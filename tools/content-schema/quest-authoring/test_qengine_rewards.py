@@ -555,13 +555,23 @@ class QuestRewards(unittest.TestCase):
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks'] + self.l13_callbacks['callbacks']
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-','l13-','m36-','qb-'))},
-                         {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),99)
-
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),102)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),148)
+                         {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack','between-the-lines-phillip-accept'})
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),104)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),153)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
-        self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
+        additional_sources = {
+            'oteryn:quest-reward/between-the-lines-phillip-accept':
+                'tibia_fandom:108521:1206800:Pen and Sword/Inkwing',
+            'oteryn:quest-reward/l10-brotherhood-dread-lord':
+                'crystal:201189f871d23597b82caf88fd611454a2ddefb8:'
+                'data-global/npc/the_bone_master.lua:78-80,123-128:sha256:'
+                '65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1',
+        }
+        for callback in callbacks:
+            if callback['key'] in additional_sources:
+                self.assertEqual(callback['sources'], [additional_sources[callback['key']]])
+            else:
+                self.assertIn(q.PIN, callback['sources'][0])
 
     def test_l1_handins_preserve_source_crest_identity_and_exclusive_sides(self):
         callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}

@@ -914,6 +914,7 @@ mod tests {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
         assert_eq!(expected.len() - before_ape_city_and_beginning, 24);
+        assert!(expected.insert("oteryn:quest-callback/qd-steal-from-thieves-oasis-box".into()));
         assert_eq!(
             callbacks
                 .into_iter()

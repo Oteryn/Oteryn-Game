@@ -28,6 +28,8 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/ape-city.json"),
+    include_str!("../../../../content/quests/npc-callbacks/beginning.json"),
     include_str!("../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
@@ -36,8 +38,6 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
-    include_str!("../../../../content/quests/npc-callbacks/ape-city.json"),
-    include_str!("../../../../content/quests/npc-callbacks/beginning.json"),
     include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),

@@ -572,7 +572,7 @@ mod main_native_contract {
         let after = explicit.catalogue();
         // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
-        assert_eq!(before.tracks.len(), 2136 + 7 + 6 + 5);
+        assert_eq!(before.tracks.len(), 2165);
         let festive_guard = "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5";
         assert_eq!(
             before.tracks.get(festive_guard),

@@ -571,8 +571,8 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rookgaard-exchanges.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
 ];
@@ -2437,10 +2437,13 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared rewards include 207 earlier rows, 31 QB routes, four Dream
-        // Courts exchanges and one native First Dragon victory exchange.
-        // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 246 + 132 + 125 + 4 + 1 + 1 + 13 + 12 + 3 + 2);
+        // Shared and QuestPC7 are counted separately from the original shards,
+        // the extended Fibula, Hunter, Rookgaard, Ape City and Beginning shards,
+        // and the Forgemaster and Rottin Wood additions.
+        assert_eq!(
+            load()?.len(),
+            250 + 132 + 125 + 4 + 4 + 4 + 3 + 2 + 1 + 1 + 13 + 12
+        );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2468,6 +2471,13 @@ mod tests {
         let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
         assert_eq!(qb.len(), 31);
         let added_keys = [
+            "oteryn:quest-reward/between-the-lines-phillip-accept",
+            "oteryn:quest-reward/l10-brotherhood-dread-lord",
+            "oteryn:quest-reward/l11-dream-warrior-task-base",
+            "oteryn:quest-reward/l11-dream-warrior-undal-base",
+            "oteryn:quest-reward/l11-dream-warrior-undal-first",
+            "oteryn:quest-reward/l11-dream-warrior-undal-second",
+            "oteryn:quest-reward/l2-festive-base-earned",
             "oteryn:quest-reward/l2-wizard-flowers",
             "oteryn:quest-reward/l2-wizard-flowers-start",
             "oteryn:quest-reward/l2-wizard-legs",
@@ -2475,6 +2485,8 @@ mod tests {
             "oteryn:quest-reward/l2-wizard-shield",
             "oteryn:quest-reward/l2-wizard-skull",
             "oteryn:quest-reward/l2-wizard-start",
+            "oteryn:quest-reward/l3-demon-helmet-complete",
+            "oteryn:quest-reward/l3-demon-shield-complete",
             "oteryn:quest-reward/l8-hunter-elane-gloves",
             "oteryn:quest-reward/l8-hunter-elane-gloves-sale",
             "oteryn:quest-reward/l8-hunter-gloves-sale",
@@ -2490,7 +2502,7 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 210);
+        assert_eq!(legacy.len(), 219);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))

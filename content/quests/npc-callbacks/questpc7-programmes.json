@@ -2320,82 +2320,6 @@
       ]
     },
     {
-      "key": "oteryn:quest-reward/questpc7-tokens-finish-the-commission",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "finish the commission"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/tokens/programme",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        }
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": false,
-        "completed_quests": []
-      },
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "completes": true,
-      "reply": [
-        "Your replica commission is complete."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-tokens-replica-rewards",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "replica rewards",
-        "souvenir"
-      ],
-      "topic": 0,
-      "next_topic": 1,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/tokens/programme",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": false,
-        "completed_quests": []
-      },
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "completes": false,
-      "reply": [
-        "Each replica costs 20 Silver Raid Tokens. Which would you like?",
-        "{Abacus}, {Assassin Doll}, {Bag of Oriental Spices}, {Bookworm Doll}, {Citizen Doll}, {Crimson Doll}, {Doll of Durin the Almighty}, {Dragon Eye}",
-        "{Dragon Goblet}, {Draken Doll}, {Emblem}, {Encyclopedia}, {Friendship Amulet}, {Frozen Heart}, {Golden Falcon}, {Golden Newspaper}",
-        "{Goromaphone}, {Hand Puppets}, {Imortus}, {Jade Amulet}, {Key of Numerous Locks}, {Little Adventurer Doll}, {Loremaster Doll}, {Lucky Clover Amulet}",
-        "{Mathmaster Shield}, {Medusa Skull}, {Music Box}, {Noble Sword}, {Norseman Doll}, {Old Radio}, {Orc's Jaw Shredder}, {Phoenix Statue}",
-        "{Pigeon Trophy}, {Shield of Destiny}, {Shield of Endless Search}, {The Mexcalibur}, {Tibiora's Box}"
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ]
-    },
-    {
       "key": "oteryn:quest-reward/questpc7-tokens-abacus-replica-repeat",
       "quest": "oteryn:quest.hunting_for_tokens",
       "npc": "oteryn:npc.jorge",
@@ -2437,7 +2361,7 @@
         "Here is your Abacus replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -2486,7 +2410,7 @@
         "Here is your Assassin Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -2535,7 +2459,7 @@
         "Here is your Assassin Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -2584,7 +2508,7 @@
         "Here is your Bag of Oriental Spices replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -2633,7 +2557,7 @@
         "Here is your Bag of Oriental Spices replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -2682,7 +2606,7 @@
         "Here is your Bookworm Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -2731,7 +2655,7 @@
         "Here is your Bookworm Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -2780,7 +2704,7 @@
         "Here is your Citizen Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -2829,7 +2753,7 @@
         "Here is your Citizen Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -2878,7 +2802,7 @@
         "Here is your Crimson Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -2927,7 +2851,7 @@
         "Here is your Crimson Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -2976,7 +2900,7 @@
         "Here is your Doll of Durin the Almighty replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -3025,7 +2949,7 @@
         "Here is your Doll of Durin the Almighty replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -3074,7 +2998,7 @@
         "Here is your Dragon Eye replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -3123,7 +3047,7 @@
         "Here is your Dragon Eye replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -3172,7 +3096,7 @@
         "Here is your Dragon Goblet replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -3221,7 +3145,7 @@
         "Here is your Dragon Goblet replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -3270,7 +3194,7 @@
         "Here is your Draken Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -3319,7 +3243,7 @@
         "Here is your Draken Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -3368,7 +3292,7 @@
         "Here is your Emblem replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -3417,7 +3341,7 @@
         "Here is your Emblem replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -3466,7 +3390,7 @@
         "Here is your Encyclopedia replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -3515,12 +3439,47 @@
         "Here is your Encyclopedia replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
       "failure_reply": [
         "You need 20 Silver Raid Tokens for this exchange."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-tokens-finish-the-commission",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "finish the commission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/tokens/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "completes": true,
+      "reply": [
+        "Your replica commission is complete."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ]
     },
     {
@@ -3564,7 +3523,7 @@
         "Here is your Friendship Amulet replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -3613,7 +3572,7 @@
         "Here is your Friendship Amulet replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -3662,7 +3621,7 @@
         "Here is your Frozen Heart replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -3711,7 +3670,7 @@
         "Here is your Frozen Heart replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -3760,7 +3719,7 @@
         "Here is your Golden Falcon replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -3809,7 +3768,7 @@
         "Here is your Golden Falcon replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -3858,7 +3817,7 @@
         "Here is your Golden Newspaper replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -3907,7 +3866,7 @@
         "Here is your Golden Newspaper replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -3956,7 +3915,7 @@
         "Here is your Goromaphone replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -4005,7 +3964,7 @@
         "Here is your Goromaphone replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -4054,7 +4013,7 @@
         "Here is your Hand Puppets replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -4103,7 +4062,7 @@
         "Here is your Hand Puppets replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -4152,7 +4111,7 @@
         "Here is your Imortus replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -4201,7 +4160,7 @@
         "Here is your Imortus replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -4250,7 +4209,7 @@
         "Here is your Jade Amulet replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -4299,7 +4258,7 @@
         "Here is your Jade Amulet replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -4348,7 +4307,7 @@
         "Here is your Key of Numerous Locks replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -4397,7 +4356,7 @@
         "Here is your Key of Numerous Locks replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -4446,7 +4405,7 @@
         "Here is your Little Adventurer Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -4495,7 +4454,7 @@
         "Here is your Little Adventurer Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -4544,7 +4503,7 @@
         "Here is your Loremaster Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -4593,7 +4552,7 @@
         "Here is your Loremaster Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -4642,7 +4601,7 @@
         "Here is your Lucky Clover Amulet replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -4691,7 +4650,7 @@
         "Here is your Lucky Clover Amulet replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -4740,7 +4699,7 @@
         "Here is your Mathmaster Shield replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -4789,7 +4748,7 @@
         "Here is your Mathmaster Shield replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -4838,7 +4797,7 @@
         "Here is your Medusa Skull replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -4887,7 +4846,7 @@
         "Here is your Medusa Skull replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -4936,7 +4895,7 @@
         "Here is your Music Box replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -4985,7 +4944,7 @@
         "Here is your Music Box replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5034,7 +4993,7 @@
         "Here is your Noble Sword replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5083,7 +5042,7 @@
         "Here is your Noble Sword replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5132,7 +5091,7 @@
         "Here is your Norseman Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5181,7 +5140,7 @@
         "Here is your Norseman Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5230,7 +5189,7 @@
         "Here is your Old Radio replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5279,7 +5238,7 @@
         "Here is your Old Radio replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5328,7 +5287,7 @@
         "Here is your Orc's Jaw Shredder replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5377,7 +5336,7 @@
         "Here is your Orc's Jaw Shredder replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5426,7 +5385,7 @@
         "Here is your Phoenix Statue replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5475,7 +5434,7 @@
         "Here is your Phoenix Statue replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5524,7 +5483,7 @@
         "Here is your Pigeon Trophy replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5573,12 +5532,53 @@
         "Here is your Pigeon Trophy replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
       "failure_reply": [
         "You need 20 Silver Raid Tokens for this exchange."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-tokens-replica-rewards",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "replica rewards",
+        "souvenir"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/tokens/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "completes": false,
+      "reply": [
+        "Each replica costs 20 Silver Raid Tokens. Which would you like?",
+        "{Abacus}, {Assassin Doll}, {Bag of Oriental Spices}, {Bookworm Doll}, {Citizen Doll}, {Crimson Doll}, {Doll of Durin the Almighty}, {Dragon Eye}",
+        "{Dragon Goblet}, {Draken Doll}, {Emblem}, {Encyclopedia}, {Friendship Amulet}, {Frozen Heart}, {Golden Falcon}, {Golden Newspaper}",
+        "{Goromaphone}, {Hand Puppets}, {Imortus}, {Jade Amulet}, {Key of Numerous Locks}, {Little Adventurer Doll}, {Loremaster Doll}, {Lucky Clover Amulet}",
+        "{Mathmaster Shield}, {Medusa Skull}, {Music Box}, {Noble Sword}, {Norseman Doll}, {Old Radio}, {Orc's Jaw Shredder}, {Phoenix Statue}",
+        "{Pigeon Trophy}, {Shield of Destiny}, {Shield of Endless Search}, {The Mexcalibur}, {Tibiora's Box}"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ]
     },
     {
@@ -5622,7 +5622,7 @@
         "Here is your Shield of Destiny replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5671,7 +5671,7 @@
         "Here is your Shield of Destiny replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5720,7 +5720,7 @@
         "Here is your Shield of Endless Search replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5769,7 +5769,7 @@
         "Here is your Shield of Endless Search replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5818,7 +5818,7 @@
         "Here is your The Mexcalibur replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5867,7 +5867,7 @@
         "Here is your The Mexcalibur replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5916,7 +5916,7 @@
         "Here is your Tibiora's Box replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5965,7 +5965,7 @@
         "Here is your Tibiora's Box replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,

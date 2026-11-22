@@ -51,6 +51,7 @@
     "oteryn:creature.adept_of_the_cult": 18030,
     "oteryn:creature.behemoth": 5999,
     "oteryn:creature.bonebeast": 6030,
+    "oteryn:creature.cockroach": 7763,
     "oteryn:creature.dipthrah": 6031,
     "oteryn:creature.dworc_voodoomaster": 6055,
     "oteryn:creature.enlightened_of_the_cult": 18110,
@@ -67,7 +68,6 @@
     "oteryn:creature.thalas": 6025,
     "oteryn:creature.tortoise": 6072,
     "oteryn:creature.undead_gladiator": 8909,
-    "oteryn:creature.vashresamun": 6025,
-    "oteryn:creature.cockroach": 7763
+    "oteryn:creature.vashresamun": 6025
   }
 }
