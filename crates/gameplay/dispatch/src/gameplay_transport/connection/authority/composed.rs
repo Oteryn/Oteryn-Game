@@ -341,6 +341,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     fn session_commands(&self) -> Option<&session_ingress::SessionCommands> {
         Some(&self.states.command_ingress)
     }
+    async fn quest_tracker_is_premium(&self, session: GameSessionId) -> bool {
+        self.session_premium_gate(session).await.premium_current()
+    }
+
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,
