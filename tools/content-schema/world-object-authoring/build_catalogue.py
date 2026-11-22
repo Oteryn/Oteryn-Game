@@ -487,6 +487,9 @@ def outputs(
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+        import spawn_ground
+
+        files[spawn_ground.SHARD] = spawn_ground.terrain_output()
     return files, world_objects.census_document_bytes(result)
 
 
@@ -535,6 +538,7 @@ def official_shards():
 def qualified_shards():
     import activity_static
     import feroxa_static
+    import spawn_ground
 
     return {
         path
@@ -550,6 +554,7 @@ def qualified_shards():
             "content/world/objects/objects-12917-12931.json",
             *activity_static.SHARDS.values(),
             feroxa_static.SHARD,
+            spawn_ground.SHARD,
         )
         if (path := ROOT / relative).exists()
     }

@@ -4,6 +4,8 @@
 Writes content/world/spawns/ (index.json plus spawns-*.json shards): one source per XML
 `<monster centerx centery centerz radius>` element, in file order, each point bound to the
 creature definition `oteryn:creature.<slug(name)>` and placed at the centre plus its offset.
+The reconciliation packet supplies the reviewed same-floor corrections against the pinned
+Crystal map. Reconciliation keeps every source key, centre, creature and respawn policy.
 The source is OTS_HYPOTHESIS_ONLY migration evidence: only normalized facts are written. The
 groups listed in the import's `spawns/held-groups.json` stay out (they wait for their owning
 contract). Fails closed on a hash other than the pinned one, an unbound name, a point off its
@@ -31,6 +33,7 @@ HELD = IMPORT / "map-content-linking/spawns/held-groups.json"
 HELD_SHA256 = "8a666c3d409edda5ac5996d6dec64cce24b30d5f43c75aa9a1175f1d07297c57"
 BOSSES = Path(__file__).with_name("boss-spawns.json")
 BOSS_CHANCES = Path(__file__).with_name("held-boss-chances.json")
+RECONCILIATION = Path(__file__).with_name("spawn-reconciliation-1.json")
 FRAME = "global-target-2026-09-27"
 SHARD_SIZE = 2000
 SOURCE = {
@@ -112,6 +115,34 @@ def creature_keys() -> set[str]:
 
 def dump(value) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def reconcile_cells(records, evidence):
+    """Keep each original spawn and apply only the reviewed coordinate corrections."""
+    moves = {}
+    for row in evidence["points"]:
+        if row["from"] != row["to"]:
+            source = row["source"]
+            x, y, z = row["from"]
+            nx, ny, nz = row["to"]
+            key = (source, row["creature"], x, y, z)
+            if (
+                key in moves or source > evidence["last_source_key"]
+                or z != nz or abs(x - nx) + abs(y - ny) not in (1, 2)
+                or not (0 <= nx <= 0xFFFF and 0 <= ny <= 0xFFFF)
+            ):
+                raise ValueError(f"invalid spawn reconciliation: {key}")
+            moves[key] = {"x": nx, "y": ny, "floor": nz}
+    for record in records:
+        declaration = record["declaration"]
+        source = declaration["identity"]["key"]
+        for point in declaration["points"]:
+            cell = point["cell"]
+            key = (source, point["creature"], cell["x"], cell["y"], cell["floor"])
+            if key in moves:
+                point["cell"] = moves.pop(key)
+    if moves:
+        raise ValueError(f"unmatched spawn reconciliation: {next(iter(moves))}")
 
 
 def convert(xml: bytes) -> dict[str, str]:
@@ -213,6 +244,9 @@ def convert(xml: bytes) -> dict[str, str]:
         sys.exit("Ancient Tombs source spawns are incomplete")
     records.extend(scheduled_bosses)
     records.extend(pharaohs[key] for key in sorted(pharaohs))
+    reconciliation_bytes = RECONCILIATION.read_bytes()
+    reconciliation = json.loads(reconciliation_bytes)
+    reconcile_cells(records, reconciliation)
     files, shards = {}, []
     for start in range(0, len(records), SHARD_SIZE):
         part = records[start : start + SHARD_SIZE]
@@ -260,7 +294,10 @@ def convert(xml: bytes) -> dict[str, str]:
                                     "record_count": len(bosses["records"])},
                                    {"path": "tools/world-bundle-compiler/held-boss-chances.json",
                                     "sha256": hashlib.sha256(chances_bytes).hexdigest(),
-                                    "record_count": len(chances)}],
+                                    "record_count": len(chances)},
+                                   {"path": "tools/world-bundle-compiler/spawn-reconciliation-1.json",
+                                    "sha256": hashlib.sha256(reconciliation_bytes).hexdigest(),
+                                    "record_count": len(reconciliation["points"])}],
         }
     )
     return {name: text + "\n" for name, text in files.items()}
