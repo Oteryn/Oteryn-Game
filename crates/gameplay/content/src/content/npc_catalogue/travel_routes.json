@@ -2083,13 +2083,14 @@
     "key": "oteryn:service.travel.melian/marapur",
     "keyword": "marapur",
     "price": 70,
-    "premium": true,
+    "premium": false,
     "x": 33805,
-    "y": 32767,
+    "y": 32766,
     "floor": 2,
     "postman": true,
-    "held": true,
-    "carpet": true
+    "held": false,
+    "carpet": true,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.melian/svargrond",
@@ -2287,13 +2288,14 @@
     "key": "oteryn:service.travel.pino/marapur",
     "keyword": "marapur",
     "price": 70,
-    "premium": true,
+    "premium": false,
     "x": 33805,
-    "y": 32767,
+    "y": 32766,
     "floor": 2,
     "postman": true,
-    "held": true,
-    "carpet": true
+    "held": false,
+    "carpet": true,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.pino/svargrond",
@@ -2392,9 +2394,16 @@
     "x": 32024,
     "y": 32813,
     "floor": 7,
-    "postman": true,
-    "held": true,
-    "carpet": false
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "project_required_quest_tracks": [
+      {
+        "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor",
+        "minimum": 1,
+        "maximum": 1
+      }
+    ]
   },
   {
     "key": "oteryn:service.travel.sebastian_nargor/liberty_bay",
@@ -2544,13 +2553,14 @@
     "key": "oteryn:service.travel.tanyt/marapur",
     "keyword": "marapur",
     "price": 70,
-    "premium": true,
+    "premium": false,
     "x": 33805,
-    "y": 32767,
+    "y": 32766,
     "floor": 2,
     "postman": true,
-    "held": true,
-    "carpet": true
+    "held": false,
+    "carpet": true,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.tanyt/svargrond",
@@ -2609,8 +2619,9 @@
     "y": 32916,
     "floor": 7,
     "postman": true,
-    "held": true,
-    "carpet": false
+    "held": false,
+    "carpet": false,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.tonar_oskayaat/passage",
