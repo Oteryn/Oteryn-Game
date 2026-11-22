@@ -19,7 +19,7 @@ fn source_direction(
     (direction, true)
 }
 
-pub(super) fn admitted_direction(
+pub(in crate::gameplay_transport) fn admitted_direction(
     runtime: &mut ChannelRuntimeV1,
     states: &super::super::actor_spell::ChannelSpellStates,
     actor: ExactActorRef,
@@ -27,27 +27,10 @@ pub(super) fn admitted_direction(
     requested: StepDirection,
     now: u64,
 ) -> (StepDirection, bool) {
-    use oteryn_gameplay_domain::domain::condition::StatusKind;
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
     use sha2::{Digest, Sha256};
-    if !states
-        .get(runtime, actor, session)
-        .is_some_and(|state| state.owned_conditions().has_status(StatusKind::Drunk, now))
-    {
-        return (requested, false);
-    }
-    // The retained Drome compatibility status has already been resolved by the
-    // pure drome_step_direction owner with this same time and position. Every
-    // other native Drunk condition keeps this ordinary source owner exactly once.
-    if states.get(runtime, actor, session).is_some_and(|state| {
-        state
-            .owned_conditions()
-            .active_at(
-                oteryn_gameplay_domain::domain::condition::ConflictKey::Status(StatusKind::Drunk),
-                now,
-            )
-            .is_some_and(|condition| condition.definition().key() == "drome.drunk")
-    }) {
+    // The Drome variant has its own steering owner before this one.
+    if !states.native_drunk_steers(runtime, actor, session, now) {
         return (requested, false);
     }
     // The connection routes only due, non-replayed walks here (serve/route.rs).

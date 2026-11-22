@@ -160,3 +160,42 @@ fn login_button_waits_for_paste_and_cancels_when_form_closes() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn reverting_editor_text_keeps_field_edited_until_reload() -> TestResult {
+    let (mut app, editor) = app()?;
+    let temp = super::Temp::new()?;
+    let path = temp.join("login.json");
+    let original = super::settings(&temp)?;
+    original.save(&path)?;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .configure_login(Some(path.clone()), |_| None);
+    app.update();
+    for value in ["http://127.0.0.1:18567", original.platform_url.as_str()] {
+        app.world_mut()
+            .get_mut::<EditableText>(editor)
+            .ok_or("editor")?
+            .editor_mut()
+            .set_text(value);
+        app.update();
+    }
+    let mut external = original.clone();
+    external.platform_url = "http://127.0.0.1:18568".into();
+    external.save(&path)?;
+    let mut host = app.world_mut().non_send_mut::<HostOwner>();
+    host.login.submit()?;
+    assert_eq!(
+        LoginSettings::load(&path)?.platform_url,
+        original.platform_url
+    );
+
+    host.configure_login(Some(path.clone()), |_| None);
+    external.save(&path)?;
+    host.login.submit()?;
+    assert_eq!(
+        LoginSettings::load(&path)?.platform_url,
+        external.platform_url
+    );
+    Ok(())
+}

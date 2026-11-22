@@ -15,10 +15,10 @@ mod publication;
 #[path = "store/rebase.rs"]
 mod rebase;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum BackupOrder {
-    BackupFirst,
-    ActiveFirst,
+pub(super) enum Replacement {
+    Import(PathBuf),
+    Set(Box<ReferencePreferences>),
+    Restore,
 }
 
 pub struct PreferenceStore {
@@ -132,10 +132,14 @@ impl PreferenceStore {
     pub fn backup_path(&self) -> PathBuf {
         let pending = self.path.with_added_extension("pending-backup");
         if pending.is_file() {
-            pending
-        } else {
-            self.path.with_extension("backup.json")
+            return pending;
         }
+        Self::ordered_snapshots(&self.path)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|(_, path)| path)
+            .find(|path| Self::read_transfer(path).is_ok())
+            .unwrap_or_else(|| self.path.with_extension("backup.json"))
     }
 
     pub fn defaults(path: PathBuf) -> Self {

@@ -25,6 +25,7 @@ pub struct SelectionRequest {
 pub struct SelectionBridge {
     requests: Receiver<SelectionRequest>,
     pending: Option<SelectionRequest>,
+    responses_paused: bool,
     worlds: Vec<(String, String)>,
     closed: Arc<AtomicBool>,
     epoch: Arc<AtomicU64>,
@@ -98,6 +99,7 @@ impl SelectionBridge {
             Self {
                 requests,
                 pending: None,
+                responses_paused: false,
                 worlds: Vec::new(),
                 closed,
                 epoch,
@@ -140,7 +142,14 @@ impl SelectionBridge {
         }
         before != self.pending().map(|r| r.id)
     }
+    pub fn pause_responses(&mut self, paused: bool) {
+        self.responses_paused = paused;
+    }
+
     pub fn respond(&mut self, id: u64, action: SelectionAction) -> bool {
+        if self.responses_paused {
+            return false;
+        }
         let Some(request) = self.pending() else {
             return false;
         };
