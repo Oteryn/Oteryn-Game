@@ -213,7 +213,8 @@ pub(in crate::gameplay_transport) fn equipped_mana_shield(
 }
 
 /// I05-r2 (Crystal movement.cpp:647-650): any worn item in its own slot whose worn form has
-/// INVISIBILITY true. `None` for the same unreadable equipment `equipment_effects` refuses.
+/// INVISIBILITY true. For the stealth ring, Crystal 201189f8 items.xml:6917,7326 puts
+/// the modifier on 3086, while the equipment snapshot keeps base 3049 until expiry.
 pub(in crate::gameplay_transport) fn equipped_invisibility(
     equipment: &EquipmentSnapshot,
     content: &NativeGameplayState,
