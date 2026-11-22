@@ -76,7 +76,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let implicit_parameter = self.spells.source_indexed(intent.spell).is_some_and(|(spell, _)| {
             matches!(&spell.execution, crate::spell::Execution::NativeProfile(profile)
                 if profile.spell()["execution"]["native_behavior"]["key"].as_str() == Some("vertical_move"))
-                || super::super::parameter_cast::is_find_fiend(spell)
+                || oteryn_gameplay_spell_rules::parameter_cast::is_find_fiend(spell)
         });
         let implicit = implicit_parameter.then_some(
             oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent {

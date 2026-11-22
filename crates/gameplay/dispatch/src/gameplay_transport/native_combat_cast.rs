@@ -1795,6 +1795,10 @@ fn area_candidates(
 
 #[path = "native_combat_cast/delayed_strikes.rs"]
 pub(in crate::gameplay_transport) mod delayed_strikes;
+#[path = "native_combat_cast/empowerment.rs"]
+mod empowerment;
+#[path = "native_combat_cast/equipment_attacks.rs"]
+mod equipment_attacks;
 /// All facts originate in the actual owner, static qualified content and the same SQL Item
 /// transaction. Missing Premium/learning/Wheel/elemental/magnitude is refused before RNG.
 #[path = "native_combat_cast/prepare.rs"]
@@ -1812,10 +1816,19 @@ fn presentation_requests(
 ) -> Result<Vec<super::super::spell_presentations::LocatedCueRequest>, SpellCastDisposition> {
     use super::super::spell_presentations::{CueTarget, LocatedCueRequest, QualifiedCueTile};
     let mut result = Vec::new();
-    let effect =
-        profile.spell()["execution"]["native_behavior"]["parameters"]["effect_asset_binding"]
+    let recipe = &profile.spell()["execution"]["native_behavior"];
+    let effects = crate::spell::spell_presentations::equipment_effects(profile);
+    let effect = if let (Some(effects), NativeCombatPlan::Combat(combat)) = (effects, plan) {
+        match combat.element {
+            crate::spell::native_combat::Element::Energy => effects[1],
+            crate::spell::native_combat::Element::Earth => effects[2],
+            _ => effects[0],
+        }
+    } else {
+        recipe["parameters"]["effect_asset_binding"]
             .as_str()
-            .ok_or(SpellCastDisposition::Rejected)?;
+            .ok_or(SpellCastDisposition::Rejected)?
+    };
     let actor = |id| {
         actors
             .iter()
@@ -2356,7 +2369,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         };
         let native_combat = matches!(&spell.execution, Execution::NativeProfile(p) if matches!(
             p.spell()["execution"]["native_behavior"]["key"].as_str(), Some("wheel_combat" | "avatar_state"
-                | "monster_ai_override" | "mass_spirit_mend" | "mana_shield_capacity" | "delayed_strike")));
+                | "monster_ai_override" | "mass_spirit_mend" | "mana_shield_capacity" | "delayed_strike" | "equipment_attack" | "owned_field_buff")));
         if !native_combat
             && !is_source_self(spell)
             && !ordinary_combat::applicable(spell)

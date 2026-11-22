@@ -672,8 +672,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) else {
                     continue;
                 };
+                let empowerment = runtime
+                    .read_actor_position(entry.actor)
+                    .ok()
+                    .map_or(0, |position| {
+                        player.divine_empowerment_percent(position.position(), now.get())
+                    });
                 let Some(damage) = damage
-                    .checked_mul(i64::from(retained))
+                    .checked_mul(i64::from(retained) + i64::from(empowerment))
                     .map(|value| value / 100)
                 else {
                     continue;

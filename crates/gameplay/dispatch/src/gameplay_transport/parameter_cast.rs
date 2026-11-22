@@ -38,7 +38,9 @@ use sqlx::{Postgres, Transaction};
 
 const MAX_PENDING_PARAMETERS: usize = 256;
 
-pub use oteryn_gameplay_spell_rules::parameter_cast::{named_player_spell, native_key};
+pub use oteryn_gameplay_spell_rules::parameter_cast::{
+    is_find_fiend, named_player_spell, native_key,
+};
 #[allow(
     clippy::large_enum_variant,
     reason = "transient owner result; boxing would add an allocation to the owner turn"
@@ -310,12 +312,6 @@ pub(super) fn source_feedback(
         },
     }))
 }
-pub(super) fn is_find_fiend(spell: &SpellDefinition) -> bool {
-    matches!(&spell.execution, Execution::NativeProfile(profile)
-        if profile.spell()["execution"]["native_behavior"]["key"] == "locate_message"
-        && profile.spell()["execution"]["native_behavior"]["parameters"]["source"] == "nearest_fiendish")
-}
-
 async fn prepare_find_fiend(
     tx: &mut Transaction<'_, Postgres>,
     authority: &items::SpellItemAuthority,
@@ -333,12 +329,13 @@ async fn prepare_find_fiend(
     let mut fiends = Vec::new();
     if let Some((target, deadline)) = runtime.nearest_live_fiend(position, now.get()) {
         let policy = &target.state.policy;
-        let race = super::charm_progression::canonical_races().and_then(|races| {
-            races.iter().find(|race| {
-                race.key() == policy.definition_key
-                    && race.definition_revision() == policy.definition_revision
-            })
-        });
+        let race =
+            crate::gameplay_transport::charm_progression::canonical_races().and_then(|races| {
+                races.iter().find(|race| {
+                    race.key() == policy.definition_key
+                        && race.definition_revision() == policy.definition_revision
+                })
+            });
         let (bestiary_completed, bestiary_required_kills) = if let Some(race) = race {
             let threshold = race.final_kill_threshold();
             let kills = crate::durability::bestiary_progress::spell_caster_bestiary_kills(

@@ -83,6 +83,13 @@ pub struct CharacterCastFacts {
 /// when the actor's state is created, one more for every committed cast and for every periodic
 /// evaluation that changes Serene.
 #[derive(Debug, Clone, PartialEq, Eq)]
+struct DivineEmpowerment {
+    positions: Vec<crate::spell::chain::TilePosition>,
+    expires_micros: u64,
+    bonus_percent: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlayerSpellState {
     /// Soul War login-reset counter, retained by the existing scoped state transfer.
     pub(super) soul_war_torment: u8,
@@ -100,6 +107,7 @@ pub struct PlayerSpellState {
     pub(super) stored_promotion: bool,
     pub(super) premium_valid_until_micros: Option<u64>,
     pub health: u32,
+    divine_empowerment: Option<DivineEmpowerment>,
     pub(super) field_attack_history: super::field_history::FieldAttackHistory,
     pub(super) mana: u32,
     /// FOOD-REGEN-1: milliseconds of fed time accumulated toward the next health and mana credit.
@@ -256,6 +264,7 @@ impl PlayerSpellState {
                 equipped_offence: Default::default(),
                 training: None,
                 training_payment: None,
+                divine_empowerment: None,
                 field_attack_history: super::field_history::FieldAttackHistory::default(),
                 training_checkpoint: None,
             })

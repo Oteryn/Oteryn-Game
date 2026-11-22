@@ -14,6 +14,7 @@ pub(super) const POPULATION_TICK_MICROS: u64 = 10_000_000;
 // Crystal 201189f8 config.lua.dist: default live fiendish rotation, one hour.
 const FIENDISH_LIFETIME_MICROS: u64 = 3_600_000_000;
 
+#[derive(Debug)]
 pub(super) struct TrackedFiend {
     actor: ExactActorRef,
     deadline: u64,

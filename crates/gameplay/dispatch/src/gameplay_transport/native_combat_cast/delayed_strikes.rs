@@ -192,16 +192,18 @@ pub(in crate::gameplay_transport) fn combat(
     })
 }
 
-#[allow(
-    clippy::too_many_arguments,
-    reason = "same paid owner admission for both native plan families"
-)]
+pub(super) struct PlanFacts<'a> {
+    pub(super) combat: &'a NativeCombatFacts,
+    pub(super) delayed: Option<&'a NativeDelayedFacts>,
+    pub(super) equipment:
+        Option<&'a oteryn_gameplay_spell_rules::native_actor_states::EquipmentFacts>,
+}
+
 pub(super) fn paid(
     before: &PlayerSpellState,
     spell: &SpellDefinition,
     operational: &OperationalCastFacts,
-    facts: &NativeCombatFacts,
-    delayed: Option<&NativeDelayedFacts>,
+    facts: PlanFacts<'_>,
     now: SemanticTimeMicros,
     draw: &mut dyn FnMut(i64, i64) -> i64,
     caster: &crate::spell::CasterState,
@@ -212,21 +214,40 @@ pub(super) fn paid(
     ),
     SpellCastDisposition,
 > {
+    let input = if let Some(equipment) = facts.equipment {
+        Facts::Equipment(equipment)
+    } else {
+        facts
+            .delayed
+            .map_or(Facts::Combat(facts.combat), Facts::Delayed)
+    };
     let mut paid = prepare_native_owner_cast_with_caster(
         before,
         spell,
         operational,
-        delayed.map_or(Facts::Combat(facts), Facts::Delayed),
+        input,
         now,
         draw,
         caster,
     )?;
+    if let Plan::Equipment(equipment) = &paid.plan {
+        paid.plan = Plan::Combat(Box::new(equipment_attacks::combat(
+            equipment,
+            facts.combat,
+            draw,
+        )?));
+        return Ok((paid, None));
+    }
     if !matches!(paid.plan, Plan::Delayed(_)) {
         return Ok((paid, None));
     }
     let Plan::Delayed(plan) = paid.plan else {
         return reject();
     };
+    if let NativeDelayedPlan::CreateField { cooldown_ms, .. } = plan.as_ref() {
+        paid.plan = Plan::Combat(Box::new(combat(None, Some(*cooldown_ms))));
+        return Ok((paid, Some(*plan)));
+    }
     let NativeDelayedPlan::Cast {
         immediate,
         cooldown_ms,
@@ -320,6 +341,17 @@ pub(super) fn cues(
     caster: ExactActorRef,
 ) -> Result<Vec<super::super::super::spell_presentations::LocatedCueRequest>, SpellCastDisposition>
 {
+    if matches!(plan, Some(NativeDelayedPlan::CreateField { .. })) {
+        use crate::gameplay_transport::spell_presentations::{CueTarget, LocatedCueRequest};
+        return Ok(profile.spell()["presentation"]["cast_cue"]
+            .as_str()
+            .into_iter()
+            .map(|binding| LocatedCueRequest {
+                binding: binding.to_owned(),
+                target: CueTarget::Actor(caster),
+            })
+            .collect());
+    }
     let Some(NativeDelayedPlan::Cast {
         immediate, marker, ..
     }) = plan

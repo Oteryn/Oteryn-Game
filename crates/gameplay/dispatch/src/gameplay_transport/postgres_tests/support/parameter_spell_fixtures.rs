@@ -69,7 +69,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     );
     prepare_current_session(&h).await?;
     h.seed_pvp_target().await?;
-    if !matches!(case, 1 | 5..=8) {
+    if !matches!(case, 1 | 5..=13) {
         observer::admit(&h).await?;
     }
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -107,9 +107,29 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         cp,
         room.clone(),
         native.spell_book().clone(),
-        if matches!(case, 5..=7) { 4 } else { 2 },
+        if matches!(case, 5..=7 | 9..=13) { 5 } else { 2 },
     )?;
     deps.combat_room = Some(room);
+    use crate::gameplay_transport::spell_premium_coordinator::{
+        SpellPremiumCoordinator, purchase_fixture,
+    };
+    let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+    if case >= 9 {
+        h.root
+            .latch_premium_activation(
+                &activation.activation_id,
+                activation.switch_over_us,
+                activation.switch_over_us + 60_000_000,
+            )
+            .await
+            .map_err(debug)?;
+    }
+    let premium = SpellPremiumCoordinator::new(
+        consumer,
+        Some(clock),
+        Some(activation),
+        Some(h.root.clone()),
+    );
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
     if case >= 7 {
@@ -121,10 +141,21 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     let mut admitted = deps.admitted;
     let actor = deps.actor;
     let session = admitted.game_session_id;
+    if case >= 9 {
+        owner.premium_coordinator = Some(&premium);
+        owner.admit_premium(id(40), session);
+    }
     owner.admit_progression_session(&mut admitted).await;
     let progression = owner.progression_binding(session).ok_or("progression")?;
     let formula = native.training_formula().ok_or("training")?;
-    let druid = convert_vocation(formula, &DurableBuildState::default(), "druid").map_err(debug)?;
+    let vocation = match case {
+        9 | 12 => "monk",
+        10 | 11 => "knight",
+        13 => "paladin",
+        _ => "druid",
+    };
+    let druid =
+        convert_vocation(formula, &DurableBuildState::default(), vocation).map_err(debug)?;
     h.root
         .commit_character_build(
             &authority,
@@ -148,10 +179,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             current_fence(&owner, session).await?,
             ExperienceAwardRequest {
                 occurrence: ExperienceRewardOccurrence::from_bytes(id(91)).map_err(debug)?,
-                amount: oteryn_simulation_determinism::ExactI64::new(if case >= 7 {
-                    204_800
-                } else {
-                    98_800
+                amount: oteryn_simulation_determinism::ExactI64::new(match case {
+                    13 => 450_000_000,
+                    9..=12 => 6_000_000,
+                    7 | 8 => 204_800,
+                    _ => 98_800,
                 }),
                 context: progression.context.clone(),
                 policy_revision: progression.policy_revision.clone(),
@@ -161,6 +193,82 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         )
         .await
         .map_err(debug)?;
+    if case == 13 {
+        let data =
+            oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded().map_err(debug)?;
+        let rules = std::sync::Arc::new(
+            crate::durability::character_wheel::WheelRuleset::from_catalogue(
+                data.revision(),
+                data.wheel(),
+            )
+            .map_err(debug)?,
+        );
+        owner.wheel_ruleset = Some(rules.clone());
+        let purchase = super::atelier_fixtures::fixture::prepare(&h).await?;
+        let fence = current_fence(&owner, session).await?;
+        assert!(matches!(
+            owner
+                .revision_sequencer
+                .acquire(fence.character_id)
+                .await
+                .commit_npc_purchase(&h.root, &authority, &h.node, fence, purchase, &premium)
+                .await
+                .map_err(debug)?,
+            crate::durability::npc_purchase::PurchaseOutcome::Committed(_)
+        ));
+        let mut points = [0; 36];
+        for (index, slot) in data.wheel()["topology"]
+            .as_array()
+            .ok_or("Wheel topology")?
+            .iter()
+            .enumerate()
+        {
+            if slot["domain"] == "blue" {
+                points[index] =
+                    u16::try_from(slot["capacity"].as_u64().ok_or("Wheel slot capacity")?)?;
+            }
+        }
+        let fence = current_fence(&owner, session).await?;
+        assert!(matches!(
+            owner
+                .revision_sequencer
+                .acquire(fence.character_id)
+                .await
+                .commit_wheel(
+                    &h.root,
+                    &authority,
+                    &h.node,
+                    fence,
+                    crate::durability::character_wheel::WheelChangeRequest {
+                        occurrence:
+                            crate::durability::character_wheel::WheelOccurrence::from_bytes(id(92))
+                                .map_err(debug)?,
+                        expected_wheel_revision: 0,
+                        slots: crate::durability::character_wheel::WheelSlots::new(points)
+                            .map_err(debug)?,
+                        vessels: None,
+                    },
+                    rules,
+                    crate::durability::character_wheel::WheelChangeFacts { at_temple: false },
+                    &premium,
+                )
+                .await
+                .map_err(debug)?,
+            crate::durability::character_wheel::WheelCommitOutcome::Committed(_)
+        ));
+    }
+    let crate::gameplay_transport::spell_character_facts::CastFactsLoad::Ready {
+        facts: cast_facts,
+        ..
+    } = crate::gameplay_transport::spell_character_facts::load_character_cast_facts(
+        &h.root,
+        &authority,
+        current_fence(&owner, session).await?.character_id,
+    )
+    .await
+    else {
+        return Err("durable cast facts unavailable".into());
+    };
     let mut augment_target = None;
     {
         let mut runtime = deps.runtime.lock().await;
@@ -252,11 +360,15 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                     &runtime,
                     actor,
                     session,
-                    crate::spell::cast::CharacterCastFacts {
-                        level: if case >= 7 { 25 } else { 20 },
-                        ..crate::gameplay_transport::actor_spell::tests::FACTS
+                    if case >= 9 {
+                        cast_facts
+                    } else {
+                        crate::spell::cast::CharacterCastFacts {
+                            level: if case >= 7 { 25 } else { 20 },
+                            ..crate::gameplay_transport::actor_spell::tests::FACTS
+                        }
                     },
-                    (0, 0),
+                    (if case == 12 { 3 } else { 0 }, 0),
                     owner.owner_now()
                 )
                 .is_some()
@@ -269,7 +381,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .map_err(debug)?;
     }
     let target_session = GameSessionId::decode(&id(110)).map_err(debug)?;
-    let target_actor = if !matches!(case, 1 | 5..=8) {
+    let target_actor = if !matches!(case, 1 | 5..=13) {
         Some(observer::initialize(&deps, &owner).await?)
     } else {
         None
@@ -293,7 +405,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
     for current_session in [
         Some(session),
-        (!matches!(case, 1 | 5..=8)).then_some(target_session),
+        (!matches!(case, 1 | 5..=13)).then_some(target_session),
     ]
     .into_iter()
     .flatten()
@@ -306,6 +418,9 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             )
             .await
             .map_err(debug)?;
+    }
+    if case >= 9 {
+        return super::knight_spells::cast_case(&h, &owner, actor, session, case).await;
     }
     if case == 0 || case == 3 {
         allow_location(&owner, target_session, native.source_digest(), case == 0).await?;

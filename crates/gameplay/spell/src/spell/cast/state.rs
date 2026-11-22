@@ -11,6 +11,31 @@ use crate::spell::harmony::{HarmonyMultiplier, MonkState, MonkStateError};
 use crate::spell::{CasterState, HarmonyRole, SpellBook, SpellDefinition, Vocation};
 
 impl PlayerSpellState {
+    pub fn install_divine_empowerment(
+        &mut self,
+        positions: Vec<crate::spell::chain::TilePosition>,
+        expires_micros: u64,
+        bonus_percent: u32,
+    ) {
+        self.divine_empowerment = Some(super::DivineEmpowerment {
+            positions,
+            expires_micros,
+            bonus_percent,
+        });
+    }
+
+    pub fn divine_empowerment_percent(
+        &self,
+        position: crate::foundation::MovementLocalPosition,
+        now: u64,
+    ) -> u32 {
+        self.divine_empowerment.as_ref()
+            .filter(|field| self.health > 0 && now < field.expires_micros)
+            .filter(|field| field.positions.iter().any(|tile|
+                (tile.x, tile.y, tile.floor) == (position.x, position.y, position.floor)))
+            .map_or(0, |field| field.bonus_percent)
+    }
+
     /// Replaces the Wheel dedication contribution without changing the Character-owned base.
     /// Lower maxima clamp the live pools; higher maxima do not grant health or mana.
     pub fn apply_wheel_maximum_bonus(

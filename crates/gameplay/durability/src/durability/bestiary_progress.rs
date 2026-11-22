@@ -597,7 +597,8 @@ pub async fn spell_caster_bestiary_kills(
     .bind(authority.character_id_bytes().as_slice())
     .bind(race.key())
     .fetch_optional(&mut **tx)
-    .await?;
+    .await
+    .map_err(DurabilityError::from)?;
     u32::try_from(kills.unwrap_or_default()).map_err(|_| DurabilityError::InvalidStoredState.into())
 }
 
