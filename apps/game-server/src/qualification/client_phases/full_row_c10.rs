@@ -4,7 +4,8 @@
 //!    spell; require a `Cast` reply and the exact soul debit in an actor-vitals delta.
 //! 2. Immediately repeat that player command; require the cooldown refusal and no
 //!    soul delta (the negative path must not charge the player).
-//! 3. Walk to a native rat spawn and kill it through ordinary combat, thereby
+//! 3. Walk to a native creature spawn whose reward meets the character level,
+//!    and kill it through ordinary combat, thereby
 //!    opening the server's kill-funded soul window; require earned XP and then the
 //!    periodic `+1` soul actor-vitals delta on the real server clock.
 //! 4. Send BED_SLEEP_INTENT with an ordinary carried-item handle; require the
@@ -23,6 +24,7 @@ use oteryn_protocol_oteryn::actor_spell_catalog as spell_wire;
 use oteryn_protocol_oteryn::bed::COMMAND_TYPE_BED_SLEEP_INTENT;
 use oteryn_protocol_oteryn::item_view::{ItemHandle, encode_item_target};
 use oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1;
+use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::collections::BTreeSet;
 use std::num::{NonZeroU32, NonZeroU64};
@@ -104,18 +106,33 @@ async fn bed_command(client: &mut DevClientSession, handle: ItemHandle) -> TestR
 async fn soul_spell(client: &mut DevClientSession) -> TestResult<spell_wire::SpellCatalogEntry> {
     let snapshot = client.session_mut().gated_snapshot(spell_wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
         .ok_or("step soul debit: admitted spell catalogue missing")?;
-    spell_wire::decode_catalog(&snapshot.payload)
-        .map_err(|e| format!("step soul debit: catalogue reply={e:?}"))?
-        .into_iter()
-        .find(|spell| spell.available && spell.rune_item.is_none() && spell.soul > 0)
-        .ok_or_else(|| "step soul debit: no available player-earned soul spell in server catalogue".into())
+    let catalog = spell_wire::decode_catalog(&snapshot.payload)
+        .map_err(|e| format!("step soul debit: catalogue reply={e:?}"))?;
+    let vitals = client.actor_vitals().ok_or("step=soul-debit observed=no-vitals")?;
+    select_soul_spell(&catalog, vitals.mana, vitals.soul).cloned().ok_or_else(|| {
+        let candidates: Vec<_> = catalog.iter().filter(|spell| spell.rune_item.is_none() && spell.soul > 0)
+            .map(|spell| (spell.words.as_str(), spell.level, spell.mana, spell.soul, spell.available)).collect();
+        format!("step=soul-debit observed=no-affordable-eligible-fixed-cost-spell mana={} soul={} candidates={candidates:?} need=ordinary-soul-spell-eligibility", vitals.mana, vitals.soul).into()
+    })
+}
+
+fn select_soul_spell(
+    catalog: &[spell_wire::SpellCatalogEntry],
+    mana: u32,
+    soul: u32,
+) -> Option<&spell_wire::SpellCatalogEntry> {
+    catalog.iter().find(|spell| {
+        spell.available && spell.rune_item.is_none() && !spell.mana_percent
+            && spell.mana <= mana && (1..=soul).contains(&spell.soul)
+    })
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let generation = load_world_generation(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let world = &generation.bundle;
     let mut client = connect_world(clients, 0xca).await?;
     let spell = soul_spell(&mut client).await?;
     let before = client.actor_vitals().copied().ok_or("step soul debit: vitals absent")?;
@@ -123,7 +140,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if cast.disposition != SpellCastDisposition::Cast {
         return Err(format!("step soul debit: server reply={cast:?}").into());
     }
-    let after = wait_soul(&mut client, before.soul, |soul| soul == before.soul.saturating_sub(spell.soul), "soul debit", Duration::from_secs(5)).await?;
+    let expected = before.soul.checked_sub(spell.soul)
+        .ok_or("step=soul-debit observed=insufficient-soul need=affordable-soul-cost")?;
+    let after = cast.actor_vitals_delta.as_ref().map(|delta| delta.value.soul)
+        .filter(|&soul| soul == expected)
+        .ok_or_else(|| format!("step=soul-debit observed={cast:?} need=command-vitals-delta-soul-{expected}"))?;
     row.pass("soul-debit", (before.soul, after));
 
     let held = client.inventory().cloned();
@@ -136,18 +157,20 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("cooldown-refusal", refused.disposition);
 
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    let xp_before = progress(&mut client).await?.0;
+    let (xp_before, level) = progress(&mut client).await?;
+    let creature = soul_window_target(world, &metadata.spawns, &generation.rewards,
+        tile(client.world_spatial().actor_position)?, level)?;
+    travel_to_spawn(&mut client, world, &metadata.spawns, creature).await?;
     client_hunt::hunt(&mut client).await.map_err(|e| { verdict::record_error(verdict::IndexedError::as_error(&e)); verdict::context(format!("step kill window: combat reply={e}"), e) })?;
     let xp_after = progress(&mut client).await?.0;
-    if xp_after <= xp_before {
-        return Err(format!("step kill window: no XP delta {xp_before}->{xp_after}").into());
+    if xp_after.checked_sub(xp_before).is_none_or(|earned| earned < u64::from(level)) {
+        return Err(format!("step=kill-window creature={creature} observed=xp-{xp_before}->{xp_after} need=applied-xp-at-least-level-{level}").into());
     }
     let regenerated = wait_soul(&mut client, after, |soul| soul == after + 1, "kill-window regeneration", Duration::from_secs(130)).await?;
     row.pass("kill-window-regeneration", (xp_before, xp_after, after, regenerated));
 
     let carried = client.inventory().and_then(|i| i.main_backpack).map(|i| i.handle)
-        .unwrap_or(NonZeroU64::MIN);
+        .ok_or("step=non-bed-refusal observed=no-backpack-handle need=real-carried-item")?;
     let vitals = client.actor_vitals().copied().ok_or("step non-bed refusal: vitals absent")?;
     let custody = client.inventory().cloned();
     let refusal = bed_command(&mut client, carried).await?;
@@ -156,25 +179,109 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("non-bed-refusal", refusal);
 
-    // The production spatial item view exposes dynamic ground items, while native
-    // house beds must likewise arrive with a session-local handle. Exercise every
-    // visible map-item candidate; only OfflineTraining is a successful bed reply.
-    let handles: Vec<_> = client.world_entities().into_iter().flat_map(|entities| entities.iter())
-        .filter_map(|entity| match entity.detail {
-            oteryn_protocol_oteryn::world_spatial_entities::EntityDetail::Object { item_handle: Some(handle), .. } => Some(handle),
-            _ => None,
-        }).collect();
-    if handles.is_empty() {
-        return Err("step bed sleep: actual native item-view observation contained no bed handle; server needs an admitted reachable house-bed item in the node-boot world".into());
+    let (bed, definition, _) = plan_bed(world, tile(client.world_spatial().actor_position)?)?;
+    let food = full_e2ef7::acquire(&mut client, world, &provisioning::item_index()?, "oteryn:item.tibia.i3577", 1)
+        .await.map_err(|error| format!("step=rest-food observed={error} need=earned-edible-food"))?;
+    let handle = client.inventory().and_then(|inventory| inventory.entries.iter()
+        .find(|item| item.item_definition_ref == food)).ok_or("step=rest-food observed=no-carried-food-handle")?.handle;
+    let used = client.use_item(handle).await?;
+    if used.disposition != UseDisposition::Committed {
+        return Err(format!("step=rest-food observed={used:?} need=consumed-food").into());
     }
-    for handle in handles {
-        let reply = bed_command(&mut client, handle).await?;
-        if reply == UseDisposition::OfflineTraining {
-            row.pass("bed-sleep", (handle, reply));
-            return fresh_admission(row, clients, client.join_snapshot().game_session_id, regenerated, vitals).await;
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at.floor == bed.floor && u32::from(at.x.abs_diff(bed.x)) + u32::from(at.y.abs_diff(bed.y)) == 1
+    }).ok_or("step=bed-route observed=no-route-from-food-vendor need=reachable-house-bed")?;
+    walk(&mut client, world, &path).await?;
+    let basis = spatial_basis::current(&mut client)?;
+    let position = basis.position(bed);
+    let map = client.session_mut().world_map_snapshot().ok_or("step=bed-sleep observed=no-live-world-map")?;
+    let handle = map.tiles.iter().find(|entry| entry.position == position)
+        .and_then(|entry| entry.items.iter().find_map(|item| {
+            if item.definition == MapDefinition::Item(definition) && let MapOrigin::Handle(handle) = item.origin {
+                Some(handle)
+            } else {
+                None
+            }
+        })).ok_or_else(|| format!("step=bed-sleep observed=no-live-bed-handle position={position:?} need=MapBase-bed-handle"))?;
+    let before_rest = client.actor_vitals().copied().ok_or("step=bed-sleep observed=no-vitals")?;
+    let reply = bed_command(&mut client, handle).await?;
+    if reply != UseDisposition::OfflineTraining {
+        return Err(format!("step=bed-sleep position={position:?} observed={reply:?} need=premium-and-house-bed-access").into());
+    }
+    row.pass("bed-sleep", (position, reply));
+    let prior = client.join_snapshot().game_session_id;
+    drop(client);
+    fresh_admission(row, clients, prior, regenerated, before_rest).await
+}
+
+fn soul_window_target<'a>(
+    world: &BundleWorld,
+    spawns: &'a oteryn_world_bundle::spawn::Table,
+    rewards: &crate::content::creature_reward::CreatureRewardTable,
+    from: TilePos,
+    level: u32,
+) -> TestResult<&'a str> {
+    let mut candidates: Vec<_> = spawns.creatures.iter().enumerate().filter_map(|(index, creature)| {
+        let xp = rewards.row(&creature.key).ok()?.xp_amount.get();
+        (xp >= i64::from(level)).then_some((xp, index, creature.key.as_str()))
+    }).collect();
+    candidates.sort_unstable();
+    for (_, index, key) in candidates {
+        if route(world, from, |at| {
+            world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
+                && spawns.sources.iter().any(|source| source.floor == at.floor
+                    && source.points.iter().any(|point| point.creature as usize == index
+                        && point.x.abs_diff(at.x).max(point.y.abs_diff(at.y)) <= 1))
+        }).is_some() {
+            return Ok(key);
         }
     }
-    Err("step bed sleep: all actual visible item handles returned non-bed refusal; server needs a reachable ACL-authorized bed in node-boot content".into())
+    Err(format!("step=kill-window observed=no-reachable-spawn-with-xp-at-least-{level} need=level-appropriate-creature").into())
+}
+
+fn plan_bed(world: &BundleWorld, from: TilePos) -> TestResult<(TilePos, NonZeroU32, Vec<StepDirection>)> {
+    use oteryn_gameplay_world::map::view::MapFacts;
+
+    let profiles = native_input()?.item_profiles.as_ref().ok_or("step=bed-route observed=no-native-item-profiles")?;
+    let profiles: serde_json::Value = serde_json::from_slice(&profiles.bytes)?;
+    let definitions = provisioning::item_index()?;
+    let heads: BTreeSet<_> = profiles["records"].as_array().ok_or("step=bed-route observed=no-item-profile-records")?
+        .iter().filter_map(|entry| {
+            let bed = &entry["semantics"]["bed"];
+            if bed["state"] != "KNOWN" || bed["value"]["part"] != "HEAD" {
+                return None;
+            }
+            let key = entry["production_definition"]["production_key"].as_str()?;
+            definitions.definition_ref("Item", key, definitions.revision(key)?)
+        }).collect();
+    let facts = world.facts();
+    let houses: BTreeSet<_> = facts.house_ids().collect();
+    let mut sites = std::collections::BTreeMap::new();
+    for bed in houses.into_iter().flat_map(|house| facts.house_tiles(house)) {
+        let Some(stack) = world.base().tile(bed.x, bed.y, bed.floor) else { continue };
+        for (ordinal, (&id, _)) in stack.ids().iter().zip(stack.depths()).filter(|&(_, &depth)| depth == 0).enumerate() {
+            let Ok(ordinal) = u8::try_from(ordinal) else { break };
+            if let Some(entry) = facts.base_entry(bed, ordinal, id)
+                && let MapDefinition::Item(reference) = entry.definition
+                && heads.contains(&reference)
+            {
+                for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
+                    if let (Some(x), Some(y)) = (bed.x.checked_add_signed(dx), bed.y.checked_add_signed(dy)) {
+                        sites.entry(TilePos { x, y, floor: bed.floor }).or_insert((bed, reference));
+                    }
+                }
+            }
+        }
+    }
+    if sites.is_empty() {
+        return Err("step=bed-route observed=no-authored-house-bed-head need=placed-reciprocal-bed-pair".into());
+    }
+    let path = route(world, from, |at| sites.contains_key(&at))
+        .ok_or("step=bed-route observed=no-walk-route-to-authored-bed need=reachable-house-bed")?;
+    let at = path.iter().try_fold(from, |at, &direction| destination(world, at, direction))
+        .ok_or("step=bed-route observed=invalid-planned-step")?;
+    let &(bed, definition) = sites.get(&at).ok_or("step=bed-route observed=non-bed-route-endpoint")?;
+    Ok((bed, definition, path))
 }
 
 async fn wait_soul(client: &mut DevClientSession, from: u32, wanted: impl Fn(u32) -> bool, step: &str, duration: Duration) -> TestResult<u32> {
@@ -222,6 +329,19 @@ async fn fresh_admission(row: &mut Row, clients: &SeamClients<'_>, prior: crate:
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn soul_spell_needs_both_live_resource_pools() {
+        let entry = spell_wire::SpellCatalogEntry {
+            cast_index: 1, name: "Conjure Arrow".into(), words: "exevo con".into(), level: 13,
+            mana: 100, mana_percent: false, soul: 1, learned: true, available: true,
+            cooldown_groups: vec![], rune_item: None,
+        };
+        let catalog = [entry];
+        assert!(select_soul_spell(&catalog, 55, 100).is_none());
+        assert!(select_soul_spell(&catalog, 100, 0).is_none());
+        assert_eq!(select_soul_spell(&catalog, 100, 1), Some(&catalog[0]));
+    }
+
     #[test]
     fn bed_intent_encodes_handle_and_skill() -> TestResult {
         let target = NonZeroU64::new(99).ok_or("handle")?;

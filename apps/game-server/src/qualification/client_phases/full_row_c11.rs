@@ -62,7 +62,7 @@ impl Row {
     fn finish(self) {
         for action in ACTIONS {
             if !self.passed.contains(action) {
-                evidence(&format!("C11_GAP step={action} unproven"));
+                evidence(&gap(action, &self.failures));
             }
         }
         let pass = self.failures.is_empty() && ACTIONS.iter().all(|a| self.passed.contains(a));
@@ -81,7 +81,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(&mut row, clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(&mut row, clients))).await {
         Ok(Ok(())) => {}
         Ok(Err(error)) => row.fail("fresh-admission-monk", error),
         Err(_) => row.fail("fresh-admission-monk", "journey-timeout"),
@@ -98,13 +98,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let mut client = connect_world(clients, 0xcb).await?;
     if let Err(error) = choose_monk(&mut client, world, &bytes).await {
         verdict::record_error(error.as_ref());
         row.fail("player-monk-choice", error);
-    } else {
-        row.pass("player-monk-choice", "Oressa-confirmed");
+        battle_queries(row, &mut client).await;
+        logout(&mut client, world).await?;
+        return Ok(());
     }
+    row.pass("player-monk-choice", "Oressa-confirmed");
 
     if client.actor_vitals().is_some_and(|v| v.serene) {
         row.pass("solo-serene", client.actor_vitals());
@@ -115,7 +118,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let book = spell_book()?;
     let mut builders_ok = true;
     for expected in 1..=5 {
-        if let Err(error) = cast(&mut client, &book, "exori infir pug", Some(expected)).await {
+        let attempt = async {
+            select_melee_target(&mut client, world, &metadata.spawns).await?;
+            cast(&mut client, &book, "exori infir pug", Some(expected)).await
+        }.await;
+        if let Err(error) = attempt {
             verdict::record_error(error.as_ref());
             row.fail("builders-to-five", format!("builder={expected} {error}"));
             builders_ok = false;
@@ -125,42 +132,45 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if builders_ok {
         row.pass("builders-to-five", client.actor_vitals());
     }
-    match cast(&mut client, &book, "exori infir nia", Some(0)).await {
+    let spender = async {
+        select_melee_target(&mut client, world, &metadata.spawns).await?;
+        cast(&mut client, &book, "exori infir nia", Some(0)).await
+    }.await;
+    match spender {
         Ok(reply) => row.pass("spender-to-zero", reply),
         Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("spender-to-zero", error) },
     }
     wait_spell(&mut client, &book, "exori infir nia").await?;
-    let before = client.actor_vitals().copied().ok_or("C11 vitals absent")?;
-    let zero = send_cast(&mut client, &book, "exori infir nia").await;
-    match zero {
-        Ok(outcome)
-            if client
-                .actor_vitals()
-                .is_some_and(|after| after.harmony == 0 && after.mana == before.mana) =>
-        {
-            row.pass(
-                "zero-spender-path",
-                format!(
-                    "reply={outcome:?} before={before:?} after={:?}",
-                    client.actor_vitals()
-                ),
-            )
+    // The native rules permit a zero-Harmony spender at normal mana cost.
+    // Require an actual successful cast with no Harmony change.
+    let zero_spender = async {
+        if client.actor_vitals().is_none_or(|vitals| vitals.harmony != 0) {
+            return Err("zero-Harmony spender requires an observed zero starting balance".into());
         }
-        Ok(outcome) => row.fail(
-            "zero-spender-path",
-            format!(
-                "reply={outcome:?} before={before:?} after={:?}",
-                client.actor_vitals()
-            ),
-        ),
-        Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("zero-spender-path", error) },
+        select_melee_target(&mut client, world, &metadata.spawns).await?;
+        cast(&mut client, &book, "exori infir nia", Some(0)).await
+    }.await;
+    match zero_spender {
+        Ok(outcome) => row.pass("zero-spender-path", outcome),
+        Err(error) => {
+            verdict::record_error(error.as_ref());
+            row.fail("zero-spender-path", error);
+        }
     }
 
     battle_queries(row, &mut client).await;
-    logout(&mut client).await?;
+    let prior = client.join_snapshot().game_session_id;
+    logout(&mut client, world).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0xcc).await?;
-    match cast(&mut fresh, &book, "exori infir pug", Some(1)).await {
+    if fresh.join_snapshot().game_session_id == prior {
+        return Err("fresh Monk admission reused the prior game session".into());
+    }
+    let fresh_builder = async {
+        select_melee_target(&mut fresh, world, &metadata.spawns).await?;
+        cast(&mut fresh, &book, "exori infir pug", Some(1)).await
+    }.await;
+    match fresh_builder {
         Ok(reply) if fresh.actor_vitals().is_some_and(|v| v.serene) => {
             row.pass("fresh-admission-monk", reply)
         }
@@ -170,7 +180,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ),
         Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("fresh-admission-monk", error) },
     }
-    logout(&mut fresh).await
+    logout(&mut fresh, world).await
 }
 
 fn spell_book() -> TestResult<crate::spell::SpellBook> {
@@ -194,6 +204,25 @@ fn spell_index(book: &crate::spell::SpellBook, words: &str) -> TestResult<std::n
         .find(|i| book.indexed(*i).is_some_and(|s| &s.key == key))
         .ok_or_else(|| "C11 spell index absent".into())
 }
+async fn select_melee_target(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult {
+    use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+    travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
+    let here = client.world_spatial().actor_position;
+    let target = client.world_entities().and_then(|entities| entities.iter().find(|entry| {
+        entry.kind == oteryn_dev_client::EntityKind::Creature && entry.position.floor == here.floor
+            && entry.position.x.abs_diff(here.x).max(entry.position.y.abs_diff(here.y)) <= 1
+    })).map(|entry| entry.entity).ok_or("no adjacent living creature for targeted Monk spell")?;
+    let attack = client.session_mut().attack_target(Some(&target)).await?;
+    if attack.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("targeted Monk spell could not select attack target: {attack:?}").into());
+    }
+    Ok(())
+}
+
 async fn send_cast(
     client: &mut DevClientSession,
     book: &crate::spell::SpellBook,
@@ -202,7 +231,7 @@ async fn send_cast(
     Ok(client
         .cast_spell(
             spell_index(book, words)?,
-            oteryn_protocol_oteryn::actor_spell::SpellTarget::None,
+            oteryn_protocol_oteryn::actor_spell::SpellTarget::AttackTarget,
             false,
         )
         .await?)
@@ -218,6 +247,7 @@ async fn cast(
         .copied()
         .ok_or("C11 pre-cast vitals absent")?;
     let outcome = send_cast(client, book, words).await?;
+    client.session_mut().attack_target(None).await?;
     let spell = book.spoken(words).ok_or("C11 spell absent")?.spell;
     let crate::spell::ManaCost::Fixed(cost) = spell.mana else {
         return Err("C11 non-fixed mana".into());
@@ -232,7 +262,7 @@ async fn cast(
         .as_ref()
         .map(|d| d.value)
         .ok_or("accepted C11 cast missing vitals delta")?;
-    if after.mana != before.mana.saturating_sub(cost) || harmony.is_some_and(|h| after.harmony != h)
+    if Some(after.mana) != before.mana.checked_sub(cost) || harmony.is_some_and(|h| after.harmony != h)
     {
         return Err(format!(
             "command={words} reply={outcome:?} expected_mana={} expected_harmony={harmony:?}",
@@ -269,7 +299,7 @@ async fn battle_queries(row: &mut Row, client: &mut DevClientSession) {
     match client.session_mut().gated_command(wire::CAPABILITY_BATTLE_INSTINCT_STATUS_V1, wire::COMMAND_TYPE_BATTLE_INSTINCT_STATUS_QUERY, &[]).await {
         Ok(reply) if reply.status == CommandStatus::Accepted => match wire::BattleInstinctStatus::decode(&reply.payload) {
             Some(status) if status.active => row.pass("battle-instinct-snapshot", status),
-            Some(status) => row.fail("battle-instinct-snapshot", format!("decoded={status:?}; server must expose a legitimate player Wheel acquisition path before active Battle Instinct can be qualified")),
+            Some(status) => row.fail("battle-instinct-snapshot", format!("decoded={status:?}; need=earned-Wheel-allocation-with-active-battle_instinct")),
             None => row.fail("battle-instinct-snapshot", format!("reply={reply:?} malformed status payload")),
         },
         Ok(reply) => row.fail("battle-instinct-snapshot", format!("reply={reply:?}")), Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("battle-instinct-snapshot", error) },
@@ -304,7 +334,7 @@ async fn choose_monk(
         .npcs
         .iter()
         .find(|n| n.key == "oteryn:npc.oressa")
-        .ok_or("Oressa absent")?;
+        .ok_or("Oressa absent from served NPC table; need=reachable-oteryn:npc.oressa-placement")?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         npc.placements
             .iter()
@@ -312,6 +342,7 @@ async fn choose_monk(
     })
     .ok_or("no player walk route to Oressa")?;
     walk(client, world, &path).await?;
+    let basis = spatial_basis::current(client)?;
     let actor = client
         .world_entities()
         .and_then(|entities| {
@@ -320,7 +351,7 @@ async fn choose_monk(
                     && npc.placements.iter().any(|p| {
                         e.position.x == i32::from(p.x)
                             && e.position.y == i32::from(p.y)
-                            && e.position.floor == -i16::from(p.floor)
+                            && e.position.floor == basis.floor(p.floor)
                     })
             })
         })
@@ -352,16 +383,48 @@ async fn choose_monk(
                     .iter()
                     .any(|line| line == "Your vocation is now monk."))
         {
-            return Err(format!("player command={text} disposition={disposition:?} replies={lines:?}; need Oressa Monk offer for provisioned character").into());
+            return Err(format!("player command={text} disposition={disposition:?} replies={lines:?}; need=unassigned-level-8-character-and-confirmed-Oressa-Monk-offer").into());
         }
     }
     Ok(())
 }
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("C11 logout refused".into());
+async fn logout(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    let safe = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| tile.protection_zone())
+    }).ok_or("step=fresh-admission-monk observed=no-reachable-protection-zone need=safe-combat-logout")?;
+    walk(client, world, &safe).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    loop {
+        let reply = logout_retrying_busy(client).await?.0;
+        match reply {
+            Some(LogoutResult::Accepted) => return Ok(()),
+            Some(LogoutResult::InFight { .. }) if tokio::time::Instant::now() < deadline => {
+                client.service_liveness(Duration::from_millis(250)).await?;
+                client.take_events();
+            }
+            _ => return Err(format!("C11 logout refused: {reply:?}").into()),
+        }
     }
-    Ok(())
+}
+
+fn gap(action: &str, failures: &[String]) -> String {
+    let prefix = format!("step={action} observed=");
+    failures.iter().find(|failure| failure.starts_with(&prefix))
+        .map_or_else(|| format!("C11_GAP step={action} unproven"), |failure| format!("C11_GAP {failure}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn gap_reports_the_observed_blocker_for_its_action() {
+        let failures = ["step=player-monk-choice observed=Oressa absent".to_owned()];
+        assert_eq!(
+            gap("player-monk-choice", &failures),
+            "C11_GAP step=player-monk-choice observed=Oressa absent"
+        );
+        assert_eq!(gap("solo-serene", &failures), "C11_GAP step=solo-serene unproven");
+    }
 }

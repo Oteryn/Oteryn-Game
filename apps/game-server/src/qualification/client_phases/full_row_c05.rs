@@ -86,6 +86,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if list.modes != 1 { return Err(format!("allow step observed modes={}", list.modes).into()); }
     evidence(&format!("C05_CHECK {} PASS accepted-settings-reply", ACTIONS[0]));
 
+    let catalog = caster.session_mut().gated_snapshot(
+        oteryn_protocol_oteryn::actor_spell_catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG,
+    ).ok_or("step=locate-eligibility observed=no-served-spell-catalog")?;
+    let entries = oteryn_protocol_oteryn::actor_spell_catalog::decode_catalog(&catalog.payload)
+        .map_err(|error| format!("step=locate-eligibility observed=invalid-catalog:{error:?}"))?;
+    if let Some(gap) = locate_eligibility(&entries) {
+        return Err(gap.into());
+    }
     let before = caster.actor_vitals().copied().ok_or("locate step missing vitals")?;
     let (reply, messages) = cast(&mut caster, &target_name).await?;
     let after = caster.actor_vitals().copied().ok_or("locate step missing post-cast vitals")?;
@@ -97,6 +105,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     if setting(&mut target, &[0, 0]).await? != [1] { return Err("deny step missing committed [1] reply".into()); }
     evidence(&format!("C05_CHECK {} PASS accepted-settings-reply", ACTIONS[2]));
+    // Exiva starts its spell and support cooldowns on success. A refusal
+    // during that interval would not exercise the target's privacy gate.
+    let ready_at = tokio::time::Instant::now() + Duration::from_secs(2);
+    while tokio::time::Instant::now() < ready_at {
+        caster.service_liveness(Duration::from_millis(25)).await?;
+        target.service_liveness(Duration::from_millis(25)).await?;
+    }
     let before_refusal = caster.actor_vitals().copied().ok_or("refusal step missing vitals")?;
     let (refused, messages) = cast(&mut caster, &target_name).await?;
     let after_refusal = caster.actor_vitals().copied().ok_or("refusal step missing post-cast vitals")?;
@@ -122,4 +137,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let _ = caster.session_mut().logout().await;
     let _ = target.session_mut().logout().await;
     Ok(())
+}
+
+fn locate_eligibility(entries: &[oteryn_protocol_oteryn::actor_spell_catalog::SpellCatalogEntry]) -> Option<String> {
+    match entries.iter().find(|entry| entry.words.eq_ignore_ascii_case("exiva")) {
+        Some(entry) if entry.available => None,
+        Some(entry) => Some(format!("step=locate-eligibility observed=exiva-unavailable required-level={} learned={} need=player-earned-exiva-eligibility", entry.level, entry.learned)),
+        None => Some("step=locate-eligibility observed=exiva-absent-from-vocation-catalogue need=served-exiva-for-admitted-vocation".into()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn missing_exiva_is_distinct_from_a_cast_refusal() {
+        assert_eq!(locate_eligibility(&[]).as_deref(), Some("step=locate-eligibility observed=exiva-absent-from-vocation-catalogue need=served-exiva-for-admitted-vocation"));
+    }
 }

@@ -2,14 +2,14 @@
 //!
 //! Concrete player scenario derived from the C01 audit/matrix row and the
 //! ATTACK owner (`gameplay_transport/attack.rs`):
-//! 1. Admit the provisioned node-boot character, walk through the compiled
-//!    world to an authored rat, and require a genuinely equipped hand weapon.
+//! 1. Admit the ordinary node-boot character, earn payment from real hunts if
+//!    needed, and equip an acquired club and chain armor.
 //! 2. For offensive, balanced, and defensive mode, send SET_FIGHT_MODES with
 //!    STAND and then CHASE; after every accepted reply require the exact combat
 //!    state delta, send ATTACK_TARGET, and observe a lower target-HP delta.
 //! 3. During those encounters require server-attributed incoming damage and an
 //!    equal ActorVitals HP delta while the character wears its ordinary armor;
-//!    this is the observed armor/block result, never a hard-coded damage pass.
+//!    record the armor/block gap unless the server identifies a mitigated hit.
 //! 4. Send ATTACK_TARGET naming the character itself; require the server's
 //!    TargetNotACreature refusal and unchanged combat target/vitals.
 //! 5. Kill a rat by native melee, require XP to increase, open its corpse, and
@@ -20,7 +20,13 @@
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
+use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveIntent, ItemMoveDestination, ItemMoveOutcome};
 use std::collections::BTreeSet;
+
+const MELEE_KIT: [(u32, EquipmentSlot); 2] = [
+    (3270, EquipmentSlot::LeftHand),
+    (3358, EquipmentSlot::Armor),
+];
 
 const CASES: &[&str] = &[
     "offensive-stand", "offensive-chase", "balanced-stand", "balanced-chase",
@@ -184,29 +190,39 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let mut client = connect_world(clients, 0xc1).await?;
-    use oteryn_protocol_oteryn::item_view::EquipmentSlot;
-    let equipment = &client
-        .inventory()
-        .ok_or("step=equipment observed=inventory-absent")?
-        .equipment;
-    let equipped = equipment.len();
-    let hand = equipment.iter().any(|entry| {
-        matches!(
-            entry.slot,
-            EquipmentSlot::RightHand | EquipmentSlot::LeftHand
-        )
-    });
-    let armor = equipment.iter().any(|entry| {
-        matches!(
-            entry.slot,
-            EquipmentSlot::Head
-                | EquipmentSlot::Armor
-                | EquipmentSlot::Legs
-                | EquipmentSlot::Feet
-        )
-    });
-    if !hand || !armor {
-        return Err(format!("step=equipment observed=hand-{hand}/armor-{armor} need=legitimate-equipped-weapon-and-defence").into());
+    let definitions = provisioning::item_index()?;
+    for (id, slot) in MELEE_KIT {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let reference = full_e2ef7::acquire(&mut client, world, &definitions, &key, 1)
+            .await
+            .map_err(|error| format!("step=equipment item={id} observed={error} need=earned-melee-kit"))?;
+        if client.inventory().is_some_and(|inventory| inventory.equipment.iter().any(
+            |entry| entry.slot == slot && entry.item.item_definition_ref == reference
+        )) {
+            continue;
+        }
+        let source = client.inventory().and_then(|inventory| inventory.entries.iter()
+            .find(|entry| entry.item_definition_ref == reference))
+            .ok_or_else(|| format!("step=equipment item={id} observed=no-carried-handle"))?.handle;
+        let outcome = client.move_item(&ItemMoveIntent {
+            source,
+            destination: ItemMoveDestination::Equipment(slot),
+        }).await?;
+        if outcome.status != CommandStatus::Accepted || outcome.outcome != ItemMoveOutcome::Moved {
+            return Err(format!("step=equipment item={id} slot={slot:?} observed={outcome:?} need=Moved").into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            if client.inventory().is_some_and(|inventory| inventory.equipment.iter().any(
+                |entry| entry.slot == slot && entry.item.item_definition_ref == reference
+            )) {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("step=equipment item={id} slot={slot:?} observed=no-equipped-item-delta").into());
+            }
+            client.service_liveness(Duration::from_millis(25)).await?;
+        }
     }
     let mut defenses = Vec::new();
     for (name, fight) in [("offensive", FightMode::Offensive), ("balanced", FightMode::Balanced), ("defensive", FightMode::Defensive)] {
@@ -221,7 +237,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     // Equal shown and HP deltas say nothing about mitigation: only a server mark on a blocked or
     // armor-reduced hit proves the defence, and the attributed frames carry none.
-    evidence(&format!("C01_GAP armor-defence equipment={equipped} attributed-hp-deltas={defenses:?} needed=server-mark-on-blocked-or-armor-reduced-hit"));
+    evidence(&format!("C01_GAP step=armor-defence equipment=club-and-chain-armor attributed-hp-deltas={defenses:?} need=server-mark-on-blocked-or-armor-reduced-hit"));
     let me = own(&client)?;
     let before_vitals = *client.actor_vitals().ok_or("step=refusal observed=no-vitals")?;
     let refused = client.session_mut().attack_target(Some(&me)).await?;
@@ -249,8 +265,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=disengage observed={clear:?} need=cleared-combat-state").into());
     }
     row.pass("monster-target-follow-disengage", "target-selected-chase-exercised-and-cleared");
+    let safe = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| tile.protection_zone())
+    }).ok_or("step=relog observed=no-reachable-protection-zone need=safe-combat-logout")?;
+    walk(&mut client, world, &safe).await?;
     let old_session = client.join_snapshot().game_session_id;
-    if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    if logout_retrying_busy(&mut client).await?.0 != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("step=relog observed=logout-refused".into());
     }
     drop(client);
@@ -262,12 +282,22 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("relog-xp-loot", "fresh-session-identical-xp-and-loot");
     let _ = fresh.session_mut().logout().await;
-    Ok(())
+    Err("step=armor-defence observed=unlabelled-hp-deltas need=server-attributed-block-or-armor-reduction".into())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn melee_kit_contains_distinct_hand_and_body_items() -> TestResult {
+        let definitions = provisioning::item_index()?;
+        let [(hand, hand_slot), (body, body_slot)] = MELEE_KIT;
+        assert_ne!(provisioning::item_reference(&definitions, hand)?, provisioning::item_reference(&definitions, body)?);
+        assert_eq!(hand_slot, EquipmentSlot::LeftHand);
+        assert_eq!(body_slot, EquipmentSlot::Armor);
+        Ok(())
+    }
+
     #[test]
     fn all_required_checks_are_distinct() {
         assert_eq!(CASES.iter().copied().collect::<BTreeSet<_>>().len(), CASES.len());

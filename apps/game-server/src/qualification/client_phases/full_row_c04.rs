@@ -1,7 +1,7 @@
 //! C04 full-row journey, derived from the matrix, re-audit, and the cast gate owner.
 //!
 //! 1. Admit the provisioned Character in the temple PZ; send an aggressive indexed CAST and
-//!    require an accepted command carrying a rejected cast disposition, no vitals delta, and no
+//!    require a rejected command and cast disposition, no vitals delta, and no
 //!    mana change.
 //! 2. Walk out of the PZ using native STEP commands; send the same CAST and require `Cast`, an
 //!    authoritative vitals delta, and the exact mana debit.
@@ -48,7 +48,7 @@ impl Row {
         }
         if let Some(failure) = &self.failure {
             evidence(&format!(
-                "C04_CHECK FAIL {failure}; need=reachable authored fear-applying player combat path and native reply/delta frames"
+                "C04_GAP {failure}"
             ));
         }
         evidence(&format!(
@@ -78,6 +78,19 @@ fn evidence_token(value: &str) -> String {
             }
         })
         .collect()
+}
+
+fn refused_without_cost(
+    status: CommandStatus,
+    disposition: SpellCastDisposition,
+    has_vitals_delta: bool,
+    mana_before: u32,
+    mana_after: u32,
+) -> bool {
+    status == CommandStatus::Rejected
+        && disposition == SpellCastDisposition::Rejected
+        && !has_vitals_delta
+        && mana_before == mana_after
 }
 
 fn spell_book() -> TestResult<crate::spell::SpellBook> {
@@ -158,25 +171,25 @@ async fn journey(
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
     let book = spell_book()?;
-    let ordinary = index(&book, "exura")?;
-    let primary_peer = index(&book, "exura gran")?;
-    let aggressive = index(&book, "exevo vis lux")?;
+    let ordinary = index(&book, "exevo infir flam hur")?;
+    let primary_peer = index(&book, "exori infir vis")?;
     let mut client = connect_world(clients, 0xc4).await?;
 
+    let pz_path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| tile.protection_zone())
+    }).ok_or("protection-zone-refusal: no reachable PZ tile")?;
+    walk(&mut client, world, &pz_path).await?;
     let before = mana(&client)?;
-    let pz = cast(&mut client, aggressive).await?;
-    if pz.status != CommandStatus::Accepted
-        || pz.disposition != SpellCastDisposition::Rejected
-        || pz.actor_vitals_delta.is_some()
-        || mana(&client)? != before
-    {
+    let pz = cast(&mut client, ordinary).await?;
+    if !refused_without_cost(
+        pz.status, pz.disposition, pz.actor_vitals_delta.is_some(), before, mana(&client)?,
+    ) {
         return Err(format!(
-            "PZ CAST expected accepted/rejected/no-delta reply={pz:?} mana={before}->{}",
+            "PZ CAST expected rejected/rejected/no-delta reply={pz:?} mana={before}->{}",
             mana(&client)?
         )
         .into());
     }
-    row.pass(1, &pz);
 
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world
@@ -191,14 +204,15 @@ async fn journey(
     if outside.status != CommandStatus::Accepted
         || outside.disposition != SpellCastDisposition::Cast
         || outside.actor_vitals_delta.is_none()
-        || mana(&client)? >= before
+        || before.checked_sub(8) != Some(mana(&client)?)
     {
         return Err(format!(
-            "outside CAST expected cast/vitals debit reply={outside:?} mana={before}->{}",
+            "protection-zone-control: starter Scorch outside PZ expected Cast and 8 mana debit, reply={outside:?} mana={before}->{}",
             mana(&client)?
         )
         .into());
     }
+    row.pass(1, &pz);
     row.pass(2, &outside);
 
     let paid = mana(&client)?;
@@ -222,30 +236,35 @@ async fn journey(
     {
         return Err(format!("primary-group cooldown expected no debit reply={group:?}").into());
     }
-    let source = book
-        .indexed(ordinary)
-        .ok_or("ordinary spell index vanished")?;
-    let secondary_key = source
-        .groups
-        .get(1)
-        .ok_or("served exura has no secondary cooldown group")?
-        .key
-        .as_str();
-    let secondary = (1..=book.source_len())
-        .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
-        .find(|candidate| {
-            *candidate != ordinary
-                && book.indexed(*candidate).is_some_and(|spell| {
-                    spell.groups.iter().skip(1).any(|g| g.key == secondary_key)
-                })
+    use oteryn_protocol_oteryn::actor_spell_catalog as wire;
+    let snapshot = client.session_mut().gated_snapshot(wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
+        .ok_or("secondary-group: no served actor spell catalogue")?;
+    let catalogue = wire::decode_catalog(&snapshot.payload)
+        .map_err(|error| format!("secondary-group: malformed actor spell catalogue {error:?}"))?;
+    let eligible: Vec<_> = catalogue.iter().filter(|entry| entry.available && entry.rune_item.is_none()
+        && entry.soul == 0 && !entry.mana_percent && entry.mana <= paid)
+        .filter_map(|entry| {
+            let index = std::num::NonZeroU32::new(entry.cast_index)?;
+            let spell = book.indexed(index)?;
+            (!spell.needs_target && !spell.groups.is_empty()).then_some((index, spell))
+        }).collect();
+    let pair = eligible.iter().find_map(|&(trigger, source)| {
+        eligible.iter().find_map(|&(peer, other)| {
+            (trigger != peer && !source.groups.iter().any(|group| group.key == other.groups[0].key)
+                && source.groups.iter().skip(1).any(|secondary| other.groups.iter().skip(1).any(|group| group.key == secondary.key)))
+                .then_some((trigger, peer))
         })
-        .ok_or_else(|| {
-            format!("no distinct served spell shares secondary group {secondary_key}")
-        })?;
-    let second = cast(&mut client, secondary).await?;
+    });
+    let (trigger, peer) = pair.ok_or("secondary-group: no eligible affordable spell pair with distinct primary groups and a shared secondary group")?;
+    let trigger = wait_ready(&mut client, trigger).await?;
+    if trigger.status != CommandStatus::Accepted || trigger.disposition != SpellCastDisposition::Cast {
+        return Err(format!("secondary-group: trigger could not cast {trigger:?}").into());
+    }
+    let after_trigger = mana(&client)?;
+    let second = cast(&mut client, peer).await?;
     if second.disposition != SpellCastDisposition::CoolingDown
         || second.actor_vitals_delta.is_some()
-        || mana(&client)? != paid
+        || mana(&client)? != after_trigger
     {
         return Err(format!("secondary-group cooldown expected no debit reply={second:?}").into());
     }
@@ -316,10 +335,9 @@ async fn journey(
     client.session_mut().attack_target(None).await?;
     let fear_mana = mana(&client)?;
     let feared = cast(&mut client, ordinary).await?;
-    if feared.disposition != SpellCastDisposition::Rejected
-        || feared.actor_vitals_delta.is_some()
-        || mana(&client)? != fear_mana
-    {
+    if !refused_without_cost(
+        feared.status, feared.disposition, feared.actor_vitals_delta.is_some(), fear_mana, mana(&client)?,
+    ) {
         return Err(format!("feared CAST expected rejected/no debit reply={feared:?}").into());
     }
     row.pass(5, &feared);
@@ -398,6 +416,15 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn refusal_requires_rejected_status_and_no_debit() {
+        let denied = SpellCastDisposition::Rejected;
+        assert!(refused_without_cost(CommandStatus::Rejected, denied, false, 55, 55));
+        assert!(!refused_without_cost(CommandStatus::Accepted, denied, false, 55, 55));
+        assert!(!refused_without_cost(CommandStatus::Rejected, denied, true, 55, 55));
+        assert!(!refused_without_cost(CommandStatus::Rejected, denied, false, 55, 54));
+    }
+
     #[test]
     fn evidence_tokens_are_report_safe() {
         assert_eq!(
