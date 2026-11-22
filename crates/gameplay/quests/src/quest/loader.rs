@@ -249,6 +249,7 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
     Ok(lowered)
 }
 
@@ -381,9 +382,7 @@ pub(super) fn lower_embedded_quest_state(
     // whether native bindings are imported by the caller.
     super::source_deaths::retain_overlord_predecessor(&mut lowered.catalogue)
         .map_err(QuestLoadError::Json)?;
-    let mut lowered = restrict_runtime_scope(lowered, content_revision)?;
-    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
-    Ok(lowered)
+    restrict_runtime_scope(lowered, content_revision)
 }
 
 fn restrict_runtime_scope(

@@ -107,14 +107,36 @@ async fn appearance(
         .ok_or_else(|| "current appearance observation".into())
 }
 
-pub(super) async fn cosmetics_case(
+pub(super) async fn stock_outfit_purchases(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
     admitted: &mut AdmittedSession,
-    inject_omission: bool,
+    mut points: u64,
 ) -> TestResult {
-    // Admission seed predates the appearance fixture. Supply its historical creation sex;
-    // every purchase and every earned-fact read below uses the production fences normally.
+    historical_sex(harness).await?;
+    for (base, outfit, look) in [
+        (3, "oteryn:outfit.falconer", 1282),
+        (0, "oteryn:outfit.feral_trapper", 1907),
+    ] {
+        let refused = full_board(owner, admitted, 16, base + 1, "").await?;
+        assert_eq!((refused.refusal, refused.points), (8, points));
+        for (index, cost, addons) in [(base, 100_000, 0), (base + 2, 35_000, 2), (base + 1, 35_000, 3)] {
+            points -= cost;
+            let paid = full_board(owner, admitted, 16, index, "").await?;
+            assert_eq!((paid.refusal, paid.points), (0, points));
+            assert!(paid.shop.iter().any(|entry| entry.index == index && entry.bought));
+            let visible = appearance(owner, admitted).await?;
+            let earned = visible.catalogue.outfits.iter().find(|entry| entry.key == outfit)
+                .ok_or("purchased outfit missing from appearance catalogue")?;
+            assert_eq!((earned.look_type, earned.permitted_addons), (look, addons));
+        }
+    }
+    assert_eq!(receipt_count(harness).await?, 6);
+    Ok(())
+}
+
+async fn historical_sex(harness: &Harness) -> TestResult {
+    // The admission fixture predates the character's creation-sex field.
     let mut fixture = harness.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *fixture)
@@ -123,6 +145,16 @@ pub(super) async fn cosmetics_case(
         .bind(id(41).as_slice()).execute(&mut *fixture).await?;
     fixture.commit().await?;
 
+    Ok(())
+}
+
+pub(super) async fn cosmetics_case(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    admitted: &mut AdmittedSession,
+    inject_omission: bool,
+) -> TestResult {
+    historical_sex(harness).await?;
     let original = full_board(owner, admitted, 4, 0, "").await?.points;
     fixture_track(harness, task_board::POINTS, 1_000_000).await?;
     let before = appearance(owner, admitted).await?;

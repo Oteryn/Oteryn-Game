@@ -211,13 +211,23 @@ fn task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust() -> TestRes
 }
 
 fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) -> TestResult {
-    scenario_with_bootstrap(fault, elite_case_enabled, false)
+    scenario_with_bootstrap(fault, elite_case_enabled, false, false)
 }
 
 #[test]
 fn task_board_control_epoch_initializer_allows_live_query_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-control-epoch", || {
-        scenario_with_bootstrap(None, false, true)
+        scenario_with_bootstrap(None, false, true, false)
+    })
+}
+
+#[test]
+fn task_board_stock_falconer_and_feral_trapper_outfits_debit_and_unlock() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-stock-outfits", || {
+        scenario_with_bootstrap(None, false, false, true)
     })
 }
 
@@ -226,6 +236,7 @@ fn scenario_with_bootstrap(
     fault: Option<RollbackFault>,
     elite_case_enabled: bool,
     control_epoch_case: bool,
+    stock_outfits: bool,
 ) -> TestResult {
     run(async move |admin| {
         let tag = fault.map_or("task_board_e2e", RollbackFault::tag);
@@ -240,14 +251,14 @@ fn scenario_with_bootstrap(
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let cosmetics = cosmetic_cases::cosmetics_packet()?;
+        let cosmetics = (!stock_outfits).then(cosmetic_cases::cosmetics_packet).transpose()?;
         let (controller, pin) =
             crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(
                 world,
                 Some(include_bytes!(
                     "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
                 )),
-                Some(&cosmetics),
+                cosmetics.as_deref(),
             );
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
@@ -1002,7 +1013,12 @@ fn scenario_with_bootstrap(
             return Ok(());
         }
         let cosmetic_fault = fault == Some(RollbackFault::CosmeticGrant);
-        cosmetic_cases::cosmetics_case(&owner, &harness, &mut admitted, cosmetic_fault).await?;
+        if stock_outfits {
+            let previous_balance = 340_000 - i64::try_from(accrued.weekly.pending_points)?;
+            fixture_track(&harness, task_board::POINTS, previous_balance).await?;
+        } else {
+            cosmetic_cases::cosmetics_case(&owner, &harness, &mut admitted, cosmetic_fault).await?;
+        }
         if cosmetic_fault {
             drop(owner);
             drop(authority);
@@ -1023,6 +1039,17 @@ fn scenario_with_bootstrap(
             reset.soulseals,
             before_reset.soulseals + before_reset.weekly.pending_soulseals
         );
+        if stock_outfits {
+            assert!(before_reset.weekly.pending_points > 0);
+            assert_eq!(reset.points, 340_000, "the settled week funds the final purchase");
+            cosmetic_cases::stock_outfit_purchases(&owner, &harness, &mut admitted, reset.points)
+                .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
+        }
         let settled_points = reset.points;
         let again = full_board(&owner, &mut admitted, 4, 0, "").await?;
         assert_eq!(

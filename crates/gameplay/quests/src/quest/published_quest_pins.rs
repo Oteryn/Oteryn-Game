@@ -73,6 +73,21 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
 // new rules bound to the new hash. Existing absent-track defaults did not change.
 const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
+    // Active quest definitions captured from main at 3e09916423181c795c829eca5e5414dde3f29a3e.
+    (
+        "oteryn:quest.dream_warrior_outfits_quest",
+        hash(b"89294b60df026bb41c7f506035840b13ad6fc2d71e3a510d73242caf385bb9a0"),
+        &[hash(
+            b"549d02b6c708850ac156f8c1bda5211cae5ecf4b1cc4a12cf9e512278d4c191f",
+        )],
+    ),
+    (
+        "oteryn:quest.the_first_dragon_quest",
+        hash(b"4b8694d760896a03fd774cac416fb65bc82f3277affb5a2c208b6742789d431f"),
+        &[hash(
+            b"2000974093d7ce811040df0d025f3e725f0a624e5bb6f8c8fdccbda8c1e3dd66",
+        )],
+    ),
     (
         "oteryn:quest.ferumbras_ascension_quest",
         hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
