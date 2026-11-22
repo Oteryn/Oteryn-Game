@@ -518,6 +518,17 @@ pub(super) async fn seed_quest_prerequisites(
     values: &[(String, i64)],
     occurrence: u8,
 ) -> TestResult {
+    seed_quest_prerequisites_and_completions(h, owner, admitted, values, &[], occurrence).await
+}
+
+pub(super) async fn seed_quest_prerequisites_and_completions(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    values: &[(String, i64)],
+    completed_quests: &[String],
+    occurrence: u8,
+) -> TestResult {
     let catalogue = owner
         .quest_catalogue
         .as_ref()
@@ -546,6 +557,27 @@ pub(super) async fn seed_quest_prerequisites(
             .execute(&mut *tx).await?;
         assert_eq!(changed.rows_affected(), 1);
     }
+    for quest in completed_quests {
+        let hash = catalogue
+            .definition_hash(quest)
+            .ok_or("canonical prerequisite quest")?;
+        let changed = sqlx::query(
+            "INSERT INTO game_character_quest_states(
+                character_id, quest_key, pinned_content_revision, definition_hash,
+                started_character_revision, completed_character_revision, committed_character_revision
+             ) SELECT character_id, $2, $3, $4, character_revision, character_revision, character_revision
+               FROM game_character_roots
+              WHERE character_id=encode($1,'hex')::uuid AND character_revision=$5::text::numeric",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(quest)
+        .bind(catalogue.content_revision())
+        .bind(hash.as_slice())
+        .bind(revision.to_string())
+        .execute(&mut *tx)
+        .await?;
+        assert_eq!(changed.rows_affected(), 1);
+    }
     tx.commit().await?;
     let stored = owner
         .root
@@ -554,6 +586,15 @@ pub(super) async fn seed_quest_prerequisites(
         .map_err(debug)?;
     for (key, (_, value)) in tracks {
         assert_eq!(stored.tracks().get(&key), Some(&value));
+    }
+    for quest in completed_quests {
+        let state = stored
+            .states()
+            .get(quest)
+            .ok_or("stored prerequisite quest")?;
+        assert!(state.completed);
+        assert_eq!(state.pinned_content_revision, catalogue.content_revision());
+        assert_eq!(Some(state.definition_hash), catalogue.definition_hash(quest));
     }
     Ok(())
 }

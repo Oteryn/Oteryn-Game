@@ -1258,8 +1258,13 @@ pub(super) async fn exercise(
             .iter()
             .map(|state| (state.track.clone(), state.minimum))
             .collect::<Vec<_>>();
-        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
-            h, owner, admitted, &prerequisites, 150,
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites_and_completions(
+            h,
+            owner,
+            admitted,
+            &prerequisites,
+            &setup.requires_completed_quests,
+            150,
         )
         .await?;
         owner
