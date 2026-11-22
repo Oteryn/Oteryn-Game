@@ -985,6 +985,39 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             .fetch_one(&h.pool).await?;
         assert_eq!(flags, 0, "other creature deaths do not set BossStorage");
     }
+    if rule.creature == "oteryn:creature.arbaziloth" {
+        let questlog: Option<i64> = sqlx::query_scalar(
+            "SELECT value FROM game_character_quest_tracks \
+             WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+        )
+        .bind(id(41).as_slice())
+        .bind("oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/questlog")
+        .fetch_optional(&h.pool)
+        .await?;
+        assert_eq!(questlog, Some(1), "death must start the quest log");
+        let hard_kills: Option<i64> = sqlx::query_scalar(
+            "SELECT value FROM game_character_quest_tracks \
+             WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+        )
+        .bind(id(41).as_slice())
+        .bind("oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/hard_kills")
+        .fetch_optional(&h.pool)
+        .await?;
+        assert_eq!(hard_kills, None, "an easy victory earns no hard-win credit");
+        assert!(
+            !owner.runtime.lock().await.arbaziloth_doomforge_open(),
+            "an easy victory leaves the Doomforge portal closed"
+        );
+        let outfits: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_account_appearance_unlock_receipts \
+             WHERE granting_character_id=encode($1,'hex')::uuid AND unlock_key=$2",
+        )
+        .bind(id(41).as_slice())
+        .bind("oteryn:outfit.fiend_slayer/quest-grant/0")
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(outfits, 1, "duplicate death must grant Fiend Slayer once");
+    }
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
     )

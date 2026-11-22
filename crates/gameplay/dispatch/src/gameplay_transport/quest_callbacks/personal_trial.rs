@@ -23,9 +23,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         if pending.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
-            || pending.iter().any(|p| p.source_key() == key)
+            || pending
+                .iter()
+                .any(|p| p.holds_source_key(key) || p.overlaps_merchant_wave(callback))
         {
             return false;
+        }
+        if callback.starts_merchant_wave() {
+            // Each merchant placement is attempted separately at the spawn deadline.
+            return encounter
+                .monsters
+                .iter()
+                .all(|monster| runtime.companion_policy(&monster.creature).is_ok());
         }
         let Some(map) = self.bundle_map() else {
             return false;

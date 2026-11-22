@@ -4,6 +4,7 @@ import hashlib
 import json
 
 from import_spell_families import canonical_bytes
+from nrwicked_profiles import ROLES as ARBAZILOTH_ENCOUNTER_ROLES
 
 PACKET = "imports/crystalserver/creature-parity-201189f.json"
 REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
@@ -13,6 +14,9 @@ BATCH = "creature-parity-crystal-201189f-r1"
 CREATURES = "content/creatures/definitions/spell-native-profiles.json"
 PRESENTATIONS = "content/presentations/definitions/spell-native-profiles.json"
 RACES = "content/creatures/definitions/creature-races.json"
+ACTIVE_ENCOUNTER_KEYS = frozenset(
+    f"oteryn:creature.{role}" for role in ARBAZILOTH_ENCOUNTER_ROLES
+)
 
 
 def identity(ref):
@@ -130,7 +134,8 @@ def apply_native(root, generated):
 
     packet, _ = read_packet(root)
     index = json.loads((root / "content/creatures/definitions/index.json").read_bytes())
-    expected = {identity(row["identity"]): row for row in packet["definitions"]}
+    source_rows = {identity(row["identity"]): row for row in packet["definitions"]}
+    expected = {key: row for key, row in source_rows.items() if key[1] not in ACTIVE_ENCOUNTER_KEYS}
     rows = [
         row for path in index["shards"]
         for row in json.loads((root / path).read_bytes())["records"]
@@ -141,11 +146,10 @@ def apply_native(root, generated):
     creatures, presentations, appended = union_profiles(
         json.loads(generated[CREATURES]), json.loads(generated[PRESENTATIONS]), rows,
         declarations["authoring_profiles"], preserve_existing_display_aliases=True,
-        # Crystal's registry names differ from these two mask.name values.
-        # The existing spawn resolver consumes exact keys for both variants.
+        # Crystal's registry name differs from the display name. The spawn
+        # resolver consumes the exact key for this source variant.
         source_display_aliases={
             "oteryn:creature.elderbloodjaw": "oteryn:creature.elder_bloodjaw",
-            "oteryn:creature.enraged_arbaziloth": "oteryn:creature.arbaziloth",
         },
     )
     if {identity(ref) for ref in appended} != set(expected):
@@ -175,7 +179,7 @@ def apply_native(root, generated):
     generated["content/spells.manifest.json"] = canonical_bytes(manifest)
 
     races = json.loads((root / RACES).read_bytes())
-    carried = [row for row in races["records"] if identity(row["creature"]) not in expected]
+    carried = [row for row in races["records"] if identity(row["creature"]) not in source_rows]
     carried.extend(
         dict(
             creature=entry["identity"], race=entry["race"], disposition=entry["race_disposition"],
@@ -184,7 +188,7 @@ def apply_native(root, generated):
                 sha256=entry["source_sha256"],
             ),
         )
-        for entry in expected.values()
+        for entry in source_rows.values()
     )
     races["records"] = sorted(carried, key=lambda row: identity(row["creature"]))
     races["record_count"] = len(carried)

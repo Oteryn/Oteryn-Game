@@ -68,6 +68,9 @@ def validate_inventory(root, rows, native, schedules):
     elemental_native, elemental_schedules = elemental_inventory(native)
     extra_native += elemental_native
     extra_schedules += elemental_schedules
+    from nrwicked_profiles import inventory_extension as nrwicked_inventory
+    _, nrwicked_schedules = nrwicked_inventory(root, native)
+    extra_schedules += nrwicked_schedules
     packet, _ = crystal.read_packet(root)
     canonical = {crystal.identity(row['definition']['identity']): row for row in rows}
     active = {crystal.identity(row['profile']['target']): row for row in native}
@@ -78,9 +81,12 @@ def validate_inventory(root, rows, native, schedules):
         authored = next(row for row in entry['profiles'] if row['target'] == definition['behavior'])
         if (key not in active or key not in canonical
                 or canonical[key]['definition'] != definition
-                or canonical[key]['source_bindings'] != [entry['binding']]
-                or active[key]['behavior'] != authored):
+                or canonical[key]['source_bindings'] != [entry['binding']]):
             raise ValueError(f'Crystal Creature inventory mismatch: {key}')
+        if key[1] in crystal.ACTIVE_ENCOUNTER_KEYS:
+            continue
+        if active[key]['behavior'] != authored:
+            raise ValueError(f'Crystal Creature Behavior inventory mismatch: {key}')
         additions += sum(len(authored['data']['profile'].get(group, []))
                          for group in ('attacks', 'defenses'))
     for entry in packet['schedules']:

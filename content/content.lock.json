@@ -25,14 +25,14 @@
     "Encounter": 108,
     "Encounter.Raid": 240,
     "Formula": 6292,
-    "Item": 34122,
+    "Item": 34123,
     "Loot": 1302,
     "Mount": 252,
     "NPC": 1282,
     "Presentation": 3174,
     "Proficiency": 443,
     "Quest": 352,
-    "RewardClaim": 345,
+    "RewardClaim": 346,
     "Service.Bank": 2,
     "Service.Blessing": 10,
     "Service.Promotion": 7,
@@ -49,9 +49,9 @@
   "legacy_blobs": {
     "declarations": "448e377d6d925ee3967413bc41d44c8a0e36a458",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "cfaef136e8c031869c41b204aec84fc893cfcf7e",
-    "reference": "00c34b02fe05dfbe9c98cdae0adbec7f5e7cba67",
-    "sources": "128a8292c50c94eb1d17acf6e5379c41103cc3b6"
+    "imports": "4085197917905ea72edacf6dce714019eef51409",
+    "reference": "38be8f1fca20a33e99d222a6d44ae589a2dbffcf",
+    "sources": "8f3ffa35293bd454ca5586ec68c67e937c4b8cfe"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "ruleset_counts": {
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "4b26baf625bc030a656483c57347e102475b222b1fcad050044b2d9a9563078c"
+          "sha256": "a55f8f7ec7df68273437e56388c56a779f0d024f7c19665d7cc7d09a5b779ad2"
         },
         {
           "creates_canonical_identities": false,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6635,
+          "record_count": 6649,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "9eaeeed8da8b28f568b3d42611d658ac3b650af582ebe45dbc4ed74264637e76"
+          "sha256": "4b009fb9ea4a8a638acc239dc6ed6b15ba9cf1a54bdaa092071338fd9ef5382e"
         },
         {
           "creates_canonical_identities": false,
