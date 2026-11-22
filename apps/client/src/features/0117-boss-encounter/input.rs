@@ -7,6 +7,32 @@ use oteryn_client_ui::boss_encounter::{BossCategory, BossEncounterPanel, Intent,
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
+    pub(crate) fn tracked_boss_open(&self, key: &str) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.boss_encounter;
+        if !panel.selected || panel.pending {
+            return false;
+        }
+        panel.hidden_stages = 0;
+        panel.hidden_rarities = 0;
+        let known = panel
+            .boss_names
+            .get(key)
+            .filter(|name| name.len() <= 48)
+            .cloned()
+            .unwrap_or_default();
+        browse(panel, &known, BossCategory::All, false);
+        panel.tracker_target = Some(key.to_owned());
+        enqueue(&mut mailbox, &self.commands, Intent::Catalogue);
+        mailbox.boss_encounter.pending
+    }
+    pub(crate) fn tracked_boss_continue(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.boss_encounter;
+        if panel.tracker_target.is_some() && !panel.pending {
+            enqueue(&mut mailbox, &self.commands, Intent::CatalogueNext);
+        }
+    }
     pub fn boss_encounter_browse(&self, search: &str, category: BossCategory, previous: bool) {
         browse(
             &mut lock(&self.mailbox).boss_encounter,
@@ -16,6 +42,23 @@ impl PlayLink {
         );
     }
 
+    pub fn boss_visibility_toggle(&self, rarity: bool, bit: u8) {
+        let panel = &mut lock(&self.mailbox).boss_encounter;
+        if panel.pending || !panel.selected || bit > 4 {
+            return;
+        }
+        if rarity {
+            panel.hidden_rarities ^= 1 << bit;
+        } else {
+            panel.hidden_stages ^= 1 << bit;
+        }
+        if !oteryn_client_ui::boss_encounter::catalogue_cards(panel)
+            .iter()
+            .any(|e| e.key == panel.fields[0])
+        {
+            panel.select_boss(false);
+        }
+    }
     pub fn boss_slot_select_boss(&self, previous: bool) {
         lock(&self.mailbox)
             .boss_encounter
@@ -106,6 +149,7 @@ pub(in crate::play) fn browse(
     if !panel.selected || panel.pending || search.len() > 512 || search.contains('\0') {
         return;
     }
+    panel.tracker_target = None;
     panel.boss_search = search.to_owned();
     panel.browser_search = search.to_owned();
     panel.browser_category = category;

@@ -16,6 +16,9 @@ type Fixture = (
     Outbox,
 );
 fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
+    fixture_with(|_| {})
+}
+fn fixture_with(configure: impl FnOnce(&mut App)) -> Result<Fixture, Box<dyn std::error::Error>> {
     let (link, commands, outbox) = play_channel();
     link.use_shared_frontend();
     outbox.bevy_cyclopedia_initialize(true, true, true);
@@ -33,6 +36,7 @@ fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
         .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::modal::install(&mut app);
     cyclopedia::install(&mut app);
+    configure(&mut app);
     app.update();
     let event = oteryn_input_actions::NormalizedInputEvent::Key {
         code: oteryn_input_actions::KeyCode::new(24)?,
@@ -238,6 +242,21 @@ fn cyclopedia_renders_item_and_appearance_names_from_replies() -> TestResult {
                 && row.contains("Inventory: 1")
                 && row.contains("Inbox: 4"))
     );
+    click(&mut app, Kind::HoldingsLayout)?;
+    assert!(
+        app.world_mut()
+            .query::<(&Name, &Node)>()
+            .iter(app.world())
+            .any(|(name, node)| name.as_str() == "cyclopedia.holdings"
+                && node.display == Display::Grid)
+    );
+    assert!(
+        texts(&mut app)
+            .iter()
+            .any(|row| row.contains("oteryn:item/sword"))
+    );
+    click(&mut app, Kind::HoldingsLayout)?;
+    assert!(commands.try_recv().is_err());
     click(
         &mut app,
         Kind::Tab(Tab::Character(CharacterTab::Appearances)),
@@ -458,3 +477,149 @@ fn cyclopedia_familiar_page_is_reachable_and_distinguishes_catalogue_from_unlock
 }
 
 include!("holdings_cases.rs");
+
+#[test]
+fn character_stat_shortcuts_open_wheel_and_blessings() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    click(&mut app, Kind::Wheel)?;
+    let owner = app.world().non_send::<HostOwner>();
+    assert!(owner.play.as_ref().ok_or("play")?.link.wheel_panel().open);
+    let (mut app, mut commands, outbox) = fixture()?;
+    app.init_resource::<super::hud::EquipmentWidget>();
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    click(&mut app, Kind::Tab(Tab::Character(CharacterTab::Defence)))?;
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    click(&mut app, Kind::Blessings)?;
+    assert!(
+        app.world()
+            .resource::<super::hud::EquipmentWidget>()
+            .blessings
+    );
+    Ok(())
+}
+
+#[test]
+fn general_stats_opens_store_filtered_to_xp_boosts() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    outbox.bevy_store_initialize();
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    click(&mut app, Kind::XpBoost)?;
+    let owner = app.world().non_send::<HostOwner>();
+    let panel = owner.play.as_ref().ok_or("play")?.link.store_panel();
+    assert!(panel.open);
+    assert_eq!(panel.browser.search, "XP Boost");
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::ServerMechanic(_)
+    ));
+    Ok(())
+}
+
+#[test]
+fn subject_navigation_opens_items_and_returns_to_character() -> TestResult {
+    use super::cyclopedia_navigation::{Destination, Subject, SubjectButton};
+    let (mut app, mut commands, outbox) = fixture()?;
+    super::cyclopedia_items::install(&mut app);
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    for (from, to) in [
+        (Subject::Character, Destination::Open(Subject::Items)),
+        (Subject::Items, Destination::Back),
+    ] {
+        let entity = app
+            .world_mut()
+            .query::<(Entity, &SubjectButton)>()
+            .iter(app.world())
+            .find_map(|(entity, b)| (b.from == from && b.to == to).then_some(entity))
+            .ok_or("subject link")?;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        assert_eq!(
+            link.inspection_panel().catalogue_open,
+            from == Subject::Character
+        );
+        assert_eq!(
+            link.cyclopedia_character_panel().open,
+            from == Subject::Items
+        );
+    }
+    click(&mut app, Kind::Encyclopedia)?;
+    let back = app
+        .world_mut()
+        .query::<(Entity, &SubjectButton)>()
+        .iter(app.world())
+        .find_map(|(e, b)| (b.from == Subject::Items && b.to == Destination::Back).then_some(e))
+        .ok_or("previous subject")?;
+    app.world_mut().trigger(Activate { entity: back });
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .cyclopedia_character_panel()
+            .open
+    );
+    Ok(())
+}
+
+#[test]
+fn magical_archive_subject_opens_the_spellbook_and_returns_to_character() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture_with(|app| {
+        app.add_message::<bevy::input::keyboard::KeyboardInput>();
+        super::journal::install(app);
+    })?;
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    outbox.bevy_journal_spellbook_select();
+    app.update();
+    for (caption, open) in [("Magical Archive", true), ("Back", false)] {
+        let button = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(label, parent)| {
+                (label.0 == caption
+                    && app
+                        .world()
+                        .get::<super::cyclopedia_navigation::SubjectButton>(parent.parent())
+                        .is_some())
+                .then_some(parent.parent())
+            })
+            .ok_or("missing archive subject navigation")?;
+        app.world_mut().trigger(Activate { entity: button });
+        app.update();
+        app.update();
+        let link = &app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link;
+        assert_eq!(link.spellbook_window_open(), open);
+        assert_eq!(link.cyclopedia_character_panel().open, !open);
+        if open {
+            assert!(
+                texts(&mut app)
+                    .iter()
+                    .any(|text| text == "Spellbook — Magical Archive")
+            );
+        }
+    }
+    Ok(())
+}

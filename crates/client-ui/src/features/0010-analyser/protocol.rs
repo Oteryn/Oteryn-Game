@@ -134,6 +134,7 @@ pub fn reset(panel: &mut Panel) {
         loot_tracked: std::mem::take(&mut panel.loot_tracked),
         loot_only_tracked: panel.loot_only_tracked,
         export_path: std::mem::take(&mut panel.export_path),
+        loot_sources: std::mem::take(&mut panel.loot_sources),
         loot_prices: std::mem::take(&mut panel.loot_prices),
         supply_prices: std::mem::take(&mut panel.supply_prices),
         item_info: std::mem::take(&mut panel.item_info),

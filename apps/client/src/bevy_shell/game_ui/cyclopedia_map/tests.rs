@@ -147,12 +147,10 @@ fn cyclopedia_map_bevy_browses_subareas_and_submits_poi_exploration()
     let geometry = receive(&mut rx)?;
     let request = wire::decode_request(&geometry.payload).map_err(|e| format!("{e:?}"))?;
     assert_eq!((request.area, request.floor), (2, 7));
-    reply(
-        &outbox,
-        &geometry,
+    let geometry_data = |floor| -> Result<Vec<u8>, String> {
         wire::encode_reply(&wire::Reply::Geometry(wire::GeometryPage {
             area: 2,
-            floor: 7,
+            floor,
             page: 0,
             next: None,
             total: 1,
@@ -164,8 +162,25 @@ fn cyclopedia_map_bevy_browses_subareas_and_submits_poi_exploration()
                 subarea: 2,
             }],
         }))
-        .map_err(|e| format!("{e:?}"))?,
-    );
+        .map_err(|e| format!("{e:?}"))
+    };
+    reply(&outbox, &geometry, geometry_data(7)?);
+    app.update();
+    click(&mut app, Kind::Surface)?;
+    assert!(has_text(&mut app, "Surface view"));
+    click(&mut app, Kind::Opacity)?;
+    assert!(has_text(&mut app, "Background floors: 100%"));
+    click(&mut app, Kind::Atlas(6))?;
+    let upstairs = receive(&mut rx)?;
+    reply(&outbox, &upstairs, geometry_data(6)?);
+    app.update();
+    click(&mut app, Kind::Opacity)?;
+    assert!(has_text(&mut app, "Background floors: 75%"));
+    click(&mut app, Kind::Surface)?;
+    assert!(has_text(&mut app, "Map view"));
+    click(&mut app, Kind::Atlas(7))?;
+    let downstairs = receive(&mut rx)?;
+    reply(&outbox, &downstairs, geometry_data(7)?);
     app.update();
     click(&mut app, Kind::Explore(Intent::Start))?;
     let start = receive(&mut rx)?;
@@ -197,6 +212,21 @@ fn cyclopedia_map_bevy_browses_subareas_and_submits_poi_exploration()
     app.update();
     assert!(has_text(&mut app, "◆"));
     assert!(has_text(&mut app, "Found 1/7"));
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner
+            .play
+            .as_mut()
+            .ok_or("play")?
+            .view
+            .edit_minimap_marker((100, 100, 7), "Harbour flag".into(), 1)?;
+    }
+    app.update();
+    assert!(has_text(&mut app, "Harbour flag"));
+    click(&mut app, Kind::Flag(1))?;
+    assert!(!has_text(&mut app, "Harbour flag"));
+    click(&mut app, Kind::ShowFlags)?;
+    assert!(has_text(&mut app, "Harbour flag"));
     click(&mut app, Kind::Explore(Intent::Find))?;
     let find = receive(&mut rx)?;
     assert_eq!(
@@ -432,3 +462,74 @@ fn gold(app: &mut App) -> Result<String, Box<dyn std::error::Error>> {
 }
 
 include!("donation_cases.rs");
+
+#[test]
+fn area_view_and_separator_change_the_rendered_map_pixels() -> Result<(), Box<dyn std::error::Error>>
+{
+    use oteryn_client_runtime::cyclopedia_map::geometry as wire;
+    fn layer(app: &mut App) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let until = std::time::Instant::now() + std::time::Duration::from_secs(30);
+        while std::time::Instant::now() < until {
+            app.update();
+            let handle = app
+                .world_mut()
+                .query_filtered::<&ImageNode, With<terrain::Terrain>>()
+                .iter(app.world())
+                .next()
+                .map(|node| node.image.clone());
+            if let Some(image) =
+                handle.and_then(|h| app.world().resource::<Assets<Image>>().get(&h))
+            {
+                return image.data.clone().ok_or_else(|| "image bytes".into());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        Err("atlas terrain raster did not reach the canvas".into())
+    }
+    let (mut app, mut rx, outbox) = ready()?;
+    app.world_mut().resource_mut::<terrain::Cache>().root =
+        Some(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."));
+    press(&mut app, Kind::Atlas(6))?;
+    let cmd = feature(&mut rx)?;
+    reply(
+        &outbox,
+        &cmd,
+        wire::encode_reply(&wire::Reply::Geometry(wire::GeometryPage {
+            area: 1,
+            floor: 6,
+            page: 0,
+            next: None,
+            total: 1,
+            bounds: [32064, 30994, 32113, 31043],
+            runs: vec![wire::Run {
+                y: 31012,
+                begin: 32080,
+                end: 32083,
+                subarea: 1,
+            }],
+        }))
+        .map_err(|e| format!("{e:?}"))?,
+    );
+    let original = layer(&mut app)?;
+    assert!(
+        has_text(&mut app, "Surface view"),
+        "a covered above-ground area opens with satellite imagery"
+    );
+    press(&mut app, Kind::Surface)?;
+    let first = layer(&mut app)?;
+    assert!(has_text(&mut app, "Map view"));
+    press(&mut app, Kind::Surface)?;
+    let second = layer(&mut app)?;
+    assert_eq!(original.as_slice(), second.as_slice());
+    assert!(
+        first != second,
+        "map and satellite must use distinct imagery"
+    );
+    press(&mut app, Kind::Opacity)?;
+    let faded = layer(&mut app)?;
+    assert!(
+        faded != second,
+        "background floors must change in the composited image"
+    );
+    Ok(())
+}

@@ -1,4 +1,5 @@
 //! Capability-57 exploration: confirmed area/subarea footprints and visible POIs.
+mod terrain;
 use super::{GameModal, modal::ModalGuard};
 use crate::bevy_shell::{
     owner::{HostOwner, Phase},
@@ -14,6 +15,12 @@ use oteryn_client_ui_bevy as source;
 
 #[derive(Resource, Default)]
 struct State {
+    flags: Vec<(u16, u16, u8, String)>,
+    hidden_flags: u8,
+    surface: bool,
+    chose_mode: bool,
+    no_satellite: Option<([u16; 4], i8)>,
+    faded: u8,
     generation: u64,
     root: Option<Entity>,
     snapshot: Option<Panel>,
@@ -32,6 +39,10 @@ struct Action {
 struct Donation;
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
+    Flag(u8),
+    ShowFlags,
+    Surface,
+    Opacity,
     Atlas(usize),
     Explore(Intent),
     /// Cycles the floors present in the confirmed exploration result and region atlas.
@@ -43,7 +54,8 @@ enum Kind {
 
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
-        .add_systems(Update, project)
+        .init_resource::<terrain::Cache>()
+        .add_systems(Update, (project, terrain::project).chain())
         .add_systems(PostUpdate, donate.after(bevy::text::EditableTextSystems));
 }
 fn activate(
@@ -71,6 +83,33 @@ fn activate(
         return;
     }
     match action.kind {
+        Kind::Flag(index) => {
+            state.hidden_flags ^= 1 << index;
+            state.snapshot = None;
+        }
+        Kind::ShowFlags => {
+            state.hidden_flags = 0;
+            state.snapshot = None;
+        }
+        Kind::Surface => {
+            if panel.geometry.floor > 7
+                || panel.geometry.bounds.is_some_and(|bounds| {
+                    state.no_satellite == Some((bounds, panel.geometry.floor))
+                })
+            {
+                return;
+            }
+            state.chose_mode = true;
+            state.surface = !state.surface;
+            state.snapshot = None;
+        }
+        Kind::Opacity => {
+            if !state.surface || panel.geometry.floor >= 7 {
+                return;
+            }
+            state.faded = (state.faded + 25) % 125;
+            state.snapshot = None;
+        }
         Kind::Close => play.link.cyclopedia_atlas_close(),
         Kind::Atlas(index) => play.link.cyclopedia_atlas_action(index),
         Kind::Floor { previous } => play.link.cyclopedia_map_floor(previous),
@@ -157,7 +196,7 @@ fn remove_root(
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
-    skins: Res<Skins>,
+    (skins, terrain_cache): (Res<Skins>, Res<terrain::Cache>),
     mut state: ResMut<State>,
     mut focus: ResMut<bevy::input_focus::InputFocus>,
     parents: Query<&ChildOf>,
@@ -175,12 +214,41 @@ fn project(
         remove_root(&mut state, &mut commands, &mut focus, &parents);
         state.snapshot = None;
         state.donate = None;
+        state.flags.clear();
+        state.hidden_flags = 0;
+        state.surface = false;
+        state.chose_mode = false;
+        state.no_satellite = None;
+        state.faded = 0;
         state.generation = owner.generation();
     }
     let Some(panel) = panel else {
         return;
     };
-    if state.snapshot.as_ref() == Some(&panel) {
+    let missing = panel
+        .geometry
+        .bounds
+        .is_some_and(|bounds| state.no_satellite == Some((bounds, panel.geometry.floor)));
+    if panel.geometry.floor > 7 || missing {
+        state.surface = false;
+    } else if !state.chose_mode && panel.geometry.bounds.is_some() {
+        state.surface =
+            terrain_cache.root.is_some() || std::env::var_os(crate::map::ASSET_DIR_ENV).is_some();
+    }
+    let flags = panel
+        .geometry
+        .bounds
+        .and_then(|bounds| {
+            Some(
+                owner
+                    .play
+                    .as_ref()?
+                    .view
+                    .atlas_flags(bounds, panel.geometry.floor),
+            )
+        })
+        .unwrap_or_default();
+    if state.snapshot.as_ref() == Some(&panel) && state.flags == flags {
         return;
     }
     // Let queued edits reach the old editor before preserving its draft and replacing it.
@@ -188,6 +256,7 @@ fn project(
     if gold.is_some_and(|gold| gold.pending_paste.is_some() || !gold.pending_edits.is_empty()) {
         return;
     }
+    state.flags = flags;
     // The typed gold survives a redraw of the same window; only Donate submits it.
     let draft = gold.map(|gold| gold.value().to_string());
     remove_root(&mut state, &mut commands, &mut focus, &parents);
@@ -220,6 +289,14 @@ fn project(
         ))
         .id();
     label(&mut commands, &skins, root, "Cyclopedia Map");
+    use crate::bevy_shell::game_ui::cyclopedia_navigation::{Subject, bar};
+    bar(
+        &mut commands,
+        &skins,
+        root,
+        owner.generation(),
+        Subject::Map,
+    );
     let bar = commands
         .spawn(Node {
             flex_wrap: FlexWrap::Wrap,
@@ -228,6 +305,31 @@ fn project(
         .id();
     commands.entity(root).add_child(bar);
     for (caption, kind) in [
+        (
+            if state.surface {
+                "Surface view"
+            } else {
+                "Map view"
+            },
+            Kind::Surface,
+        ),
+        (
+            [
+                "Background floors: 100%",
+                "Background floors: 75%",
+                "Background floors: 50%",
+                "Background floors: 25%",
+                "Background floors: 0%",
+            ][usize::from(state.faded / 25)],
+            Kind::Opacity,
+        ),
+        ("Red squares", Kind::Flag(0)),
+        ("Blue squares", Kind::Flag(1)),
+        ("Green squares", Kind::Flag(2)),
+        ("Yellow squares", Kind::Flag(3)),
+        ("Quest crosses", Kind::Flag(4)),
+        ("Personal crosses", Kind::Flag(5)),
+        ("Show all flags", Kind::ShowFlags),
         ("Regions", Kind::Atlas(0)),
         ("Previous area", Kind::Atlas(1)),
         ("Next area", Kind::Atlas(2)),
@@ -259,7 +361,10 @@ fn project(
             ))
             .observe(activate)
             .id();
-        if kind != Kind::Close && (!panel.selected || panel.pending || panel.speed_pending) {
+        if kind != Kind::Close && (!panel.selected || panel.pending || panel.speed_pending)
+            || kind == Kind::Surface && (panel.geometry.floor > 7 || missing)
+            || kind == Kind::Opacity && (!state.surface || panel.geometry.floor >= 7)
+        {
             commands
                 .entity(button)
                 .insert(bevy::ui::InteractionDisabled);
@@ -321,6 +426,23 @@ fn project(
         ))
         .id();
     commands.entity(root).add_child(canvas);
+    if let Some(bounds) = panel.geometry.bounds {
+        commands.spawn((
+            ChildOf(canvas),
+            terrain::Terrain {
+                bounds,
+                floor: panel.geometry.floor,
+                surface: state.surface,
+                opacity: 100 - state.faded,
+            },
+            Node {
+                position_type: PositionType::Absolute,
+                width: px(640.),
+                height: px(480.),
+                ..default()
+            },
+        ));
+    }
     let colors = [
         Color::srgb(0.25, 0.45, 0.3),
         Color::srgb(0.4, 0.4, 0.6),
@@ -341,10 +463,55 @@ fn project(
                     height: px(h as f32),
                     ..default()
                 },
-                BackgroundColor(colors[usize::from(rect.color)]),
+                BackgroundColor(colors[usize::from(rect.color)].with_alpha(0.32)),
             ))
             .id();
         commands.entity(canvas).add_child(cell);
+    }
+    if let Some([left, top, right, bottom]) = panel.geometry.bounds {
+        let (w, h) = (u32::from(right - left) + 1, u32::from(bottom - top) + 1);
+        let (num, den) = if w * 400 >= h * 600 {
+            (600, w)
+        } else {
+            (400, h)
+        };
+        let (ox, oy) = (
+            16 + (600 - w * num / den) / 2,
+            66 + (400 - h * num / den) / 2,
+        );
+        for (x, y, icon, name) in &state.flags {
+            if state.hidden_flags & (1 << icon) != 0 {
+                continue;
+            }
+            let symbol = match icon {
+                4 => "✚",
+                5 => "×",
+                _ => "■",
+            };
+            let color = [
+                Color::srgb(1., 0., 0.),
+                Color::srgb(0., 0., 1.),
+                Color::srgb(0., 1., 0.),
+                Color::srgb(1., 1., 0.),
+                Color::srgb(1., 0., 0.),
+                Color::srgb(1., 0., 0.),
+            ][usize::from(*icon)];
+            commands
+                .spawn((
+                    ChildOf(canvas),
+                    source::text(
+                        format!("{symbol} {name}"),
+                        source::font(skins.font.clone(), false),
+                    ),
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: px((ox + u32::from(x - left) * num / den) as f32),
+                        top: px((oy + u32::from(y - top) * num / den) as f32),
+                        ..default()
+                    },
+                ))
+                .insert(TextColor(color));
+        }
     }
     for [x, y] in drawing.points {
         let point = commands

@@ -73,6 +73,10 @@ fn catalogue_window() -> Result<CatalogueWindow, Box<dyn std::error::Error>> {
                     name: "Confirmed sword".into(),
                     attributes: vec![
                         ("Attack".into(), "30".into()),
+                        ("Classification".into(), "2".into()),
+                        ("Body Position".into(), "both hands".into()),
+                        ("Professions".into(), "druid".into()),
+                        ("Required Level".into(), "50".into()),
                         ("Catalogue next".into(), "42".into()),
                         ("Catalogue categories".into(), "Weapons".into()),
                         ("Category".into(), "Weapons".into()),
@@ -481,5 +485,153 @@ fn catalogue_search_can_acquire_focus() -> TestResult {
         .query_filtered::<Entity, With<Search>>()
         .single(world)?;
     crate::bevy_shell::ui::assert_editor_acquires_focus(world, field);
+    Ok(())
+}
+
+#[test]
+fn selected_item_reaches_quick_loot_lists_and_container_manager() -> TestResult {
+    use oteryn_client_ui::quick_loot::{Action as LootAction, QuickLootFilterMode};
+    let (mut app, link, mut receiver, outbox) = catalogue_window()?;
+    outbox.bevy_quick_loot_selected(true);
+    click(&mut app, Action::Select(42))?;
+    click(&mut app, Action::LootFilter(QuickLootFilterMode::Skip))?;
+    assert!(matches!(
+        receiver.try_recv()?,
+        PlayCommand::ServerMechanic(_)
+    ));
+    assert_eq!(
+        link.quick_loot_panel().pending,
+        Some(LootAction::Add {
+            mode: QuickLootFilterMode::Skip,
+            definition: 42,
+        })
+    );
+    click(&mut app, Action::ManageLoot)?;
+    assert!(link.quick_loot_panel().open);
+    assert!(!link.inspection_panel().catalogue_open);
+    Ok(())
+}
+
+#[test]
+fn item_equipment_filters_match_confirmed_attributes_and_player_stats() -> TestResult {
+    use oteryn_client_runtime::cyclopedia_character::{GeneralStats, TabExtension, TabView};
+    let (mut app, _, mut receiver, outbox) = catalogue_window()?;
+    outbox.bevy_cyclopedia_initialize(true, true, true);
+    let selectable = |app: &mut App| {
+        app.world_mut()
+            .query::<&Control>()
+            .iter(app.world())
+            .any(|c| c.action == Action::Select(42))
+    };
+    click(&mut app, Action::Hands)?;
+    assert!(!selectable(&mut app));
+    click(&mut app, Action::Hands)?;
+    assert!(selectable(&mut app));
+    click(&mut app, Action::Class)?;
+    assert!(!selectable(&mut app));
+    click(&mut app, Action::Class)?;
+    click(&mut app, Action::Class)?;
+    assert!(selectable(&mut app));
+    click(&mut app, Action::Level)?;
+    assert!(matches!(receiver.try_recv()?, PlayCommand::Feature(c) if c.capability == 199));
+    outbox.bevy_cyclopedia_result(&oteryn_client_runtime::raw_feature::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_client_runtime::raw_feature::CommandStatus::Accepted,
+        payload: TabView::GeneralStats(GeneralStats {
+            level: 40,
+            ..Default::default()
+        })
+        .encode_extended(&TabExtension {
+            vocation_id: Some(6),
+            deaths: None,
+        })
+        .map_err(|_| "stats")?,
+    });
+    app.update();
+    assert!(!selectable(&mut app));
+    click(&mut app, Action::Level)?;
+    assert!(selectable(&mut app));
+    click(&mut app, Action::Vocation)?;
+    assert!(!selectable(&mut app));
+    Ok(())
+}
+
+#[test]
+fn selected_item_tracks_drops_and_excludes_quick_sales() -> TestResult {
+    let (mut app, link, _, outbox) = catalogue_window()?;
+    outbox.bevy_analyser_initialize();
+    click(&mut app, Action::Select(42))?;
+    click(&mut app, Action::Track)?;
+    assert!(link.analyser_panel().loot_tracked.contains(&42));
+    click(&mut app, Action::ExcludeSale)?;
+    assert!(link.npc_shop_panel().sale_exclusions.contains(&42));
+    click(&mut app, Action::Track)?;
+    assert!(!link.analyser_panel().loot_tracked.contains(&42));
+    Ok(())
+}
+
+#[test]
+fn item_valuation_uses_confirmed_market_or_entered_unit_price() -> TestResult {
+    let (mut app, link, mut receiver, outbox) = catalogue_window()?;
+    outbox.bevy_analyser_initialize();
+    click(&mut app, Action::Select(42))?;
+    click(&mut app, Action::Prices)?;
+    reply_to_prices(&mut receiver, &outbox)?;
+    app.update();
+    click(&mut app, Action::MarketValue)?;
+    assert_eq!(link.analyser_panel().loot_prices.get(&42), Some(&19));
+    app.world_mut()
+        .query_filtered::<&mut EditableText, With<OwnPrice>>()
+        .single_mut(app.world_mut())?
+        .editor_mut()
+        .set_text("73");
+    click(&mut app, Action::OwnValue)?;
+    assert_eq!(link.analyser_panel().loot_prices.get(&42), Some(&73));
+    use oteryn_client_ui::npc_shop::NpcTradeSide;
+    use oteryn_session::{AppliedDelta, EntityRef, SessionEvent, npc_service};
+    outbox.bevy_npc_shop_supported();
+    let shop = |revision, price| {
+        SessionEvent::NpcTradeWindow(AppliedDelta {
+            server_sequence: revision,
+            base_revision: revision - 1,
+            new_revision: revision,
+            value: npc_service::NpcTradeWindow {
+                open: Some((
+                    EntityRef {
+                        identity: [9; 16],
+                        generation: 1,
+                    },
+                    revision,
+                )),
+                offers: vec![npc_service::NpcOffer {
+                    item_definition_ref: 42,
+                    side: NpcTradeSide::Sell,
+                    count: 1,
+                    unit_price: price,
+                }],
+                details: vec![],
+            },
+        })
+    };
+    outbox.push(vec![shop(1, 32)]);
+    app.update();
+    assert!(visible(&mut app).contains("Current merchant buys 1 for 32 gold"));
+    click(&mut app, Action::MerchantValue)?;
+    assert_eq!(link.analyser_panel().loot_prices.get(&42), Some(&32));
+    outbox.push(vec![shop(2, 41)]);
+    app.update();
+    assert_eq!(link.analyser_panel().loot_prices.get(&42), Some(&41));
+    click(&mut app, Action::ExcludeSale)?;
+    assert!(link.npc_shop_panel().sale_exclusions.contains(&42));
+    let quote = link.npc_shop_panel().live.quotes()[0];
+    link.npc_sell_all_request(quote);
+    assert!(
+        receiver.try_recv().is_err(),
+        "excluded catalogue item was sold"
+    );
+    click(&mut app, Action::ExcludeSale)?;
+    link.npc_sell_all_request(quote);
+    assert!(matches!(receiver.try_recv()?, PlayCommand::NpcShop(_)));
     Ok(())
 }

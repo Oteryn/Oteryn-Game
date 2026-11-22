@@ -15,6 +15,13 @@ pub mod tracking;
 mod view;
 pub use input::{open_key, select_tool, set_item_price, set_xp_goal};
 pub use state::{Panel, Tool};
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PriceSource {
+    Merchant,
+    Market,
+    Own,
+}
+
 pub use view::{panel_text, session_text};
 #[cfg(test)]
 #[path = "tests/measurements.rs"]
