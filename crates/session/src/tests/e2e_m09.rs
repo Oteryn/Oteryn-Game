@@ -29,16 +29,17 @@ fn e2e_m09_replays_yield_inventory_and_rejects_invalid_payload() -> Result<(), B
                 "3492 39\n3578 1\n".into(),
             )
         };
-        let decoded = item_view::decode_character_inventory(&payload)
+        let selected = capture_inventory_profile::selected("m09", &[4, 6])?;
+        let decoded = capture_inventory_profile::decode(&payload, &selected)?;
+        let before = item_view::encode_character_inventory(&CharacterInventory::default())
             .map_err(|error| format!("{error:?}"))?;
-        let before = CharacterInventory::default();
-        let (client, peer) = item_peer(
-            item_snapshot(vec![])?,
-            vec![inventory_domain(3, &before)?],
+        let (client, peer) = capture_inventory_profile::peer(
+            selected.clone(),
+            before,
             vec![
-                ItemStep::Send(Step::ReadCommand),
-                ItemStep::Send(use_result(41, 7, UseDisposition::Committed)?),
-                ItemStep::Send(Step::Send(encode_state_delta(
+                Step::ReadCommand,
+                use_result(41, 7, UseDisposition::Committed)?,
+                Step::Send(encode_state_delta(
                     1,
                     42,
                     STATE_DOMAIN_CHARACTER_INVENTORY,
@@ -46,7 +47,7 @@ fn e2e_m09_replays_yield_inventory_and_rejects_invalid_payload() -> Result<(), B
                     4,
                     item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
                     &payload,
-                )?)),
+                )?),
             ],
         );
         let mut session = Session::admit(client, item_admission()?).await?;
@@ -67,13 +68,13 @@ fn e2e_m09_replays_yield_inventory_and_rejects_invalid_payload() -> Result<(), B
         drop(session);
         peer.await??;
 
-        let (client, peer) = item_peer(
-            item_snapshot(vec![])?,
-            vec![inventory_domain(3, &decoded)?],
+        let (client, peer) = capture_inventory_profile::peer(
+            selected,
+            payload,
             vec![
-                ItemStep::Send(Step::ReadCommand),
-                ItemStep::Send(use_result(41, 7, UseDisposition::NothingToUse)?),
-                ItemStep::Send(Step::Send(encode_state_delta(
+                Step::ReadCommand,
+                use_result(41, 7, UseDisposition::NothingToUse)?,
+                Step::Send(encode_state_delta(
                     1,
                     42,
                     STATE_DOMAIN_CHARACTER_INVENTORY,
@@ -81,7 +82,7 @@ fn e2e_m09_replays_yield_inventory_and_rejects_invalid_payload() -> Result<(), B
                     4,
                     item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
                     &[0xff],
-                )?)),
+                )?),
             ],
         );
         let mut session = Session::admit(client, item_admission()?).await?;

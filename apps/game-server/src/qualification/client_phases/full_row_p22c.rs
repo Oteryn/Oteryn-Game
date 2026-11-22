@@ -81,7 +81,7 @@ async fn durable(clients: &SeamClients<'_>) -> TestResult<i64> {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let best = tr::COMMAND_TYPE_BESTIARY_TRACKER;
-    let mut client = connect_world(clients, 0xd3).await?;
+    let mut client = connect_world_with_capabilities(clients, 0xd3, &[tr::CAPABILITY_CYCLOPEDIA_TRACKER_V1]).await?;
     selected(&client)?;
     let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Add, RAT)).await?;
     expect(
@@ -96,7 +96,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     logout(&mut client).await?;
 
-    let mut client = connect_world(clients, 0xd4).await?;
+    let mut client = connect_world_with_capabilities(clients, 0xd4, &[tr::CAPABILITY_CYCLOPEDIA_TRACKER_V1]).await?;
     selected(&client)?;
     let list = read(&mut client, best).await?;
     expect(has(&list, RAT), "read-after-relog", "race-lost")?;
@@ -113,7 +113,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     logout(&mut client).await?;
 
-    let mut client = connect_world(clients, 0xd5).await?;
+    let mut client = connect_world_with_capabilities(clients, 0xd5, &[tr::CAPABILITY_CYCLOPEDIA_TRACKER_V1]).await?;
     let list = read(&mut client, best).await?;
     expect(
         !has(&list, RAT),

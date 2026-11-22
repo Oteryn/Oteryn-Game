@@ -1,6 +1,6 @@
 //! Capture the inventory and own-vitals payloads exposed after a real rune command.
 use super::*;
-use oteryn_protocol_oteryn::{actor_spell, item_view};
+use oteryn_protocol_oteryn::actor_spell;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(capture(clients))).await;
@@ -48,7 +48,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     }
 
     if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let inventory = item_view::encode_character_inventory(&before_inventory)
+        let inventory = inventory_capture::encode("c06", client.selected_capabilities(), &before_inventory)
             .map_err(|error| format!("C06 inventory encode: {error:?}"))?;
         let vitals = actor_spell::encode_actor_vitals(&before_vitals)
             .map_err(|error| format!("C06 vitals encode: {error:?}"))?;

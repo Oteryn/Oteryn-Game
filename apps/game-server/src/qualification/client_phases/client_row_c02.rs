@@ -62,7 +62,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .or_else(|| client.inventory())
         .ok_or("C02 session has no inventory state")?;
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some() {
-        match item_view::encode_character_inventory_with_equip_drop(inventory, true) {
+        match inventory_capture::encode("c02", client.selected_capabilities(), inventory) {
             Ok(payload) => write_capture("c02-inventory.bin", &payload),
             Err(error) => evidence(&format!(
                 "SEAM_EVIDENCE e2e_all scenario=C02.client capture=c02-inventory.bin error={error:?}"

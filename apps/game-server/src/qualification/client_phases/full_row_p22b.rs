@@ -81,7 +81,7 @@ async fn progress(clients: &SeamClients<'_>) -> TestResult<i64> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
-    let mut client = connect_world(clients, 0xd2).await?;
+    let mut client = connect_world_with_capabilities(clients, 0xd2, &[tr::CAPABILITY_CYCLOPEDIA_TRACKER_V1]).await?;
     selected(&client)?;
     let boss = tr::COMMAND_TYPE_BOSSTIARY_TRACKER;
     let credited = progress(clients).await?;
@@ -112,7 +112,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     expect(has(&list, BOSS), "read-after-add", "boss-missing")?;
     // Durable: the entry survives logout and a fresh admission.
     logout(&mut client).await?;
-    let mut client = connect_world(clients, 0xd3).await?;
+    let mut client = connect_world_with_capabilities(clients, 0xd3, &[tr::CAPABILITY_CYCLOPEDIA_TRACKER_V1]).await?;
     selected(&client)?;
     let list = read(&mut client, boss).await?;
     expect(
@@ -130,7 +130,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     expect(!has(&list, BOSS), "read-after-remove", "boss-still-tracked")?;
     // Durable: the removal also survives logout and a fresh admission.
     logout(&mut client).await?;
-    let mut client = connect_world(clients, 0xd4).await?;
+    let mut client = connect_world_with_capabilities(clients, 0xd4, &[tr::CAPABILITY_CYCLOPEDIA_TRACKER_V1]).await?;
     selected(&client)?;
     let list = read(&mut client, boss).await?;
     expect(

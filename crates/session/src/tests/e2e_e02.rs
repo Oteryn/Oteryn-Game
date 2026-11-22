@@ -5,7 +5,7 @@
 //! The before inventory and the applied after inventory are session-owned views of the same
 //! character, re-encoded by the row with the production encoder (the C09/I11 practice).
 use super::*;
-use crate::tests::{BoxError, admission_with, join_peer_with};
+use crate::tests::{BoxError, admission_with, capture_inventory_profile, join_peer_with};
 use oteryn_protocol_oteryn::{encode_state_delta, item_view};
 
 const SELECTED: &[u32] = &[
@@ -88,14 +88,18 @@ fn fixture() -> Result<Capture, BoxError> {
 fn e02_coin_inventory_replay() -> Result<(), BoxError> {
     crate::tests::block_on(async {
         let capture = fixture()?;
+        let selected = capture_inventory_profile::selected("e02", SELECTED)?;
+        let expected_before = capture_inventory_profile::decode(&capture.before, &selected)?;
+        let expected_after = capture_inventory_profile::decode(&capture.after, &selected)?;
         let (client, mut server) = tokio::io::duplex(256 * 1024);
         let before = capture.before.clone();
         let after = capture.after.clone();
+        let selected_for_peer = selected.clone();
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                SELECTED,
-                SELECTED,
+                &selected_for_peer,
+                &selected_for_peer,
                 &[],
                 entity_snapshot()?,
                 &[(
@@ -122,7 +126,11 @@ fn e02_coin_inventory_replay() -> Result<(), BoxError> {
             std::future::pending::<()>().await;
             Ok::<(), BoxError>(())
         });
-        let mut session = match Session::admit(client, admission_with(SELECTED)?).await {
+        let admission = Admission {
+            supported_capabilities: &selected,
+            ..admission_with(SELECTED)?
+        };
+        let mut session = match Session::admit(client, admission).await {
             Ok(session) => session,
             Err(error) => {
                 peer.abort();
@@ -130,6 +138,7 @@ fn e02_coin_inventory_replay() -> Result<(), BoxError> {
                 return Err(format!("E02 admission: {error:?}; peer={peer_error:?}").into());
             }
         };
+        assert_eq!(session.inventory(), Some(&expected_before));
         assert_eq!(units(session.inventory()), capture.before_units);
         let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
         while units(session.inventory()) != capture.after_units {
@@ -138,6 +147,7 @@ fn e02_coin_inventory_replay() -> Result<(), BoxError> {
             }
             session.service_liveness(Duration::from_millis(50)).await?;
         }
+        assert_eq!(session.inventory(), Some(&expected_after));
         assert_eq!(units(session.inventory()), capture.after_units);
         assert_ne!(capture.before_units, capture.after_units);
 

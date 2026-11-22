@@ -1,7 +1,7 @@
 //! C04 full-row journey, derived from the matrix, re-audit, and the cast gate owner.
 //!
 //! 1. Admit the provisioned Character in the temple PZ; send an aggressive indexed CAST and
-//!    require an accepted command carrying a rejected cast disposition, no vitals delta, and no
+//!    require a rejected command carrying a rejected cast disposition, no vitals delta, and no
 //!    mana change.
 //! 2. Walk out of the PZ using native STEP commands; send the same CAST and require `Cast`, an
 //!    authoritative vitals delta, and the exact mana debit.
@@ -126,6 +126,17 @@ fn mana(client: &DevClientSession) -> TestResult<u32> {
     Ok(client.actor_vitals().ok_or("actor vitals absent")?.mana)
 }
 
+pub(super) fn pz_rejection_matches(
+    outcome: &oteryn_dev_client::CastOutcome,
+    before_mana: u32,
+    after_mana: u32,
+) -> bool {
+    outcome.status == CommandStatus::Rejected
+        && outcome.disposition == SpellCastDisposition::Rejected
+        && outcome.actor_vitals_delta.is_none()
+        && after_mana == before_mana
+}
+
 async fn cast(
     client: &mut DevClientSession,
     spell: std::num::NonZeroU32,
@@ -165,13 +176,9 @@ async fn journey(
 
     let before = mana(&client)?;
     let pz = cast(&mut client, aggressive).await?;
-    if pz.status != CommandStatus::Accepted
-        || pz.disposition != SpellCastDisposition::Rejected
-        || pz.actor_vitals_delta.is_some()
-        || mana(&client)? != before
-    {
+    if !pz_rejection_matches(&pz, before, mana(&client)?) {
         return Err(format!(
-            "PZ CAST expected accepted/rejected/no-delta reply={pz:?} mana={before}->{}",
+            "PZ CAST expected rejected/rejected/no-delta reply={pz:?} mana={before}->{}",
             mana(&client)?
         )
         .into());

@@ -277,12 +277,7 @@ async fn view_intent(
 }
 
 fn here(client: &DevClientSession) -> WorldTilePosition {
-    let at = client.world_spatial().actor_position;
-    WorldTilePosition {
-        x: at.x,
-        y: at.y,
-        floor: -at.floor,
-    }
+    spatial_basis::browse_position(client.world_spatial().actor_position)
 }
 
 fn ground(client: &DevClientSession) -> WorldTilePosition {

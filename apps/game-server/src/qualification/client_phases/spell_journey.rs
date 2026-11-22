@@ -140,6 +140,25 @@ pub(super) fn spell_index(
         .ok_or_else(|| format!("{words} has no canonical spell index").into())
 }
 
+pub(super) fn protection_zone_outcome_matches(
+    outcome: &oteryn_dev_client::CastOutcome,
+    before: oteryn_protocol_oteryn::actor_spell::ActorVitals,
+    after: Option<oteryn_protocol_oteryn::actor_spell::ActorVitals>,
+    inside: bool,
+) -> bool {
+    if inside {
+        outcome.status == CommandStatus::Rejected
+            && outcome.disposition == SpellCastDisposition::Rejected
+            && outcome.actor_vitals_delta.is_none()
+            && after == Some(before)
+    } else {
+        outcome.status == CommandStatus::Accepted
+            && outcome.disposition == SpellCastDisposition::Cast
+            && outcome.actor_vitals_delta.is_some()
+            && after.is_some_and(|after| after.mana < before.mana)
+    }
+}
+
 pub(super) async fn protection_zone_probe(
     client: &mut DevClientSession,
     inside: bool,
@@ -169,18 +188,12 @@ pub(super) async fn protection_zone_probe(
             client.take_events();
             continue;
         }
-        let matched = outcome.status == CommandStatus::Accepted
-            && if inside {
-                outcome.disposition == SpellCastDisposition::Rejected
-                    && outcome.actor_vitals_delta.is_none()
-                    && client.actor_vitals().copied() == Some(before)
-            } else {
-                outcome.disposition == SpellCastDisposition::Cast
-                    && outcome.actor_vitals_delta.is_some()
-                    && client
-                        .actor_vitals()
-                        .is_some_and(|after| after.mana < before.mana)
-            };
+        let matched = protection_zone_outcome_matches(
+            &outcome,
+            before,
+            client.actor_vitals().copied(),
+            inside,
+        );
         if !matched {
             return Err(
                 format!("PZ aggressive cast comparison inside={inside}: {outcome:?}").into(),

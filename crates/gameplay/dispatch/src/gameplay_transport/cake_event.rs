@@ -314,19 +314,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command.game_session_id,
             CommandId::new(command.command_id).ok()?,
         );
-        match self
-            .root
-            .replay_world_cake(
-                self.character,
-                self.holder,
-                fence,
-                reference,
-                intent.clone(),
-                native.source_digest(),
-                candidate,
-            )
-            .await
-        {
+        let replay = {
+            // This read also guards unrelated world USE commands against a reused
+            // Cake command id. A transient busy holder must not swallow their owner.
+            let Ok(budget) = super::AdmissionRetryBudget::for_foreground_command(self.root) else {
+                return Some(outcome(UseDisposition::NotPossible));
+            };
+            budget
+                .retry_command_guard(async || {
+                    self.root
+                        .replay_world_cake(
+                            self.character,
+                            self.holder,
+                            fence,
+                            reference,
+                            intent.clone(),
+                            native.source_digest(),
+                            candidate,
+                        )
+                        .await
+                })
+                .await
+        };
+        match replay {
             Ok(Some(disposition)) => return Some(outcome(disposition)),
             Ok(None) => {}
             Err(_) => return Some(outcome(UseDisposition::NotPossible)),

@@ -1,7 +1,8 @@
 //! S06 client replay capture: the outfit selection and the unearned-addon refusal. The native
 //! appearance catalogue is read before and after an APPEARANCE_CHANGE that selects an earned outfit
-//! with new colours; the raw `gated_snapshot` payloads (`s06-before.bin`, `s06-after.bin`) and the
-//! raw command results (`s06-commit.bin`, `s06-refusal.bin`) are written byte for byte, and
+//! with new colours. The snapshots (`s06-before.bin`, `s06-after.bin`) use the production Snapshot
+//! encoder on the Session appearance view; they are not copies of admission snapshot bytes. The
+//! command results (`s06-commit.bin`, `s06-refusal.bin`) remain the raw server payloads, and
 //! `s06-expected.txt` holds the selection, the committed revision and the content revision.
 //! Mount taming is not driven here: the full row's taming step needs content the world lacks.
 use super::*;
@@ -16,15 +17,15 @@ struct Observed {
     expected: String,
 }
 
-fn raw_snapshot(client: &mut DevClientSession) -> TestResult<(Vec<u8>, appearance::Snapshot)> {
+fn encoded_snapshot(client: &mut DevClientSession) -> TestResult<(Vec<u8>, appearance::Snapshot)> {
     let state = client
         .session_mut()
-        .gated_snapshot(appearance::STATE_DOMAIN_APPEARANCE)
+        .appearance_snapshot()
         .ok_or("step=snapshot appearance domain missing")?;
-    let payload = state.payload.clone();
-    let decoded = appearance::Snapshot::decode(&payload)
-        .map_err(|error| format!("step=snapshot decode {error:?}"))?;
-    Ok((payload, decoded))
+    let payload = state
+        .encode()
+        .map_err(|error| format!("step=snapshot encode {error:?}"))?;
+    Ok((payload, state))
 }
 
 async fn change(
@@ -64,7 +65,7 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
     {
         return Err("step=admission appearance capability not selected".into());
     }
-    let (before_bytes, before) = raw_snapshot(&mut client)?;
+    let (before_bytes, before) = encoded_snapshot(&mut client)?;
     let option = before
         .catalogue
         .outfits
@@ -93,7 +94,10 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         Ok(appearance::ChangeResult::Committed(value)) if status == CommandStatus::Accepted => value,
         observed => return Err(format!("step=select status={status:?} result={observed:?}").into()),
     };
-    let (after_bytes, after) = raw_snapshot(&mut client)?;
+    let after = full_row_s06::wait_for_selection(&mut client, committed, &selection).await?;
+    let after_bytes = after
+        .encode()
+        .map_err(|error| format!("step=snapshot encode {error:?}"))?;
     if after.catalogue.selected.as_ref().map(|s| &s.selection) != Some(&selection)
         || after.catalogue.root_revision != committed
     {

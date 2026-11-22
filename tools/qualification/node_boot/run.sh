@@ -1041,6 +1041,9 @@ stage() { # name prerequisite... -- function
       echo "NODE_BOOT_STAGE_FAILED $name rows=$new_rows"
     fi
     if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
+      # Row failures need the same first-incarnation evidence as a nonzero exit.
+      # Later lifecycle probes truncate node_log even when the scenario process returned 0.
+      [[ -f "$failed_node_log" || ! -f "$node_log" ]] || cp "$node_log" "$failed_node_log"
       echo "--- session close events behind failed e2e rows"
       grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed|connection_[a-z_]+)( |$)' "$node_log" 2>/dev/null | tail -n 120 || true
     fi

@@ -25,7 +25,8 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 let start=MovementLocalPosition{x:33302,y:32070,floor:7};
                 let first=MovementLocalPosition{x:33303,y:32070,floor:7};
                 let second=MovementLocalPosition{x:33303,y:32071,floor:7};
-                let world=cake_bundle(native,deps.admitted.world_id,deps.admitted.channel_id,start,&[(first,12085),(second,12086)])?;
+                let ordinary_door=MovementLocalPosition{x:33302,y:32069,floor:7};
+                let world=cake_bundle(native,deps.admitted.world_id,deps.admitted.channel_id,start,&[(first,12085),(second,12086),(ordinary_door,1629)])?;
                 let cells=world.movement_cells(pin.qualified_room().movement_cells()).map_err(debug)?;
                 let room=super::rust_lottery_fixtures::bundle_action_room(pin.qualified_room(),&world,deps.admitted.world_id,&cells)?;
                 let content_pin=ChannelContentPin::from_activation(deps.admitted.world_id,pin.activation_sequence(),pin.identity().server_artifact_digest(),pin.identity().client_artifact_digest(),room.frame_binding().digest(),room.map_revision_digest(),(start.x,start.y,start.floor));
@@ -42,6 +43,24 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 let fence=crate::gameplay_transport::item_fence_of(current).ok_or("current item fence")?;
                 let equipment_before:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
                 assert_eq!(equipment_before,0);
+                // An ordinary door must reach its existing owner after a transient
+                // busy holder in Cake's replay read, without requiring equipment.
+                let door_key=crate::map::view::placement_key(crate::map::overlay::TilePos{x:33302,y:32069,floor:-7},1).ok_or("ordinary door placement")?;
+                assert!(world.facts().doors().contains(door_key));
+                let door_target=WorldObjectTarget{placement:world.base().digest().into_iter().chain(door_key.to_be_bytes()).collect(),expected_revision:0};
+                let door_command=UseCommand{game_session_id:deps.admitted.game_session_id,command_id:899,item_fence:Some(fence)};
+                let held=h.root.try_issue_semantic_pass()?;
+                let (door_outcome,released)=tokio::join!(
+                    owner.use_world_object(deps.actor,door_command,door_target),
+                    async move {
+                        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                        held.run(|_,_|Box::pin(async {Ok(())})).await
+                    }
+                );
+                released?;
+                assert_eq!(door_outcome.disposition,UseDisposition::Committed,"ordinary door USE must survive a transient busy replay holder");
+                assert_eq!(world.facts().doors().revision(door_key),1);
+                tokio::time::sleep(std::time::Duration::from_millis(210)).await;
                 let ground_key=crate::map::view::placement_key(world.start(),0).ok_or("unrelated ground placement")?;
                 let unrelated=WorldObjectTarget{placement:world.base().digest().into_iter().chain(ground_key.to_be_bytes()).collect(),expected_revision:0};
                 let unrelated_command=UseCommand{game_session_id:deps.admitted.game_session_id,command_id:900,item_fence:Some(fence)};
@@ -285,6 +304,7 @@ fn cake_bundle(
         world,
         channel,
         |key| {
+            use crate::content::{ReferenceItemField, ReferenceItemType};
             Some(crate::map::facts::ItemDefinition {
                 reference: index.definition_ref("Item", key, "definition-r1")?,
                 solid: native
@@ -298,7 +318,11 @@ fn cake_bundle(
                     .attributes
                     .blocks_projectile?,
                 pickupable: false,
-                door: false,
+                door: matches!(
+                    &native.item_policy(key, "definition-r1")?.record().semantics.classification,
+                    ReferenceItemField::Known(classification)
+                        if classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
+                ),
             })
         },
     )

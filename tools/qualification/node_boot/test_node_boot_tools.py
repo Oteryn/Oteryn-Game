@@ -286,6 +286,36 @@ class SeamPassThroughTests(unittest.TestCase):
 
 
 class StageDumpTests(unittest.TestCase):
+    def test_zero_exit_failed_rows_preserve_the_first_failed_node_incarnation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            saved = root / 'failed-node.log'
+            script = textwrap.dedent(f'''\
+                set -Eeuo pipefail
+                WORK={temp}; VARS={temp}/vars; : > "$VARS"
+                node_log={temp}/node.log; failed_node_log={saved}; GAME_SOURCE={temp}
+                NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0
+                declare -A STATUS=(); ORDER=()
+                evidence() {{ :; }}; pg_observability_dump() {{ :; }}
+                start_runtime_diagnostics() {{ :; }}; stop_runtime_diagnostics() {{ :; }}
+                success() {{ echo 'SEAM_EVIDENCE e2e_all scenario=W20a.client status=PASS'; }}
+                failure() {{ echo 'SEAM_EVIDENCE e2e_all scenario=W23.full status=FAIL'; }}
+                ''') + section('stage_rows()', 'stage()') + function('stage') + '''
+                printf 'successful incarnation\\n' > "$node_log"
+                stage clean -- success
+                [[ ! -e "$failed_node_log" ]]
+                printf 'first failed incarnation\\n' > "$node_log"
+                stage first -- failure
+                [[ ${STATUS[first]} == 'FAIL(rows)' ]]
+                printf 'later replacement incarnation\\n' > "$node_log"
+                stage second -- failure
+                [[ ${STATUS[second]} == 'FAIL(rows)' ]]
+                '''
+            result = bash(script)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue(saved.is_file(), 'FAIL rows must retain the node log before restart')
+            self.assertEqual(saved.read_text(), 'first failed incarnation\n')
+
     def run_stage(self, command):
         with tempfile.TemporaryDirectory() as temp:
             script = textwrap.dedent(f'''\

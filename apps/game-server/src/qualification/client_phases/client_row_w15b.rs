@@ -7,7 +7,6 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::quest_log as journal;
-use oteryn_protocol_oteryn::item_view;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 fn capture(name: &str, bytes: &[u8]) {
@@ -144,7 +143,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         .clone();
     let inventory_payload = |client: &DevClientSession| -> TestResult<Vec<u8>> {
         let inventory = client.inventory().ok_or("inventory snapshot missing")?;
-        item_view::encode_character_inventory(inventory)
+        inventory_capture::encode("w15b", client.selected_capabilities(), inventory)
             .map_err(|error| format!("inventory encode: {error:?}").into())
     };
     let before_units = units(&client)?;

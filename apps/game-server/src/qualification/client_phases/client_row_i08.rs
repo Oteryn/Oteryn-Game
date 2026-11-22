@@ -1,7 +1,6 @@
 //! Capture the real inventory payload applied by the native client for SCENARIO_MATRIX I08.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
-use oteryn_protocol_oteryn::item_view;
 
 fn visible(inventory: &oteryn_dev_client::CharacterInventory) -> String {
     inventory
@@ -46,7 +45,7 @@ async fn journey(clients: &SeamClients<'_>, path: &Path) -> TestResult {
         .find(|item| item.item_definition_ref == bag_ref)
         .copied()
         .ok_or("real player does not carry a Primal Bag")?;
-    let before_payload = item_view::encode_character_inventory_with_equip_drop(&before, true)
+    let before_payload = inventory_capture::encode("i08", client.selected_capabilities(), &before)
         .map_err(|error| format!("inventory encode: {error:?}"))?;
     client.take_events();
     let reply = client.use_item(item.handle).await?;
@@ -83,7 +82,7 @@ async fn journey(clients: &SeamClients<'_>, path: &Path) -> TestResult {
     if bag_before != bag_after + 1 || !minted {
         return Err("inventory payload did not consume one bag and mint a pool reward".into());
     }
-    let after_payload = item_view::encode_character_inventory_with_equip_drop(&after, true)
+    let after_payload = inventory_capture::encode("i08", client.selected_capabilities(), &after)
         .map_err(|error| format!("inventory encode: {error:?}"))?;
     capture(path, "i08-before.bin", &before_payload);
     capture(path, "i08-after.bin", &after_payload);

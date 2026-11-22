@@ -4,7 +4,6 @@
 use super::*;
 use oteryn_dev_client::client_runtime::npc_shop as runtime;
 use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef};
-use oteryn_protocol_oteryn::item_view;
 use oteryn_protocol_oteryn::npc_service as wire;
 use std::collections::BTreeMap;
 
@@ -34,7 +33,7 @@ fn pairs(client: &DevClientSession) -> String {
 
 fn encoded(client: &DevClientSession) -> TestResult<Vec<u8>> {
     let inventory = client.inventory().ok_or("inventory absent")?;
-    item_view::encode_character_inventory(inventory)
+    inventory_capture::encode("e02", client.selected_capabilities(), inventory)
         .map_err(|error| format!("inventory encode: {error:?}").into())
 }
 

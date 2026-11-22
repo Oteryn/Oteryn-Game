@@ -6,8 +6,8 @@
 //!    List command reports no public/relationship permission.
 //! 2. The caster says `exiva "<target>"`; the server rejects the spell and
 //!    sends the protected-character reply, without changing caster vitals.
-//! 3. The target sends AddName(`<caster>`); the server accepts it and List
-//!    returns mode 2 plus the caster's resolved character id and name.
+//! 3. The target enables SetModes(2), then sends AddName(`<caster>`); the server
+//!    accepts both and List returns mode 2 plus the caster's resolved id and name.
 //! 4. The caster repeats `exiva "<target>"`; the server accepts the spell,
 //!    debits mana, and sends the directional Find Person reply.
 //! 5. The target sends malformed SetModes(32); the server rejects it and a
@@ -121,6 +121,21 @@ async fn list(client: &mut DevClientSession) -> TestResult<PlayerList> {
     let payload = settings(client, &[5]).await?;
     PlayerList::decode(&payload)
         .ok_or_else(|| format!("List reply was not a PlayerList: {payload:?}").into())
+}
+
+pub(super) async fn allow_named_player(
+    target: &mut DevClientSession,
+    caster_name: &str,
+) -> TestResult {
+    if settings(target, &[0, 2]).await? != [1] {
+        return Err("SetModes(2) lacked accepted receipt".into());
+    }
+    let mut add = vec![6];
+    add.extend(caster_name.as_bytes());
+    if settings(target, &add).await? != [1] {
+        return Err("AddName lacked accepted receipt".into());
+    }
+    Ok(())
 }
 
 async fn malformed_refused(client: &mut DevClientSession) -> TestResult {
@@ -311,11 +326,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("denied-cast", denied);
 
-    let mut add = vec![6];
-    add.extend(caster_name.as_bytes());
-    if settings(&mut target, &add).await? != [1] {
-        return Err("step 3 AddName lacked accepted receipt".into());
-    }
+    allow_named_player(&mut target, &caster_name).await?;
     let allowed = list(&mut target).await?;
     let (caster_id, listed_name) = allowed
         .players
@@ -387,3 +398,7 @@ mod tests {
         assert_eq!(row.passed.len(), ACTIONS.len());
     }
 }
+
+#[cfg(test)]
+#[path = "full_row_p17_tests.rs"]
+mod transport_tests;

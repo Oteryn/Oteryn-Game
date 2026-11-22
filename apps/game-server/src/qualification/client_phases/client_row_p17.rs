@@ -75,11 +75,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     capture("p17-denied.bin", &denied_bytes);
 
-    let mut add = vec![6];
-    add.extend(caster_name.as_bytes());
-    if accepted(&mut target, &add).await? != [1] {
-        return Err("AddName lacked the accepted receipt".into());
-    }
+    full_row_p17::allow_named_player(&mut target, &caster_name).await?;
     let (allowed_bytes, allowed) = list(&mut target).await?;
     let [(caster_id, listed_name)] = allowed.players.as_slice() else {
         return Err(format!("allow List mismatch: {allowed:?}").into());

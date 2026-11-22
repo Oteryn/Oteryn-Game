@@ -13,6 +13,7 @@ struct Frames {
 }
 
 struct Captured {
+    atelier_v2: bool,
     query: Frames,
     stale: Frames,
     expected: String,
@@ -70,10 +71,19 @@ fn frames(receipt: bool, revision: u64, balances: bool) -> Result<Frames, Error>
 
 fn fixture() -> Result<Captured, Error> {
     Ok(Captured {
+        atelier_v2: false,
         query: frames(false, 3, true)?,
         stale: frames(true, 3, true)?,
         expected: "revision=3\ngems=0\ngrades=0\nreveal_gold_q0=50000\ncarried_gold=123456\nstale_refused=true\nstale_current_revision=3\n".into(),
     })
+}
+
+fn atelier_profile(text: &str) -> Result<bool, Error> {
+    match text {
+        "atelier_v2=0\n" => Ok(false),
+        "atelier_v2=1\n" => Ok(true),
+        _ => Err("missing or malformed P07 Atelier profile".into()),
+    }
 }
 
 fn captured() -> Result<Captured, Error> {
@@ -90,6 +100,9 @@ fn captured() -> Result<Captured, Error> {
         })
     };
     Ok(Captured {
+        atelier_v2: atelier_profile(&std::fs::read_to_string(
+            path.join("p07-atelier-profile.txt"),
+        )?)?,
         query: frames("query")?,
         stale: frames("stale")?,
         expected: std::fs::read_to_string(path.join("p07-expected.txt"))?,
@@ -116,16 +129,22 @@ fn response(kind: u32, frames: &Frames) -> WheelResponse {
 
 #[test]
 fn e2e_p07_replays_atelier_state_and_stale_reveal() -> Result<(), Error> {
-    let captured = captured()?;
+    replay(captured()?)
+}
+
+fn replay(captured: Captured) -> Result<(), Error> {
     let e = captured.expected.as_str();
     let revision: u64 = value(e, "revision")?.parse()?;
     let mut panel = WheelPanel {
         selected: true,
+        atelier_v2: captured.atelier_v2,
         ..WheelPanel::default()
     };
     request(&mut panel, Intent::Refresh, occurrence(1)).ok_or("refresh")?;
     assert!(apply_result(&mut panel, &response(161, &captured.query)));
     let state = panel.confirmed_atelier.clone().ok_or("atelier state")?;
+    let board = panel.vessel_board.clone();
+    assert_eq!(board.is_some(), captured.atelier_v2);
     assert_eq!(state.revision, revision);
     assert_eq!(state.gems.len().to_string(), value(e, "gems")?);
     assert_eq!(state.grades.len().to_string(), value(e, "grades")?);
@@ -154,10 +173,19 @@ fn e2e_p07_replays_atelier_state_and_stale_reveal() -> Result<(), Error> {
 
     // Reveal carries the confirmed revision; the server refuses the stale one and nothing moves.
     let reveal = request(&mut panel, Intent::Reveal, occurrence(2)).ok_or("reveal")?;
-    assert_eq!(reveal.kind, 424);
-    let sent = wire(atelier::decode_mutate(&reveal.payload))?;
-    assert_eq!(sent.expected_revision, revision);
-    assert!(apply_result(&mut panel, &response(424, &captured.stale)));
+    let kind = if captured.atelier_v2 {
+        atelier::v2::COMMAND_TYPE_ATELIER_V2_MUTATE
+    } else {
+        atelier::COMMAND_TYPE_ATELIER_MUTATE
+    };
+    assert_eq!(reveal.kind, kind);
+    let sent_revision = if captured.atelier_v2 {
+        wire(atelier::v2::decode_mutate(&reveal.payload))?.expected_revision
+    } else {
+        wire(atelier::decode_mutate(&reveal.payload))?.expected_revision
+    };
+    assert_eq!(sent_revision, revision);
+    assert!(apply_result(&mut panel, &response(kind, &captured.stale)));
     assert_eq!(value(e, "stale_refused")?, "true");
     assert_eq!(
         panel.feedback,
@@ -169,6 +197,8 @@ fn e2e_p07_replays_atelier_state_and_stale_reveal() -> Result<(), Error> {
         value(e, "stale_current_revision")?
     );
     assert_eq!(after.gems, state.gems);
+    assert_eq!(after, state);
+    assert_eq!(panel.vessel_board, board);
     assert_eq!(
         panel
             .confirmed_resources
@@ -185,5 +215,65 @@ fn e2e_p07_replays_atelier_state_and_stale_reveal() -> Result<(), Error> {
         Some("The response did not match this request; refresh and retry")
     );
     assert_eq!(panel.confirmed_atelier.as_ref(), Some(&after));
+    assert_eq!(panel.vessel_board, board);
+    Ok(())
+}
+
+#[test]
+fn e2e_p07_replays_v2_atelier_state_and_stale_reveal() -> Result<(), Error> {
+    let mut captured = fixture()?;
+    captured.atelier_v2 = true;
+    let current = atelier::v2::AtelierReply {
+        refused: false,
+        revision: 3,
+        wheel_revision: 1,
+        in_temple: true,
+        premium: true,
+        gems: Vec::new(),
+        grades: Vec::new(),
+        quality_quotes: (0..3)
+            .map(|quality| atelier::v2::QualityQuote {
+                quality,
+                reveal_gold: 50_000 + u64::from(quality),
+                fragment_kind: 0,
+                fragment_min: 1,
+                fragment_max: 2,
+            })
+            .collect(),
+        grade_quotes: Vec::new(),
+        vessels: vec![
+            atelier::v2::VesselSlotView {
+                quality: 0,
+                open: true,
+                gem: None
+            };
+            12
+        ],
+        vessel_nodes: vec![1, 5, 9],
+        vessel_node_bonus: 7,
+        resistance_capped: true,
+    };
+    captured.query.atelier = wire(atelier::v2::encode_reply(&current))?;
+    captured.query.receipt = captured.query.wheel.clone();
+    captured.stale.atelier = captured.query.atelier.clone();
+    captured.stale.receipt = wire(atelier::v2::encode_reply(&atelier::v2::AtelierReply {
+        refused: true,
+        ..current
+    }))?;
+    replay(captured)
+}
+
+#[test]
+fn e2e_p07_requires_an_explicit_capture_profile() -> Result<(), Error> {
+    assert!(!atelier_profile("atelier_v2=0\n")?);
+    assert!(atelier_profile("atelier_v2=1\n")?);
+    for invalid in [
+        "",
+        "atelier_v2=true\n",
+        "atelier_v2=1\natelier_v2=0\n",
+        "atelier_v2=1\nunknown=1\n",
+    ] {
+        assert!(atelier_profile(invalid).is_err());
+    }
     Ok(())
 }

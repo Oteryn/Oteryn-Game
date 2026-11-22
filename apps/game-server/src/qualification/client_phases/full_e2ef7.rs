@@ -2613,7 +2613,12 @@ fn verify_party_refusal(
     after: casts::ActorVitals,
     expected: casts::SpellCastDisposition,
 ) -> TestResult {
-    if outcome.status != CommandStatus::Accepted
+    let expected_status = if expected == casts::SpellCastDisposition::Rejected {
+        CommandStatus::Rejected
+    } else {
+        CommandStatus::Accepted
+    };
+    if outcome.status != expected_status
         || outcome.disposition != expected
         || outcome.actor_vitals_delta.is_some()
         || before != after
@@ -3089,7 +3094,7 @@ mod continuation_tests {
         };
         let mut outcome = oteryn_dev_client::CastOutcome {
             command_id: 1,
-            status: CommandStatus::Accepted,
+            status: CommandStatus::Rejected,
             disposition: casts::SpellCastDisposition::Rejected,
             result_server_sequence: 1,
             actor_vitals_delta: None,
@@ -6892,3 +6897,7 @@ mod forge_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "cast_status_tests.rs"]
+mod cast_status_tests;

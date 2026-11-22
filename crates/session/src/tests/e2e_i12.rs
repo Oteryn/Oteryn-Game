@@ -8,6 +8,9 @@ use super::*;
 fn pick_refining_replays_real_inventory_payload() -> Result<(), BoxError> {
     block_on(async {
         let (snapshot_payload, delta_payload, revisions, expected) = fixture()?;
+        let selected = capture_inventory_profile::selected("i12", &[4, 6])?;
+        let expected_before = capture_inventory_profile::decode(&snapshot_payload, &selected)?;
+        let expected_after = capture_inventory_profile::decode(&delta_payload, &selected)?;
         let revisions = revisions
             .split_whitespace()
             .map(str::parse::<u64>)
@@ -31,7 +34,7 @@ fn pick_refining_replays_real_inventory_payload() -> Result<(), BoxError> {
             join_peer_with(
                 &mut server,
                 CLIENT_SUPPORTED_CAPABILITIES,
-                &[4, 6],
+                &selected,
                 &[],
                 item_snapshot(vec![])?,
                 &[(
@@ -44,6 +47,7 @@ fn pick_refining_replays_real_inventory_payload() -> Result<(), BoxError> {
             .await
         });
         let mut session = Session::admit(client, item_admission()?).await?;
+        assert_eq!(session.inventory(), Some(&expected_before));
         let frame = encode_state_delta(
             1,
             server_sequence,
@@ -54,6 +58,7 @@ fn pick_refining_replays_real_inventory_payload() -> Result<(), BoxError> {
             &delta_payload,
         )?;
         session.apply_state_delta(server_sequence, decode_wire_envelope(&frame)?.payload())?;
+        assert_eq!(session.inventory(), Some(&expected_after));
         assert_eq!(visible(session.inventory()), expected);
 
         let before = session.inventory().cloned();

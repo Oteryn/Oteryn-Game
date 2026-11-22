@@ -24,6 +24,16 @@ impl Basis {
     }
 }
 
+pub(super) fn browse_position(
+    at: ActorPosition,
+) -> oteryn_protocol_oteryn::item_view::WorldTilePosition {
+    oteryn_protocol_oteryn::item_view::WorldTilePosition {
+        x: at.x,
+        y: at.y,
+        floor: at.floor,
+    }
+}
+
 fn resolve(selected: bool, marker: Option<u32>, observed_floor: i16) -> TestResult<Basis> {
     // The snapshot selects the cue route. Both routes use Global z.
     let basis = match (selected, marker) {
@@ -50,6 +60,36 @@ pub(super) fn current(client: &mut oteryn_dev_client::DevClientSession) -> TestR
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn browse_field_uses_the_observed_global_floor() -> TestResult {
+        use oteryn_protocol_oteryn::browse_field::{
+            BrowseFieldIntent, decode_browse_field_intent, encode_browse_field_intent,
+        };
+        use oteryn_protocol_oteryn::item_view::WorldTilePosition;
+        for floor in [0, 7, 15] {
+            let at = ActorPosition {
+                x: 32369,
+                y: 32238,
+                floor,
+            };
+            let position = browse_position(at);
+            let intent = BrowseFieldIntent::Open { position };
+            let encoded = encode_browse_field_intent(&intent)
+                .map_err(|error| format!("step=browse-encode observed={error:?}"))?;
+            assert_eq!(
+                decode_browse_field_intent(&encoded),
+                Ok(BrowseFieldIntent::Open {
+                    position: WorldTilePosition {
+                        x: at.x,
+                        y: at.y,
+                        floor: at.floor
+                    }
+                })
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn current_native_and_legacy_markers_validate_observed_floor() -> TestResult {

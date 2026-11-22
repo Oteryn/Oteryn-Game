@@ -188,3 +188,180 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
         Ok(())
     })?
 }
+
+#[test]
+fn appearance_snapshot_tracks_validated_selection_in_both_result_orders() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                for result_first in [true, false] {
+                    let (before, entity, spatial) = appearance_fixture::snapshot()?;
+                    let initial = before.encode().map_err(|e| format!("{e:?}"))?;
+                    let domain = (21, 1, 1, initial.clone());
+                    let option = before.catalogue.outfits.first().ok_or("earned outfit")?;
+                    let selection = appearance::Selection {
+                        outfit_key: option.key.clone(),
+                        colours: [2, 1, 0, 2],
+                        addons: 0,
+                        mount_key: None,
+                    };
+                    let committed = before
+                        .catalogue
+                        .root_revision
+                        .checked_add(1)
+                        .ok_or("revision")?;
+                    let mut expected = before.clone();
+                    expected.catalogue.root_revision = committed;
+                    expected.catalogue.selected = Some(appearance::Selected {
+                        selection: selection.clone(),
+                        revision: committed,
+                        provenance: "session-regression".into(),
+                    });
+                    let binding = expected
+                        .bindings
+                        .iter_mut()
+                        .find(|binding| binding.entity == entity.entity)
+                        .ok_or("own binding")?;
+                    binding.root_revision = committed;
+                    binding.selection_revision = Some(committed);
+                    binding.look = appearance::Look::Outfit {
+                        look_type: option.look_type,
+                        colours: selection.colours,
+                        addons: selection.addons,
+                    };
+                    let catalogue = expected.catalogue.encode().map_err(|e| format!("{e:?}"))?;
+                    let mappings = appearance::Mappings {
+                        context: before.catalogue.context,
+                        upserts: vec![binding.clone()],
+                        forgets: Vec::new(),
+                    }
+                    .encode()
+                    .map_err(|e| format!("{e:?}"))?;
+                    let (inject_stale, stale_ready) = tokio::sync::oneshot::channel();
+                    let (client, mut server) = tokio::io::duplex(256 * 1024);
+                    let peer = tokio::spawn(async move {
+                        join_peer_with(
+                            &mut server,
+                            CLIENT_SUPPORTED_CAPABILITIES,
+                            &[6, 25],
+                            &[],
+                            spatial,
+                            &[domain],
+                        )
+                        .await?;
+                        read_frame(&mut server).await?;
+                        let result = encode_command_result(
+                            1,
+                            if result_first { 41 } else { 43 },
+                            7,
+                            CommandStatus::Accepted,
+                            &appearance::ChangeResult::Committed(committed)
+                                .encode()
+                                .map_err(|e| format!("{e:?}"))?,
+                        )?;
+                        if result_first {
+                            write_frame(&mut server, &result).await?;
+                        }
+                        let first = if result_first { 42 } else { 41 };
+                        write_frame(
+                            &mut server,
+                            &encode_state_delta(1, first, 21, 1, 2, 2, &catalogue)?,
+                        )
+                        .await?;
+                        write_frame(
+                            &mut server,
+                            &encode_state_delta(1, first + 1, 21, 2, 3, 1, &mappings)?,
+                        )
+                        .await?;
+                        if !result_first {
+                            write_frame(&mut server, &result).await?;
+                        }
+                        // Reject a valid payload replayed against the old domain revision.
+                        stale_ready.await?;
+                        write_frame(
+                            &mut server,
+                            &encode_state_delta(1, 44, 21, 1, 2, 1, &mappings)?,
+                        )
+                        .await?;
+                        let mut rest = Vec::new();
+                        server.read_to_end(&mut rest).await?;
+                        Ok::<(), BoxError>(())
+                    });
+                    let mut session = Session::admit(client, entity_admission()?).await?;
+                    assert_eq!(session.appearance_snapshot().as_ref(), Some(&before));
+                    let change = appearance::Change {
+                        context: before.catalogue.context,
+                        expected_root_revision: before.catalogue.root_revision,
+                        prior: before.catalogue.selected.clone(),
+                        selection,
+                        content_revision: "r1".into(),
+                    };
+                    let outcome = session
+                        .gated_command(25, 25, &change.encode().map_err(|e| format!("{e:?}"))?)
+                        .await?;
+                    assert_eq!(outcome.status, CommandStatus::Accepted);
+                    assert_eq!(
+                        appearance::ChangeResult::decode(&outcome.payload)
+                            .map_err(|e| format!("{e:?}"))?,
+                        appearance::ChangeResult::Committed(committed)
+                    );
+                    if result_first {
+                        // The result alone must not manufacture an observed selection.
+                        assert_eq!(session.last_server_sequence(), 41);
+                        assert_eq!(session.appearance_snapshot().as_ref(), Some(&before));
+                    }
+                    tokio::time::timeout(DEADLINE, async {
+                        while session.last_server_sequence() < 43 {
+                            session.service_liveness(Duration::from_millis(10)).await?;
+                        }
+                        Ok::<(), BoxError>(())
+                    })
+                    .await??;
+                    assert_eq!(session.last_server_sequence(), 43);
+                    let observed = session.appearance_snapshot().ok_or("appearance snapshot")?;
+                    assert_eq!(observed, expected, "result_first={result_first}");
+                    assert_ne!(observed, before);
+                    let encoded = observed.encode().map_err(|e| format!("{e:?}"))?;
+                    assert_eq!(
+                        appearance::Snapshot::decode(&encoded).map_err(|e| format!("{e:?}"))?,
+                        observed
+                    );
+                    // Full snapshot bytes retain their original contract; only the typed view advances.
+                    assert_eq!(
+                        session.gated_snapshot(21).ok_or("join snapshot")?.payload,
+                        initial
+                    );
+                    assert!(matches!(
+                        session.take_events().as_slice(),
+                        [
+                            SessionEvent::Appearance(AppliedDelta {
+                                value: AppearanceUpdate::Catalogue(_),
+                                ..
+                            }),
+                            SessionEvent::Appearance(AppliedDelta {
+                                value: AppearanceUpdate::Mappings(_),
+                                ..
+                            })
+                        ]
+                    ));
+                    inject_stale
+                        .send(())
+                        .map_err(|_| "peer stopped before stale revision")?;
+                    assert!(matches!(
+                        session.service_liveness(DEADLINE).await,
+                        Err(SessionError::Protocol(
+                            FoundationProtocolError::StateRevisionMismatch
+                        ))
+                    ));
+                    assert_eq!(session.appearance_snapshot().as_ref(), Some(&expected));
+                    assert!(session.take_events().is_empty());
+                    drop(session);
+                    peer.await??;
+                }
+                Ok::<(), BoxError>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "appearance snapshot thread failed")?
+}

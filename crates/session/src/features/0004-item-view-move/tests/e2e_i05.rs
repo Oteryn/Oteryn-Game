@@ -18,6 +18,8 @@ fn i05_equipment_transform_replays_and_malformed_delta_preserves_state() -> Resu
 
 async fn replay() -> Result<(), BoxError> {
     let (payload, expected) = fixture()?;
+    let selected = capture_inventory_profile::selected("i05", &[4, 6, 12, 14])?;
+    let expected_inventory = capture_inventory_profile::decode(&payload, &selected)?;
     let numbers = expected
         .split_whitespace()
         .map(str::parse::<u64>)
@@ -42,14 +44,14 @@ async fn replay() -> Result<(), BoxError> {
     let initial = CharacterInventory::default();
     let initial_payload = item_view::encode_character_inventory_with_equip_drop(&initial, true)
         .map_err(|error| format!("{error:?}"))?;
-    let selected = &[4, 6, 12, 14];
     let (client, mut server) = tokio::io::duplex(256 * 1024);
     let captured = payload.clone();
+    let selected_for_peer = selected.clone();
     let peer = tokio::spawn(async move {
         join_peer_with(
             &mut server,
-            selected,
-            selected,
+            &selected_for_peer,
+            &selected_for_peer,
             &[],
             item_snapshot(vec![])?,
             &[(9, base_revision, 1, initial_payload), (14, 1, 1, vec![])],
@@ -72,10 +74,14 @@ async fn replay() -> Result<(), BoxError> {
         tokio::io::AsyncReadExt::read_to_end(&mut server, &mut rest).await?;
         Ok::<(), BoxError>(())
     });
-    let mut admission = item_admission()?;
-    admission.supported_capabilities = selected;
+    let admission = Admission {
+        supported_capabilities: &selected,
+        ..item_admission()?
+    };
     let mut session = Session::admit(client, admission).await?;
+    assert_eq!(session.inventory(), Some(&initial));
     session.service_liveness(Duration::from_millis(20)).await?;
+    assert_eq!(session.inventory(), Some(&expected_inventory));
     let ring = session
         .inventory()
         .and_then(|inventory| {
@@ -90,7 +96,7 @@ async fn replay() -> Result<(), BoxError> {
     let before = session.inventory().cloned();
     let mut malformed = payload;
     malformed.pop();
-    assert!(item_view::decode_character_inventory_with_equip_drop(&malformed, true).is_err());
+    assert!(capture_inventory_profile::decode(&malformed, &selected).is_err());
     assert_eq!(session.inventory().cloned(), before);
     drop(session);
     peer.await??;

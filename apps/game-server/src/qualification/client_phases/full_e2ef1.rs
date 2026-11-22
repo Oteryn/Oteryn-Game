@@ -4,6 +4,36 @@ use super::*;
 #[path = "provision.rs"]
 mod original;
 
+// The authored unlocked key-door form is reachable from the qualification entry.
+// Far USE exercises approach/retry; it does not require a non-key door family.
+pub(super) const FAR_USE_DOOR: u16 = 1629;
+
+pub(super) fn far_use_route(
+    world: &BundleWorld,
+    from: TilePos,
+    target: TilePos,
+) -> Option<Vec<StepDirection>> {
+    let distance = |at: TilePos| {
+        if at.floor == target.floor {
+            at.x.abs_diff(target.x).max(at.y.abs_diff(target.y))
+        } else {
+            u16::MAX
+        }
+    };
+    // Choose the approach on an actual path to USE range, not a nearby tile across a wall.
+    let path = route(world, from, |at| {
+        distance(at) == 1 && (at.x == target.x || at.y == target.y)
+    })?;
+    let mut at = from;
+    for (index, direction) in path.iter().enumerate() {
+        if distance(at) == 3 {
+            return Some(path[..index].to_vec());
+        }
+        at = destination(world, at, *direction)?;
+    }
+    None
+}
+
 pub(super) fn item_index() -> TestResult<crate::content::item_ref::ItemDefinitionIndex> {
     original::item_index()
 }
@@ -12,6 +42,10 @@ pub(super) fn item_reference(
     id: u32,
 ) -> TestResult<std::num::NonZeroU32> {
     original::item_reference(index, id)
+}
+#[cfg(test)]
+pub(super) fn check_authored_use_targets(world: &BundleWorld, bytes: &[u8]) -> TestResult {
+    e2ef1::check_authored_use_targets(world, bytes)
 }
 /// The fixture provisioning alone, without the E2EF1 movement journey; for
 /// groups (creature sweep) that provision a character more than once.
@@ -277,19 +311,106 @@ mod e2ef1 {
         range: u16,
     ) -> TestResult<Object> {
         let from = tile(client.world_spatial().actor_position)?;
+        let (object, path) = approach_plan(world, from, objects, wanted, range)?;
+        walk(client, world, &path).await?;
+        Ok(object)
+    }
+
+    fn approach_plan(
+        world: &BundleWorld,
+        from: TilePos,
+        objects: &[Object],
+        wanted: impl Fn(Object) -> bool,
+        range: u16,
+    ) -> TestResult<(Object, Vec<StepDirection>)> {
         for &object in objects
             .iter()
             .filter(|object| wanted(**object) && distance(from, object.at) <= 160)
         {
-            if let Some(path) = route(world, from, |at| {
-                distance(at, object.at) == range
-                    && (range != 1 || at.x == object.at.x || at.y == object.at.y)
-            }) {
-                walk(client, world, &path).await?;
-                return Ok(object);
+            let path = if range == 3 {
+                far_use_route(world, from, object.at)
+            } else {
+                route(world, from, |at| {
+                    distance(at, object.at) == range
+                        && (range != 1 || at.x == object.at.x || at.y == object.at.y)
+                })
+            };
+            if let Some(path) = path {
+                return Ok((object, path));
             }
         }
         Err("no reachable exact authored target within town budget".into())
+    }
+
+    const LOCKED_REFUSAL_DOOR: u16 = 1631;
+
+    #[cfg(test)]
+    pub(super) fn check_authored_use_targets(world: &BundleWorld, bytes: &[u8]) -> TestResult {
+        let objects = objects(bytes)?;
+        let mut failures = Vec::new();
+        for (appearance, range, case) in [
+            (FAR_USE_DOOR, 3, "M02/far-use-retry"),
+            (LOCKED_REFUSAL_DOOR, 1, "M05/locked-refusal"),
+        ] {
+            let plan = approach_plan(
+                world,
+                TOWN,
+                &objects,
+                |object| object.appearance == appearance && world.facts().doors().at(object.at),
+                range,
+            );
+            match plan {
+                Ok((object, path)) => {
+                    let key = crate::map::view::placement_key(object.at, object.ordinal)
+                        .ok_or("door placement key")?;
+                    assert!(
+                        world.facts().doors().contains(key),
+                        "{case}: exact placement must be a registered door"
+                    );
+                    let landing = path
+                        .iter()
+                        .try_fold(TOWN, |at, direction| destination(world, at, *direction))
+                        .ok_or("door approach contains an invalid step")?;
+                    assert_eq!(
+                        distance(landing, object.at),
+                        range,
+                        "{case}: approach range"
+                    );
+                    if range == 3 {
+                        assert!(
+                            route(world, landing, |at| distance(at, object.at) == 1
+                                && (at.x == object.at.x || at.y == object.at.y))
+                            .is_some(),
+                            "{case}: the deferred USE must be able to reach the door"
+                        );
+                    }
+                    if range == 1 {
+                        assert!(
+                            landing.x == object.at.x || landing.y == object.at.y,
+                            "{case}: orthogonal approach"
+                        );
+                        assert!(
+                            matches!(
+                                world.facts().doors().toggle(key, 0, false, 1, false),
+                                Some(crate::map::door::DoorUse::Locked)
+                            ),
+                            "{case}: selected form must refuse as locked"
+                        );
+                        assert_eq!(
+                            world.facts().doors().revision(key),
+                            0,
+                            "{case}: refusal preserves revision"
+                        );
+                    }
+                }
+                Err(error) => failures.push(format!("{case}: {error}")),
+            }
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(failures.join("; ").into())
+        }
     }
 
     async fn m01(
@@ -439,12 +560,11 @@ mod e2ef1 {
         checks: &mut Checks,
         revisions: &mut BTreeMap<(TilePos, u8), u64>,
     ) -> TestResult {
-        // 1638/1639 is a plain door family (not a key, level or quest door).
         let object = approach(
             client,
             world,
             objects,
-            |o| o.appearance == 1638 && world.facts().doors().at(o.at),
+            |o| o.appearance == FAR_USE_DOOR && world.facts().doors().at(o.at),
             3,
         )
         .await?;
@@ -950,7 +1070,7 @@ mod e2ef1 {
             client,
             world,
             objects,
-            |o| o.appearance == 1628 && world.facts().doors().at(o.at),
+            |o| o.appearance == LOCKED_REFUSAL_DOOR && world.facts().doors().at(o.at),
             1,
         )
         .await?;

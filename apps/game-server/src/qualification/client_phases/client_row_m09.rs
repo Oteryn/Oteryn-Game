@@ -340,7 +340,7 @@ fn capture_inventory(client: &mut DevClientSession) {
         evidence("M09_CLIENT_CAPTURE write-error=no inventory delta followed committed fishing");
         return;
     };
-    let payload = match oteryn_protocol_oteryn::item_view::encode_character_inventory(&inventory) {
+    let payload = match inventory_capture::encode("m09", client.selected_capabilities(), &inventory) {
         Ok(payload) => payload,
         Err(error) => {
             evidence(&format!("M09_CLIENT_CAPTURE write-error=encode {error:?}"));

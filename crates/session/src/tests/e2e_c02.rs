@@ -52,15 +52,27 @@ fn c02_replays_server_ammunition_payload_and_rejects_invalid_delta() -> Result<(
                             "3447 1\n".into(),
                         )
                     };
+                let selected = capture_inventory_profile::selected("c02", &[4, 6, 12])?;
+                // Only the after view is captured. The synthetic join cannot invent unselected equipment.
+                let initial = if selected.contains(&item_view::CAPABILITY_ITEM_EQUIP_DROP_V1) {
+                    initial
+                } else {
+                    CharacterInventory::default()
+                };
+                let expected_inventory = capture_inventory_profile::decode(&payload, &selected)?;
                 let (client, mut server) = tokio::io::duplex(256 * 1024);
-                let initial_payload =
-                    item_view::encode_character_inventory_with_equip_drop(&initial, true)
-                        .map_err(|error| format!("{error:?}"))?;
+                let initial_payload = item_view::encode_character_inventory_with_appearances(
+                    &initial,
+                    selected.contains(&item_view::CAPABILITY_ITEM_EQUIP_DROP_V1),
+                    selected.contains(&item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+                )
+                .map_err(|error| format!("{error:?}"))?;
+                let selected_for_peer = selected.clone();
                 let peer = tokio::spawn(async move {
                     join_peer_with(
                         &mut server,
-                        &[4, 6, 12],
-                        &[4, 6, 12],
+                        &selected_for_peer,
+                        &selected_for_peer,
                         &[],
                         item_snapshot(vec![])?,
                         &[(9, 4, 1, initial_payload)],
@@ -95,8 +107,14 @@ fn c02_replays_server_ammunition_payload_and_rejects_invalid_delta() -> Result<(
                     .await?;
                     Ok::<(), BoxError>(())
                 });
-                let mut session = Session::admit(client, admission_with(&[4, 6, 12])?).await?;
+                let admission = Admission {
+                    supported_capabilities: &selected,
+                    ..admission_with(&[4, 6, 12])?
+                };
+                let mut session = Session::admit(client, admission).await?;
+                assert_eq!(session.inventory(), Some(&initial));
                 session.wait_for_events(DEADLINE).await?;
+                assert_eq!(session.inventory(), Some(&expected_inventory));
                 let visible = session
                     .inventory()
                     .into_iter()

@@ -145,3 +145,108 @@ fn e2e_w20a_world_clock_replay() -> Result<(), BoxError> {
         Ok(())
     })?
 }
+
+#[test]
+fn clock_capture_preserves_interleaved_chat_and_refuses_invalid_updates() -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::chat::{self, ChatLine, ChatRoomSet};
+    block_on(async {
+        // The real capture receives Game chat before its clock frame. A stale chat
+        // revision or an unnegotiated chat domain must still poison the session.
+        for (chat_selected, chat_base, valid) in
+            [(true, 3, true), (true, 2, false), (false, 3, false)]
+        {
+            let selected: &[u32] = if chat_selected { &[6, 7, 19] } else { &[6, 19] };
+            let line = ChatLine::Private {
+                speaker_name: "Game".into(),
+                text: "Welcome".into(),
+            };
+            let expected_line = line.clone();
+            let before = encode_world_clock(WorldClock {
+                tibian_minute: 366,
+                light_level: 54,
+                light_color: 215,
+            })
+            .map_err(|error| format!("clock snapshot: {error:?}"))?;
+            let after = encode_world_clock(WorldClock {
+                tibian_minute: 370,
+                light_level: 61,
+                light_color: 215,
+            })
+            .map_err(|error| format!("clock delta: {error:?}"))?;
+            let expected_clock = after.clone();
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                let mut snapshots = vec![(STATE_DOMAIN_WORLD_CLOCK, 4, 1, before)];
+                if chat_selected {
+                    snapshots.push((
+                        chat::STATE_DOMAIN_CHAT,
+                        3,
+                        chat::SNAPSHOT_TYPE_CHAT_V1,
+                        chat::encode_chat_rooms(ChatRoomSet::default()),
+                    ));
+                }
+                snapshots.sort_by_key(|(domain, _, _, _)| *domain);
+                join_peer_with(
+                    &mut server,
+                    selected,
+                    selected,
+                    &[],
+                    entity_snapshot(vec![]),
+                    &snapshots,
+                )
+                .await?;
+                let chat_payload =
+                    chat::encode_chat_line(&line).map_err(|error| format!("chat: {error:?}"))?;
+                write_frame(
+                    &mut server,
+                    &encode_state_delta(
+                        1,
+                        41,
+                        chat::STATE_DOMAIN_CHAT,
+                        chat_base,
+                        4,
+                        chat::DELTA_TYPE_CHAT_LINE_V1,
+                        &chat_payload,
+                    )?,
+                )
+                .await?;
+                write_frame(
+                    &mut server,
+                    &encode_state_delta(1, 42, STATE_DOMAIN_WORLD_CLOCK, 4, 5, 1, &after)?,
+                )
+                .await?;
+                Ok::<_, BoxError>(())
+            });
+            let mut session = Session::admit(client, admission_with(selected)?).await?;
+            let result = session.read_gated_delta(STATE_DOMAIN_WORLD_CLOCK, 1).await;
+            peer.await??;
+            if valid {
+                let delta = result?;
+                assert_eq!(
+                    (
+                        delta.server_sequence,
+                        delta.base_revision,
+                        delta.new_revision
+                    ),
+                    (42, 4, 5)
+                );
+                assert_eq!(delta.payload, expected_clock);
+                let events = session.take_events();
+                assert!(matches!(events.as_slice(), [SessionEvent::ChatLine(delta)]
+                    if delta.value == expected_line && delta.server_sequence == 41
+                        && delta.base_revision == 3 && delta.new_revision == 4));
+                assert_eq!(
+                    session.chat_log().map(|log| log.lines.back()),
+                    Some(Some(&expected_line))
+                );
+            } else {
+                assert!(result.is_err(), "invalid interleaved chat must be refused");
+                assert!(matches!(
+                    session.read_gated_delta(STATE_DOMAIN_WORLD_CLOCK, 1).await,
+                    Err(SessionError::SessionUnusable)
+                ));
+            }
+        }
+        Ok(())
+    })?
+}

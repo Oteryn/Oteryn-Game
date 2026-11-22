@@ -132,6 +132,7 @@ fn block_on<F: std::future::Future>(
 
 // Include topic files in this module to preserve test paths and private fixture access.
 include!("client_tests_admission.rs");
+include!("client_tests_capabilities.rs");
 include!("client_tests_snapshots.rs");
 include!("client_tests_command_fixtures.rs");
 include!("client_tests_commands.rs");

@@ -6,7 +6,7 @@
 //! `crates/session/src/tests/e2e_w19a.rs` replays them through `Session::apply_state_delta`.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
-use oteryn_protocol_oteryn::{item_view, world_object as use_wire};
+use oteryn_protocol_oteryn::world_object as use_wire;
 use std::collections::BTreeMap;
 
 const BAG_ID: u32 = 6506;
@@ -73,7 +73,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .find(|item| item.item_definition_ref == bag_ref)
         .copied()
         .ok_or("step=carry the Character holds no blue surprise bag")?;
-    let before_payload = item_view::encode_character_inventory_with_equip_drop(&before, true)
+    let before_payload = inventory_capture::encode("w19a", client.selected_capabilities(), &before)
         .map_err(|error| format!("inventory encode: {error:?}"))?;
     let held_before = units(&before);
 
@@ -125,7 +125,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if !spent || minted.len() != 1 || !rewards.contains(&minted[0]) || held_after.get(&minted[0]).copied().unwrap_or(0) <= held_before.get(&minted[0]).copied().unwrap_or(0) {
         return Err(format!("step=outcome before={held_before:?} after={held_after:?}").into());
     }
-    let after_payload = item_view::encode_character_inventory_with_equip_drop(&after, true)
+    let after_payload = inventory_capture::encode("w19a", client.selected_capabilities(), &after)
         .map_err(|error| format!("inventory encode: {error:?}"))?;
     capture("w19a-before.bin", &before_payload);
     capture("w19a-after.bin", &after_payload);

@@ -73,7 +73,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             _ => None,
         })
         .ok_or("committed pick refine sent no inventory delta")?;
-    let delta_payload = item_view::encode_character_inventory(&delta.value)
+    let delta_payload = inventory_capture::encode("i12", client.selected_capabilities(), &delta.value)
         .map_err(|error| format!("inventory capture: {error:?}"))?;
     capture(&snapshot.payload, &delta_payload, &reply.payload, snapshot.revision, &delta);
     Ok("committed-inventory-delta-captured".into())

@@ -180,6 +180,17 @@ pub struct VisibleAppearance {
 }
 
 impl<S: SessionStream> Session<S> {
+    /// Clone the current validated appearance catalogue and dictionary.
+    ///
+    /// This projects the reducer state; `gated_snapshot` retains the last full snapshot bytes.
+    pub fn appearance_snapshot(&self) -> Option<wire::Snapshot> {
+        self.appearance.as_ref().map(|state| wire::Snapshot {
+            catalogue: state.catalogue.clone(),
+            bindings: state.bindings.values().cloned().collect(),
+            high_water: state.high_water,
+        })
+    }
+
     /// Resolve only the exact visible incarnation and dictionary reference.
     pub fn visible_appearances(&self) -> Vec<VisibleAppearance> {
         self.entities

@@ -23,6 +23,7 @@ use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObs
 use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError};
 /// Default support sent by this harness, shared with the native session.
 pub use oteryn_session::CLIENT_SUPPORTED_CAPABILITIES;
+pub use oteryn_session::GatedSnapshot;
 pub use oteryn_session::SessionError;
 use oteryn_session::{Admission, Session};
 pub use oteryn_session::{
@@ -233,6 +234,15 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
 /// `connect_and_join`'s full join, but keeps the admitted connection: see
 /// `oteryn_session::Session` for the sequence, revision and liveness discipline it carries.
 pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSession, DevClientError> {
+    connect_session_with_capabilities(request, CLIENT_SUPPORTED_CAPABILITIES).await
+}
+
+/// Connects with the caller's complete capability offer, including any explicitly opted-in
+/// native session routes. The session still validates the server's selected subset and snapshot.
+pub async fn connect_session_with_capabilities(
+    request: JoinRequest<'_>,
+    supported_capabilities: &[u32],
+) -> Result<DevClientSession, DevClientError> {
     let started = Instant::now();
     let stream = oteryn_session_tcp::connect(TcpConnect {
         address: request.address,
@@ -250,7 +260,7 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
             character_id: request.character_id,
             admission_material: request.admission_material,
             client_build_id: request.client_build_id,
-            supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+            supported_capabilities,
             deadline: request.deadline,
         },
     )

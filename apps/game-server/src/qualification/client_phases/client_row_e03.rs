@@ -3,7 +3,6 @@
 //! views are session-owned and re-encoded with the production encoder (C09/I11 practice).
 //! The ordinary starter carries no coin stack, so the row reports FAIL until one is reachable.
 use super::*;
-use oteryn_protocol_oteryn::item_view;
 
 const COINS: [u32; 3] = [3031, 3035, 3043];
 
@@ -28,7 +27,7 @@ fn pairs(client: &oteryn_dev_client::DevClientSession) -> String {
 
 fn encoded(client: &oteryn_dev_client::DevClientSession) -> TestResult<Vec<u8>> {
     let inventory = client.inventory().ok_or("inventory absent")?;
-    item_view::encode_character_inventory(inventory)
+    inventory_capture::encode("e03", client.selected_capabilities(), inventory)
         .map_err(|error| format!("inventory encode: {error:?}").into())
 }
 

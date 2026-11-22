@@ -1,6 +1,6 @@
 //! I14 client replay capture. The native session consumer is
 //! `crates/session/src/domain_dispatch.rs::Session::apply_state_delta`; it decodes a Character
-//! Inventory payload with `decode_character_inventory_with_equip_drop`, then replaces the store
+//! Inventory payload with `decode_character_inventory_with_appearances`, then replaces the store
 //! returned by `crates/session/src/session_access.rs::Session::inventory`.
 use super::*;
 use oteryn_dev_client::SessionEvent;
@@ -56,17 +56,12 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         let writes = [
             (
                 "i14-inventory-before.bin",
-                oteryn_protocol_oteryn::item_view::encode_character_inventory_with_equip_drop(
-                    &before, true,
-                )
+                inventory_capture::encode("i14", client.selected_capabilities(), &before)
                     .map_err(|error| format!("I14 before codec: {error:?}"))?,
             ),
             (
                 "i14-inventory-after.bin",
-                oteryn_protocol_oteryn::item_view::encode_character_inventory_with_equip_drop(
-                    &delta.value,
-                    true,
-                )
+                inventory_capture::encode("i14", client.selected_capabilities(), &delta.value)
                     .map_err(|error| format!("I14 after codec: {error:?}"))?,
             ),
             ("i14-expected.txt", expected.into_bytes()),

@@ -49,10 +49,9 @@ fn blue_surprise_bag_inventory_payload_replays_and_invalid_delta_is_atomic() -> 
 {
     block_on(async {
         let (before_payload, after_payload, expected) = captured_or_fixture()?;
-        let before = item_view::decode_character_inventory_with_equip_drop(&before_payload, true)
-            .map_err(|error| format!("before inventory: {error:?}"))?;
-        let _after = item_view::decode_character_inventory_with_equip_drop(&after_payload, true)
-            .map_err(|error| format!("after inventory: {error:?}"))?;
+        let selected = capture_inventory_profile::selected("w19a", &[4, 6, 12])?;
+        let before = capture_inventory_profile::decode(&before_payload, &selected)?;
+        let after = capture_inventory_profile::decode(&after_payload, &selected)?;
         let before_visible = visible(&before);
         let (client, mut server) = tokio::io::duplex(256 * 1024);
         let (valid_sent, valid_received) = tokio::sync::oneshot::channel();
@@ -61,10 +60,15 @@ fn blue_surprise_bag_inventory_payload_replays_and_invalid_delta_is_atomic() -> 
             join_peer_with(
                 &mut server,
                 CLIENT_SUPPORTED_CAPABILITIES,
-                &[4, 6, 12],
+                &selected,
                 &[],
                 item_snapshot(vec![])?,
-                &[inventory_domain(3, &before)?],
+                &[(
+                    STATE_DOMAIN_CHARACTER_INVENTORY,
+                    3,
+                    item_view::SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
+                    before_payload,
+                )],
             )
             .await?;
             write_frame(
@@ -98,12 +102,14 @@ fn blue_surprise_bag_inventory_payload_replays_and_invalid_delta_is_atomic() -> 
             Ok::<(), BoxError>(())
         });
         let mut session = Session::admit(client, item_admission()?).await?;
+        assert_eq!(session.inventory(), Some(&before));
         assert_eq!(
             visible(session.inventory().ok_or("inventory absent at admission")?),
             before_visible
         );
         valid_received.await?;
         session.service_liveness(Duration::from_millis(20)).await?;
+        assert_eq!(session.inventory(), Some(&after));
         assert_eq!(
             visible(session.inventory().ok_or("inventory absent after replay")?),
             expected

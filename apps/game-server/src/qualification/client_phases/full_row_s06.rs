@@ -87,12 +87,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 fn snapshot(client: &mut DevClientSession) -> TestResult<appearance::Snapshot> {
-    let state = client
+    client
         .session_mut()
-        .gated_snapshot(appearance::STATE_DOMAIN_APPEARANCE)
-        .ok_or("step=appearance-snapshot observed=missing need=appearance-state-domain")?;
-    appearance::Snapshot::decode(&state.payload)
-        .map_err(|error| format!("step=appearance-snapshot observed=decode-{error:?}").into())
+        .appearance_snapshot()
+        .ok_or_else(|| "step=appearance-snapshot observed=missing need=appearance-state-domain".into())
 }
 
 fn content_revision() -> TestResult<String> {
@@ -138,6 +136,38 @@ fn own_binding<'a>(
         .ok_or_else(|| "own appearance binding absent".into())
 }
 
+/// A commit result may precede both appearance deltas. Observe their validated state before use.
+pub(super) async fn wait_for_selection(
+    client: &mut DevClientSession,
+    committed: u64,
+    selection: &appearance::Selection,
+) -> TestResult<appearance::Snapshot> {
+    let result = verdict::indexed_timeout(Duration::from_secs(5), async {
+        loop {
+            let state = snapshot(client)?;
+            let binding = own_binding(client, &state)?;
+            if state.catalogue.root_revision == committed
+                && state.catalogue.selected.as_ref().is_some_and(|selected| {
+                    selected.selection == *selection && selected.revision == committed
+                })
+                && binding.root_revision == committed
+                && binding.selection_revision == Some(committed)
+            {
+                return Ok::<_, Box<dyn std::error::Error>>(state);
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
+    })
+    .await;
+    match result {
+        Ok(result) => result,
+        Err(_) => Err(format!(
+            "step=appearance-observation observed=timeout-5s need=catalogue-and-own-binding-revision-{committed}"
+        )
+        .into()),
+    }
+}
+
 async fn outfit_and_refusal(
     row: &mut Row,
     client: &mut DevClientSession,
@@ -166,7 +196,7 @@ async fn outfit_and_refusal(
         appearance::ChangeResult::Committed(revision) if status == CommandStatus::Accepted => revision,
         observed => return Err(format!("step=outfit-select observed=status-{status:?}-result-{observed:?} need=committed-selection").into()),
     };
-    let after = snapshot(client)?;
+    let after = wait_for_selection(client, committed, &selection).await?;
     if after.catalogue.selected.as_ref().map(|s| &s.selection) != Some(&selection)
         || after.catalogue.root_revision != committed
         || own_binding(client, &after)?.selection_revision
@@ -264,7 +294,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         appearance::ChangeResult::Committed(revision) if status == CommandStatus::Accepted => revision,
         observed => return Err(format!("step=mount-select observed=status-{status:?}-result-{observed:?} need=tamed-mount-selection").into()),
     };
-    let mounted_state = snapshot(&mut client)?;
+    let mounted_state = wait_for_selection(&mut client, committed, &mounted).await?;
     let mounted_selected = mounted_state.catalogue.selected.as_ref();
     let mounted_binding = own_binding(&client, &mounted_state)?;
     if mounted_selected.map(|selected| &selected.selection) != Some(&mounted)

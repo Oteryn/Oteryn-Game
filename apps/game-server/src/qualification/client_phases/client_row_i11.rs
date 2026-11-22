@@ -169,7 +169,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         before_bread + 1,
     )
     .await?;
-    let delta_payload = item_view::encode_character_inventory(&delta.value)
+    let delta_payload = inventory_capture::encode("i11", client.selected_capabilities(), &delta.value)
         .map_err(|error| format!("I11 inventory capture encode: {error:?}"))?;
     capture("i11-snapshot.bin", &snapshot.payload);
     capture("i11-inventory.bin", &delta_payload);

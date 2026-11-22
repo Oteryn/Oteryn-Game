@@ -7,6 +7,8 @@ mod activity_scope_tests;
 #[path = "tests/analyser.rs"]
 mod analyser_tests;
 mod appearance_session_tests;
+#[path = "tests/capture_inventory_profile.rs"]
+pub(super) mod capture_inventory_profile;
 #[path = "cast_chat/tests.rs"]
 mod cast_chat_tests;
 #[path = "features/0083-channel-list/tests.rs"]

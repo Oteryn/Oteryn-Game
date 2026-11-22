@@ -64,7 +64,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .iter()
         .find(|row| row.slot == items::EquipmentSlot::Ring)
         .ok_or("i05-ring-slot-empty-after-reequip")?;
-    let payload = items::encode_character_inventory_with_equip_drop(&delta.value, true)
+    let payload = inventory_capture::encode("i05", client.selected_capabilities(), &delta.value)
         .map_err(|error| format!("i05-capture-encode:{error:?}"))?;
     write_capture(
         "i05-inventory.bin",

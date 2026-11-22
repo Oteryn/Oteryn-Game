@@ -6,7 +6,7 @@
 //! The inventory views are session-owned views re-encoded by the row with the production encoder
 //! (the C09/I11 practice); the quest payloads are the raw bytes the client received.
 use super::*;
-use crate::tests::{BoxError, admission_with, join_peer_with};
+use crate::tests::{BoxError, admission_with, capture_inventory_profile, join_peer_with};
 use oteryn_protocol_oteryn::{encode_state_delta, item_view};
 
 const SELECTED: &[u32] = &[
@@ -131,6 +131,11 @@ fn value<'a>(expected: &'a str, key: &str) -> Result<&'a str, BoxError> {
 fn e2e_w15b_reward_chest_claim_replay() -> Result<(), BoxError> {
     crate::tests::block_on(async {
         let capture = fixture()?;
+        let selected = capture_inventory_profile::selected("w15b", SELECTED)?;
+        let expected_before =
+            capture_inventory_profile::decode(&capture.inventory_before, &selected)?;
+        let expected_after =
+            capture_inventory_profile::decode(&capture.inventory_after, &selected)?;
         let expected = capture.expected.as_str();
         let (client, mut server) = tokio::io::duplex(256 * 1024);
         let (before, after) = (
@@ -150,11 +155,12 @@ fn e2e_w15b_reward_chest_claim_replay() -> Result<(), BoxError> {
         };
         let (before_seq, before_base, before_new) = numbers("list_before")?;
         let (after_seq, after_base, after_new) = numbers("list_after")?;
+        let selected_for_peer = selected.clone();
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                SELECTED,
-                SELECTED,
+                &selected_for_peer,
+                &selected_for_peer,
                 &[],
                 entity_snapshot()?,
                 &[
@@ -202,7 +208,11 @@ fn e2e_w15b_reward_chest_claim_replay() -> Result<(), BoxError> {
             std::future::pending::<()>().await;
             Ok::<(), BoxError>(())
         });
-        let mut session = match Session::admit(client, admission_with(SELECTED)?).await {
+        let admission = Admission {
+            supported_capabilities: &selected,
+            ..admission_with(SELECTED)?
+        };
+        let mut session = match Session::admit(client, admission).await {
             Ok(session) => session,
             Err(error) => {
                 peer.abort();
@@ -210,6 +220,7 @@ fn e2e_w15b_reward_chest_claim_replay() -> Result<(), BoxError> {
                 return Err(format!("W15b admission: {error:?}; peer={peer_error:?}").into());
             }
         };
+        assert_eq!(session.inventory(), Some(&expected_before));
         assert_eq!(units(session.inventory()), value(expected, "before_units")?);
         assert_eq!(
             session
@@ -241,6 +252,7 @@ fn e2e_w15b_reward_chest_claim_replay() -> Result<(), BoxError> {
             }
             session.service_liveness(Duration::from_millis(50)).await?;
         }
+        assert_eq!(session.inventory(), Some(&expected_after));
         assert_ne!(
             value(expected, "before_units")?,
             value(expected, "after_units")?

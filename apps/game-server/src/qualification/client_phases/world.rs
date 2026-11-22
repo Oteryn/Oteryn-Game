@@ -322,6 +322,8 @@ include!("full_e2ef19_mount.rs");
 include!("full_e2ef18_mount.rs");
 include!("full_e2ef20_mount.rs");
 include!("full_e2ef5_mount.rs");
+#[path = "inventory_capture.rs"]
+mod inventory_capture;
 #[path = "map_journey.rs"]
 mod map_journey;
 include!("native_content.rs");
@@ -3307,6 +3309,14 @@ async fn connect_world(
     connect_character(clients, tag, 1).await
 }
 
+async fn connect_world_with_capabilities(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    additional_capabilities: &[u32],
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    connect_character_with_capabilities(clients, tag, 1, additional_capabilities).await
+}
+
 fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT_CONNECTION: AtomicU64 = AtomicU64::new(1);
@@ -3330,6 +3340,15 @@ pub(super) async fn connect_character(
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
+    connect_character_with_capabilities(clients, tag, index, &[]).await
+}
+
+async fn connect_character_with_capabilities(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+    additional_capabilities: &[u32],
+) -> TestResult<oteryn_dev_client::DevClientSession> {
     wait_character_released(clients, index).await?;
     let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
     let (nonce, attempt) = fresh_grant_material(tag)?;
@@ -3346,16 +3365,23 @@ pub(super) async fn connect_character(
         attempt,
     };
     let token = sign_grant(&grant, now_seconds()?);
-    let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
-        address: clients.address,
-        server_name: "localhost",
-        root_certificate: clients.certificate,
-        schema_revision: 1,
-        character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
-        admission_material: token.as_bytes(),
-        client_build_id: "oteryn-dev-client/world-qualification",
-        deadline: Duration::from_secs(20),
-    })
+    let mut capabilities = oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES.to_vec();
+    capabilities.extend_from_slice(additional_capabilities);
+    capabilities.sort_unstable();
+    capabilities.dedup();
+    let client = oteryn_dev_client::connect_session_with_capabilities(
+        oteryn_dev_client::JoinRequest {
+            address: clients.address,
+            server_name: "localhost",
+            root_certificate: clients.certificate,
+            schema_revision: 1,
+            character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
+            admission_material: token.as_bytes(),
+            client_build_id: "oteryn-dev-client/world-qualification",
+            deadline: Duration::from_secs(20),
+        },
+        &capabilities,
+    )
     .await?;
     verdict::Harness::global().progress("admission");
     Ok(client)
@@ -3454,12 +3480,16 @@ pub(crate) fn smoke() -> TestResult {
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>()
         .into();
+    #[cfg(test)]
+    let use_target_bytes = compiled.bytes.clone();
     let world = load_world(
         compiled.bytes,
         &pin,
         WorldId::decode(&v7(1, 2))?,
         ChannelId::decode(&v7(1, 3))?,
     )?;
+    #[cfg(test)]
+    provisioning::check_authored_use_targets(world, &use_target_bytes)?;
     assert!(
         world
             .base()

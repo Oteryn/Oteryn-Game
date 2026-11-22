@@ -2,6 +2,7 @@
 //! snapshots, while `domain_dispatch.rs::Session::apply_state_delta` consumes their deltas.
 //! The visible accessors are `session_access.rs::Session::{inventory,actor_vitals}`.
 use crate::snapshot_state::SnapshotState;
+use crate::tests::capture_inventory_profile;
 use oteryn_protocol_oteryn::{DomainSnapshot, actor_spell, item_view};
 
 type TestError = Box<dyn std::error::Error>;
@@ -34,8 +35,12 @@ fn c06_real_payloads_replay_into_client_inventory_and_vitals() -> Result<(), Tes
                 "145 150 30 55 7 0\n".into(),
             )
         };
+    let selected =
+        capture_inventory_profile::selected("c06", &[4]).map_err(|error| error.to_string())?;
+    let expected_inventory = capture_inventory_profile::decode(&inventory_payload, &selected)
+        .map_err(|error| error.to_string())?;
     let body = snapshot_body(&inventory_payload, &vitals_payload)?;
-    let state = SnapshotState::decode(&body, 41, &[4], None, None)?;
+    let state = SnapshotState::decode(&body, 41, &selected, None, None)?;
     let values = expected
         .split_whitespace()
         .map(str::parse::<u32>)
@@ -58,13 +63,14 @@ fn c06_real_payloads_replay_into_client_inventory_and_vitals() -> Result<(), Tes
         ),
         (*health, *max_health, *mana, *max_mana, *soul)
     );
+    assert_eq!(inventory, &expected_inventory);
     assert_eq!(u32::try_from(inventory.entries.len())?, *entries);
 
     let retained = state.clone();
     let mut invalid = vitals_payload;
     invalid.push(0);
     let invalid_body = snapshot_body(&inventory_payload, &invalid)?;
-    assert!(SnapshotState::decode(&invalid_body, 42, &[4], None, Some(&state)).is_err());
+    assert!(SnapshotState::decode(&invalid_body, 42, &selected, None, Some(&state)).is_err());
     assert_eq!(retained.actor_vitals, state.actor_vitals);
     assert_eq!(retained.inventory, state.inventory);
     Ok(())

@@ -17,7 +17,7 @@ fn distance(a: TilePos, b: TilePos) -> u16 {
     }
 }
 
-fn plain_doors(bytes: &[u8], world: &BundleWorld) -> TestResult<Vec<Door>> {
+fn far_use_doors(bytes: &[u8], world: &BundleWorld) -> TestResult<Vec<Door>> {
     let mut doors = Vec::new();
     oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
         for tile in sector.tiles {
@@ -26,7 +26,7 @@ fn plain_doors(bytes: &[u8], world: &BundleWorld) -> TestResult<Vec<Door>> {
                 let appearance = crate::map::palette_appearance(
                     &manifest.palette[item.palette as usize].key,
                 );
-                if appearance == Some(1638) && world.facts().doors().at(at) {
+                if appearance == Some(provisioning::FAR_USE_DOOR) && world.facts().doors().at(at) {
                     doors.push(Door {
                         at,
                         ordinal: u8::try_from(ordinal).map_err(|_| {
@@ -69,13 +69,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xa2).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let (door, path) = plain_doors(&bytes, world)?
+    let (door, path) = far_use_doors(&bytes, world)?
         .into_iter()
         .filter_map(|door| {
-            route(world, from, |at| distance(at, door.at) == 3).map(|path| (door, path))
+            provisioning::far_use_route(world, from, door.at).map(|path| (door, path))
         })
         .min_by_key(|(_, path)| path.len())
-        .ok_or("M02 client capture has no reachable plain door")?;
+        .ok_or("M02 client capture has no reachable door for far USE")?;
     walk(&mut client, world, &path).await?;
     client.take_events();
     let key = crate::map::view::placement_key(door.at, door.ordinal)

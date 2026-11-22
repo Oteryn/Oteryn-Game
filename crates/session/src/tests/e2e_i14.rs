@@ -2,7 +2,7 @@
 //!
 //! The production consumer under test is `Session::apply_state_delta` in
 //! `crates/session/src/domain_dispatch.rs`; its Character Inventory arm calls
-//! `decode_character_inventory_with_equip_drop`, updates `Session::inventory`, and emits
+//! `decode_character_inventory_with_appearances`, updates `Session::inventory`, and emits
 //! `SessionEvent::Inventory`. The client-visible accessor is `Session::inventory` in
 //! `crates/session/src/session_access.rs`.
 use super::*;
@@ -45,14 +45,17 @@ fn i14_real_consumable_inventory_payload_replays_and_invalid_delta_is_atomic()
         let &[sequence, base, new, expected_meat] = numbers.as_slice() else {
             return Err("invalid I14 capture metadata".into());
         };
-        let selected: &'static [u32] = &[4, 6, 12];
+        let selected = capture_inventory_profile::selected("i14", &[4, 6, 12])?;
+        let expected_before = capture_inventory_profile::decode(&before, &selected)?;
+        let expected_after = capture_inventory_profile::decode(&after, &selected)?;
         let (client, mut server) = tokio::io::duplex(256 * 1024);
         let before_for_peer = before.clone();
+        let selected_for_peer = selected.clone();
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                selected,
-                selected,
+                &selected_for_peer,
+                &selected_for_peer,
                 &[],
                 item_snapshot(vec![])?,
                 &[(9, base, 1, before_for_peer)],
@@ -62,15 +65,19 @@ fn i14_real_consumable_inventory_payload_replays_and_invalid_delta_is_atomic()
             let _ = server.read_to_end(&mut rest).await;
             Ok::<(), BoxError>(())
         });
-        let mut admission = item_admission()?;
-        admission.supported_capabilities = selected;
+        let admission = Admission {
+            supported_capabilities: &selected,
+            ..item_admission()?
+        };
         let mut session = Session::admit(client, admission).await?;
+        assert_eq!(session.inventory(), Some(&expected_before));
         let frame = encode_state_delta(1, sequence, 9, base, new, 1, &after)?;
         let payload = decode_wire_envelope(&frame)?.payload().to_vec();
         assert!(matches!(
             session.apply_state_delta(sequence, &payload)?,
             SessionEvent::Inventory(_)
         ));
+        assert_eq!(session.inventory(), Some(&expected_after));
         let meat = session
             .inventory()
             .ok_or("inventory not stored")?

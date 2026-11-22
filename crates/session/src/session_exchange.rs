@@ -307,17 +307,8 @@ impl<S: SessionStream> Session<S> {
                 .await?;
             let delta = decode_state_delta(&payload)?;
             if delta.domain_id != domain_id {
-                if !matches!(
-                    domain_id,
-                    npc_service::STATE_DOMAIN_NPC_CONVERSATION
-                        | npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW
-                        | player_trade::STATE_DOMAIN_PLAYER_TRADE
-                ) {
-                    return Err(SessionError::UnexpectedDomain {
-                        expected: domain_id,
-                        actual: delta.domain_id,
-                    });
-                }
+                // Selected domains share one ordered stream. Retain intervening
+                // updates through their normal capability, type and revision checks.
                 let event = self.apply_state_delta(server_sequence, &payload)?;
                 self.queue_event(event)?;
                 continue;

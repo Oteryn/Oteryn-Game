@@ -1,5 +1,28 @@
 //! Browse Field over the real node; reference: `client_e2e/browse_field.rs`.
 use super::*;
+
+fn panel_at(
+    position: ActorPosition,
+) -> oteryn_dev_client::client_ui::browse_field::BrowseFieldPanel {
+    oteryn_dev_client::client_ui::browse_field::BrowseFieldPanel {
+        selected: true,
+        x: position.x,
+        y: position.y,
+        floor: position.floor,
+        ..Default::default()
+    }
+}
+
+fn check_browsed_tile(
+    position: ActorPosition,
+    observed: oteryn_protocol_oteryn::item_view::WorldTilePosition,
+) -> TestResult {
+    if observed.x != position.x || observed.y != position.y || observed.floor != position.floor {
+        return Err("browse field returned a different tile".into());
+    }
+    Ok(())
+}
+
 pub(super) async fn browse_field(
     client: &mut oteryn_dev_client::DevClientSession,
 ) -> TestResult<()> {
@@ -14,13 +37,7 @@ pub(super) async fn browse_field(
         return Ok(());
     }
     let position = client.world_spatial().actor_position;
-    let mut panel = client_ui::browse_field::BrowseFieldPanel {
-        selected: true,
-        x: position.x,
-        y: position.y,
-        floor: -position.floor,
-        ..Default::default()
-    };
+    let mut panel = panel_at(position);
     let command = client_ui::browse_field::open(&mut panel).ok_or("browse field request")?;
     let response = client_runtime::raw_feature::send(
         client.session_mut(),
@@ -53,12 +70,7 @@ pub(super) async fn browse_field(
         .find(|view| view.browse.is_some())
         .ok_or("browse view delta missing")?;
     let browse = view.browse.as_ref().ok_or("browse page missing")?;
-    if browse.position.x != position.x
-        || browse.position.y != position.y
-        || browse.position.floor != -position.floor
-    {
-        return Err("browse field returned a different tile".into());
-    }
+    check_browsed_tile(position, browse.position)?;
     evidence(&format!(
         "mechanic=browse_field state=opened position={position:?} entries={} view_id={} revision={}",
         view.entries.len(),
@@ -97,6 +109,49 @@ pub(super) async fn browse_field(
         .is_empty()
     {
         return Err("browse field remained open".into());
+    }
+    Ok(())
+}
+
+#[test]
+fn browse_panel_and_readback_keep_the_observed_global_floor() -> TestResult {
+    use oteryn_protocol_oteryn::browse_field::{BrowseFieldIntent, decode_browse_field_intent};
+    use oteryn_protocol_oteryn::item_view::WorldTilePosition;
+    for floor in [0, 7, 15] {
+        let position = ActorPosition {
+            x: 32369,
+            y: 32238,
+            floor,
+        };
+        let expected = WorldTilePosition {
+            x: position.x,
+            y: position.y,
+            floor,
+        };
+        let mut panel = panel_at(position);
+        let command = oteryn_dev_client::client_ui::browse_field::open(&mut panel)
+            .ok_or("browse field request refused the observed tile")?;
+        assert_eq!(
+            decode_browse_field_intent(&command.payload),
+            Ok(BrowseFieldIntent::Open { position: expected })
+        );
+        check_browsed_tile(position, expected)?;
+        for wrong in [
+            WorldTilePosition {
+                x: expected.x + 1,
+                ..expected
+            },
+            WorldTilePosition {
+                y: expected.y + 1,
+                ..expected
+            },
+            WorldTilePosition {
+                floor: (floor + 1) % 16,
+                ..expected
+            },
+        ] {
+            assert!(check_browsed_tile(position, wrong).is_err());
+        }
     }
     Ok(())
 }

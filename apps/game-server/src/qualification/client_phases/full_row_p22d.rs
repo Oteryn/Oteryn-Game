@@ -1,9 +1,8 @@
 //! P22d (live tracker refresh on kill progress):
 //! 1. Admit the node-boot character, track a race and note its kill count.
 //! 2. Walk to a compiled spawn of that race, kill one creature and wait for the live frames.
-//! 3. The server pushes a Cyclopedia tracker StateDelta (domain 98); the native session has no
-//!    decoder for that domain and fails with `UnsupportedPushedDomain`. The row therefore
-//!    confirms the credit through a fresh admission (kill count +1) and reports the client gap.
+//! 3. Require the live Cyclopedia tracker update (domain 98) and confirm the same kill count
+//!    through a fresh admission. An unsupported pushed domain remains a client gap.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
@@ -82,6 +81,50 @@ fn is_domain_gap(error: &str) -> bool {
         || (lowered.contains("unsupported") && lowered.contains("98"))
 }
 
+fn live_tracker_kills(events: Vec<oteryn_dev_client::SessionEvent>) -> TestResult<Option<u32>> {
+    let mut observed = None;
+    for event in events {
+        if let oteryn_dev_client::SessionEvent::GatedSnapshotReplaced(delta) = event
+            && delta.value.domain_id == tr::STATE_DOMAIN_CYCLOPEDIA_TRACKER
+        {
+            expect(
+                delta.value.snapshot_type == tr::SNAPSHOT_TYPE_CYCLOPEDIA_TRACKER_V1,
+                "live-refresh",
+                "unexpected-tracker-snapshot-type",
+            )?;
+            let (bestiary, _) = tr::decode_domain_snapshot(&delta.value.payload)
+                .ok_or("step=live-refresh;observed=undecodable-tracker-snapshot")?;
+            observed = bestiary.entries.iter()
+                .find(|entry| entry.creature_key == RAT)
+                .map(|entry| entry.kill_count);
+        }
+    }
+    Ok(observed)
+}
+
+fn finish_live_refresh(
+    before: u32,
+    after: u32,
+    killed: bool,
+    live_kills: Option<u32>,
+    push_error: Option<String>,
+) -> TestResult<Verdict> {
+    expect(
+        before.checked_add(1) == Some(after),
+        "kill-credit",
+        format!("before:{before},after:{after},killed:{killed},error:{push_error:?}"),
+    )?;
+    match push_error {
+        Some(error) if is_domain_gap(&error) => Ok(("MISSING-CLIENT", GAP.to_owned())),
+        Some(error) => Err(format!("step=live-refresh;observed=session-error:{error}").into()),
+        None if killed && live_kills == Some(after) => Ok((
+            "PASS",
+            "domain-98-push-and-fresh-admission-kill-credit-validated".to_owned(),
+        )),
+        None => Err(format!("step=live-refresh;observed=live-kills:{live_kills:?},durable-kills:{after},killed:{killed}").into()),
+    }
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let best = tr::COMMAND_TYPE_BESTIARY_TRACKER;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -93,7 +136,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xd6).await?;
+    let mut client = connect_world_with_capabilities(clients, 0xd6, &[tr::CAPABILITY_CYCLOPEDIA_TRACKER_V1]).await?;
     selected(&client)?;
     let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Add, RAT)).await?;
     expect(
@@ -136,38 +179,34 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut push_error: Option<String> = None;
     let mut killed = false;
+    let mut live_kills = live_tracker_kills(client.take_events())?;
     while tokio::time::Instant::now() < deadline {
         if let Err(error) = client.service_liveness(Duration::from_millis(50)).await {
             push_error = Some(error.to_string());
             break;
         }
-        client.take_events();
+        if let Some(kills) = live_tracker_kills(client.take_events())? {
+            live_kills = Some(kills);
+        }
         if client
             .world_entities()
             .is_some_and(|entities| entities.get(&target.entity).is_none())
         {
             killed = true;
+        }
+        if killed && before.checked_add(1) == live_kills {
             break;
         }
     }
     drop(client);
 
-    let mut fresh = connect_world(clients, 0xd7).await?;
+    let mut fresh = connect_world_with_capabilities(clients, 0xd7, &[tr::CAPABILITY_CYCLOPEDIA_TRACKER_V1]).await?;
     let list = read(&mut fresh, best).await?;
     let after = kills(&list, RAT);
     // Leave the tracker as found.
     call(&mut fresh, best, &change(tr::TrackerAction::Remove, RAT)).await?;
     logout(&mut fresh).await?;
-    expect(
-        after == before + 1,
-        "kill-credit",
-        format!("before:{before},after:{after},killed:{killed},error:{push_error:?}"),
-    )?;
-    match push_error {
-        Some(error) if is_domain_gap(&error) => Ok(("MISSING-CLIENT", GAP.to_owned())),
-        Some(error) => Err(format!("step=live-refresh;observed=session-error:{error}").into()),
-        None => Err("step=live-refresh;observed=no-domain-98-push-and-no-client-refusal".into()),
-    }
+    finish_live_refresh(before, after, killed, live_kills, push_error)
 }
 
 type Verdict = (&'static str, String);
@@ -221,6 +260,43 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn tracker_event(domain_id: u32, bestiary_kills: Option<u32>, boss_kills: Option<u32>) -> TestResult<oteryn_dev_client::SessionEvent> {
+        let entry = |kill_count| tr::TrackerEntry {
+            creature_key: RAT.to_owned(), kill_count, thresholds: [25, 250, 500], completed: false,
+        };
+        let payload = tr::encode_domain_snapshot(
+            &tr::TrackerSnapshot { boss: false, entries: bestiary_kills.map(entry).into_iter().collect() },
+            &tr::TrackerSnapshot { boss: true, entries: boss_kills.map(entry).into_iter().collect() },
+        ).ok_or("tracker snapshot encode")?;
+        Ok(oteryn_dev_client::SessionEvent::GatedSnapshotReplaced(oteryn_dev_client::AppliedDelta {
+            server_sequence: 42, base_revision: 1, new_revision: 2,
+            value: oteryn_dev_client::GatedSnapshot {
+                domain_id, snapshot_type: tr::SNAPSHOT_TYPE_CYCLOPEDIA_TRACKER_V1, revision: 2, payload,
+            },
+        }))
+    }
+
+    #[test]
+    fn live_tracker_update_is_observed_and_requires_matching_durable_credit() -> TestResult {
+        let live = live_tracker_kills(vec![tracker_event(tr::STATE_DOMAIN_CYCLOPEDIA_TRACKER, Some(4), None)?])?;
+        assert_eq!(live, Some(4), "domain 98 update must not be discarded");
+        assert_eq!(finish_live_refresh(3, 4, true, live, None)?.0, "PASS");
+        assert!(finish_live_refresh(3, 4, true, None, None).is_err());
+        assert!(finish_live_refresh(3, 4, true, Some(3), None).is_err());
+        assert!(finish_live_refresh(3, 4, false, live, None).is_err());
+        assert!(finish_live_refresh(3, 3, true, live, None).is_err());
+        assert!(finish_live_refresh(3, 5, true, live, None).is_err());
+        assert!(finish_live_refresh(3, 4, true, live, Some("connection reset".into())).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn unrelated_or_boss_tracker_updates_do_not_prove_a_rat_kill() -> TestResult {
+        assert_eq!(live_tracker_kills(vec![tracker_event(28, Some(4), None)?])?, None);
+        assert_eq!(live_tracker_kills(vec![tracker_event(tr::STATE_DOMAIN_CYCLOPEDIA_TRACKER, None, Some(4))?])?, None);
+        Ok(())
+    }
 
     #[test]
     fn token_has_no_whitespace_and_is_bounded() {
