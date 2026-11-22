@@ -1,0 +1,12 @@
+[
+  {
+    "creature": "angry_sugar_fairy",
+    "item": 48340,
+    "source": {
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/monster/fey/angry_sugar_fairy.lua",
+      "sha256": "4fa48a11c2c20edbf0803cfc4e9f6fd8e98d6ccf11dcd8346d91579999fc9312",
+      "line": 32
+    }
+  }
+]

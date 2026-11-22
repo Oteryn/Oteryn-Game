@@ -1322,6 +1322,19 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 return Err(invalid("native gameplay candidate Item binding conflict"));
             }
         }
+        let corpse_bindings: Vec<super::project::ProjectV2SourceIdentityBinding> =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../imports/crystalserver/ordinary-corpses/bindings.json"
+            ))
+            .map_err(|_| invalid("native Crystal corpse Item bindings"))?;
+        for binding in corpse_bindings {
+            if admitted
+                .insert(binding.external_id.clone(), binding)
+                .is_some()
+            {
+                return Err(invalid("native Crystal corpse Item binding conflict"));
+            }
+        }
         authored_items::admit(&items, sections[5], &mut admitted)?;
         let mut source_reward_items = boss_reward_bindings::qualified_records()?;
         for record in &source_reward_items {

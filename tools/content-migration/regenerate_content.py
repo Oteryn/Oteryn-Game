@@ -130,6 +130,7 @@ CHECKS = (
     ["python3", "tools/content-schema/world-object-authoring/feroxa_static.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
+    ["python3", "tools/content-migration/ordinary_corpse_profiles.py", "--check"],
     ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
     ["python3", "tools/content-migration/test_prey_difficulty.py"],
     ["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--check"],
