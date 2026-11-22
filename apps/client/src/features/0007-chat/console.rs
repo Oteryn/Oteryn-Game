@@ -148,6 +148,21 @@ impl PlayLink {
     pub fn chat_show_lists(&self) {
         show_lists(&mut lock(&self.mailbox));
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn chat_export_log(&self) {
+        let result = (|| {
+            let directory = crate::crash_report::user_data_directory().ok_or_else(|| {
+                std::io::Error::other(tr!("Cannot locate the user configuration directory."))
+            })?;
+            std::fs::create_dir_all(&directory)?;
+            write_log(&self.mailbox, &directory.join("chat.log"), true)
+        })();
+        report_log_result(&self.mailbox, &result);
+    }
+    #[cfg(bevy_shell)]
+    pub(crate) fn local_persistence_notice(&self, message: String) {
+        lock(&self.mailbox).chat.feedback = Some(message);
+    }
     pub fn chat_save_log(&self, path: &Path, append: bool) -> std::io::Result<()> {
         save_log(&self.mailbox, path, append)
     }
@@ -206,19 +221,55 @@ pub(in crate::play) fn save_log(
     path: &Path,
     append: bool,
 ) -> std::io::Result<()> {
+    let result = write_log(shared, path, append);
+    report_log_result(shared, &result);
+    result
+}
+
+fn write_log(shared: &SharedMailbox, path: &Path, append: bool) -> std::io::Result<()> {
     let snapshot = lock(shared).chat.clone();
-    let result = std::fs::OpenOptions::new()
-        .create(true)
-        .write(true)
-        .append(append)
-        .truncate(!append)
-        .open(path)
-        .and_then(|mut file| oteryn_client_ui::chat::write_log(&snapshot, &mut file));
-    lock(shared).chat.feedback = Some(match &result {
+    #[cfg(windows)]
+    let mut file = export_windows::open(path, append)?;
+    #[cfg(not(windows))]
+    let mut file = open_export(path, append)?;
+    if !append {
+        file.set_len(0)?;
+    }
+    oteryn_client_ui::chat::write_log(&snapshot, &mut file)
+}
+
+#[cfg(not(windows))]
+fn open_export(path: &Path, append: bool) -> std::io::Result<std::fs::File> {
+    let mut options = std::fs::OpenOptions::new();
+    options.create(true).write(true).append(append);
+    #[cfg(unix)]
+    {
+        use rustix::fs::OFlags;
+        use std::os::unix::fs::OpenOptionsExt;
+        options
+            .mode(0o600)
+            .custom_flags((OFlags::NOFOLLOW | OFlags::NONBLOCK).bits() as i32);
+    }
+    let file = options.open(path)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let metadata = file.metadata()?;
+        if !metadata.is_file()
+            || metadata.uid() != rustix::process::geteuid().as_raw()
+            || metadata.mode() & 0o077 != 0
+        {
+            return Err(std::io::ErrorKind::PermissionDenied.into());
+        }
+    }
+    Ok(file)
+}
+
+fn report_log_result(shared: &SharedMailbox, result: &std::io::Result<()>) {
+    lock(shared).chat.feedback = Some(match result {
         Ok(()) => tr!("Channel log written").into(),
         Err(error) => lfmt!("Could not write channel log: {error}", error = error),
     });
-    result
 }
 use crate::play::Outbox;
 use oteryn_client_ui::chat::{ConsoleDisplay, console_request};
@@ -474,3 +525,11 @@ pub(super) fn native_key(
     }
     (bound && routed.is_empty()) || !actions.is_empty()
 }
+
+#[cfg(any(test, windows))]
+#[path = "export_policy.rs"]
+mod export_policy;
+
+#[cfg(windows)]
+#[path = "export_windows.rs"]
+mod export_windows;

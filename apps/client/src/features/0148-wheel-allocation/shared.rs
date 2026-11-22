@@ -66,12 +66,9 @@ fn adjust(panel: &mut WheelPanel, index: usize, remove: bool) -> bool {
             break;
         }
     }
-    if reply
-        .nodes
-        .iter()
-        .enumerate()
-        .any(|(i, node)| points[i] > 0 && (!open[i] || (!remove && reply.unlock_points < node.minimum_points)))
-    {
+    if reply.nodes.iter().enumerate().any(|(i, node)| {
+        points[i] > 0 && (!open[i] || (!remove && reply.unlock_points < node.minimum_points))
+    }) {
         return false;
     }
     let nonce = reply.request.nonce;
@@ -100,16 +97,21 @@ impl PlayLink {
         fields: [String; 2],
     ) -> bool {
         let mut m = lock(&self.mailbox);
-        if !m.shared_frontend || m.wheel_shutdown || self.commands.is_closed()
-            || !m.wheel.open || m.wheel != *expected
-            || m.world_input_blocked() || m.server_modal.is_active()
+        if !m.shared_frontend
+            || m.wheel_shutdown
+            || self.commands.is_closed()
+            || !m.wheel.open
+            || m.wheel != *expected
+            || m.world_input_blocked()
+            || m.server_modal.is_active()
             || !editable(&m.wheel)
         {
             return false;
         }
         let selected = m.wheel.preset_fields[0].clone();
         m.wheel.preset_fields = fields;
-        super::super::view::presets::submit_named(&mut m, action, &selected);
+        drop(m);
+        super::super::view::presets::submit_named(&self.mailbox, action, selected);
         true
     }
 
@@ -180,15 +182,26 @@ impl PlayLink {
     }
 }
 
-
 impl PlayLink {
-    pub(crate) fn gem_control_bound(&self, expected: &WheelPanel, action: Option<super::gem_presentation::Action>) -> bool {
+    pub(crate) fn gem_control_bound(
+        &self,
+        expected: &WheelPanel,
+        action: Option<super::gem_presentation::Action>,
+    ) -> bool {
         let mut m = lock(&self.mailbox);
-        if m.world_input_blocked() || m.wheel_shutdown || !m.wheel.open || &m.wheel != expected { return false; }
+        if m.world_input_blocked() || m.wheel_shutdown || !m.wheel.open || &m.wheel != expected {
+            return false;
+        }
         if let Some(action) = action {
             super::gem_presentation::activate(&mut m, &self.commands, action);
-        } else if m.wheel.gems.last_revision != m.wheel.confirmed_atelier.as_ref().map(|a| a.revision)
-            || m.wheel.gems.review.as_ref().is_some_and(|review| review.expires <= std::time::Instant::now()) {
+        } else if m.wheel.gems.last_revision
+            != m.wheel.confirmed_atelier.as_ref().map(|a| a.revision)
+            || m.wheel
+                .gems
+                .review
+                .as_ref()
+                .is_some_and(|review| review.expires <= std::time::Instant::now())
+        {
             super::gem_presentation::query(&mut m, &self.commands);
         }
         true
@@ -205,31 +218,65 @@ impl crate::play::Outbox {
 #[cfg(test)]
 mod regression_tests {
     use super::*;
-    use oteryn_client_ui::wheel_allocation::{atelier, wheel};
     use oteryn_client_runtime::wheel_presentation as wire;
+    use oteryn_client_ui::wheel_allocation::{atelier, wheel};
     #[test]
     fn locked_ring_allocation_can_be_removed_one_point_at_a_time() {
         let mut points = [0; 36];
         points[0] = 3;
-        let request = wire::Request { nonce: 1, wheel_revision: 2, atelier_revision: 3,
-            points, vessels: [None; 4] };
+        let request = wire::Request {
+            nonce: 1,
+            wheel_revision: 2,
+            atelier_revision: 3,
+            points,
+            vessels: [None; 4],
+        };
         let mut panel = WheelPanel {
-            selected: true, synchronized: true, points,
-            confirmed_wheel: Some(wheel::WheelAllocationReply { refused: false, revision: 2,
-                points, vessels: Some([None; 4]) }),
-            confirmed_atelier: Some(atelier::AtelierReply { refused: false, revision: 3,
-                gems: vec![], grades: vec![], quality_quotes: vec![], grade_quotes: vec![] }),
+            selected: true,
+            synchronized: true,
+            points,
+            confirmed_wheel: Some(wheel::WheelAllocationReply {
+                refused: false,
+                revision: 2,
+                points,
+                vessels: Some([None; 4]),
+            }),
+            confirmed_atelier: Some(atelier::AtelierReply {
+                refused: false,
+                revision: 3,
+                gems: vec![],
+                grades: vec![],
+                quality_quotes: vec![],
+                grade_quotes: vec![],
+            }),
             ..Default::default()
         };
         panel.diagram.selected = true;
-        panel.diagram.reply = Some(wire::Reply { request: request.clone(),
-            catalogue: "test".into(), vocation: "knight".into(), available: 50,
-            unlock_points: 50, removal_permitted: true, eligible: true,
-            draft_valid: false, reason: "Ring locked".into(),
-            nodes: (0..36).map(|_| wire::Node { domain: 0, capacity: 50,
-                minimum_points: 100, unlock_from: vec![], name: "Locked".into(),
-                per_point: vec![], full_slot: vec![] }).collect(),
-            revelations: vec![], current: vec![], draft: vec![] });
+        panel.diagram.reply = Some(wire::Reply {
+            request: request.clone(),
+            catalogue: "test".into(),
+            vocation: "knight".into(),
+            available: 50,
+            unlock_points: 50,
+            removal_permitted: true,
+            eligible: true,
+            draft_valid: false,
+            reason: "Ring locked".into(),
+            nodes: (0..36)
+                .map(|_| wire::Node {
+                    domain: 0,
+                    capacity: 50,
+                    minimum_points: 100,
+                    unlock_from: vec![],
+                    name: "Locked".into(),
+                    per_point: vec![],
+                    full_slot: vec![],
+                })
+                .collect(),
+            revelations: vec![],
+            current: vec![],
+            draft: vec![],
+        });
         panel.diagram.last = Some(request);
         assert!(!adjust(&mut panel, 0, false));
         for remaining in [2, 1, 0] {

@@ -160,7 +160,7 @@ impl NativeLoginConfig {
         ) && let Ok(client) =
             login_client(&platform, &gateway, &self.oauth_client_id, self.retry_unit)
         {
-            self.device_sessions.sign_out(&client).await.is_ok()
+            self.device_sessions.finish_sign_out(&client).await.is_ok()
         } else {
             false
         }

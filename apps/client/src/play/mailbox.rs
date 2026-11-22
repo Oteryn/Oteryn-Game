@@ -250,6 +250,7 @@ pub(super) struct Mailbox {
     pub(super) animus: oteryn_client_ui::animus_mastery::AnimusPanel,
     pub(super) wheel: oteryn_client_ui::wheel_allocation::WheelPanel,
     pub(super) wheel_shutdown: bool,
+    pub(super) wheel_preset_save_pending: bool,
     pub(super) exiva: oteryn_client_ui::exiva_settings::ExivaPanel,
     pub(super) mechanics_status: oteryn_client_ui::mechanics_status::MechanicsStatusPanel,
     pub(super) condition_status: oteryn_client_ui::condition_status::ConditionStatusPanel,
