@@ -393,6 +393,9 @@ def test_package_tree_contract():
             48227,
             48340,
             49362,
+            48401,
+            48396,
+            35136,
         )
     ], "only the exact source-qualified reference extensions are admitted"
     # Replaying an extension with a changed semantic fact must refuse, not normalize it.

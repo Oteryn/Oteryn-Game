@@ -703,7 +703,12 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     del corpse_document
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
+    import ordinary_corpse_slice2
     from bind_monster_source_definitions import bind_definitions
+    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
+    creatures = json.loads(generated[creature_path])
+    ordinary_corpse_slice2.bind_creatures(root, creatures)
+    generated[creature_path] = spell_import.canonical_bytes(creatures)
     generated = bind_definitions(root, generated)
     # W11 source callback outfits share the registered native appearance provider.
     import soul_war_appearance_profiles
@@ -711,7 +716,6 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         root, generated, spell_import.PROVIDER_DESTINATIONS["spell_appearances"], NATIVE_MANIFEST)
     # Owner-authored quest variants retain admitted attack closures, with no donor identity.
     import engenc_elemental_profiles
-    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     creatures = json.loads(generated[creature_path])
     engenc_elemental_profiles.apply(creatures)
     nrwicked_profiles.admit_creatures(
@@ -739,6 +743,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     house_top_order = json.loads((root / house_decoration_actions.PROFILES).read_bytes())
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
+    ordinary_corpse_slice2.admit_items(root, items, provider_order)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.

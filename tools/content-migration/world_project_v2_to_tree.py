@@ -306,6 +306,8 @@ def materialize_item_tree(reference, declarations, editor, sources):
     apply_tainted_talisman(item_records, ROOT)
     from engclaim_item_profiles import apply_admissions as apply_engclaim_items
     apply_engclaim_items(item_records, ROOT)
+    from ordinary_corpse_slice2 import extend_references as extend_ordinary_corpse_references
+    extend_ordinary_corpse_references(item_records, ROOT)
     # Captured Global client weights win over the legacy package (ITEMGLOB).
     from import_cyclopedia_global import apply_admissions as apply_client_weights
     apply_client_weights(item_records, ROOT)
