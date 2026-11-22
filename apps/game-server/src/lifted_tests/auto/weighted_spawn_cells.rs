@@ -4,6 +4,7 @@ use std::error::Error;
 use crate::foundation::{ChannelId, ChannelRuntimeV1, NodeId, WorldId};
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_gameplay_foundation::scheduled_events::{Schedule, test_clock};
 use oteryn_world_bundle::spawn;
 use oteryn_world_bundle_compiler::bundle::{BuildClass, Extent, Family, Terrain, TerrainKind};
 use oteryn_world_bundle_compiler::compile::{Input, KeyResolver, Resolution, realize_spawns};
@@ -169,6 +170,7 @@ fn start_runtime(table: spawn::Table) -> Result<ChannelRuntimeV1, Box<dyn Error>
 #[test]
 fn shared_spawn_cell_draws_by_weight_on_each_respawn_and_keeps_single_creature_cells()
 -> Result<(), Box<dyn Error>> {
+    let _clock = test_clock::set(Schedule::default(), 0);
     let table = authored_spawn_table()?;
     let mut runtime = start_runtime(table)?;
     let points = runtime.spawn_point_creatures();
@@ -230,6 +232,7 @@ fn shared_spawn_cell_draws_by_weight_on_each_respawn_and_keeps_single_creature_c
 
 #[test]
 fn occupied_weighted_spawn_retries_the_same_owner_draw() -> Result<(), Box<dyn Error>> {
+    let _clock = test_clock::set(Schedule::default(), 0);
     let mut runtime = start_runtime(authored_spawn_table()?)?;
     let (point, home, actor) = runtime.spawn_point_creatures()[0];
     let rat = actor.ok_or("initial weighted occupant")?;
