@@ -27,13 +27,14 @@ pub const NEUTRAL_RATE: u32 = 100;
 const MIN_RESPAWN_MICROS: u64 = 1_000_000;
 const MAX_RESPAWN_MICROS: u64 = 86_400_000_000;
 
-/// The four admitted multipliers, whole percentages.
+/// Active rate multipliers and bonuses.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct EventRates {
     pub experience: u32,
     pub loot: u32,
     pub spawn: u32,
     pub skill: u32,
+    pub double_daily_rewards: bool,
 }
 
 impl Default for EventRates {
@@ -43,6 +44,7 @@ impl Default for EventRates {
             loot: NEUTRAL_RATE,
             spawn: NEUTRAL_RATE,
             skill: NEUTRAL_RATE,
+            double_daily_rewards: false,
         }
     }
 }
@@ -114,6 +116,8 @@ struct SourceRates {
     lootrate: Option<u32>,
     spawnrate: Option<u32>,
     skillrate: Option<u32>,
+    #[serde(default)]
+    double_daily_rewards: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -177,6 +181,7 @@ impl Schedule {
                     loot: rate(event.ingame.lootrate),
                     spawn: rate(event.ingame.spawnrate),
                     skill: rate(event.ingame.skillrate),
+                    double_daily_rewards: event.ingame.double_daily_rewards,
                 },
             });
         }
@@ -247,6 +252,8 @@ impl Schedule {
                 loot: compound(active.loot, event.rates.loot),
                 spawn: compound(active.spawn, event.rates.spawn),
                 skill: compound(active.skill, event.rates.skill),
+                double_daily_rewards: active.double_daily_rewards
+                    || event.rates.double_daily_rewards,
             })
     }
 }
@@ -256,6 +263,18 @@ impl Schedule {
 pub fn content_schedule() -> &'static Schedule {
     static SCHEDULE_CELL: OnceLock<Schedule> = OnceLock::new();
     SCHEDULE_CELL.get_or_init(|| Schedule::parse(SCHEDULE).unwrap_or_default())
+}
+
+/// DAILY snapshots the promotion at its World's committed server save.
+pub fn double_daily_rewards_at(reset_at_unix_ms: i64) -> bool {
+    let unix_seconds = reset_at_unix_ms.div_euclid(1_000);
+    #[cfg(any(test, feature = "test-support"))]
+    if let Some(rates) = test_clock::rates_at(unix_seconds) {
+        return rates.double_daily_rewards;
+    }
+    content_schedule()
+        .rates_at(unix_seconds)
+        .double_daily_rewards
 }
 
 /// The rates in force now: the content schedule at the current UTC second.
@@ -363,6 +382,15 @@ pub mod test_clock {
         Guard(CLOCK.with(|clock| clock.borrow_mut().replace((schedule, unix_seconds))))
     }
 
+    pub(super) fn rates_at(unix_seconds: i64) -> Option<EventRates> {
+        CLOCK.with(|clock| {
+            clock
+                .borrow()
+                .as_ref()
+                .map(|(schedule, _)| schedule.rates_at(unix_seconds))
+        })
+    }
+
     pub(super) fn rates() -> Option<EventRates> {
         CLOCK.with(|clock| {
             clock
@@ -428,6 +456,7 @@ mod tests {
             loot: 150,
             spawn: 200,
             skill: 300,
+            ..EventRates::default()
         };
         assert_eq!(schedule.rates_at(START - 1), EventRates::default());
         assert_eq!(schedule.rates_at(START), active);
