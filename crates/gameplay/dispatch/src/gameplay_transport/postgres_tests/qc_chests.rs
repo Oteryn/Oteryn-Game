@@ -11,6 +11,9 @@ fn qc_rapier_chest_grants_one_rapier_completes_the_quest_and_refuses_a_second_cl
 /// Skull of Ratha Quest), at every source placement through the catalogue owner.
 #[test]
 fn qc_skull_of_ratha_three_source_chests_use_replay_and_refusal() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
     const CLAIMS: [&str; 3] = [
         "oteryn:reward-claim.kv.witch_house_quest",
         "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1",
@@ -30,12 +33,11 @@ fn qc_skull_of_ratha_three_source_chests_use_replay_and_refusal() -> TestResult 
     );
     let started = std::time::Instant::now();
     super::quest_catalogue_chests_fixtures::execute(selected)?;
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some() {
-        println!(
-            "POSTGRES_CASE_COMPLETED qc_skull_of_ratha_three_source_chests_use_replay_and_refusal duration={:?}",
-            started.elapsed()
-        );
-    }
+    super::m35_claim_sets::skull_of_ratha()?;
+    println!(
+        "POSTGRES_CASE_COMPLETED qc_skull_of_ratha_three_source_chests_use_replay_and_refusal duration={:?}",
+        started.elapsed()
+    );
     Ok(())
 }
 

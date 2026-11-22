@@ -43,10 +43,12 @@ pub fn configure(root: &Path, out: &Path) -> Result<(), Box<dyn Error>> {
         let bytes = source_bytes(Path::new(path))?;
         // The reward USE proof pins qready1_reward_claims.rs. Keep its callers
         // in the same shard so that the proof-bearing source stays intact.
+        // The Skull of Ratha coverage case also calls the shared M35 scenario.
         if matches!(
             module,
             "mod m35_claim_sets;"
                 | "mod qa_global_reward_corrections;"
+                | "mod qc_chests;"
                 | "mod qready1_reward_claims;"
         ) {
             reward_claim_group.push((path_line, module));
