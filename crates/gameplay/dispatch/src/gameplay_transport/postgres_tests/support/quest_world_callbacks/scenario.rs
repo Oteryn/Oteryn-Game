@@ -23,13 +23,13 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
-    let explorer = name == super::super::explorer_society_journey::NAME;
+    let explorer = name == super::super::explorer_society_journey_fixtures::NAME;
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let koshei = name == super::super::koshei_the_deathless_journey_fixtures::NAME;
-    use super::super::new_frontier_journey;
-    let recover_bait = name == new_frontier_journey::BAIT_RECOVERY;
-    let frontier = name == new_frontier_journey::NAME || recover_bait;
+    use super::super::new_frontier_journey_fixtures;
+    let recover_bait = name == new_frontier_journey_fixtures::BAIT_RECOVERY;
+    let frontier = name == new_frontier_journey_fixtures::NAME || recover_bait;
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -131,9 +131,9 @@ fn scenario_case(
     let start = if alawars_vault {
         super::super::alawars_vault_journey_fixtures::START
     } else if explorer {
-        super::super::explorer_society_journey::START
+        super::super::explorer_society_journey_fixtures::START
     } else if frontier {
-        super::super::new_frontier_journey::start()
+        super::super::new_frontier_journey_fixtures::start()
     } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
@@ -1075,11 +1075,11 @@ fn scenario_case(
         } else if koshei {
             super::super::koshei_the_deathless_journey_fixtures::world(generation.native_gameplay().ok_or("Koshei native content")?)?
         } else if explorer {
-            super::super::explorer_society_journey::world(
+            super::super::explorer_society_journey_fixtures::world(
                 generation.native_gameplay().ok_or("Explorer native policies")?,
             )?
         } else if frontier {
-            super::super::new_frontier_journey::world(generation.native_gameplay().ok_or("Frontier native policies")?)?
+            super::super::new_frontier_journey_fixtures::world(generation.native_gameplay().ok_or("Frontier native policies")?)?
         } else if pinned_qc_world {
             super::super::qc_pinned_world::world(
                 generation
@@ -1966,7 +1966,7 @@ fn scenario_case(
         if koshei {
             Box::pin(super::super::koshei_the_deathless_journey_fixtures::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if explorer {
-            Box::pin(super::super::explorer_society_journey::exercise(&mut owner, &mut admitted, &h)).await?;
+            Box::pin(super::super::explorer_society_journey_fixtures::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if m03_use {
             Box::pin(super::super::qengine_m03_use_fixtures::exercise(
                 &mut owner,
@@ -2897,7 +2897,9 @@ fn scenario_case(
             ))
             .await?;
         } else if frontier {
-            Box::pin(new_frontier_journey::exercise(&mut owner, &mut admitted, &h, recover_bait)).await?;
+            Box::pin(
+                new_frontier_journey_fixtures::exercise(&mut owner, &mut admitted, &h, recover_bait),
+            ).await?;
         } else if name == "authored-secret-library" {
             Box::pin(super::super::questpc8_secret_library_fixtures::exercise(
                 &mut owner,
