@@ -19,6 +19,7 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                     callback.key.as_str(),
                     "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
+                        | "oteryn:quest-callback/to-blind-the-enemy/mirror"
                 ))
             || matches!(
                 callback.native_rule,
