@@ -47,7 +47,7 @@
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "7de2c536bc3d5e5fdc8f84954fe5ce5faf1b8357",
+    "declarations": "8b1b9c5d9603f29a57c942283ab5721a0084c6d9",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "307cf0a3d2c62e222a27ceab4f3b19af9f8b3edf",
     "reference": "e8c4487697f321137afbd4b4962a7d0e202a4331",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "681bf87727aca676266061586a874b411d8c2f2ce813b5b17447862d00d3ff62"
+          "sha256": "f2bc8e4231a2e887514379b92a9cee1ad43bd1627dd6422cf01c8adc46fd6e3c"
         },
         {
           "creates_canonical_identities": false,

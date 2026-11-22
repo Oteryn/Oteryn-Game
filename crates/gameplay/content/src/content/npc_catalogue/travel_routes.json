@@ -81,9 +81,14 @@
     "y": 31820,
     "floor": 6,
     "postman": true,
-    "held": true,
+    "held": false,
     "carpet": false,
-    "native_addition": true
+    "native_addition": true,
+    "partial_quest_callback": {
+      "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+      "stage": 1,
+      "next_stage": 2
+    }
   },
   {
     "key": "oteryn:service.travel.captain_bluebear/edron",
@@ -949,9 +954,14 @@
     "y": 32022,
     "floor": 6,
     "postman": true,
-    "held": true,
+    "held": false,
     "carpet": false,
-    "native_addition": true
+    "native_addition": true,
+    "partial_quest_callback": {
+      "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+      "stage": 3,
+      "next_stage": 4
+    }
   },
   {
     "key": "oteryn:service.travel.captain_sinbeard/darashia",
@@ -1629,7 +1639,10 @@
     "floor": 15,
     "postman": true,
     "held": false,
-    "carpet": false
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_mines/robsons_isle",
@@ -1641,7 +1654,10 @@
     "floor": 14,
     "postman": true,
     "held": false,
-    "carpet": false
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_mines/thais",
@@ -1653,7 +1669,10 @@
     "floor": 13,
     "postman": true,
     "held": false,
-    "carpet": false
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_robsons/kazordoon",
@@ -1665,7 +1684,10 @@
     "floor": 15,
     "postman": true,
     "held": false,
-    "carpet": false
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_robsons/mines",
@@ -1677,7 +1699,10 @@
     "floor": 10,
     "postman": true,
     "held": false,
-    "carpet": false
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_robsons/thais",
@@ -1689,7 +1714,10 @@
     "floor": 13,
     "postman": true,
     "held": false,
-    "carpet": false
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_thais/kazordoon",
@@ -1701,7 +1729,11 @@
     "floor": 15,
     "postman": true,
     "held": false,
-    "carpet": false
+    "carpet": false,
+    "world_changes": [
+      "awash",
+      "steamship"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_thais/mines",
@@ -1713,7 +1745,10 @@
     "floor": 10,
     "postman": true,
     "held": false,
-    "carpet": false
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_thais/robsons_isle",
@@ -1725,7 +1760,10 @@
     "floor": 14,
     "postman": true,
     "held": false,
-    "carpet": false
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.karith/ab_dendriel",
@@ -2692,15 +2730,14 @@
     "y": 31783,
     "floor": 3,
     "postman": true,
-    "held": true,
+    "held": false,
     "carpet": true,
-    "project_required_quest_tracks": [
-      {
-        "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
-        "minimum": 2,
-        "maximum": 2
-      }
-    ]
+    "project_required_quest_tracks": [],
+    "partial_quest_callback": {
+      "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+      "stage": 2,
+      "next_stage": 3
+    }
   },
   {
     "key": "oteryn:service.travel.uzon/issavi",

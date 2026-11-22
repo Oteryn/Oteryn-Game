@@ -19,6 +19,15 @@ pub struct TravelTicketRequirement {
     pub valid_for_seconds: u32,
 }
 
+/// An exact donor transition whose Quest settlement is pending.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PartialTravelQuestCallback {
+    pub track: String,
+    pub stage: i64,
+    pub next_stage: i64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TravelRoute {
     pub service: String,
@@ -34,7 +43,8 @@ pub struct TravelRoute {
     pub quest_clear_gate: Option<String>,
     pub ticket: Option<TravelTicketRequirement>,
     pub return_origin: Option<TravelReturnRequirement>,
-    pub world_change: Option<String>,
+    pub world_changes: Vec<String>,
+    pub partial_quest_callback: Option<PartialTravelQuestCallback>,
 }
 
 #[derive(Deserialize)]
@@ -65,6 +75,10 @@ struct Correction {
     return_origin: Option<TravelReturnRequirement>,
     #[serde(default)]
     world_change: Option<String>,
+    #[serde(default)]
+    world_changes: Vec<String>,
+    #[serde(default)]
+    partial_quest_callback: Option<PartialTravelQuestCallback>,
 }
 
 /// Bind route corrections to the same revision as their production conversation book.
@@ -142,7 +156,13 @@ pub fn resolve(
                 quest_clear_gate: correction.quest_clear_gate.clone(),
                 ticket: correction.ticket.clone(),
                 return_origin: correction.return_origin.clone(),
-                world_change: correction.world_change.clone(),
+                world_changes: correction
+                    .world_change
+                    .iter()
+                    .chain(&correction.world_changes)
+                    .cloned()
+                    .collect(),
+                partial_quest_callback: correction.partial_quest_callback.clone(),
             })
         });
     let authored = services
@@ -175,7 +195,8 @@ pub fn resolve(
                     quest_clear_gate: None,
                     ticket: None,
                     return_origin: None,
-                    world_change: None,
+                    world_changes: Vec::new(),
+                    partial_quest_callback: None,
                 })
             })
         });
@@ -187,18 +208,13 @@ mod tests {
     use super::revision_material;
 
     #[test]
-    fn postman_travel_callbacks_stay_held_until_quest_settlement()
+    fn partial_postman_travel_callbacks_preserve_exact_donor_transitions()
     -> Result<(), Box<dyn std::error::Error>> {
         let evidence: serde_json::Value = serde_json::from_str(include_str!(
             "../../../../../../docs/agents/evidence/quests-2-20261102/the_postman_missions_quest.json"
         ))?;
-        let catalogue = crate::content::NpcDataCatalogue::load(
-            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
-            std::ffi::OsStr::new("world"),
-            crate::content::npc_catalogue_preproduction_limits(),
-        )?;
-        let model = catalogue.service_model_for_project()?;
-        let mut placed_carpet_callbacks = 0;
+        let model = production_travel_model()?;
+        let mut callbacks = 0;
         for row in evidence["rows"].as_array().ok_or("Postman evidence rows")? {
             let source = &row["source_row"];
             let Some((npc, destination)) = source["trigger"]
@@ -207,56 +223,119 @@ mod tests {
                 .and_then(|trigger| trigger.strip_suffix(",yes"))
                 .and_then(|trigger| trigger.split_once(':'))
                 .filter(|_| {
-                    source["condition"]
-                        .as_str()
-                        .is_some_and(|v| v.starts_with("Mission01="))
-                        && source["effect"]
+                    ["condition", "effect"].iter().all(|key| {
+                        source[*key]
                             .as_str()
                             .is_some_and(|v| v.starts_with("Mission01="))
+                    })
                 })
             else {
                 continue;
             };
-            let key = format!("oteryn:npc.{npc}");
-            let Some((_, entry)) = model
-                .npcs()
-                .iter()
-                .find(|(reference, _)| reference.key == key)
-            else {
-                continue;
+            let stage = |key: &str| -> Result<i64, Box<dyn std::error::Error>> {
+                Ok(source[key]
+                    .as_str()
+                    .and_then(|text| text.split_once(';'))
+                    .and_then(|(condition, _)| condition.strip_prefix("Mission01="))
+                    .ok_or("Postman stage")?
+                    .parse()?)
             };
-            let routes = super::resolve(&model, &key, &entry.services);
-            if let Some(route) = routes.iter().find(|route| route.keyword == destination) {
-                assert!(
-                    route.held,
-                    "{npc}/{destination} omits its Postman transition"
-                );
-                if route.carpet {
-                    placed_carpet_callbacks += 1;
-                    let (mission, stage) = source["condition"]
-                        .as_str()
-                        .and_then(|value| value.split_once(';'))
-                        .and_then(|(condition, _)| condition.split_once('='))
-                        .ok_or("Postman donor prerequisite")?;
-                    let stage = stage.parse::<i64>()?;
-                    assert!(
-                        route.route.required_quest_tracks.iter().any(|requirement| {
-                            requirement.track.ends_with(&format!(
-                                "/the_postman_missions/{}",
-                                mission.to_ascii_lowercase()
-                            )) && requirement.minimum == stage
-                                && requirement.maximum == Some(stage)
-                        }),
-                        "{npc}/{destination} must preserve the exact donor prerequisite"
-                    );
+            if npc == "brodrosch" {
+                // The admitted service offers Gnomprona, and has no Cormaya route.
+                assert_eq!(destination, "cormaya");
+                assert!(production_route(&model, npc, destination)?.is_none());
+                continue;
+            }
+            let route = production_route(&model, npc, destination)?.ok_or("Postman route")?;
+            let callback = route
+                .partial_quest_callback
+                .ok_or("missing Postman callback")?;
+            assert_eq!(
+                callback.track,
+                "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01"
+            );
+            assert_eq!(
+                (callback.stage, callback.next_stage),
+                (stage("condition")?, stage("effect")?)
+            );
+            callbacks += 1;
+        }
+        assert_eq!(callbacks, 3);
+        Ok(())
+    }
+
+    #[test]
+    fn placed_postman_callback_routes_admit_ordinary_passengers()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let model = production_travel_model()?;
+        let mut blocked = Vec::new();
+        for (npc, destination) in [
+            ("captain_bluebear", "carlin"),
+            ("uzon", "edron"),
+            ("captain_seahorse", "venore"),
+        ] {
+            let route = production_route(&model, npc, destination)?.ok_or("production route")?;
+            if route.held || !route.route.required_quest_tracks.is_empty() {
+                blocked.push((npc, destination));
+            }
+        }
+        assert!(
+            blocked.is_empty(),
+            "ordinary passengers blocked: {blocked:?}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn placed_junkar_routes_preserve_world_change_requirements()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let model = production_travel_model()?;
+        let mut missing = Vec::new();
+        for (npc, destinations) in [
+            ("junkar_mines", ["kazordoon", "robsons_isle", "thais"]),
+            ("junkar_robsons", ["kazordoon", "mines", "thais"]),
+            ("junkar_thais", ["kazordoon", "mines", "robsons_isle"]),
+        ] {
+            for destination in destinations {
+                let route =
+                    production_route(&model, npc, destination)?.ok_or("production route")?;
+                let expected: &[_] = if (npc, destination) == ("junkar_thais", "kazordoon") {
+                    &["awash", "steamship"]
+                } else {
+                    &["awash"]
+                };
+                if route.held || route.world_changes != expected {
+                    missing.push((npc, destination, route.world_changes));
                 }
             }
         }
-        assert_eq!(
-            placed_carpet_callbacks, 1,
-            "missing placed Postman carpet route"
-        );
+        assert!(missing.is_empty(), "world change missing: {missing:?}");
         Ok(())
+    }
+
+    fn production_travel_model() -> Result<super::NpcServiceModel, Box<dyn std::error::Error>> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        Ok(catalogue.service_model_for_project()?)
+    }
+
+    fn production_route(
+        model: &super::NpcServiceModel,
+        npc: &str,
+        destination: &str,
+    ) -> Result<Option<super::TravelRoute>, Box<dyn std::error::Error>> {
+        let key = format!("oteryn:npc.{npc}");
+        let (_, entry) = model
+            .npcs()
+            .iter()
+            .find(|(reference, _)| reference.key == key)
+            .ok_or_else(|| format!("missing NPC {key}"))?;
+        Ok(super::resolve(model, &key, &entry.services)
+            .into_iter()
+            .find(|route| route.route.key == destination))
     }
 
     #[test]
@@ -632,12 +711,7 @@ mod tests {
             assert!(row.yalahar_town_gate.is_some());
         }
         // These donor routes cannot be safely offered with the currently admitted owners.
-        for key in [
-            "captain_max/yalahar",
-            "captain_bluebear/targuna",
-            "captain_bluebear/carlin",
-            "captain_seahorse/venore",
-        ] {
+        for key in ["captain_max/yalahar", "captain_bluebear/targuna"] {
             assert!(
                 rows.iter()
                     .find(|row| row.key == format!("oteryn:service.travel.{key}"))
