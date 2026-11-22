@@ -987,6 +987,7 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
     def setUpClass(cls):
         import authored_static_item_constructors as authored
         import boss_reward_yield_profiles as yields
+        from crystal_equipment_slice import complete_boss_yield_pairs
         import lion_trial_item_profiles as lion
         import quest_callback_profiles as callbacks
         cls.authored, cls.yields, cls.callbacks = authored, yields, callbacks
@@ -1015,6 +1016,7 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
                      yields.corpses.encode)
         cls.actual = refresh.registered_source_document(
             refresh.ROOT, json.loads(generated['profiles']))
+        complete_boss_yield_pairs(refresh.ROOT, cls.actual)
         cls.selection = next(row for row in refresh.SRX3_SOURCES if row[0] == 'SRX3-BOSS-YIELDS')
         with patch.object(refresh, 'SRX3_SOURCES', (cls.selection,)):
             cls.cohort = refresh.source_cohorts(refresh.ROOT)[0]
@@ -1024,6 +1026,7 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
                      yields.corpses.encode)
         cls.isolated = refresh.registered_source_document(
             refresh.ROOT, json.loads(isolated['profiles']))
+        complete_boss_yield_pairs(refresh.ROOT, cls.isolated)
         definitions = [(path, row['definition'])
                        for path in sorted((refresh.ROOT / 'content/items/definitions').glob('items-*.json'))
                        for row in json.loads(path.read_bytes())['records']
