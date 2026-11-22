@@ -7,7 +7,7 @@ use super::ProjectV2DefinitionRef;
 pub use gaz::QualifiedGazEvents;
 pub(crate) use health::policies as health_event_policies;
 pub use health::{NativeHealthEventKind, QualifiedNativeHealthEvent, requires_native_health_event};
-pub use stages::{QualifiedNativeCallbackStage, source_callback_area};
+pub use stages::{CANDY_HORROR_WAVE, QualifiedNativeCallbackStage, source_callback_area};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NativeCallbackList {
@@ -147,7 +147,7 @@ use crate::content::{
 };
 use std::sync::OnceLock;
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NativeCallbackEntry {
     pub creature: Ref,
@@ -236,6 +236,7 @@ fn witness() -> Result<&'static Witness, NativeCallbackError> {
 pub struct QualifiedNativeCallback {
     entry: NativeCallbackEntry,
     content: [u8; 32],
+    candy_wave_schedule: Option<crate::content::ProjectV2AbilitySchedule>,
 }
 impl QualifiedNativeCallback {
     pub fn entry(&self) -> &NativeCallbackEntry {
@@ -267,11 +268,15 @@ pub fn qualify_native_callback(
     index: usize,
     list: NativeCallbackList,
 ) -> Result<Option<QualifiedNativeCallback>, NativeCallbackError> {
+    if creature.key == "oteryn:creature.candy_horror" && list == NativeCallbackList::Attack {
+        return stages::qualify_candy_wave(native, creature, index);
+    }
     qualify_native_callback_document(native.creature_profiles(), creature, index, list).map(
         |entry| {
             entry.map(|entry| QualifiedNativeCallback {
                 entry,
                 content: native.source_digest(),
+                candy_wave_schedule: None,
             })
         },
     )
@@ -663,6 +668,7 @@ fn qualify_outburst_events_document(
     let callback = QualifiedNativeCallback {
         entry: callback_entry,
         content: digest,
+        candy_wave_schedule: None,
     };
     Ok(QualifiedNativeOutburstEvents {
         outburst,

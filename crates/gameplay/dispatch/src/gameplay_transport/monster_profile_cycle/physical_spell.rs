@@ -291,7 +291,9 @@ pub(super) async fn execute_proposals(
     native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
 ) -> Result<(), ()> {
     for proposal in proposals {
-        if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack {
+        if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack
+            || proposal.ability.key == crate::content::native_monster_callbacks::CANDY_HORROR_WAVE
+        {
             continue;
         }
         let Some(parent_source) = source_for(runtime, native, proposal) else {
@@ -796,7 +798,13 @@ async fn prepare_source_reader_checked<'native>(
         None => None,
     };
     let physical_facing = from.facing();
-    let from = anchor.unwrap_or(from.position());
+    let directional_anchor =
+        callback.is_some_and(|plan| plan.source().uses_captured_directional_position());
+    let from = if directional_anchor {
+        from.position()
+    } else {
+        anchor.unwrap_or(from.position())
+    };
     let to = anchor.unwrap_or(to.position());
     let scheduled_facing = || {
         states
@@ -914,9 +922,16 @@ async fn prepare_source_reader_checked<'native>(
         // Sight excludes its endpoints. An area needs the actual current tile too:
         // ground, PZ, floor changes and Item blockers come from the same transaction.
         let area_tile = if area {
-            map.read(runtime, at)
-                .await
-                .ok_or(PreparationError::Unavailable)?
+            match map.read(runtime, at).await {
+                Some(open) => open,
+                None if directional_anchor
+                    && map.source_tile_exists(runtime, at) == Some(false) =>
+                {
+                    tiles.insert((x, y, at.floor), Some(false));
+                    continue;
+                }
+                None => return Err(PreparationError::Unavailable),
+            }
         } else {
             true
         };

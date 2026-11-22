@@ -85,6 +85,42 @@ impl SourcePositionAnchor {
         anchor.captured_target = Some(proposal.target);
         Ok(anchor)
     }
+    /// Crystal's direction-only InstantSpell saves the position one tile ahead
+    /// in the Lua variant. The callback later rotates from the current caster.
+    pub fn capture_directional_variant(
+        runtime: &ChannelRuntimeV1,
+        source: &SpellSource,
+        proposal: &ProfileAbilityProposal,
+    ) -> Result<Self, AttackError> {
+        if !source.uses_captured_directional_position() {
+            return Err(AttackError::InvalidSource);
+        }
+        let mut anchor = Self::capture(runtime, source, proposal)?;
+        use crate::foundation::MovementFacing;
+        let facing = runtime
+            .read_actor_position(proposal.issuer)
+            .map_err(|_| AttackError::StaleIssuer)?
+            .facing()
+            .ok_or(AttackError::MissingCombatFacts)?;
+        let facing = match facing {
+            MovementFacing::North => Facing::North,
+            MovementFacing::East => Facing::East,
+            MovementFacing::South => Facing::South,
+            MovementFacing::West => Facing::West,
+        };
+        let (x, y) = geometry::step(facing);
+        anchor.position.x = anchor
+            .position
+            .x
+            .checked_add(x)
+            .ok_or(AttackError::NumericOverflow)?;
+        anchor.position.y = anchor
+            .position
+            .y
+            .checked_add(y)
+            .ok_or(AttackError::NumericOverflow)?;
+        Ok(anchor)
+    }
     /// Read the saved geometry only while its exact source cast remains current.
     pub fn current_position(
         &self,
@@ -233,6 +269,9 @@ fn source_target_tiles(
         .collect()
 }
 impl SpellSource {
+    pub fn uses_captured_directional_position(&self) -> bool {
+        self.ability.key == crate::content::native_monster_callbacks::CANDY_HORROR_WAVE
+    }
     /// Source cast center shared by tile admission and the damage owner.
     /// Crystal CombatSpell::castSpell selects the target, next facing tile, or caster.
     pub fn cast_center(
@@ -2547,11 +2586,15 @@ impl DamageSpellOwner {
         let to = runtime
             .read_actor_position(proposal.target)
             .map_err(|_| AttackError::StaleTarget)?;
-        let fp = match anchor {
-            Some(anchor) => anchor.current_position(runtime, source, proposal)?,
-            None => from.position(),
+        let captured = anchor
+            .map(|anchor| anchor.current_position(runtime, source, proposal))
+            .transpose()?;
+        let fp = if source.uses_captured_directional_position() {
+            from.position()
+        } else {
+            captured.unwrap_or(from.position())
         };
-        let tp = if anchor.is_some() { fp } else { to.position() };
+        let tp = captured.unwrap_or(to.position());
         if from.context() != to.context() || fp.floor != tp.floor {
             return Err(AttackError::OutOfRange);
         }

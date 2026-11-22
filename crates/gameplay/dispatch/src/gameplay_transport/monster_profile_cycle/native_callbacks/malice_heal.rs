@@ -1,9 +1,40 @@
-//! Soul Cage's selected native defense: CombatNull dispel, then named healing.
+//! Native area defenses: CombatNull dispel followed by filtered monster healing.
 use super::*;
 use crate::content::creature_attack_geometry::{self as geometry, Facing};
 use crate::creature_area_heal::{AreaHealSource, CreatureHealCatalog};
 use crate::foundation::{ConditionType, GameSessionId, MovementFacing};
 use oteryn_simulation_determinism::SemanticTimeMicros;
+
+#[derive(Clone, Copy)]
+enum HealTargets {
+    Named,
+    Masterless,
+}
+
+impl HealTargets {
+    fn for_proposal(runtime: &ChannelRuntimeV1, proposal: &ProfileAbilityProposal) -> Option<Self> {
+        if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Defence {
+            return None;
+        }
+        match proposal.ability.key.as_str() {
+            "oteryn:ability.spell.heal_malice"
+                if runtime.matches_live_creature_identity(
+                    proposal.issuer,
+                    b"oteryn:creature.soul_cage",
+                ) =>
+            {
+                Some(Self::Named)
+            }
+            // Crystal 201189f data/scripts/spells/healing/heal_monsters{,_9x9}.lua.
+            "oteryn:ability.spell.heal_monster" | "oteryn:ability.spell.heal_monster_9x9"
+                if runtime.contains_live_creature(proposal.issuer) =>
+            {
+                Some(Self::Masterless)
+            }
+            _ => None,
+        }
+    }
+}
 
 #[derive(Debug)]
 struct Work {
@@ -17,12 +48,12 @@ struct Work {
 }
 
 #[derive(Debug, Default)]
-pub(super) struct NativeMaliceHeal {
+pub(super) struct NativeAreaDefences {
     memos: ActorMemoTable<Ref, Memo>,
     pending: Option<Work>,
 }
 
-impl NativeMaliceHeal {
+impl NativeAreaDefences {
     #[allow(
         clippy::too_many_arguments,
         reason = "the selected defense retains its current map, native source and player condition owners"
@@ -50,7 +81,7 @@ impl NativeMaliceHeal {
         else {
             return if proposals
                 .iter()
-                .any(|p| p.ability.key == "oteryn:ability.spell.heal_malice")
+                .any(|p| HealTargets::for_proposal(runtime, p).is_some())
             {
                 Err(())
             } else {
@@ -58,12 +89,9 @@ impl NativeMaliceHeal {
             };
         };
         for p in proposals {
-            if p.list != crate::ai_think::profile_schedule::ScheduleList::Defence
-                || p.ability.key != "oteryn:ability.spell.heal_malice"
-                || !runtime.matches_live_creature_identity(p.issuer, b"oteryn:creature.soul_cage")
-            {
+            let Some(targets) = HealTargets::for_proposal(runtime, p) else {
                 continue;
-            }
+            };
             oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_intent::validate(
                 runtime, p,
             )
@@ -106,8 +134,9 @@ impl NativeMaliceHeal {
                 {
                     return Err(());
                 }
-                self.pending =
-                    Some(prepare(runtime, states, room, native, map, p, sequence).await?);
+                self.pending = Some(
+                    prepare(runtime, states, room, native, map, (p, targets), sequence).await?,
+                );
             }
             let work = self.pending.as_mut().ok_or(())?;
             if work.proposal != *p {
@@ -136,7 +165,10 @@ impl NativeMaliceHeal {
                     continue;
                 }
                 let digest = Sha256::new()
-                    .chain_update(b"oteryn:heal-malice-dispel:v1")
+                    .chain_update(match targets {
+                        HealTargets::Named => b"oteryn:heal-malice-dispel:v1".as_slice(),
+                        HealTargets::Masterless => b"oteryn:heal-monster-dispel:v1".as_slice(),
+                    })
                     .chain_update(p.occurrence.id().as_str().as_bytes())
                     .chain_update(actor.placement_identity())
                     .finalize();
@@ -158,11 +190,20 @@ impl NativeMaliceHeal {
             runtime
                 .commit_source_creature_heal_batch(native.source_digest(), &work.heals)
                 .map_err(|_| ())?;
-            for &at in &work.tiles {
-                index
-                    .map()
-                    .facts
-                    .emit_movement_effect(visual_position(at).ok_or(())?, work.effect);
+            let binding = runtime.binding();
+            for at in work.tiles.iter().copied().filter_map(visual_position) {
+                let facts = &index.map().facts;
+                let scope = binding.runtime_scope();
+                if matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
+                    facts.emit_scoped_movement_effect(
+                        scope,
+                        binding.scope_generation(),
+                        at,
+                        work.effect,
+                    );
+                } else {
+                    facts.emit_movement_effect(at, work.effect);
+                }
             }
             let work = self.pending.take().ok_or(())?;
             self.memos.insert(
@@ -178,17 +219,13 @@ impl NativeMaliceHeal {
     }
 }
 
-#[allow(
-    clippy::too_many_arguments,
-    reason = "all source cells and physical recipients are read before the retained defense commits"
-)]
 async fn prepare(
     runtime: &ChannelRuntimeV1,
     states: &ChannelSpellStates,
     room: &QualifiedNativeEntryRoom,
     native: &NativeGameplayState,
     map: &mut CurrentMonsterMap<'_, '_>,
-    p: &ProfileAbilityProposal,
+    (p, targets): (&ProfileAbilityProposal, HealTargets),
     sequence: u64,
 ) -> Result<Work, ()> {
     let record = native
@@ -200,7 +237,7 @@ async fn prepare(
         })
         .ok_or(())?;
     // This existing qualifier binds the actual Creature/defense/Ability/Heal
-    // Effect/Formula and named-target filter, including the paralysis dispel.
+    // Effect/Formula and target filter, including the paralysis dispel.
     let source =
         AreaHealSource::from_current_native(runtime, native, &record.profile.target, p.entry_index)
             .map_err(|_| ())?;
@@ -208,7 +245,11 @@ async fn prepare(
         return Err(());
     }
     let filter = source.filter.as_ref().ok_or(())?;
-    if filter.kind != crate::content::ProjectV2AffectsKind::NamedCreatures {
+    let kind = match targets {
+        HealTargets::Named => crate::content::ProjectV2AffectsKind::NamedCreatures,
+        HealTargets::Masterless => crate::content::ProjectV2AffectsKind::MasterlessMonsters,
+    };
+    if filter.kind != kind {
         return Err(());
     }
     let definitions = record.attack_definitions.as_ref().ok_or(())?;
@@ -293,7 +334,6 @@ async fn prepare(
         if !map.view().sight(sight, at) {
             continue;
         }
-        visual_position(at).ok_or(())?;
         tiles.push(at);
     }
     if !map.validate_transaction(runtime).await {
@@ -326,10 +366,11 @@ async fn prepare(
         if session.is_some() {
             continue;
         }
-        let (key, maximum) = catalog.current_target(runtime, actor).map_err(|_| ())?;
+        let key = runtime
+            .current_live_creature_identity(actor)
+            .map_err(|_| ())?;
         if actor == p.issuer && !filter.includes_caster
-            || filter.excludes_caster_name && key == record.profile.target.key
-            || !filter.creatures.iter().any(|creature| creature.key == key)
+            || filter.excludes_caster_name && key == record.profile.target.key.as_bytes()
             || filter.top_creature_only
                 && runtime
                     .current_top_actor_on_cell(position.position())
@@ -338,8 +379,24 @@ async fn prepare(
         {
             continue;
         }
+        let admitted = match targets {
+            HealTargets::Named => filter
+                .creatures
+                .iter()
+                .any(|creature| creature.key.as_bytes() == key),
+            HealTargets::Masterless => current_source_creature_role(runtime, actor)
+                .map_err(|_| ())?
+                .is_ordinary(),
+        };
+        if !admitted {
+            continue;
+        }
+        let (key, maximum) = catalog.current_target(runtime, actor).map_err(|_| ())?;
         let hash = Sha256::new()
-            .chain_update(b"oteryn:heal-malice-target:v1")
+            .chain_update(match targets {
+                HealTargets::Named => b"oteryn:heal-malice-target:v1".as_slice(),
+                HealTargets::Masterless => b"oteryn:heal-monster-target:v1".as_slice(),
+            })
             .chain_update(p.occurrence.id().as_str().as_bytes())
             .chain_update(actor.placement_identity())
             .finalize();
