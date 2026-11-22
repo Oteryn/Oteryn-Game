@@ -52,10 +52,10 @@ class NativeGoalLootProof(unittest.TestCase):
 
     def test_selected_source_tables_have_complete_finite_custody(self):
         ids = native.selected()
-        self.assertEqual(len(ids), 87)
+        self.assertEqual(len(ids), 118)
         self.assertTrue({44158, 3082, 2824, 3031} <= ids)
         items = definitions()
-        self.assertEqual(len(items), 87)
+        self.assertEqual(len(items), 118)
         self.assertEqual(set(items), {f'oteryn:item.tibia.i{i}' for i in ids})
         self.assertTrue(all(d['materializable'] for d in items.values()))
         amulet = items['oteryn:item.tibia.i3082']

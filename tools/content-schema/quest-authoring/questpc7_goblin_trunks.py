@@ -1,4 +1,4 @@
-"""Three selected native junk trunks; personal progress and a retained hammer."""
+"""Three native junk trunks with donor decay and third-use hammer breakage."""
 import hashlib
 import json
 import sys
@@ -26,18 +26,24 @@ def build(root):
         raise ValueError('QUESTPC7_GOBLIN_TRUNK_RECIPE_DRIFT')
     track='oteryn:quest-progress/questpc7/goblin/';result=[]
     for i,(x,y,_) in enumerate(sites,1):
-        result.append(dict(key=f'oteryn:quest-callback/questpc7-goblin-trunk-{i}',quest=definition['identity']['key'],
-            trigger='use',selector=dict(position=dict(x=x,y=y,floor=-10),appearance=17677,unique=None,action=None),
-            lever=None,reversible=False,passages=[],teleport=None,
-            storage=[dict(track=track+'programme',minimum=0,maximum=6,set=0,preserve=True),
-                     dict(track=track+'trunks',minimum=0,maximum=2,set=3,add=1),
-                     dict(track=track+f'trunk-site-{i}',minimum=-1,maximum=-1,set=1)],
-            activation=dict(track=track+'trunks',minimum=0,maximum=2),
-            minimum_level=None,experience=None,monk_reward=None,offerings=[],item_on_target=None,
-            return_on_failure=False,failure_message=None,
-            requirements=dict(min_level=0,premium=False,completed_quests=[],owned_items=[dict(item='oteryn:item.tibia.i17676',count=1)]),
-            success_message='You smash one marked junk trunk with the retained trunkhammer.',
-            sources=[f'{region}:1:sha256:{digest}',
-                     f'canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(canonical).hexdigest()}',
-                     'https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277']))
+        for last in (False, True):
+            lo, hi = (2, 2) if last else (0, 1)
+            result.append(dict(key=f'oteryn:quest-callback/questpc7-goblin-trunk-{i}' + ('-last' if last else ''),
+                quest=definition['identity']['key'], trigger='use',
+                selector=dict(position=dict(x=x,y=y,floor=-10),appearance=17677,unique=None,action=None),
+                lever=None,reversible=False,passages=[],teleport=None,
+                storage=[dict(track=track+'programme',minimum=0,maximum=6,set=0,preserve=True),
+                         dict(track=track+'trunks',minimum=lo,maximum=hi,set=hi+1,add=1),
+                         dict(track=track+f'trunk-site-{i}',minimum=-1,maximum=-1,set=1)],
+                activation=dict(track=track+'trunks',minimum=lo,maximum=hi),
+                minimum_level=None,experience=None,monk_reward=None,offerings=[],
+                item_on_target=dict(item='oteryn:item.tibia.i17676', count=1, replacement=None,
+                                    target_replacement=None, reusable=not last),
+                effects=dict(transform=17678, reset_after_ms=240000),
+                return_on_failure=False,failure_message=None,
+                success_message='You smash the last trunk and your hammer breaks.' if last else 'You smash the junk trunk.',
+                sources=[f'{region}:1:sha256:{digest}',
+                         f'canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(canonical).hexdigest()}',
+                         'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17678',
+                         'https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277']))
     return result

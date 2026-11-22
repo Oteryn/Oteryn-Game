@@ -1289,7 +1289,7 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if name == "qengine-rewards-smith-story" {
+        let world = if matches!(name, "qengine-rewards-smith-story" | "authored-smith-cache") {
             world_with_native_items(
                 &callback,
                 trigger,
@@ -1321,6 +1321,14 @@ fn scenario_case(
                 &super::super::questpc7_goblin_fixtures::trunk_objects(),
                 generation.native_gameplay().ok_or("native")?,
                 &super::super::questpc7_goblin_fixtures::trunk_items(),
+            )?
+        } else if name == "qengine-rewards-goblin-perfume-finish" {
+            world_with_native_items(
+                &callback,
+                trigger,
+                &[],
+                generation.native_gameplay().ok_or("native")?,
+                &[(super::super::questpc7_goblin_fixtures::PERFUME_GAS, 17681)],
             )?
         } else if name == "qengine-rewards-goblin-pond" {
             let p = Position {
@@ -2618,6 +2626,8 @@ fn scenario_case(
             super::super::questpc7_hot_corpses_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-goblin-slug" {
             super::super::questpc7_goblin_slug_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "qengine-rewards-goblin-perfume-finish" {
+            Box::pin(super::super::questpc7_goblin_fixtures::exercise_perfume_finish(&mut owner, &mut admitted, &h)).await?;
         } else if name == "qengine-rewards-goblin-perfume-items" {
             super::super::questpc7_goblin_fixtures::exercise_perfume_items(&mut owner, &mut admitted, &h)
                 .await?;

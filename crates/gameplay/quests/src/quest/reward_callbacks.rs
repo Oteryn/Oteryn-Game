@@ -1537,20 +1537,86 @@ fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
 
 /// Preserve published definition hashes and absent-track values for changed quests.
 pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
-    // Main at 492ca0e6ba, before Package C.
     type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
-    const PREVIOUS: &[DefinitionPin] = &[(
-        "oteryn:quest.treasure_hunt_quest",
-        [
-            0xf5, 0x96, 0x11, 0x56, 0xeb, 0xf0, 0x43, 0x9a, 0x52, 0x2a, 0x95, 0xe0, 0x77, 0x22,
-            0x87, 0x88, 0x67, 0xa3, 0x26, 0x3e, 0x14, 0x0c, 0x11, 0x35, 0x81, 0xdb, 0x8f, 0xa7,
-            0x31, 0x10, 0x9f, 0x22,
-        ],
-        &[
-            ("oteryn:quest-progress/m09/treasure/ingots", -1),
-            ("oteryn:quest-progress/m09/treasure/telescope", -1),
-        ],
-    )];
+    const PREVIOUS: &[DefinitionPin] = &[
+        // Main at 492ca0e6ba, before Package C.
+        (
+            "oteryn:quest.treasure_hunt_quest",
+            [
+                0xf5, 0x96, 0x11, 0x56, 0xeb, 0xf0, 0x43, 0x9a, 0x52, 0x2a, 0x95, 0xe0, 0x77, 0x22,
+                0x87, 0x88, 0x67, 0xa3, 0x26, 0x3e, 0x14, 0x0c, 0x11, 0x35, 0x81, 0xdb, 0x8f, 0xa7,
+                0x31, 0x10, 0x9f, 0x22,
+            ],
+            &[
+                ("oteryn:quest-progress/m09/treasure/ingots", -1),
+                ("oteryn:quest-progress/m09/treasure/telescope", -1),
+            ],
+        ),
+        // Main at 3e0991642318, before the donor content update.
+        (
+            "oteryn:quest.fire_fighter_outfits_quest",
+            [
+                0x61, 0x6b, 0x48, 0xd5, 0xb4, 0xc3, 0x99, 0x2f, 0x3a, 0x3d, 0xda, 0x42, 0x71, 0x5b,
+                0xc2, 0x21, 0x98, 0x03, 0x74, 0x66, 0x41, 0x65, 0x0a, 0xcb, 0xbc, 0x88, 0x41, 0xa6,
+                0x3e, 0x4b, 0xe2, 0x97,
+            ],
+            &[],
+        ),
+        (
+            "oteryn:quest.giant_smithhammer_quest",
+            [
+                0x50, 0xbc, 0xf5, 0xc0, 0x2d, 0xbb, 0xbd, 0x3a, 0x4a, 0xc6, 0x32, 0x6d, 0xcd, 0x43,
+                0xea, 0x56, 0x3f, 0xa9, 0x6f, 0xc8, 0xb1, 0xca, 0x5d, 0x92, 0x74, 0xd3, 0xaa, 0x98,
+                0x9a, 0x04, 0xd2, 0x15,
+            ],
+            &[],
+        ),
+        (
+            "oteryn:quest.glooth_engineer_outfits_quest",
+            [
+                0xc2, 0xc9, 0x4f, 0x5e, 0x18, 0xa4, 0xea, 0x58, 0x7c, 0x64, 0xc1, 0xaa, 0x09, 0x8f,
+                0xfa, 0x45, 0x47, 0xcf, 0xe4, 0x62, 0x8e, 0x7b, 0xbe, 0x1f, 0xc4, 0x63, 0xb2, 0xc8,
+                0xc0, 0xb2, 0x54, 0xe9,
+            ],
+            &[],
+        ),
+        (
+            "oteryn:quest.goblin_merchant_quest",
+            [
+                0x6a, 0x7a, 0xbf, 0x58, 0x6d, 0x27, 0x9c, 0xd8, 0x07, 0xc0, 0xeb, 0xd0, 0x39, 0x67,
+                0xca, 0xb2, 0x11, 0x6f, 0xc3, 0xbb, 0x03, 0x6e, 0x72, 0x07, 0x2a, 0x9a, 0xc1, 0xfc,
+                0xcf, 0x81, 0x12, 0x9b,
+            ],
+            &[],
+        ),
+        (
+            "oteryn:quest.golden_outfits_quest",
+            [
+                0x87, 0xb8, 0xf1, 0x83, 0x13, 0x02, 0xeb, 0xe9, 0x8f, 0xf5, 0xa9, 0x92, 0xae, 0x8a,
+                0x55, 0x06, 0x53, 0x05, 0x4b, 0x15, 0xcf, 0x80, 0xa9, 0x39, 0x60, 0x46, 0x66, 0xbc,
+                0x3b, 0x9d, 0x95, 0x4b,
+            ],
+            &[],
+        ),
+        (
+            "oteryn:quest.grave_danger_quest",
+            [
+                0x9f, 0x3e, 0x5b, 0x1c, 0xb5, 0x14, 0xd0, 0xaa, 0x4c, 0x8b, 0x47, 0x5f, 0xd0, 0x41,
+                0xfc, 0x61, 0x91, 0x07, 0x91, 0xa5, 0x3d, 0xa2, 0xce, 0x3e, 0xbd, 0x1c, 0xc8, 0x0c,
+                0x9d, 0x31, 0xd2, 0xab,
+            ],
+            &[],
+        ),
+        (
+            "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+            [
+                0xee, 0x6c, 0x3e, 0x40, 0x6d, 0xa9, 0xbb, 0x80, 0x0d, 0x0f, 0x73, 0xcd, 0x6f, 0xe7,
+                0x1d, 0xa5, 0xfd, 0x80, 0x64, 0xf3, 0xf0, 0xe6, 0x6c, 0x3c, 0x61, 0x33, 0xde, 0x1e,
+                0x04, 0x5e, 0xd5, 0x29,
+            ],
+            &[],
+        ),
+    ];
     for &(quest, hash, defaults) in PREVIOUS {
         if active
             .definition_hash(quest)
@@ -2297,7 +2363,7 @@ mod tests {
         // shared-reward-callbacks.json has 207 existing rows plus the generated
         // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
         // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1);
+        assert_eq!(load()?.len(), 238 + 70 + 126 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2353,7 +2419,7 @@ mod tests {
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;
-        assert_eq!(programmes.len(), 59);
+        assert_eq!(programmes.len(), 70);
         let published = published_markers::keys()?;
         for callback in &programmes {
             assert!(callback.key.starts_with("oteryn:quest-reward/questpc7-"));
@@ -2362,13 +2428,21 @@ mod tests {
         }
         for callback in original {
             let crown = callback.key == "oteryn:quest-reward/l4-royal-costume-crown";
-            assert_eq!(callback.completes, crown);
+            let completes = crown
+                || matches!(
+                    callback.key.as_str(),
+                    "oteryn:quest-reward/l3-glooth-engineer-first-high"
+                        | "oteryn:quest-reward/l3-glooth-engineer-second-after-first"
+                        | "oteryn:quest-reward/l10-golden-boots"
+                        | "oteryn:quest-reward/l10-golden-legacy-helmet"
+                );
+            assert_eq!(callback.completes, completes);
             assert_eq!(
                 serde_json::to_value(callback)
                     .map_err(|e| e.to_string())?
                     .get("completes")
                     .is_some(),
-                crown
+                completes
             );
             if crown {
                 assert_eq!(callback.quest, "oteryn:quest.royal_costume_outfits_quest");

@@ -990,7 +990,7 @@ pub(super) async fn exercise(
             &[
                 ("base", None, None, Some(0)),
                 ("first-low", None, None, Some(1)),
-                ("second", None, None, Some(2)),
+                ("second-after-first", None, None, Some(2)),
             ],
             618,
         ),
@@ -998,8 +998,8 @@ pub(super) async fn exercise(
             "golden",
             &[
                 ("base", None, None, Some(0)),
-                ("boots", None, None, Some(1)),
                 ("helmet", None, None, Some(2)),
+                ("boots", None, None, Some(1)),
             ],
             1211,
         ),
@@ -1453,7 +1453,7 @@ pub(super) async fn exercise(
         if family == "golden" {
             assert_eq!(
                 serde_json::to_value(&callback)?["fee"],
-                serde_json::json!({"gold": if *suffix == "base" {100000} else {50000}, "include_bank":true})
+                serde_json::json!({"gold": if *suffix == "base" {500000000} else {250000000}, "include_bank":true})
             );
             assert!(!callback.requires_premium);
         }
@@ -1557,6 +1557,14 @@ pub(super) async fn exercise(
                         },
                     },
                 ];
+                if suffix.starts_with("second") {
+                    let value = if *suffix == "second-after-first" { 1 } else { -1 };
+                    expected.push(Requirement {
+                        track: "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon1".into(),
+                        minimum: value,
+                        maximum: if *suffix == "second-after-first" { 1 } else { 0 },
+                    });
+                }
                 if *suffix == "first-high" {
                     expected.push(Requirement {
                         track: "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon2"
@@ -2045,7 +2053,7 @@ pub(super) async fn exercise(
             actor_condition_fixture(owner, admitted, *kind, true).await?;
         }
 
-        if name == "qengine-rewards-l3-dark-trails-story" && callback.key.ends_with("-second") {
+        if name == "qengine-rewards-l3-dark-trails-story" && callback.key.ends_with("-second-after-first") {
             commit_fixture(
                 owner,
                 admitted,
@@ -2348,7 +2356,9 @@ pub(super) async fn exercise(
         for item in &needed {
             held.insert(item.item.clone(), quantity(h, &item.item).await?);
         }
-        if let Some(fee) = &callback.fee {
+        if let Some(fee) = &callback.fee
+            && (family != "golden" || step_index == 0)
+        {
             let before = counts(h).await?;
             let (result, _, _) =
                 super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false).await?;
@@ -2362,6 +2372,11 @@ pub(super) async fn exercise(
                 before,
                 "unpaid hand-in has no flags/value/consumption"
             );
+            if family == "golden" {
+                sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING")
+                    .execute(&h.pool).await?;
+                super::item_forge_fusion_fixtures::fixture::seed_bank(h).await?;
+            } else {
             supply(
                 owner,
                 admitted,
@@ -2376,8 +2391,9 @@ pub(super) async fn exercise(
                 &mut occurrence,
             )
             .await?;
+            }
         }
-        let money_before = if callback.fee.is_some() {
+        let money_before = if callback.fee.is_some() && family != "golden" {
             Some(coin_worth(h).await?)
         } else {
             None
@@ -2495,6 +2511,14 @@ pub(super) async fn exercise(
                 "exact source fee, retain all change"
             );
         }
+        if family == "glooth-engineer" {
+            let awards: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/glooth_engineer'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(awards, i64::from(step_index == 2));
+        }
         if let Some(key) = &callback.achievement {
             let earned: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
@@ -2599,7 +2623,8 @@ pub(super) async fn exercise(
     );
     if family == "golden" {
         let paid: (i64, i64) = sqlx::query_as("SELECT count(*),coalesce(sum(fee_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=18").fetch_one(&h.pool).await?;
-        assert_eq!(paid, (3, 200000));
+        assert_eq!(paid, (3, 1_000_000_000));
+        assert_eq!(super::item_forge_fusion_fixtures::fixture::bank(h).await?, 0);
     }
     if family == "nobleman" {
         let paid:(i64,i64,i64)=sqlx::query_as("SELECT count(*),coalesce(sum(fee_gold_units),0)::bigint,coalesce(sum(bank_debit_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=18").fetch_one(&h.pool).await?;

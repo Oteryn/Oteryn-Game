@@ -3646,7 +3646,7 @@
         }
       ],
       "reply": [
-        "The basic Golden outfit costs 100000 gold. Do you agree?"
+        "The basic Golden outfit costs 500000000 gold. Do you agree?"
       ]
     },
     {
@@ -3659,6 +3659,13 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission/helmet-first",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
@@ -3666,7 +3673,27 @@
         }
       ],
       "reply": [
-        "The Golden boots and gloves costs 50000 gold. Do you agree?"
+        "The Golden boots and gloves costs 250000000 gold. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "golden helmet"
+      ],
+      "topic": 0,
+      "next_topic": 103,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The Golden helmet costs 250000000 gold. Do you agree?"
       ]
     },
     {
@@ -3683,10 +3710,17 @@
           "maximum": 2,
           "set": 2,
           "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission/helmet-first",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
         }
       ],
       "reply": [
-        "The Golden helmet costs 50000 gold. Do you agree?"
+        "The Golden helmet costs 250000000 gold. Do you agree?"
       ]
     },
     {
@@ -3699,7 +3733,7 @@
       "next_topic": 1,
       "storage": [],
       "reply": [
-        "Choose armor, boots or helmet for your golden commission."
+        "Donate for the armor first, then the helmet, then the boots."
       ]
     },
     {
@@ -3711,7 +3745,7 @@
       "next_topic": 2,
       "storage": [],
       "reply": [
-        "Choose armor, boots or helmet for your golden commission."
+        "Donate for the armor first, then the helmet, then the boots."
       ]
     },
     {
@@ -3730,7 +3764,7 @@
         }
       ],
       "reply": [
-        "The chosen commission costs 100000 gold. Do you agree?"
+        "The donation costs 500000000 gold. Do you agree?"
       ]
     },
     {
@@ -3743,13 +3777,45 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/golden/source-helmet-first",
           "minimum": 1,
           "maximum": 1,
-          "set": 2
+          "set": 1,
+          "preserve": true
         }
       ],
       "reply": [
-        "The chosen commission costs 50000 gold. Do you agree?"
+        "The donation costs 250000000 gold. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "helmet"
+      ],
+      "topic": 2,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/golden/source-helmet-first",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "The donation costs 250000000 gold. Do you agree?"
       ]
     },
     {
@@ -3765,10 +3831,17 @@
           "minimum": 2,
           "maximum": 2,
           "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/golden/source-helmet-first",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
         }
       ],
       "reply": [
-        "The chosen commission costs 50000 gold. Do you agree?"
+        "The donation costs 250000000 gold. Do you agree?"
       ]
     },
     {

@@ -19,6 +19,9 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                     callback.key.as_str(),
                     "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
+                        | "oteryn:quest-callback/rafzan-swamp-gas-33026-32183"
+                        | "oteryn:quest-callback/rafzan-swamp-gas-33067-32121"
+                        | "oteryn:quest-callback/rafzan-swamp-gas-33092-32061"
                 ))
             || matches!(
                 callback.native_rule,
@@ -53,6 +56,30 @@ pub(crate) fn matches_source(
 mod tests {
     use super::*;
     use oteryn_gameplay_quests::quest::{native_rules::NativeRule, world_callbacks};
+
+    #[test]
+    fn rafzan_swamp_gas_reaches_the_selected_tool_owner() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let sites = callbacks
+            .iter()
+            .filter(|callback| {
+                callback
+                    .key
+                    .starts_with("oteryn:quest-callback/rafzan-swamp-gas-")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(sites.len(), 3);
+        for site in sites {
+            assert!(accepts(site));
+            let tool = site.item_on_target.as_ref().ok_or("gas tool")?;
+            assert_eq!(tool.item, "oteryn:item.tibia.i17672");
+            assert_eq!(
+                tool.replacement.as_deref(),
+                Some("oteryn:item.tibia.i17673")
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn registered_ice_paint_callbacks_reach_the_carried_tool_owner() -> Result<(), String> {

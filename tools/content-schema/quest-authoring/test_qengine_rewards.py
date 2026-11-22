@@ -218,13 +218,18 @@ class QuestRewards(unittest.TestCase):
             next(c for c in bad['callbacks'] if c['key']=='oteryn:quest-reward/l10-brotherhood-use-follower')[field]=value
             with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
 
-    def test_l10_golden_chosen_prices_and_order(self):
+    def test_l10_golden_source_prices_and_order(self):
         rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
-        for suffix,before,after,bit,gold in [('base',0,1,0,100000),('boots',1,2,1,50000),('helmet',2,3,2,50000)]:
+        for suffix,before,after,bit,gold in [('base',0,1,0,500000000),('helmet',1,2,2,250000000),('boots',2,3,1,250000000),('legacy-helmet',2,3,2,250000000)]:
             row=rows['l10-golden-'+suffix]
             self.assertEqual(row['fee'],{'gold':gold,'include_bank':True})
             self.assertEqual(row['outfit'],{'outfit':'oteryn:outfit.golden','addons':bit})
-            self.assertEqual([(r['minimum'],r['maximum'],r['set']) for r in row['storage']],[(before,before,after)])
+            self.assertEqual([(r['minimum'],r['maximum'],r['set']) for r in row['storage']], [
+                (before,before,after), *{
+                    'base': [], 'helmet': [(-1,-1,1)], 'boots': [(1,1,1)],
+                    'legacy-helmet': [(-1,-1,-1)],
+                }[suffix]
+            ])
             self.assertFalse(row.get('requires_premium',False))
 
     def test_l9_repeatable_source_trades_and_canonical_item_grants(self):

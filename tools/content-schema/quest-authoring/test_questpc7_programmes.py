@@ -219,9 +219,11 @@ class QuestPc7QuestRewards(unittest.TestCase):
     def test_golden_selected_prices_and_fee_conservation(self):
         from jsonschema import ValidationError
         selected=[c for c in self.callbacks['callbacks'] if c['key'].split('/')[-1].startswith('questpc7-golden-')]
-        self.assertEqual(len(selected),5)
-        fees={c['key'].split('-')[-1]:c['fee'] for c in selected if c.get('fee')}
-        self.assertEqual(fees, {name:{'gold':amount,'include_bank':True} for name,amount in [('base',100000),('gloves',50000),('helmet',50000)]})
+        self.assertEqual(len(selected),6)
+        fees={c['key'].split('questpc7-golden-')[-1]:c['fee'] for c in selected if c.get('fee')}
+        self.assertEqual(fees, {name:{'gold':amount,'include_bank':True} for name,amount in [('base',500000000),('gloves',250000000),('helmet',250000000),('legacy-helmet',250000000)]})
+        order = sorted((c for c in selected if c.get('fee') and '-legacy-' not in c['key']), key=lambda c: c['storage'][0]['minimum'])
+        self.assertEqual([c['outfit']['addons'] for c in order], [0, 2, 1])
         source=next(c for c in selected if c.get('fee'))
         for mutation in ('zero','double'):
             bad=copy.deepcopy(self.callbacks)
@@ -245,8 +247,10 @@ class QuestPc7QuestRewards(unittest.TestCase):
         self.assertEqual({m['target']['outfit_key'] for m in aliases}, targets)
         self.assertTrue(all(m['compatible_provenance'] == ['crystal-item-cosmetics-201189f-v1'] for m in aliases))
         callbacks = {c['key'].split('/')[-1]: c for c in self.callbacks['callbacks']}
+        self.assertEqual(callbacks['questpc7-fiend-second-token']['requirements']['owned_cosmetics'][0]['addons'], 1)
+        self.assertNotIn('questpc7-inquisition-first-token', callbacks)
+        self.assertNotIn('questpc7-inquisition-second-token', callbacks)
         for slug in ('fiend', 'inquisition'):
-            self.assertEqual(callbacks[f'questpc7-{slug}-second-token']['requirements']['owned_cosmetics'][0]['addons'], 1)
             self.assertEqual(callbacks[f'questpc7-{slug}-complete']['requirements']['owned_cosmetics'][0]['addons'], 3)
             self.assertTrue(callbacks[f'questpc7-{slug}-complete']['completes'])
         bad = copy.deepcopy(self.callbacks)
@@ -489,14 +493,14 @@ class FeasterRouteOwnership(unittest.TestCase):
                 new['sources'] = old['sources']
                 self.assertEqual(new, old)
 
-    def test_integration_preserves_112_callbacks_under_two_disjoint_owners(self):
+    def test_integration_preserves_120_callbacks_under_two_disjoint_owners(self):
         from types import SimpleNamespace
         from unittest.mock import Mock, patch
         import questpc7_feaster_programme as feaster
         import questpc7_integration as integration
         original = json.loads((q.ROOT / 'content/quests/questpc7-world-callbacks.json').read_bytes())['callbacks']
         unrelated = [row for row in original if row['quest'] != feaster.QUEST]
-        self.assertEqual(len(unrelated), 99)
+        self.assertEqual(len(unrelated), 107)
         worlds, _, _ = feaster.build(q.ROOT)
         worlds = unrelated + worlds
         unchanged = copy.deepcopy(worlds)
@@ -508,18 +512,18 @@ class FeasterRouteOwnership(unittest.TestCase):
         }
         loader = Mock(side_effect=lambda name, path: modules[name])
         with patch('questpc7_index_witness.rebind') as rebind:
-            result = integration.outputs(q.ROOT, {}, 'fixture pin', loader, (worlds, [], []))
+            result = integration.outputs(q.ROOT, {}, 'fixture pin', loader, (worlds, [], [], []))
         rebind.assert_called_once_with(q.ROOT, worlds, planned_props)
         main = json.loads(result['content/quests/questpc7-world-callbacks.json'])['callbacks']
         phase = json.loads(result[self.PHASE_OUTPUT])['callbacks']
-        self.assertEqual((len(main), len(phase)), (110, 2))
+        self.assertEqual((len(main), len(phase)), (118, 2))
         self.assertEqual(main, [row for row in unchanged if row['key'] not in self.KEYS])
         self.assertEqual(phase, [row for row in unchanged if row['key'] in self.KEYS])
         main_keys = {row['key'] for row in main}
         phase_keys = {row['key'] for row in phase}
         self.assertEqual(phase_keys, self.KEYS)
         self.assertTrue(main_keys.isdisjoint(phase_keys))
-        self.assertEqual(len(main_keys | phase_keys), 112)
+        self.assertEqual(len(main_keys | phase_keys), 120)
         self.assertEqual(worlds, unchanged)
         self.assertEqual(result['content/world/placements/index.json'], b'fixture index')
 
@@ -538,5 +542,5 @@ class FeasterRouteOwnership(unittest.TestCase):
                         rows.append(copy.deepcopy(next(row for row in rows if row['key'] == key)))
                     loader = Mock()
                     with self.assertRaisesRegex(ValueError, 'QUESTPC7_FEASTER_PHASE_OWNERSHIP_DRIFT'):
-                        integration.outputs(q.ROOT, {}, 'fixture pin', loader, (rows, [], []))
+                        integration.outputs(q.ROOT, {}, 'fixture pin', loader, (rows, [], [], []))
                     loader.assert_not_called()

@@ -101,11 +101,8 @@ pub(super) async fn exercise(
         .iter()
         .find(|c| c.key == format!("oteryn:quest-reward/questpc7-{slug}-commission"))
         .ok_or("intro")?;
-    let parent = &intro
-        .requirements
-        .as_ref()
-        .ok_or("requirements")?
-        .completed_quests[0];
+    let parent = intro.requirements.as_ref().ok_or("requirements")?.completed_quests.first();
+    let intro_word = intro.keywords.first().ok_or("report keyword")?;
     let [npc] = super::classic_quests_fixtures::install(owner, admitted, [intro.npc.as_str()]).await?;
     let mut npc_sequence = 2000_u64;
     let mut selected = admitted
@@ -133,7 +130,7 @@ pub(super) async fn exercise(
             admitted,
             npc,
             &mut npc_sequence,
-            &format!("{slug} commission")
+            intro_word
         )
         .await?,
         NpcIntentDisposition::Rejected,
@@ -142,12 +139,22 @@ pub(super) async fn exercise(
     eprintln!("QUESTPC7_OUTFIT_ITEMS parent refusal complete");
     // Only this prerequisite is a fenced fixture; the subject programme and all
     // inventory/appearance milestones start fresh and run through their real owners.
-    super::questpc7_eligibility_fixtures::complete_parent_key(owner, admitted, parent).await?;
-    let parent_revision:String=sqlx::query_scalar("SELECT completed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(parent).fetch_one(&h.pool).await?;
+    let parent_revision = if let Some(parent) = parent {
+        super::questpc7_eligibility_fixtures::complete_parent_key(owner, admitted, parent).await?;
+        Some(sqlx::query_scalar::<_, String>("SELECT completed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(parent).fetch_one(&h.pool).await?)
+    } else {
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+            h, owner, admitted,
+            &[("oteryn:quest-progress/questpc7/grave/boss_6".into(), 1)], 233,
+        ).await?;
+        owner.refresh_quest_session(admitted.game_session_id, false).await;
+        None
+    };
     assert_eq!(
         talk(owner, admitted, npc, &mut npc_sequence, "hi").await?,
         NpcIntentDisposition::Ok
     );
+    if parent.is_some() {
     for words in [format!("{slug} commission"), format!("{slug} first token")] {
         eprintln!("QUESTPC7_OUTFIT_ITEMS requesting {words}");
         assert_eq!(
@@ -182,6 +189,22 @@ pub(super) async fn exercise(
         .await?,
         NpcIntentDisposition::Ok
     );
+    } else {
+        assert_eq!(talk(owner, admitted, npc, &mut npc_sequence, intro_word).await?, NpcIntentDisposition::Ok);
+        for (index, item) in items.into_iter().enumerate() {
+            // Inventory setup for this USE test. Native boss loot admission has its own loader proof.
+            let fence = owner.current_quest_fence(admitted.game_session_id).await.map_err(|()| "fence")?.ok_or("fence")?;
+            super::quest_world_callbacks_fixtures::input_item(owner, fence.item_fence(),
+                &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                    position: oteryn_gameplay_quests::quest::world_callbacks::Position { x: 33293, y: 31677, floor: -15 },
+                    item: format!("oteryn:item.tibia.i{item}"),
+                    count: 1,
+                }, 970 + u64::try_from(index)?, true).await?;
+        }
+        assert_eq!(quantity(h, items[0]).await?, 1);
+        use_token(owner, admitted, items[0]).await?;
+        assert_eq!(quantity(h, items[0]).await?, 0);
+    }
     assert_eq!(quantity(h, items[1]).await?, 1);
     assert_eq!(
         talk(
@@ -210,8 +233,10 @@ pub(super) async fn exercise(
     );
     let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(&intro.quest).fetch_one(&h.pool).await?;
     assert!(completed);
+    if let (Some(parent), Some(parent_revision)) = (parent, parent_revision) {
     let after:String=sqlx::query_scalar("SELECT completed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(parent).fetch_one(&h.pool).await?;
     assert_eq!(after, parent_revision, "prerequisite remains read-only");
+    }
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let observed = owner
         .appearance_observation(actor, admitted.game_session_id, vec![])

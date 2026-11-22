@@ -856,6 +856,10 @@
             "maxLength": 128
           }
         },
+        "per_occurrence_mint": {
+          "type": "boolean",
+          "default": false
+        },
         "counter": {
           "$ref": "#/$defs/rewardCounter"
         },
