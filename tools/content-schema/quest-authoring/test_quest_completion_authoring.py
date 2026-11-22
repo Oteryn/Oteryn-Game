@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import jsonschema
 import quest_completion_authoring as tool
+from quest_tree_authoring import restore_outlaw_source_holds
 
 
 class QuestCompletionTests(unittest.TestCase):
@@ -20,6 +21,7 @@ class QuestCompletionTests(unittest.TestCase):
                 if definition.get('definition_profile') == 'oteryn_authored_v1':
                     continue
                 definition.pop('oteryn_recipe', None)
+                restore_outlaw_source_holds(definition)
                 cls.source.append(row)
         cls.payload_path = cls.root / tool.DIRECTORY / 'recipes.json'
         cls.payload = tool.read(cls.payload_path)

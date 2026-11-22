@@ -191,7 +191,7 @@ def requested_keys(root, extra_keys=()):
 def _requested_inputs(root, extra_keys=()):
     # Retain both the selected startup source cohort and authored callback custody.
     sys.path.insert(0, str(root / 'tools/content-schema/world-authoring'))
-    from quest_chest_bindings import panpipe_key_claim
+    from quest_chest_bindings import outlaw_key_claim, panpipe_key_claim
     sys.path.insert(0, str(root / 'tools/content-schema/reward-claim-authoring'))
     import container_native
 
@@ -229,6 +229,14 @@ def _requested_inputs(root, extra_keys=()):
                 if tool.get('replacement'):
                     authored_keys.add(tool['replacement'])
                     keys.add(tool['replacement'])
+    # The Outlaw Camp binding is embedded by the Quest crate. Its terminal
+    # multi-item reward uses the existing canonical Item profile admission.
+    outlaw = json.loads((root / 'content/quests/authored-bindings/outlaw_camp_journey.json').read_bytes())
+    (reward,) = [stage['trigger']['callback']['effects']['item_reward']
+                 for quest in outlaw['quests'] for stage in quest['stages']
+                 if stage['completes']]
+    keys.add(reward['item'])
+    keys.update(item['item'] for item in reward['additional'])
     # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
@@ -271,7 +279,8 @@ def _requested_inputs(root, extra_keys=()):
             if definition['identity']['key'] in selected_chests:
                 # Filled-container/text claims already enter through the exact
                 # W15b native projection below; selection adds only map binding.
-                if definition.get('readiness') == 'ready' or panpipe_key_claim(definition):
+                if (definition.get('readiness') == 'ready' or panpipe_key_claim(definition)
+                        or outlaw_key_claim(definition)):
                     keys.update(item['item']['key'] for placement in definition['placements']
                                 for item in placement['reward']['items'])
                 elif (definition.get('readiness') != 'waiting_implementation'

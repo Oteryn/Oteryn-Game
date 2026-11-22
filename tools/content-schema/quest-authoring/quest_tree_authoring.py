@@ -32,6 +32,10 @@ ALAWAR_QUEST = 'oteryn:quest.alawar_s_vault_quest'
 ALAWAR_KEY_CLAIM = 'oteryn:reward-claim.quest.key.id4502'
 ALAWAR_SOURCE_HOLD = {'code': 'claim_native_lowering_missing',
                       'source_key': 'canary:reward-claim/quest/key/id4502'}
+OUTLAW_QUEST = 'oteryn:quest.the_outlaw_camp_quest'
+OUTLAW_OVERLAY = ('tools/content-schema/world-authoring/samples/'
+                  'quest-chest-bindings/outlaw-camp.json')
+CALLBACK_COVERAGE = 'docs/repository/QUEST_CALLBACK_COVERAGE.json'
 
 
 def compact(value):
@@ -236,6 +240,23 @@ def monk_native_lowering(root):
     }
 
 
+def outlaw_key_holds(definition):
+    return [{'code': 'claim_native_lowering_missing', 'source_key': ref['key']}
+            for ref in definition['source_refs']['claims']]
+
+
+def restore_outlaw_source_holds(definition):
+    if definition['identity']['key'] != OUTLAW_QUEST:
+        return
+    holds = outlaw_key_holds(definition)
+    missing = definition['missing_data']
+    if not any(hold in missing for hold in holds):
+        # The native projection removes the consecutive key holds.
+        # The frozen donor view keeps them immediately before the quest hold.
+        at = missing.index({'code': 'quest_native_lowering_missing'})
+        missing[at:at] = holds
+
+
 def source_projection(root, records):
     """Validate and remove the compiled native annotations from the SOURCE view.
 
@@ -250,6 +271,7 @@ def source_projection(root, records):
                 and ALAWAR_SOURCE_HOLD not in definition['missing_data']):
             # The applied UID projection closes this delivery in the live Quest only.
             definition['missing_data'].append(copy.deepcopy(ALAWAR_SOURCE_HOLD))
+        restore_outlaw_source_holds(definition)
         if definition['identity']['key'] != 'oteryn:quest.the_way_of_the_monk_quest':
             continue
         original = {'state': 'WAITING_IMPLEMENTATION', 'canonical_progress_refs': [],
@@ -377,6 +399,42 @@ def reconcile_alawar_key_claim(root, records, claims):
     ):
         raise ValueError('Alawar key 4502 lost its native claim or World placement evidence')
     definition['missing_data'].remove(ALAWAR_SOURCE_HOLD)
+def reconcile_outlaw_key_holds(root, records, claims):
+    """Reconcile the four historical holds against exact native key-USE evidence."""
+    capture = read(root, OUTLAW_OVERLAY)
+    if capture['journey']['quest'] != OUTLAW_QUEST:
+        raise ValueError('Outlaw Camp key USE owner drift')
+    (definition,) = [r['definition'] for r in records
+                     if r['definition']['identity']['key'] == OUTLAW_QUEST]
+    owner = definition['source_refs']['quest']
+    (coverage,) = [r for r in read(root, CALLBACK_COVERAGE)['quests']
+                   if r['quest'] == owner['key']]
+    by_key = {c['identity']['key']: c for c in claims}
+    proven = set()
+    for source in capture['bindings']:
+        claim = by_key[source['claim']]
+        (placement,) = claim['placements']
+        (proof,) = [p for p in coverage['chests'] if p['claim'] == source['claim']]
+        (bound,) = proof['placements']
+        position = dict(zip('xyz', source['position']))
+        if (claim['quest'] != owner or claim['data_holds']
+                or proof['status'] != 'dispatch_pg_qualified'
+                or proof['reason'] != 'quest_catalogue_chests_qchk4_outlaw_camp_use_replay_and_refusal'
+                or placement['appearance_tibia_id'] != source['appearance']
+                or placement['source_binding']['project_position'] != position
+                or bound['position'] != position
+                or not any(p['server'] == 'crystalserver'
+                           and p['unique_id'] == source['unique']
+                           and p['reward_matches_current_source'] for p in bound['sources'])):
+            raise ValueError('Outlaw Camp key USE evidence drift')
+        proven.add(claim['provenance']['pilot_key'])
+    holds = outlaw_key_holds(definition)
+    missing = definition['missing_data']
+    if len(proven) != 4 or proven != {h['source_key'] for h in holds} or not all(
+            h in missing for h in holds):
+        raise ValueError('Outlaw Camp key hold membership drift')
+    definition['missing_data'] = [h for h in missing if h not in holds]
+
 
 def expected_files(root, include_registration=False):
     quests = read(root, SOURCE)['quests']
@@ -442,6 +500,7 @@ def expected_files(root, include_registration=False):
                                 'target_items' not in original.get(stage['key'], {}))
     resolution = enrich([*recipes, {'stages': extra_stages}], index)
     validate_references(records, items)
+    reconcile_outlaw_key_holds(root, records, claims)
     files, shards = {'content/quests/item-key-resolution.json': compact(resolution)}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
         chunk = records[start:start + SHARD_SIZE]
@@ -468,6 +527,7 @@ def expected_files(root, include_registration=False):
         'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (SOURCE, CLAIM_INDEX, MANIFEST, READINESS, GATES, GATE_MANIFEST, INTERACTION_MANIFEST, PROGRESS, INTERACTIONS, BUNDLE,
             'tools/content-schema/quest-authoring/ots_readiness.py',
             'tools/content-schema/quest-authoring/quest_tree_authoring.py',
+            OUTLAW_OVERLAY, CALLBACK_COVERAGE,
             'tools/content-schema/quest-authoring/quest_item_keys.py',
             'tools/content-schema/quest-authoring/quest_item_keys.schema.json',
             'content/quests/world-callbacks.json',

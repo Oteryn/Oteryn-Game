@@ -134,6 +134,7 @@ def supported_claim(definition):
     return (
         definition["readiness"] == "ready"
         or panpipe_key_claim(definition)
+        or outlaw_key_claim(definition)
         or (
             definition.get("definition_profile") == "authored_variant_v1"
             and definition.get("readiness") == "waiting_implementation"
@@ -152,11 +153,22 @@ def supported_claim(definition):
     )
 
 
+OUTLAW_KEYS = {3301: 2970, 3302: 2969, 3303: 2970, 3304: 2972}
+
+
+def outlaw_key_claim(definition):
+    return any(key_claim(definition, number, item) for number, item in OUTLAW_KEYS.items())
+
+
 def panpipe_key_claim(definition):
+    return key_claim(definition, 4055, 2969)
+
+
+def key_claim(definition, number, item):
     """Select the existing key-only lowering, with its exact source key number."""
     variant = definition.get("source_variant", {})
     return (
-        definition["identity"]["key"] == "oteryn:reward-claim.quest.key.id4055"
+        definition["identity"]["key"] == f"oteryn:reward-claim.quest.key.id{number}"
         and definition.get("definition_profile") == "authored_variant_v1"
         and definition.get("readiness") == "waiting_implementation"
         and definition.get("native_admission") == "WAITING_IMPLEMENTATION"
@@ -176,13 +188,13 @@ def panpipe_key_claim(definition):
                 {
                     "item": {
                         "family": "Item",
-                        "key": "oteryn:item.tibia.i2969",
+                        "key": f"oteryn:item.tibia.i{item}",
                         "revision": "definition-r1",
                     },
                     "count": 1,
                 }
             ],
-            "key_binding": "canary:door-key/4055",
+            "key_binding": f"canary:door-key/{number}",
         }
     )
 
@@ -364,6 +376,28 @@ def selections(root=ROOT):
                 raise ValueError("QUEST_CHEST_CANONICAL_SELECTOR_DRIFT")
             bindings[position] = row
         captured_claims = {r["claim"] for r in document["bindings"]}
+        if "journey" in document:
+            journey = document["journey"]
+            terminal, passage = journey["terminal"], journey["passage"]
+            if (
+                path.name != "outlaw-camp.json"
+                or journey["quest"] != "oteryn:quest.the_outlaw_camp_quest"
+                or captured_claims != {
+                    f"oteryn:reward-claim.quest.key.id{number}" for number in OUTLAW_KEYS
+                }
+                or terminal["position"] != [32620, 32198, 10]
+                or terminal["appearance"] != 2472
+                or terminal["unique"] != 14091
+                or passage["position"] != [32620, 32199, 10]
+                or passage["appearance"] != 6251
+                or passage["action"] != 3303
+            ):
+                raise ValueError("OUTLAW_CAMP_SOURCE_SELECTOR_DRIFT")
+            for rows, row in ((bindings, terminal), (doors, passage)):
+                position = tuple(row["position"])
+                if position in rows:
+                    raise ValueError("OUTLAW_CAMP_SOURCE_SELECTOR_CONFLICT")
+                rows[position] = row
         for row in document.get("level_access", []):
             position = tuple(row["position"])
             if (
@@ -403,7 +437,7 @@ def selections(root=ROOT):
             if ITEM_ACCESS[key][0] not in doors:
                 raise ValueError("QUEST_CHEST_ITEM_ACCESS_MISSING")
     if any(
-        row["claim"] == "oteryn:reward-claim.kv.panpipe" for row in bindings.values()
+        row.get("claim") == "oteryn:reward-claim.kv.panpipe" for row in bindings.values()
     ):
         # Already captured from both donors: door_key.lua lines137/158. The
         # numeric storage is4055 despite the donors' stale "key3791" label.
