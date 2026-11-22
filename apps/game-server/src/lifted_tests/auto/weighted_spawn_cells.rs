@@ -39,7 +39,8 @@ impl KeyResolver for WalkableGround {
 
 fn authored_spawn_table() -> Result<spawn::Table, Box<dyn Error>> {
     let mut families = Families::default();
-    families.add_spawns(br#"{
+    families.add_spawns(
+        br#"{
       "family":"Spawn.Source","coordinate_frame":"global-target-2026-09-27",
       "records":[{"declaration":{
         "identity":{"key":"oteryn:spawn.weighted_test"},
@@ -53,7 +54,8 @@ fn authored_spawn_table() -> Result<spawn::Table, Box<dyn Error>> {
            "direction":"south","respawn_ms":30000,"weight":3}
         ]
       }}]
-    }"#)?;
+    }"#,
+    )?;
     for key in [RAT, CAVE_RAT] {
         families.creatures.insert(
             key.into(),
@@ -178,8 +180,8 @@ fn shared_spawn_cell_draws_by_weight_on_each_respawn_and_keeps_single_creature_c
     let mut now = 0_u64;
     // This scope and the authored 1:3 weights fix the draw at every admission ordinal.
     let expected = [
-        RAT, CAVE_RAT, RAT, RAT, CAVE_RAT, RAT, RAT, CAVE_RAT,
-        RAT, RAT, CAVE_RAT, RAT, CAVE_RAT, RAT, RAT,
+        RAT, CAVE_RAT, RAT, RAT, CAVE_RAT, RAT, RAT, CAVE_RAT, RAT, RAT, CAVE_RAT, RAT, CAVE_RAT,
+        RAT, RAT,
     ];
     for (ordinal, species) in expected.into_iter().enumerate() {
         let live = runtime.spawn_point_creatures();
@@ -199,18 +201,26 @@ fn shared_spawn_cell_draws_by_weight_on_each_respawn_and_keeps_single_creature_c
             runtime.commit_monster_lab_damage(fixed_actor, b"single-home", 20)?;
         }
         crate::gameplay_transport::drive_owner_spawns(&mut runtime, now);
-        let due = runtime.pending_respawn(shared).ok_or("weighted deadline")?.due_micros;
+        let due = runtime
+            .pending_respawn(shared)
+            .ok_or("weighted deadline")?
+            .due_micros;
         assert_eq!(due, now + 30_000_000);
         crate::gameplay_transport::drive_owner_spawns(&mut runtime, due);
         assert!(runtime.spawn_point_creatures()[0].2.is_none());
         crate::gameplay_transport::drive_owner_spawns(&mut runtime, due + 4_200_000);
         now = due + 4_250_000;
         if ordinal == 0 {
-            let single_due = runtime.pending_respawn(single).ok_or("single deadline")?.due_micros;
+            let single_due = runtime
+                .pending_respawn(single)
+                .ok_or("single deadline")?
+                .due_micros;
             assert_eq!(single_due, 45_000_000);
             crate::gameplay_transport::drive_owner_spawns(&mut runtime, single_due);
             crate::gameplay_transport::drive_owner_spawns(&mut runtime, single_due + 4_200_000);
-            let replacement = runtime.spawn_point_creatures()[1].2.ok_or("single replacement")?;
+            let replacement = runtime.spawn_point_creatures()[1]
+                .2
+                .ok_or("single replacement")?;
             assert_ne!(replacement, fixed_actor);
             now = single_due + 4_250_000;
         }
@@ -230,14 +240,18 @@ fn occupied_weighted_spawn_retries_the_same_owner_draw() -> Result<(), Box<dyn E
     crate::gameplay_transport::drive_owner_spawns(&mut runtime, 0);
     crate::gameplay_transport::drive_owner_spawns(&mut runtime, 30_000_000);
     crate::gameplay_transport::drive_owner_spawns(&mut runtime, 34_200_000);
-    let retry = runtime.pending_respawn(point).ok_or("occupied home retry")?;
+    let retry = runtime
+        .pending_respawn(point)
+        .ok_or("occupied home retry")?;
     assert_eq!((retry.attempt, retry.due_micros), (1, 39_200_000));
     assert!(runtime.spawn_point_creatures()[0].2.is_none());
 
     runtime.remove_test_actor(blocker)?;
     crate::gameplay_transport::drive_owner_spawns(&mut runtime, retry.due_micros);
     crate::gameplay_transport::drive_owner_spawns(&mut runtime, retry.due_micros + 4_200_000);
-    let replacement = runtime.spawn_point_creatures()[0].2.ok_or("retried birth")?;
+    let replacement = runtime.spawn_point_creatures()[0]
+        .2
+        .ok_or("retried birth")?;
     assert_ne!(replacement, rat);
     // Ordinal 1 is Cave Rat, whereas consuming another draw would select Rat.
     assert!(runtime.matches_live_creature_identity(replacement, CAVE_RAT.as_bytes()));
