@@ -31,6 +31,7 @@ fn manager(vault: Arc<MemoryVault>, folder: PathBuf) -> DeviceLogin {
         forget_requested: Default::default(),
         journal: super::test_server::journal(Some(folder.clone())),
         vault,
+        commerce: Default::default(),
         state: Default::default(),
         folder: Some(folder),
     }

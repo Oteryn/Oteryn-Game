@@ -6,6 +6,11 @@ use std::time::Duration;
 
 const DEFAULT_CALLBACK_TIMEOUT: Duration = Duration::from_secs(300);
 
+use oteryn_foundation::CancellationToken;
+
+static SYSTEM_BROWSER: std::sync::LazyLock<BrowserOpener> =
+    std::sync::LazyLock::new(|| Arc::new(open_system_browser));
+
 pub type BrowserOpener = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 
 /// A required native login setting that is absent or empty.
@@ -100,7 +105,7 @@ impl NativeLoginConfig {
             preference_path: crate::play::PreferenceStore::path(),
             callback_timeout: DEFAULT_CALLBACK_TIMEOUT,
             retry_unit: Duration::from_secs(1),
-            open_browser: Arc::new(open_system_browser),
+            open_browser: Arc::clone(&SYSTEM_BROWSER),
             select_character: Arc::new(crate::character_selection::select),
             training_queue: Default::default(),
             account_services: Arc::new(crate::account_services::present),
@@ -112,8 +117,12 @@ impl NativeLoginConfig {
     }
 }
 
-/// Opens `url` in the system browser without waiting for it.
+/// Waits for the system URL delivery helper to finish.
 pub fn open_system_browser(url: &str) -> bool {
+    deliver_system_url(url, None)
+}
+
+fn deliver_system_url(url: &str, cancel: Option<&CancellationToken>) -> bool {
     let platform = if cfg!(windows) {
         BrowserPlatform::Windows
     } else if cfg!(target_os = "macos") {
@@ -121,15 +130,27 @@ pub fn open_system_browser(url: &str) -> bool {
     } else {
         BrowserPlatform::Unix
     };
-    browser_command(platform, url)
+    let Ok(mut child) = browser_command(platform, url)
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .spawn()
-        .map(|mut child| {
-            std::thread::spawn(move || child.wait());
-        })
-        .is_ok()
+    else {
+        return false;
+    };
+    let deadline = std::time::Instant::now() + Duration::from_secs(3);
+    while std::time::Instant::now() < deadline
+        && !cancel.is_some_and(CancellationToken::is_cancelled)
+    {
+        match child.try_wait() {
+            Ok(Some(status)) => return status.success(),
+            Ok(None) => std::thread::sleep(Duration::from_millis(10)),
+            Err(_) => break,
+        }
+    }
+    let _ = child.kill();
+    let _ = child.wait();
+    false
 }
 
 enum BrowserPlatform {
@@ -152,6 +173,14 @@ fn browser_command(platform: BrowserPlatform, url: &str) -> std::process::Comman
 }
 
 impl NativeLoginConfig {
+    pub(crate) fn checkout_browser(&self, cancel: CancellationToken) -> BrowserOpener {
+        if Arc::ptr_eq(&self.open_browser, &SYSTEM_BROWSER) {
+            Arc::new(move |url| deliver_system_url(url, Some(&cancel)))
+        } else {
+            Arc::clone(&self.open_browser)
+        }
+    }
+
     pub(crate) async fn forget_devices(&self) -> bool {
         use oteryn_platform_client::{PlatformClientConfig, gameplay_entry::login_client};
         if let (Ok(platform), Ok(gateway)) = (

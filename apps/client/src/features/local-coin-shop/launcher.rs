@@ -90,7 +90,7 @@ impl Launcher {
                 let cancel = (*worker_cancel).clone();
                 let mut config = launcher.config.clone();
                 if let Some(gate) = launcher.browser_gate.clone() {
-                    let browser = config.open_browser;
+                    let browser = config.checkout_browser(cancel.clone());
                     let browser_cancel = cancel.clone();
                     config.open_browser = Arc::new(move |url| gate(&browser, url, &browser_cancel));
                 }

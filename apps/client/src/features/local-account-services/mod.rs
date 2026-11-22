@@ -77,7 +77,7 @@ impl View {
     pub fn can_retry(&self) -> bool {
         self.pending.is_some() && self.post_refusal_status.is_none()
     }
-    fn pending_id(&self) -> Option<&str> {
+    pub(crate) fn pending_id(&self) -> Option<&str> {
         self.pending
             .as_ref()
             .map(|r| r.request_id.as_str())
@@ -180,6 +180,26 @@ pub fn present(view: &View, cancel: CancellationToken) -> Action {
 pub(crate) struct Session {
     account: View,
     coin: crate::coin_shop::View,
+}
+
+impl Session {
+    pub(crate) fn reopen_coins(
+        &mut self,
+        character_id: Option<String>,
+    ) -> &mut crate::coin_shop::View {
+        self.coin.reopen(character_id);
+        &mut self.coin
+    }
+
+    pub(crate) fn reopen(&mut self) {
+        self.account = View {
+            pending: self.account.pending.take(),
+            post_refusal_status: self.account.post_refusal_status,
+            unresolved: std::mem::take(&mut self.account.unresolved),
+            ..Default::default()
+        };
+        self.reopen_coins(None);
+    }
 }
 
 pub(crate) async fn run(

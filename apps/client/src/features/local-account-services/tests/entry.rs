@@ -126,12 +126,12 @@ fn entry_cancel_waits_for_account_services_browser_delivery() -> TestResult {
 }
 
 #[test]
-fn fresh_services_oauth_discards_bazaar_state() -> TestResult {
+fn fresh_services_oauth_keeps_bazaar_state() -> TestResult {
     fresh_services_oauth(false)
 }
 
 #[test]
-fn fresh_services_oauth_discards_prelogin_coin_state() -> TestResult {
+fn fresh_services_oauth_keeps_prelogin_coin_state() -> TestResult {
     fresh_services_oauth(true)
 }
 
@@ -146,7 +146,7 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
         config.platform_url = mock.base.clone();
         let selections = AtomicUsize::new(0);
         config.select_character = Arc::new(move |_, _, _| {
-            if selections.fetch_add(1, Ordering::SeqCst) < 2 {
+            if matches!(selections.fetch_add(1, Ordering::SeqCst), 0 | 1 | 3) {
                 SelectionAction::AccountServices
             } else {
                 SelectionAction::Play {
@@ -156,11 +156,12 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
             }
         });
         let account = AtomicUsize::new(0);
+        let original = Mutex::new(None);
         config.account_services = Arc::new(move |view, _| {
             let step = account.fetch_add(1, Ordering::SeqCst);
             assert!(!format!("{view:?}").contains("services-test-token-"));
             match (coins, step) {
-                (true, 0 | 2) => Action::CoinShop,
+                (true, 0 | 2 | 4) => Action::CoinShop,
                 (false, 0) => Action::Bid {
                     auction_id: AUCTION.into(),
                     coins: 50,
@@ -168,10 +169,40 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
                 },
                 (false, 1) => {
                     assert!(view.pending());
+                    let id = view.pending_id();
+                    assert!(id.is_some());
+                    *original
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner) = id.map(str::to_owned);
                     Action::Back
                 }
                 (false, 2) => {
-                    assert!(!view.pending(), "new OAuth inherited the Bazaar request");
+                    assert!(view.can_retry());
+                    assert_eq!(
+                        view.pending_id(),
+                        original
+                            .lock()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner)
+                            .as_deref()
+                    );
+                    Action::Bid {
+                        auction_id: AUCTION.into(),
+                        coins: 55,
+                        confirmed: true,
+                    }
+                }
+                (false, 3) => {
+                    assert_eq!(
+                        view.pending_id(),
+                        original
+                            .lock()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner)
+                            .as_deref()
+                    );
+                    Action::Back
+                }
+                (false, 4) => {
+                    assert!(!view.pending(), "sign-out retained a Bazaar request");
                     Action::Back
                 }
                 _ => Action::Back,
@@ -190,7 +221,11 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
                     CoinAction::Back
                 }
                 _ => {
-                    assert!(!view.pending(), "new OAuth inherited the coin request");
+                    assert_eq!(view.pending(), coin.load(Ordering::SeqCst) == 3);
+                    assert_eq!(
+                        view.can_purchase(crate::account_services::test_server::coins::PACKAGE),
+                        !view.pending()
+                    );
                     CoinAction::Back
                 }
             }
@@ -205,8 +240,16 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
             &config,
             CancellationToken::new(),
         ))?;
+        mock.runtime
+            .block_on(config.device_sessions.sign_out(&client))?;
+        mock.runtime.block_on(authorize::authorize(
+            &client,
+            &config,
+            CancellationToken::new(),
+        ))?;
         let state = mock.authority.lock().map_err(|_| "lock")?;
-        assert_eq!(state.oauth_exchanges, 5);
+        assert_eq!(state.effects, 0);
+        assert_eq!(state.oauth_exchanges, 8);
         Ok(())
     })
 }
@@ -215,7 +258,7 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
 fn commerce_oauth_bearer_is_absent_from_debug_and_log_output() -> TestResult {
     let output = std::process::Command::new(std::env::current_exe()?)
         .args([
-            "fresh_services_oauth_discards_",
+            "fresh_services_oauth_keeps_",
             "store_launcher_fresh_oauth",
             "--nocapture",
         ])

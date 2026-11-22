@@ -137,9 +137,10 @@ async fn submit(
     let result = client
         .create_coin_order(token, request, cancel.clone())
         .await;
-    // A retry's 403 does not bound the earlier POST. Keep its identity even after status 404.
+    // Only a refusal of the initial POST can rule out its effect.
     view.post_refusal_status = match &result {
-        Err(NativeLoginError::Platform(HttpStatus(status @ (403 | 409)))) => Some(*status),
+        Err(NativeLoginError::Platform(HttpStatus(409))) if !retry => Some(409),
+        Err(NativeLoginError::Platform(HttpStatus(403))) => Some(403),
         _ => None,
     };
     if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {

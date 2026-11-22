@@ -54,6 +54,7 @@ fn failed_vault_delete_still_revokes_and_never_reuses_the_session() -> TestResul
                 forget_requested: Default::default(),
                 journal: super::test_server::journal(None),
                 vault,
+                commerce: Default::default(),
                 state: Default::default(),
                 folder: None,
             };
@@ -97,6 +98,7 @@ fn sign_out_retries_every_pending_family() -> TestResult {
                 forget_requested: Default::default(),
                 journal: super::test_server::journal(None),
                 vault: vault.clone(),
+                commerce: Default::default(),
                 state: Default::default(),
                 folder: None,
             };
@@ -137,6 +139,7 @@ fn credential_fifo_is_rejected_within_the_lock_deadline() -> TestResult {
         forget_requested: Default::default(),
         journal: super::test_server::journal(Some(folder.path().into())),
         vault: Arc::new(Vault::default()),
+        commerce: Default::default(),
         state: Default::default(),
         folder: Some(folder.path().into()),
     };
@@ -166,6 +169,7 @@ fn queued_revocation_survives_shutdown_before_the_worker_runs() -> TestResult {
         forget_requested: Default::default(),
         journal: super::test_server::journal(Some(folder.path().into())),
         vault: vault.clone(),
+        commerce: Default::default(),
         state: Default::default(),
         folder: Some(folder.path().into()),
     };
@@ -245,6 +249,7 @@ fn rejected_platform_revocation_is_retried_after_restart() -> TestResult {
         forget_requested: Default::default(),
         journal: super::test_server::journal(Some(folder.path().into())),
         vault: vault.clone(),
+        commerce: Default::default(),
         state: Default::default(),
         folder: Some(folder.path().into()),
     };
@@ -295,6 +300,7 @@ fn review_3376_exit_after_active_vault_clear_replays_without_token_in_marker() -
         forget_requested: Default::default(),
         journal: super::test_server::journal(Some(folder.path().into())),
         vault: vault.clone(),
+        commerce: Default::default(),
         state: Default::default(),
         folder: Some(folder.path().into()),
     };

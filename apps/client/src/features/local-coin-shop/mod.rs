@@ -47,6 +47,14 @@ impl View {
             ..Self::default()
         }
     }
+    pub(crate) fn reopen(&mut self, character_id: Option<String>) {
+        *self = Self {
+            pending: self.pending.take(),
+            post_refusal_status: self.post_refusal_status,
+            confirmed: self.confirmed.take(),
+            ..Self::new(character_id)
+        };
+    }
     pub fn pending(&self) -> bool {
         self.pending.is_some()
     }

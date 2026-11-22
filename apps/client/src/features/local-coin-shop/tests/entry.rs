@@ -137,7 +137,7 @@ fn store_launcher_opens_coin_history_and_transfer_pages_until_the_session_ends()
 }
 
 #[test]
-fn store_launcher_fresh_oauth_discards_pending_request() -> TestResult {
+fn store_launcher_fresh_oauth_keeps_request_until_sign_out() -> TestResult {
     use crate::account_services::test_server::coins::PACKAGE;
     use std::time::Instant;
     test_thread(|| {
@@ -147,10 +147,17 @@ fn store_launcher_fresh_oauth_discards_pending_request() -> TestResult {
         let mut config = stack.config();
         config.platform_url = mock.base.clone();
         let (shown_tx, shown_rx) = mpsc::channel();
+        let device = config.device_sessions.clone();
         let steps = AtomicUsize::new(0);
         config.coin_shop = Arc::new(move |view, _| {
-            let _ = shown_tx.send((view.pending(), format!("{view:?}")));
-            if steps.fetch_add(1, Ordering::SeqCst) == 0 {
+            let _ = shown_tx.send((
+                view.status_text()
+                    .lines()
+                    .find(|line| line.contains("Unresolved order request"))
+                    .map(str::to_owned),
+                format!("{view:?}"),
+            ));
+            if matches!(steps.fetch_add(1, Ordering::SeqCst), 0 | 2) {
                 Action::Purchase {
                     package_id: PACKAGE.into(),
                     confirmed: true,
@@ -169,9 +176,11 @@ fn store_launcher_fresh_oauth_discards_pending_request() -> TestResult {
             None,
         );
         assert!(launcher.start());
+        let mut original = None;
         for expected in [false, true] {
             let (pending, debug) = shown_rx.recv_timeout(Duration::from_secs(5))?;
-            assert_eq!(pending, expected);
+            assert_eq!(pending.is_some(), expected);
+            original = pending;
             assert!(!debug.contains("services-test-token-"));
         }
         done_rx.recv_timeout(Duration::from_secs(5))?;
@@ -181,16 +190,24 @@ fn store_launcher_fresh_oauth_discards_pending_request() -> TestResult {
         }
         assert!(launcher.start());
         let (pending, debug) = shown_rx.recv_timeout(Duration::from_secs(5))?;
-        assert!(
-            !pending,
-            "Store reopened with state from the previous OAuth"
-        );
+        assert_eq!(pending, original);
+        let (after_purchase, _) = shown_rx.recv_timeout(Duration::from_secs(5))?;
+        assert_eq!(after_purchase, original);
+        assert_eq!(mock.with_coins(|coins| coins.creations)?, 0);
         assert!(!debug.contains("services-test-token-"));
         assert!(!format!("{launcher:?}").contains("services-test-token-"));
         done_rx.recv_timeout(Duration::from_secs(5))?;
+        mock.runtime.block_on(device.sign_out(&mock.client()?))?;
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !launcher.can_start() && Instant::now() < deadline {
+            std::thread::yield_now();
+        }
+        assert!(launcher.start());
+        assert!(shown_rx.recv_timeout(Duration::from_secs(5))?.0.is_none());
+        done_rx.recv_timeout(Duration::from_secs(5))?;
         assert_eq!(
             mock.authority.lock().map_err(|_| "lock")?.oauth_exchanges,
-            2
+            3
         );
         Ok(())
     })
