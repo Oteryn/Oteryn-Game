@@ -6,6 +6,8 @@ from functools import lru_cache
 
 from jsonschema import Draft202012Validator, ValidationError
 
+import world_contribution_bindings
+
 
 def require(condition, message):
     if not condition:
@@ -105,17 +107,24 @@ def registered_talk_bindings(root):
         require(path.is_file() and not path.is_symlink(), "Native binding registry file type")
         document = json.loads(path.read_text(encoding="utf-8"))
         require(document.get("schema") == 1, "Native binding registry schema")
+        relative = path.relative_to(root).as_posix()
+        shared_contribution = relative == world_contribution_bindings.BINDINGS_PATH
+        if shared_contribution:
+            # These exact callbacks credit a World ledger and prove no personal stage.
+            require(document == world_contribution_bindings.build(root)[relative],
+                    "Shared World contribution registry differs from the generator")
+
         for quest in document["quests"]:
             require(quest["quest"] not in owners, "Duplicate native binding quest owner")
             owners.add(quest["quest"])
             for stage in quest["stages"]:
                 trigger = stage["trigger"]
-                if trigger["kind"] != "npc_dialogue":
+                if trigger["kind"] != "npc_dialogue" or shared_contribution:
                     continue
                 key = (quest["quest"], stage["key"])
                 require(key not in result, "Duplicate registered TALK stage")
                 callbacks = [trigger["callback"]["key"]] + [c["key"] for c in trigger.get("alternatives", [])]
-                reference = {"kind": "npc_dialogue", "document": path.relative_to(root).as_posix(),
+                reference = {"kind": "npc_dialogue", "document": relative,
                              "stage": stage["key"]}
                 reference["callback" if len(callbacks) == 1 else "callbacks"] = callbacks[0] if len(callbacks) == 1 else callbacks
                 result[key] = reference

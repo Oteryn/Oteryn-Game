@@ -4,8 +4,12 @@ use crate::domain::CharacterId;
 use crate::foundation::{GameSessionId, RuntimeScopeRefV1};
 use oteryn_gameplay_encounter_rules::boss::RewardParticipation;
 
+#[path = "reward_chest/outfits.rs"]
+mod outfits;
 #[path = "reward_chest/settlement.rs"]
 mod settlement;
+
+pub use outfits::{BossOutfit, BossOutfitDeath, BossOutfitRecipient};
 
 /// One selected reward before it enters physical custody. Native Item policy determines its
 /// stack shape at collection; reward rolls are frozen once, never repeated by a client command.
@@ -84,6 +88,7 @@ pub struct BossDeathAtomicPlan {
     pub boss_key: String,
     pub minted_at_unix_ms: u64,
     pub rewards: Option<BossRewardDeath>,
+    pub outfit: Option<BossOutfitDeath>,
 }
 impl From<BossRewardDeath> for BossDeathAtomicPlan {
     fn from(rewards: BossRewardDeath) -> Self {
@@ -92,6 +97,7 @@ impl From<BossRewardDeath> for BossDeathAtomicPlan {
             boss_key: rewards.boss_key.clone(),
             minted_at_unix_ms: rewards.minted_at_unix_ms,
             rewards: Some(rewards),
+            outfit: None,
         }
     }
 }

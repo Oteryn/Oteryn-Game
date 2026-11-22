@@ -937,6 +937,35 @@ impl ChannelRuntimeV1 {
         spell_combat.native_death_events = death_events;
         Ok(())
     }
+    /// Only a creature auto-attack reads and consumes the timed Shield Bash / Slam condition.
+    pub fn shield_attack_damage_percent(&self, actor: ExactActorRef, now: u64) -> u32 {
+        self.carrier
+            .validate_ref(&self.continuity, actor.0)
+            .ok()
+            .and_then(|index| match &self.carrier.slots[index] {
+                Slot::CreatureOccupied {
+                    companion: Some(companion),
+                    ..
+                } => companion.conditions.shield_attack_damage_percent(now),
+                _ => None,
+            })
+            .unwrap_or(100)
+    }
+
+    /// Called once after the damage step commits, while the same owner holds the actor.
+    pub fn consume_shield_attack_reduction(&mut self, actor: ExactActorRef, now: u64) {
+        let Ok(index) = self.carrier.validate_ref(&self.continuity, actor.0) else {
+            return;
+        };
+        if let Slot::CreatureOccupied {
+            companion: Some(companion),
+            ..
+        } = &mut self.carrier.slots[index]
+        {
+            companion.conditions.consume_shield_attack_reduction(now);
+        }
+    }
+
     pub fn companion_snapshot(
         &self,
         actor: ExactActorRef,

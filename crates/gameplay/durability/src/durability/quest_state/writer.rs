@@ -879,7 +879,12 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        let awash_pump = context.is_some() && world_callbacks.iter().any(|callback| {
+            callback.key == request.transition_key
+                && oteryn_gameplay_quests::quest::world_contributions::pump_coal(callback).is_some()
+        });
         if reward_callback.is_none()
+            && !awash_pump
             && benevola.is_none()
             && !shared_entrance
             && catalogue
@@ -1990,6 +1995,13 @@ impl DurabilityRoot {
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,(&reward_root,&recovery),&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    if !super::super::world_event::changes::contributions::credit_quest(
+                        &mut tx, &recovery, fence, request.cause, reward_callback.as_ref(),
+                        callback.as_ref().zip(context.as_ref().map(|(_, context, _)| context.reset_epoch)),
+                    ).await? {
+                        tx.rollback().await?;
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if let Some(world) = &callback
                         && world.item_reward.is_none() && world.state_operations.is_empty()
                         && !world.storage.iter().any(|storage| storage.add.is_some())

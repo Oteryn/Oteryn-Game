@@ -17,6 +17,24 @@ pub enum SpellSpeedError {
     Admission(ConditionRefusal),
 }
 
+const SHIELD_ATTACK_CONDITION: &str = "oteryn:shield_attack_reduction";
+
+impl super::ConditionDefinition {
+    pub fn shield_attack_reduction(duration_ms: u32, damage_percent: u32) -> Option<Self> {
+        Self::new(
+            SHIELD_ATTACK_CONDITION,
+            1,
+            ConditionValues::Attributes {
+                duration_ms,
+                critical_chance_percent: 0,
+                critical_extra_percentage_points: 0,
+                damage_dealt_percent: damage_percent,
+                incoming_reduction_percent: 0,
+            },
+        )
+    }
+}
+
 impl<S: Clone> ConditionStore<S> {
     /// Caster `ConditionSpeed` uses f32 multiplication and addition followed by
     /// truncation. The ordinary store uses decimal thousandths; the frozen content
@@ -254,6 +272,27 @@ impl<S: Clone> ConditionStore<S> {
         self.get(key)
             .filter(|v| v.started_at <= now && v.ends_at.is_none_or(|end| now < end))
     }
+    pub fn shield_attack_damage_percent(&self, now: u64) -> Option<u32> {
+        let condition = self.active_at(super::ConflictKey::Attributes, now)?;
+        if condition.definition.key != SHIELD_ATTACK_CONDITION {
+            return None;
+        }
+        match condition.definition.values {
+            ConditionValues::Attributes {
+                damage_dealt_percent,
+                ..
+            } => Some(damage_dealt_percent),
+            _ => None,
+        }
+    }
+
+    pub fn consume_shield_attack_reduction(&mut self, now: u64) {
+        if self.shield_attack_damage_percent(now).is_some() {
+            self.instances
+                .retain(|condition| condition.definition.key != SHIELD_ATTACK_CONDITION);
+        }
+    }
+
     pub fn speed_delta_at(&self, now: u64) -> i64 {
         self.active_at(super::ConflictKey::Speed, now)
             .map_or(0, |v| v.speed_delta)

@@ -81,6 +81,13 @@ impl DurabilityRoot {
         }) {
             return Err(DurabilityError::InvalidStoredState);
         }
+        if plan
+            .outfit
+            .as_ref()
+            .is_some_and(|outfit| !outfit.matches_settlement(&plan.boss_key))
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -98,6 +105,7 @@ impl DurabilityRoot {
             .bind(scope.world_id().as_bytes().as_slice()).bind(plan.death.as_slice()).execute(&mut **tx).await?;
         let previous: Option<Vec<u8>> = sqlx::query_scalar("SELECT intent FROM game_boss_death_settlements WHERE world_id=encode($1,'hex')::uuid AND death_id=encode($2,'hex')::uuid")
             .bind(scope.world_id().as_bytes().as_slice()).bind(plan.death.as_slice()).fetch_optional(&mut **tx).await?;
+        let first_settlement = previous.is_none();
         if let Some(previous) = previous {
             if previous != intent {
                 return Err(DurabilityError::InvalidStoredState);
@@ -119,15 +127,23 @@ impl DurabilityRoot {
             sqlx::query("INSERT INTO game_boss_death_settlements(world_id,death_id,boss_key,minted_at,scope_kind,scope_id,scope_generation,personal_rewards,intent) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,encode($6,'hex')::uuid,$7::text::numeric,$8,$9) ON CONFLICT(world_id,death_id) DO NOTHING")
                 .bind(scope.world_id().as_bytes().as_slice()).bind(plan.death.as_slice()).bind(&plan.boss_key).bind(minted).bind(kind).bind(id.as_slice()).bind(generation.get().to_string()).bind(plan.rewards.is_some()).bind(intent).execute(&mut **tx).await?;
         }
-        match plan.rewards {
-            Some(rewards) => {
-                self.settle_boss_reward_chests_in_transaction(
+        if let Some(rewards) = plan.rewards
+            && !self
+                .settle_boss_reward_chests_in_transaction(
                     tx, authority, node, scope, generation, rewards,
                 )
-                .await
-            }
-            None => Ok(true),
+                .await?
+        {
+            return Ok(false);
         }
+        // The settlement receipt and its outfit writes share the transaction.
+        // Replays retain the first grant even if a later observation sees a different census.
+        if first_settlement && let Some(outfit) = plan.outfit {
+            outfit
+                .grant(self, tx, scope, generation, plan.death)
+                .await?;
+        }
+        Ok(true)
     }
 
     /// One owner for the frozen death and its chests. Native XP and Quest owners

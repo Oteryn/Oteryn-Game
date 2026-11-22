@@ -1,4 +1,5 @@
 //! Forge classification lives in the existing spawn and actor owners.
+use super::runtime_actor_companion::CompanionSnapshot;
 use super::*;
 use oteryn_gameplay_domain::domain::echo_warden::EchoVariant;
 use oteryn_gameplay_domain::domain::forge_creature::{
@@ -9,6 +10,16 @@ use sha2::{Digest, Sha256};
 
 // Canary's Game::updateForgeableMonsters maintenance cadence, in owner semantic time.
 pub(super) const POPULATION_TICK_MICROS: u64 = 10_000_000;
+
+// Crystal 201189f8 config.lua.dist: default live fiendish rotation, one hour.
+const FIENDISH_LIFETIME_MICROS: u64 = 3_600_000_000;
+
+#[derive(Debug)]
+pub(super) struct TrackedFiend {
+    actor: ExactActorRef,
+    deadline: u64,
+    awaiting_replacement: bool,
+}
 
 impl ChannelRuntimeV1 {
     /// Echo's influenced family uses the existing Forge stack draw and modifier owner.
@@ -80,22 +91,81 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 
+    /// Returns the nearest live Forge fiend across floors in this runtime and its reversion
+    /// deadline. The registry is bounded to three entries and retains Forge selection order.
+    pub fn nearest_live_fiend(
+        &self,
+        from: MovementLocalPosition,
+        now: u64,
+    ) -> Option<(CompanionSnapshot, u64)> {
+        self.forge_fiends
+            .iter()
+            .filter(|entry| !entry.awaiting_replacement && now < entry.deadline)
+            .filter_map(|entry| {
+                let snapshot = self.companion_snapshot(entry.actor).ok()?;
+                (snapshot.forge == Some(ForgeCreature::Fiendish))
+                    .then_some((snapshot, entry.deadline))
+            })
+            .min_by_key(|(snapshot, _)| {
+                let p = snapshot.position;
+                from.x
+                    .abs_diff(p.x)
+                    .max(from.y.abs_diff(p.y))
+                    .max(u32::from(from.floor.abs_diff(p.floor)))
+            })
+    }
+
+    fn revert_fiend(&mut self, actor: ExactActorRef, maximum: i64) -> Result<(), CarrierError> {
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let Slot::CreatureOccupied {
+            health,
+            spell_combat,
+            ..
+        } = &mut self.carrier.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        *health = maximum;
+        spell_combat.maximum_health = maximum;
+        spell_combat.forge = None;
+        Ok(())
+    }
+
     pub(super) fn drive_forge_population(&mut self, now: u64) -> Result<(), CarrierError> {
-        // Observe only the three retained incarnations on ordinary owner turns. A dead
-        // fiend holds its population slot until its own replacement deadline.
+        // Death retains the population slot until its replacement deadline. A living
+        // fiend reverts in place when its own classification expires.
+        let mut reverted = Vec::new();
         for index in 0..self.forge_fiends.len() {
-            let (actor, due) = self.forge_fiends[index];
-            if due.is_none() && self.companion_snapshot(actor).is_err() {
-                let due = now.saturating_add(FIENDISH_RESPAWN_MICROS);
-                self.forge_fiends[index].1 = Some(due);
-                self.forge_next_tick_micros = self.forge_next_tick_micros.min(due);
+            let entry = &self.forge_fiends[index];
+            if entry.awaiting_replacement {
+                continue;
+            }
+            let actor = entry.actor;
+            match self.companion_snapshot(actor) {
+                Err(_) => {
+                    let due = now.saturating_add(FIENDISH_RESPAWN_MICROS);
+                    let entry = &mut self.forge_fiends[index];
+                    entry.deadline = due;
+                    entry.awaiting_replacement = true;
+                    self.forge_next_tick_micros = self.forge_next_tick_micros.min(due);
+                }
+                Ok(snapshot)
+                    if now >= entry.deadline
+                        && self.assert_actor_spell_unreserved(actor).is_ok() =>
+                {
+                    self.revert_fiend(actor, snapshot.state.policy.maximum_health)?;
+                    reverted.push(actor);
+                }
+                Ok(_) => (),
             }
         }
-        if now < self.forge_next_tick_micros {
+        self.forge_fiends.retain(|entry| {
+            !reverted.contains(&entry.actor)
+                && !(entry.awaiting_replacement && entry.deadline <= now)
+        });
+        if now < self.forge_next_tick_micros && reverted.is_empty() {
             return Ok(());
         }
-        self.forge_fiends
-            .retain(|(_, due)| due.is_none_or(|due| now < due));
         let available =
             usize::from(FIENDISH_SIMULTANEOUS_MAX).saturating_sub(self.forge_fiends.len());
         let mut candidates = Vec::new();
@@ -110,7 +180,8 @@ impl ChannelRuntimeV1 {
                     continue;
                 };
                 let identity = (u64::from(source.source.0) << 8) | ordinal as u64;
-                let eligible = snapshot.state.master.is_none()
+                let eligible = !reverted.contains(&actor)
+                    && snapshot.state.master.is_none()
                     && snapshot.state.policy.forge_difficulty.is_some()
                     && !matches!(snapshot.forge, Some(ForgeCreature::Influenced(_)));
                 candidates.push(ForgeSpawnCandidate {
@@ -137,7 +208,11 @@ impl ChannelRuntimeV1 {
                 && let Some((_, actor)) = actors.iter().find(|(id, _)| id == identity)
             {
                 self.apply_forge_classification(*actor, ForgeCreature::Fiendish)?;
-                self.forge_fiends.push((*actor, None));
+                self.forge_fiends.push(TrackedFiend {
+                    actor: *actor,
+                    deadline: now.saturating_add(FIENDISH_LIFETIME_MICROS),
+                    awaiting_replacement: false,
+                });
                 selected += 1;
             }
         }
@@ -175,7 +250,7 @@ impl ChannelRuntimeV1 {
         self.forge_next_tick_micros = self
             .forge_fiends
             .iter()
-            .filter_map(|(_, due)| *due)
+            .map(|entry| entry.deadline.max(now.saturating_add(1)))
             .min()
             .unwrap_or(next_scan)
             .min(next_scan);

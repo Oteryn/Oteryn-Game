@@ -346,10 +346,34 @@ pub(super) fn hireling_refusal(
 
 /// What a known commit applies.
 enum Effect {
-    Food(u16),
+    Food {
+        seconds: u16,
+        speech: Option<&'static str>,
+    },
     Potion(Vec<ReferencePotionRestore>),
     /// W22c: the durable effect row is the whole effect; the kill settle reads it.
     Concoction,
+}
+
+/// Crystal 201189f8, data/scripts/actions/items/foods.lua:101,127-133,144-154.
+/// These actions use the donor's food units (12 seconds each) and eat speech.
+fn crystal_food(definition: &TypedDefinitionRef) -> Option<Effect> {
+    if definition.family != "Item" || definition.revision_ref != "definition-r1" {
+        return None;
+    }
+    let units = match definition.production_key.as_str() {
+        "oteryn:item.tibia.i15795" => 0,
+        "oteryn:item.tibia.i48255" | "oteryn:item.tibia.i48508" => 125,
+        "oteryn:item.tibia.i48256" => 605,
+        "oteryn:item.tibia.i48273" => 185,
+        "oteryn:item.tibia.i48509" | "oteryn:item.tibia.i48511" => 120,
+        "oteryn:item.tibia.i48544" => 124,
+        _ => return None,
+    };
+    Some(Effect::Food {
+        seconds: units * 12,
+        speech: Some(if units == 0 { "Phew!" } else { "Yum." }),
+    })
 }
 
 enum UseSource {
@@ -632,7 +656,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
         }
-        if let Some(record) = record
+        let sourced_food = crystal_food(&entry.item.definition);
+        if sourced_food.is_none()
+            && let Some(record) = record
             && let ReferenceItemField::Known(_) = &record.semantics.fluid
         {
             let fluid = inventory.fluids.get(&source).copied().unwrap_or(0);
@@ -641,7 +667,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .drink(actor, &command, fence, source, definition, fluid)
                 .await;
         }
-        let (kind, effect, flask) = match record.map(|record| &record.semantics.consumption) {
+        let consumption = record.map(|record| &record.semantics.consumption);
+        let (kind, effect, flask) = match (sourced_food, consumption) {
+            (Some(effect), _) => (ItemUseKind::Food, effect, ItemUseFlaskPlan::None),
             _ if entry.item.definition.production_key
                 == crate::durability::item_use::concoction::WEALTH_DUPLEX_KEY =>
             {
@@ -651,21 +679,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ItemUseFlaskPlan::None,
                 )
             }
-            None => return Err(UseDisposition::NothingToUse),
-            Some(consumption) => match consumption {
-                ReferenceItemField::Known(ReferenceItemConsumption::Food(food))
-                    if food.regeneration_seconds > 0 =>
-                {
-                    let effect = Effect::Food(food.regeneration_seconds);
-                    (ItemUseKind::Food, effect, ItemUseFlaskPlan::None)
-                }
-                ReferenceItemField::Known(ReferenceItemConsumption::Potion(potion)) => {
-                    let flask = flask_plan(native, &inventory, entry, &potion.empty_flask)?;
-                    let effect = Effect::Potion(potion.restores.clone());
-                    (ItemUseKind::Potion, effect, flask)
-                }
-                _ => return Err(UseDisposition::NothingToUse),
-            },
+            (_, Some(ReferenceItemField::Known(ReferenceItemConsumption::Food(food))))
+                if food.regeneration_seconds > 0 =>
+            {
+                let effect = Effect::Food {
+                    seconds: food.regeneration_seconds,
+                    speech: None,
+                };
+                (ItemUseKind::Food, effect, ItemUseFlaskPlan::None)
+            }
+            (_, Some(ReferenceItemField::Known(ReferenceItemConsumption::Potion(potion)))) => {
+                let flask = flask_plan(native, &inventory, entry, &potion.empty_flask)?;
+                let effect = Effect::Potion(potion.restores.clone());
+                (ItemUseKind::Potion, effect, flask)
+            }
+            _ => return Err(UseDisposition::NothingToUse),
         };
         let reserved: Vec<[u8; 16]> = std::iter::once(source)
             .chain(match &flask {
@@ -711,8 +739,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }) {
                 return Err(UseDisposition::RequirementNotMet);
             }
-            // FOOD-REGEN-1: eating that would reach the cap is refused; nothing is burned.
-            if let Effect::Food(seconds) = effect
+            // Crystal checks fullness only when the actor already has an active food condition.
+            if let Effect::Food { seconds, .. } = effect
                 && eat_food(&mut state.clone(), seconds, self.owner_ms()).is_err()
             {
                 return Err(UseDisposition::Full);
@@ -759,6 +787,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &effect,
                 self.owner_ms(),
             );
+            if let Effect::Food {
+                speech: Some(speech),
+                ..
+            } = effect
+                && !states.is_dead(actor)
+            {
+                self.states
+                    .chat
+                    .publish_quest_speech(&runtime, actor, session, speech);
+            }
         }
         if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
             gate.settle(
@@ -1326,9 +1364,11 @@ fn apply_effect(
     now_ms: u64,
 ) {
     match effect {
-        Effect::Food(seconds) => {
+        Effect::Food { seconds, .. } => {
             // Checked FULL at PREPARE; with one use in flight it cannot have filled since.
-            let _ = states.apply_food(runtime, actor, session, *seconds, now_ms);
+            if *seconds > 0 {
+                let _ = states.apply_food(runtime, actor, session, *seconds, now_ms);
+            }
         }
         Effect::Potion(restores) => {
             let root =

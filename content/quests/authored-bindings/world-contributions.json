@@ -1,0 +1,186 @@
+{
+  "quests": [
+    {
+      "quest": "oteryn:quest.awash_world_change",
+      "recipe_sha256": "bac9203516500a025fdab711c9bf0c28bbc36a690eed5acae3af867bb467789f",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
+        "https://www.tibiawiki.com.br/wiki/Awash_World_Change"
+      ],
+      "stages": [
+        {
+          "completes": false,
+          "key": "awash-pump-north",
+          "trigger": {
+            "callback": {
+              "item_on_target": {
+                "count": 1,
+                "item": "oteryn:item.tibia.i12600",
+                "selected_instance": true
+              },
+              "key": "oteryn:quest-callback/authored-awash-pump-north",
+              "offerings": [],
+              "passages": [],
+              "quest": "oteryn:quest.awash_world_change",
+              "requires_world_admission": true,
+              "return_on_failure": false,
+              "reversible": false,
+              "selector": {
+                "native": {
+                  "appearance": 12666,
+                  "ordinal": 1,
+                  "position": {
+                    "floor": -9,
+                    "x": 32558,
+                    "y": 32007
+                  }
+                }
+              },
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
+                "https://www.tibiawiki.com.br/wiki/Awash_World_Change"
+              ],
+              "storage": [],
+              "trigger": "use"
+            },
+            "kind": "map_use"
+          }
+        },
+        {
+          "completes": false,
+          "key": "awash-pump-middle",
+          "trigger": {
+            "callback": {
+              "item_on_target": {
+                "count": 1,
+                "item": "oteryn:item.tibia.i12600",
+                "selected_instance": true
+              },
+              "key": "oteryn:quest-callback/authored-awash-pump-middle",
+              "offerings": [],
+              "passages": [],
+              "quest": "oteryn:quest.awash_world_change",
+              "requires_world_admission": true,
+              "return_on_failure": false,
+              "reversible": false,
+              "selector": {
+                "native": {
+                  "appearance": 12667,
+                  "ordinal": 1,
+                  "position": {
+                    "floor": -9,
+                    "x": 32560,
+                    "y": 32014
+                  }
+                }
+              },
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
+                "https://www.tibiawiki.com.br/wiki/Awash_World_Change"
+              ],
+              "storage": [],
+              "trigger": "use"
+            },
+            "kind": "map_use"
+          }
+        },
+        {
+          "completes": false,
+          "key": "awash-pump-south",
+          "trigger": {
+            "callback": {
+              "item_on_target": {
+                "count": 1,
+                "item": "oteryn:item.tibia.i12600",
+                "selected_instance": true
+              },
+              "key": "oteryn:quest-callback/authored-awash-pump-south",
+              "offerings": [],
+              "passages": [],
+              "quest": "oteryn:quest.awash_world_change",
+              "requires_world_admission": true,
+              "return_on_failure": false,
+              "reversible": false,
+              "selector": {
+                "native": {
+                  "appearance": 12666,
+                  "ordinal": 1,
+                  "position": {
+                    "floor": -9,
+                    "x": 32567,
+                    "y": 32024
+                  }
+                }
+              },
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
+                "https://www.tibiawiki.com.br/wiki/Awash_World_Change"
+              ],
+              "storage": [],
+              "trigger": "use"
+            },
+            "kind": "map_use"
+          }
+        }
+      ],
+      "tracks": []
+    },
+    {
+      "quest": "oteryn:quest.steamship_world_change",
+      "recipe_sha256": "53edcd3ed085aa4082b0d10bd8c7f6544cdf9c68a7255a001b41aa5c627b5fdc",
+      "sources": [
+        "https://tibia.fandom.com/wiki/Steamship_World_Change/Spoiler",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/junkar_thais.lua"
+      ],
+      "stages": [
+        {
+          "completes": false,
+          "key": "coal",
+          "trigger": {
+            "callback": {
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "key": "oteryn:quest-reward/authored/steamship/donation",
+              "keywords": [
+                "yes"
+              ],
+              "next_topic": 0,
+              "npc": "oteryn:npc.junkar_thais",
+              "quest": "oteryn:quest.steamship_world_change",
+              "repeatable": true,
+              "reply": [
+                "Thank you."
+              ],
+              "sources": [
+                "https://tibia.fandom.com/wiki/Steamship_World_Change/Spoiler",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/junkar_thais.lua"
+              ],
+              "storage": [],
+              "take": [
+                {
+                  "count": 1,
+                  "item": "oteryn:item.tibia.i12600"
+                }
+              ],
+              "topic": 1
+            },
+            "kind": "npc_dialogue"
+          }
+        }
+      ],
+      "tracks": []
+    }
+  ],
+  "schema": 1
+}

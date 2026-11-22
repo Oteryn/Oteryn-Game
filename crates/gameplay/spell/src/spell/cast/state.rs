@@ -11,6 +11,53 @@ use crate::spell::harmony::{HarmonyMultiplier, MonkState, MonkStateError};
 use crate::spell::{CasterState, HarmonyRole, SpellBook, SpellDefinition, Vocation};
 
 impl PlayerSpellState {
+    pub fn install_divine_empowerment(
+        &mut self,
+        positions: Vec<crate::spell::chain::TilePosition>,
+        origin: crate::spell::chain::TilePosition,
+        expires_micros: u64,
+        interval_micros: u64,
+        bonus_percent: u32,
+        now: u64,
+    ) {
+        self.divine_empowerment = Some(super::DivineEmpowerment {
+            standing_on_field: positions.contains(&origin),
+            positions,
+            expires_micros,
+            interval_micros,
+            next_poll_micros: now.saturating_add(interval_micros),
+            bonus_percent,
+        });
+    }
+
+    /// Crystal player_wheel.cpp checks the owner tile at cast and on a one-second think cadence.
+    pub fn poll_divine_empowerment(
+        &mut self,
+        position: crate::foundation::MovementLocalPosition,
+        now: u64,
+    ) {
+        let Some(field) = self.divine_empowerment.as_mut() else {
+            return;
+        };
+        if now >= field.expires_micros || self.health == 0 {
+            self.divine_empowerment = None;
+        } else if now >= field.next_poll_micros {
+            field.standing_on_field = field.positions.iter().any(|tile| {
+                (tile.x, tile.y, tile.floor) == (position.x, position.y, position.floor)
+            });
+            field.next_poll_micros = now.saturating_add(field.interval_micros);
+        }
+    }
+
+    pub fn divine_empowerment_percent(&self, now: u64) -> u32 {
+        self.divine_empowerment
+            .as_ref()
+            .filter(|field| {
+                field.standing_on_field && self.health > 0 && now < field.expires_micros
+            })
+            .map_or(0, |field| field.bonus_percent)
+    }
+
     /// Replaces the Wheel dedication contribution without changing the Character-owned base.
     /// Lower maxima clamp the live pools; higher maxima do not grant health or mana.
     pub fn apply_wheel_maximum_bonus(

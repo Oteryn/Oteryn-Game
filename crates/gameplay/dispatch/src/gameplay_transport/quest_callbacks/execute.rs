@@ -130,7 +130,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             (pos, after)
         };
-        if map.facts.object_revision(key) != expected_revision {
+        let skinning = callback.skinning_target();
+        let current_revision = map.facts.object_revision(key);
+        let skinning_already_projected = skinning.is_some()
+            && expected_revision.checked_add(1) == Some(current_revision)
+            && callback
+                .item_on_target
+                .as_ref()
+                .and_then(|tool| tool.target_replacement)
+                == Some(after.appearance_id)
+            && self
+                .states
+                .quest_callbacks
+                .records
+                .lock()
+                .is_ok_and(|pending| {
+                    pending.get(&session).is_some_and(|record| {
+                        record.ingress_settled
+                            && record.cause == cause
+                            && record.key == key
+                            && record.callback == callback.key
+                            && record.revision == expected_revision
+                    })
+                });
+        if current_revision != expected_revision && !skinning_already_projected {
             // A known-commit source visual batch may have published its first
             // fixed object before a retry. Only that retained exact post-CAS
             // revision is replayable; a later party's revision never aliases it.
@@ -167,10 +190,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
             );
         }
-        if !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
-            callback,
-            after.appearance_id,
-        ) {
+        if !skinning_already_projected
+            && !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
+                callback,
+                after.appearance_id,
+            )
+        {
             return UseDisposition::NothingToUse;
         }
         if callback.effects.reward_door.is_some() {
@@ -218,6 +243,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Occupied;
         }
         let before = after;
+        if skinning.is_some()
+            && !selected_tool
+                .is_some_and(|(tool, _)| self.states.player_trades.physical(session, Some(*tool)))
+        {
+            return UseDisposition::Rejected;
+        }
+        if let Some(source) = &skinning
+            && (tile(source.position) != pos
+                || crate::map::view::placement_of(key)
+                    .is_none_or(|(_, ordinal)| ordinal != source.ordinal)
+                || (!skinning_already_projected && before.appearance_id != source.appearance)
+                || before.bound
+                || before.count != 1
+                || before.sub_type != 0
+                || map.facts.house_tile(pos))
+        {
+            return UseDisposition::NothingToUse;
+        }
         if let Some(pair) = callback.lever {
             after.appearance_id = pair[usize::from(!close)];
         }
@@ -1522,7 +1565,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // Personal gifts and legacy telescope completion leave the shared object intact.
             // Scene changes and shared-world progress still publish their revision.
-            let personal_claim_preserves_object = (callback.item_reward().is_some()
+            let personal_claim_preserves_object = (skinning.is_some()
+                || callback.item_reward().is_some()
                 || callback.key == "oteryn:quest-callback/m09-treasure-telescope-legacy")
                 && callback.effects.item_reward_cycle.is_none()
                 && !callback.effects.item_reward_per_use
@@ -1588,6 +1632,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else if !merchant_projected
                 && !callback.is_read_only()
                 && !personal_claim_preserves_object
+                && !skinning_already_projected
                 && !apply_scene()
             {
                 return UseDisposition::Rejected;

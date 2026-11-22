@@ -159,6 +159,41 @@ impl GroundActionContext {
     }
 }
 
+/// Operands resolved by the active Channel owner for a flask-on-dispenser action.
+#[derive(Debug)]
+pub struct DispenserActionContext {
+    pub(super) target: Option<GroundActionContext>,
+    pub(super) overflow: Option<LoopGround>,
+}
+
+impl DispenserActionContext {
+    pub fn from_native_owner(
+        room: Option<&crate::content::QualifiedNativeEntryRoom>,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        source: Option<GroundActionSource>,
+        map_revision: Option<&str>,
+    ) -> Result<Self, &'static str> {
+        let target = source
+            .map(|source| {
+                GroundActionContext::from_native_owner(
+                    room.ok_or("dispenser Ground room missing")?, runtime, actor, session, source,
+                )
+            })
+            .transpose()?;
+        let overflow = room.zip(map_revision).and_then(|(room, revision)| {
+            let (current, position) = runtime.positioned_player_for_session(session).ok()??;
+            if current != actor {
+                return None;
+            }
+            LoopGround::from_native_owner(room, runtime, position.position(), revision).ok()
+        });
+        Ok(Self { target, overflow })
+    }
+
+}
+
 impl DurabilityRoot {
     pub async fn read_ground_action_source(
         &self,
@@ -208,7 +243,7 @@ impl DurabilityRoot {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub async fn consume_dispenser_on_ground<C: ItemLoopContent>(
+    pub async fn consume_dispenser<C: ItemLoopContent>(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
@@ -217,7 +252,7 @@ impl DurabilityRoot {
         request: ConsumeTransformRequest,
         native: &NativeGameplayState,
         content: &C,
-        target: &GroundActionContext,
+        context: &DispenserActionContext,
     ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
         self.consume_transform_inner(
             permit,
@@ -229,7 +264,7 @@ impl DurabilityRoot {
             content,
             false,
             None,
-            ActionContext::DispenserTarget(target),
+            ActionContext::Dispenser(context),
         )
         .await
     }
@@ -664,6 +699,13 @@ async fn write_reward<C: ItemLoopContent>(
         .filter(|ordinal| *ordinal > 0)
         .ok_or(DurabilityError::InvalidStoredState)?
         .to_string();
+    let placement = crate::durability::item_mint::GroundPlacement {
+        spatial_position: source.target.spatial_position.clone(),
+        corpse_ref: source.corpse_ref.clone(),
+        map_revision: source.target.map_revision.clone(),
+        content_revision: source.target.content_revision.clone(),
+        native_room_placement_context: source.target.placement_context.clone(),
+    };
     persist_action(
         Some(ground_fences.permit),
         tx,
@@ -679,36 +721,22 @@ async fn write_reward<C: ItemLoopContent>(
         capacity,
         &outputs,
         &source.location,
-        ground.then_some((ground_fences, context)),
+        ground.then_some((ground_fences, &placement)),
     )
     .await
 }
 
-/// Reserve the exact new reward root through the existing native census. The
-/// caller has already applied its real source debit under the Ground owner lock.
-pub(super) async fn admit_reward_output(
+/// Check the new root against the native census after any source removals.
+pub(super) async fn admit_output(
     tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
     fences: &ActionGroundFences<'_>,
-    context: &GroundActionContext,
+    placement: &crate::durability::item_mint::GroundPlacement,
     output: &Value,
 ) -> Result<Option<UseDisposition>, DurabilityError> {
     use crate::durability::ground_cell_limit::{GroundCellAdmissionError, GroundCellLimitError};
     use crate::durability::spell_item_transaction::SpellItemError;
 
-    let source = &context.source;
-    if !oteryn_gameplay_items::event_items::ground_output_at_source(
-        &source.definition.production_key,
-    ) {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    let placement = crate::durability::item_mint::GroundPlacement {
-        spatial_position: source.target.spatial_position.clone(),
-        corpse_ref: source.corpse_ref.clone(),
-        map_revision: source.target.map_revision.clone(),
-        content_revision: source.target.content_revision.clone(),
-        native_room_placement_context: source.target.placement_context.clone(),
-    };
     let item = crate::durability::item_mint::uuid_text(
         output
             .get("item")
@@ -721,7 +749,7 @@ pub(super) async fn admit_reward_output(
         fences.recovery,
         fences.node,
         (fence.runtime_scope, fence.scope_ownership_generation.get()),
-        &placement,
+        placement,
         &item,
     )
     .await

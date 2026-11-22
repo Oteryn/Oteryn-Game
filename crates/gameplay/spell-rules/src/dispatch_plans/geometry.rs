@@ -70,30 +70,31 @@ pub fn geometry(
     let Some(area) = &a.area else {
         return Ok(BTreeSet::from([origin]));
     };
-    let matrix = |rows: &[String]| -> Result<Value, PlanRejected> {
-        rows.iter()
-            .map(|r| {
-                r.bytes()
-                    .map(|c| match c {
-                        b'.' => Ok(json!(0)),
-                        b'x' => Ok(json!(1)),
-                        b'c' => Ok(json!(2)),
-                        b'C' => Ok(json!(3)),
-                        _ => Err(PlanRejected),
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-                    .map(Value::Array)
-            })
-            .collect::<Result<Vec<_>, _>>()
-            .map(Value::Array)
-    };
     let mut area_json =
-        json!({"directional":a.needs_direction,"orthogonal":matrix(&area.matrix.north)?});
+        json!({"directional":a.needs_direction,"orthogonal":source_matrix(&area.matrix.north)?});
     if let Some(rows) = &area.matrix.diagonal {
-        area_json["diagonal"] = matrix(rows)?;
+        area_json["diagonal"] = source_matrix(rows)?;
     }
     area_candidates(&json!({"area":area_json}), origin, facing)
 }
+pub fn source_matrix(rows: &[String]) -> Result<Value, PlanRejected> {
+    rows.iter()
+        .map(|r| {
+            r.bytes()
+                .map(|c| match c {
+                    b'.' => Ok(json!(0)),
+                    b'x' => Ok(json!(1)),
+                    b'c' => Ok(json!(2)),
+                    b'C' => Ok(json!(3)),
+                    _ => Err(PlanRejected),
+                })
+                .collect::<Result<Vec<_>, _>>()
+                .map(Value::Array)
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map(Value::Array)
+}
+
 /// Geometry is read from the already closed native recipe, independent of tile permission.
 pub fn area_candidates(
     parameters: &Value,

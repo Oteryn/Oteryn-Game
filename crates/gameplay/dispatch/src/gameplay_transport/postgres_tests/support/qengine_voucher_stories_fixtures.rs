@@ -131,8 +131,11 @@ pub(super) async fn exercise(
     h: &Harness,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-l9-steamship-donation" {
+        return super::world_contributions::steamship_donation(owner, admitted, h).await;
+    }
     let (family, looks, vouchers) = match name {
-        "qengine-rewards-l9-afflicted-story" => ("afflicted", (430, 431), [12551, 12787, 12786]),
+        "qengine-rewards-l9-afflicted-story" | "qengine-rewards-l9-afflicted-swamp-fever" => ("afflicted", (430, 431), [12551, 12787, 12786]),
         "qengine-rewards-l9-soil-guardian-story"
         | "qengine-rewards-l9-soil-guardian-package-story" => {
             ("soil_guardian", (514, 516), [16252, 16253, 16254])
@@ -191,6 +194,8 @@ pub(super) async fn exercise(
     );
     let mut ordinal = 600;
     if family == "afflicted" {
+        let world = admitted.world_id;
+        super::worldchg_trader_fixtures::day(h, world, 0).await?;
         let [npc] = super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.ottokar"]).await?;
         mint(owner, admitted, 12787, 1, &mut ordinal).await?;
         use_native(owner, admitted, 12787, UseDisposition::RequirementNotMet).await?;
@@ -255,6 +260,12 @@ pub(super) async fn exercise(
             result,
             oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Rejected
         );
+        let prove_phase = name == "qengine-rewards-l9-afflicted-swamp-fever";
+        if prove_phase {
+            assert!(h.root.world_change_active(world, "swamp_fever_unmedicated").await?);
+            assert!(!h.root.world_change_active(world, "swamp_fever_medicine_delivered").await?);
+            assert_eq!(medicine_tally(h).await?, 0);
+        }
         for expected in 1..=2 {
             mint(owner, admitted, 12517, 1, &mut ordinal).await?;
             let (result, _, command) =
@@ -292,6 +303,16 @@ pub(super) async fn exercise(
                 progress, expected,
                 "literal replay cannot advance achievement twice"
             );
+            if prove_phase {
+                assert_eq!(medicine_tally(h).await?, expected);
+                assert!(h.root.world_change_active(world, "swamp_fever_medicine_delivered").await?);
+                assert!(!h.root.world_change_active(world, "swamp_fever_unmedicated").await?);
+            }
+        }
+        if prove_phase {
+            super::worldchg_trader_fixtures::day(h, world, 1).await?;
+            assert!(h.root.world_change_active(world, "swamp_fever_unmedicated").await?);
+            assert!(!h.root.world_change_active(world, "swamp_fever_medicine_delivered").await?);
         }
         let claims:i64=sqlx::query_scalar("SELECT count(*) FROM game_reward_claims WHERE claim_production_key LIKE 'oteryn:quest-exchange/%'").fetch_one(&h.pool).await?;
         assert_eq!(
@@ -556,4 +577,14 @@ pub(super) async fn exercise(
     );
     assert_eq!(grants(h).await?, 3);
     Ok(())
+}
+
+
+async fn medicine_tally(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT coalesce(sum(t.tally),0)::bigint FROM game_world_change_tallies t
+         JOIN game_world_reset_active a USING(world_id,reset_epoch) WHERE t.resource='medicine'",
+    )
+    .fetch_one(&h.pool)
+    .await?)
 }

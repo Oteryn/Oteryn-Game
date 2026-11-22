@@ -20,7 +20,8 @@
 
 use super::item_mint_audit::{
     self as mint, AuditError, EventEnvelopeV1, ITEM_LIFECYCLE_LIVE, OneItemOperationV1,
-    OneItemStateV1, OneItemTransactionV1, TransactionEventRefV1, TransactionResourceUsage,
+    OneItemStateV1, OneItemTransactionV1, OneItemTypedDefinitionRevisionV1, TransactionEventRefV1,
+    TransactionResourceUsage,
     Type2EventTuple, check_content_key, check_definition, check_uuid_v7, encode_bounded,
 };
 use super::item_transfer_audit::{ITEM_LIFECYCLE_RETIRED, OneItemCommandRefV1};
@@ -124,6 +125,9 @@ pub struct OneItemNpcTradeLineV1 {
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemNpcTradeV1 {
+    /// Exact item price denomination. The gold summary stays zero for these trades.
+    #[prost(message, optional, tag = "21")]
+    pub item_currency: Option<OneItemTypedDefinitionRevisionV1>,
     /// NPC-TRADE-3: Item fluid state, including an explicitly empty container.
     #[prost(uint32, optional, tag = "19")]
     pub fluid_subtype: Option<u32>,
@@ -403,6 +407,9 @@ fn check_npc_trade_shape(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
         .as_ref()
         .is_some_and(|cause| cause.npc_key == super::npc_trade::yeo::NPC)
     {
+        if value.item_currency.is_some() {
+            return Err(AuditError::InvalidInput);
+        }
         return yeo::check(value);
     }
     check_ordinary_npc_trade(value)
@@ -467,6 +474,34 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
         SIDE_EXCHANGE => (LINE_ITEM_BURN, [LINE_ITEM_MINT, LINE_ITEM_MINT], 0),
         _ => return Err(AuditError::InvalidInput),
     };
+    let currency = value.item_currency.as_ref();
+    let expected_currency_units = if let Some(currency) = currency {
+        use super::npc_trade::item_currency::UNITS_MAX;
+        check_definition(Some(currency))?;
+        if currency.family != COIN_DEFINITION_FAMILY
+            || Coin::from_production_key(&currency.production_key).is_some()
+            || !matches!(side, SIDE_BUY | SIDE_SELL)
+            || value.house_key.is_some()
+            || value.bank_debit.is_some()
+            || value.total_gold_units != 0
+        {
+            return Err(AuditError::InvalidInput);
+        }
+        value.unit_price
+            .checked_mul(u64::from(value.quantity))
+            .filter(|total| (1..=UNITS_MAX).contains(total))
+            .ok_or(AuditError::InvalidInput)?
+    } else {
+        if value.unit_price.checked_mul(u64::from(value.quantity)) != Some(value.total_gold_units) {
+            return Err(AuditError::InvalidInput);
+        }
+        0
+    };
+    let (burn_kind, mint_kinds) = if currency.is_some() {
+        (LINE_ITEM_BURN, [LINE_ITEM_MINT; 2])
+    } else {
+        (burn_kind, mint_kinds)
+    };
     let sell_all = value.sell_all;
     let quantity_max = if sell_all {
         SELL_ALL_UNITS_MAX
@@ -477,7 +512,6 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
         || value.runtime_scope_ownership_generation == 0
         || (sell_all && side != SIDE_SELL)
         || !(1..=quantity_max).contains(&value.quantity)
-        || value.unit_price.checked_mul(u64::from(value.quantity)) != Some(value.total_gold_units)
         || value.total_gold_units > total_max
     {
         return Err(AuditError::InvalidInput);
@@ -503,6 +537,8 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
     if (side == SIDE_SELL && burns == 0)
         || (sell_all && burns == 0)
         || burns > FEE_INPUTS_MAX
+        || (currency.is_some()
+            && mint_lines.len() > super::npc_trade::item_currency::STACKS_MAX)
         || mint_lines
             .iter()
             .any(|line| !mint_kinds.contains(&line.kind))
@@ -517,13 +553,25 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
     // BURN lines. BUY: the fee plan's coin order, only the last keeps units. SELL: one item.
     // SELL_ALL: whole stacks of one item, highest ordinal first.
     let mut burned: u64 = 0;
+    let mut currency_units = 0_u64;
     let mut item_units: Option<u32> = None;
     let mut item_definition = None;
     let mut previous: Option<(u64, u64)> = None;
     for (index, line) in burn_lines.iter().enumerate() {
         let units = check_burn(line, &value.world_id)?;
         let before = line.before.as_ref().ok_or(AuditError::InvalidInput)?;
-        if side == SIDE_BUY {
+        if let Some(currency) = currency.filter(|_| side == SIDE_BUY) {
+            let last = index + 1 == burn_lines.len();
+            let whole = line.after.as_ref().is_some_and(|after| after.quantity == 0);
+            if before.definition.as_ref() != Some(currency)
+                || previous.is_some_and(|(_, ordinal)| line.placement_ordinal >= ordinal)
+                || !(whole || last)
+            {
+                return Err(AuditError::InvalidInput);
+            }
+            previous = Some((0, line.placement_ordinal));
+            currency_units += u64::from(units);
+        } else if side == SIDE_BUY {
             let coin = state_coin(before)?;
             let last = index + 1 == burn_lines.len();
             let ordered = previous.is_none_or(|(worth, ordinal)| {
@@ -575,7 +623,12 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
             return Err(AuditError::InvalidInput);
         }
         previous_ordinal = Some(line.placement_ordinal);
-        if line.kind == LINE_ITEM_MINT {
+        if let Some(currency) = currency.filter(|_| side == SIDE_SELL) {
+            if after.definition.as_ref() != Some(currency) {
+                return Err(AuditError::InvalidInput);
+            }
+            currency_units += u64::from(units);
+        } else if line.kind == LINE_ITEM_MINT {
             // Bought stacks are consecutive after all change, of one definition.
             if is_coin(after)
                 || (side == SIDE_BUY
@@ -609,7 +662,10 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
     // Quantity counts purchase units; a stackable offer contains `count` item units per
     // purchase (NPC0 §3.4/§5.3/§5.4). The bound catalogue/writer owns exact count;
     // this payload carries only its revision/index, so validate the integral bundle shape.
-    if item_definition.is_none()
+    if item_definition.as_ref().is_none_or(|item| {
+        currency.is_some_and(|currency| currency.production_key == item.production_key)
+    })
+        || currency_units != expected_currency_units
         || units == 0
         || !units.is_multiple_of(value.quantity)
         || (sell_all && units != value.quantity)
@@ -634,7 +690,11 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
     // Conservation and the exact coin outputs.
     let expected = if side == SIDE_BUY {
         // The change is below the last burned coin's worth: no unit burned beyond the plan.
-        let change_bound = previous.map_or(1, |(worth, _)| worth);
+        let change_bound = if currency.is_some() {
+            1
+        } else {
+            previous.map_or(1, |(worth, _)| worth)
+        };
         let change = burned
             .checked_add(bank)
             .and_then(|paid| paid.checked_sub(value.total_gold_units));
@@ -672,7 +732,7 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
         value.hireling_package.is_some(),
         value.house_furniture_kit.is_some(),
         hireling_sell,
-        ordinary_bulk(value),
+        ordinary_bulk(value) || currency.is_some(),
         &npc_trade_usage(value),
     )
 }

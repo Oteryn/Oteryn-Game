@@ -83,6 +83,7 @@ fn mint_line(
 
 fn trade(side: u32, quantity: u32, unit_price: u64) -> OneItemNpcTradeV1 {
     OneItemNpcTradeV1 {
+        item_currency: None,
         fluid_subtype: None,
         full_charges: None,
         cause: Some(OneItemNpcTradeCauseV1 {

@@ -120,6 +120,8 @@ pub fn projected<'a>(
 ) -> impl Iterator<Item = (NpcOffer, &'a ProjectV2ServiceOffer)> {
     offers
         .iter()
+        // NpcOfferV1 carries a gold price and has no denomination field.
+        .filter(|offer| offer.currency.is_none())
         .filter_map(|offer| {
             let shown = NpcOffer {
                 item_definition_ref: items

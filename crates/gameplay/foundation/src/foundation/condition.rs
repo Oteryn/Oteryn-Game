@@ -58,7 +58,7 @@ pub const COND0_RL_02_MIN_TICK_INTERVAL_MS: u32 = 1_000;
 /// `COND0-RL-03`: damage ticks per actor per simulation tick. The store also counts regeneration
 /// ticks against it, so a catch-up of any tick kind is bounded per pass (`RUN_EACH_BOUNDED`).
 pub const COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK: usize = 4;
-/// ITEM-USE-0 §6.1: the food time cap (a parity value, not a resource limit).
+/// Crystal foods.lua:145: a meal that reaches this threshold while fed is refused.
 pub const FOOD_REGENERATION_CAP_MS: u32 = 1_200_000;
 /// §3: paralysis never takes speed below this.
 pub const PARALYSIS_SPEED_FLOOR: i64 = 40;
@@ -74,7 +74,8 @@ const MICROS_PER_MS: u64 = 1_000;
 use oteryn_gameplay_domain::domain::condition::attributes::AttributeModifiers;
 use oteryn_gameplay_domain::domain::condition::{
     ConditionGate, ConditionRefusal, ConditionType, ConditionValues, ConflictKey, DotElement,
-    DotSequenceStep, MAX_DOT_SEQUENCE_STEPS, SpeedRange, StatusKind,
+    DotSequenceStep, FOOD_REGENERATION_MAX_DURATION_MS, MAX_DOT_SEQUENCE_STEPS, SpeedRange,
+    StatusKind,
 };
 #[cfg(test)]
 use oteryn_gameplay_domain::domain::condition::{ExactSpeedRatio, RationalSpeedRange};
@@ -244,7 +245,10 @@ impl ConditionDefinition {
                 ConditionValues::FoodRegeneration {
                     added_ms,
                     interval_ms,
-                } => added_ms > 0 && interval_ok(interval_ms),
+                } => {
+                    (1..=FOOD_REGENERATION_MAX_DURATION_MS).contains(&added_ms)
+                        && interval_ok(interval_ms)
+                }
                 ConditionValues::Recovery {
                     duration_ms,
                     interval_ms,
@@ -1030,7 +1034,10 @@ impl<S: Clone> ConditionStore<S> {
             | ConditionValues::Outfit { duration_ms, .. } => duration_ms,
             ConditionValues::DamageOverTime { interval_ms, .. }
             | ConditionValues::Agony { interval_ms, .. } => interval_ms,
-            ConditionValues::FoodRegeneration { .. } => FOOD_REGENERATION_CAP_MS,
+            ConditionValues::FoodRegeneration {
+                added_ms,
+                interval_ms,
+            } => added_ms.max(interval_ms),
         };
         let bound_ms = if definition.permanent_outfit {
             0
@@ -1282,14 +1289,19 @@ impl<S: Clone> ConditionStore<S> {
                 let total = remaining
                     .checked_add(ms(added_ms))
                     .ok_or(ConditionRefusal::TimeOverflow)?;
-                if total >= ms(FOOD_REGENERATION_CAP_MS) {
+                if remaining > 0 && total >= ms(FOOD_REGENERATION_CAP_MS) {
                     return Err(ConditionRefusal::Full);
                 }
                 instance.ends_at = Some(
                     now.checked_add(total)
                         .ok_or(ConditionRefusal::TimeOverflow)?,
                 );
-                instance.next_tick_at = Some(keep_timing(interval_ms)?);
+                instance.next_tick_at = Some(if remaining > 0 {
+                    keep_timing(interval_ms)?
+                } else {
+                    now.checked_add(ms(interval_ms))
+                        .ok_or(ConditionRefusal::TimeOverflow)?
+                });
             }
             ConditionValues::Recovery {
                 duration_ms,

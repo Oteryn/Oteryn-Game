@@ -1,9 +1,7 @@
 //! The location phrase of Find Person and Find Fiend, `locate_message`
 //! (`docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md` part B.3 P7, owner S27).
 //!
-//! A pure rule over the offset from the target to the caster. The spells that use it are not
-//! admitted: Find Person needs the player-name parameter (no V1 cast-wire field) and Find Fiend the
-//! Forge fiendish-monster registry (no owner). Bands follow F/TibiaMaps (5, 101, 251 tiles; QP2).
+//! Pure location rules over the offset from target to caster.
 
 /// Distance band (`bands_tiles [5, 101, 251]`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -66,11 +64,15 @@ const TANGENT_WIDE: i64 = 24_142;
 /// Locate a target from `dx, dy, dz` = caster position minus target position (P7). `x` grows to the
 /// east, `y` to the south and `z` downwards, so `dz > 0` means the target is higher.
 pub fn locate(dx: i32, dy: i32, dz: i32) -> Located {
+    locate_with_very_far_band(dx, dy, dz, 251)
+}
+
+pub fn locate_with_very_far_band(dx: i32, dy: i32, dz: i32, very_far: i64) -> Located {
     let (dx, dy) = (i64::from(dx), i64::from(dy));
     let distance = match dx.abs().max(dy.abs()) {
         0..=4 => LocateDistance::Beside,
         5..=100 => LocateDistance::Close,
-        101..=250 => LocateDistance::Far,
+        distance if distance < very_far => LocateDistance::Far,
         _ => LocateDistance::VeryFar,
     };
     let level = match dz {

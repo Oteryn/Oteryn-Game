@@ -402,6 +402,9 @@ pub(super) async fn change_active(
     world: WorldId,
     key: &str,
 ) -> Result<bool, DurabilityError> {
+    if let Some(active) = changes::contributions::gate(tx, world, key).await? {
+        return Ok(active);
+    }
     lock_admission_relations(tx).await?;
     let row: Option<(String,bool)> = sqlx::query_as("SELECT s.reset_epoch::text,s.active FROM game_world_change_states s JOIN game_world_reset_active a USING(world_id,reset_epoch) WHERE s.world_id=encode($1,'hex')::uuid AND s.change_key=$2 FOR SHARE OF s")
         .bind(world.as_bytes().as_slice()).bind(key).fetch_optional(&mut **tx).await?;

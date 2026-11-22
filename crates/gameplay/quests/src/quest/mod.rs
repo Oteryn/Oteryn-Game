@@ -94,6 +94,7 @@ pub mod timers;
 pub mod unnatural_selection;
 pub mod world_callbacks;
 pub mod world_change_journals;
+pub mod world_contributions;
 mod world_requirement_key;
 pub mod wrath_sleeping_dragon;
 
@@ -482,6 +483,7 @@ impl QuestStateCatalogue {
                 && !transition.completes
                 && !dreamer_fire_bug::shared_transition(&transition)
                 && !dreamer_carrot::shared_transition(&transition)
+                && !world_contributions::awash_transition(&transition)
                 && !(((transition.key == "oteryn:quest-transition/worldchange/benevola/handover"
                     && transition.quest == "oteryn:quest/worldchange/benevola")
                     || transition.key.starts_with("oteryn:quest-reward/"))

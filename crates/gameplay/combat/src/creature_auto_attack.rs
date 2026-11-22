@@ -1235,6 +1235,9 @@ impl AutoAttackOwner {
                 / u64::from(DAMAGE_MULTIPLIER_SCALE),
         )
         .map_err(|_| AttackError::NumericOverflow)?;
+        let shield_percent = runtime.shield_attack_damage_percent(facts.issuer, now.get());
+        let requested = u32::try_from(u64::from(requested) * u64::from(shield_percent) / 100)
+            .map_err(|_| AttackError::NumericOverflow)?;
         let source_critical = if runtime
             .soulpit_variant(facts.issuer)
             .and_then(|tag| tag.boss)
@@ -1457,6 +1460,9 @@ impl AutoAttackOwner {
             runtime
                 .record_hazard_critical(facts.target, facts.session, now.get())
                 .map_err(|_| AttackError::StaleTarget)?;
+        }
+        if shield_percent != 100 {
+            runtime.consume_shield_attack_reduction(facts.issuer, now.get());
         }
         Ok(SwingOutcome {
             occurrence,

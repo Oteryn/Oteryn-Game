@@ -540,17 +540,22 @@ impl NpcConversations {
         if intent.catalogue_revision != book.catalogue_revision() {
             return Err(Box::new(stale()));
         }
-        let Some((offer, source)) = usize::try_from(intent.offer_index)
+        let Some(source) = usize::try_from(intent.offer_index)
             .ok()
-            .and_then(|index| projected(&shown_offers, items).nth(index))
+            .and_then(|index| shown_offers.get(index))
         else {
+            return Err(Box::new(stale()));
+        };
+        // Use the exact retained slot before checking the price. Re-projecting
+        // the whole list could shift an old token quote to a later gold offer.
+        if source.currency.is_some() || !entry.offers().contains(source) {
+            return Err(Box::new(rejected()));
+        }
+        let Some((offer, _)) = projected(std::slice::from_ref(source), items).next() else {
             return Err(Box::new(stale()));
         };
         if offer.side != intent.side || offer.unit_price != intent.expected_unit_price {
             return Err(Box::new(stale()));
-        }
-        if !entry.offers().contains(source) || source.currency.is_some() {
-            return Err(Box::new(rejected()));
         }
         Ok(NpcTradeOffer {
             sub_type: source.sub_type,

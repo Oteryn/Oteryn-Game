@@ -300,6 +300,17 @@ impl OwnedCastFacts {
         if require_cast_access && spell.learning_required && learned.is_none() {
             return Err(OwnedFactsError::UnavailableLearning);
         }
+        let equipment_input = match &spell.execution {
+            super::Execution::NativeProfile(profile)
+                if profile.spell()["execution"]["native_behavior"]["key"] == "equipment_attack" =>
+            {
+                profile.spell()["execution"]["native_behavior"]["parameters"]["input"]["kind"]
+                    .as_str()
+            }
+            _ => None,
+        };
+        let native_weapon = equipment_input == Some("wielded_weapon");
+        let native_shield = equipment_input == Some("wielded_shield");
         let needs_attack = spell.needs_weapon
             || matches!(&spell.execution, super::Execution::NativeProfile(profile)
                 if attack_input(&profile.spell()["execution"]))
@@ -312,8 +323,13 @@ impl OwnedCastFacts {
         let mut attack = None;
         let mut shield = None;
         // Source-defined first shield is left hand then right. The snapshot is the actual owner.
-        for slot in [6_u8, 5] {
-            if !needs_attack && !spell.needs_shield {
+        let slots = if equipment_input.is_some() {
+            [5, 6]
+        } else {
+            [6, 5]
+        };
+        for slot in slots {
+            if !needs_attack && !spell.needs_shield && !native_shield && !native_weapon {
                 break;
             }
             if let Some(item) = self.equipment.items.iter().find(|i| i.slot == slot) {
@@ -324,22 +340,27 @@ impl OwnedCastFacts {
                     )
                     .ok_or(OwnedFactsError::UnknownItemPolicy)?;
                 let ReferenceItemField::Known(weapon) = &policy.record().semantics.weapon else {
+                    if equipment_input.is_some() {
+                        continue;
+                    }
                     return Err(OwnedFactsError::UnavailableEquipment);
                 };
                 let ReferenceItemField::Known(kind) = weapon.weapon_type else {
+                    if equipment_input.is_some() {
+                        continue;
+                    }
                     return Err(OwnedFactsError::UnavailableEquipment);
                 };
                 if kind == ReferenceWeaponType::Shield {
-                    if shield.is_none() {
+                    if shield.is_none() || native_shield {
                         let ReferenceItemField::Known(defense) = weapon.defense else {
                             return Err(OwnedFactsError::UnavailableEquipment);
                         };
-                        shield = Some(
-                            u32::try_from(defense.0)
-                                .map_err(|_| OwnedFactsError::UnavailableEquipment)?,
-                        );
+                        let defense = u32::try_from(defense.0)
+                            .map_err(|_| OwnedFactsError::UnavailableEquipment)?;
+                        shield = Some(shield.map_or(defense, |current: u32| current.max(defense)));
                     }
-                } else if slot == 5 {
+                } else if (slot == 5 || native_weapon) && !native_shield && attack.is_none() {
                     let skill = match kind {
                         ReferenceWeaponType::Fist => Some(0),
                         ReferenceWeaponType::Club => Some(1),
@@ -370,10 +391,10 @@ impl OwnedCastFacts {
                 }
             }
         }
-        if needs_attack && attack.is_none() {
+        if needs_attack && !native_weapon && attack.is_none() {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
-        let attack_factor = if needs_attack {
+        let attack_factor = if needs_attack && !native_weapon {
             self.equipment
                 .combat_mode
                 .ok_or(OwnedFactsError::UnknownCombatMode)?

@@ -500,7 +500,9 @@ fn resolve_and_apply(
     let (scaled, _) = runtime
         .encounter_source_damage(intent.issuer, u64::from(magnitude), critical_roll)
         .map_err(|_| BiteRejection::InvalidPlan)?;
-    let magnitude = u32::try_from(scaled).map_err(|_| BiteRejection::InvalidPlan)?;
+    let shield_percent = runtime.shield_attack_damage_percent(intent.issuer, now.get());
+    let magnitude = u32::try_from(u128::from(scaled) * u128::from(shield_percent) / 100)
+        .map_err(|_| BiteRejection::InvalidPlan)?;
     let magnitude = vitals
         .source_combat_component_damage(runtime, intent.issuer, intent.target, magnitude, now.get())
         .ok_or(BiteRejection::InvalidPlan)?;
@@ -555,6 +557,9 @@ fn resolve_and_apply(
             now,
         )
         .ok_or(BiteRejection::StaleTarget)?;
+    if shield_percent != 100 {
+        runtime.consume_shield_attack_reduction(intent.issuer, now.get());
+    }
     Ok(AppliedBite {
         requested: magnitude,
         damage: hit.damage,

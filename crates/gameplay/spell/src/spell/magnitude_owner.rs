@@ -489,7 +489,14 @@ impl PreparedMagnitudeOwner {
                 )
                 .ok_or(Error::InvalidCondition)?,
         )
-        .map_err(|_| Error::InvalidMagnitude)
+        .ok()
+        .and_then(|percent| {
+            percent.checked_add(
+                self.caster
+                    .divine_empowerment_percent(self.now_ms.saturating_mul(1000)),
+            )
+        })
+        .ok_or(Error::InvalidMagnitude)
     }
     /// F's planted raw/late-modifier split. This changes only numerical inputs;
     /// `attributes` and `caster` remain intact for commit-time owner validation.

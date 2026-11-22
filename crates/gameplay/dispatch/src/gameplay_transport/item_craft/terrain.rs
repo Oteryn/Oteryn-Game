@@ -544,6 +544,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(index) = native.item_index() else {
             return;
         };
+        let skinning_replacements: std::collections::BTreeSet<_> = self
+            .callback_content()
+            .iter()
+            .filter_map(|callback| {
+                let after = callback.item_on_target.as_ref()?.target_replacement?;
+                let target = callback.skinning_target()?;
+                let key = oteryn_world_bundle::bundle::placement_key(
+                    target.position.floor,
+                    target.position.x,
+                    target.position.y,
+                    target.ordinal,
+                )?;
+                Some((key, u32::from(after)))
+            })
+            .collect();
         for row in rows {
             if row.placement.len() != 40 || row.placement[..32] != map.overlay.base().digest()[..] {
                 return;
@@ -584,11 +599,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return;
             };
-            // Map-authored plants may be Terrain; the pinned palette owns each successor.
-            if matches!(
-                row.item,
-                306 | 324 | 330 | 13842 | 13843 | 14029 | 14031 | 14032 | 3699 | 3700
-            ) {
+            // Authored replacements are projected from the pinned palette on fresh USE
+            // and during recovery, including targets defined as Terrain.
+            if skinning_replacements.contains(&(key, row.item))
+                || matches!(
+                    row.item,
+                    306 | 324 | 330 | 13842 | 13843 | 14029 | 14031 | 14032 | 3699 | 3700
+                )
+            {
                 let Some(after) = u16::try_from(row.item)
                     .ok()
                     .and_then(|appearance| map.facts.quest_callback_replacement(key, appearance))

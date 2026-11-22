@@ -25,6 +25,7 @@ fn intent() -> NpcTradeIntent {
 
 fn receipt() -> NpcTradeReceipt {
     NpcTradeReceipt {
+        item_currency: false,
         npc_key: "npc.alesar".to_owned(),
         catalogue_revision: 9,
         offer_index: 2,
@@ -83,6 +84,11 @@ fn identities_are_uuid_v7_fixed_per_command_and_distinct_per_tag() {
 #[test]
 fn replay_answers_only_the_intent_it_committed() {
     assert!(answers(&receipt(), &intent(), false));
+    let item_receipt = NpcTradeReceipt {
+        item_currency: true,
+        ..receipt()
+    };
+    assert!(!answers(&item_receipt, &intent(), false));
     // NPC-TRADE-SELLALL-1: a trade answers only its own kind; a sell-all's stored quantity is the
     // units it sold, never the intent's.
     assert!(!answers(&receipt(), &intent(), true));

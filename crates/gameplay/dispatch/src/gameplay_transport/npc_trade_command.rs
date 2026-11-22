@@ -90,7 +90,8 @@ const fn side_of(side: NpcTradeSide) -> npc_trade::NpcTradeSide {
 /// Whether the committed trade answered this intent: the same kind, offer, side, quantity and price
 /// (the occurrence already binds the NPC actor). A sell-all's stored quantity is the units it sold.
 fn answers(receipt: &NpcTradeReceipt, intent: &NpcTradeIntent, sell_all: bool) -> bool {
-    receipt.sell_all == sell_all
+    !receipt.item_currency
+        && receipt.sell_all == sell_all
         && receipt.catalogue_revision == intent.catalogue_revision
         && receipt.offer_index == intent.offer_index
         && receipt.side == side_of(intent.side)

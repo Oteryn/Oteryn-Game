@@ -312,6 +312,7 @@ fn buy_with_change_then_partial_and_whole_sell_replay_and_conflicts() -> TestRes
                 .await
                 .map_err(debug)?,
             Some(NpcTradeReceipt {
+                item_currency: false,
                 npc_key: "fixture:npc.trader".into(),
                 catalogue_revision: 1,
                 offer_index: 0,
@@ -740,6 +741,7 @@ fn sell_all_sells_every_stack_once_replays_and_then_finds_nothing() -> TestResul
                 .await
                 .map_err(debug)?,
             Some(NpcTradeReceipt {
+                item_currency: false,
                 npc_key: "fixture:npc.trader".into(),
                 catalogue_revision: 1,
                 offer_index: 0,
