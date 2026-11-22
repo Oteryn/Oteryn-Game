@@ -339,6 +339,27 @@ fn house_window_action_with_map(
                     );
                 app.update();
                 assert!(projection(&mut app)?.contains("Abbey Hall"));
+                for (field, mut text) in app
+                    .world_mut()
+                    .query::<(&super::super::houses::Field, &mut EditableText)>()
+                    .iter_mut(app.world_mut())
+                {
+                    match field.0 {
+                        2 => text.editor_mut().set_text("1"),
+                        3 => text.editor_mut().set_text("100"),
+                        6 => text.editor_mut().set_text("CONFIRM"),
+                        _ => continue,
+                    };
+                }
+                let bid = button(&mut app, "Bid")?;
+                app.world_mut()
+                    .trigger(bevy::ui_widgets::Activate { entity: bid });
+                app.update();
+                app.update();
+                assert!(
+                    receiver.try_recv().is_err(),
+                    "a hidden house row received a bid"
+                );
             }
             let text = projection(&mut app)?;
             assert!(

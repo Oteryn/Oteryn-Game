@@ -393,6 +393,22 @@ fn finish(
         }
         state.redraw = true;
     } else {
+        if (2..=13).contains(&selection)
+            && (state.guildhalls.is_some() || state.rented.is_some())
+            && !values[2]
+                .trim()
+                .parse::<usize>()
+                .ok()
+                .and_then(|n| n.checked_sub(1))
+                .and_then(|n| model.page.rows.get(n))
+                .is_some_and(|row| {
+                    oteryn_client_ui::house::matches_filters(row, state.guildhalls, state.rented)
+                })
+        {
+            state.feedback = "Select a house shown by the current filters".into();
+            state.redraw = true;
+            return;
+        }
         if submit(
             &play.link,
             state.activity_revision,

@@ -20,13 +20,14 @@ pub(super) struct Terrain {
 pub(super) struct Cache {
     pub root: Option<PathBuf>,
     key: Option<Terrain>,
-    task: Option<Task<Result<Image, String>>>,
+    task: Option<Task<Result<(Image, bool), String>>>,
     image: Option<Handle<Image>>,
     error: Option<String>,
 }
 pub(super) fn project(
     mut commands: Commands,
     mut cache: ResMut<Cache>,
+    mut state: ResMut<super::State>,
     mut images: ResMut<Assets<Image>>,
     canvases: Query<(Entity, &Terrain, Option<&ImageNode>)>,
     skin: Res<crate::bevy_shell::ui::Skins>,
@@ -60,7 +61,18 @@ pub(super) fn project(
     {
         cache.task = None;
         match result {
-            Ok(image) => cache.image = Some(images.add(image)),
+            Ok((image, satellite)) => {
+                if key.surface && !satellite {
+                    state.no_satellite = Some((key.bounds, key.floor));
+                    state.surface = false;
+                    state.snapshot = None;
+                    cache.key = Some(Terrain {
+                        surface: false,
+                        ..key
+                    });
+                }
+                cache.image = Some(images.add(image));
+            }
             Err(message) => cache.error = Some(message),
         }
     }
@@ -82,7 +94,7 @@ pub(super) fn project(
     }
 }
 impl Terrain {
-    fn image(self, store: &AssetStore) -> Result<Image, String> {
+    fn image(self, store: &AssetStore) -> Result<(Image, bool), String> {
         let [left, top, right, bottom] = self.bounds.map(i32::from);
         let w = right - left + 1;
         let h = bottom - top + 1;
@@ -167,16 +179,19 @@ impl Terrain {
             }
         }
         use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-        Ok(Image::new(
-            Extent3d {
-                width: 640,
-                height: 480,
-                depth_or_array_layers: 1,
-            },
-            TextureDimension::D2,
-            pixels,
-            TextureFormat::Rgba8UnormSrgb,
-            bevy::asset::RenderAssetUsages::default(),
+        Ok((
+            Image::new(
+                Extent3d {
+                    width: 640,
+                    height: 480,
+                    depth_or_array_layers: 1,
+                },
+                TextureDimension::D2,
+                pixels,
+                TextureFormat::Rgba8UnormSrgb,
+                bevy::asset::RenderAssetUsages::default(),
+            ),
+            self.surface,
         ))
     }
 }

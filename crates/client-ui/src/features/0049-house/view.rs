@@ -9,6 +9,15 @@ pub enum HouseOrder {
     Area,
 }
 
+pub fn matches_filters(
+    row: &oteryn_client_runtime::house::Row,
+    guildhalls: Option<bool>,
+    rented: Option<bool>,
+) -> bool {
+    guildhalls.is_none_or(|wanted| (row.kind == 3) == wanted)
+        && rented.is_none_or(|wanted| (3..=5).contains(&row.state) == wanted)
+}
+
 pub fn browser_text(
     panel: &Panel,
     guildhalls: Option<bool>,
@@ -20,10 +29,7 @@ pub fn browser_text(
         .rows
         .iter()
         .enumerate()
-        .filter(|(_, row)| {
-            guildhalls.is_none_or(|wanted| (row.kind == 3) == wanted)
-                && rented.is_none_or(|wanted| (3..=5).contains(&row.state) == wanted)
-        })
+        .filter(|(_, row)| matches_filters(row, guildhalls, rented))
         .collect();
     match order {
         Some(HouseOrder::Name) => {

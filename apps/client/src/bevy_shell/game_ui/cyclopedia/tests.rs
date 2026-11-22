@@ -16,6 +16,9 @@ type Fixture = (
     Outbox,
 );
 fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
+    fixture_with(|_| {})
+}
+fn fixture_with(configure: impl FnOnce(&mut App)) -> Result<Fixture, Box<dyn std::error::Error>> {
     let (link, commands, outbox) = play_channel();
     link.use_shared_frontend();
     outbox.bevy_cyclopedia_initialize(true, true, true);
@@ -33,6 +36,7 @@ fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
         .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::modal::install(&mut app);
     cyclopedia::install(&mut app);
+    configure(&mut app);
     app.update();
     let event = oteryn_input_actions::NormalizedInputEvent::Key {
         code: oteryn_input_actions::KeyCode::new(24)?,
@@ -570,5 +574,52 @@ fn subject_navigation_opens_items_and_returns_to_character() -> TestResult {
             .cyclopedia_character_panel()
             .open
     );
+    Ok(())
+}
+
+#[test]
+fn magical_archive_subject_opens_the_spellbook_and_returns_to_character() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture_with(|app| {
+        app.add_message::<bevy::input::keyboard::KeyboardInput>();
+        super::journal::install(app);
+    })?;
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    outbox.bevy_journal_spellbook_select();
+    app.update();
+    for (caption, open) in [("Magical Archive", true), ("Back", false)] {
+        let button = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(label, parent)| {
+                (label.0 == caption
+                    && app
+                        .world()
+                        .get::<super::cyclopedia_navigation::SubjectButton>(parent.parent())
+                        .is_some())
+                .then_some(parent.parent())
+            })
+            .ok_or("missing archive subject navigation")?;
+        app.world_mut().trigger(Activate { entity: button });
+        app.update();
+        app.update();
+        let link = &app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link;
+        assert_eq!(link.spellbook_window_open(), open);
+        assert_eq!(link.cyclopedia_character_panel().open, !open);
+        if open {
+            assert!(
+                texts(&mut app)
+                    .iter()
+                    .any(|text| text == "Spellbook — Magical Archive")
+            );
+        }
+    }
     Ok(())
 }

@@ -18,6 +18,8 @@ struct State {
     flags: Vec<(u16, u16, u8, String)>,
     hidden_flags: u8,
     surface: bool,
+    chose_mode: bool,
+    no_satellite: Option<([u16; 4], i8)>,
     faded: u8,
     generation: u64,
     root: Option<Entity>,
@@ -90,9 +92,14 @@ fn activate(
             state.snapshot = None;
         }
         Kind::Surface => {
-            if panel.geometry.floor > 7 {
+            if panel.geometry.floor > 7
+                || panel.geometry.bounds.is_some_and(|bounds| {
+                    state.no_satellite == Some((bounds, panel.geometry.floor))
+                })
+            {
                 return;
             }
+            state.chose_mode = true;
             state.surface = !state.surface;
             state.snapshot = None;
         }
@@ -189,7 +196,7 @@ fn remove_root(
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
-    skins: Res<Skins>,
+    (skins, terrain_cache): (Res<Skins>, Res<terrain::Cache>),
     mut state: ResMut<State>,
     mut focus: ResMut<bevy::input_focus::InputFocus>,
     parents: Query<&ChildOf>,
@@ -210,14 +217,23 @@ fn project(
         state.flags.clear();
         state.hidden_flags = 0;
         state.surface = false;
+        state.chose_mode = false;
+        state.no_satellite = None;
         state.faded = 0;
         state.generation = owner.generation();
     }
     let Some(panel) = panel else {
         return;
     };
-    if panel.geometry.floor > 7 {
+    let missing = panel
+        .geometry
+        .bounds
+        .is_some_and(|bounds| state.no_satellite == Some((bounds, panel.geometry.floor)));
+    if panel.geometry.floor > 7 || missing {
         state.surface = false;
+    } else if !state.chose_mode && panel.geometry.bounds.is_some() {
+        state.surface =
+            terrain_cache.root.is_some() || std::env::var_os(crate::map::ASSET_DIR_ENV).is_some();
     }
     let flags = panel
         .geometry
@@ -346,7 +362,7 @@ fn project(
             .observe(activate)
             .id();
         if kind != Kind::Close && (!panel.selected || panel.pending || panel.speed_pending)
-            || kind == Kind::Surface && panel.geometry.floor > 7
+            || kind == Kind::Surface && (panel.geometry.floor > 7 || missing)
             || kind == Kind::Opacity && (!state.surface || panel.geometry.floor >= 7)
         {
             commands

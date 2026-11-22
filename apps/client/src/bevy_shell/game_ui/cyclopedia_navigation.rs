@@ -14,6 +14,7 @@ pub(super) enum Subject {
     Character,
     Houses,
     Items,
+    MagicalArchive,
     Map,
 }
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -69,6 +70,10 @@ pub(super) fn bar(
         (Destination::Open(Subject::Character), "Character"),
         (Destination::Open(Subject::Houses), "Houses"),
         (Destination::Open(Subject::Items), "Items"),
+        (
+            Destination::Open(Subject::MagicalArchive),
+            "Magical Archive",
+        ),
         (Destination::Open(Subject::Map), "Map"),
     ] {
         if to == Destination::Open(from) {
@@ -137,6 +142,7 @@ fn activate(
         }
         Subject::Items => play.link.item_catalogue_set_open(false),
         Subject::Bestiary => play.link.bestiary_close(),
+        Subject::MagicalArchive => play.link.spellbook_set_open(false),
         Subject::Map => play.link.cyclopedia_atlas_close(),
         Subject::Bosstiary => {
             open_toolbar(&mut owner, Control::Panel("bosstiary"));
@@ -156,6 +162,7 @@ fn activate(
             }
         }
         Subject::Bestiary => play.link.charm_progression_open(),
+        Subject::MagicalArchive => super::journal::open_spells(&mut owner),
         Subject::Map => play.link.cyclopedia_atlas_open(),
         Subject::Houses => {
             if let Some(h) = houses.as_mut() {
@@ -185,6 +192,7 @@ impl Subject {
             Subject::Character => play.link.cyclopedia_character_panel().open,
             Subject::Items => play.link.inspection_panel().catalogue_open,
             Subject::Bestiary => play.link.charm_progression_panel().open,
+            Subject::MagicalArchive => play.link.spellbook_window_open(),
             Subject::Map => play.link.cyclopedia_atlas_panel().is_some(),
             Subject::Bosstiary => owner.settings.preferences.panel_visible("bosstiary"),
             Subject::Houses => houses

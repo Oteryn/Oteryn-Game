@@ -510,9 +510,17 @@ fn area_view_and_separator_change_the_rendered_map_pixels() -> Result<(), Box<dy
         }))
         .map_err(|e| format!("{e:?}"))?,
     );
+    let original = layer(&mut app)?;
+    assert!(
+        has_text(&mut app, "Surface view"),
+        "a covered above-ground area opens with satellite imagery"
+    );
+    press(&mut app, Kind::Surface)?;
     let first = layer(&mut app)?;
+    assert!(has_text(&mut app, "Map view"));
     press(&mut app, Kind::Surface)?;
     let second = layer(&mut app)?;
+    assert_eq!(original.as_slice(), second.as_slice());
     assert!(
         first != second,
         "map and satellite must use distinct imagery"
