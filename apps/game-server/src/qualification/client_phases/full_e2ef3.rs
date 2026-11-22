@@ -6,6 +6,9 @@ use super::*;
 use oteryn_protocol_oteryn::{container_tree as tree, inspection as inspect};
 use std::collections::BTreeMap;
 
+#[path = "full_e2ef3_e2ei-d.rs"]
+mod full_e2ef3_e2ei_d;
+
 struct Row {
     id: &'static str,
     source: &'static str,
@@ -309,6 +312,9 @@ pub(super) async fn run(
             ));
             continue;
         }
+        if full_e2ef3_e2ei_d::owns(row.id) {
+            continue;
+        }
         result(
             row,
             started.elapsed().as_secs_f64(),
@@ -320,5 +326,5 @@ pub(super) async fn run(
             &cause,
         );
     }
-    observations
+    full_e2ef3_e2ei_d::run(observations, clients, primal, covet).await
 }
