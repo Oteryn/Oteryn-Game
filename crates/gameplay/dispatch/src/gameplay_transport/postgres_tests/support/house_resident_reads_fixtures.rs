@@ -9,12 +9,12 @@ use crate::gameplay_transport::{
         serve_admitted,
     },
 };
+use oteryn_protocol_oteryn::mail::{self, MailIntent, MailOutcome};
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
-use oteryn_protocol_oteryn::{item_inscription, item_view, world_spatial_entities as entities};
 use oteryn_protocol_oteryn::{actor_motion, appearance};
-use oteryn_protocol_oteryn::mail::{self, MailIntent, MailOutcome};
+use oteryn_protocol_oteryn::{item_inscription, item_view, world_spatial_entities as entities};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -81,9 +81,13 @@ pub(super) async fn presentation_exchange(
     use oteryn_protocol_oteryn::server_info::{self, Query, Reply};
     if case == Case::ResidentQuest {
         let (status, bytes) = super::cyclopedia_fixtures::support::exchange(
-            owner, &mut admitted, 1, server_info::COMMAND_TYPE_SERVER_INFO_QUERY,
+            owner,
+            &mut admitted,
+            1,
+            server_info::COMMAND_TYPE_SERVER_INFO_QUERY,
             &Query::Quests.encode().ok_or("quest query")?,
-        ).await?;
+        )
+        .await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert!(matches!(Reply::decode(&bytes), Some(Reply::Quests(titles))
             if titles.len() == 1 && !titles[0].1.is_empty()));
@@ -99,7 +103,9 @@ pub(super) async fn presentation_exchange(
     let observing = async {
         loop {
             let raw = super::item_look_fixtures::read_frame(&mut client).await?;
-            if decode_wire_envelope(&raw).map_err(debug)?.message_type() == MessageType::SnapshotCommit {
+            if decode_wire_envelope(&raw).map_err(debug)?.message_type()
+                == MessageType::SnapshotCommit
+            {
                 break;
             }
         }
@@ -127,9 +133,16 @@ pub(super) async fn presentation_exchange(
             let motion = next_motion(&mut client, admitted).await?;
             assert_eq!(motion.mount_look_type, look);
             let actor = admitted.runtime_actor.ok_or("mount observer")?;
-            let view = owner.observe_visible_entities(actor).await.ok_or("mounted visibility")?;
-            let motion = view.entities.iter().find(|entity| entity.identity == actor.placement_identity())
-                .and_then(|entity| entity.motion).ok_or("House resident motion")?;
+            let view = owner
+                .observe_visible_entities(actor)
+                .await
+                .ok_or("mounted visibility")?;
+            let motion = view
+                .entities
+                .iter()
+                .find(|entity| entity.identity == actor.placement_identity())
+                .and_then(|entity| entity.motion)
+                .ok_or("House resident motion")?;
             assert_eq!(motion.mount_look_type, look);
             use oteryn_protocol_oteryn::world_spatial::{
                 self as spatial, StepDirection, StepDisposition,
@@ -181,7 +194,8 @@ pub(super) async fn presentation_exchange(
     };
     let (_, result) = tokio::time::timeout(std::time::Duration::from_secs(12), async {
         tokio::join!(serving, observing)
-    }).await?;
+    })
+    .await?;
     result
 }
 
@@ -232,25 +246,43 @@ pub(super) async fn select_mount(
         .bind(id(40).as_slice()).bind(id(199).as_slice()).execute(&h.pool).await?;
     owner.admit_progression_session(admitted).await;
     let actor = admitted.runtime_actor.ok_or("mount actor")?;
-    let initial = owner.appearance_observation(actor, admitted.game_session_id, Vec::new()).await.ok_or("mount catalogue")?;
+    let initial = owner
+        .appearance_observation(actor, admitted.game_session_id, Vec::new())
+        .await
+        .ok_or("mount catalogue")?;
     let change = appearance::Change {
         context: initial.catalogue.context,
         expected_root_revision: initial.catalogue.root_revision,
         prior: None,
         selection: appearance::Selection {
-            outfit_key: initial.catalogue.outfits.first().ok_or("outfit")?.key.clone(),
+            outfit_key: initial
+                .catalogue
+                .outfits
+                .first()
+                .ok_or("outfit")?
+                .key
+                .clone(),
             colours: [0; 4],
             addons: 0,
             mount_key: Some(mount_key),
         },
         content_revision: "content-1".into(),
     };
-    let outcome = owner.change_appearance(actor, crate::gameplay_transport::connection::UseCommand {
-        game_session_id: admitted.game_session_id,
-        command_id: 100,
-        item_fence: admitted.item_fence,
-    }, change).await;
-    assert!(matches!(outcome, Some(appearance::ChangeResult::Committed(_))));
+    let outcome = owner
+        .change_appearance(
+            actor,
+            crate::gameplay_transport::connection::UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: 100,
+                item_fence: admitted.item_fence,
+            },
+            change,
+        )
+        .await;
+    assert!(matches!(
+        outcome,
+        Some(appearance::ChangeResult::Committed(_))
+    ));
     Ok(())
 }
 
@@ -288,7 +320,7 @@ pub(super) async fn exchange(
         .await?;
     sqlx::query(
         "INSERT INTO game_item_texts \
-         VALUES(encode($1,'hex')::uuid,'House letter',encode($2,'hex')::uuid,now(),1)",
+         VALUES(encode($1,'hex')::uuid,'House letter',encode($2,'hex')::uuid,to_timestamp(1700000000),1)",
     )
     .bind(id(71).as_slice())
     .bind(id(41).as_slice())
@@ -323,16 +355,28 @@ pub(super) async fn exchange(
         use std::time::Duration;
         let mut writer = h.pool.begin().await?;
         sqlx::query("LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE")
-            .execute(&mut *writer).await?;
+            .execute(&mut *writer)
+            .await?;
         let (capacity, emblems) = tokio::time::timeout(Duration::from_secs(1), async {
             let cap = owner.observe_inventory_capacity(admitted).await;
             let emblems = owner.observe_guild_emblems(admitted).await;
             (cap, emblems)
-        }).await?;
+        })
+        .await?;
         assert!(capacity.is_some());
-        assert!(!emblems.ok_or("House emblems while writer is busy")?.is_empty());
+        assert!(
+            !emblems
+                .ok_or("House emblems while writer is busy")?
+                .is_empty()
+        );
         writer.rollback().await?;
     }
+    let writer_name: String = sqlx::query_scalar(
+        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(41).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
     let shared = &*owner;
     let expiry = case == Case::ResidentExpiryTick;
     let policy = if expiry {
@@ -465,7 +509,8 @@ pub(super) async fn exchange(
                                 })
                                 .map_err(debug)?,
                             )
-                        } else if matches!(case, Case::ResidentEquip | Case::ResidentTimedEquip(_)) {
+                        } else if matches!(case, Case::ResidentEquip | Case::ResidentTimedEquip(_))
+                        {
                             (
                                 item_view::COMMAND_TYPE_ITEM_MOVE_INTENT,
                                 item_view::encode_item_move_intent_with_equip_drop(
@@ -530,30 +575,54 @@ pub(super) async fn exchange(
                 MessageType::CommandResult if case == Case::ResidentLetter => {
                     let reply = decode_command_result(envelope.payload()).map_err(debug)?;
                     assert_eq!(reply.status, CommandStatus::Accepted);
-                    if reply.command_id == 2 {
+                    if reply.command_id == 3 {
                         assert_eq!(reply.payload, [MailOutcome::TextWritten as u8]);
                         break;
                     }
-                    assert_eq!(
-                        item_inscription::Reply::decode(reply.payload),
-                        Some(item_inscription::Reply {
-                            text: "House letter".into(),
-                            writable: true,
-                            max_length: 1999
-                        })
-                    );
+                    let inscription: serde_json::Value = serde_json::from_slice(reply.payload)?;
+                    assert_eq!(inscription["text"], "House letter");
+                    assert_eq!(inscription["writable"], true);
+                    assert_eq!(inscription["max_length"], 1999);
+                    let handle = letter_handle.ok_or("letter handle missing")?.get();
+                    if reply.command_id == 1 {
+                        assert!(inscription.get("writer_name").is_none());
+                        assert!(inscription.get("written_at_unix_ms").is_none());
+                        let payload = item_inscription::Request {
+                            item_handle: handle,
+                        }
+                        .encode()
+                        .ok_or("attributed request")?;
+                        let frame = encode_client_command(
+                            admitted.continuity.connection_generation,
+                            &ClientCommandValue {
+                                command_id: 2,
+                                command_type:
+                                    item_inscription::COMMAND_TYPE_ITEM_INSCRIPTION_ATTRIBUTION,
+                                payload: &payload,
+                            },
+                        )
+                        .map_err(debug)?;
+                        crate::gameplay_transport::tcp_tls::write_frame(&mut client, &frame)
+                            .await?;
+                        continue;
+                    }
+                    assert_eq!(reply.command_id, 2);
+                    assert_eq!(inscription["writer_name"], writer_name);
+                    assert_eq!(inscription["written_at_unix_ms"], 1_700_000_000_000_i64);
                     let payload = mail::encode_intent(&MailIntent::WriteText {
                         item_handle: letter_handle.ok_or("letter handle missing")?.get(),
                         text: "Edited in the House".into(),
-                    }).map_err(debug)?;
+                    })
+                    .map_err(debug)?;
                     let frame = encode_client_command(
                         admitted.continuity.connection_generation,
                         &ClientCommandValue {
-                            command_id: 2,
+                            command_id: 3,
                             command_type: u32::from(mail::COMMAND_TYPE_MAIL),
                             payload: &payload,
                         },
-                    ).map_err(debug)?;
+                    )
+                    .map_err(debug)?;
                     client.write_u32(u32::try_from(frame.len())?).await?;
                     client.write_all(&frame).await?;
                 }
@@ -702,7 +771,8 @@ pub(super) async fn exchange(
                 admitted,
                 Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(
                     71
-                )))
+                ))),
+                false,
             )
             .await
             .is_none()

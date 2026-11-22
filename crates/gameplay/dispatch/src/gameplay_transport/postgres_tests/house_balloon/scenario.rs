@@ -108,7 +108,10 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             base.admitted.channel_id,
         )?
     } else {
-        super::super::house_wrap_fixtures::wrap_bundle(base.admitted.world_id, base.admitted.channel_id)?
+        super::super::house_wrap_fixtures::wrap_bundle(
+            base.admitted.world_id,
+            base.admitted.channel_id,
+        )?
     };
     use crate::content::native_gameplay::test_support::cosmetics_fixture::{
         activated_with_optional_cosmetics, cosmetics_test_packet,
@@ -119,14 +122,20 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     ) {
         let mut packet = cosmetics_test_packet();
         packet["authoring"]["document"]["content_revision"] = "content-1".into();
-        let mount = packet["authoring"]["document"]["mounts"][0]["key"].as_str().ok_or("mount key")?.to_owned();
+        let mount = packet["authoring"]["document"]["mounts"][0]["key"]
+            .as_str()
+            .ok_or("mount key")?
+            .to_owned();
         packet["authoring"]["document"]["grant_mappings"] = serde_json::json!([
             {"grant_key":"resident-mount", "target":{"kind":"Mount","mount_key":mount}, "compatible_provenance":["content-1"]}
         ]);
         let mut promotion = packet["authoring"]["promotions"][0].clone();
         promotion["path"] = "/grant_mappings".into();
         promotion["value"] = packet["authoring"]["document"]["grant_mappings"].clone();
-        packet["authoring"]["promotions"].as_array_mut().ok_or("promotions")?.push(promotion);
+        packet["authoring"]["promotions"]
+            .as_array_mut()
+            .ok_or("promotions")?
+            .push(promotion);
         Some((serde_json::to_vec(&packet)?, mount))
     } else {
         None
@@ -142,7 +151,9 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         )?
     } else {
         activated_with_optional_cosmetics(
-            base.admitted.world_id, None, cosmetics.as_ref().map(|(bytes, _)| bytes.as_slice()),
+            base.admitted.world_id,
+            None,
+            cosmetics.as_ref().map(|(bytes, _)| bytes.as_slice()),
         )
     };
     // Cell collision and gameplay must use the same activated artifact. Native
@@ -186,19 +197,36 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         required, crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id, deps.admitted.channel_id), 1, "policy-1", offers,
     ).map_err(debug)?;
     if case == Case::ResidentQuest {
-        let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
-        use oteryn_gameplay_quests::quest::log::{QuestLogCatalogue, QuestLogContent, QuestLogKind};
-        let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
+        let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(debug)?;
+        use oteryn_gameplay_quests::quest::log::{
+            QuestLogCatalogue, QuestLogContent, QuestLogKind,
+        };
+        let journal =
+            oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
         let catalogue = lowered.catalogue();
-        let mut visible = journal.content.active().quests().iter()
-            .find(|quest| quest.kind == QuestLogKind::Storyline && quest.shown_in_quest_log && quest.start.is_some())
-            .ok_or("resident quest fixture")?.clone();
+        let mut visible = journal
+            .content
+            .active()
+            .quests()
+            .iter()
+            .find(|quest| {
+                quest.kind == QuestLogKind::Storyline
+                    && quest.shown_in_quest_log
+                    && quest.start.is_some()
+            })
+            .ok_or("resident quest fixture")?
+            .clone();
         let (track, threshold) = visible.start.as_mut().ok_or("quest start track")?;
         *threshold = catalogue.track(track).ok_or("quest track")?.initial;
         owner.quest_catalogue = Some(std::sync::Arc::new(catalogue.clone()));
-        owner.quest_log_content = Some(crate::gameplay_transport::quest_log::QuestLogLines::new(
-            QuestLogContent::new(QuestLogCatalogue::new(catalogue, vec![visible]).map_err(debug)?, Vec::new()),
-        ).ok_or("resident quest journal")?);
+        owner.quest_log_content = Some(
+            crate::gameplay_transport::quest_log::QuestLogLines::new(QuestLogContent::new(
+                QuestLogCatalogue::new(catalogue, vec![visible]).map_err(debug)?,
+                Vec::new(),
+            ))
+            .ok_or("resident quest journal")?,
+        );
     }
     if matches!(
         case,
@@ -334,7 +362,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             3, 4, 6, 13, 15, 25, 49, 51, 86, 115, 165, 502, 508, 509, 511,
         ],
         Case::ResidentExpiryTick => &[3, 4, 6, 15, 49, 51, 86, 115, 165, 508, 509, 511],
-        Case::ResidentLetter => &[4, 6, 15, 49, 86, 115, 508, 509, 511],
+        Case::ResidentLetter => &[4, 6, 15, 49, 86, 115, 508, 509, 511, 596],
         Case::ResidentMail => &[4, 6, 86, 115],
         Case::ResidentEquip | Case::ResidentTimedEquip(_) => &[4, 6, 12, 15, 86],
         Case::ResidentMount | Case::ResidentAppearanceRevoked => &[6, 13, 25, 49, 86, 502],
@@ -353,7 +381,10 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         SelectedCapabilities::select(&offered, capabilities).ok_or("House USE offers")?;
     let contents = if matches!(case, Case::CarpetTile { .. }) {
         vec![(before_key, 1), (other_key.as_str(), 1)]
-    } else if matches!(case, Case::Container | Case::ContainerMove | Case::ContainerCapacity) {
+    } else if matches!(
+        case,
+        Case::Container | Case::ContainerMove | Case::ContainerCapacity
+    ) {
         vec![(before_key, 1), (INNER, 1), ("oteryn:item.tibia.i3031", 10)]
     } else if case == Case::Nested {
         vec![(before_key, 1), (INNER, 1)]
@@ -427,7 +458,13 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         assert_eq!(receipts(h).await?, 0);
     }
     if let Some((_, mount_key)) = cosmetics {
-        super::super::house_resident_reads_fixtures::select_mount(h, &owner, &mut admitted, mount_key).await?;
+        super::super::house_resident_reads_fixtures::select_mount(
+            h,
+            &owner,
+            &mut admitted,
+            mount_key,
+        )
+        .await?;
     }
     if case == Case::ResidentQuest {
         owner.admit_quest_session(&admitted).await;
@@ -441,7 +478,8 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         case,
         Case::ResidentTimedEquip(super::super::house_resident_reads_fixtures::ClockCase::Logout)
     ) {
-        super::super::house_resident_reads_fixtures::prepare_logout_vocation(&owner, admitted).await?;
+        super::super::house_resident_reads_fixtures::prepare_logout_vocation(&owner, admitted)
+            .await?;
     }
     let mut transfer = vec![8, 1, 18, HOUSE.len() as u8];
     transfer.extend(HOUSE.as_bytes());
@@ -469,15 +507,23 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         }
     }
     if case == Case::ResidentAppearanceRevoked {
-        return super::super::house_resident_reads_fixtures::appearance_revoked(h, &owner, admitted).await;
+        return super::super::house_resident_reads_fixtures::appearance_revoked(
+            h, &owner, admitted,
+        )
+        .await;
     }
     if matches!(case, Case::ResidentQuest | Case::ResidentMount) {
-        return super::super::house_resident_reads_fixtures::presentation_exchange(&owner, admitted, case).await;
+        return super::super::house_resident_reads_fixtures::presentation_exchange(
+            &owner, admitted, case,
+        )
+        .await;
     }
     if matches!(
         case,
-        Case::ResidentTimedEquip(super::super::house_resident_reads_fixtures::ClockCase::Logout
-            | super::super::house_resident_reads_fixtures::ClockCase::Writer)
+        Case::ResidentTimedEquip(
+            super::super::house_resident_reads_fixtures::ClockCase::Logout
+                | super::super::house_resident_reads_fixtures::ClockCase::Writer
+        )
     ) {
         // These cases exercise resident custody and lifecycle. Use the fixture's
         // engineering collision cells to avoid unrelated bundle zone and terrain owners.

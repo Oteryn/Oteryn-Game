@@ -117,6 +117,7 @@ impl FreshAdmissionAuthority for CommandAuthority {
         &self,
         _: AdmittedSession,
         item: Option<crate::gameplay_transport::item_view::ItemKey>,
+        attributed: bool,
     ) -> Option<Vec<u8>> {
         assert_eq!(
             item,
@@ -124,10 +125,13 @@ impl FreshAdmissionAuthority for CommandAuthority {
                 [2; 16]
             ))
         );
+        assert!(!attributed);
         oteryn_protocol_oteryn::item_inscription::Reply {
             text: "Resident letter".into(),
             max_length: 1999,
             writable: true,
+            writer_name: None,
+            written_at_unix_ms: None,
         }
         .encode()
     }
@@ -249,6 +253,8 @@ fn house_query_mount_and_inscription_routes_return_owner_results() -> Result<(),
             text: "Resident letter".into(),
             max_length: 1999,
             writable: true,
+            writer_name: None,
+            written_at_unix_ms: None,
         }
         .encode()
         .ok_or("letter reply")?;
