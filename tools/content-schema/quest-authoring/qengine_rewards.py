@@ -488,8 +488,7 @@ def build():
         if finished_second:required.append(requirement(glooth+'addon2',1))
         add('l3-glooth-engineer-'+suffix,'glooth_engineer_outfits_quest','ezebeth',['addon'],
             [storage(glooth+'addon'+str(bit),-1,1,0)],outfit=('glooth_engineer',bit),requires=required)
-    declarations=[{'key':votes,'quest':'oteryn:quest.oramond_quest','initial':-1,'min':-1,'max':2147483647,
-        'sources':[f'crystal:{PIN}:data-global/npc/ezebeth.lua:93-103:sha256:{sha(inputs["data-global/npc/ezebeth.lua"])}']}]
+    declarations=[]
     noble=prefix+'u7_8/nobleman_outfits/'
     first=noble+'nobleman_first_addon'
     second=noble+'nobleman_second_addon'
@@ -952,18 +951,33 @@ def build():
             ('brotherhood','the_bone_master','nightmare','bone_brother','skull_and_bones'),
             ('nightmare','the_dream_master','brotherhood','nightmare_knight','nightmare_walker')]:
         quest=family+'_outfits_quest'
-        rank=prefix+'u7_9/'+family+'_outfits/outfits'
+        order=prefix+'u7_9/'+family+'_outfits/'
+        rank=order+'outfits'
         other=prefix+'u7_9/'+opposite+'_outfits/outfits'
         requirements=[requirement(parent,1),requirement(other,0)]
         for stage,before,after,item,count,topic,achievement in [
                 ('join',0,1,768,0,2,join_achievement),('officer',1,2,769,500,3,None),('leader',2,3,770,1000,4,final_achievement)]:
             guard=[storage(rank,before,after)]
+            if family == 'nightmare' and stage == 'join':
+                guard.append(storage(order+'knightwatch_tower_door',-1,1,1))
             add('l10-'+family+'-'+stage,quest,npc,['yes'],guard,take=[] if count==0 else [(6499,count)],
                 give=(item,1),topic=topic,requires=requirements,achievement='oteryn:achievement/'+achievement if achievement else None)
             callbacks[-1]['requires_premium']=True
+            if family == 'nightmare' and stage == 'leader':
+                callbacks[-1]['give']['additional'] = [{'item':'oteryn:item.tibia.i6390','count':1}]
             source_offer(npc,['join'] if stage=='join' else ['advancement','demonic','essence'],0,1 if stage=='join' else topic,
                 [storage(rank,before,before,preserve=True)])
             offers[-1]['requires']=requirements
+        if family == 'nightmare':
+            add('l10-nightmare-protector', quest, npc, ['yes'],
+                [storage(rank,3,4),storage(order+'door',-1,1,1)],
+                take=[(6499,1500)], topic=5, requires=requirements,
+                achievement='oteryn:achievement/lord_protector')
+            callbacks[-1].update(requires_premium=True, completes=True,
+                reply=['You have earned the rank of Lord Protector.'])
+            source_offer(npc,['advancement','demonic','essence'],0,5,[storage(rank,3,3,preserve=True)])
+            offers[-1].update(requires=requirements,
+                reply=['Bring 1,500 demonic essences to advance to Lord Protector.'])
         source_offer(npc,['yes'],1,2,[storage(rank,0,0,preserve=True)])
         offers[-1]['requires']=requirements
         for stage,item,threshold,bit in [('follower',768,1,0),('officer',769,2,1),('leader',770,3,2)]:
@@ -979,6 +993,9 @@ def build():
                 callback['forbids_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':bit}]
             document_path='data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua'
             callback['sources'].append(f'crystal:{PIN}:{document_path}:1-69:sha256:{sha(inputs[document_path])}')
+    source_offer('chavis',['food'],0,1,[
+        storage('oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/count',5,5,preserve=True)])
+    offers[-1]['reply']=['Do you have five roots ready to hand in for a Rathleton vote?']
     # L11: source task rewards plus explicitly selected Oteryn qualification desks.
     dream_ready=[requirement(prefix+'u12_00/the_dream_courts/ward_stones/questline',3),
         requirement(prefix+'u12_00/the_dream_courts/main/the_summer_court',1)]

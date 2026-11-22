@@ -101,6 +101,38 @@ fn the_compiler_admits_exactly_the_npcs_of_the_server_service_model() -> TestRes
     Ok(())
 }
 
+#[test]
+fn chavis_is_loaded_at_the_rathleton_food_task_cell() -> TestResult {
+    let mut families = repository_families()?;
+    for shard in shards(&root(), "content/world/npc-placements/")? {
+        families.add_npc_placements(&shard)?;
+    }
+    let positions: Vec<_> = families
+        .npc_placements
+        .iter()
+        .filter(|placement| placement.npc == "oteryn:npc.chavis")
+        .map(|placement| placement.cell)
+        .collect();
+    assert_eq!(positions, [(33548, 31948, 7)]);
+    Ok(())
+}
+
+#[test]
+fn dream_master_is_loaded_at_the_knightwatch_tower_cell() -> TestResult {
+    let mut families = repository_families()?;
+    for shard in shards(&root(), "content/world/npc-placements/")? {
+        families.add_npc_placements(&shard)?;
+    }
+    let positions: Vec<_> = families
+        .npc_placements
+        .iter()
+        .filter(|placement| placement.npc == "oteryn:npc.the_dream_master")
+        .map(|placement| placement.cell)
+        .collect();
+    assert_eq!(positions, [(32844, 32228, 14)]);
+    Ok(())
+}
+
 const PALETTE: [&str; 5] = [
     "terrain:grass",
     "terrain:lava",

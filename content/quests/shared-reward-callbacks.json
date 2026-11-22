@@ -2,16 +2,6 @@
   "schema": 1,
   "tracks": [
     {
-      "key": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
-      "quest": "oteryn:quest.oramond_quest",
-      "initial": -1,
-      "min": -1,
-      "max": 2147483647,
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:93-103:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
-      ]
-    },
-    {
       "key": "oteryn:quest-progress/outfit_quest/ref",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "initial": 0,
@@ -1220,6 +1210,12 @@
           "minimum": 0,
           "maximum": 0,
           "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
         }
       ],
       "take": [],
@@ -1276,7 +1272,13 @@
       "give": {
         "item": "oteryn:item.tibia.i770",
         "count": 1,
-        "contents": []
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i6390",
+            "count": 1
+          }
+        ]
       },
       "outfit": null,
       "achievement": "oteryn:achievement/nightmare_walker",
@@ -1349,6 +1351,59 @@
         }
       ],
       "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l10-nightmare-protector",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6499",
+          "count": 1500
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/lord_protector",
+      "reply": [
+        "You have earned the rank of Lord Protector."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "requires_premium": true,
+      "completes": true
     },
     {
       "key": "oteryn:quest-reward/l10-nightmare-use-follower",

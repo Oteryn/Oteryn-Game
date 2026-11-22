@@ -213,6 +213,15 @@ class QuestRewards(unittest.TestCase):
                 self.assertEqual(row['outfit'],{'outfit':'oteryn:outfit.'+family,'addons':bit})
                 self.assertTrue(row['requires_premium'])
                 self.assertEqual(row['forbids_outfits'] if bit==0 else row['requires_outfits'],['oteryn:outfit.'+family])
+        leader = rows['l10-nightmare-leader']
+        self.assertEqual(leader['give']['additional'], [{'item':'oteryn:item.tibia.i6390','count':1}])
+        nightmare = 'oteryn:quest-progress/quest/u7_9/nightmare_outfits/'
+        join = rows['l10-nightmare-join']
+        self.assertEqual({row['track']:row['set'] for row in join['storage']}[nightmare+'knightwatch_tower_door'], 1)
+        protector = rows['l10-nightmare-protector']
+        self.assertEqual(protector['take'], [{'item':'oteryn:item.tibia.i6499','count':1500}])
+        self.assertEqual(protector['achievement'], 'oteryn:achievement/lord_protector')
+        self.assertEqual({row['track']:row['set'] for row in protector['storage']}[nightmare+'door'], 1)
         for field,value in [('carried_item','oteryn:item.tibia.i769'),('take',[]),('give',{'item':'oteryn:item.tibia.i768','count':1,'contents':[]})]:
             bad=copy.deepcopy(self.callbacks)
             next(c for c in bad['callbacks'] if c['key']=='oteryn:quest-reward/l10-brotherhood-use-follower')[field]=value

@@ -123,24 +123,41 @@ pub(super) async fn exercise(
     let quentin = actors[3];
     let tibra = actors[4];
     super::classic_quests_fixtures::talk(owner, admitted, cyclops, 1000, "hi").await?;
-    super::classic_quests_fixtures::talk(owner, admitted, cyclops, 1001, "forging friendship").await?;
+    mint(owner, admitted, 3416, 1, 1999).await?;
+    for (nonce, word) in [(1001, "uth'lokr"), (1002, "yes"), (1003, "yes")] {
+        super::classic_quests_fixtures::talk(owner, admitted, cyclops, nonce, word).await?;
+    }
+    assert_eq!(count(h, 3416).await?, 1);
+    assert_eq!(count(h, 5889).await?, 0);
     assert_eq!(
         super::classic_quests_fixtures::progress(owner, admitted, authority, TRACK).await?,
         0
     );
+    super::classic_quests_fixtures::talk(owner, admitted, cyclops, 1004, "uth'lokr").await?;
     assert_eq!(
-        super::qengine_rewards_fixtures::talk(owner, admitted, cyclops, 1002, "deliver skirts").await?,
+        super::qengine_rewards_fixtures::talk(owner, admitted, cyclops, 1005, "yes").await?,
         NpcIntentDisposition::Rejected
     );
     for i in 0..3 {
         mint(owner, admitted, 3560, 1, 2000 + i).await?;
     }
-    super::classic_quests_fixtures::talk(owner, admitted, cyclops, 1003, "deliver skirts").await?;
+    for (nonce, word) in [(1006, "uth'lokr"), (1007, "yes")] {
+        super::classic_quests_fixtures::talk(owner, admitted, cyclops, nonce, word).await?;
+    }
     assert_eq!(count(h, 3560).await?, 0);
     assert_eq!(
         super::classic_quests_fixtures::progress(owner, admitted, authority, TRACK).await?,
         1
     );
+    for (use_count, nonce) in [(1, 1008), (2, 1010)] {
+        if use_count == 2 {
+            mint(owner, admitted, 3416, 1, 2004).await?;
+        }
+        super::classic_quests_fixtures::talk(owner, admitted, cyclops, nonce, "uth'lokr").await?;
+        super::classic_quests_fixtures::talk(owner, admitted, cyclops, nonce + 1, "yes").await?;
+        assert_eq!(count(h, 3416).await?, 0);
+        assert_eq!(count(h, 5889).await?, use_count);
+    }
     let steel = callbacks
         .iter()
         .find(|c| c.key.ends_with("questpc7-friends-royal-steel"))
@@ -167,9 +184,9 @@ pub(super) async fn exercise(
         );
     }
     assert_eq!(count(h, 3381).await?, 0);
-    super::classic_quests_fixtures::talk(owner, admitted, marina, 1010, "hi").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, marina, 1012, "hi").await?;
     mint(owner, admitted, 5902, 50, 2020).await?;
-    super::classic_quests_fixtures::talk(owner, admitted, marina, 1011, "deliver honey").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, marina, 1013, "deliver honey").await?;
     assert_eq!(count(h, 5902).await?, 0);
     mint(owner, admitted, 5879, 20, 2021).await?;
     let yarn = callbacks
