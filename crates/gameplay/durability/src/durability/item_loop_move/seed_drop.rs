@@ -61,6 +61,7 @@ struct GroundPot {
     item: [u8; 16],
     before: serde_json::Value,
     location: serde_json::Value,
+    placement_context: Vec<u8>,
     first_stage: i32,
 }
 
@@ -81,7 +82,7 @@ async fn lock_ground_pot(
         return refuse(LoopMoveRefusal::Stale);
     }
     let locked = sqlx::query(
-        "SELECT to_jsonb(i) AS before, to_jsonb(g) AS location,
+        "SELECT to_jsonb(i) AS before, to_jsonb(g) AS location, g.native_room_placement_context,
                 coalesce((SELECT max(source_stage) FROM game_spell_field_temporal_schedules
                           WHERE item_instance_id=i.item_instance_id),0)+1 AS first_stage
            FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id)
@@ -111,10 +112,19 @@ async fn lock_ground_pot(
     let Some(locked) = locked else {
         return refuse(LoopMoveRefusal::Stale);
     };
+    let placement_context: Vec<u8> = locked.try_get("native_room_placement_context")?;
+    if placement_context != ground.placement_context
+        && (placement_context.len() != 32
+            || crate::durability::map_item_mint_audit::map_revision_of(&placement_context)
+                != ground.map_revision)
+    {
+        return refuse(LoopMoveRefusal::Stale);
+    }
     Ok(GroundPot {
         item,
         before: locked.try_get("before")?,
         location: locked.try_get("location")?,
+        placement_context,
         first_stage: locked.try_get("first_stage")?,
     })
 }
@@ -300,9 +310,23 @@ impl DurabilityRoot {
                     }
                     SeedDropPlacement::Base { .. } => None,
                 };
+                // A map-minted pot uses its bundle digest as its placement context.
+                // Admit the seed against the pot's proven physical Ground context so
+                // the same-transaction census counts that root. Replay still compares
+                // the original wire-resolved move intent.
+                let admitted_request = pot.as_ref()
+                    .filter(|pot| pot.placement_context != ground.placement_context)
+                    .map(|pot| LoopMoveRequest {
+                        destination: LoopDestination::Ground(LoopGround {
+                            placement_context: pot.placement_context.clone(),
+                            ..ground.clone()
+                        }),
+                        ..request.clone()
+                    });
                 // Existing owner proves the exact drop/split, including nested/Ground source
                 // custody and every original deferred move constraint, before this consequence.
-                let mut receipt=apply_loop_move(&mut tx,permit,&record,&node,&fence,command,content,&request,&intent,None,None,None,None).await?;
+                let mut receipt=apply_loop_move(&mut tx,permit,&record,&node,&fence,command,content,
+                    admitted_request.as_ref().unwrap_or(&request),&intent,None,None,None,None).await?;
                 let planted=sqlx::query("SELECT to_jsonb(i) AS before_item,to_jsonb(g) AS before_ground,uuid_send(i.item_instance_id) AS item,i.quantity FROM game_item_loop_move_lines l JOIN game_item_instances i USING(item_instance_id) JOIN game_item_ground_locations g USING(item_instance_id) WHERE l.transaction_id=encode($1,'hex')::uuid AND l.to_kind=3 AND g.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.spatial_position=$4 FOR UPDATE OF i")
                     .bind(receipt.transaction_id.as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&ground.spatial_position)
                     .fetch_one(&mut **tx).await?;
