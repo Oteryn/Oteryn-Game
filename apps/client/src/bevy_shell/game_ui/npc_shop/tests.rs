@@ -266,6 +266,37 @@ fn npc_shop_actual_activate_emits_exact_retained_trade_and_pending_blocks_repeat
         .ok_or("offer row")?;
     app.world_mut().trigger(Activate { entity: select });
     app.update();
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bevy_item_details_selected(true);
+    let inspect = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(e, a)| matches!(a.kind, Kind::Cyclopedia).then_some(e))
+        .ok_or("cyclopedia")?;
+    app.world_mut().trigger(Activate { entity: inspect });
+    let inspected = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .inspection_panel();
+    assert!(inspected.catalogue_open);
+    assert_eq!(
+        inspected.last_request,
+        Some(oteryn_client_ui::inspection::Request::Catalogue(42))
+    );
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::ServerMechanic(_)
+    ));
     let buy = app
         .world_mut()
         .query::<(Entity, &Action)>()
@@ -596,5 +627,289 @@ fn npc_shop_decoded_names_and_extended_amounts_reach_rows_and_commands() -> Resu
         return Err("trade command".into());
     };
     assert_eq!(intent.quantity, 150);
+    Ok(())
+}
+
+#[test]
+fn price_button_sorts_rows_without_changing_quote_identity() -> Result {
+    let (host, _commands, outbox) = fixture()?;
+    let mut window = host
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .npc_shop_panel()
+        .live
+        .window;
+    window.offers.push(npc_service::NpcOffer {
+        unit_price: 2,
+        item_definition_ref: 43,
+        ..window.offers[0]
+    });
+    window.details = ["apple", "Zebra"]
+        .map(|name| npc_service::NpcQuoteDetails {
+            name: name.into(),
+            maximum_quantity: 10,
+        })
+        .into();
+    outbox.push(vec![SessionEvent::NpcTradeWindow(AppliedDelta {
+        server_sequence: 8,
+        base_revision: 7,
+        new_revision: 8,
+        value: window,
+    })]);
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        source::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_asset::<Font>()
+    .init_resource::<InputFocus>()
+    .insert_non_send(host)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    for (by_price, expected) in [(true, [1, 0]), (false, [0, 1])] {
+        let button = app
+            .world_mut()
+            .query::<(Entity, &Action)>()
+            .iter(app.world())
+            .find_map(|(e, a)| {
+                matches!(
+                    (a.kind, by_price),
+                    (Kind::SortPrice, true) | (Kind::SortName, false)
+                )
+                .then_some(e)
+            })
+            .ok_or("sort by price")?;
+        app.world_mut().trigger(Activate { entity: button });
+        app.update();
+        let state = app.world().resource::<State>();
+        let parent = state.widgets.ok_or("widgets")?.rows;
+        let indices: Vec<_> = app
+            .world()
+            .get::<Children>(parent)
+            .ok_or("rows")?
+            .iter()
+            .filter_map(|e| match app.world().get::<Action>(e)?.kind {
+                Kind::Select(q) => Some(q.offer_index),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(indices, expected);
+    }
+    Ok(())
+}
+
+#[test]
+fn sell_all_visits_owned_sell_quotes_without_row_selection() -> Result {
+    let (host, mut commands, outbox) = fixture()?;
+    let mut window = host
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .npc_shop_panel()
+        .live
+        .window;
+    window.offers = [42, 43, 44]
+        .map(|item| npc_service::NpcOffer {
+            item_definition_ref: item,
+            count: 1,
+            side: NpcTradeSide::Sell,
+            unit_price: 7,
+        })
+        .into();
+    let item = |id: u32| -> std::result::Result<_, Box<dyn std::error::Error>> {
+        Ok(oteryn_session::ItemEntry {
+            appearance_id: 0,
+            handle: u64::from(id).try_into()?,
+            item_definition_ref: id.try_into()?,
+            count: 3.try_into()?,
+            sub_type: 0,
+        })
+    };
+    outbox.push(vec![
+        SessionEvent::NpcTradeWindow(AppliedDelta {
+            server_sequence: 8,
+            base_revision: 7,
+            new_revision: 8,
+            value: window,
+        }),
+        SessionEvent::Inventory(AppliedDelta {
+            server_sequence: 9,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::CharacterInventory {
+                main_backpack: Some(item(1)?),
+                entries: vec![item(42)?, item(43)?, item(44)?],
+                equipment: vec![],
+            },
+        }),
+    ]);
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        source::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_asset::<Font>()
+    .init_resource::<InputFocus>()
+    .insert_non_send(host)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    let button = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(e, a)| matches!(a.kind, Kind::SellAll).then_some(e))
+        .ok_or("sell all")?;
+    app.world_mut().trigger(Activate { entity: button });
+    for expected in [0, 2] {
+        let PlayCommand::NpcShop(request) = commands.try_recv()? else {
+            return Err("sell all".into());
+        };
+        assert_eq!(request.0.offer_index, expected);
+        assert!(commands.try_recv().is_err());
+        if expected == 0 {
+            outbox.push(vec![SessionEvent::Inventory(AppliedDelta {
+                server_sequence: 10,
+                base_revision: 1,
+                new_revision: 2,
+                value: oteryn_session::CharacterInventory {
+                    main_backpack: Some(item(1)?),
+                    entries: vec![item(44)?],
+                    equipment: vec![],
+                },
+            })]);
+        }
+        outbox.bevy_npc_sale_accepted();
+        app.update();
+    }
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn shop_weight_sort_and_capacity_use_inspected_weight_and_live_free_capacity() -> Result {
+    use oteryn_client_ui::inspection::{InspectedItem, Reply, encode_reply};
+    let (host, mut commands, outbox) = fixture()?;
+    let link = &host.play.as_ref().ok_or("play")?.link;
+    link.bevy_item_details_selected(true);
+    let mut window = link.npc_shop_panel().live.window;
+    window.offers.push(npc_service::NpcOffer {
+        item_definition_ref: 43,
+        ..window.offers[0]
+    });
+    outbox.push(vec![
+        SessionEvent::NpcTradeWindow(AppliedDelta {
+            server_sequence: 8,
+            base_revision: 7,
+            new_revision: 8,
+            value: window,
+        }),
+        SessionEvent::InventoryCapacity(AppliedDelta {
+            server_sequence: 9,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::inventory_capacity::InventoryCapacity {
+                capacity: 5000,
+                free: 900,
+            },
+        }),
+    ]);
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        source::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_asset::<Font>()
+    .init_resource::<InputFocus>()
+    .insert_non_send(host)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    let click = |app: &mut App, which: fn(Kind) -> bool| -> Result {
+        let e = app
+            .world_mut()
+            .query::<(Entity, &Action)>()
+            .iter(app.world())
+            .find_map(|(e, a)| which(a.kind).then_some(e))
+            .ok_or("button")?;
+        app.world_mut().trigger(Activate { entity: e });
+        app.update();
+        Ok(())
+    };
+    click(&mut app, |k| matches!(k, Kind::SortWeight))?;
+    for (item, weight) in [(42, "4.20 oz"), (43, "1.12 oz")] {
+        let PlayCommand::Feature(command) = commands.try_recv()? else {
+            return Err("weight request".into());
+        };
+        assert_eq!(
+            oteryn_client_ui::inspection::decode_request(&command.payload)
+                .map_err(|_| "request")?,
+            oteryn_client_ui::inspection::Request::Catalogue(item)
+        );
+        if item == 42 {
+            click(&mut app, |k| matches!(k,Kind::Select(q) if q.item==42))?;
+            click(&mut app, |k| matches!(k, Kind::Trade))?;
+            assert!(
+                commands.try_recv().is_err(),
+                "capacity check is waiting for the requested weight"
+            );
+        }
+        let payload = encode_reply(&Reply {
+            status: 1,
+            catalogue: None,
+            requests: vec![],
+            items: vec![InspectedItem {
+                slot: 0,
+                definition_ref: item,
+                count: 1,
+                tier: 0,
+                name: "Goods".into(),
+                attributes: vec![("Weight".into(), weight.into())],
+            }],
+        })
+        .map_err(|_| "reply")?;
+        outbox.trade_inspection_result(
+            &command,
+            &oteryn_session::GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: oteryn_session::CommandStatus::Accepted,
+                payload,
+            },
+        );
+        app.update();
+    }
+    assert_eq!(
+        app.world()
+            .resource::<State>()
+            .rendered
+            .as_ref()
+            .ok_or("rows")?
+            .rows[0]
+            .item,
+        43
+    );
+    click(&mut app, |k| matches!(k,Kind::Select(q) if q.item==42))?;
+    click(&mut app, |k| matches!(k, Kind::Trade))?;
+    assert!(commands.try_recv().is_err());
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.contains("12.60 oz") && text.contains("9.00 oz"))
+    );
+    click(&mut app, |k| matches!(k, Kind::IgnoreCapacity))?;
+    click(&mut app, |k| matches!(k, Kind::Trade))?;
+    assert!(matches!(commands.try_recv()?, PlayCommand::NpcTrade(_)));
     Ok(())
 }

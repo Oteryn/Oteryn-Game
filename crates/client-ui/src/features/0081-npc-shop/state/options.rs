@@ -27,9 +27,22 @@ impl LiveShop {
                 .sum()
         })
     }
+    pub fn total_weight(&self, quote: Quote, amount: u32) -> Option<u128> {
+        let weight = self.weights.get(&quote.item).copied().flatten()?;
+        Some(u128::from(weight) * u128::from(quote.count) * u128::from(amount))
+    }
     /// Capacity here is a preview. The server still checks custody and free space.
     pub fn can_trade(&self, quote: Quote, amount: u32) -> bool {
         self.valid_amount(quote, amount)
+            && (quote.side != NpcTradeSide::Buy
+                || self.options.ignore_capacity
+                || (!self.inspection_selected
+                    || self.free_capacity.is_none()
+                    || self.weights.contains_key(&quote.item))
+                    && self
+                        .free_capacity
+                        .zip(self.total_weight(quote, amount))
+                        .is_none_or(|(free, weight)| weight <= u128::from(free)))
             && (quote.side != NpcTradeSide::Buy
                 || self.options.ignore_capacity
                 || self.free_slots() != Some(0)

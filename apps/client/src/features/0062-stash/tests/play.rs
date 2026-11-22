@@ -10,6 +10,8 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Default)]
 struct Peer {
+    reverse_pages: bool,
+    emptied_last: bool,
     queries: Option<std::sync::Arc<std::sync::Mutex<Vec<stash::StashFilter>>>>,
 }
 impl Stepper for Peer {
@@ -28,7 +30,7 @@ impl Stepper for Peer {
             assert_eq!(filter.trader, "Sam");
             assert_eq!(intent.page, 0);
         }
-        let reply = stash::StashReply {
+        let mut reply = stash::StashReply {
             outcome: stash::StashOutcome::Opened,
             stowed_quantity: 0,
             transaction: None,
@@ -42,6 +44,26 @@ impl Stepper for Peer {
                 migration_required: false,
             }],
         };
+        if self.reverse_pages {
+            let last = if self.emptied_last { 2 } else { 3 };
+            reply.has_more = intent.page < last;
+            if intent.page > last { reply.rows.clear(); } else {
+                reply.rows[0].handle = [intent.page as u8 + 1;16];
+            }
+            if let stash::StashAction::Withdraw { row, .. } = intent.action {
+                if intent.page == 3 {
+                    assert!(!self.emptied_last, "withdrawal must execute once");
+                    assert_eq!(row,[4;16]);
+                    self.emptied_last = true;
+                    reply.rows.clear();
+                    reply.outcome = stash::StashOutcome::Committed;
+                    reply.transaction = Some([9;16]);
+                } else {
+                    assert_eq!(intent.page, 2);
+                    assert_eq!(row, [3;16]);
+                }
+            }
+        }
         let wire = stash::encode_stash_reply(&reply).map_err(|_| SessionError::SessionUnusable)?;
         Ok(StashResponse {
             status: CommandStatus::Accepted,
@@ -121,6 +143,7 @@ fn stash_market_round_trip_keeps_context() -> Result<(), Error> {
                 let task = tokio::spawn(run_session(
                     Peer {
                         queries: Some(queries.clone()),
+                        ..Default::default()
                     },
                     incoming,
                     outbox,
@@ -250,4 +273,41 @@ fn stash_sort_is_saved_and_restored_in_a_new_session() -> Result<(), Error> {
         })?
         .join()
         .map_err(|_| "Stash preferences thread panicked")?
+}
+
+#[test]
+fn reverse_stash_pages_start_at_last_and_keep_withdraw_handle() -> Result<(), Error> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+        let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+        runtime.block_on(async {
+            let (link, incoming, outbox) = play_channel();
+            let task = tokio::spawn(run_session(Peer { reverse_pages: true, ..Default::default() }, incoming, outbox));
+            tokio::time::timeout(Duration::from_secs(3), async {
+                while !link.stash_panel().selected { tokio::task::yield_now().await; }
+            }).await?;
+            link.stash_reverse();
+            ready(&link).await?;
+            let page = link.stash_panel();
+            assert_eq!(page.page, 0);
+            assert!(page.has_more);
+            assert_eq!(page.rows[0].handle, [4;16]);
+            link.stash_request(Intent::Next);
+            ready(&link).await?;
+            let page = link.stash_panel();
+            assert_eq!(page.page, 1);
+            assert_eq!(page.rows[0].handle, [3;16]);
+            link.stash_request(Intent::Withdraw { row: 0, amount: 1 });
+            ready(&link).await?;
+            link.stash_request(Intent::Previous);
+            ready(&link).await?;
+            link.stash_request(Intent::Withdraw { row: 0, amount: 12 });
+            ready(&link).await?;
+            let refreshed = link.stash_panel();
+            assert_eq!(refreshed.page, 0);
+            assert_eq!(refreshed.rows[0].handle, [3;16]);
+            drop(link);
+            task.await?;
+            Ok::<(), Error>(())
+        })?
+    })?.join().map_err(|_| "reverse stash session panicked")?
 }

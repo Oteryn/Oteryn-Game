@@ -31,6 +31,7 @@ pub(super) struct MailboxState {
     selected: bool,
     pending: bool,
     stamina: Option<u16>,
+    vocation: Option<u8>,
 }
 impl MailboxState {
     pub(super) fn new(selected: bool) -> Self {
@@ -86,7 +87,12 @@ impl PlayLink {
                 ..Default::default()
             });
     }
-    fn request_hud_stamina(&self) -> bool {
+    #[cfg(bevy_shell)]
+    pub(crate) fn own_hud_vocation(&self) -> (Option<u8>, bool) {
+        let mailbox = lock(&self.mailbox);
+        (mailbox.hud_resource.vocation, mailbox.hud_resource.pending)
+    }
+    pub(crate) fn request_hud_stamina(&self) -> bool {
         let mut mailbox = lock(&self.mailbox);
         let state = &mut mailbox.hud_resource;
         if !state.selected || state.pending {
@@ -102,10 +108,10 @@ impl PlayLink {
     }
 }
 impl Outbox {
-    pub(super) fn hud_stamina_initialize(&self, selected: bool) {
+    pub(crate) fn hud_stamina_initialize(&self, selected: bool) {
         lock(&self.0).hud_resource = MailboxState::new(selected);
     }
-    pub(super) fn hud_stamina_result(&self, result: &oteryn_session::GatedCommandResult) {
+    pub(crate) fn hud_stamina_result(&self, result: &oteryn_session::GatedCommandResult) {
         use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, apply_result};
         let mut mailbox = lock(&self.0);
         let mut panel = CyclopediaCharacterPanel {
@@ -123,6 +129,7 @@ impl Outbox {
             .map(|stats| stats.stamina_minutes);
         mailbox.hud_resource.pending = false;
         mailbox.hud_resource.stamina = stamina;
+        mailbox.hud_resource.vocation = panel.vocation_id;
     }
 }
 impl PlayView {
