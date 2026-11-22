@@ -37,6 +37,8 @@ enum Case {
     Preserve,
     IceUsePickup,
     IceUseGroundFirst,
+    MaterializedDrop,
+    MaterializedPickupRace,
 }
 #[test]
 fn seed_drop_partial_stack_wire_is_atomic_replayable_and_grows() -> TestResult {
@@ -61,6 +63,22 @@ fn planted_pot_pickup_keeps_deadlines_through_inventory_and_catches_up_once() ->
 #[test]
 fn planted_pot_ground_stage_remains_visible_and_pickable() -> TestResult {
     run_case(Case::IceUseGroundFirst)
+}
+
+#[test]
+fn seed_drop_materialized_pot_postgres_consumes_one_and_starts_decay() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(Case::MaterializedDrop)
+}
+
+#[test]
+fn seed_drop_materialized_pot_postgres_pickup_race_and_replay() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(Case::MaterializedPickupRace)
 }
 
 fn run_case(case: Case) -> TestResult {
@@ -93,7 +111,7 @@ fn scenario(case: Case) -> TestResult {
             .await
             .map_err(debug)?;
         let dropping = matches!(case, Case::OrdinaryDrop | Case::IceDrop);
-        let seed = if matches!(case, Case::OrdinaryDrop) {
+        let seed = if matches!(case, Case::OrdinaryDrop | Case::MaterializedDrop) {
             647
         } else {
             13844
@@ -117,12 +135,12 @@ fn scenario(case: Case) -> TestResult {
         } else {
             14029
         };
-        let carried: u8 = if matches!(case, Case::OrdinaryDrop) {
+        let carried: u8 = if matches!(case, Case::OrdinaryDrop | Case::MaterializedDrop) {
             5
         } else {
             1
         };
-        let count: u8 = if matches!(case, Case::OrdinaryDrop) {
+        let count: u8 = if matches!(case, Case::OrdinaryDrop | Case::MaterializedDrop) {
             3
         } else {
             1
@@ -258,6 +276,129 @@ fn scenario(case: Case) -> TestResult {
         let key = view::placement_key(pos, 1).ok_or("pot placement")?;
         let mut placement = map.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
+        if matches!(case, Case::MaterializedDrop | Case::MaterializedPickupRace) {
+            let definition = crate::gameplay_transport::item_look::typed_definition(
+                index,
+                reference(water).ok_or("empty pot")?,
+            )
+            .ok_or("pot definition")?;
+            let request = crate::durability::map_item_mint::MapItemMintRequest {
+                flat_crate: None,
+                key_number: None,
+                command: crate::foundation::CommandRef::new(
+                    admitted.game_session_id,
+                    crate::foundation::CommandId::new(901).map_err(debug)?,
+                ),
+                base_bundle_digest: map.base().digest(),
+                placement_key: key,
+                reset_epoch: 0,
+                item: crate::gameplay_transport::item_ref_admission::generation_item_facts(
+                    native, &definition,
+                )
+                .map_err(debug)?,
+                quantity: 1,
+                content_revision: format!(
+                    "sha256:{}",
+                    native.source_digest().iter().map(|b| format!("{b:02x}")).collect::<String>()
+                ),
+                ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
+                sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
+            };
+            maintain_ready(&owner).await?;
+            let mut candidate = owner
+                .root
+                .freeze_map_item_mint(owner.character, owner.holder, fence, request)
+                .await
+                .map_err(debug)?;
+            let permit = owner.spell_lane_permit().await.ok_or("pot lane")?;
+            maintain_ready(&owner).await?;
+            let minted = owner
+                .root
+                .commit_map_item_mint(&permit, owner.character, owner.holder, fence, &mut candidate)
+                .await
+                .map_err(debug)?;
+            let crate::durability::map_item_mint::MapItemMintOutcome::Committed(minted) = minted else {
+                return Err("fresh empty pot mint expected".into());
+            };
+            drop(permit);
+            maintain_ready(&owner).await?;
+            let ground = crate::gameplay_transport::loop_move::loop_ground(&owner, map.base(), Some(index))
+                .await
+                .ok_or("pot projection")?;
+            assert_eq!(ground.ground_entry(&minted.item_instance_id).map(|(pos, _)| pos), Some(pos));
+            let seed_ref = reference(&seed_key).ok_or("seed")?;
+            let pickup_wins = matches!(case, Case::MaterializedPickupRace);
+            let mut command_id = 1;
+            if pickup_wins {
+                use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
+                // Commit pickup after the MOVE owner's observation. Its cached projection is
+                // intentionally left intact until the fenced seed transaction rechecks custody.
+                let permit = owner.spell_lane_permit().await.ok_or("pickup lane")?;
+                maintain_ready(&owner).await?;
+                let picked_up = owner.root.commit_item_loop_move(
+                    &permit, owner.character, owner.holder, &fence,
+                    crate::foundation::CommandRef::new(admitted.game_session_id, crate::foundation::CommandId::new(902).map_err(debug)?),
+                    &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+                    LoopMoveRequest {
+                        item: minted.item_instance_id,
+                        count: None,
+                        pickup_cell: ground.pickup_cell(&minted.item_instance_id),
+                        destination: LoopDestination::MainBackpack,
+                    },
+                ).await.map_err(debug)?;
+                assert!(picked_up.is_ok());
+                drop(permit);
+                let (next, result, _) = drop_exchange(&owner, admitted, command_id, None, seed_ref, count, false).await?;
+                assert_eq!(result, Some(ItemMoveOutcome::Stale));
+                assert_eq!(sqlx::query_scalar::<_, i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(71).as_slice()).fetch_one(&harness.pool).await?, i64::from(carried));
+                assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_map_seed_drop_records")
+                    .fetch_one(&harness.pool).await?, 0);
+                owner.states.loop_ground.invalidate();
+                command_id += 1;
+                let (next, result, _) = drop_exchange(
+                    &owner, next, command_id, None, reference(water).ok_or("empty pot")?, 1, false,
+                ).await?;
+                assert_eq!(result, Some(ItemMoveOutcome::Moved));
+                admitted = next;
+                command_id += 1;
+            }
+            let (_, result, actual) = drop_exchange(&owner, admitted, command_id, None, seed_ref, count, false).await?;
+            assert_eq!(result, Some(ItemMoveOutcome::Moved));
+            if pickup_wins {
+                drop(owner);
+                owner = deps.owner(&harness, &authority);
+                owner.active_generation = Some(active);
+                owner.movement_cells = (&cells).into();
+                deps.initialize(&owner).await;
+                let (_, replay, _) = drop_exchange(&owner, admitted, command_id, Some(actual), seed_ref, count, false).await?;
+                assert_eq!(replay, Some(ItemMoveOutcome::Moved));
+            }
+            let pot: (String, i64, bool) = sqlx::query_as("SELECT definition_production_key,quantity,EXISTS(SELECT 1 FROM game_item_ground_locations g WHERE g.item_instance_id=i.item_instance_id AND g.spatial_position=$2) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(minted.item_instance_id.as_slice()).bind(ground.pickup_cell(&minted.item_instance_id).ok_or("pot cell")?)
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(pot, (format!("oteryn:item.tibia.i{after}"), 1, true));
+            let seeds: (i64, i64) = sqlx::query_as("SELECT coalesce(sum(i.quantity),0)::bigint,coalesce(sum(i.quantity) FILTER (WHERE g.item_instance_id IS NOT NULL),0)::bigint FROM game_item_instances i LEFT JOIN game_item_ground_locations g USING(item_instance_id) WHERE i.definition_production_key=$1 AND i.lifecycle=1")
+                .bind(&seed_key).fetch_one(&harness.pool).await?;
+            assert_eq!(seeds, (i64::from(carried)-1, i64::from(count)-1));
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_terrain_tool_transforms")
+                .fetch_one(&harness.pool).await?, 0);
+            let deadlines: Vec<(String, i64, bool)> = sqlx::query_as("SELECT target_production_key,duration_millis,expires_at_unix_ms=d.occurred_at+row_number() OVER (ORDER BY source_stage)*duration_millis FROM game_spell_field_temporal_schedules p CROSS JOIN game_map_seed_drop_records d WHERE p.item_instance_id=encode($1,'hex')::uuid ORDER BY source_stage")
+                .bind(minted.item_instance_id.as_slice()).fetch_all(&harness.pool).await?;
+            assert_eq!(deadlines, vec![(format!("oteryn:item.tibia.i{mature}"), 72_000_000, true), ("oteryn:item.tibia.i306".into(), 72_000_000, true)]);
+            let audit_count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_map_seed_drop_records d JOIN game_item_audit_outbox a USING(event_id) WHERE a.envelope_sha256=d.envelope_sha256 AND a.envelope_sha256=sha256(a.envelope)")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(audit_count, 1);
+            maintain_ready(&owner).await?;
+            let current_ground = crate::gameplay_transport::loop_move::loop_ground(&owner, map.base(), Some(index))
+                .await
+                .ok_or("planted pot projection")?;
+            assert_eq!(current_ground.ground_entry(&minted.item_instance_id).map(|(pos, _)| pos), Some(pos));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let intent = UseIntent {
             target: UseTarget::ItemByDefinition(reference(&seed_key).ok_or("seed")?),
             use_with: None,
