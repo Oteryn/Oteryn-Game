@@ -927,6 +927,10 @@ pub(super) async fn move_loop_item_with_house_capacity(
         .and_then(|ground| ground.ground_entry(&item))
         .map(|(pos, _)| (i32::from(pos.x), i32::from(pos.y), i16::from(pos.floor)));
     let actor_at = pins.as_ref().map(|(_, at, ..)| *at);
+    let dreamer_throw = pickup.is_none()
+        && ring_target.is_some()
+        && matches!((actor_at, &request.target), (Some(at), LoopTarget::Ground(to))
+            if dreamer_ring::entrance_throw(at, *to));
     let pickup_cell = match (pickup, actor_at) {
         (Some(cell), Some(at)) if in_reach(at, cell) => {
             ground.as_ref().and_then(|ground| ground.pickup_cell(&item))
@@ -956,7 +960,12 @@ pub(super) async fn move_loop_item_with_house_capacity(
                     return posted;
                 }
             }
-            match drop_cell(base, *at, to) {
+            let cell = if dreamer_throw {
+                source_drop_cell(base, *at, to)
+            } else {
+                drop_cell(base, *at, to)
+            };
+            match cell {
                 Ok(spatial_position) => LoopDestination::Ground(LoopGround {
                     spatial_position,
                     map_revision: map_revision(base),
@@ -1000,16 +1009,20 @@ pub(super) async fn move_loop_item_with_house_capacity(
     } else {
         None
     };
-    let elemental_result = admission
-        .commit_elemental_arrival(
-            &mut permit,
-            actor,
-            command,
-            native,
-            &loop_request,
-            ground.as_deref(),
-        )
-        .await;
+    let elemental_result = if dreamer_throw {
+        None
+    } else {
+        admission
+            .commit_elemental_arrival(
+                &mut permit,
+                actor,
+                command,
+                native,
+                &loop_request,
+                ground.as_deref(),
+            )
+            .await
+    };
     let mut ring_opened = false;
     let ring_result = match (elemental_result.is_none(), ring_target.as_ref()) {
         (true, Some(prepared)) => {
@@ -1038,6 +1051,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
             }
             Ok(Some(Err(refusal))) => Ok(Some(Err(refusal))),
             Err(error) => Err(error),
+            Ok(None) if dreamer_throw => return LoopMoveResult::TooFar,
             Ok(None) => match seed_target {
                 Some(target) => {
                     admission

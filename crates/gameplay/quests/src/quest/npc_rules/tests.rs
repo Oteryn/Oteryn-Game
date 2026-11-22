@@ -666,7 +666,7 @@ fn storage_owner_preserves_order_and_rejects_unowned_effects() -> Result<(), Npc
 }
 
 // The accepted source cohorts from both parents retain these exact predecessors.
-// Draconia has no historical definition; Stag and schema2 have separate owners.
+// Draconia and Skjaar have no historical definition. Stag and schema2 have separate owners.
 const EXPECTED_LEGACY_QUESTS: [&str; 25] = [
     "oteryn:quest.a_father_s_burden_quest",
     "oteryn:quest.a_pirates_tail",
@@ -813,6 +813,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.hot_cuisine_quest",
         "oteryn:quest.in_service_of_yalahar_quest",
         "oteryn:quest.marlin_trophy_quest",
+        SKJAAR_QUEST,
         "oteryn:quest.outfit_and_addon_quests",
         "oteryn:quest.kilmaresh_quest",
         "oteryn:quest.the_djinn_war_efreet_faction",
@@ -900,14 +901,18 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .all(|rule| rule.npc.starts_with("oteryn:npc.corym_"))
     );
-    // The historical frozen catalogue has no Draconia definition to alias.
+    // Skjaar is an active programme with no definition in the frozen catalogue.
+    assert_eq!(old.catalogue().definition_hash(SKJAAR_QUEST), None);
+    assert!(active.definition_hash(SKJAAR_QUEST).is_some());
     let expected_legacy = expected_programmes
         .iter()
         .copied()
         .filter(|quest| {
             !matches!(
                 *quest,
-                "oteryn:quest.draconia_quest" | "oteryn:quest.the_order_of_the_stag_quest"
+                "oteryn:quest.draconia_quest"
+                    | "oteryn:quest.the_order_of_the_stag_quest"
+                    | SKJAAR_QUEST
             )
         })
         .collect::<std::collections::BTreeSet<_>>();
@@ -1221,7 +1226,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .filter(|program| program.document.schema == 1)
             .count(),
-        28
+        29
     );
     // Canonical main adds the exact source cohort checked above; schema2
     // Mystery has no fabricated legacy definition or absent-value mapping.

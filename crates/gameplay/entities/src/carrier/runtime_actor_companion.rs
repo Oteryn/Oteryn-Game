@@ -818,6 +818,23 @@ impl ChannelRuntimeV1 {
         &self,
         name_or_key: &str,
     ) -> Result<Arc<CompiledCreaturePolicy>, CarrierError> {
+        self.resolve_companion_policy(name_or_key, false)
+    }
+
+    /// A named summon can select the sole costed type when a raid-only
+    /// Creature shares its display name. Exact keys still identify each type.
+    pub fn named_summon_policy(
+        &self,
+        name_or_key: &str,
+    ) -> Result<Arc<CompiledCreaturePolicy>, CarrierError> {
+        self.resolve_companion_policy(name_or_key, true)
+    }
+
+    fn resolve_companion_policy(
+        &self,
+        name_or_key: &str,
+        named_summon: bool,
+    ) -> Result<Arc<CompiledCreaturePolicy>, CarrierError> {
         self.carrier.validate_current_continuity(&self.continuity)?;
         let table = self.companion_policies.as_ref().ok_or(
             oteryn_gameplay_domain::domain::carrier_values::CarrierError::InvalidCreatureTarget,
@@ -843,12 +860,21 @@ impl ChannelRuntimeV1 {
         let first = matches.next().ok_or(
             oteryn_gameplay_domain::domain::carrier_values::CarrierError::InvalidCreatureTarget,
         )?;
-        if matches.next().is_some() {
-            return Err(
-                oteryn_gameplay_domain::domain::carrier_values::CarrierError::InvalidCreatureTarget,
-            );
+        let Some(second) = matches.next() else {
+            return Ok(Arc::clone(first));
+        };
+        if named_summon {
+            let mut costed = [first, second]
+                .into_iter()
+                .chain(matches)
+                .filter(|policy| policy.mana_cost.is_some());
+            if let Some(policy) = costed.next()
+                && costed.next().is_none()
+            {
+                return Ok(Arc::clone(policy));
+            }
         }
-        Ok(Arc::clone(first))
+        Err(CarrierError::InvalidCreatureTarget)
     }
     /// Active spawn realization binds its wild creature to its actual decoded policy. Convince
     /// subsequently reads this binding, never guesses the definition from a spawn instance id.

@@ -89,7 +89,11 @@ fn write_fresh(output: &Path, documents: &CanonicalProjectDocuments) -> Result<(
 
 fn canonicalize(roots: Roots) -> Result<()> {
     let roots = prepare_roots(roots)?;
-    let limits = npc_catalogue_preproduction_limits();
+    let mut limits = npc_catalogue_preproduction_limits();
+    // Regeneration canonicalizes the Orc Sam admission before refreshing the
+    // published cohort limits. The admission adds four references and one source.
+    limits.project.max_reference_records = limits.project.max_reference_records.max(62_890);
+    limits.project.max_import_records = limits.project.max_import_records.max(32);
     let project = capture_world_project(
         roots.input.parent().ok_or("input root has no parent")?,
         roots

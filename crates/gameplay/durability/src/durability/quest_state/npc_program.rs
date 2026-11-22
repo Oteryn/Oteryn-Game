@@ -286,7 +286,9 @@ fn evaluate_source(
         sex: facts.appearance.1,
         outfits: facts.appearance.0,
     };
-    if hot_cuisine_m42::owns(request) {
+    if input.npc == oteryn_gameplay_quests::quest::npc_rules::SKJAAR_NPC {
+        source.plan_skjaar(input)
+    } else if hot_cuisine_m42::owns(request) {
         hot_cuisine_m42::plan(source, &input)
     } else if inventory.is_some() && marlin_trophy::owns(request) {
         source.plan_marlin_items(&input)
@@ -384,7 +386,8 @@ impl DurabilityRoot {
     ) -> Result<NpcProgramCommit> {
         if request.command.game_session_id() != fence.game_session_id
             || request.message.len() > 255
-            || !request.transition_key.starts_with("oteryn:quest-npc/")
+            || !(request.transition_key.starts_with("oteryn:quest-npc/")
+                || rewards::is_skjaar_donation(&request))
             || !valid_quest_key(&request.transition_key)
             || request.topic < 0
             || fence.character_lease_generation == 0
@@ -576,7 +579,11 @@ impl DurabilityRoot {
                     .bind(id).fetch_one(&mut **tx).await?;
                 if pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
             }
-            let item_action = father_items || marlin_items || ((cooking_items || generic_items) && items::changes_items(&plan));
+            let skjaar = request.npc == oteryn_gameplay_quests::quest::npc_rules::SKJAAR_NPC;
+            let skjaar_fee = if skjaar { rewards::skjaar_fee(&plan)? } else { None };
+            let skjaar_key = skjaar && items::changes_items(&plan);
+            let item_action = father_items || marlin_items || ((cooking_items || generic_items) && items::changes_items(&plan))
+                || skjaar_fee.is_some() || skjaar_key;
             let quest=&plan.quest;
             let hash=catalogue.definition_hash(quest).ok_or(DurabilityError::InvalidStoredState)?;
             let stored_state=sqlx::query("SELECT pinned_content_revision,definition_hash,completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE").bind(id).bind(quest).fetch_optional(&mut **tx).await?;
@@ -608,7 +615,22 @@ impl DurabilityRoot {
                     Err(super::super::character_equipment::EquipmentError::Durability(error)) => return Err(error),
                     Err(super::super::character_equipment::EquipmentError::Database(error)) => return Err(error.into()),
                 }
-                let applied = if marlin_items {
+                let applied = if let Some(fee) = skjaar_fee {
+                    match rewards::debit_skjaar_fee(&mut tx, fence, &request, &plan, *content, fee).await? {
+                        rewards::SkjaarPayment::Paid => true,
+                        rewards::SkjaarPayment::InsufficientFunds => {
+                            return Ok(Ok(rewards::skjaar_refusal(plan.inventory_failure_reply, 0)));
+                        }
+                        rewards::SkjaarPayment::ChangeDoesNotFit => {
+                            return Ok(Ok(rewards::skjaar_refusal(Vec::new(), request.topic)));
+                        }
+                    }
+                } else if skjaar_key {
+                    if !rewards::mint_skjaar_key(&mut tx, &node, fence, &request, &plan, *content).await? {
+                        return Ok(Ok(rewards::skjaar_refusal(Vec::new(), request.topic)));
+                    }
+                    true
+                } else if marlin_items {
                     marlin_trophy::apply(&mut tx, fence, &request, &plan, *content, &node).await?
                 } else if cooking_items || generic_items {
                     items::apply(&mut tx, fence, &request, &plan, *content, &node, permit).await?
@@ -644,8 +666,10 @@ impl DurabilityRoot {
             } else {
                 sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision,completed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric,$5::text::numeric,$6::text::numeric)").bind(id).bind(quest).bind(&pin).bind(hash.as_slice()).bind(&committed).bind(completion).execute(&mut **tx).await?;
             }
-            sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation,end_delay_ms,completes) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$9::text::integer,$10)")
-                .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).bind(items::end_delay(&plan).to_string()).bind(plan.completes).execute(&mut **tx).await?;
+            if skjaar_fee.is_none() {
+                sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation,end_delay_ms,completes) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$9::text::integer,$10)")
+                    .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).bind(items::end_delay(&plan).to_string()).bind(plan.completes).execute(&mut **tx).await?;
+            }
             achievements::grant(&mut tx, character, &request, &achievement_keys).await?;
             if let Some(admission) = teleport { teleport::insert(&mut tx, character, &request, &plan, admission).await?; }
             if experience > 0 {
@@ -682,6 +706,11 @@ async fn load(
     };
     if row.try_get::<Vec<u8>, _>("request_binding")? != request.binding(character) {
         return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
+    }
+    if rewards::is_skjaar_donation(request) {
+        let transition = QuestTransitionOutcome::AlreadyCommitted(decode_receipt(&row)?);
+        let result = rewards::replay_skjaar_donation(tx, character, request, transition).await?;
+        return Ok(Ok(Some(result)));
     }
     let response=sqlx::query("SELECT reply,next_topic,inventory_changed,end_conversation,end_delay_ms FROM game_quest_npc_program_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric AND transition_key=$4")
         .bind(character.as_bytes().as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).fetch_optional(&mut **tx).await?.ok_or(DurabilityError::InvalidStoredState)?;

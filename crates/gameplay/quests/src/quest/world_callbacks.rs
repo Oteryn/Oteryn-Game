@@ -823,6 +823,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     native_callbacks.push(super::dreamer_carrot::callback());
     native_callbacks.push(super::dreamer_death_ring::reset_callback());
     native_callbacks.extend(super::dreamer_fire_bug::callbacks());
+    native_callbacks.extend(super::dreamer_puzzles::colour_controls());
     native_callbacks.push(super::targuna_ram::callback()?);
     native_callbacks.push(nomads_land::callback()?);
     native_callbacks.extend(super::ice_seal_paint::callbacks()?);
@@ -953,7 +954,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 "oteryn:quest-callback/questpc7-feaster-entry"
                     | "oteryn:quest-callback/questpc7-feaster-purification-entry"
             ) && !feaster_routes::admitted(callback))
-            || (callback.key == super::dreamer_death_ring::RESET
+            || (matches!(callback.key.as_str(),
+                super::dreamer_death_ring::RESET | super::dreamer_death_ring::JOURNEY_RESET)
                 && !super::dreamer_death_ring::shared_reset(callback))
             || (callback.key == super::dreamer_carrot::KEY
                 && !super::dreamer_carrot::shared_input(callback))
@@ -1066,7 +1068,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 && callback.has_personal_state()
                 && !callback.supports_ground_stack_guard())
             || (callback.world_requirements.len() > MAX_EFFECTS
-                && !dense_ground::admitted(callback))
+                && !dense_ground::admitted(callback)
+                && !super::dreamer_puzzles::token_requirements(callback))
             || callback.world_requirements.iter().any(|r| {
                 !r.valid()
                     || (r.ground.is_none()

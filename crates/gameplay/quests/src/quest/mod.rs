@@ -42,6 +42,7 @@ pub mod distinct_targets;
 pub mod dreamer_carrot;
 pub mod dreamer_death_ring;
 pub mod dreamer_fire_bug;
+pub mod dreamer_puzzles;
 pub mod elemental_arrival;
 pub mod elemental_spheres;
 pub mod elvenbane;

@@ -60,6 +60,38 @@ const RUST: &[(u32, &[(u32, u32)])] = &[
             (3364, 30),
         ],
     ),
+    // Crystal 201189f8 rust_remover.lua:45–65.
+    (
+        8902,
+        &[
+            (3410, 3137),
+            (3432, 2887),
+            (7460, 929),
+            (3419, 23),
+            (3434, 10),
+        ],
+    ),
+    (
+        8907,
+        &[
+            (3354, 2200),
+            (3376, 1870),
+            (3353, 1490),
+            (3351, 1010),
+            (3385, 190),
+            (3391, 10),
+        ],
+    ),
+    (
+        8908,
+        &[
+            (3353, 3156),
+            (3351, 2976),
+            (3385, 963),
+            (3391, 210),
+            (3392, 7),
+        ],
+    ),
 ];
 
 fn admitted(native: &NativeGameplayState, definition: &TypedDefinitionRef) -> bool {
@@ -114,7 +146,7 @@ const fn lottery_wins(draw: u64) -> bool {
     draw.is_multiple_of(98)
 }
 
-/// Resolve remover + rusty armor/legs using Crystal's success threshold and a uniform
+/// Resolve remover + rusty equipment using Crystal's success threshold and a uniform
 /// choice among eligible entries (equivalent to its repeated random-index rejection loop).
 pub fn rust_conversion(
     native: &NativeGameplayState,
@@ -176,12 +208,12 @@ mod tests {
     }
 
     #[test]
-    fn donor_tables_cover_the_six_global_armor_and_legs_variants() {
+    fn donor_tables_cover_the_nine_rusty_equipment_variants() {
         assert_eq!(
             RUST.iter()
                 .map(|(_, outcomes)| outcomes.len())
                 .sum::<usize>(),
-            31
+            47
         );
         assert_eq!(
             RUST[0],

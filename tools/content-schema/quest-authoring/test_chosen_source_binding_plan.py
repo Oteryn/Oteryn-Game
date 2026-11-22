@@ -1,7 +1,7 @@
 import json
 import pathlib
 import unittest
-from native_talk_binding_evidence import canonical_definitions
+from native_talk_binding_evidence import apply_native_talk_bindings, canonical_definitions
 from quest_native_binding_preflight import verify_stage_runtime
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -21,6 +21,7 @@ REGISTERED_TALK_STAGES = {(key, "s1") for key in REGISTERED_TALK_QUESTS} | {
     ("oteryn:quest.authored.bank_robbery_mini_world_change", "s1"),
     ("oteryn:quest.authored.child_of_destiny_quest", "s1"),
     ("oteryn:quest.authored.child_of_destiny_quest", "s5"),
+    ("oteryn:quest.dreamer_s_challenge_quest", "s5"),
     ("oteryn:quest.shadows_of_yalahar_quest", "s1"),
     ("oteryn:quest.authored.top_of_the_city_quest", "s1"),
     ("oteryn:quest.authored.top_of_the_city_quest", "s4"),
@@ -79,6 +80,18 @@ class ChosenSourceBindingPlanTest(unittest.TestCase):
                     talks.append(intent)
         self.assertEqual(251, len(talks))
         self.assertTrue(all("DIALOGUE_LANE_OWNS_TALK_BINDING" in row["unresolved"] for row in talks))
+
+    def test_dreamer_native_binding_maps_join_to_talk_and_report_to_completion(self):
+        plan = json.loads(PLAN.read_bytes())
+        apply_native_talk_bindings(ROOT, plan, canonical_definitions(ROOT))
+        owner = next(row for row in plan["records"]
+                     if row["quest"] == "oteryn:quest.dreamer_s_challenge_quest")
+        stages = {stage["stage_key"]: stage for stage in owner["stages"]}
+        self.assertEqual(stages["s5"]["native_dispatch_binding"]["callback"],
+                         "oteryn:quest-reward/dreamers-challenge/join")
+        self.assertTrue(stages["s5"]["runtime_enabled"])
+        self.assertEqual(stages["s7"]["event_identity_associations"]["kind"], "complete")
+        self.assertIsNone(stages["s7"]["native_dispatch_binding"])
 
     def test_authored_dialogue_candidates_are_preserved(self):
         authored = [row for row in self.plan["records"] if row["quest"] not in self.source_keys]

@@ -90,9 +90,9 @@ def load_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def load_items() -> dict[str, dict]:
+def load_items(root: Path = ROOT) -> dict[str, dict]:
     items = {}
-    for path in sorted(ROOT.glob(ITEMS_GLOB)):
+    for path in sorted(root.glob(ITEMS_GLOB)):
         for record in load_json(path)["records"]:
             definition = record["definition"]
             items[definition["identity"]["key"]] = definition

@@ -120,8 +120,10 @@
     "oteryn:npc.scott_the_scout",
     "oteryn:npc.seymour",
     "oteryn:npc.sinatuki",
+    "oteryn:npc.skjaar",
     "oteryn:npc.snake_eye",
     "oteryn:npc.spectulus",
+    "oteryn:npc.the_dream_master",
     "oteryn:npc.the_first_dragon",
     "oteryn:npc.the_forgemaster",
     "oteryn:npc.the_oracle",
@@ -483,6 +485,25 @@
             "x": 31955,
             "y": 31916,
             "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.the_dream_master": {
+      "basis": "Exact Crystal NPC XML placement at data-global/world/world-npc.xml:3212-3214. North is the engine default because the spawn has no direction.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32844,
+            "y": 32228,
+            "z": 14
           }
         }
       ],

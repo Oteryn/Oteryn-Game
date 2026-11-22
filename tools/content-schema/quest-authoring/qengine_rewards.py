@@ -950,13 +950,26 @@ def build():
     parent='oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4'
     declarations.append({'key':parent,'quest':'oteryn:quest.dreamer_s_challenge_quest','initial':0,
         'min':0,'max':1,'writable':False,'sources':['owner:chosen-Dreamers-Challenge-terminal-puzzle-s4:read-only']})
+    chosen_entrance='oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s1'
+    declarations.append({'key':chosen_entrance,'quest':'oteryn:quest.dreamer_s_challenge_quest','initial':0,
+        'min':0,'max':1,'writable':False,'sources':['owner:chosen-Dreamers-Challenge-entrance-s1:read-only']})
+    chosen_essences='oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s6'
+    chosen_report='oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s7'
+    # Opening a conversation must not spend a durable one-shot. The authored
+    # report owns both the debit and completion, including a resumed offer.
+    offers.append({'npc':'oteryn:npc.the_dream_master','keywords':['advancement','demonic essence'],
+        'topic':0,'next_topic':3,'storage':[],
+        'requires':[requirement(chosen_entrance,1),requirement(chosen_essences,1),requirement(chosen_report,0)],
+        'reply':['Did you bring 100 demonic essences for your Document of the Follower?']})
     for family,npc,opposite,join_achievement,final_achievement in [
             ('brotherhood','the_bone_master','nightmare','bone_brother','skull_and_bones'),
             ('nightmare','the_dream_master','brotherhood','nightmare_knight','nightmare_walker')]:
         quest=family+'_outfits_quest'
         rank=prefix+'u7_9/'+family+'_outfits/outfits'
         other=prefix+'u7_9/'+opposite+'_outfits/outfits'
-        requirements=[requirement(parent,1),requirement(other,0)]
+        # The chosen 100-essence route owns the follower grant for characters
+        # who entered it. Preserve the independent donor routes for old saves.
+        requirements=[requirement(parent,1),requirement(other,0),requirement(chosen_entrance,0)]
         for stage,before,after,item,count,topic,achievement in [
                 ('join',0,1,768,0,2,join_achievement),('officer',1,2,769,500,3,None),('leader',2,3,770,1000,4,final_achievement)]:
             guard=[storage(rank,before,after)]

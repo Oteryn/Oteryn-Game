@@ -1,6 +1,9 @@
+import hashlib
 import json
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import quest_access_bindings as access
 import world_region_codec as codec
@@ -9,6 +12,48 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class QuestAccessBindings(unittest.TestCase):
+    def test_dreamer_startup_capture_covers_each_puzzle_selector(self):
+        capture = json.loads((ROOT / access.CAPTURE).read_bytes())
+        rows = {(row["attribute"], row["value"], tuple(row["position"]))
+                for row in capture["bindings"]}
+        expected = {
+            ("unique", 2244, (32857, 32225, 11)),
+            ("unique", 9234, (32857, 32230, 11)),
+            ("unique", 50147, (32826, 32347, 9)),
+            ("unique", 9030, (32762, 32290, 14)),
+            ("unique", 2272, (32838, 32263, 14)),
+            ("action", 8033, (32836, 32278, 14)),
+            ("action", 8033, (32834, 32285, 14)),
+            *(("action", 2245, (32816, y, 9)) for y in range(32334, 32340)),
+            *(("action", 2246, (x, 32332, 9)) for x in range(32818, 32824)),
+        }
+        self.assertEqual(expected - rows, set())
+        observed = {value for attribute, value, _ in rows if attribute == "unique"}
+        self.assertEqual({2241, 2242, 2243, *range(2250, 2256)} - observed, set())
+
+    def test_capture_bootstraps_without_generated_sample_and_rejects_changed_source(self):
+        sources = {
+            "lever.lua": b"LeverUnique = {}\nLeverAction = {}\n",
+            "tile.lua": b"TileUnique = {}\nTileAction = {}\n",
+            "teleport.lua": b"TeleportAction = {}\n",
+            "item.lua": b"ItemUnique = {}\nItemAction = {}\n",
+        }
+        hashes = {name: hashlib.sha256(raw).hexdigest() for name, raw in sources.items()}
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            tables = root / "data-global/startup/tables"
+            tables.mkdir(parents=True)
+            for name, raw in sources.items():
+                (tables / name).write_bytes(raw)
+            with patch.object(access, "CAPTURE", root / "missing.json"), patch.object(
+                access, "SOURCE_HASHES", hashes, create=True
+            ):
+                capture = access.capture_sources(root)
+                self.assertEqual([row["sha256"] for row in capture["sources"]], list(hashes.values()))
+                (tables / "item.lua").write_bytes(sources["item.lua"] + b"\n")
+                with self.assertRaisesRegex(ValueError, "pinned Crystal201189f blob: .*item.lua"):
+                    access.capture_sources(root)
+
     def fixture(self, attrs=None):
         tiles = [
             (10, 20, 0, 0, (), [(0, 0, attrs), (1, 1, {"count": 3})]),

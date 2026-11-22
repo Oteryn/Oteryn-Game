@@ -1,6 +1,7 @@
 """Offline evidence join for the server's closed native TALK binding registry."""
 import hashlib
 import json
+import sys
 from pathlib import Path, PurePosixPath
 from functools import lru_cache
 
@@ -16,6 +17,50 @@ def require(condition, message):
 def callback_schema():
     schema = json.loads(Path(__file__).with_name("shared-reward-callbacks.schema.json").read_text())
     return Draft202012Validator(schema)
+
+
+def dreamer_auxiliary_claims(root, definition, holds):
+    if definition["identity"]["key"] != "oteryn:quest.dreamer_s_challenge_quest":
+        return False
+    prefix = "canary:reward-claim/quest/u7_9/dreamers_challenge/"
+    allowed = {("claim_native_lowering_missing", prefix + suffix)
+               for suffix in ("bplong_sword", "chest_book", "chests_wine")}
+    allowed.add(("claim_item_semantics_missing", prefix + "chests_wine"))
+    if any((hold.get("code"), hold.get("source_key")) not in allowed for hold in holds):
+        return False
+    refs = definition["source_refs"]
+    required = {hold["source_key"] for hold in holds}
+    variants = {}
+    content = root / "content/interactions/reward_claims"
+    for path in sorted(content.glob("reward-claim-variants-*.json")):
+        for row in json.loads(path.read_bytes())["records"]:
+            claim = row["definition"]
+            key = claim["provenance"]["pilot_key"]
+            if key not in required:
+                continue
+            source = claim["source_variant"]["source_claim"]
+            if (key in variants or claim["data_holds"] or claim["quest"] != refs["quest"]
+                    or source["quest"] != refs["quest"]
+                    or {"family": "RewardClaim", **source["identity"]} not in refs["claims"]
+                    or source["identity"]["key"] != key
+                    or source["identity"]["revision"] != claim["provenance"]["pilot_revision"]):
+                return False
+            variants[key] = claim
+    if variants.keys() != required:
+        return False
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "reward-claim-authoring"))
+    try:
+        import reward_claim_authoring as rewards
+    finally:
+        sys.path.pop(0)
+    items = rewards.load_items(root)
+    for key, claim in variants.items():
+        native = rewards.container_native.derive(
+            claim, rewards.container_native.claim_items(key, items), rewards.stack_problem,
+        )
+        if native is None or native != claim.get("native_contents"):
+            return False
+    return True
 
 
 def verify_talk_binding(root, definition, stage_key, reference):
@@ -52,8 +97,11 @@ def verify_talk_binding(root, definition, stage_key, reference):
     if definition.get("definition_profile") != "oteryn_authored_v1":
         allowed_holds.add("reported_source_gap")
     missing = definition.get("missing_data")
-    require(isinstance(missing, list) and all(isinstance(m, dict) and m.get("code") in allowed_holds
-                                            for m in missing), "TALK recipe has unresolved DATA holds")
+    require(isinstance(missing, list) and all(isinstance(m, dict) for m in missing),
+            "TALK recipe has invalid DATA holds")
+    unresolved = [hold for hold in missing if hold.get("code") not in allowed_holds]
+    require(not unresolved or dreamer_auxiliary_claims(root, definition, unresolved),
+            "TALK recipe has unresolved DATA holds")
     digest = hashlib.sha256(json.dumps(recipe, sort_keys=True, ensure_ascii=False,
                                       separators=(",", ":")).encode()).hexdigest()
     quests = [q for q in document.get("quests", []) if q.get("quest") == owner]

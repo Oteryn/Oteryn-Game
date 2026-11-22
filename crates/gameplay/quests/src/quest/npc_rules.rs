@@ -411,6 +411,10 @@ pub struct NpcRulePlan {
     pub inventory_failure_reply: Vec<String>,
 }
 
+pub const SKJAAR_NPC: &str = "oteryn:npc.skjaar";
+pub const SKJAAR_QUEST: &str = "oteryn:quest.noble_armor_quest";
+const SKJAAR_PROGRAM: &str = "oteryn:quest-npc-program.skjaar";
+
 impl NpcRuleCatalog {
     /// Resolve only programmes explicitly bound into this catalogue for this NPC.
     pub fn admitted_for_npc(
@@ -562,10 +566,15 @@ impl NpcRuleCatalog {
                 if authored
                     .programs
                     .iter()
-                    .any(|program| program.document.schema != 2)
+                    .any(|program| {
+                        program.document.schema != 2
+                            && !(program.document.schema == 1
+                                && program.document.quest == SKJAAR_QUEST
+                                && program.document.program_key.as_deref() == Some(SKJAAR_PROGRAM))
+                    })
                 {
                     return Err(NpcRuleError::Invalid(
-                        "authored NPC registry requires schema2".into(),
+                        "invalid authored NPC registry schema".into(),
                     ));
                 }
                 catalogue.programs.extend(
@@ -608,6 +617,47 @@ impl NpcRuleCatalog {
         input: &NpcRuleInput<'_>,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
         evaluate::plan(self, input, &BTreeMap::new(), true)
+    }
+
+    /// Select the source branch. The fenced fee owner checks and spends actual gold
+    /// before the first-question reply or topic can be published.
+    pub fn plan_skjaar(
+        &self,
+        input: NpcRuleInput<'_>,
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        let Some(program) = self.programs.iter().find(|program| {
+            input.npc == SKJAAR_NPC
+                && program.document.quest == SKJAAR_QUEST
+                && program.document.program_key.as_deref() == Some(SKJAAR_PROGRAM)
+        }) else {
+            return Err(NpcRuleError::MissingNativeResolution(SKJAAR_NPC.into()));
+        };
+        let quote = program
+            .document
+            .rules
+            .iter()
+            .flat_map(|rule| &rule.effects)
+            .find_map(|effect| match effect {
+                NpcRuleEffect::TakeMoney {
+                    amount,
+                    include_bank: true,
+                } => Some(*amount),
+                _ => None,
+            })
+            .ok_or_else(|| NpcRuleError::MissingNativeResolution(SKJAAR_NPC.into()))?;
+        let advisory = NpcInventorySnapshot {
+            bank: quote,
+            ..NpcInventorySnapshot::default()
+        };
+        evaluate::plan(
+            self,
+            &NpcRuleInput {
+                inventory: &advisory,
+                ..input
+            },
+            &BTreeMap::new(),
+            false,
+        )
     }
 
     /// Inventory recipes own exact carried items and UTC calendar facts. Other
@@ -745,6 +795,7 @@ fn additive_legacy_owner(program: &NpcRuleProgram) -> bool {
                 program.document.program_key.as_deref(),
             ),
             ("oteryn:quest.elemental_spheres_quest", None)
+                | (SKJAAR_QUEST, Some(SKJAAR_PROGRAM))
                 | (
                     "oteryn:quest.outfit_and_addon_quests",
                     Some("oteryn:quest-npc-program.citizen-source-sagas")

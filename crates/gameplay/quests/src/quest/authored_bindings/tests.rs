@@ -56,6 +56,41 @@ fn native_binding_identity_and_recipe_digest_are_part_of_definition_hash() -> Re
 }
 
 #[test]
+fn dreamer_binding_admits_the_shipped_hash_after_offer_declaration() -> Result<(), String> {
+    use crate::quest::{dreamer_death_ring::ENTRANCE_TRACK, dreamer_fire_bug, npc_rules};
+
+    let quest = dreamer_fire_bug::QUEST;
+    let track = |key: &str| QuestTrack {
+        key: key.into(),
+        quest: quest.into(),
+        initial: 0,
+        min: 0,
+        max: 1,
+    };
+    let terminal = track("oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4");
+    let shipped = QuestStateCatalogue::new("content-1", vec![terminal.clone()], vec![])
+        .map_err(|error| format!("{error:?}"))?;
+    let base = QuestStateCatalogue::new("content-1", vec![terminal, track(ENTRANCE_TRACK)], vec![])
+        .map_err(|error| format!("{error:?}"))?;
+    let hash = shipped
+        .definition_hash(quest)
+        .ok_or("shipped Dreamer hash")?;
+    assert_ne!(base.definition_hash(quest), Some(hash));
+    let binding = Bindings::parse(include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/quests/authored-bindings/dreamers_challenge_journey.json"
+    )))?;
+    let active = binding.attach(&base)?;
+    let defaults =
+        npc_rules::legacy_defaults(&active, quest, &hash).ok_or("shipped Dreamer predecessor")?;
+    assert_eq!(defaults.get(ENTRANCE_TRACK), Some(&0));
+    assert!(
+        !defaults.contains_key("oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4")
+    );
+    Ok(())
+}
+
+#[test]
 fn extending_catalogue_preserves_bound_identity_and_runtime_callbacks() -> Result<(), String> {
     let base = QuestStateCatalogue::empty("engine-fixture-r1").ok_or("base")?;
     let binding = fixture()?;

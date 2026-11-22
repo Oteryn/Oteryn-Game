@@ -1,0 +1,276 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.noble_armor_quest",
+  "program_key": "oteryn:quest-npc-program.skjaar",
+  "source_files": [
+    {
+      "path": "data-global/npc/skjaar.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "b5174d99af285953f0a4fb5eab85b6a61fb1168d9d189915a13859c246c2dad2"
+    }
+  ],
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/noble-armor/skjaar/donations",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:62-69"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/noble-armor/skjaar/key-granted",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:79-84"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/noble-armor/skjaar/greet",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "npc": "oteryn:npc.skjaar",
+      "trigger": "greet",
+      "reply": [
+        "Another creature who believes thinks physical strength is more important than wisdom! Why are you disturbing me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:89"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/noble-armor/skjaar/key",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "npc": "oteryn:npc.skjaar",
+      "trigger": "say",
+      "keywords": [
+        "key"
+      ],
+      "keyword_mode": "msg_contains",
+      "reply": [
+        "I will give the key to the crypt only to the closest followers of my master. Would you like me to test you?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:56-58"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/noble-armor/skjaar/key-granted",
+          "op": "eq",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/noble-armor/skjaar/quote",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "npc": "oteryn:npc.skjaar",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        1
+      ],
+      "reply": [
+        "Before we start I must ask you for a small donation of 1000 gold coins. Are you willing to pay 1000 gold coins for the test?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:59-61"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/skjaar-donation",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "npc": "oteryn:npc.skjaar",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        2
+      ],
+      "reply": [
+        "All right then. Here comes the first question. What was the name of Dago's favourite pet?"
+      ],
+      "effects": [
+        {
+          "kind": "take_money",
+          "amount": 1000,
+          "include_bank": true
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/noble-armor/skjaar/donations",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:62-69"
+      ],
+      "inventory_failure_reply": [
+        "You don't have enough money"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/noble-armor/skjaar/key-granted",
+          "op": "eq",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/noble-armor/skjaar/pet",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "npc": "oteryn:npc.skjaar",
+      "trigger": "say",
+      "keywords": [
+        "redips"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        3
+      ],
+      "reply": [
+        "Perhaps you knew him after all. Tell me - how many fingers did he have when he died?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:70-72"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/noble-armor/skjaar/fingers",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "npc": "oteryn:npc.skjaar",
+      "trigger": "say",
+      "keywords": [
+        "7"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        4
+      ],
+      "reply": [
+        "Also true. But can you also tell me the colour of the deamons in which master specialized?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:73-75"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/noble-armor/skjaar/colour",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "npc": "oteryn:npc.skjaar",
+      "trigger": "say",
+      "keywords": [
+        "black"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        5
+      ],
+      "reply": [
+        "It seems you are worthy after all. Do you want the key to the crypt?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:76-78"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/noble-armor/skjaar/grant",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "npc": "oteryn:npc.skjaar",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        6
+      ],
+      "reply": [
+        "Here you are"
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i2970",
+          "count": 1,
+          "subtype": 3142
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/noble-armor/skjaar/key-granted",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:79-84"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/noble-armor/skjaar/donations",
+          "op": "gt",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/noble-armor/skjaar/key-granted",
+          "op": "eq",
+          "value": 0
+        }
+      ]
+    }
+  ]
+}
