@@ -77,8 +77,8 @@ async fn apply(
                     .pending
                     .as_ref()
                     .map(|p| &p.request_id)
-                    .or_else(|| view.uncertain.0.first())
                     .or_else(|| view.order.as_ref().map(|o| &o.request_id))
+                    .or_else(|| view.uncertain.0.first())
                 {
                     Some(id) => id.clone(),
                     None => return Ok(()),

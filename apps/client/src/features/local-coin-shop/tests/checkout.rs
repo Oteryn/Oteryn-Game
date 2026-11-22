@@ -447,6 +447,12 @@ fn checkout_refresh_case(deny_lookup: bool) -> TestResult {
                 fresh.order.as_ref().ok_or("active order")?.request_id,
                 original
             );
+            // A previous batch timed out on A. Status still belongs to the
+            // order displayed behind the active checkout controls.
+            let displayed = fresh.order.clone();
+            fresh.uncertain.0.insert(original);
+            execute(&mut fresh, Action::Status, &next);
+            assert_eq!(fresh.order, displayed);
         }
         Ok(())
     })
