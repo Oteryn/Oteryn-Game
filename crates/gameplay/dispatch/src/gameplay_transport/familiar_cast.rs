@@ -2643,6 +2643,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             committed.as_ref(),
         )
         .map_err(|_| ())?;
+        states.prune_deferred_creature_fields(runtime);
         let timers = timer_preflight
             .finalize(&applied)
             .expect("same preflighted lifecycle must match actual physical receipt");

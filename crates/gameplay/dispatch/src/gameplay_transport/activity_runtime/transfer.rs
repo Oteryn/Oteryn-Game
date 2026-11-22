@@ -35,6 +35,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if next.item_fence.ok_or(())?.character_id != character {
             return Err(());
         }
+        self.prune_transferred_creature_fields().await;
         self.transfer_activity_equipment_clocks(destination, old, new)
             .await;
         move_session_entry(

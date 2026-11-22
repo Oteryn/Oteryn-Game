@@ -169,6 +169,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     content,
                                 )
                                 .map_err(|_| DurabilityError::Unavailable)?;
+                            states.forget_deferred_creature_field(actor);
                             extracted.push(source.identity());
                         }
                         crate::durability::raid_schedule::RaidWrite::CompareFailed => runtime

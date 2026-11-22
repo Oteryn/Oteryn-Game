@@ -9,6 +9,27 @@ use oteryn_gameplay_foundation::foundation::condition::{
 };
 use sha2::{Digest, Sha256};
 
+#[derive(Debug)]
+pub(super) struct DeferredCreatureFieldEntry {
+    actor: ExactActorRef,
+    position_revision: u64,
+    entry: CreatureFieldEntry,
+}
+
+impl ChannelSpellStates {
+    pub(super) fn forget_deferred_creature_field(&mut self, actor: ExactActorRef) {
+        if !self.deferred_creature_field_entries.is_empty() {
+            self.deferred_creature_field_entries
+                .remove(&actor.placement_identity());
+        }
+    }
+
+    pub(super) fn prune_deferred_creature_fields(&mut self, runtime: &ChannelRuntimeV1) {
+        self.deferred_creature_field_entries
+            .retain(|_, deferred| runtime.contains_live_creature(deferred.actor));
+    }
+}
+
 pub(super) fn periodic_source_busy(
     runtime: &ChannelRuntimeV1,
     states: &ChannelSpellStates,
@@ -23,11 +44,20 @@ pub(super) fn periodic_source_busy(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn prune_transferred_creature_fields(&self) {
+        let runtime = self.runtime.lock().await;
+        self.states
+            .spell_states
+            .lock()
+            .await
+            .prune_deferred_creature_fields(&runtime);
+    }
+
     pub(super) async fn tick_creature_fields(
         &self,
         map: &mut crate::movement::monster_map::CurrentMonsterMap<'_, '_>,
         runtime: &mut ChannelRuntimeV1,
-        states: &ChannelSpellStates,
+        states: &mut ChannelSpellStates,
         native: &crate::content::native_gameplay::NativeGameplayState,
         now: u64,
         native_health_names: &super::source_names::NativeHealthNamesData,
@@ -35,10 +65,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         native_health_names
             .validate_frame(runtime)
             .map_err(|_| DurabilityError::Unavailable)?;
+        states.prune_deferred_creature_fields(runtime);
         let mut plans = Vec::new();
         let mut source_players = Vec::new();
+        let mut deferred = Vec::new();
 
-        let creatures = runtime.visible_entities().creatures;
+        // Replay retained contacts before observing any of their new tiles.
+        let mut creatures = runtime.visible_entities().creatures;
+        if !states.deferred_creature_field_entries.is_empty() {
+            for visible in &creatures {
+                let key = visible.actor.placement_identity();
+                let Some(pending) = states.deferred_creature_field_entries.get_mut(&key) else {
+                    continue;
+                };
+                if let Err(error) = runtime.assert_actor_spell_unreserved(visible.actor) {
+                    if error == CarrierError::PlanConflict {
+                        continue;
+                    }
+                    return Err(DurabilityError::Unavailable);
+                }
+                let snapshot = runtime
+                    .companion_snapshot(visible.actor)
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                if !snapshot.state.conditions.accepts_time(now) {
+                    continue;
+                }
+                // The retained recipe survives caster retirement. Attribution,
+                // like a fresh field read, still requires a current exact actor.
+                if pending
+                    .entry
+                    .source
+                    .is_some_and(|source| !runtime.borrow_exact_actor_lookup().contains(source))
+                {
+                    pending.entry.source = None;
+                    pending.entry.lineage = None;
+                }
+                runtime
+                    .commit_creature_field_entry_at(
+                        visible.actor,
+                        now,
+                        pending.position_revision,
+                        Some(&pending.entry),
+                    )
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                states.deferred_creature_field_entries.remove(&key);
+            }
+            creatures.retain(|visible| {
+                !states
+                    .deferred_creature_field_entries
+                    .contains_key(&visible.actor.placement_identity())
+            });
+        }
         // Passive source creatures are outside the AI table, but still own field conditions.
         let positions = creatures
             .iter()
@@ -132,6 +209,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !snapshot.state.conditions.accepts_time(now) {
                 continue;
             }
+            if let Err(error) = runtime.assert_actor_spell_unreserved(visible.actor) {
+                if error != CarrierError::PlanConflict {
+                    return Err(DurabilityError::Unavailable);
+                }
+                if let Some(entry) = entry {
+                    deferred.push(DeferredCreatureFieldEntry {
+                        actor: visible.actor,
+                        position_revision: snapshot.position_revision,
+                        entry,
+                    });
+                }
+                continue;
+            }
             let facts = TickFacts {
                 in_protection_zone: protection_zone,
                 standing_on_field: standing,
@@ -183,6 +273,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if !map.validate_transaction(runtime).await {
             return Err(DurabilityError::Unavailable);
+        }
+        for pending in deferred {
+            states
+                .deferred_creature_field_entries
+                .insert(pending.actor.placement_identity(), pending);
         }
         for (actor, entry, facts, skip_hp) in plans {
             runtime

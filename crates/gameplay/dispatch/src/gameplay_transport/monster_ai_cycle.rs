@@ -495,6 +495,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .filter(|(_, _, session)| session.is_none())
             .collect::<Vec<_>>();
+        states.prune_deferred_creature_fields(&runtime);
         if swing_pass
             && monsters.is_empty()
             && !states.primal_callbacks.has_native_work()

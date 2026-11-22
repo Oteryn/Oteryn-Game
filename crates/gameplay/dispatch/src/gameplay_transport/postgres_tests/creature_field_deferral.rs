@@ -15,8 +15,9 @@ use crate::durability::spell_items_abi::{
 };
 use crate::durability::{DurabilityError, spell_owner_commit::SpellLanePermit};
 use crate::foundation::{
-    ActorRef, ChannelRuntimeV1, CharacterId, CharacterLease, CommandId, CommandRef, ExactActorRef,
-    GameSessionId,
+    ActivityTransferMember, ActorRef, ChannelRuntimeV1, CharacterId, CharacterLease, CommandId,
+    CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition, RuntimeScopeRefV1,
+    ScopeOwnershipGeneration,
 };
 use crate::gameplay_transport::{ComposedFreshAdmission, actor_spell::ChannelSpellStates};
 use crate::movement::monster_map::CurrentMonsterMap;
@@ -32,14 +33,15 @@ use oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntr
 use oteryn_gameplay_entities::carrier::{
     ChannelActorCarrier, NamespaceContinuityGuard,
     runtime_actor_source_reservation::{
-        SourceActorReservation, SourceActorReservationProof, source_reservation_seal,
+        ScopeCreatureReservationProof, SourceActorReservation, SourceActorReservationProof,
+        source_reservation_seal,
     },
 };
 use oteryn_gameplay_entities::{
     AttackerCommand, CreatureDeathOccurrenceKey, OwnerDamageCommand, OwnerDamageResult,
 };
 use oteryn_gameplay_foundation::foundation::condition::{
-    ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+    ApplicationFacts, ConditionDefinition, ConditionSourceKind, TickFacts,
 };
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
@@ -88,6 +90,30 @@ fn deferred_periodic_turn_consumes_two_ticks_and_same_time_replay_consumes_none(
     run(admin, Case::Replay)
 }
 
+#[test]
+fn deferred_entries_are_pruned_after_target_death_and_despawn() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::TargetRemoved)
+}
+
+#[test]
+fn deferred_entry_is_pruned_when_a_companion_owner_changes_scope() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::ScopeChange)
+}
+
+#[test]
+fn reserved_target_that_steps_off_takes_one_field_application() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::TargetMoves)
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     ReservedSource,
@@ -95,6 +121,9 @@ enum Case {
     ReadyPoison,
     PendingStance,
     Replay,
+    TargetRemoved,
+    ScopeChange,
+    TargetMoves,
 }
 
 fn run(admin: String, case: Case) -> TestResult {
@@ -144,18 +173,30 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
         .companion_policy(CYCLOPS)
         .map_err(debug)?
         .maximum_health;
-    let first = runtime
-        .admit_pinned_monster_lab_creature(cell(2), CYCLOPS, maximum)
-        .map_err(debug)?;
-    runtime
-        .install_creature_policy(first, CYCLOPS)
-        .map_err(debug)?;
-    let second = runtime
-        .admit_pinned_monster_lab_creature(cell(3), CYCLOPS, maximum)
-        .map_err(debug)?;
-    runtime
-        .install_creature_policy(second, CYCLOPS)
-        .map_err(debug)?;
+    let mut spawn = |position, owned| -> TestResult<_> {
+        if owned {
+            return runtime
+                .create_companion(
+                    deps.actor,
+                    deps.admitted.game_session_id,
+                    CYCLOPS,
+                    position,
+                    None,
+                    None,
+                    0,
+                )
+                .map_err(debug);
+        }
+        let actor = runtime
+            .admit_pinned_monster_lab_creature(position, CYCLOPS, maximum)
+            .map_err(debug)?;
+        runtime
+            .install_creature_policy(actor, CYCLOPS)
+            .map_err(debug)?;
+        Ok(actor)
+    };
+    let first = spawn(cell(2), case == Case::ScopeChange)?;
+    let second = spawn(cell(3), case == Case::TargetRemoved)?;
     assert_eq!(
         runtime
             .visible_entities()
@@ -178,9 +219,15 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
             crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
         ).map_err(debug)?;
     let source = (deps.actor, deps.admitted.game_session_id);
-    if case == Case::ReservedSource || case == Case::ReadyPoison {
-        let position = cell(if case == Case::ReservedSource { 2 } else { 3 });
-        seed_fire(harness, &deps, &owner, native, position).await?;
+    let cells = [cell(2), cell(3)];
+    let field_cells = match case {
+        Case::ReservedSource | Case::ScopeChange | Case::TargetMoves => &cells[..1],
+        Case::ReadyPoison => &cells[1..],
+        Case::TargetRemoved => &cells[..],
+        Case::Hooked | Case::PendingStance | Case::Replay => &[],
+    };
+    if !field_cells.is_empty() {
+        seed_fire(harness, &deps, &owner, native, field_cells).await?;
     }
     let permit = owner.spell_lane_permit().await.ok_or("field lane")?;
     let pass = FieldPass {
@@ -194,7 +241,7 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
     initialize_source(&mut runtime, &mut states, source, id(41))?;
     let before = health(&runtime, first)?;
     let other_before = health(&runtime, second)?;
-    if case != Case::ReadyPoison {
+    if !matches!(case, Case::ReadyPoison | Case::TargetRemoved) {
         install_dot(&mut runtime, second, None, DotElement::Drown, 0)?;
     }
     match case {
@@ -307,8 +354,204 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
             assert_eq!(health(&runtime, first)?, before - 8);
             assert!(remaining(&runtime, first)?.is_empty());
         }
+        Case::TargetRemoved | Case::ScopeChange | Case::TargetMoves => {
+            let all_targets = [first, second];
+            let targets = if case == Case::TargetRemoved {
+                &all_targets[..]
+            } else {
+                &all_targets[..1]
+            };
+            let proof = HeldTargets {
+                targets,
+                scope: runtime.binding().runtime_scope(),
+                generation: runtime.binding().scope_generation(),
+            };
+            let mut held = runtime
+                .prepare_scope_creature_reservation(&proof)
+                .map_err(debug)?;
+            runtime
+                .reserve_scope_creatures(&mut held, &proof)
+                .map_err(debug)?;
+            let outcome = pass.tick(&mut runtime, &mut states, 0).await;
+            assert!(
+                outcome.is_ok(),
+                "reserved target aborted the pass: {outcome:?}"
+            );
+            assert_eq!(states.deferred_creature_field_entries.len(), targets.len());
+            for &actor in targets {
+                assert!(
+                    states
+                        .deferred_creature_field_entries
+                        .contains_key(&actor.placement_identity())
+                );
+                assert!(remaining(&runtime, actor)?.is_empty());
+            }
+            assert_eq!(health(&runtime, first)?, before);
+            runtime
+                .release_scope_creatures_after_observed_outcome(held, &proof)
+                .map_err(debug)?;
+
+            if case == Case::TargetMoves {
+                assert_eq!(health(&runtime, second)?, other_before - 4);
+                let position = runtime.read_actor_position(first).map_err(debug)?;
+                runtime
+                    .borrow_movement_position()
+                    .commit_creature_relocation(first, position, cell(4))
+                    .map_err(debug)?;
+                // Yellow flame has seven ten-point ticks spaced ten seconds apart.
+                // The pinned Cyclops mitigation truncates each tick to nine HP.
+                let last = 1 + 60 * SECOND;
+                for tick in 0..7 {
+                    pass.tick(&mut runtime, &mut states, 1 + tick * 10 * SECOND)
+                        .await?;
+                    assert_eq!(
+                        health(&runtime, first)?,
+                        before - 9 * (i64::try_from(tick)? + 1)
+                    );
+                }
+                assert!(states.deferred_creature_field_entries.is_empty());
+                assert!(remaining(&runtime, first)?.is_empty());
+                pass.tick(&mut runtime, &mut states, last).await?;
+                assert_eq!(health(&runtime, first)?, before - 63);
+            } else if case == Case::TargetRemoved {
+                kill_between_passes(&mut runtime, first, before)?;
+                let doomed = runtime.companion_snapshot(second).map_err(debug)?;
+                runtime
+                    .despawn_companion(source.0, source.1, &doomed)
+                    .map_err(debug)?;
+                pass.tick(&mut runtime, &mut states, 1).await?;
+                assert!(states.deferred_creature_field_entries.is_empty());
+                assert!(
+                    runtime
+                        .companion_snapshot_including_dead(first)
+                        .map_err(debug)?
+                        .state
+                        .conditions
+                        .instances()
+                        .is_empty()
+                );
+                assert!(!runtime.contains_live_creature(second));
+            } else {
+                let moved = transfer_to_activity(&mut runtime, source)?;
+                assert_ne!(moved.runtime_scope(), first.runtime_scope());
+                assert!(!runtime.contains_live_creature(first));
+                assert!(runtime.contains_live_creature(second));
+                drop(states);
+                drop(runtime);
+                owner.prune_transferred_creature_fields().await;
+                assert!(
+                    owner
+                        .states
+                        .spell_states
+                        .lock()
+                        .await
+                        .deferred_creature_field_entries
+                        .is_empty()
+                );
+            }
+        }
     }
     Ok(())
+}
+
+struct HeldTargets<'a> {
+    targets: &'a [ExactActorRef],
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+}
+
+impl source_reservation_seal::Sealed for HeldTargets<'_> {}
+impl ScopeCreatureReservationProof for HeldTargets<'_> {
+    fn scope(&self) -> (RuntimeScopeRefV1, ScopeOwnershipGeneration) {
+        (self.scope, self.generation)
+    }
+    fn event_identity(&self) -> [u8; 16] {
+        id(10)
+    }
+    fn source_binding_digest(&self) -> [u8; 32] {
+        [10; 32]
+    }
+    fn affected_creatures(&self) -> &[ExactActorRef] {
+        self.targets
+    }
+    fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
+        self.targets
+            .iter()
+            .all(|&actor| runtime.contains_live_creature(actor))
+    }
+}
+
+fn kill_between_passes(
+    runtime: &mut ChannelRuntimeV1,
+    actor: ExactActorRef,
+    hp: i64,
+) -> TestResult {
+    let amount = u32::try_from(hp)?;
+    let lethal = CreatureFieldEntry {
+        definition: ConditionDefinition::new(
+            "test.deferral.lethal",
+            1,
+            ConditionValues::Agony {
+                total_min: amount,
+                total_max: amount,
+                per_tick: amount,
+                interval_ms: 1000,
+                delayed: false,
+            },
+        )
+        .ok_or("lethal condition")?,
+        source: None,
+        lineage: None,
+        occurrence: DecisionOccurrenceId::from_bytes(id(11)),
+    };
+    runtime
+        .commit_creature_field_entry(actor, 1, Some(&lethal))
+        .map_err(debug)?;
+    let turn = runtime
+        .stage_creature_periodic_turn(actor, 1, TickFacts::default())
+        .map_err(debug)?;
+    let receipt = runtime.commit_creature_periodic_turn(turn).map_err(debug)?;
+    assert_eq!(receipt.health_after, 0);
+    Ok(())
+}
+
+fn transfer_to_activity(
+    runtime: &mut ChannelRuntimeV1,
+    (actor, session): (ExactActorRef, GameSessionId),
+) -> TestResult<ExactActorRef> {
+    let binding = runtime.binding();
+    let mut destination = ChannelRuntimeV1::from_committed_scope_assignment(
+        RuntimeScopeRefV1::instance(binding.world_id(), id(55)).map_err(debug)?,
+        binding.node_id(),
+        binding.node_registration_revision(),
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        8,
+        runtime.content_pin().clone(),
+    )
+    .map_err(debug)?;
+    let lease = runtime
+        .bound_attacker_lease(actor, session)
+        .map_err(debug)?;
+    let members = [ActivityTransferMember {
+        source_actor: actor,
+        source_session: session,
+        source_lease: lease,
+        destination_session: GameSessionId::decode(&id(56)).map_err(debug)?,
+        destination_lease: CharacterLease::new(lease.character_id(), lease.generation() + 1)
+            .map_err(debug)?,
+        destination_cell: cell(2),
+    }];
+    // The SQL-backed field pass has already retained the contact. The test
+    // drives the physical side of a known activity handoff and its cleanup.
+    let mut prepared = runtime
+        .prepare_activity_transfer(&mut destination, &members)
+        .map_err(debug)?;
+    let moved = runtime
+        .commit_activity_transfer(&mut destination, &mut prepared)
+        .map_err(debug)?;
+    Ok(moved.first().ok_or("transferred player")?.destination_actor)
 }
 
 struct FieldPass<'a, 'f, 's> {
@@ -659,7 +902,7 @@ async fn seed_fire(
     deps: &Dependencies,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     native: &NativeGameplayState,
-    position: crate::foundation::MovementLocalPosition,
+    positions: &[MovementLocalPosition],
 ) -> TestResult {
     use crate::durability::item_mint::TypedDefinitionRef;
     let policy = native
@@ -671,10 +914,32 @@ async fn seed_fire(
     )
     .map_err(debug)?;
     let permit = owner.spell_lane_permit().await.ok_or("field lane")?;
-    let target = {
+    let mut operations = Vec::new();
+    {
         let runtime = deps.runtime.lock().await;
-        SpellGroundTarget::for_native_tile_read(&deps.room, &runtime, position).map_err(debug)?
-    };
+        for (index, &position) in positions.iter().enumerate() {
+            let target = SpellGroundTarget::for_native_tile_read(&deps.room, &runtime, position)
+                .map_err(debug)?;
+            operations.push(SpellItemOperation::MintGround {
+                item_instance_id: id(180 + u8::try_from(index)?),
+                definition: definition.clone(),
+                quantity: 1,
+                placement: target.placement(b"creature-field-deferral".to_vec()),
+                lifetime_millis: None,
+                blocks_movement: policy
+                    .record()
+                    .attributes
+                    .blocks_movement
+                    .ok_or("field movement")?,
+                blocks_projectile: policy
+                    .record()
+                    .attributes
+                    .blocks_projectile
+                    .ok_or("field projectile")?,
+                description: None,
+            });
+        }
+    }
     let (current, _) =
         crate::durability::fresh_admission::FreshAdmissionStore::from_root(harness.root.clone())
             .current_session_at(deps.admitted.game_session_id)
@@ -711,24 +976,7 @@ async fn seed_fire(
             actor: deps.actor,
             character_lease_generation: fence.character_lease_generation,
         }),
-        operations: vec![SpellItemOperation::MintGround {
-            item_instance_id: id(180),
-            definition,
-            quantity: 1,
-            placement: target.placement(b"creature-field-deferral".to_vec()),
-            lifetime_millis: None,
-            blocks_movement: policy
-                .record()
-                .attributes
-                .blocks_movement
-                .ok_or("field movement")?,
-            blocks_projectile: policy
-                .record()
-                .attributes
-                .blocks_projectile
-                .ok_or("field projectile")?,
-            description: None,
-        }],
+        operations,
         companion: None,
         direct_companion: None,
     };

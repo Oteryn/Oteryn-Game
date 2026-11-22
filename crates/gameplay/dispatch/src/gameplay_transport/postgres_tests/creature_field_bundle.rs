@@ -58,7 +58,7 @@ async fn exercise(harness: &Harness) -> TestResult {
     let mut runtime = deps.runtime.lock().await;
     let native_health_names = owner.seal_native_health_names(&runtime, health_names).map_err(debug)?;
     let objects = deps.door.lock().await;
-    let states = owner.states.spell_states.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
     // TEST_PARAMETERS: an existing residual Drown condition distinguishes PZ suppression
     // from ordinary damage. Its native store and due cursor remain the production owners.
     for (ordinal, actor) in actors.iter().enumerate() {
@@ -116,7 +116,7 @@ async fn exercise(harness: &Harness) -> TestResult {
     let mut context = (
         &owner,
         &mut *runtime,
-        &*states,
+        &mut *states,
         &deps.room,
         &*objects,
         native,

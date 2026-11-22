@@ -533,6 +533,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let begin = runtime
             .begin_source_creature_death(&notice)
             .map_err(|_| ())?;
+        states.forget_deferred_creature_field(begin.actor());
         attack
             .kills()
             .freeze_source_drop_profile(runtime, &begin, native)?;
