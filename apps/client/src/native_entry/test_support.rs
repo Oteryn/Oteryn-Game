@@ -448,3 +448,14 @@ pub(crate) async fn authorize_selection(
     let authorized = super::authorize::authorize(client, config, CancellationToken::new()).await?;
     Ok((authorized.character_id, authorized.channel_id))
 }
+
+pub(crate) async fn authorize_then_expire_ticket(
+    client: &NativeLoginClient,
+    config: &NativeLoginConfig,
+) -> Result<(String, Option<String>), GameplayEntryError> {
+    let cancel = CancellationToken::new();
+    let mut authorized = super::authorize::authorize(client, config, cancel.clone()).await?;
+    tokio::time::sleep_until(authorized.ticket.usable_until().into()).await;
+    let (_, grant) = super::initial_gateway_login(client, &mut authorized, config, cancel).await?;
+    Ok((authorized.character_id, Some(grant.channel_id)))
+}

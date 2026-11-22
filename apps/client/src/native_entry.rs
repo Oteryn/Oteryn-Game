@@ -104,6 +104,12 @@ pub(crate) async fn enter_observed(
         config.retry_unit,
     )?
     .with_release(crate::build_info::login_release(&config.gateway_url));
+    let mut authorized = authorize::authorize(&client, config, cancellation.clone()).await?;
+    let character_id = parse_uuid_v7(&authorized.character_id)
+        .and_then(|bytes| CharacterId::decode(&bytes).ok())
+        .ok_or(GameplayEntryError::InvalidConfiguration)?;
+    let (attempt_ref, grant) =
+        initial_gateway_login(&client, &mut authorized, config, cancellation.clone()).await?;
     let authorize::Authorized {
         ticket,
         character_id: selected_character,
@@ -111,25 +117,15 @@ pub(crate) async fn enter_observed(
         character_name,
         training_requested,
         channels,
-    } = authorize::authorize(&client, config, cancellation.clone()).await?;
+        ..
+    } = authorized;
 
-    let character_id = parse_uuid_v7(&selected_character)
-        .and_then(|bytes| CharacterId::decode(&bytes).ok())
-        .ok_or(GameplayEntryError::InvalidConfiguration)?;
-
-    // 4. Gateway login: one attempt_ref for this whole attempt.
-    let attempt_ref =
-        AttemptRef::generate().map_err(|_error| rejected(PublicClass::TemporarilyUnavailable))?;
     let login = GatewayLogin {
         attempt_ref: &attempt_ref,
         character_id: &selected_character,
         channel_id: selected_channel.as_deref(),
         client_build: &config.client_build,
     };
-    let grant = client
-        .gateway_login(&ticket, &login, cancellation.clone())
-        .await
-        .map_err(login_rejected)?;
 
     // Gameplay TLS applies only after the Gateway has issued a grant.
     let root = load_root_certificate(&config.dev_root)
@@ -151,6 +147,38 @@ pub(crate) async fn enter_observed(
         config,
     };
     oteryn_client_runtime::connection::enter(&mut attempt, config.retry_unit, cancellation).await
+}
+
+async fn initial_gateway_login(
+    client: &NativeLoginClient,
+    authorized: &mut authorize::Authorized,
+    config: &NativeLoginConfig,
+    cancel: CancellationToken,
+) -> Result<(AttemptRef, NativeLoginGrant), GameplayEntryError> {
+    loop {
+        let attempt_ref =
+            AttemptRef::generate().map_err(|_| rejected(PublicClass::TemporarilyUnavailable))?;
+        let login = GatewayLogin {
+            attempt_ref: &attempt_ref,
+            character_id: &authorized.character_id,
+            channel_id: authorized.channel_id.as_deref(),
+            client_build: &config.client_build,
+        };
+        match client
+            .gateway_login(&authorized.ticket, &login, cancel.clone())
+            .await
+        {
+            Ok(grant) => return Ok((attempt_ref, grant)),
+            Err(NativeLoginError::TicketSpent)
+                if authorized.from_device && Instant::now() >= authorized.ticket.usable_until() =>
+            {
+                authorized
+                    .refresh_ticket(client, config, cancel.clone())
+                    .await?;
+            }
+            Err(error) => return Err(login_rejected(error)),
+        }
+    }
 }
 
 struct NativeAttempt<'a> {

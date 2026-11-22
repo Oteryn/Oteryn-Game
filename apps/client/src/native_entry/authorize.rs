@@ -76,12 +76,8 @@ pub(super) async fn authorize(
                 .await?,
         );
     }
-    let mut services_session = crate::account_services::Session::default();
     let mut quick = !config.require_character_picker;
-    let platform = PlatformClientConfig::new(&config.platform_url)
-        .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
-    let directory_client = oteryn_platform_client::PlatformClient::new(platform)
-        .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
+    let directory_client = directory_client(config)?;
     let (character_id, channel_id, mut character_name, training_requested, mut channels) = loop {
         let characters = if let Some(token) = &token {
             client
@@ -203,6 +199,8 @@ pub(super) async fn authorize(
                 let services = access_token(client, config, cancellation.clone(), true).await;
                 match services {
                     Ok(services) => {
+                        // Commerce state lives only as long as this services authorization.
+                        let mut services_session = crate::account_services::Session::default();
                         crate::account_services::run(
                             client,
                             &services,
@@ -244,6 +242,7 @@ pub(super) async fn authorize(
             }
         }
     };
+    let mut from_device = false;
     let ticket = if let Some(token) = token {
         client
             .issue_native_ticket(token, cancellation)
@@ -251,36 +250,28 @@ pub(super) async fn authorize(
             .map_err(login_rejected)?
     } else if let Some(attempt) = &mut device {
         match attempt.ticket(client, cancellation.clone()).await {
-            Ok(ticket) => ticket,
+            Ok(ticket) => {
+                from_device = true;
+                ticket
+            }
             Err(
                 NativeLoginError::TicketSpent
-                | NativeLoginError::DeviceRefused(DeviceRefusal { status: 401, .. }),
+                | NativeLoginError::DeviceRefused(DeviceRefusal { status: 401, .. })
+                | NativeLoginError::Platform(
+                    oteryn_platform_client::PlatformClientError::InvalidPayload,
+                ),
             ) => {
-                let fresh = access_token(client, config, cancellation.clone(), false).await?;
-                let characters = client
-                    .owner_characters(&fresh, cancellation.clone())
-                    .await
-                    .map_err(login_rejected)?;
-                let directory = directory_client
-                    .fetch_directory_as(Some(&fresh), cancellation.clone())
-                    .await
-                    .map_err(retry_login)?;
-                let selected = crate::character_selection::join(characters, &directory)
-                    .into_iter()
-                    .find(|row| {
-                        row.available
-                            && row.character.character_id == character_id
-                            && channel_id
-                                .as_ref()
-                                .is_none_or(|id| row.channels.iter().any(|c| &c.id == id))
-                    })
-                    .ok_or_else(|| rejected(PublicClass::RetryLogin))?;
+                let (ticket, selected) = fresh_ticket(
+                    client,
+                    config,
+                    &character_id,
+                    channel_id.as_deref(),
+                    cancellation,
+                )
+                .await?;
                 character_name = selected.character.name;
                 channels = selected.channels;
-                client
-                    .issue_native_ticket(fresh, cancellation)
-                    .await
-                    .map_err(login_rejected)?
+                ticket
             }
             Err(error) => return Err(login_rejected(error)),
         }
@@ -292,6 +283,7 @@ pub(super) async fn authorize(
     }
     Ok(Authorized {
         ticket,
+        from_device,
         character_id,
         channel_id,
         character_name,
@@ -303,12 +295,76 @@ pub(super) async fn authorize(
 /// The consuming ticket and the selection it was issued for.
 pub(super) struct Authorized {
     pub ticket: NativeTicket,
+    pub from_device: bool,
     pub character_id: String,
     pub channel_id: Option<String>,
     pub character_name: String,
     pub training_requested: bool,
     /// The Channels of the selected World, as the directory listed them (chsw, capability 513).
     pub channels: Vec<crate::character_selection::ChannelChoice>,
+}
+
+impl Authorized {
+    pub(super) async fn refresh_ticket(
+        &mut self,
+        client: &NativeLoginClient,
+        config: &NativeLoginConfig,
+        cancel: CancellationToken,
+    ) -> Result<(), GameplayEntryError> {
+        let (ticket, selected) = fresh_ticket(
+            client,
+            config,
+            &self.character_id,
+            self.channel_id.as_deref(),
+            cancel,
+        )
+        .await?;
+        self.ticket = ticket;
+        self.from_device = false;
+        self.character_name = selected.character.name;
+        self.channels = selected.channels;
+        Ok(())
+    }
+}
+
+async fn fresh_ticket(
+    client: &NativeLoginClient,
+    config: &NativeLoginConfig,
+    character_id: &str,
+    channel_id: Option<&str>,
+    cancel: CancellationToken,
+) -> Result<(NativeTicket, crate::character_selection::CharacterRow), GameplayEntryError> {
+    let fresh = access_token(client, config, cancel.clone(), false).await?;
+    let characters = client
+        .owner_characters(&fresh, cancel.clone())
+        .await
+        .map_err(login_rejected)?;
+    let directory = directory_client(config)?
+        .fetch_directory_as(Some(&fresh), cancel.clone())
+        .await
+        .map_err(retry_login)?;
+    let selected = crate::character_selection::join(characters, &directory)
+        .into_iter()
+        .find(|row| {
+            row.available
+                && row.character.character_id == character_id
+                && channel_id.is_none_or(|id| row.channels.iter().any(|channel| channel.id == id))
+        })
+        .ok_or_else(|| rejected(PublicClass::RetryLogin))?;
+    let ticket = client
+        .issue_native_ticket(fresh, cancel)
+        .await
+        .map_err(login_rejected)?;
+    Ok((ticket, selected))
+}
+
+fn directory_client(
+    config: &NativeLoginConfig,
+) -> Result<oteryn_platform_client::PlatformClient, GameplayEntryError> {
+    let platform = PlatformClientConfig::new(&config.platform_url)
+        .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
+    oteryn_platform_client::PlatformClient::new(platform)
+        .map_err(|_| GameplayEntryError::InvalidConfiguration)
 }
 
 async fn enroll_or_fresh_browser(

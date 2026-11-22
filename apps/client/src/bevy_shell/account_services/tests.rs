@@ -758,3 +758,51 @@ fn expired_coin_offer_disables_review_and_closes_confirmation() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn expired_transfer_offer_disables_review_and_closes_confirmation() -> TestResult {
+    use crate::account_services::test_server::{CHARACTER, DESTINATION};
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let (mut app, config) = commerce_app()?;
+        let cancel = CancellationToken::new();
+        let worker_cancel = cancel.clone();
+        let worker = thread::Builder::new().stack_size(64 << 20).spawn(move || {
+            mock.runtime.block_on(crate::account_services::run(
+                &client,
+                &token,
+                &config,
+                &mut Default::default(),
+                worker_cancel,
+            ))
+        })?;
+        let result = (|| {
+            let account = wait(&mut app, None)?;
+            click_named(&mut app, &format!("account.character.{CHARACTER}"))?;
+            click_named(&mut app, &format!("account.transfer.{DESTINATION}"))?;
+            wait(&mut app, Some(account))?;
+            click_named(&mut app, "account.transfer.confirm")?;
+            let controls = |world: &mut World| {
+                let mut names =
+                    world.query_filtered::<&Name, Without<bevy::ui::InteractionDisabled>>();
+                let mut active = |wanted| names.iter(world).any(|name| name.as_str() == wanted);
+                (
+                    active("account.transfer.confirm"),
+                    active("commerce.confirm"),
+                )
+            };
+            assert_eq!(controls(app.world_mut()), (true, true));
+            app.insert_resource(bevy::time::TimeUpdateStrategy::ManualInstant(
+                Instant::now() + Duration::from_secs(121),
+            ));
+            app.update();
+            assert_eq!(controls(app.world_mut()), (false, false));
+            Ok(())
+        })();
+        cancel.cancel();
+        worker.join().map_err(|_| "account presenter")??;
+        result
+    })
+}

@@ -247,3 +247,102 @@ fn refreshed_tracked_receipt_reconciles_pending_and_preserves_terminal_identity(
         })
     })
 }
+
+#[test]
+fn bazaar_retry_and_precreate_refusals_settle_after_missing_status() -> TestResult {
+    test_thread(|| {
+        let mut settled = Vec::new();
+        for refusal in [409, 403] {
+            let mock = MockPlatform::start()?;
+            let client = mock.client()?;
+            let token = mock.token(&client)?;
+            let mut view = View::default();
+            let execute = |view: &mut View, action| {
+                mock.runtime.block_on(controller::execute(
+                    view,
+                    action,
+                    &client,
+                    &token,
+                    CancellationToken::new(),
+                ))
+            };
+            execute(&mut view, Action::Refresh(AuctionView::All));
+            mock.authority
+                .lock()
+                .map_err(|_| "lock")?
+                .bazaar_post_failure = Some(if refusal == 409 { 0 } else { refusal });
+            execute(
+                &mut view,
+                Action::Bid {
+                    auction_id: AUCTION.into(),
+                    coins: 50,
+                    confirmed: true,
+                },
+            );
+            if refusal == 409 {
+                let request = view.pending.clone().ok_or("ambiguous bid")?;
+                mock.authority
+                    .lock()
+                    .map_err(|_| "lock")?
+                    .bazaar_post_failure = Some(refusal);
+                execute(&mut view, Action::Retry);
+                assert_eq!(view.pending.as_ref(), Some(&request));
+                execute(&mut view, Action::Status);
+            }
+            settled.push(!view.pending());
+            assert_eq!(mock.authority.lock().map_err(|_| "lock")?.effects, 0);
+        }
+        assert_eq!(
+            settled,
+            [true, true],
+            "bazaar retry 409 and pre-create 403 must both settle"
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn bazaar_reopen_with_same_authorization_keeps_retry_before_first_receipt() -> TestResult {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let stack = crate::native_entry::test_support::Stack::start_two_channels()?;
+        let mut config = stack.config();
+        let step = AtomicUsize::new(0);
+        config.account_services =
+            Arc::new(move |view, _| match step.fetch_add(1, Ordering::SeqCst) {
+                0 => Action::Bid {
+                    auction_id: AUCTION.into(),
+                    coins: 50,
+                    confirmed: true,
+                },
+                1 => {
+                    assert!(view.can_retry());
+                    Action::Back
+                }
+                2 => {
+                    assert!(view.can_retry(), "reopen lost same-authorization Retry");
+                    Action::Retry
+                }
+                _ => Action::Back,
+            });
+        mock.authority
+            .lock()
+            .map_err(|_| "lock")?
+            .bazaar_post_failure = Some(0);
+        let mut session = Session::default();
+        for _ in 0..2 {
+            mock.runtime.block_on(run(
+                &client,
+                &token,
+                &config,
+                &mut session,
+                CancellationToken::new(),
+            ))?;
+        }
+        assert_eq!(mock.authority.lock().map_err(|_| "lock")?.effects, 1);
+        Ok(())
+    })
+}

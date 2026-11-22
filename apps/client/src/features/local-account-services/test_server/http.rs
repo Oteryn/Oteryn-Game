@@ -26,9 +26,10 @@ impl MockPlatform {
                 let (head,body)=text.split_once("\r\n\r\n").unwrap_or_default();
                 let mut line=head.lines().next().unwrap_or_default().split_whitespace();
                 let method=line.next().unwrap_or_default();let target=line.next().unwrap_or_default();
-                let authorized=head.lines().any(|line|line.eq_ignore_ascii_case("authorization: Bearer services-test-token"));
+                let authorized=head.lines().any(|line|line.to_ascii_lowercase().starts_with("authorization: bearer services-test-token-"));
                 let signature=head.lines().find_map(|line| {let(key,value)=line.split_once(':')?;key.eq_ignore_ascii_case("x-sandbox-signature").then(||value.trim())});
-                let (status,reply)={let Ok(mut state)=state.lock() else {return;};state.requests.push(text.clone());state.route(method,target,body,authorized,signature)};
+                let (status,reply)={let Ok(mut state)=state.lock() else {return;};let headers = head.lines().filter(|line| !line.to_ascii_lowercase().starts_with("authorization:"));
+                    state.requests.push(format!("{}\r\n\r\n{body}", headers.collect::<Vec<_>>().join("\r\n")));state.respond(method,target,body,authorized,signature)};
                 if status == 0 { continue; }
                 let _=stream.write_all(format!("HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{reply}",reply.len()).as_bytes()).await;
             }
@@ -50,5 +51,38 @@ impl MockPlatform {
             "http://127.0.0.1:1/callback",
             CancellationToken::new(),
         ))?)
+    }
+}
+
+impl Authority {
+    fn respond(
+        &mut self,
+        method: &str,
+        target: &str,
+        body: &str,
+        authorized: bool,
+        signature: Option<&str>,
+    ) -> (u16, String) {
+        if method == "POST" && target == "/oauth/token" {
+            self.oauth_exchanges += 1;
+            return (
+                200,
+                format!(
+                    r#"{{"token_type":"Bearer","access_token":"services-test-token-{}"}}"#,
+                    self.oauth_exchanges
+                ),
+            );
+        }
+        if authorized && method == "POST" {
+            let failure = match target {
+                "/api/v1/native-account/bazaar/commands" => self.bazaar_post_failure.take(),
+                "/api/v1/native-account/coin-purchases/orders" => self.coin_post_failure.take(),
+                _ => None,
+            };
+            if let Some(status) = failure {
+                return (status, String::new());
+            }
+        }
+        self.route(method, target, body, authorized, signature)
     }
 }

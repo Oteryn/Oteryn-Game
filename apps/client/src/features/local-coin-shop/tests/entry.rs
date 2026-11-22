@@ -133,3 +133,62 @@ fn store_launcher_opens_coin_history_and_transfer_pages_until_the_session_ends()
         Ok(())
     })
 }
+
+#[test]
+fn store_launcher_fresh_oauth_discards_pending_request() -> TestResult {
+    use crate::account_services::test_server::coins::PACKAGE;
+    use std::time::Instant;
+    test_thread(|| {
+        let stack = test_support::Stack::start(Vec::new())?;
+        let mock = MockPlatform::start()?;
+        mock.authority.lock().map_err(|_| "lock")?.coin_post_failure = Some(0);
+        let mut config = stack.config();
+        config.platform_url = mock.base.clone();
+        let (shown_tx, shown_rx) = mpsc::channel();
+        let steps = AtomicUsize::new(0);
+        config.coin_shop = Arc::new(move |view, _| {
+            let _ = shown_tx.send((view.pending(), format!("{view:?}")));
+            if steps.fetch_add(1, Ordering::SeqCst) == 0 {
+                Action::Purchase {
+                    package_id: PACKAGE.into(),
+                    confirmed: true,
+                }
+            } else {
+                Action::Back
+            }
+        });
+        let (done_tx, done_rx) = mpsc::channel();
+        let launcher = Launcher::new(
+            config,
+            CHARACTER.into(),
+            Arc::new(move || {
+                let _ = done_tx.send(());
+            }),
+        );
+        assert!(launcher.start());
+        for expected in [false, true] {
+            let (pending, debug) = shown_rx.recv_timeout(Duration::from_secs(5))?;
+            assert_eq!(pending, expected);
+            assert!(!debug.contains("services-test-token-"));
+        }
+        done_rx.recv_timeout(Duration::from_secs(5))?;
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !launcher.can_start() && Instant::now() < deadline {
+            std::thread::yield_now();
+        }
+        assert!(launcher.start());
+        let (pending, debug) = shown_rx.recv_timeout(Duration::from_secs(5))?;
+        assert!(
+            !pending,
+            "Store reopened with state from the previous OAuth"
+        );
+        assert!(!debug.contains("services-test-token-"));
+        assert!(!format!("{launcher:?}").contains("services-test-token-"));
+        done_rx.recv_timeout(Duration::from_secs(5))?;
+        assert_eq!(
+            mock.authority.lock().map_err(|_| "lock")?.oauth_exchanges,
+            2
+        );
+        Ok(())
+    })
+}

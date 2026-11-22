@@ -86,6 +86,18 @@ impl Server {
                     reply["expires_at"] = (issued_at + 60).into();
                     body = serde_json::to_vec(&reply).map_err(|_| "ticket fixture")?;
                 }
+                if request.starts_with(b"POST /v1/login ")
+                    && body.windows(13).any(|w| w == b"__ATTEMPTID__")
+                {
+                    let request = String::from_utf8_lossy(&request);
+                    let (_, payload) = request.split_once("\r\n\r\n").ok_or("gateway body")?;
+                    let payload: serde_json::Value =
+                        serde_json::from_str(payload).map_err(|_| "gateway request")?;
+                    let attempt = payload["attempt_ref"].as_str().ok_or("gateway attempt")?;
+                    body = String::from_utf8_lossy(&body)
+                        .replace("__ATTEMPTID__", attempt)
+                        .into_bytes();
+                }
                 let header = format!(
                     "HTTP/1.1 {status} fixture\r\nContent-Type: application/json\r\nContent-Length: {}\r\nCache-Control: no-store, private\r\nPragma: no-cache\r\nConnection: close\r\n\r\n",
                     body.len()

@@ -51,7 +51,6 @@ pub struct View {
     pub selected_view: AuctionView,
     pending: Option<BazaarRequest>,
     post_rejected: bool,
-    retry_authorized: bool,
     unresolved: std::collections::BTreeSet<String>,
     quote_until: Option<Instant>,
 }
@@ -66,7 +65,6 @@ impl Default for View {
             selected_view: AuctionView::All,
             pending: None,
             post_rejected: false,
-            retry_authorized: false,
             unresolved: Default::default(),
             quote_until: None,
         }
@@ -77,7 +75,7 @@ impl View {
         self.pending.is_some() || !self.unresolved.is_empty()
     }
     pub fn can_retry(&self) -> bool {
-        self.pending.is_some() && self.retry_authorized && !self.post_rejected
+        self.pending.is_some() && !self.post_rejected
     }
     fn pending_id(&self) -> Option<&str> {
         self.pending
@@ -191,12 +189,10 @@ pub(crate) async fn run(
     session: &mut Session,
     cancel: CancellationToken,
 ) -> Result<(), crate::GameplayEntryError> {
-    session.account = View {
-        pending: session.account.pending.take(),
-        post_rejected: session.account.post_rejected,
-        ..View::default()
-    };
     let view = &mut session.account;
+    view.page = None;
+    view.quote = None;
+    view.quote_until = None;
     controller::execute(
         view,
         Action::Refresh(AuctionView::All),

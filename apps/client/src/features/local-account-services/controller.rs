@@ -157,11 +157,8 @@ async fn apply(
             }
         }
         Action::Retry => {
-            if view.can_retry()
-                && let Some(request) = &view.pending
-            {
-                let receipt = client.bazaar_command(token, request, cancel).await?;
-                accept(view, receipt);
+            if view.can_retry() {
+                submit(view, client, token, cancel, true).await?;
             }
             return Ok(());
         }
@@ -200,10 +197,30 @@ async fn apply(
         request_id: AttemptRef::generate()?.as_str().to_owned(),
         command,
     };
-    view.retry_authorized = true;
-    let request = view.pending.insert(request);
+    view.pending = Some(request);
+    submit(view, client, token, cancel, false).await
+}
+
+async fn submit(
+    view: &mut View,
+    client: &NativeLoginClient,
+    token: &AccessToken,
+    cancel: CancellationToken,
+    retry: bool,
+) -> Result<(), NativeLoginError> {
+    let Some(request) = &view.pending else {
+        return Ok(());
+    };
     let result = client.bazaar_command(token, request, cancel).await;
-    view.post_rejected = matches!(result, Err(NativeLoginError::Platform(HttpStatus(409))));
+    view.post_rejected = matches!(
+        result,
+        Err(NativeLoginError::Platform(HttpStatus(403 | 409)))
+    );
+    if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {
+        view.pending = None;
+        view.quote = None;
+        view.post_rejected = false;
+    }
     accept(view, result?);
     Ok(())
 }
@@ -223,7 +240,6 @@ pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
         .as_ref()
         .is_some_and(|p| p.request_id == receipt.request_id)
     {
-        view.retry_authorized = true;
         view.post_rejected = false;
     }
     if receipt.state != OperationState::Pending

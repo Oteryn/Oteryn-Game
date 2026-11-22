@@ -9,7 +9,7 @@ use std::sync::{
 
 pub(crate) struct Launcher {
     config: NativeLoginConfig,
-    view: tokio::sync::Mutex<super::View>,
+    character_id: String,
     after: Arc<dyn Fn() + Send + Sync>,
     active: AtomicBool,
     ended: AtomicBool,
@@ -30,7 +30,7 @@ impl Launcher {
     ) -> Arc<Self> {
         Arc::new(Self {
             config,
-            view: tokio::sync::Mutex::new(super::View::new(Some(character_id))),
+            character_id,
             after,
             active: AtomicBool::new(false),
             ended: AtomicBool::new(false),
@@ -83,15 +83,11 @@ impl Launcher {
                     .enable_all()
                     .build()
                 {
-                    Ok(runtime) => runtime.block_on(async {
-                        let mut view = launcher.view.lock().await;
-                        crate::native_entry::open_coin_shop(
-                            &launcher.config,
-                            &mut view,
-                            cancel.clone(),
-                        )
-                        .await
-                    }),
+                    Ok(runtime) => runtime.block_on(crate::native_entry::open_coin_shop(
+                        &launcher.config,
+                        &launcher.character_id,
+                        cancel.clone(),
+                    )),
                     Err(_) => Err(crate::GameplayEntryError::Rejected(
                         oteryn_platform_client::native_login::PublicClass::TemporarilyUnavailable,
                     )),

@@ -144,8 +144,6 @@ pub(crate) async fn run(
     cancel: CancellationToken,
 ) -> Result<(), crate::GameplayEntryError> {
     view.catalogue = None;
-    view.balance = None;
-    view.order = None;
     controller::execute(
         view,
         Action::Refresh,

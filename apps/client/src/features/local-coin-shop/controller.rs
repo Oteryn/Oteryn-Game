@@ -10,20 +10,7 @@ pub(super) async fn execute(
     browser: &Browser,
     cancel: CancellationToken,
 ) {
-    let new_order = matches!(
-        action,
-        Action::Purchase {
-            confirmed: true,
-            ..
-        }
-    ) && !view.pending();
     if let Err(error) = apply(view, action, client, token, browser, cancel).await {
-        if new_order && view.pending() {
-            view.post_rejected = matches!(
-                error,
-                NativeLoginError::Platform(PlatformClientError::HttpStatus(409))
-            );
-        }
         view.feedback = lfmt!(
             "Coin service unavailable ({:?}). Pending requests keep their identity; check status or retry. No browser result credits coins.",
             error.public_class()
@@ -71,11 +58,11 @@ async fn apply(
                 character_id: view.character_id.clone(),
             });
             view.confirmed = Some(package);
-            submit(view, client, token, browser, cancel).await?;
+            submit(view, client, token, browser, cancel, false).await?;
         }
         Action::Retry => {
             if view.can_retry() {
-                submit(view, client, token, browser, cancel).await?;
+                submit(view, client, token, browser, cancel, true).await?;
             }
         }
         Action::Status | Action::Inspect(_) => {
@@ -102,10 +89,7 @@ async fn apply(
                 Err(NativeLoginError::Platform(PlatformClientError::HttpStatus(404)))
                     if view.post_rejected && view.pending() =>
                 {
-                    view.pending = None;
-                    view.confirmed = None;
-                    view.post_rejected = false;
-                    view.quote_until.clear();
+                    clear_refused_order(view);
                     view.feedback = tr!("The server refused the request").into();
                     return Ok(());
                 }
@@ -119,20 +103,44 @@ async fn apply(
     }
     Ok(())
 }
+fn clear_refused_order(view: &mut View) {
+    view.pending = None;
+    view.confirmed = None;
+    view.post_rejected = false;
+    view.quote_until.clear();
+}
+
 async fn submit(
     view: &mut View,
     client: &NativeLoginClient,
     token: &AccessToken,
     browser: &Browser,
     cancel: CancellationToken,
+    retry: bool,
 ) -> Result<(), NativeLoginError> {
     let Some(request) = &view.pending else {
         return Ok(());
     };
-    let order = client
+    let result = client
         .create_coin_order(token, request, cancel.clone())
-        .await?;
-    accept(view, order)?;
+        .await;
+    view.post_rejected = matches!(
+        result,
+        Err(NativeLoginError::Platform(PlatformClientError::HttpStatus(
+            403 | 409
+        )))
+    );
+    if !retry
+        && matches!(
+            result,
+            Err(NativeLoginError::Platform(PlatformClientError::HttpStatus(
+                403
+            )))
+        )
+    {
+        clear_refused_order(view);
+    }
+    accept(view, result?)?;
     open_checkout(view, client, browser);
     // Browser launch is not payment evidence. Always use a separate authenticated wallet read.
     refresh(view, client, token, cancel).await?;
