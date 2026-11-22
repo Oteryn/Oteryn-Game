@@ -96,11 +96,15 @@ fn scenario(transform: bool) -> TestResult {
                 .target_replacement = Some(4012);
         }
         let second = callback("second-sample", other, 10697, 2)?;
+        let recipe_sha256: String = Sha256::digest(serde_json::to_vec(&[&first, &second])?)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
         let bytes = serde_json::to_vec(&json!({
             "schema": 1,
             "quests": [{
                 "quest": QUEST,
-                "recipe_sha256": format!("{:x}", Sha256::digest(serde_json::to_vec(&[&first,&second])?)),
+                "recipe_sha256": recipe_sha256,
                 "sources": [DONOR],
                 "tracks": [{"key": TRACK, "initial": 1, "minimum": 0, "maximum": 3}],
                 "stages": [
@@ -260,6 +264,11 @@ fn scenario(transform: bool) -> TestResult {
             .fetch_one(&h.pool)
             .await?;
         assert_eq!(refused, 0);
+        let transforms: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_terrain_tool_transforms")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(transforms, 0);
         assert_eq!(map.facts.object_revision(first_key), 0);
 
         owner.clock_origin -= std::time::Duration::from_secs(2);
