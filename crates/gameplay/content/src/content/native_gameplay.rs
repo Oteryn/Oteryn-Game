@@ -1352,6 +1352,10 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         source_reward_items.extend(m25_items);
         source_reward_items.extend(galthen_furniture::qualified_records()?);
         source_reward_items.extend(galthen_loot::qualified_records()?);
+        let item_detail_weights: BTreeMap<String, u32> = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/item-detail-weight-facts.json"
+        ))
+        .map_err(|_| invalid("native Item Details weight facts"))?;
         for record in &items.records {
             let binding = &record.production_binding;
             if cradle_profiles
@@ -1383,7 +1387,26 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 .find(|expected| expected.production_binding.external_id == binding.external_id)
             {
                 if record != expected {
-                    return Err(invalid("native boss reward complete source Item policy"));
+                    // Accept the verified Global weight in addition to the historical
+                    // donor record. Compare the entire profile in both cases.
+                    use super::ReferenceItemField as F;
+                    let refusal = || invalid("native boss reward complete source Item policy");
+                    let weight = item_detail_weights
+                        .get(&binding.external_id)
+                        .copied()
+                        .filter(|&weight| weight > 0)
+                        .ok_or_else(refusal)?;
+                    let mut corrected = expected.clone();
+                    let F::Known(physical) = &mut corrected.semantics.physical else {
+                        return Err(refusal());
+                    };
+                    if physical.weight != F::Known(0) {
+                        return Err(refusal());
+                    }
+                    physical.weight = F::Known(weight);
+                    if record != &corrected {
+                        return Err(refusal());
+                    }
                 }
             } else if binding.external_id == "48416" {
                 use super::{ReferenceItemField as F, ReferenceItemType as Type};
@@ -3552,6 +3575,24 @@ mod tests {
                 .item_policy("oteryn:item.tibia.i43946", "definition-r1")
                 .is_some()
         );
+        let scroll = original["records"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .position(|row| row["production_binding"]["external_id"] == "43946")
+            .unwrap();
+        let mut corrected = original.clone();
+        for (weight, admissible) in [(120, true), (121, false)] {
+            corrected["records"][scroll]["semantics"]["physical"]["value"]["weight"]["value"] =
+                weight.into();
+            let bytes = serde_json::to_vec(&corrected).unwrap();
+            supplied.item_profiles = Some(pinned(&bytes));
+            assert_eq!(
+                compile_native_gameplay(baseline.compiled(), &supplied).is_ok(),
+                admissible,
+                "scroll weight {weight}"
+            );
+        }
         for pointer in [
             "/records/0/production_binding_qualification/scope",
             "/records/0/authoring/item/revision",

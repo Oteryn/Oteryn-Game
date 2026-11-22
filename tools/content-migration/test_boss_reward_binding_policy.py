@@ -3,6 +3,7 @@ import hashlib
 import json
 from pathlib import Path
 import unittest
+from item_detail_source_facts import WEIGHT_FACTS
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -17,7 +18,12 @@ class BossRewardBindingPolicyTests(unittest.TestCase):
         native = json.loads((ROOT/'content/items/definitions/spell-native-profiles.json').read_bytes())
         actual = {row['production_binding']['external_id']: row for row in native['records']}
         expected = {row['production_binding']['external_id']: row for row in capture['records']}
+        weights = json.loads((ROOT / WEIGHT_FACTS).read_bytes())
         for identifier in ('43860', '43946', '43947', '44048'):
+            if identifier in weights:
+                physical = expected[identifier]['semantics']['physical']['value']
+                self.assertEqual(physical['weight'], {'state': 'KNOWN', 'value': 0})
+                physical['weight'] = {'state': 'KNOWN', 'value': weights[identifier]}
             self.assertTrue(identifier in actual, f'actual native Item{identifier} is missing')
             self.assertEqual(digest(actual[identifier]), digest(expected[identifier]),
                              f'complete native Item{identifier} policy differs from frozen source body')
