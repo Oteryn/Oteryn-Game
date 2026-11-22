@@ -429,7 +429,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             cell: runtime.read_actor_position(actor).ok()?.position(),
                         })
                     } else {
-                        let _ = stage_sewer_shock_outfit(&mut next, native, now, &rolls);
+                        stage_sewer_shock_outfit(&mut next, native, now)?;
                         next.source_set_batch_revision(current.revision().checked_add(1)?);
                         None
                     };
@@ -602,8 +602,6 @@ fn item_id(key: &str) -> Option<u16> {
 pub(super) struct FishingRolls {
     pub(super) catch: u32,
     pub(super) shock: u32,
-    root: GameplayDecisionRoot,
-    occurrence: DecisionOccurrenceId,
 }
 
 pub(super) fn fishing_rolls(
@@ -627,8 +625,6 @@ pub(super) fn fishing_rolls(
     Some(FishingRolls {
         catch: u32::try_from(crate::spell::uniform_draw(catch, 1, 100_000)).ok()?,
         shock: u32::try_from(crate::spell::uniform_draw(shock, 1, 100)).ok()?,
-        root,
-        occurrence,
     })
 }
 
@@ -636,43 +632,18 @@ fn stage_sewer_shock_outfit(
     next: &mut crate::spell::cast::PlayerSpellState,
     native: &crate::content::native_gameplay::NativeGameplayState,
     now: u64,
-    rolls: &FishingRolls,
 ) -> Option<()> {
-    use crate::foundation::{
-        ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
+    let Some(appearance) = native
+        .spell_appearances()
+        .and_then(|index| index.for_creature("oteryn:creature.skeleton", "definition-r1"))
+    else {
+        // Older gameplay manifests can resolve the rod and damage without an outfit registry.
+        return Some(());
     };
-    let appearance = native
-        .spell_appearances()?
-        .for_creature("oteryn:creature.skeleton", "definition-r1")?;
-    let definition = ConditionDefinition::new(
-        "fishing.sewer_shock",
-        1,
-        ConditionValues::Outfit {
-            look_type: appearance.look_type(),
-            duration_ms: 4_000,
-        },
-    )?
-    .with_appearance(appearance.selection())?;
-    let base_speed = u16::try_from(next.owned_base_speed()).ok()?;
+    // Crystal mechanical_fishing.lua:223-232 saves the current look and restores it after the zap.
     next.conditions
-        .apply(
-            &definition,
-            None,
-            ConditionSourceKind::SelfUse,
-            &[],
-            &ApplicationFacts {
-                now,
-                base_speed,
-                mana_shield_capacity: 0,
-                target_reentry_protected: false,
-                source_reentry_protected: false,
-                target_is_player: true,
-                decision_root: &rolls.root,
-                occurrence: rolls.occurrence,
-            },
-        )
-        .ok()?;
-    Some(())
+        .overlay_outfit(appearance.look_type(), appearance.selection(), 4_000, now)
+        .ok()
 }
 
 pub(in crate::gameplay_transport) fn gathering_roll(

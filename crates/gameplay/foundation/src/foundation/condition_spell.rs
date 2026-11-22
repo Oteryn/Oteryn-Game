@@ -388,7 +388,15 @@ impl<S: Clone> ConditionStore<S> {
     pub fn intense_hex_damage_percent_at(&self, now: u64) -> i32 {
         100 + self.intense_hex_delta_at(now).damage_dealt
     }
+    fn outfit_overlay_at(&self, now: u64) -> Option<&super::OutfitOverlay> {
+        self.outfit_overlay
+            .as_deref()
+            .filter(|outfit| outfit.starts_at <= now && now < outfit.ends_at)
+    }
     pub fn outfit_at(&self, now: u64) -> Option<u32> {
+        if let Some(outfit) = self.outfit_overlay_at(now) {
+            return Some(outfit.look_type);
+        }
         match self
             .active_at(super::ConflictKey::Outfit, now)?
             .definition
@@ -402,6 +410,11 @@ impl<S: Clone> ConditionStore<S> {
         &self,
         now: u64,
     ) -> Option<super::TemporaryDisplayedAppearance<'_>> {
+        if let Some(outfit) = self.outfit_overlay_at(now) {
+            return Some(super::TemporaryDisplayedAppearance::Outfit(
+                &outfit.appearance,
+            ));
+        }
         let definition = &self.active_at(super::ConflictKey::Outfit, now)?.definition;
         match definition.values {
             ConditionValues::ItemOutfit { .. } => definition
@@ -419,6 +432,9 @@ impl<S: Clone> ConditionStore<S> {
         &self,
         now: u64,
     ) -> Option<&crate::domain::appearance::AppearanceSelection<String>> {
+        if let Some(outfit) = self.outfit_overlay_at(now) {
+            return Some(&outfit.appearance);
+        }
         self.active_at(super::ConflictKey::Outfit, now)?
             .definition
             .appearance_selection
@@ -496,7 +512,12 @@ impl<S: Clone> ConditionStore<S> {
 
 impl<S: Clone> ConditionStore<S> {
     pub fn accepts_time(&self, now: u64) -> bool {
-        now >= self.pass_at && self.instances.iter().all(|v| v.started_at <= now)
+        now >= self.pass_at
+            && self.instances.iter().all(|v| v.started_at <= now)
+            && self
+                .outfit_overlay
+                .as_ref()
+                .is_none_or(|outfit| outfit.starts_at <= now)
     }
 }
 
@@ -517,7 +538,8 @@ impl<S: Clone> ConditionStore<S> {
         });
         self.cleanse_immunities
             .retain(|immunity| now < immunity.until);
-        Ok(before != (self.instances.len(), self.cleanse_immunities.len()))
+        let outfit_expired = self.expire_outfit_overlay(now);
+        Ok(outfit_expired || before != (self.instances.len(), self.cleanse_immunities.len()))
     }
 }
 
