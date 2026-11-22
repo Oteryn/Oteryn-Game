@@ -1,6 +1,6 @@
 //! Native account services run outside an admitted character session.
 mod controller;
-mod history;
+pub(crate) mod history;
 mod session;
 pub(crate) mod status_lookup;
 pub(crate) use session::{PriorRequests, Session};
@@ -14,7 +14,6 @@ mod tests;
 use oteryn_foundation::CancellationToken;
 use oteryn_platform_client::native_login::bazaar::*;
 use oteryn_platform_client::native_login::{AccessToken, AttemptRef, NativeLoginClient};
-use oteryn_platform_client::{PlatformClientError::HttpStatus, native_login::NativeLoginError};
 use std::{sync::Arc, time::Instant};
 
 pub(crate) use history::HistoryStatus;
@@ -110,18 +109,13 @@ impl View {
             .map(|row| client.bazaar_status(token, &row.request_id, cancel.clone()));
         let results = status_lookup::collect(lookups).await;
         for (row, result) in listed.into_iter().zip(results) {
-            let receipt = match result {
-                Some(Ok(receipt)) => receipt,
-                Some(Err(NativeLoginError::Platform(HttpStatus(403 | 404))))
-                    if row.state != OperationState::Pending =>
-                {
-                    // A stale terminal listing from another grant cannot establish ownership.
-                    continue;
-                }
-                _ => {
-                    self.history.lookup_failed(row.request_id);
-                    continue;
-                }
+            let pending = row.state == OperationState::Pending
+                || self
+                    .pending
+                    .as_ref()
+                    .is_some_and(|request| request.request_id == row.request_id);
+            let Some(receipt) = self.history.lookup_result(row.request_id, pending, result) else {
+                continue;
             };
             if !controller::verify(self, &receipt) {
                 continue;

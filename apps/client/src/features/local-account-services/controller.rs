@@ -170,13 +170,13 @@ async fn apply(
         Action::Status => {
             if let Some(id) = view
                 .pending_id()
-                .or_else(|| view.history.unverified.first().map(String::as_str))
+                .or_else(|| view.history.unverified.keys().next().map(String::as_str))
             {
                 match client.bazaar_status(token, id, cancel).await {
                     Ok(receipt) => accept(view, receipt),
                     Err(NativeLoginError::Platform(HttpStatus(404)))
                         if view.post_refusal_status == Some(409)
-                            && !view.history.unverified.contains(id)
+                            && !view.history.unverified.contains_key(id)
                             && !view.unresolved.contains(id) =>
                     {
                         view.prior.reconcile(id);
@@ -186,6 +186,8 @@ async fn apply(
                         view.feedback = tr!("The server refused the request").into();
                     }
                     Err(error @ NativeLoginError::Platform(HttpStatus(404))) => {
+                        let missing = id.to_owned();
+                        view.history.missing(&missing);
                         view.post_refusal_status = None;
                         return Err(error);
                     }

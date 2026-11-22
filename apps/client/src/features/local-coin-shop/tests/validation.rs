@@ -577,3 +577,52 @@ fn inspecting_a_paid_order_after_another_purchase_refuses_stale_checkout() -> Te
         Ok(())
     })
 }
+
+#[test]
+fn fresh_grant_missing_terminal_order_releases_history_only_fence() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let original = mock.token(&client)?;
+        let browser: Browser = Arc::new(|_| true);
+        let execute = |view: &mut View, action, token| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                token,
+                &browser,
+                CancellationToken::new(),
+            ))
+        };
+        let mut first = View::new(None);
+        execute(&mut first, Action::Refresh, &original);
+        execute(
+            &mut first,
+            Action::Purchase {
+                package_id: PACKAGE.into(),
+                confirmed: true,
+            },
+            &original,
+        );
+        let (body, sig) =
+            mock.signed_event(first.order.as_ref().ok_or("order")?, EventKind::Paid)?;
+        assert_eq!(mock.webhook(&body, &sig)?, 200);
+        let (_, row) = mock.with_coins(|c| c.orders.pop_first())?.ok_or("paid")?;
+        mock.with_coins(|c| c.orders.insert("stale-index".into(), row))?;
+        let token = mock.token(&client)?;
+        for resolve in [Action::Refresh, Action::Status] {
+            let mut view = View::with_prior(None, first.prior.clone());
+            mock.with_coins(|c| c.status_failure = Some(503))?;
+            execute(&mut view, Action::Refresh, &token);
+            assert!(view.pending());
+            mock.with_coins(|c| c.status_failure = None)?;
+            execute(&mut view, resolve, &token);
+            assert!(
+                view.can_purchase(PACKAGE),
+                "stale order blocked the fresh grant after 404"
+            );
+        }
+        Ok(())
+    })
+}

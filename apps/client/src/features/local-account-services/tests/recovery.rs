@@ -597,3 +597,40 @@ fn history_rejects_a_regressing_receipt_after_selection_changes() -> TestResult 
         Ok(())
     })
 }
+
+#[test]
+fn fresh_grant_missing_terminal_bid_releases_history_only_fence() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let original = mock.token(&client)?;
+        seed_bids(&mock, &client, &original, 1)?;
+        let token = mock.token(&client)?;
+        let mut authority = mock.authority.lock().map_err(|_| "lock")?;
+        let (_, row) = authority.commands.pop_first().ok_or("bid")?;
+        authority.commands.insert("stale-index".into(), row);
+        drop(authority);
+        for resolve in [Action::Refresh(AuctionView::All), Action::Status] {
+            let mut view = View::default();
+            let execute = |view: &mut View, action| {
+                mock.runtime.block_on(controller::execute(
+                    view,
+                    action,
+                    &client,
+                    &token,
+                    CancellationToken::new(),
+                ))
+            };
+            mock.authority.lock().map_err(|_| "lock")?.status_failure = Some(503);
+            execute(&mut view, Action::Refresh(AuctionView::All));
+            assert!(view.pending());
+            mock.authority.lock().map_err(|_| "lock")?.status_failure = None;
+            execute(&mut view, resolve);
+            assert!(
+                !view.pending(),
+                "stale bid blocked the fresh grant after 404"
+            );
+        }
+        Ok(())
+    })
+}

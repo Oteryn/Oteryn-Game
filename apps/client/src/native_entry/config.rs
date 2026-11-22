@@ -2,7 +2,6 @@ use crate::CLIENT_BUILD;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::path::PathBuf;
 use std::sync::Arc;
-#[cfg(test)]
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -41,9 +40,12 @@ pub(crate) struct BrowserEpoch {
     #[cfg(test)]
     prepare_for_test: Option<Arc<dyn Fn() -> std::io::Result<std::process::Command> + Send + Sync>>,
     #[cfg(test)]
+    before_os_spawn: Option<Arc<dyn Fn() + Send + Sync>>,
+    #[cfg(test)]
     launches: std::sync::atomic::AtomicUsize,
     #[cfg(test)]
     spawned: Option<Arc<dyn Fn(u32) + Send + Sync>>,
+    spawn_guard: Mutex<()>,
     ended: CancellationToken,
 }
 
@@ -51,19 +53,33 @@ impl BrowserEpoch {
     fn spawn_helper(
         &self,
         command: &mut std::process::Command,
+        admission: Option<&BrowserEpoch>,
         cancelled: impl Fn() -> bool,
     ) -> std::io::Result<std::process::Child> {
         #[cfg(test)]
         if let Some(spawn) = &self.prepare_for_test {
             *command = spawn()?;
         }
-        if cancelled() {
-            return Err(std::io::ErrorKind::Interrupted.into());
-        }
-        #[cfg(test)]
-        self.launches
-            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        let child = command.spawn()?;
+        let child = {
+            // Lock order is system browser, then admission. Close takes only its own
+            // epoch lock. Preparation, observation and child cleanup run outside both.
+            let _system = self.spawn_guard.lock().unwrap_or_else(|e| e.into_inner());
+            let _admission = admission
+                .filter(|epoch| !std::ptr::eq(*epoch, self))
+                .map(|epoch| epoch.spawn_guard.lock().unwrap_or_else(|e| e.into_inner()));
+            if cancelled() {
+                return Err(std::io::ErrorKind::Interrupted.into());
+            }
+            #[cfg(test)]
+            if let Some(pause) = &self.before_os_spawn {
+                pause();
+            }
+            let child = command.spawn()?;
+            #[cfg(test)]
+            self.launches
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            child
+        };
         #[cfg(test)]
         if let Some(spawned) = &self.spawned {
             spawned(child.id());
@@ -97,6 +113,7 @@ impl BrowserEpoch {
     }
 
     pub(crate) fn close(&self) {
+        let _guard = self.spawn_guard.lock().unwrap_or_else(|e| e.into_inner());
         self.ended.cancel();
     }
 }
@@ -245,7 +262,9 @@ fn deliver_system_url(
             if cancelled() {
                 return;
             }
-            let Ok(mut child) = worker_scope.spawn_helper(&mut command, cancelled) else {
+            let Ok(mut child) =
+                worker_scope.spawn_helper(&mut command, worker_epoch.as_deref(), cancelled)
+            else {
                 return;
             };
             let deadline = std::time::Instant::now() + HELPER_OBSERVATION;

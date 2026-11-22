@@ -77,7 +77,7 @@ async fn apply(
                     .pending
                     .as_ref()
                     .map(|p| &p.request_id)
-                    .or_else(|| view.history.unverified.first())
+                    .or_else(|| view.history.unverified.keys().next())
                     .or_else(|| view.order.as_ref().map(|o| &o.request_id))
                 {
                     Some(id) => id.clone(),
@@ -103,7 +103,7 @@ async fn apply(
                 // was no order only while this grant has never observed a row for it.
                 Err(NativeLoginError::Platform(HttpStatus(404)))
                     if view.post_refusal_status == Some(409)
-                        && !view.history.unverified.contains(&id)
+                        && !view.history.unverified.contains_key(&id)
                         && view.order.as_ref().is_none_or(|o| o.request_id != id) =>
                 {
                     view.prior.reconcile(&id);
@@ -116,7 +116,11 @@ async fn apply(
                         view.post_refusal_status = None;
                     }
                     if known_open_order(view, &id) {
-                        view.history.lookup_failed(id);
+                        view.history
+                            .unverified
+                            .insert(id, crate::account_services::history::Evidence::Pending);
+                    } else if matches!(error, NativeLoginError::Platform(HttpStatus(404))) {
+                        view.history.missing(&id);
                     }
                     return Err(error);
                 }
@@ -211,16 +215,12 @@ async fn refresh(
         .map(|row| client.coin_order_status(token, &row.request_id, cancel.clone()));
     let results = crate::account_services::status_lookup::collect(lookups).await;
     for (row, result) in listed.into_iter().zip(results) {
-        match result {
-            Some(Ok(order)) => catalogue.recent_orders.push(order),
-            Some(Err(NativeLoginError::Platform(HttpStatus(403 | 404))))
-                if !known_open_order(view, &row.request_id) =>
-            {
-                // A denial cannot associate a previously unseen order with this grant.
-            }
-            _ => {
-                view.history.lookup_failed(row.request_id);
-            }
+        let pending = view
+            .pending
+            .as_ref()
+            .is_some_and(|request| request.request_id == row.request_id);
+        if let Some(order) = view.history.lookup_result(row.request_id, pending, result) {
+            catalogue.recent_orders.push(order);
         }
     }
     if let Some(request_id) = view
