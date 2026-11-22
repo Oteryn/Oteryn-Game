@@ -11,7 +11,7 @@ use crate::durability::{
 };
 use crate::gameplay_transport::{
     capabilities::{OfferedCapability, SelectedCapabilities},
-    connection::FirstEntryOutcome,
+    connection::{FirstEntryOutcome, FreshAdmissionAuthority},
 };
 use oteryn_protocol_oteryn::{
     CommandStatus,
