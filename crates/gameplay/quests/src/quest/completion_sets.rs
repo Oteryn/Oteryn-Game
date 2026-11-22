@@ -209,12 +209,18 @@ pub fn extend(base: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> 
             return Err("completion set bounds".into());
         }
         if let Some(finish) = &declaration.finish {
+            let has_binding = base.authored_bindings().is_some_and(|bindings| {
+                bindings
+                    .quests
+                    .iter()
+                    .any(|binding| binding.quest == *quest)
+            });
             if base
                 .transition(&finish.transition)
                 .is_none_or(|transition| transition.quest != *quest)
                 || finish.minimum_tracks.iter().any(|(key, minimum)| {
                     base.track(key).map_or_else(
-                        || base.authored_bindings.is_some(),
+                        || has_binding,
                         |track| track.quest != *quest || !(track.min..=track.max).contains(minimum),
                     )
                 })
@@ -277,8 +283,59 @@ pub fn extend(base: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> 
     catalogue.predecessors = base.predecessors;
     catalogue.authored_bindings = base.authored_bindings;
     catalogue.native_recipe_evidence = base.native_recipe_evidence;
+    retain_alawar_predecessor(&mut catalogue, &rules)?;
     catalogue.completion_sets = rules;
     Ok(catalogue)
+}
+
+// The original approach and the two independent chest transitions have the same
+// track defaults. A saved partial quest may finish the new route with those claims.
+fn retain_alawar_predecessor(
+    catalogue: &mut QuestStateCatalogue,
+    rules: &BTreeMap<String, CompletionSet>,
+) -> Result<(), String> {
+    const QUEST: &str = "oteryn:quest.alawar_s_vault_quest";
+    let Some(rule) = rules.get(QUEST).filter(|rule| rule.finish.is_some()) else {
+        return Ok(());
+    };
+    let mut transitions = BTreeMap::new();
+    let mut tracks = BTreeMap::new();
+    for key in [
+        "oteryn:quest-callback/m01b/alawar-s-vault/s1/entry",
+        "oteryn:quest-transition/kv/alawars_vault1/chest",
+        "oteryn:quest-transition/kv/alawars_vault2/chest",
+    ] {
+        let transition = catalogue
+            .transition(key)
+            .filter(|t| t.quest == QUEST)
+            .ok_or("Alawar predecessor transition")?;
+        for effect in &transition.effects {
+            let track = catalogue
+                .track(&effect.track)
+                .filter(|t| t.quest == QUEST)
+                .ok_or("Alawar predecessor track")?;
+            tracks.insert(track.key.clone(), track.clone());
+        }
+        transitions.insert(key.to_owned(), transition.clone());
+    }
+    let original_rule = CompletionSet {
+        finish: None,
+        ..rule.clone()
+    };
+    let hash = Sha256::new()
+        .chain_update(super::definition_hash(QUEST, &tracks, &transitions))
+        .chain_update(serde_json::to_vec(&original_rule).map_err(|error| error.to_string())?)
+        .finalize()
+        .into();
+    catalogue
+        .predecessors
+        .entry(QUEST.into())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash,
+            defaults: BTreeMap::new(),
+        });
+    Ok(())
 }
 
 impl QuestStateCatalogue {

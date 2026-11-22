@@ -630,7 +630,7 @@ mod main_native_contract {
             }
         }
         assert_eq!(before.npc_legacy, after.npc_legacy);
-        assert_eq!(before.predecessors, after.predecessors);
+        assert_eq!(expected.predecessors, after.predecessors);
         assert_eq!(before.authored_bindings, after.authored_bindings);
         assert!(after.native_recipe_evidence.is_some());
         Ok(())

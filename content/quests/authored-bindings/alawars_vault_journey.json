@@ -15,6 +15,12 @@
           "initial": 0,
           "minimum": 0,
           "maximum": 6
+        },
+        {
+          "key": "oteryn:quest-progress/alawars-vault/lever",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
         }
       ],
       "stages": [
@@ -249,6 +255,54 @@
               ],
               "sources": [
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_key.lua:163-166"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s3-cross-open-magic-wall",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/alawars-vault-cross-open-magic-wall",
+              "quest": "oteryn:quest.alawar_s_vault_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32187,
+                  "y": 31626,
+                  "floor": -8
+                },
+                "appearance": 409,
+                "native": {
+                  "position": {
+                    "x": 32187,
+                    "y": 31626,
+                    "floor": -8
+                  },
+                  "ordinal": 0,
+                  "appearance": 409
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/alawars-vault/lever",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "requires_world_admission": true,
+              "sources": [
+                "content/quests/world-callbacks.json#alawars-vault-lever"
               ]
             }
           }
