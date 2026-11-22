@@ -136,6 +136,7 @@ def apply_admissions(definitions, root=ROOT):
         planned = copy.deepcopy(pending)
         source = importer(root)
         import grizzly_shop_profiles as shop
+        from quest_reward_item_semantics import NATIVE_FULL_CHARGE_DEFAULTS
         # Shop custody is already source-qualified. Reuse its admission without
         # rewriting the separate frozen charge and temporal SOURCE witnesses.
         shop_keys = {r['production_definition']['production_key'] for r in
@@ -149,6 +150,11 @@ def apply_admissions(definitions, root=ROOT):
                     source.apply_admissions(group, root, ids, source_core=source_core,
                         xml_override=alternate_xml(root) if alternate else None)
         for definition, replacement in zip(pending, planned):
+            # The reward owner qualified the exact charge count for these
+            # Items. A loot admission does not fill its unowned timer state.
+            if (definition['identity']['key'] in NATIVE_FULL_CHARGE_DEFAULTS
+                    and replacement['semantics']['temporal']['state'] == 'NOT_APPLICABLE'):
+                replacement['semantics']['temporal'] = definition['semantics']['temporal']
             definition.clear()
             definition.update(replacement)
 

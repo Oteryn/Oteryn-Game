@@ -1028,13 +1028,13 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                     | "oteryn:item.tibia.i9221"
                     | "oteryn:item.tibia.i31268"
             ) {
-                // WRITE-CONTENT-1 preserves these source equipment facts but
-                // grants no mint/equip admission or speed qualification.
+                // The carried writing admission retains these existing
+                // equipment facts and leaves their speed unqualified.
                 assert!(matches!(
                     record.semantics.equipment,
                     ReferenceItemField::Known(_)
                 ));
-                assert!(!record.admission.materializable);
+                assert!(record.admission.materializable);
             } else {
                 assert!(!matches!(
                     record.semantics.equipment,
@@ -1096,6 +1096,16 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                 27932, 27933, 27934, 28572, 31266, 31268,
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
+        )
+        // The added Crystal distance-reading profiles and new document carriers
+        // retain unknown speed.
+        .chain(
+            (1979..=1982)
+                .chain(5331..=5388)
+                .chain(17725..=17800)
+                .chain(17862..=17867)
+                .chain([54133, 173, 175, 176, 177, 178, 179, 6533, 8747, 8748])
+                .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
         // MAIL-E09: the parcels and the stamped letter carry no speed attribute.
         .chain([3503, 3504, 3506].map(|id| format!("oteryn:item.tibia.i{id}")))

@@ -2373,10 +2373,11 @@
               "value": true
             },
             "write_once_target": {
-              "state": "UNKNOWN"
+              "state": "NOT_APPLICABLE"
             },
             "writeable": {
-              "state": "UNKNOWN"
+              "state": "KNOWN",
+              "value": true
             }
           }
         }
@@ -28496,7 +28497,7 @@
               "value": true
             },
             "write_once_target": {
-              "state": "UNKNOWN"
+              "state": "NOT_APPLICABLE"
             },
             "writeable": {
               "state": "KNOWN",
@@ -28664,7 +28665,7 @@
               "value": true
             },
             "write_once_target": {
-              "state": "UNKNOWN"
+              "state": "NOT_APPLICABLE"
             },
             "writeable": {
               "state": "KNOWN",
