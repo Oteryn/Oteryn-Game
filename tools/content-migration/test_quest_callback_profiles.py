@@ -167,7 +167,8 @@ class QuestCallbackProfiles(unittest.TestCase):
                     'oteryn:item.tibia.i3341', 'oteryn:item.tibia.i5803',
                     'oteryn:item.tibia.i6527', 'oteryn:item.tibia.i235',
                     'oteryn:item.tibia.i7870', 'oteryn:item.tibia.i7935',
-                    'oteryn:item.tibia.i8021', 'oteryn:item.tibia.i12510'):
+                    'oteryn:item.tibia.i8021', 'oteryn:item.tibia.i12510',
+                    'oteryn:item.tibia.i23734', 'oteryn:item.tibia.i23738'):
             row = rows[key]
             self.assertEqual(row['admission'], {'materializable': True,
                              'stack_class': 'NonStackable',

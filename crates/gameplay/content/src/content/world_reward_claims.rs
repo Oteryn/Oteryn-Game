@@ -921,7 +921,7 @@ fn authored_text_matches(
         ),
         Some(6112) => (
             "oteryn:item.tibia.i2821",
-            "9ea894f92d1b6e4cf60555cd08f5e552b8c5ce59c11c13eb6d35f7ff07abb036",
+            "82c070d062d19713a8dcb51b748174e179a9570800e07a316e209d641708119f",
         ),
         Some(6179) => (
             "oteryn:item.tibia.i2815",
@@ -937,11 +937,11 @@ fn authored_text_matches(
         ),
         Some(6196) => (
             "oteryn:item.tibia.i2821",
-            "50918d1f490444e7ecc11a36c2a48b6e1c6ee9229931abb59c69b1042df50b9f",
+            "feb0cc940641e7a9e502fe1bfe7437958b826ee3938270d5f6217c010e751658",
         ),
         Some(6202) => (
             "oteryn:item.tibia.i2836",
-            "cd5d63f500cf56283e976d96162ed57678dd8544fd2a174d32744747fe607e11",
+            "c80460595bd34757c3d5065a1af387e1a5af38b8d8c54813d153add07bad182b",
         ),
         Some(6203) => (
             "oteryn:item.tibia.i2816",
@@ -1664,7 +1664,7 @@ mod container_tests {
             .expect("native written leaf");
         assert_eq!(
             parsed.placements[0].root_text.as_deref().map(str::len),
-            Some(1505)
+            Some(1484)
         );
         assert!(parsed.placements[0].contents.is_empty());
         for mutation in ["missing", "trailing LF", "changed", "carrier", "digest"] {
