@@ -7,6 +7,7 @@ use oteryn_client_ui::boss_encounter::{BossCategory, BossEncounterPanel, Intent,
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
+    #[cfg(bevy_shell)]
     pub(crate) fn tracked_boss_open(&self, key: &str) -> bool {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.boss_encounter;
@@ -26,6 +27,7 @@ impl PlayLink {
         enqueue(&mut mailbox, &self.commands, Intent::Catalogue);
         mailbox.boss_encounter.pending
     }
+    #[cfg(bevy_shell)]
     pub(crate) fn tracked_boss_continue(&self) {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.boss_encounter;
