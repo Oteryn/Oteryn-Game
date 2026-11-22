@@ -101,6 +101,10 @@ mod foundation {
         pub(crate) fn contains_live_creature(&self, _: ExactActorRef) -> bool {
             false
         }
+        pub(crate) fn shield_attack_damage_percent(&self, _: ExactActorRef, _: u64) -> u32 {
+            100
+        }
+        pub(crate) fn consume_shield_attack_reduction(&mut self, _: ExactActorRef, _: u64) {}
         // This standalone shim has neither live nor retained creature slots.
         // Keep Parry-death replay lookup fail-closed, like every other owner read.
         pub(crate) fn companion_snapshot_including_dead(
