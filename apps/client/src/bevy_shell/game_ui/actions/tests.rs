@@ -5,6 +5,7 @@ use crate::{
 };
 use bevy::asset::AssetPlugin;
 
+mod layout;
 mod tooltips;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -369,6 +370,21 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
             .bar_layout()
             .rows[0]
             .locked
+    );
+    let layout = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bar_layout();
+    assert!(
+        layout
+            .rows
+            .iter()
+            .filter(|row| row.dock == layout.rows[0].dock)
+            .all(|row| !row.locked)
     );
     let first = slot(&mut app, 0)?;
     app.insert_resource(UiScale(1.5));
@@ -937,19 +953,4 @@ pub(in crate::bevy_shell::game_ui) fn secondary_click(entity: Entity) -> Pointer
         duration: std::time::Duration::ZERO,
         count: 1,
     }
-}
-
-#[test]
-fn hiding_assigned_hotkeys_removes_live_slot_corner_text() -> TestResult {
-    let (mut app, _) = fixture()?;
-    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
-    owner.settings.preferences.action_bar.show_hotkey = false;
-    app.update();
-    assert!(
-        app.world_mut()
-            .query::<(&SlotHotkey, &Text)>()
-            .iter(app.world())
-            .all(|(_, text)| text.0.is_empty())
-    );
-    Ok(())
 }

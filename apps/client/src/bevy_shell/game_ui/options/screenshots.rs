@@ -91,12 +91,17 @@ pub(super) fn project(
     }
 }
 
+#[cfg(test)]
+#[derive(Resource)]
+struct FolderOpener(fn(&std::path::Path) -> std::io::Result<()>);
+
 fn open_folder(
     event: On<Activate>,
     owner: NonSend<HostOwner>,
     state: Res<OptionsState>,
     guard: ModalGuard,
     mut launch: ResMut<FolderLaunch>,
+    #[cfg(test)] opener: Option<Res<FolderOpener>>,
 ) {
     if launch.0.is_some()
         || !section::editable(&owner, &state, &guard, event.entity, Page::Screenshots)
@@ -104,10 +109,16 @@ fn open_folder(
         return;
     }
     let directory = owner.settings.preferences.screenshots.effective().directory;
+    #[cfg(test)]
+    let opener = opener.map(|opener| opener.0);
     let task = bevy_tasks::IoTaskPool::get().spawn(async move {
         let folder =
             crate::play::screenshot::screenshot_directory(std::path::Path::new(&directory))?;
-        crate::play::screenshot::create_capture_directory(&folder)?;
+        crate::play::screenshot::ensure_screenshot_directory(&folder)?;
+        #[cfg(test)]
+        if let Some(open) = opener {
+            return open(&folder);
+        }
         let mut command = crate::bevy_shell::diagnostics::folder_command(&folder);
         command
             .stdin(std::process::Stdio::null())
@@ -173,6 +184,41 @@ fn use_folder(
 mod tests {
     use super::*;
     #[test]
+    fn folder_action_uses_applied_capture_directory() -> Result<(), Box<dyn std::error::Error>> {
+        let fixture = tempfile::tempdir()?;
+        let folder = fixture.path().join("captures with spaces");
+        let mut app = super::super::navigation_tests::options_page(Page::Screenshots)?;
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences
+            .screenshots
+            .directory = folder.to_string_lossy().into_owned();
+        app.insert_resource(FolderOpener(|directory| {
+            std::fs::write(directory.join("opened"), [])
+        }));
+        let button = app
+            .world_mut()
+            .query::<(Entity, &Name)>()
+            .iter(app.world())
+            .find_map(|(entity, name)| {
+                (name.as_str() == "screenshots.open-folder").then_some(entity)
+            })
+            .ok_or("folder button")?;
+        app.world_mut().trigger(Activate { entity: button });
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while !folder.join("opened").exists() && std::time::Instant::now() < deadline {
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert!(folder.join("opened").is_file());
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(folder.metadata()?.permissions().mode() & 0o077, 0);
+        }
+        Ok(())
+    }
+    #[test]
     fn destination_uses_draft_cancel_and_persisted_apply() -> Result<(), Box<dyn std::error::Error>>
     {
         let fixture = tempfile::tempdir()?;
@@ -223,60 +269,8 @@ mod tests {
 mod automatic_tests;
 
 #[cfg(test)]
-mod loot_test {
-    use super::*;
-    use bevy::ui_widgets::ValueChange;
-    use oteryn_session::{
-        AppliedDelta, SessionEvent,
-        analyser_transport::{AnalyserFact, AnalyserItemCount},
-    };
-    #[test]
-    fn tracked_loot_capture_uses_confirmed_drops_and_current_tracker()
-    -> Result<(), Box<dyn std::error::Error>> {
-        let mut app = super::super::tests::app(Page::Screenshots, None)?;
-        let checkbox = app
-            .world_mut()
-            .spawn(Control::Check("screenshots.tracked_loot"))
-            .observe(super::super::toggle)
-            .id();
-        app.world_mut().trigger(ValueChange {
-            source: checkbox,
-            value: true,
-            is_final: true,
-        });
-        let (link, _, outbox) = crate::play::play_channel();
-        outbox.bevy_hud_fixture(&[], None);
-        link.analyser_open();
-        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
-        owner.apply(true);
-        let now = std::time::Instant::now();
-        for seq in 1..=2 {
-            outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
-                server_sequence: seq,
-                base_revision: seq - 1,
-                new_revision: seq,
-                value: vec![AnalyserFact::KillLoot {
-                    race: None,
-                    gold: 0,
-                    corpse_items: vec![AnalyserItemCount {
-                        item_type: 22_u32.try_into()?,
-                        count: 1_u16.try_into()?,
-                    }],
-                }],
-            })]);
-            assert_eq!(
-                matches!(
-                    owner.settings.prepare_screenshots(now, Some(&link)),
-                    crate::play::screenshot::CaptureAction::Save
-                ),
-                seq == 2
-            );
-            assert!(link.analyser_select("loot-tracker"));
-            link.analyser_track_item("22", true);
-        }
-        Ok(())
-    }
-}
+#[path = "screenshots/loot_tests.rs"]
+mod loot_test;
 
 #[cfg(test)]
 mod bestiary_tests {
@@ -289,9 +283,9 @@ mod bestiary_tests {
     fn confirmed_bestiary_stage_changes_trigger_only_the_selected_capture()
     -> Result<(), Box<dyn std::error::Error>> {
         for (id, expected) in [
-            ("screenshots.bestiary_unlock", &[1, 2][..]),
-            ("screenshots.bestiary_complete", &[3][..]),
-            ("screenshots.bestiary_unlock", &[2][..]),
+            ("screenshots.bestiary-unlock", &[1, 2][..]),
+            ("screenshots.bestiary-complete", &[3][..]),
+            ("screenshots.bestiary-unlock", &[2][..]),
         ] {
             let mut app = super::super::tests::app(Page::Screenshots, None)?;
             let checkbox = app
@@ -380,7 +374,7 @@ mod reward_tests {
     fn boss_defeat_and_reward_treasure_require_their_own_accepted_receipts()
     -> Result<(), Box<dyn std::error::Error>> {
         for (id, boss) in [
-            ("screenshots.boss_defeat", true),
+            ("screenshots.boss", true),
             ("screenshots.reward_chest", false),
         ] {
             let mut app = super::super::tests::app(Page::Screenshots, None)?;
@@ -430,6 +424,37 @@ mod reward_tests {
                 seen |= kills == 1;
                 owner.settings.cancel_screenshot();
             }
+            if boss {
+                // Tracker pushes can arrive while the first full Bosstiary scan is in flight.
+                let crate::combat_input::PlayCommand::Feature(query) = commands.try_recv()? else {
+                    return Err("initial Bosstiary scan".into());
+                };
+                assert_eq!(query.kind, boss_encounter::COMMAND_TYPE_BOSS_COOLDOWNS);
+                use oteryn_protocol_oteryn::boss_encounter::{
+                    BosstiaryProgressEntry, encode_bosstiary_list,
+                };
+                outbox.bevy_bosstiary_result(&GatedCommandResult {
+                    command_id: 1,
+                    server_sequence: 1,
+                    status: CommandStatus::Accepted,
+                    payload: encode_bosstiary_list(
+                        0,
+                        &[],
+                        false,
+                        &[BosstiaryProgressEntry {
+                            boss_key: "oteryn:boss.test".into(),
+                            kill_count: 1,
+                        }],
+                        0,
+                        false,
+                    )
+                    .map_err(|e| format!("{e:?}"))?,
+                });
+                assert!(!matches!(
+                    owner.settings.prepare_screenshots(now, Some(&link)),
+                    crate::play::screenshot::CaptureAction::Save
+                ));
+            }
             link.boss_encounter_edit(0, "oteryn:boss.test".into());
             link.boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::Defeated);
             assert!(
@@ -439,8 +464,8 @@ mod reward_tests {
             handoff[6] = 0x70;
             handoff[8] = 0x80;
             outbox.bevy_bosstiary_result(&GatedCommandResult {
-                command_id: 1,
-                server_sequence: 1,
+                command_id: 2,
+                server_sequence: 2,
                 status: CommandStatus::Accepted,
                 payload: oteryn_protocol_oteryn::boss_encounter::encode_boss_activity_reply(
                     &boss_encounter::BossActivityReply::Accepted {

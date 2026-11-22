@@ -38,6 +38,7 @@ enum Command {
     Chase(ChaseMode),
     Secure(bool),
     Expert(u8),
+    ToggleExpert,
     BattleList(usize),
     BattleListEditor,
     /// Opens or closes the battle list menu (sort, lists, list editor).
@@ -52,6 +53,25 @@ enum Command {
 /// secure target follow the live session.
 #[derive(Component)]
 struct CombatControl;
+
+#[derive(Component)]
+struct ExpertControls;
+#[derive(Resource, Default)]
+struct ExpertVisibility(Option<u64>);
+
+fn project_expert_group(
+    owner: NonSend<HostOwner>,
+    visibility: Res<ExpertVisibility>,
+    mut groups: Query<&mut Node, With<ExpertControls>>,
+) {
+    for mut group in &mut groups {
+        group.display = if visibility.0 == Some(owner.generation()) {
+            Display::Grid
+        } else {
+            Display::None
+        };
+    }
+}
 /// The combat column of the inventory widget (Inventory.qml): a 42 px column with the Stop
 /// button over 20x20 buttons in three rows, filled top to bottom.
 const COMBAT_COLUMN: f32 = 42.;
@@ -70,6 +90,7 @@ pub(super) fn install(app: &mut App) {
     blessings::spawn(app);
     skills::install(app);
     app.init_resource::<DevOverlay>()
+        .init_resource::<ExpertVisibility>()
         .init_resource::<battle::Menu>()
         .init_resource::<EquipmentWidget>();
     vip::install(app);
@@ -82,10 +103,12 @@ pub(super) fn install(app: &mut App) {
         (
             project,
             battle::project,
+            project_expert_group,
             battle::marks::captions,
             battle::marks::hover,
             battle::portrait::project,
             status_icons::project,
+            top_bar::equipped_weapon,
             top_bar::layout,
             top_bar::project,
         )
@@ -144,6 +167,7 @@ fn activate(
     actions: Query<&HudAction>,
     mut owner: NonSendMut<HostOwner>,
     mut menu: ResMut<battle::Menu>,
+    mut expert_visibility: ResMut<ExpertVisibility>,
 ) {
     if !guard.allows(event.entity) {
         return;
@@ -235,6 +259,10 @@ fn activate(
         Command::Fight(mode) => play.link.battle_request(Action::Fight(mode)),
         Command::Chase(mode) => play.link.battle_request(Action::Chase(mode)),
         Command::Secure(secure) => battle::request_pvp(&play.link, Some(secure), None),
+        Command::ToggleExpert => {
+            expert_visibility.0 =
+                (expert_visibility.0 != Some(owner.generation())).then_some(owner.generation());
+        }
         Command::Expert(mode) => battle::request_pvp(&play.link, None, Some(mode)),
         Command::BattleList(index) => {
             let _ = play.link.battle_select_list(index);

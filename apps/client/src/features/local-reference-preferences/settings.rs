@@ -58,9 +58,12 @@ mod profile_contexts;
 mod custom_actions;
 #[path = "custom_dispatch.rs"]
 mod custom_dispatch;
+#[path = "special.rs"]
+mod special;
 #[path = "utility_actions.rs"]
 mod utility_actions;
 pub use custom_actions::{CustomAction, ObjectTarget, default_custom_hotkeys};
+pub use special::SpecialAction;
 pub use utility_actions::UtilityAction;
 #[path = "profiles.rs"]
 mod profiles;
@@ -124,6 +127,8 @@ pub struct ReferencePreferences {
     pub performance: PerformanceSettings,
     #[serde(default)]
     pub stash_stock_order: bool,
+    #[serde(default)]
+    pub outfit_presets: std::collections::BTreeMap<String, ([String; 4], Option<bool>)>,
     #[serde(skip)]
     pub miscellaneous: MiscellaneousPreferences,
     #[serde(default)]
@@ -317,6 +322,7 @@ impl Default for ReferencePreferences {
             schema_version: custom_actions::PREFERENCES_SCHEMA_VERSION,
             performance: PerformanceSettings::default(),
             stash_stock_order: false,
+            outfit_presets: Default::default(),
             miscellaneous: Default::default(),
             boss_area_opacity: default_boss_opacity(),
             graphics: GraphicsPreferences::default(),

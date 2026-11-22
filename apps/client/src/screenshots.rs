@@ -104,10 +104,7 @@ pub(crate) struct CombatCaptureFacts {
     pub damage_record: u32,
     pub healing_record: u32,
     pub player_hits: u64,
-    pub tracked_loot: u64,
-    pub boss_defeats: u64,
     pub reward_collections: u64,
-    pub low_health_crossings: u64,
 }
 
 const MAX_TRACKED_ATTACKERS: usize = 256;
@@ -116,7 +113,6 @@ impl CombatCaptureFacts {
     pub(crate) fn observe(
         &mut self,
         fact: &oteryn_session::analyser_transport::AnalyserFact,
-        tracked: &std::collections::BTreeSet<u32>,
         attackers: &mut std::collections::BTreeSet<Option<oteryn_session::EntityRef>>,
         attacker: Option<oteryn_session::EntityRef>,
     ) {
@@ -142,12 +138,6 @@ impl CombatCaptureFacts {
             && attackers.insert(attacker)
         {
             self.player_hits = self.player_hits.saturating_add(1);
-        } else if let AnalyserFact::KillLoot { corpse_items, .. } = fact
-            && corpse_items
-                .iter()
-                .any(|item| tracked.contains(&item.item_type.get()))
-        {
-            self.tracked_loot = self.tracked_loot.saturating_add(1);
         }
     }
 }

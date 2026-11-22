@@ -210,7 +210,7 @@ fn typing_an_action_name_filters_the_general_hotkey_list() -> Result<(), Box<dyn
     Ok(())
 }
 
-fn options_page(page: Page) -> Result<App, Box<dyn std::error::Error>> {
+pub(super) fn options_page(page: Page) -> Result<App, Box<dyn std::error::Error>> {
     let mut owner = HostOwner::new(None)?;
     owner.open_graphics();
     let mut app = App::new();

@@ -67,6 +67,15 @@ impl PlayLink {
             return Vec::new();
         }
         refresh(&mut mailbox, &self.commands);
+        mailbox.filtered_battle_rows(index)
+    }
+}
+impl Mailbox {
+    pub(in crate::play) fn filtered_battle_rows(
+        &self,
+        index: usize,
+    ) -> Vec<oteryn_session::WorldSpatialEntity> {
+        let mailbox = self;
         let list = &mailbox.battle_lists.preferences[index];
         let summons = list.hide_summons.then(|| mailbox.party_summons());
         let icons = &mailbox.properties.party_skull.icons;

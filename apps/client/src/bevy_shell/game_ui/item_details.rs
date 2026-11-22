@@ -1,4 +1,5 @@
 //! Source-shaped inspection over the retained capability-132 owner.
+mod portrait;
 mod widgets;
 use super::super::{
     owner::{HostOwner, Phase},
@@ -55,6 +56,7 @@ enum Kind {
     Proficiency,
     Close,
     Select(usize),
+    ToggleOutfit,
 }
 #[derive(Component, Clone, Copy)]
 struct Control {
@@ -73,12 +75,17 @@ struct State {
     clipboard_feedback: String,
     selected_index: usize,
     selection_dirty: bool,
+    outfit: bool,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
+        .init_resource::<portrait::Cache>()
         .init_resource::<Clipboard>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Update, (keyboard, project, clipboard_status).chain());
+        .add_systems(
+            Update,
+            (keyboard, project, portrait::project, clipboard_status).chain(),
+        );
 }
 fn project(
     mut commands: Commands,
@@ -97,6 +104,7 @@ fn project(
             commands.entity(widgets.overlay).despawn();
         }
         state.snapshot = None;
+        state.outfit = false;
         return;
     };
     let selection = owner.play.as_ref().and_then(|play| {
@@ -121,6 +129,7 @@ fn project(
         .is_none_or(|(key, previous, _)| key.generation != owner.generation() || previous != &model)
     {
         state.selected_index = 0;
+        state.outfit = false;
     }
     let Some(revision) = state.revision.checked_add(1) else {
         return;
@@ -142,6 +151,7 @@ fn project(
         commands.entity(widgets.overlay).despawn();
     }
     let selected_index = state.selected_index;
+    let outfit = state.outfit;
     let widgets = state
         .widgets
         .get_or_insert_with(|| widgets::build(&mut commands, &skin));
@@ -158,7 +168,7 @@ fn project(
         key,
         &model,
         selection.is_some(),
-        selected_index,
+        (selected_index, outfit),
     );
     state.snapshot = Some((key, model, selection));
     state.selection_dirty = false;
@@ -238,6 +248,16 @@ fn perform(owner: &HostOwner, state: &mut State, clipboard: &mut Clipboard, cont
                     "Clipboard unavailable"
                 }
                 .into();
+            }
+        }
+        Kind::ToggleOutfit => {
+            if !panel.pending
+                && panel.selected
+                && panel.reply.as_ref().is_some_and(|reply| reply.status == 1)
+                && matches!(panel.last_request, Some(Request::Player(_)))
+            {
+                state.outfit = !state.outfit;
+                state.selection_dirty = true;
             }
         }
         Kind::Select(index) => {

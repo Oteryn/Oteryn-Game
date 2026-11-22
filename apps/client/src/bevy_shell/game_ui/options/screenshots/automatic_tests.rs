@@ -19,9 +19,9 @@ fn impact_records_and_incoming_player_hits_drive_independent_capture_choices()
         source: AnalyserDamageSource::Player,
     };
     for (enabled, id) in [
-        "screenshots.damage_record",
-        "screenshots.healing_record",
-        "screenshots.pvp_attack",
+        "screenshots.record-damage",
+        "screenshots.record-healing",
+        "screenshots.player-attacking",
     ]
     .into_iter()
     .enumerate()
@@ -81,7 +81,7 @@ fn low_health_capture_fires_on_crossing_and_rearms_after_recovery()
     let mut app = super::super::tests::app(Page::Screenshots, None)?;
     let checkbox = app
         .world_mut()
-        .spawn(Control::Check("screenshots.low_health"))
+        .spawn(Control::Check("screenshots.low-health"))
         .observe(super::super::toggle)
         .id();
     app.world_mut().trigger(ValueChange {
@@ -229,7 +229,7 @@ fn character_impact_records_survive_restart_and_master_cancels_queued_automatic_
         let mut state = crate::play::SettingsState::new(Some(base.clone()));
         state.select_character(Some([character; 16]));
         let mut preferences = state.preferences.clone();
-        preferences.screenshots.healing_record = true;
+        preferences.screenshots.on_record_healing = true;
         preferences.screenshots.automatic_disabled = false;
         state.apply(preferences);
         let (link, _commands, outbox) = crate::play::play_channel();

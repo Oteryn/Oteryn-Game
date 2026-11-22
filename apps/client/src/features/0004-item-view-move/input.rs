@@ -97,7 +97,9 @@ impl PlayLink {
     }
     /// Whether the session negotiated the mode (510) and whether it is on, for the sort menu.
     #[must_use]
-    pub fn container_manual_sort_mode(&self) -> oteryn_client_ui::container_manual_sort::ManualSort {
+    pub fn container_manual_sort_mode(
+        &self,
+    ) -> oteryn_client_ui::container_manual_sort::ManualSort {
         lock(&self.mailbox).container_manual_sort
     }
     pub fn item_movement(&self) -> oteryn_client_ui::inventory::movement::Movement {
@@ -110,7 +112,9 @@ pub(in crate::play) fn toggle_manual_sort(mailbox: &mut crate::play::mailbox::Ma
     if mailbox.inventory_shutdown || !mailbox.container_manual_sort.toggle() {
         return false;
     }
-    if !mailbox.container_manual_sort.active() && mailbox.depot.held.take().is_some() {
+    if mailbox.container_manual_sort.active() {
+        mailbox.properties.container_sort.fields[3] = "0".into();
+    } else if mailbox.depot.held.take().is_some() {
         mailbox.depot.feedback = "";
     }
     true
@@ -154,6 +158,42 @@ impl crate::play::PlayView {
                 count: item.quantity(),
             }
         })
+    }
+    #[cfg(bevy_shell)]
+    pub(crate) fn shortcut_object_at(
+        &self,
+        tile: oteryn_renderer::TileCoord,
+    ) -> Option<(u32, u32)> {
+        use crate::play::GroundItem;
+        self.ground_items
+            .iter()
+            .rev()
+            .filter(|target| target.tile == tile)
+            .filter_map(|target| target.item)
+            .find_map(|ground| match ground {
+                GroundItem::Map { item, position, .. }
+                    if position.floor == self.floor
+                        && matches!(
+                            item.definition,
+                            oteryn_session::world_map::MapDefinition::Item(_)
+                        ) =>
+                {
+                    Some((ground.definition(), item.sub_type))
+                }
+                _ => None,
+            })
+            .or_else(|| {
+                self.entities
+                    .iter()
+                    .rev()
+                    .filter(|entity| {
+                        entity.position.floor == self.floor
+                            && entity.position.x == tile.x
+                            && entity.position.y == tile.y
+                    })
+                    .find_map(super::state::entity_item)
+                    .map(|item| (item.definition(), 0))
+            })
     }
     /// The exact existing visible source, retained by portable drag prompts for revalidation.
     pub fn item_drag_binding(

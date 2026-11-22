@@ -1,6 +1,8 @@
 //! oteryn-choice: native local view of confirmed server facts, with no gameplay authority.
 #[path = "state/bosses.rs"]
 pub mod bosses;
+#[path = "state/display.rs"]
+pub mod display;
 mod input;
 #[path = "state/kills.rs"]
 pub mod kills;
@@ -22,7 +24,7 @@ pub enum PriceSource {
     Own,
 }
 
-pub use view::{panel_text, session_text};
+pub use view::{panel_text, session_text, session_text_at};
 #[cfg(test)]
 #[path = "tests/measurements.rs"]
 mod measurement_tests;

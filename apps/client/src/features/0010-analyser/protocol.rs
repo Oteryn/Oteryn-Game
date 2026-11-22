@@ -50,7 +50,6 @@ pub(in crate::play) fn reduce(
                 for fact in &delta.value {
                     mailbox.combat_capture.observe(
                         fact,
-                        &mailbox.analyser.loot_tracked,
                         &mut mailbox.capture_attackers,
                         None,
                     );
@@ -61,7 +60,6 @@ pub(in crate::play) fn reduce(
                 for fact in &delta.value {
                     mailbox.combat_capture.observe(
                         &fact.fact,
-                        &mailbox.analyser.loot_tracked,
                         &mut mailbox.capture_attackers,
                         fact.attacker,
                     );
@@ -87,6 +85,8 @@ pub(in crate::play) fn reduce(
             }
             _ => {}
         }
+        // The current drop can qualify for automatic tracking during reduction.
+        mailbox.observe_capture_event(event);
     }
 }
 

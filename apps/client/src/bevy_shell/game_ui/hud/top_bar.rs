@@ -13,6 +13,8 @@ pub(super) struct BarFill(bool);
 #[derive(Component)]
 pub(super) struct LevelText;
 #[derive(Component)]
+pub(super) struct WeaponText;
+#[derive(Component)]
 pub(super) struct XpFill;
 
 #[derive(Component, Clone, Copy)]
@@ -117,6 +119,9 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
         .spawn((LevelText, source::text("—", font.clone())))
         .insert(TextColor(Color::WHITE))
         .id();
+    let weapon = commands
+        .spawn((WeaponText, source::text("", font.clone())))
+        .id();
     let track = commands
         .spawn((
             Node {
@@ -170,7 +175,7 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
         .observe(xp_boost);
     commands
         .entity(experience)
-        .add_children(&[level, track, boost]);
+        .add_children(&[level, track, weapon, boost]);
     let conditions = commands
         .spawn(Node {
             width: percent(100.),
@@ -239,6 +244,26 @@ pub(super) fn project(
         });
         if node.width != width {
             node.width = width;
+        }
+    }
+}
+
+pub(super) fn equipped_weapon(
+    owner: NonSend<HostOwner>,
+    mut labels: Query<&mut Text, With<WeaponText>>,
+    mut observed: Local<(u64, Option<u32>)>,
+) {
+    if observed.0 != owner.generation() {
+        *observed = (owner.generation(), None);
+    }
+    let progress = owner
+        .play
+        .as_ref()
+        .and_then(|play| play.link.equipped_weapon_progress(&mut observed.1));
+    for mut label in &mut labels {
+        let next = progress.map_or_else(String::new, |value| format!("Proficiency {value}%"));
+        if label.0 != next {
+            label.0 = next;
         }
     }
 }

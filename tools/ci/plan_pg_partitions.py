@@ -16,6 +16,13 @@ MAX501_TEST = (
     "oteryn-game-server::character_authority_postgres",
     "player_death_item_primitives::player_death_nested_maximum_501_item_reset_makes_bounded_atomic_progress",
 )
+# A cold M09 treasure fixture runs the World pin-check, which builds the World
+# twice at once. Beside the SRX3 actual-world fixtures, that exhausts a
+# runner's memory, so these cases get the whole runner. Matched on the test
+# name because the same cases exist under the library and dedicated binaries.
+EXCLUSIVE_TEST_PREFIXES = (
+    "gameplay_transport::monk_save::postgres_tests::m09_treasure_rewards::",
+)
 
 
 def estimate(case, durations):
@@ -97,7 +104,7 @@ def write_partition(plan_dir, index, total, durations, optional):
             settings = []
             if duration >= 30:
                 settings.append(f"priority = {min(100, duration // 5)}\n")
-            if (binary, name) == MAX501_TEST:
+            if (binary, name) == MAX501_TEST or name.startswith(EXCLUSIVE_TEST_PREFIXES):
                 # Keep the production two-second budget while preventing
                 # unrelated fixture processes from competing for its runner.
                 settings.append('threads-required = "num-test-threads"\n')

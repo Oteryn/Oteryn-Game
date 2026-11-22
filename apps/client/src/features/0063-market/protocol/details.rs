@@ -36,19 +36,26 @@ impl Outbox {
         result: &oteryn_session::GatedCommandResult,
     ) {
         let mut mailbox = lock(&self.0);
-        details::apply(&mut mailbox.market, command, result.status, &result.payload);
-        if let Some((id, price)) = mailbox
-            .market
-            .details
-            .statistics
-            .as_ref()
-            .and_then(|s| Some((s.definition, s.average?)))
+        let mailbox = &mut *mailbox;
+        let applied = details::apply(&mut mailbox.market, command, result.status, &result.payload);
+        #[cfg(bevy_shell)]
+        if applied && let Some(stats) = &mailbox.market.details.statistics {
+            mailbox
+                .screen_loot
+                .market_price(stats.definition, stats.average);
+        }
+        if applied
+            && let Some((id, price)) = mailbox
+                .market
+                .details
+                .statistics
+                .as_ref()
+                .and_then(|s| Some((s.definition, s.average?)))
         {
             mailbox.refresh_loot_quote(id, price, oteryn_client_ui::analyser::PriceSource::Market);
         }
     }
 }
-
 
 #[cfg(all(test, bevy_shell))]
 impl Outbox {

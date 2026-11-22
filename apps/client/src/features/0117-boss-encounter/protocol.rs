@@ -7,10 +7,18 @@ impl Outbox {
             selected,
             ..Default::default()
         };
+        mailbox.boss_capture = Default::default();
         mailbox.boss_encounter_shutdown = false;
     }
     pub(in crate::play) fn boss_encounter_result(&self, response: &GatedCommandResult) {
-        let pity_selected = lock(&self.0).boss_difficulty.pity_selected;
+        let pity_selected = {
+            let mut mailbox = lock(&self.0);
+            if mailbox.boss_capture.receive(response) {
+                mailbox.boss_encounter.pending = false;
+                return;
+            }
+            mailbox.boss_difficulty.pity_selected
+        };
         if let Some((oteryn_client_runtime::boss_difficulty::Reply::Window { .. }, _)) =
             oteryn_client_ui::boss_difficulty_pity::decode(pity_selected, &response.payload)
         {
@@ -30,6 +38,7 @@ impl crate::play::mailbox::Mailbox {
             feedback: Some(tr!("The session has ended")),
             ..Default::default()
         };
+        self.boss_capture = Default::default();
         self.boss_encounter_shutdown = true;
     }
 }

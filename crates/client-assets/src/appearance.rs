@@ -91,8 +91,6 @@ struct FlagsMsg {
     bottom: Option<bool>,
     #[prost(bool, optional, tag = "4")]
     top: Option<bool>,
-    #[prost(bool, optional, tag = "5")]
-    container: Option<bool>,
     #[prost(bool, optional, tag = "7")]
     usable: Option<bool>,
     #[prost(bool, optional, tag = "8")]
@@ -101,6 +99,8 @@ struct FlagsMsg {
     unpass: Option<bool>,
     #[prost(bool, optional, tag = "9")]
     multiuse: Option<bool>,
+    #[prost(bool, optional, tag = "5")]
+    container: Option<bool>,
     #[prost(bool, optional, tag = "6")]
     cumulative: Option<bool>,
     #[prost(bool, optional, tag = "12")]

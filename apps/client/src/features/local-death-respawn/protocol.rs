@@ -71,17 +71,6 @@ impl Mailbox {
     }
 
     pub(in crate::play) fn apply_death_vitals(&mut self, vitals: ActorVitals) {
-        let low = |v: ActorVitals| {
-            v.health > 0 && u64::from(v.health) * 100 <= u64::from(v.max_health) * 5
-        };
-        if low(vitals)
-            && self
-                .vitals
-                .is_some_and(|previous| previous.max_health > 0 && !low(previous))
-        {
-            self.combat_capture.low_health_crossings =
-                self.combat_capture.low_health_crossings.saturating_add(1);
-        }
         // An absent/default vitals snapshot is not a reported death.
         if vitals.max_health > 0 {
             let dead = vitals.health == 0;

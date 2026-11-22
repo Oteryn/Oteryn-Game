@@ -18,6 +18,12 @@ pub(super) struct Projection<'w, 's> {
         ),
         Without<ActionControl>,
     >,
+    groups: Query<
+        'w,
+        's,
+        (&'static ArrowGroup, &'static mut Node),
+        (Without<ActionControl>, Without<BarRow>),
+    >,
     controls: Query<
         'w,
         's,
@@ -131,13 +137,22 @@ pub(super) fn project(
             node.display = display;
         }
     }
+    for (group, mut node) in &mut ui.groups {
+        let side = layout.rows[group.0].dock != crate::play::BarDock::Bottom;
+        node.flex_direction = if side {
+            FlexDirection::Row
+        } else {
+            FlexDirection::Column
+        };
+        node.flex_shrink = 0.;
+    }
     page_sizes.0 = capacities;
     for (control, mut generation, mut node) in &mut ui.controls {
         generation.0 = owner.generation();
-        if let ActionControl::Scroll(bar, _) = control {
+        if let ActionControl::Scroll(bar, _) | ActionControl::Jump(bar, _) = control {
             let side = layout.rows[*bar].dock != crate::play::BarDock::Bottom;
-            node.width = px(if side { slot_size } else { scroll_size });
-            node.height = px(if side { scroll_size } else { slot_size });
+            node.width = px(if side { slot_size / 2. } else { scroll_size });
+            node.height = px(if side { scroll_size } else { slot_size / 2. });
             node.min_height = node.height;
             node.flex_shrink = 0.;
         }

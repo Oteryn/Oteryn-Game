@@ -64,7 +64,7 @@ impl PlayLink {
         panel.capture_stages = None;
         panel.discard_capture = panel.capture_pending;
     }
-    pub(crate) fn refresh_capture_bestiary(&self) {
+    pub(crate) fn refresh_capture_bestiary(&self) -> bool {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.properties.charm_progression;
         if panel.selected
@@ -73,7 +73,9 @@ impl PlayLink {
             && let Ok(query) = super::protocol::command(panel, Intent::Query)
         {
             panel.capture_pending = self.commands.send(PlayCommand::Feature(query)).is_ok();
+            return panel.capture_pending;
         }
+        false
     }
     pub fn bestiary_close(&self) {
         lock(&self.mailbox).properties.charm_progression.open = false;

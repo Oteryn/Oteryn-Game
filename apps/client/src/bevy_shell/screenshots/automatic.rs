@@ -115,8 +115,9 @@ pub(in crate::bevy_shell) fn observe(
                 }
                 if !manual
                     && (!same_crop
-                        || matches!(action, CaptureAction::Save)
-                            && owner.settings.preferences.screenshots.automatic_disabled)
+                        || (matches!(action, CaptureAction::Save)
+                            && owner.settings.preferences.screenshots.automatic_disabled
+                            && !owner.settings.manual_capture_requested()))
                 {
                     return;
                 }

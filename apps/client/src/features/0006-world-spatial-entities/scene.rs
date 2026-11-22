@@ -4,6 +4,11 @@ use oteryn_session::{EntityDetail, VisibleAppearance};
 
 impl Scene {
     #[cfg(bevy_shell)]
+    pub(crate) fn container_flag(&self, appearance: u16) -> Option<bool> {
+        self.cache.container_flag(appearance)
+    }
+
+    #[cfg(bevy_shell)]
     pub(crate) fn smart_item_action(
         &self,
         id: u16,
