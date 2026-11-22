@@ -25,7 +25,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut ordered_turns = Vec::new();
         let mut source_players = Vec::new();
 
-        let creatures = runtime.visible_entities().creatures;
+        let mut creatures = runtime.visible_entities().creatures;
+        if let Some(hooks) = runtime.encounter_hooks() {
+            creatures.retain(|visible| !hooks.contains(visible.actor));
+        }
         let candidates = map
             .creature_field_candidates(runtime, &creatures)
             .await

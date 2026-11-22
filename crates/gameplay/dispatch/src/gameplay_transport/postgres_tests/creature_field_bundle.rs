@@ -61,6 +61,130 @@ fn creature_field_fresh_entry_on_live_ground_field_stays_candidate_postgres() ->
     run_case(admin, FieldCase::FreshField)
 }
 
+#[test]
+fn creature_field_pass_skips_protected_stop_and_ticks_later_creature_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |_| {
+        let harness = Harness::create_with_admission_seed(
+            admin,
+            "creature_field_protected_stop",
+            false,
+            false,
+        )
+        .await?;
+        let result = exercise_protected_stop(&harness).await;
+        let cleanup = harness.cleanup().await;
+        result?;
+        cleanup
+    })
+}
+
+async fn exercise_protected_stop(harness: &Harness) -> TestResult {
+    use oteryn_gameplay_encounters::bosses::phase_controller::{cults, gates};
+
+    prepare_current_session(harness).await?;
+    let seal = harness.recovery.seal_current().map_err(debug)?;
+    let authority = harness
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let original = Dependencies::new()?;
+    let (controller, pin) = crate::content::native_gameplay::test_support::activated_loop_monster(
+        original.admitted.world_id,
+        false,
+    );
+    let active = controller.active().ok_or("active generation")?;
+    let native = active.native_gameplay().ok_or("native gameplay")?;
+    let stop_key = format!("{}_stop", cults::plan().roles[5].creature);
+    let (deps, [stop, later]) = dependencies(original, active, &pin, Some(stop_key.clone()))?;
+    let mut owner = deps.owner(harness, &authority);
+    owner.active_generation = Some(active);
+    owner.movement_cells = deps.room.movement_cells().into();
+    let permit = owner.spell_lane_permit().await.ok_or("field lane")?;
+    let names = owner
+        .read_native_health_names(&permit)
+        .await
+        .map_err(debug)?;
+    let mut runtime = deps.runtime.lock().await;
+    assert!(runtime.matches_live_creature_identity(stop, stop_key.as_bytes()));
+    // Use the same carrier hook that CultsEncounter::bind installs on its stop forms.
+    gates::protect(&mut runtime, &[stop]).map_err(debug)?;
+    let hooks = runtime.encounter_hooks().ok_or("Cults damage hook")?;
+    assert!(hooks.contains(stop));
+    assert!(!hooks.contains(later));
+    assert!(!runtime.has_creature_periodic_state(stop));
+    let stop_before = runtime.companion_snapshot(stop).map_err(debug)?;
+    let residual = CreatureFieldEntry {
+        definition: ConditionDefinition::new(
+            "test.bundle.creature.residual",
+            1,
+            ConditionValues::Agony {
+                // Agony has no element and can tick on the second bundle tile's PZ.
+                total_min: 10,
+                total_max: 10,
+                per_tick: 5,
+                interval_ms: 1_000,
+                delayed: true,
+            },
+        )
+        .ok_or("residual condition")?,
+        source: None,
+        lineage: None,
+        occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(id(1)),
+    };
+    runtime
+        .commit_creature_field_entry(later, 0, Some(&residual))
+        .map_err(debug)?;
+    let later_before = runtime.companion_snapshot(later).map_err(debug)?;
+    let names = owner
+        .seal_native_health_names(&runtime, names)
+        .map_err(debug)?;
+    let revisions =
+        crate::ability::RevisionSet::new("rules-1", "content-1", "world-1", "formula-1", "sim-1")
+            .map_err(debug)?;
+    let mut states = owner.states.spell_states.lock().await;
+    let mut attack = owner.states.attack.lock().await;
+    let before = runtime.issue_owner_work().map_err(debug)?;
+    let (_, actors, completed) = owner
+        .drive_monster_profiles(
+            &mut runtime,
+            &mut states,
+            &mut attack,
+            &deps.room,
+            native,
+            &permit,
+            &revisions,
+            &[],
+            1_000_000,
+            &names,
+        )
+        .await
+        .map_err(|()| "protected stop aborted the monster profile pass")?;
+    assert!(
+        completed,
+        "the profile pass finished fields and its remaining stages"
+    );
+    assert!(actors.is_empty(), "the regression uses passive creatures");
+    assert_eq!(
+        runtime.companion_snapshot(stop).map_err(debug)?,
+        stop_before
+    );
+    assert!(!runtime.has_creature_periodic_state(stop));
+    let after = runtime.issue_owner_work().map_err(debug)?;
+    // Between the markers: one empty AI batch and one periodic turn for the rat.
+    assert_eq!(after.ordinal().get(), before.ordinal().get() + 3);
+    let later_after = runtime.companion_snapshot(later).map_err(debug)?;
+    assert_eq!(later_after.health, later_before.health - 5);
+    let [condition] = later_after.state.conditions.instances() else {
+        return Err("one residual condition must remain after the tick".into());
+    };
+    assert_eq!(condition.remaining_total(), 5);
+    Ok(())
+}
+
 fn run_case(admin: String, case: FieldCase) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -108,7 +232,7 @@ async fn exercise(harness: &Harness, case: FieldCase) -> TestResult {
     );
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
-    let (deps, actors) = dependencies(original, active, &pin)?;
+    let (deps, actors) = dependencies(original, active, &pin, None)?;
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
     owner.movement_cells = deps.room.movement_cells().into();
@@ -595,6 +719,7 @@ fn dependencies(
     original: Dependencies,
     active: &crate::content::ActiveGeneration,
     pin: &crate::content::NativeEntryContentPin,
+    first_creature: Option<String>,
 ) -> TestResult<(Dependencies, [ExactActorRef; 2])> {
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let coin_key = "oteryn:item.tibia.i3031";
@@ -702,20 +827,22 @@ fn dependencies(
         .initialize_first_entry_position(deps.actor)
         .map_err(debug)?;
     use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+    let rat = u32::from(first_creature.is_some());
     let source = Table {
-        creatures: vec![Creature {
-            key: "oteryn:creature.rat".into(),
-            period: Period::All,
-        }],
+        creatures: first_creature
+            .into_iter()
+            .chain(std::iter::once("oteryn:creature.rat".into()))
+            .map(|key| Creature { key, period: Period::All })
+            .collect(),
         sources: vec![Source {
             key: "oteryn:spawn/bundle-field-zones".into(),
             floor: -7,
             x: 2,
             y: 0,
-            points: [2, 3]
+            points: [(2, 0), (3, rat)]
                 .into_iter()
-                .map(|x| Point {
-                    creature: 0,
+                .map(|(x, creature)| Point {
+                    creature,
                     x,
                     y: 0,
                     direction: Direction::West,
