@@ -33,7 +33,8 @@ from referencing import Registry, Resource
 
 ROOT = Path(__file__).resolve().parent
 ITEM_AUTHORING = ROOT.parent / "item-authoring"
-sys.path.insert(0, str(ITEM_AUTHORING))
+WORLD_AUTHORING = ROOT.parent / "world-authoring"
+sys.path[:0] = [str(ITEM_AUTHORING), str(WORLD_AUTHORING)]
 
 import engine_items
 
