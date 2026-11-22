@@ -267,7 +267,7 @@ def build_ancient_aucar(root=ROOT):
 
 def build_draconia(root=ROOT):
     quest = 'oteryn:quest.draconia_quest'
-    path, recipe = chosen(root, quest, ('s1', 'use', 1, ['Key 3012', 'Hellgate', 'Draconia']), 25)
+    path, recipe = chosen(root, quest, ('s1', 'use', 1, ['Key 3012', 'Hellgate', 'Draconia']))
     sys.path.insert(0, str(ROOT / 'tools/content-schema/world-authoring'))
     import world_region_codec as codec
     capture_path = 'tools/content-schema/world-authoring/samples/m01c-key-doors.json'
@@ -297,15 +297,45 @@ def build_draconia(root=ROOT):
                 'sources':[capture_path+':key3012', region+f':{x},{y},{z}']}}})
     raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
     return {'schema':1, 'quests':[{'quest':quest, 'recipe_sha256':hashlib.sha256(raw).hexdigest(),
-        'admission':{'minimum_level':25},
         'tracks':[{'key':track, 'initial':0, 'minimum':0, 'maximum':len(recipe['stages'])}],
         'stages':stages, 'sources':[path+':s1', capture_path]}]}
+
+
+def build_dragon_corpse(root=ROOT):
+    quest = 'oteryn:quest.dragon_corpse_quest'
+    path, recipe = chosen(root, quest, ('s1', 'explore', 1, ['Rookgaard bear cave']))
+    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
+    prefix = 'oteryn:quest-progress/chosen-source/dragon_corpse_quest/'
+    wiki = 'https://tibia.fandom.com/index.php?curid=2483&oldid=748511'
+    def storage(tail, before, after, preserve=False):
+        return {'track':prefix+tail, 'minimum':before, 'maximum':before,
+                'set':after, 'preserve':preserve}
+    stages = []
+    for key, x, y, z, ordinal, result, tools, guards in (
+        ('shovel', 32166, 32216, 8, 0, 594, (3457, 5710, 9594, 9596, 9598),
+         [storage('s2/shoveled', 0, 1)]),
+        *((f'scythe-{x}', x, 32214, 9, 1, 3651, (3453, 9596),
+           [storage('s2/shoveled', 1, 1, True), storage('s2', 0, 1)])
+          for x in range(32170, 32173)),
+    ):
+        stages.append({'key':f's2-{key}', 'completes':False,
+            'trigger':{'kind':'terrain_use', 'usage':{
+                'key':f'oteryn:quest-terrain-use/dragon-corpse-{key}',
+                'tools':[{'key':f'oteryn:item.tibia.i{i}', 'revision':'definition-r1'} for i in tools],
+                'placement_key':(x << 32) | (y << 16) | (z << 8) | ordinal,
+                'result':result, 'storage':guards,
+                'sources':[wiki, f'content/world/placements/region-z{z:02d}-x125-y125.b3:{x},{y},{z}']}}})
+    return {'schema':1, 'quests':[{'quest':quest, 'recipe_sha256':hashlib.sha256(raw).hexdigest(),
+        'tracks':[{'key':prefix+t, 'initial':0, 'minimum':0, 'maximum':1}
+                  for t in ('s2', 's2/shoveled')],
+        'stages':stages, 'sources':[path+':s2', wiki]}]}
 
 
 def content(check=False):
     documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare()), (Path('content/quests/authored-bindings/qmech-m01c-black-knight.json'), build_black_knight()), (Path('content/quests/authored-bindings/qmech-m01c-grimvale.json'), build_grimvale()), (Path('content/quests/authored-bindings/qmech-m01c-decaying-defender.json'), build_decaying_defender()), (Path('content/quests/authored-bindings/qmech-m01c-illuminator.json'), build_illuminator())]
     documents.extend((Path(f'content/quests/authored-bindings/qmech-m01c-{slug}.json'), build_task_board(slug)) for slug in ('falconer', 'feral-trappers'))
     documents.append((Path('content/quests/authored-bindings/qmech-m01c-draconia.json'), build_draconia()))
+    documents.append((Path('content/quests/authored-bindings/dragon-corpse-tools.json'), build_dragon_corpse()))
     documents.append((Path('content/quests/authored-bindings/qmech-m01c-ancient-aucar.json'), build_ancient_aucar()))
     for output, value in documents:
         path = ROOT / output

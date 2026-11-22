@@ -4,7 +4,8 @@ import re
 from key_door_item_profiles import IDS
 
 
-M01C_IDS = {5097, 6248, 7033, 7034, 7035}
+
+M01C_IDS = {5097, 5106, 6248, 7033, 7034, 7035}
 
 
 def refresh(source, packet):

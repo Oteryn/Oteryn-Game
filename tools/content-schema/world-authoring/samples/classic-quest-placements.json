@@ -1,0 +1,452 @@
+{
+  "schema": 1,
+  "source": "zimbadev/CrystalServer",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "placements": [
+    {
+      "position": [
+        32576,
+        32216,
+        15
+      ],
+      "appearance": 4240,
+      "attributes": {
+        "unique": 5016
+      },
+      "source": "data-global/startup/tables/chest.lua:492"
+    },
+    {
+      "position": [
+        32589,
+        32100,
+        14
+      ],
+      "appearance": 387,
+      "attributes": {
+        "unique": 5017
+      },
+      "source": "data-global/startup/tables/chest.lua:500"
+    },
+    {
+      "position": [
+        32800,
+        31582,
+        2
+      ],
+      "appearance": 2435,
+      "attributes": {
+        "unique": 5023
+      },
+      "source": "data-global/startup/tables/chest.lua:548"
+    },
+    {
+      "position": [
+        32803,
+        31582,
+        2
+      ],
+      "appearance": 2472,
+      "attributes": {
+        "unique": 6023
+      },
+      "source": "data-global/startup/tables/chest.lua:748"
+    },
+    {
+      "position": [
+        32804,
+        31582,
+        2
+      ],
+      "appearance": 2472,
+      "attributes": {
+        "unique": 6024
+      },
+      "source": "data-global/startup/tables/chest.lua:757"
+    },
+    {
+      "position": [
+        33072,
+        32169,
+        2
+      ],
+      "appearance": 2469,
+      "attributes": {
+        "unique": 6073
+      },
+      "source": "data-global/startup/tables/chest.lua:1131"
+    },
+    {
+      "position": [
+        33078,
+        32169,
+        2
+      ],
+      "appearance": 2469,
+      "attributes": {
+        "unique": 6074
+      },
+      "source": "data-global/startup/tables/chest.lua:1140"
+    },
+    {
+      "position": [
+        32802,
+        31576,
+        7
+      ],
+      "appearance": 2474,
+      "attributes": {
+        "unique": 6093
+      },
+      "source": "data-global/startup/tables/chest.lua:1294"
+    },
+    {
+      "position": [
+        32179,
+        32224,
+        9
+      ],
+      "appearance": 4025,
+      "attributes": {
+        "unique": 6161
+      },
+      "source": "data-global/startup/tables/chest.lua:1841"
+    },
+    {
+      "position": [
+        32592,
+        32102,
+        14
+      ],
+      "appearance": 5106,
+      "attributes": {
+        "action": 3667
+      },
+      "source": "data-global/startup/tables/door_key.lua:101"
+    },
+    {
+      "position": [
+        32462,
+        32153,
+        14
+      ],
+      "appearance": 1631,
+      "attributes": {
+        "action": 3610
+      },
+      "source": "data-global/startup/tables/door_key.lua:78"
+    },
+    {
+      "position": [
+        32462,
+        32151,
+        15
+      ],
+      "appearance": 1628,
+      "attributes": {
+        "action": 3610
+      },
+      "source": "data-global/startup/tables/door_key.lua:78"
+    },
+    {
+      "position": [
+        32814,
+        31597,
+        7
+      ],
+      "appearance": 5097,
+      "attributes": {
+        "action": 3001
+      },
+      "source": "data-global/startup/tables/door_key.lua:9"
+    },
+    {
+      "position": [
+        32796,
+        31597,
+        7
+      ],
+      "appearance": 5097,
+      "attributes": {
+        "action": 3002
+      },
+      "source": "data-global/startup/tables/door_key.lua:17"
+    },
+    {
+      "position": [
+        32811,
+        31597,
+        7
+      ],
+      "appearance": 5097,
+      "attributes": {
+        "action": 3003
+      },
+      "source": "data-global/startup/tables/door_key.lua:25"
+    },
+    {
+      "position": [
+        32809,
+        31593,
+        6
+      ],
+      "appearance": 5097,
+      "attributes": {
+        "action": 3004
+      },
+      "source": "data-global/startup/tables/door_key.lua:33"
+    },
+    {
+      "position": [
+        32794,
+        31582,
+        6
+      ],
+      "appearance": 5097,
+      "attributes": {
+        "action": 3005
+      },
+      "source": "data-global/startup/tables/door_key.lua:41"
+    },
+    {
+      "position": [
+        32814,
+        31595,
+        6
+      ],
+      "appearance": 5097,
+      "attributes": {
+        "action": 3006
+      },
+      "source": "data-global/startup/tables/door_key.lua:49"
+    },
+    {
+      "position": [
+        32797,
+        31592,
+        4
+      ],
+      "appearance": 5097,
+      "attributes": {
+        "action": 3007
+      },
+      "source": "data-global/startup/tables/door_key.lua:57"
+    },
+    {
+      "position": [
+        32804,
+        31585,
+        1
+      ],
+      "appearance": 5097,
+      "attributes": {
+        "action": 3008
+      },
+      "source": "data-global/startup/tables/door_key.lua:65"
+    },
+    {
+      "position": [
+        32794,
+        31572,
+        7
+      ],
+      "appearance": 2969,
+      "attributes": {
+        "action": 3001
+      },
+      "insert": true,
+      "source": "data-global/startup/tables/door_key.lua:14"
+    },
+    {
+      "position": [
+        32790,
+        31593,
+        7
+      ],
+      "appearance": 2969,
+      "attributes": {
+        "action": 3003
+      },
+      "source": "data-global/startup/tables/door_key.lua:30"
+    },
+    {
+      "position": [
+        32807,
+        31576,
+        6
+      ],
+      "appearance": 2969,
+      "attributes": {
+        "action": 3004
+      },
+      "source": "data-global/startup/tables/door_key.lua:38"
+    },
+    {
+      "position": [
+        32792,
+        31590,
+        6
+      ],
+      "appearance": 2969,
+      "attributes": {
+        "action": 3005
+      },
+      "source": "data-global/startup/tables/door_key.lua:46"
+    },
+    {
+      "position": [
+        32801,
+        31579,
+        6
+      ],
+      "appearance": 2969,
+      "attributes": {
+        "action": 3006
+      },
+      "source": "data-global/startup/tables/door_key.lua:54"
+    },
+    {
+      "position": [
+        32813,
+        31576,
+        5
+      ],
+      "appearance": 2969,
+      "attributes": {
+        "action": 3007
+      },
+      "source": "data-global/startup/tables/door_key.lua:62"
+    },
+    {
+      "position": [
+        32468,
+        32119,
+        14
+      ],
+      "appearance": 431,
+      "attributes": {
+        "unique": 25030
+      },
+      "source": "data-global/startup/tables/tile.lua:2233"
+    },
+    {
+      "position": [
+        32479,
+        32174,
+        15
+      ],
+      "appearance": 5111,
+      "attributes": {
+        "action": 1030
+      },
+      "source": "data-global/startup/tables/door_level.lua:27"
+    },
+    {
+      "position": [
+        32804,
+        31583,
+        2
+      ],
+      "appearance": 5102,
+      "attributes": {
+        "action": 1025
+      },
+      "source": "data-global/startup/tables/door_level.lua:16"
+    },
+    {
+      "position": [
+        32792,
+        31595,
+        7
+      ],
+      "appearance": 2772,
+      "attributes": {
+        "unique": 30006
+      },
+      "source": "data-global/startup/tables/lever.lua:781"
+    },
+    {
+      "position": [
+        32792,
+        31579,
+        7
+      ],
+      "appearance": 2772,
+      "attributes": {
+        "unique": 30035
+      },
+      "source": "data-global/startup/tables/lever.lua:1027"
+    },
+    {
+      "position": [
+        32805,
+        31587,
+        1
+      ],
+      "appearance": 1949,
+      "attributes": {
+        "unique": 35011
+      },
+      "source": "data-global/startup/tables/teleport.lua:550"
+    },
+    {
+      "position": [
+        32815,
+        31599,
+        9
+      ],
+      "appearance": 1949,
+      "attributes": {
+        "unique": 35012
+      },
+      "source": "data-global/startup/tables/teleport.lua:555"
+    },
+    {
+      "position": [
+        32669,
+        31653,
+        10
+      ],
+      "appearance": 1949,
+      "attributes": {
+        "teleport": [
+          32679,
+          31673,
+          10
+        ]
+      },
+      "source": "data-global/startup/tables/teleport.lua:634"
+    },
+    {
+      "position": [
+        32794,
+        31576,
+        5
+      ],
+      "appearance": 1949,
+      "attributes": {
+        "teleport": [
+          32812,
+          31577,
+          5
+        ]
+      },
+      "source": "data-global/startup/tables/teleport.lua:640"
+    },
+    {
+      "position": [
+        32812,
+        31576,
+        5
+      ],
+      "appearance": 1949,
+      "attributes": {
+        "teleport": [
+          32794,
+          31577,
+          5
+        ]
+      },
+      "source": "data-global/startup/tables/teleport.lua:646"
+    }
+  ]
+}

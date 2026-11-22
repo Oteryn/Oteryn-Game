@@ -968,7 +968,8 @@ impl BundleFacts {
             return None;
         }
         let facts = EntryFacts {
-            bound: placement.bound,
+            bound: placement.bound
+                && (entry.facts.appearance_id != 2969 || self.loose_source_key(key).is_none()),
             count: u32::from(placement.count),
             sub_type: u32::from(placement.sub_type),
             ..entry.facts
@@ -1002,6 +1003,27 @@ impl BundleFacts {
             .binary_search_by_key(&key, |(key, _)| *key)
             .ok()?;
         self.placements[found].1.attrs.action
+    }
+
+    /// Exact bound loose keys use the existing immutable map-source mint.
+    pub fn loose_source_key(&self, key: u64) -> Option<u16> {
+        let (pos, _) = view::placement_of(key)?;
+        let found = self
+            .placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .ok()?;
+        let placement = &self.placements[found].1;
+        let entry = self.palette.get(placement.palette as usize)?;
+        if entry.facts.appearance_id != 2969
+            || !entry.facts.pickupable
+            || placement.dropped
+            || self.house_tile(pos)
+            || self.map_source_children.contains_key(&key)
+            || self.unsupported_source_containers.contains(&key)
+        {
+            return None;
+        }
+        source_bindings::loose_draconia_key(pos, &placement.attrs)
     }
 
     /// MAP-PICKUP-1: the exact boot-time wrapper decision, before view normalization.

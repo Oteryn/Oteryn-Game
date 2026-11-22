@@ -2752,6 +2752,75 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/draconia-exit-35011",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32805,
+          "y": 31587,
+          "floor": -1
+        },
+        "unique": 35011,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32701,
+        "y": 31639,
+        "floor": -6
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "failure_teleport": {
+        "x": 32803,
+        "y": 31587,
+        "floor": -1
+      },
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32802,
+            "y": 31584,
+            "floor": -1
+          },
+          "appearance": 2772
+        },
+        {
+          "position": {
+            "x": 32803,
+            "y": 31584,
+            "floor": -1
+          },
+          "appearance": 2773
+        },
+        {
+          "position": {
+            "x": 32804,
+            "y": 31584,
+            "floor": -1
+          },
+          "appearance": 2772
+        },
+        {
+          "position": {
+            "x": 32805,
+            "y": 31584,
+            "floor": -1
+          },
+          "appearance": 2773
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/movement-exit_teleport.lua:1-36"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/draconia-lever-30006",
       "quest": "oteryn:quest.draconia_quest",
       "trigger": "use",
@@ -2827,6 +2896,122 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/action-lever.lua:20-33",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1027-1030"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-tower-lever-32802",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32802,
+          "y": 31584,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/movement-exit_teleport.lua:1-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-tower-lever-32803",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32803,
+          "y": 31584,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/movement-exit_teleport.lua:1-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-tower-lever-32804",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32804,
+          "y": 31584,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/movement-exit_teleport.lua:1-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-tower-lever-32805",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32805,
+          "y": 31584,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/movement-exit_teleport.lua:1-6"
       ]
     },
     {
