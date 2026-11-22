@@ -1,12 +1,13 @@
 //! C20c: current-session read of the latest death's immutable protection consumption.
 use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
 use oteryn_protocol_oteryn::death_protection::{
-    CAPABILITY_DEATH_PROTECTION_V1, DeathProtection, DeathProtectionReply,
+    CAPABILITY_DEATH_PROTECTION_V1, CAPABILITY_DEATH_REPORT_V1, DeathProtection, DeathProtectionReply,
+    DeathReport, DeathReportReply, DeathType,
 };
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
     base.iter()
         .copied()
-        .filter(|entry| available || entry.id != CAPABILITY_DEATH_PROTECTION_V1)
+        .filter(|entry| available || !matches!(entry.id, CAPABILITY_DEATH_PROTECTION_V1 | CAPABILITY_DEATH_REPORT_V1))
         .collect()
 }
 macro_rules! authority_methods {
@@ -17,7 +18,7 @@ macro_rules! authority_methods {
         fn death_protection_query(
             &self,
             _admitted: $crate::gameplay_transport::AdmittedSession,
-            _command_id: u64,
+            _report: bool,
         ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
             async { None }
         }
@@ -25,7 +26,7 @@ macro_rules! authority_methods {
 }
 pub(super) use authority_methods;
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn death_protection_page(&self, admitted: AdmittedSession) -> Option<Vec<u8>> {
+    pub(super) async fn death_protection_page(&self, admitted: AdmittedSession, report: bool) -> Option<Vec<u8>> {
         if !admitted
             .continuity
             .selected_capabilities
@@ -44,17 +45,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_latest_character_death(self.character, self.holder, fence)
             .await
             .ok()?;
-        DeathProtectionReply(death.map(|death| {
-            DeathProtection {
-                occurrence: *death.occurrence.as_bytes(),
-                consumed: death
-                    .blessings_before
-                    .into_iter()
-                    .filter(|key| !death.blessings_after.contains(key))
-                    .collect(),
-            }
-        }))
-        .encode()
+        let Some((death, pvp)) = death else {
+            return Some(vec![0]);
+        };
+        let protection = DeathProtection {
+            occurrence: *death.occurrence.as_bytes(),
+            consumed: death
+                .blessings_before
+                .into_iter()
+                .filter(|key| !death.blessings_after.contains(key))
+                .collect(),
+        };
+        if report {
+            DeathReportReply(Some(DeathReport {
+                protection,
+                death_type: match pvp {
+                    Some(true) => DeathType::Pvp,
+                    Some(false) => DeathType::Pve,
+                    None => DeathType::Unknown,
+                },
+                experience_lost: u64::try_from(death.experience_lost.get()).ok()?,
+            }))
+            .encode()
+        } else {
+            DeathProtectionReply(Some(protection)).encode()
+        }
     }
 }
 macro_rules! composed_methods {
@@ -65,9 +80,9 @@ macro_rules! composed_methods {
         async fn death_protection_query(
             &self,
             admitted: connection::AdmittedSession,
-            _command_id: u64,
+            report: bool,
         ) -> Option<Vec<u8>> {
-            self.death_protection_page(admitted).await
+            self.death_protection_page(admitted, report).await
         }
     };
 }

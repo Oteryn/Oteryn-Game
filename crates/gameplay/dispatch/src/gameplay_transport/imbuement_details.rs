@@ -5,7 +5,7 @@ use oteryn_protocol_oteryn::{imbuement, imbuement_details as wire, item_view::It
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
     base.iter()
         .copied()
-        .filter(|entry| available || entry.id != wire::CAPABILITY_IMBUEMENT_DETAILS_V1)
+        .filter(|entry| available || !matches!(entry.id, wire::CAPABILITY_IMBUEMENT_DETAILS_V1 | wire::CAPABILITY_IMBUEMENT_AFFORDABILITY_V1))
         .collect()
 }
 pub(super) fn project(
@@ -45,11 +45,13 @@ pub(super) async fn query<A: super::connection::FreshAdmissionAuthority>(
     item_view: Option<&super::item_view::SessionItemView>,
 ) -> super::imbuement::ImbuementReply {
     use super::imbuement::ImbuementReply as Outcome;
-    if command.command_type != wire::COMMAND_TYPE_IMBUEMENT_DETAILS
-        || !admitted
+    let affordability = command.command_type == wire::COMMAND_TYPE_IMBUEMENT_AFFORDABILITY;
+    if !admitted
             .continuity
             .selected_capabilities
             .contains(wire::CAPABILITY_IMBUEMENT_DETAILS_V1)
+        || (affordability && !admitted.continuity.selected_capabilities.contains(wire::CAPABILITY_IMBUEMENT_AFFORDABILITY_V1))
+        || (!affordability && command.command_type != wire::COMMAND_TYPE_IMBUEMENT_DETAILS)
     {
         return Outcome::Rejected;
     }
@@ -82,21 +84,61 @@ pub(super) async fn query<A: super::connection::FreshAdmissionAuthority>(
             let Some(reply) = project(item, &window) else {
                 return Outcome::Unavailable;
             };
-            wire::encode_reply(&reply).map_or(Outcome::Unavailable, Outcome::Payload)
+            let encoded = if affordability {
+                let Some(spendable_gold) = authority.imbuement_funds(*admitted).await else {
+                    return Outcome::Rejected;
+                };
+                wire::AffordabilityReply { spendable_gold, details: reply }.encode()
+            } else {
+                wire::encode_reply(&reply)
+            };
+            encoded.map_or(Outcome::Unavailable, Outcome::Payload)
         }
         other => other,
     }
 }
+impl super::ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn observe_imbuement_funds(
+        &self,
+        admitted: super::connection::AdmittedSession,
+    ) -> Option<u64> {
+        use crate::domain::currency::Coin;
+        let fence = admitted.item_fence?;
+        if fence.connection_generation.get() != admitted.continuity.connection_generation
+            || fence.game_session_id != admitted.game_session_id
+        {
+            return None;
+        }
+        let index = self.active_generation?.native_gameplay()?.item_index()?;
+        let [gold, platinum, crystal] = Coin::ALL.map(|coin| index.revision(coin.production_key()));
+        let revisions = [gold?.into(), platinum?.into(), crystal?.into()];
+        self.root.read_imbuement_funds(self.character, self.holder, fence, revisions).await.ok()?
+    }
+}
+
 macro_rules! authority_methods {
     () => {
         fn imbuement_details_available(&self) -> bool {
             false
+        }
+        fn imbuement_funds(
+            &self,
+            _admitted: $crate::gameplay_transport::AdmittedSession,
+        ) -> impl std::future::Future<Output = Option<u64>> {
+            async { None }
         }
     };
 }
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        async fn imbuement_funds(
+            &self,
+            admitted: $crate::gameplay_transport::AdmittedSession,
+        ) -> Option<u64> {
+            self.observe_imbuement_funds(admitted).await
+        }
+
         fn imbuement_details_available(&self) -> bool {
             self.active_generation
                 .and_then(|active| active.native_gameplay())

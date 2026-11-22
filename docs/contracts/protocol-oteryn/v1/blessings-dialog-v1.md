@@ -7,3 +7,20 @@ Reply: `134:u8, forecast_length:u8, forecast:bytes` (the existing selector-131 f
 Current holdings, normal-death forecast and newest twenty NPC blessing acquisitions/death consumptions are read under one Character fence and transaction. History is ordered by committed Character revision descending, includes Twist of Fate and multi-blessing purchases, and omits deaths consuming nothing. Dates are receipt timestamps in UTC; an empty history means no recorded acquisitions/consumptions. It does not reconstruct events before receipts existed.
 
 Experience protection uses the accepted death rule: 8% per regular blessing plus 30% for a current promotion benefit, before experience capping. The accepted writer preserves all magic/skill progress (100% protection, D58/NIGHT-W1 decision 19); the UI must not claim that skills are currently lost. Item/container probabilities, skull, amulet and Adventurer exceptions come from the same forecast as death settlement. Creature-specific Bless reductions are excluded from this baseline. Twist is a PvP safeguard, not a regular blessing.
+
+## Holdings and Store copies
+
+Command 6330 requires the existing 503 and 199 selections and an empty request.
+It uses the same self-only session fence as the other Character reads. The
+6330 reply is `keys` in the format above, followed by `held:u8, store_copies:u8`
+for each key in the same order, at most 1049 bytes. Keys come from the admitted
+blessing catalogue. Held is 0 or 1 and comes from the current Character
+blessings. Store copies come from the Character's persisted Store fulfillment
+projection, with zero for absent balances. Both sources are observed together.
+Store copies are separate from active protection. This command neither buys nor
+consumes either kind of holding. The 388 selector-134 reply is unchanged.
+
+The Store fulfillment projection is provisioned by the database owner.
+The gameplay runtime has read access. The inspection format follows the
+separate natural and Store counts in Crystal's blessing window and the
+[Tibia Fandom archive](https://tibia.fandom.com/wiki/Blessings#Blessing_Charges).

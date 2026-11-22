@@ -63,6 +63,54 @@ fn read_keys(tail: &mut &[u8]) -> Option<Vec<String>> {
     }
     Some(values)
 }
+pub const COMMAND_TYPE_BLESSINGS_HOLDINGS: u32 = 6330;
+pub const MAX_HOLDINGS_REPLY_BYTES: usize = 1 + 8 * (1 + 128 + 2);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Holding {
+    pub key: String,
+    pub held: bool,
+    pub store_copies: u8,
+}
+
+pub fn encode_holdings(holdings: &[Holding]) -> Option<Vec<u8>> {
+    let mut out = Vec::new();
+    let names: Vec<_> = holdings.iter().map(|row| row.key.clone()).collect();
+    keys(&mut out, &names)?;
+    for row in holdings {
+        out.extend_from_slice(&[u8::from(row.held), row.store_copies]);
+    }
+    Some(out)
+}
+
+pub fn decode_holdings(bytes: &[u8]) -> Option<Vec<Holding>> {
+    if bytes.len() > MAX_HOLDINGS_REPLY_BYTES {
+        return None;
+    }
+    let mut tail = bytes;
+    let names = read_keys(&mut tail)?;
+    let (rows, rest) = tail.as_chunks::<2>();
+    if !rest.is_empty() || rows.len() != names.len() {
+        return None;
+    }
+    let holdings = names
+        .into_iter()
+        .zip(rows)
+        .map(|(key, &[held, store_copies])| {
+            Some(Holding {
+                key,
+                held: match held {
+                    0 => false,
+                    1 => true,
+                    _ => return None,
+                },
+                store_copies,
+            })
+        })
+        .collect::<Option<Vec<_>>>()?;
+    (encode_holdings(&holdings)?.as_slice() == bytes).then_some(holdings)
+}
+
 impl Snapshot {
     pub fn encode(&self) -> Option<Vec<u8>> {
         if self.history.len() > MAX_HISTORY

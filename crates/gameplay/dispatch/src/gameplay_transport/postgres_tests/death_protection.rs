@@ -7,9 +7,7 @@ use crate::gameplay_transport::death_ml_loss_postgres::death as death_request;
 
 #[test]
 fn death_protection_postgres_projects_exact_committed_consumption_and_replays() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
-        return Ok(());
-    }
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(|| death_projection_scenario().map_err(|error| error.to_string()))?
@@ -91,7 +89,7 @@ fn death_projection_scenario() -> TestResult {
         use super::cyclopedia_fixtures::support::exchange;
         use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
         use crate::gameplay_transport::connection::FirstEntryOutcome;
-        use oteryn_protocol_oteryn::death_protection::DeathProtectionReply;
+        use oteryn_protocol_oteryn::death_protection::{DeathProtectionReply, DeathReportReply, DeathType};
         let mut after_death = current;
         after_death.expected_character_revision = death.committed_character_revision;
         let consumed_respawn = owner
@@ -112,10 +110,7 @@ fn death_projection_scenario() -> TestResult {
         admitted.item_fence = Some(current.item_fence());
         admitted.continuity.connection_generation = current.connection_generation.get();
         admitted.first_entry = FirstEntryOutcome::Positioned;
-        let offers = [OfferedCapability {
-            id: 382,
-            requires: &[],
-        }];
+        let offers = [OfferedCapability { id: 382, requires: &[] }, OfferedCapability { id: 584, requires: &[382] }];
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(&offers, &[382]).ok_or("death capability")?;
         let (status, bytes) = exchange(&owner, &mut admitted, 1, 664, &[]).await?;
@@ -133,9 +128,19 @@ fn death_projection_scenario() -> TestResult {
                 bytes
             )
         );
+        assert_eq!(exchange(&owner, &mut admitted, 2, 6331, &[]).await?.0,
+            oteryn_protocol_oteryn::CommandStatus::Rejected);
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(&offers, &[382, 584]).ok_or("report capability")?;
+        let (status, bytes) = exchange(&owner, &mut admitted, 3, 6331, &[]).await?;
+        assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+        let report = DeathReportReply::decode(&bytes).and_then(|reply| reply.0).ok_or("death report")?;
+        assert_eq!(report.protection, projection);
+        assert_eq!(report.death_type, DeathType::Pvp);
+        assert_eq!(i64::try_from(report.experience_lost)?, death.experience_lost.get());
         let mut stale = admitted;
         stale.continuity.connection_generation += 1;
-        assert!(owner.death_protection_page(stale).await.is_none());
+        assert!(owner.death_protection_page(stale, true).await.is_none());
         eprintln!(
             "NX8_C20c_POSTGRES_EVIDENCE: real PvP death, retained receipt query, router replay, and stale connection refusal executed"
         );

@@ -30,3 +30,25 @@ The client accepts a reply only for its pending item and matches a selected offe
 by family and tier. Changing items or refreshing the window discards old details.
 The quote is advisory presentation; existing apply/clear owners independently
 recheck all requirements and perform the fenced durable mutation.
+
+## Affordability
+
+Capability 582 requires 447. Both commands below also require selected 68.
+Command 6328 uses the same item query as 731. The response prefixes the
+complete 731 reply with `spendable_gold:u64le` (at most 32776 bytes total).
+The server observes live direct-backpack coin stacks and, when the Type 2 fee
+activation and payer eligibility allow it, the payer's bank balance in the
+current World under the item session fence. A quote with a recipe is affordable
+when this amount is at least its gold price. The result concerns funds only.
+Premium, materials, shrine reach, coin change capacity and concurrent spending
+are checked independently on application. Command 731 remains byte-identical.
+
+## Protection purchase
+
+Command 6327 accepts the existing command-85 Apply request shape. A valid
+negotiated request returns `Rejected` with the UTF-8 payload
+`Sorry, not possible.`. Invalid or unnegotiated requests are rejected with
+empty payload. The server does not burn gold, consume materials or apply an
+imbuement. Crystal's current apply request has no protection flag and Oteryn's
+accepted R2 ruling makes all applications succeed. The command-85 format and
+semantics remain unchanged.

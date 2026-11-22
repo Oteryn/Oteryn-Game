@@ -68,6 +68,65 @@ impl DeathProtectionReply {
         Some(value)
     }
 }
+pub const CAPABILITY_DEATH_REPORT_V1: u32 = 584;
+pub const COMMAND_TYPE_DEATH_REPORT_QUERY: u32 = 6331;
+const PENALTY_BYTES: usize = 9;
+pub const MAX_DEATH_REPORT_REPLY_BYTES: usize = MAX_DEATH_PROTECTION_REPLY_BYTES + PENALTY_BYTES;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum DeathType {
+    Unknown = 0,
+    Pve = 1,
+    Pvp = 2,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeathReport {
+    pub protection: DeathProtection,
+    pub death_type: DeathType,
+    pub experience_lost: u64,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct DeathReportReply(pub Option<DeathReport>);
+
+impl DeathReportReply {
+    pub fn encode(self) -> Option<Vec<u8>> {
+        let Some(report) = self.0 else {
+            return Some(vec![0]);
+        };
+        if report.experience_lost > i64::MAX as u64 {
+            return None;
+        }
+        let mut bytes = DeathProtectionReply(Some(report.protection)).encode()?;
+        bytes.push(report.death_type as u8);
+        bytes.extend_from_slice(&report.experience_lost.to_le_bytes());
+        Some(bytes)
+    }
+
+    pub fn decode(bytes: &[u8]) -> Option<Self> {
+        if bytes == [0] {
+            return Some(Self(None));
+        }
+        let (protection, penalty) =
+            bytes.split_at_checked(bytes.len().checked_sub(PENALTY_BYTES)?)?;
+        let protection = DeathProtectionReply::decode(protection)?.0?;
+        let death_type = match penalty[0] {
+            0 => DeathType::Unknown,
+            1 => DeathType::Pve,
+            2 => DeathType::Pvp,
+            _ => return None,
+        };
+        let experience_lost = u64::from_le_bytes(penalty[1..].try_into().ok()?);
+        (experience_lost <= i64::MAX as u64).then_some(Self(Some(DeathReport {
+            protection,
+            death_type,
+            experience_lost,
+        })))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -6,7 +6,9 @@
     199
   ],
   "acceptance_requires": true,
-  "commands": [],
+  "commands": [
+    6330
+  ],
   "domains": [],
   "supersedes": [],
   "offers": {

@@ -6,7 +6,9 @@
   "requires": [
     199
   ],
-  "command_types": [],
+  "command_types": [
+    6330
+  ],
   "state_domains": [],
   "offered": false,
   "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only with CYCLOPEDIA_CHARACTER_V1. Selected clients query command 388 selector 134; unselected clients cannot query the new snapshot. See blessings-dialog-v1.md."

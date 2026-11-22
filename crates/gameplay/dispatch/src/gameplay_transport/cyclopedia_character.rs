@@ -90,6 +90,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map_err(|_| ())?;
                 wire::encode_badges(&badges).map_err(|_| ())
             }
+            wire::blessings_dialog::COMMAND_TYPE_BLESSINGS_HOLDINGS => {
+                if !payload.is_empty()
+                    || !admitted.continuity.selected_capabilities
+                        .contains(wire::blessings_dialog::CAPABILITY_BLESSINGS_DIALOG_V1)
+                {
+                    return Err(());
+                }
+                let holdings = self.root
+                    .read_blessings_holdings(self.character, self.holder, fence)
+                    .await
+                    .map_err(|_| ())?;
+                wire::blessings_dialog::encode_holdings(&holdings).ok_or(())
+            }
             wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB => {
                 if payload.first() == Some(&wire::blessings_dialog::SELECTOR) {
                     if payload != [wire::blessings_dialog::SELECTOR]

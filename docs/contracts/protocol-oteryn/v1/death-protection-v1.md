@@ -23,3 +23,14 @@ The result is at most 4146 bytes. Consumed means exactly `blessings_before` minu
 `blessings_after` from that death's immutable receipt. A death with an empty
 consumed set is distinct from no death. Twist of Fate is a normal named consumed
 key; the client never infers its consumption from current holdings.
+
+## Death report
+
+Capability 584 requires 382. Command 6331 uses the same empty request, current
+session fence, and latest receipt. The 664 response remains byte-identical.
+A report with no death is still `00`. For a committed death, append
+`death_type:u8, experience_lost:u64le` to the complete 664 reply. The maximum is
+4155 bytes. Type 1 means PvE and 2 means PvP, from the classification captured
+at settlement. Type 0 means the retained receipt predates classification.
+Experience lost is the nonnegative XP penalty actually committed after all
+reductions and capping. The client does not recompute it from current holdings.

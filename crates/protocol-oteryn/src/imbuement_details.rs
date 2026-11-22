@@ -32,6 +32,38 @@ pub struct Reply {
     pub item: ItemHandle,
     pub quotes: Vec<Quote>,
 }
+pub const CAPABILITY_IMBUEMENT_AFFORDABILITY_V1: u32 = 582;
+pub const COMMAND_TYPE_IMBUEMENT_PROTECTION: u32 = 6327;
+pub const COMMAND_TYPE_IMBUEMENT_AFFORDABILITY: u32 = 6328;
+pub const IMBUEMENT_PROTECTION_REFUSAL: &str = "Sorry, not possible.";
+pub const MAX_AFFORDABILITY_REPLY_BYTES: usize = MAX_REPLY_BYTES + 8;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AffordabilityReply {
+    pub spendable_gold: u64,
+    pub details: Reply,
+}
+
+impl AffordabilityReply {
+    pub fn can_afford(&self, quote: &Quote) -> bool {
+        quote.recipe_available && self.spendable_gold >= u64::from(quote.gold)
+    }
+
+    pub fn encode(&self) -> Result<Vec<u8>, Error> {
+        let mut out = self.spendable_gold.to_le_bytes().to_vec();
+        out.extend(encode_reply(&self.details)?);
+        Ok(out)
+    }
+
+    pub fn decode(bytes: &[u8]) -> Result<Self, Error> {
+        let (funds, details) = bytes.split_at_checked(8).ok_or(Error::Malformed)?;
+        Ok(Self {
+            spendable_gold: u64::from_le_bytes(funds.try_into().map_err(|_| Error::Malformed)?),
+            details: decode_reply(details)?,
+        })
+    }
+}
+
 pub fn encode_query(item: ItemHandle) -> Vec<u8> {
     let mut bytes = Vec::new();
     push_varint_field(&mut bytes, 1, item.get());

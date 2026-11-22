@@ -11,9 +11,7 @@ use oteryn_protocol_oteryn::{
 };
 #[test]
 fn blessings_dialog_real_dispatch() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
-        return Ok(());
-    }
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario().map_err(|e| e.to_string()))?
@@ -155,6 +153,26 @@ fn scenario() -> TestResult {
             receipts, receipts_before,
             "a forecast never commits a death"
         );
+        use oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::{
+            COMMAND_TYPE_BLESSINGS_HOLDINGS, decode_holdings,
+        };
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_blessings (character_id, blessing_key, provenance)
+                     VALUES (encode($1,'hex')::uuid, 'oteryn:blessing.spiritual_shielding', 'fixture')")
+            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        sqlx::query("INSERT INTO game_character_store_blessing_copies (character_id, blessing_key, copies)
+                     VALUES (encode($1,'hex')::uuid, 'oteryn:blessing.twist_of_fate', 2)")
+            .bind(id(41).as_slice()).execute(&h.pool).await?;
+        let (status, bytes) = exchange(&owner, &mut admitted, 7, COMMAND_TYPE_BLESSINGS_HOLDINGS, &[]).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        let holdings = decode_holdings(&bytes).ok_or("holdings codec")?;
+        assert_eq!(holdings.len(), 8);
+        let active = holdings.iter().find(|row| row.key == "oteryn:blessing.spiritual_shielding").ok_or("active holding")?;
+        assert_eq!((active.held, active.store_copies), (true, 0));
+        let store = holdings.iter().find(|row| row.key == "oteryn:blessing.twist_of_fate").ok_or("Store holding")?;
+        assert_eq!((store.held, store.store_copies), (false, 2));
         drop(owner);
         drop(authority);
         drop(seal);
