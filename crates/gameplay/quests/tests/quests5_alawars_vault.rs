@@ -73,3 +73,23 @@ fn alawars_vault_teleport_pair_preserves_source_selectors_and_destinations() -> 
     }
     Ok(())
 }
+
+#[test]
+fn alawar_shared_tracks_admit_first_lever_and_return_uses() -> Result<(), String> {
+    use oteryn_gameplay_quests::quest::loader::load_embedded_quest_state;
+    use std::collections::BTreeMap;
+
+    let loaded = load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    for key in [
+        "oteryn:quest-callback/alawars-vault-lever",
+        "oteryn:quest-callback/alawars-vault-exit",
+    ] {
+        let transition = catalogue.transition(key).ok_or("Alawar transition")?;
+        let changes = catalogue
+            .evaluate(transition, &BTreeMap::new(), 0)
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!((changes[0].before, changes[0].after), (0, 1), "{key}");
+    }
+    Ok(())
+}
