@@ -14,8 +14,8 @@ use oteryn_world_bundle_compiler::compile::{
 };
 use oteryn_world_bundle_compiler::npc;
 use oteryn_world_bundle_compiler::project::{
-    CreatureFacts, Families, NpcFacts, NpcPlacement, Reference, SpawnPoint, SpawnSource,
-    TravelRoute,
+    CreatureFacts, Families, NpcFacts, NpcPlacement, Reference, SpawnOwner, SpawnPoint,
+    SpawnSource, TravelRoute,
 };
 use oteryn_world_bundle_compiler::sector::{self, Attrs, Item, Tile};
 use oteryn_world_bundle_compiler::spawn::{self, Direction};
@@ -208,7 +208,6 @@ fn families() -> Families {
         CreatureFacts {
             period: "All".into(),
             boss: false,
-            encounter_bound: false,
         },
     );
     families.spawns = vec![SpawnSource {
@@ -220,6 +219,7 @@ fn families() -> Families {
             direction: Direction::South,
             respawn_ms: 60_000,
             boss_policy: None,
+            owner: SpawnOwner::World,
         }],
     }];
     // Authored out of key order on purpose: the bundle sorts by NPC, then position.

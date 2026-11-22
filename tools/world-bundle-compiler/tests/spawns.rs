@@ -11,7 +11,9 @@ use oteryn_world_bundle_compiler::bundle::{
 use oteryn_world_bundle_compiler::compile::{
     Input, KeyResolver, Resolution, SpawnReason, compile, equivalence, realize_spawns,
 };
-use oteryn_world_bundle_compiler::project::{CreatureFacts, Families, SpawnPoint, SpawnSource};
+use oteryn_world_bundle_compiler::project::{
+    CreatureFacts, Families, SpawnOwner, SpawnPoint, SpawnSource,
+};
 use oteryn_world_bundle_compiler::sector::{self, Attrs, Item, Tile};
 use oteryn_world_bundle_compiler::spawn::{self, Direction, Period};
 
@@ -114,11 +116,10 @@ fn regions() -> Result<Vec<Vec<u8>>, Box<dyn StdError>> {
     Ok(vec![region(7, &tiles)?])
 }
 
-fn creature(period: &str, boss: bool, encounter_bound: bool) -> CreatureFacts {
+fn creature(period: &str, boss: bool) -> CreatureFacts {
     CreatureFacts {
         period: period.into(),
         boss,
-        encounter_bound,
     }
 }
 
@@ -129,6 +130,7 @@ fn point(creature: &str, x: u16) -> SpawnPoint {
         direction: Direction::South,
         respawn_ms: 60_000,
         boss_policy: None,
+        owner: SpawnOwner::World,
     }
 }
 
@@ -136,10 +138,10 @@ fn families() -> Families {
     let mut families = Families::default();
     families.teleports.insert((5, 1, 7), (300, 40, 6));
     for (name, facts) in [
-        ("rat", creature("All", false, false)),
-        ("bat", creature("Night", false, false)),
-        ("dragonlord", creature("All", true, false)),
-        ("guard", creature("All", false, true)),
+        ("rat", creature("All", false)),
+        ("bat", creature("Night", false)),
+        ("dragonlord", creature("All", true)),
+        ("guard", creature("All", false)),
     ] {
         families
             .creatures
@@ -161,7 +163,10 @@ fn families() -> Families {
                     boss_policy: Some(spawn::BossPolicy::Respawn { min_s: 1, max_s: 2 }),
                     ..point("dragonlord", 8)
                 },
-                point("guard", 9),
+                SpawnPoint {
+                    owner: SpawnOwner::Encounter,
+                    ..point("guard", 9)
+                },
                 point("ghost", 10),
                 point("bat", 11),
                 point("rat", 12),
@@ -196,7 +201,7 @@ fn input<'a>(regions: &'a [Vec<u8>], palette: &'a [String], families: &'a Famili
 }
 
 #[test]
-fn points_are_admitted_dropped_or_routed_by_their_cell_and_creature() -> TestResult {
+fn points_are_admitted_dropped_or_routed_by_their_owner_cell_and_creature() -> TestResult {
     let (regions, palette, families) = (regions()?, palette(), families());
     let (table, report) = realize_spawns(&input(&regions, &palette, &families), &Resolver)?;
     let dropped: Vec<_> = report
@@ -529,7 +534,7 @@ fn boss_spawn1_policy_loader_rejects_invalid_and_ambiguous_policies() -> TestRes
         families.add_spawns(&serde_json::to_vec(&value)?)?;
         families
             .creatures
-            .insert("oteryn:creature.rat".into(), creature("All", false, false));
+            .insert("oteryn:creature.rat".into(), creature("All", false));
         let (regions, palette) = (regions()?, palette());
         assert!(
             realize_spawns(&input(&regions, &palette, &families), &Resolver).is_err(),
@@ -537,7 +542,7 @@ fn boss_spawn1_policy_loader_rejects_invalid_and_ambiguous_policies() -> TestRes
         );
         families
             .creatures
-            .insert("oteryn:creature.rat".into(), creature("All", true, false));
+            .insert("oteryn:creature.rat".into(), creature("All", true));
         let (table, report) = realize_spawns(&input(&regions, &palette, &families), &Resolver)?;
         assert_eq!(report.realized_points, 1);
         let bytes = spawn::encode(&table);
@@ -545,13 +550,11 @@ fn boss_spawn1_policy_loader_rejects_invalid_and_ambiguous_policies() -> TestRes
         let mut malformed = table.clone();
         malformed.sources[0].points[0].respawn_ms = 1000;
         assert!(spawn::validate(&malformed, &world()).is_err());
-        families
-            .creatures
-            .insert("oteryn:creature.rat".into(), creature("All", true, true));
-        assert!(
-            realize_spawns(&input(&regions, &palette, &families), &Resolver).is_err(),
-            "an explicit policy cannot admit an encounter-bound boss"
-        );
+        families.spawns[0].points[0].owner = SpawnOwner::Encounter;
+        let (table, report) = realize_spawns(&input(&regions, &palette, &families), &Resolver)?;
+        assert_eq!(table.point_count(), 0);
+        assert_eq!(report.dropped.len(), 1);
+        assert_eq!(report.dropped[0].reason, SpawnReason::EncounterBound);
     }
     Ok(())
 }

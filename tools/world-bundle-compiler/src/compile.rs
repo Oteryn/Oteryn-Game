@@ -12,7 +12,7 @@ use crate::bundle::{
     self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
 };
 use crate::npc;
-use crate::project::{CreatureFacts, Families, LegacyPosition};
+use crate::project::{CreatureFacts, Families, LegacyPosition, SpawnOwner};
 use crate::sector::{Item, Tile};
 use crate::spawn;
 
@@ -237,7 +237,7 @@ pub enum SpawnReason {
     UnboundCreature,
     /// A boss or reward boss: BOSS-RAID-0's, never realized by a spawn.
     Boss,
-    /// Bound to an Encounter (E3): never realized by a spawn.
+    /// This placement is owned by an encounter and stays out of the world spawn table.
     EncounterBound,
     /// The cell is outside the World.
     OutsideWorld,
@@ -408,12 +408,14 @@ fn family_facts(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Facts, 
     cell_facts(input, resolver, &wanted)
 }
 
-/// The cells of every spawn point.
+/// The cells of every world spawn point.
 fn spawn_cells(families: &Families) -> BTreeSet<LegacyPosition> {
     families
         .spawns
         .iter()
-        .flat_map(|source| source.points.iter().map(|point| point.cell))
+        .flat_map(|source| &source.points)
+        .filter(|point| point.owner == SpawnOwner::World)
+        .map(|point| point.cell)
         .collect()
 }
 
@@ -475,23 +477,20 @@ fn spawns_with(
         }
         let mut points = Vec::with_capacity(source.points.len());
         for point in &source.points {
-            if let Some(creature) = families.creatures.get(&point.creature)
-                && point.boss_policy.is_some()
-                && (!creature.boss || creature.encounter_bound)
-            {
-                return Err(Error::Format(
-                    "boss policy requires an open-world boss".into(),
-                ));
-            }
             let (x, y, z) = point.cell;
             let reason = match families.creatures.get(&point.creature) {
+                _ if point.owner == SpawnOwner::Encounter => Some(SpawnReason::EncounterBound),
                 None => Some(SpawnReason::UnboundCreature),
+                Some(creature) if !creature.boss && point.boss_policy.is_some() => {
+                    return Err(Error::Format(
+                        "boss policy requires an open-world boss".into(),
+                    ));
+                }
                 Some(creature) if creature.boss && point.boss_policy.is_none() => {
                     return Err(Error::Format(
                         "boss spawn requires a scheduling policy".into(),
                     ));
                 }
-                Some(creature) if creature.encounter_bound => Some(SpawnReason::EncounterBound),
                 Some(creature) => {
                     let cell = facts.get(&point.cell).copied().unwrap_or_default();
                     let reason = if !input.world.contains(x, y, native_floor(z)?) {
