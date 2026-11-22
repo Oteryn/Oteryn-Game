@@ -2052,7 +2052,8 @@
     {
       "npc": "oteryn:npc.duncan",
       "keywords": [
-        "hooks"
+        "hooks",
+        "pirate hooks"
       ],
       "topic": 0,
       "next_topic": 5,
@@ -2208,6 +2209,45 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would you sell the sniper gloves for 2000 gold pieces?"
       ]
     },
     {
@@ -2809,7 +2849,9 @@
     {
       "npc": "oteryn:npc.habdel",
       "keywords": [
-        "comb"
+        "comb",
+        "mermaid comb",
+        "mermaid's comb"
       ],
       "topic": 0,
       "next_topic": 3,
@@ -3509,7 +3551,9 @@
     {
       "npc": "oteryn:npc.ishina",
       "keywords": [
-        "comb"
+        "comb",
+        "mermaid comb",
+        "mermaid's comb"
       ],
       "topic": 0,
       "next_topic": 3,
@@ -3815,6 +3859,26 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would you sell the sniper gloves for 2000 gold pieces?"
       ]
     },
     {

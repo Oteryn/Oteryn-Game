@@ -155,7 +155,11 @@
     "oteryn:npc.zethra",
     "oteryn:npc.zirella",
     "oteryn:npc.zlak",
-    "oteryn:npc.zoltan"
+    "oteryn:npc.zoltan",
+    "oteryn:npc.a_majestic_warwolf",
+    "oteryn:npc.ceiron",
+    "oteryn:npc.kroox",
+    "oteryn:npc.ustan"
   ],
   "position_conflicts": [],
   "placement_cells": {

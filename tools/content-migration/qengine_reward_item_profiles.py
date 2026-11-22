@@ -72,6 +72,9 @@ IDS |= {7253}
 IDS |= {22008}
 # M01c Fanfare: copper key is numbered by the existing key MINT owner.
 IDS |= {2973}
+# Hunter Outfits: the four source music sheets are dropped by cultists and used
+# from carried custody to learn their respective verses.
+IDS |= {6087, 6088, 6089, 6090}
 # M01c Grimvale: harvested blossoms, distinct from either planted nightshade.
 IDS |= {22082}
 # M01c Stampede: Terrified Elephant drops Tusk Shield in Crystal 201189f8

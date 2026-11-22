@@ -192,6 +192,12 @@ def xml_variant(source: dict, creatures: dict[str, bool], wiki_bosses: set[str],
         for monster in ([event] if tag == "singlespawn" else event["children"]):
             values = monster["attributes"]
             creature = "oteryn:creature." + slug(values["name"])
+            if (source["path"], values["name"]) == (
+                "data-global/raids/venore/orc_sam_backpack.xml", "Orc Sam Backpack"
+            ):
+                # Crystal 201189f8's two orc raid scripts differ only in the
+                # registered name. Use the existing definition with loot 3244.
+                creature = "oteryn:creature.orc_sambackpack"
             low = high = 1
             if tag == "areaspawn":
                 low, high = int(values.get("minamount", 0)), int(values.get("maxamount", 0))

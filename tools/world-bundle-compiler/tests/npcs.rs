@@ -663,3 +663,6 @@ mod qb_barbarian_npcs;
 
 #[path = "npcs/qb_outfit_npcs.rs"]
 mod qb_outfit_npcs;
+
+#[path = "npcs/source_quest_npcs.rs"]
+mod source_quest_npcs;

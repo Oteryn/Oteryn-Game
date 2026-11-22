@@ -48449,15 +48449,13 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
       },
-      "inactive_reasons": [
-        "creature_unbound:Orc Sam Backpack"
-      ],
+      "inactive_reasons": [],
       "key": "raid:venore.orcsambackpack",
       "kind": "area",
       "name": "venore.orcsambackpack",
@@ -48539,7 +48537,7 @@
                   "area_anchor": "raid-anchor:32964_31735_7-32981_31756_7",
                   "boss": false,
                   "boss_source": null,
-                  "creature": "oteryn:creature.orc_sam_backpack",
+                  "creature": "oteryn:creature.orc_sambackpack",
                   "source": {
                     "evidence": "OTS_HYPOTHESIS_ONLY",
                     "line": 4,
@@ -50640,7 +50638,7 @@
   "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
   "totals": {
     "area": {
-      "active": 34,
+      "active": 35,
       "total": 102
     },
     "boss": {

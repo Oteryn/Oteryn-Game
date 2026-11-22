@@ -262,7 +262,7 @@ async fn sams_old_backpack(
         kroox_npc,
         kroox,
         false,
-        vec!["hi", "sam sent me"],
+        vec!["hi", "sam send me"],
     )
     .await?;
     assert_eq!(result, NpcIntentDisposition::Ok);

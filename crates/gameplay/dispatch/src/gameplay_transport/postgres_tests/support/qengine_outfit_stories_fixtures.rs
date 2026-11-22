@@ -1180,7 +1180,7 @@ pub(super) async fn exercise(
                 ("leather", Some((5876, 100)), Some((5948, 100)), None),
                 ("wings", Some((5891, 5)), None, None),
                 ("hat", None, None, Some(1)),
-                ("gloves", Some((5875, 1)), None, Some(2)),
+                ("elane-gloves", Some((5875, 1)), None, Some(2)),
             ],
             129,
         ),
@@ -1490,7 +1490,9 @@ pub(super) async fn exercise(
         );
         let expected_targets: Vec<(&str, u8, &str)> = match (family, *suffix) {
             ("hunter", "hat") => vec![("hunter", 1, "male"), ("hunter", 2, "female")],
-            ("hunter", "gloves") => vec![("hunter", 2, "male"), ("hunter", 1, "female")],
+            ("hunter", "gloves" | "elane-gloves") => {
+                vec![("hunter", 2, "male"), ("hunter", 1, "female")]
+            }
             ("mage", "male-ritual") => vec![("mage", 1, "male"), ("summoner", 1, "female")],
             ("mage", "male-hat") => vec![("mage", 2, "male"), ("summoner", 2, "female")],
             ("mage", "female-belt") => vec![("mage", 1, "female"), ("summoner", 1, "male")],

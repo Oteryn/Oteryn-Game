@@ -680,6 +680,20 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         quest_yields = protected_loot_yields.ITEMS
         import quest_loot_profiles
         quest_loot_profiles.apply_loot_facts(facts, ROOT, creatures, tables)
+        # Crystal 201189f8 data-global/monster/humans/*_of_the_cult.lua
+        # binds the four Hunter verses to the cultist ranks in order.
+        for rank, source_id, ppm in (
+            ('novice', 6087, 9700),
+            ('acolyte', 6088, 4800),
+            ('adept', 6089, 7000),
+            ('enlightened', 6090, 4900),
+        ):
+            key = f'oteryn:loot.creature.{rank}_of_the_cult'
+            entries = [entry for entry in tables[key]['entries']
+                       if entry['item']['key'] == f'oteryn:item.tibia.i{source_id}']
+            if len(entries) != 1 or (entries[0]['min_count'], entries[0]['max_count']) != (1, 1):
+                raise ValueError(f'Hunter music sheet source binding differs: {key}')
+            entries[0]['probability_ppm'] = ppm
         import nrwicked_profiles
         nrwicked_profiles.bind_hard_loot(ROOT, creatures, definitions, tables)
     bindings, named, used = {}, {}, {}
@@ -752,7 +766,8 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     # These exact quest yields already have admitted native pickup and carried
     # profiles. Keep source tables and rates as authored.
     quest_yields = quest_yields | {f'oteryn:item.tibia.i{i}' for i in (
-        3235, 3236, 3237, 3238, 3239, 3240, 3241, 3348, 3403, 5893, 5899, 5925,
+        3235, 3236, 3237, 3238, 3239, 3240, 3241, 3244, 3348, 3403, 5893, 5899, 5925,
+        6087, 6088, 6089, 6090,
     )}
     for key in sorted(quest_yields & yield_keys):
         if not facts[key]['materializable']:

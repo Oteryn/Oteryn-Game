@@ -1,13 +1,16 @@
 //! One bounded offer catalogue for both fact selection and dialogue routing.
 use super::*;
 
+const SHARED_OFFERS: &str =
+    include_str!("../../../../../../../content/quests/shared-reward-offers.json");
+
 pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Offers> {
     let mut offers = Offers {
         schema: 1,
         offers: Vec::new(),
     };
     for source in [
-        include_str!("../../../../../../../content/quests/shared-reward-offers.json"),
+        SHARED_OFFERS,
         include_str!("../../../../../../../content/quests/chosen-reward-offers.json"),
         include_str!("../../../../../../../content/quests/npc-offers/l6-stories.json"),
         include_str!("../../../../../../../content/quests/npc-offers/m09-rookie.json"),
@@ -44,4 +47,28 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
         return None;
     }
     Some(offers)
+}
+
+#[cfg(test)]
+#[test]
+fn pirate_and_oriental_offers_accept_the_named_source_materials()
+-> Result<(), Box<dyn std::error::Error>> {
+    let shared: Offers = serde_json::from_str(SHARED_OFFERS)?;
+    for (npc, topic, keywords) in [
+        ("duncan", 5, &["hooks", "pirate hooks"][..]),
+        ("habdel", 3, &["comb", "mermaid comb", "mermaid's comb"]),
+        ("ishina", 3, &["comb", "mermaid comb", "mermaid's comb"]),
+    ] {
+        let offer = shared
+            .offers
+            .iter()
+            .find(|offer| {
+                offer.npc.strip_prefix("oteryn:npc.") == Some(npc)
+                    && offer.matches_topic(0)
+                    && offer.next_topic == topic
+            })
+            .ok_or_else(|| format!("source offer for {npc}"))?;
+        assert_eq!(offer.keywords, keywords, "{npc}");
+    }
+    Ok(())
 }

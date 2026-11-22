@@ -398,7 +398,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // both pinned appearance banks; no original key is removed or relabeled.
     ("SEASON-W18-HOUSE", 1959),
     // Merged main1ae39c7fb adds53 distinct QENGINE reward identities from
-    // QENGINE2 captures 255 source-qualified Items (qengine_reward_item_profiles.IDS).
+    // QENGINE2 captures 259 source-qualified Items (qengine_reward_item_profiles.IDS).
     // Exact nonzero and unknown source speeds are checked below.
     ("QENGINE-REWARDS", 53),
     // W05d:48 canonical seasonal profiles;35 further keys are new after the
@@ -466,7 +466,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(added_keys.contains(format!("oteryn:item.tibia.i{id}").as_str()));
     }
     // QENGINE2 identities: generated begin
-    assert_eq!(added_keys.len(), 255);
+    assert_eq!(added_keys.len(), 259);
     assert_eq!(
         added_keys,
         std::collections::BTreeSet::from([
@@ -694,6 +694,10 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i5941",
             "oteryn:item.tibia.i5945",
             "oteryn:item.tibia.i5947",
+            "oteryn:item.tibia.i6087",
+            "oteryn:item.tibia.i6088",
+            "oteryn:item.tibia.i6089",
+            "oteryn:item.tibia.i6090",
             "oteryn:item.tibia.i5989",
             "oteryn:item.tibia.i6099",
             "oteryn:item.tibia.i6100",
@@ -900,7 +904,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .sum::<usize>();
     assert_eq!(later_main_profiles, 2593);
     const QENGINE2_BASE_PROFILES: usize = 53;
-    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 202);
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 206);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
         + QENGINE2_BASE_PROFILES
@@ -963,7 +967,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
-        ("qengine-reward-item-profiles.json", 255),
+        ("qengine-reward-item-profiles.json", 259),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))

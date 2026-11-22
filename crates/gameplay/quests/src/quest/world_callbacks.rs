@@ -796,6 +796,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/qready1-crafts.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/source-outfits.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/feaster-phase-routes.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -3102,6 +3105,10 @@ mod phase_tests;
 #[cfg(test)]
 #[path = "world_callbacks/readable_text_tests.rs"]
 mod readable_text_tests;
+
+#[cfg(test)]
+#[path = "world_callbacks/source_outfit_tests.rs"]
+mod source_outfit_tests;
 
 /// A child completion is usable only as a participant of its native primary callback.
 /// The durable owner refuses direct requests for this synthetic transition.
