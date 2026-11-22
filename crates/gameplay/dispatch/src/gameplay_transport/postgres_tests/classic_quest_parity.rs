@@ -25,7 +25,7 @@ fn classic_quest_caches_grant_and_replay_from_committed_sources() -> TestResult 
 }
 
 #[test]
-fn classic_quest_approaches_open_the_native_floor_routes() -> TestResult {
+fn classic_quest_terrain_tools_well_and_lamp_use_committed_sources() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }

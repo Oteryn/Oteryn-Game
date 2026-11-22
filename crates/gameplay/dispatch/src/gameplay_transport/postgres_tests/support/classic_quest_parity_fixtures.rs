@@ -33,21 +33,18 @@ impl Access {
         start_x: u16,
         tool: (u16, i64),
     ) -> Self {
+        let start = Position {
+            x: start_x,
+            y,
+            floor,
+        };
         Self {
             name,
             source: Position { x, y, floor },
-            start: Position {
-                x: start_x,
-                y,
-                floor,
-            },
+            start,
             tool: Some((tool.0, Some(tool.1))),
             ordinal: 0,
-            destination: Position {
-                x,
-                y,
-                floor: floor - 1,
-            },
+            destination: start,
         }
     }
 }
@@ -253,12 +250,6 @@ pub(super) async fn access_exercise(
             let ground = *base.ids().first().ok_or("dug ground")?;
             let entry = map.facts.base_entry(tile, case.ordinal, ground).ok_or("dug entry")?;
             assert_eq!(i64::from(entry.appearance_id), appearance, "{}", case.name);
-            let direction = if case.start.x < source.x {
-                StepDirection::East
-            } else {
-                StepDirection::West
-            };
-            super::questpc7_ferumbras_fixtures::step(owner, admitted, direction).await?;
         }
     } else {
         let reply = super::quest_world_callbacks_fixtures::wire(
