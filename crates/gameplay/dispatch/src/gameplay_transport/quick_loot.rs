@@ -55,10 +55,15 @@ fn resolve_targets(
     mut request: QuickLootRequest,
 ) -> Option<QuickLootRequest> {
     if let Some(handle) = request.corpse {
-        let ItemKey::Entity(identity) = view?.resolve(decode_target_handle(handle)?)? else {
-            return None;
-        };
-        let corpse = runtime.bound_corpse(identity)?;
+        let corpse = match view?.resolve(decode_target_handle(handle)?)? {
+            ItemKey::Entity(identity) => runtime.bound_corpse(identity),
+            // Bundle map tiles publish the same corpse as its Ground item key.
+            ItemKey::Instance(instance) => runtime
+                .visible_corpses()
+                .into_iter()
+                .find(|corpse| corpse.item.item_instance_id == instance),
+            _ => None,
+        }?;
         if corpse.position.floor != position.floor
             || corpse.position.x.abs_diff(position.x) > 1
             || corpse.position.y.abs_diff(position.y) > 1
