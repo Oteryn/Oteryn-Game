@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "0ace54b321e1d5032ea3624fe0fddf228952bd48f871fe4a5df62437fc770177",
+  "input_sha256": "83e34fcc42780622273603300238eda1f727d4014c5924e31bfbd74db9b18eb7",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2873,7 +2873,6 @@
     "oteryn:creature.jungle_moa",
     "oteryn:creature.juvenile_bashmu",
     "oteryn:creature.killer_caiman",
-    "oteryn:creature.killer_rabbit",
     "oteryn:creature.knowledge_elemental",
     "oteryn:creature.kollos",
     "oteryn:creature.kongra",

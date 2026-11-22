@@ -694,6 +694,8 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             if len(entries) != 1 or (entries[0]['min_count'], entries[0]['max_count']) != (1, 1):
                 raise ValueError(f'Hunter music sheet source binding differs: {key}')
             entries[0]['probability_ppm'] = ppm
+        import nrwicked_profiles
+        nrwicked_profiles.bind_hard_loot(ROOT, creatures, definitions, tables)
     bindings, named, used = {}, {}, {}
     corpse_refs, yield_keys, corpse_tables = {}, set(), {}
     reward_boss_corpses = set()
