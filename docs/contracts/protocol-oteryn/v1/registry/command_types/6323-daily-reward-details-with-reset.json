@@ -2,7 +2,7 @@
   "id": 6323,
   "name": "DAILY_REWARD_DETAILS_WITH_RESET",
   "owner_decision": "Login and daily reward protocol gaps",
-  "capability": 182,
+  "capability": 580,
   "payload_schema": "docs/contracts/protocol-oteryn/v1/daily-reward-v2.md#details",
   "result_schema": "docs/contracts/protocol-oteryn/v1/daily-reward-v2.md#details",
   "max_payload_bytes": 0,

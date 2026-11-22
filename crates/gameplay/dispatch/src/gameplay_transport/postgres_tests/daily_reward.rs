@@ -62,6 +62,42 @@ async fn unrelated_custody_event(h: &Harness) -> TestResult {
 }
 
 #[test]
+fn daily_reward_remote_dispatch_spends_one_token_and_replays() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario_mode(false, 4)
+}
+
+async fn remote_case(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    use crate::foundation::CommandStatus;
+    let (_, output) = serve(owner, admitted, &[(6322, &[]), (6321, &[])]).await?;
+    let values = results(&output)?;
+    assert_eq!(values[0].1, CommandStatus::Accepted);
+    assert!(values[0].2.ends_with(&[56, 0, 64, 0]));
+    assert_eq!((values[1].1, values[1].2.as_slice()), (CommandStatus::Rejected, [8, 4].as_slice()));
+
+    sqlx::query("INSERT INTO game_character_daily_reward_access (character_id, tokens) VALUES(encode($1,'hex')::uuid,2)")
+        .bind(id(41).as_slice()).execute(&harness.pool).await?;
+    let (_, output) = serve(owner, admitted, &[(6322, &[]), (6321, &[]), (6321, &[]), (6322, &[])]).await?;
+    let values = results(&output)?;
+    assert!(values[0].2.ends_with(&[56, 1, 64, 2]));
+    assert_eq!(values[1].1, CommandStatus::Accepted);
+    assert_eq!(values[1].2.get(1), Some(&1));
+    assert_eq!(values[2].2, [8, 2]);
+    assert!(values[3].2.ends_with(&[56, 0, 64, 1]));
+
+    let tokens: i64 = sqlx::query_scalar("SELECT tokens FROM game_character_daily_reward_access WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+    assert_eq!(tokens, 1);
+    Ok(())
+}
+
+#[test]
 fn daily_reward_details_dispatch_reports_berlin_reset_boundary() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -217,7 +253,7 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
             owner.daily_reward_available(),
         );
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(&offer, &[1, wire::CAPABILITY_DAILY_REWARD_V2])
+            SelectedCapabilities::select(&offer, &[1, wire::CAPABILITY_DAILY_REWARD_V2, wire::CAPABILITY_DAILY_REWARD_ACCESS_V1])
                 .ok_or("selection")?;
         assert!(
             admitted
@@ -229,6 +265,14 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
         if mode == 3 {
             epoch(&harness, 24).await?;
             let result = reset_boundary_case(&owner, &mut admitted).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return result;
+        }
+        if mode == 4 {
+            let result = remote_case(&harness, &owner, &mut admitted).await;
             drop(owner);
             drop(authority);
             drop(seal);

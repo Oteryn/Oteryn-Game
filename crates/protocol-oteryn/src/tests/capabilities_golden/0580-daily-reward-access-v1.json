@@ -1,0 +1,21 @@
+{
+  "id": 580,
+  "name": "DAILY_REWARD_ACCESS_V1",
+  "constant": "daily_reward::CAPABILITY_DAILY_REWARD_ACCESS_V1",
+  "requires": [
+    182
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    6321,
+    6322,
+    6323
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}
