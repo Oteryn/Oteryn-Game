@@ -257,24 +257,35 @@ impl Owner {
             .position()
     }
     fn apply(&self, intent: &UseIntent, target: Option<ItemKey>) -> UseDisposition {
-        rope_in_channel(
+        disposition(rope_in_channel(
             &mut self.runtime.borrow_mut(),
             &mut self.states.borrow_mut(),
             &self.cells,
             self.actor,
-            UseCommand {
-                game_session_id: self.session,
-                command_id: 1,
-                item_fence: None,
+            RopeUse {
+                command: UseCommand {
+                    game_session_id: self.session,
+                    command_id: 1,
+                    item_fence: None,
+                },
+                intent,
+                target,
+                reset_epoch: 0,
+                now: SemanticTimeMicros::from_micros(100),
+                overlay: None,
+                ground: None,
             },
-            intent,
-            target,
-            0,
-            SemanticTimeMicros::from_micros(100),
-            None,
-        )
+        ))
     }
 }
+fn disposition(turn: RopeTurn) -> UseDisposition {
+    match turn {
+        RopeTurn::Done(disposition) => disposition,
+        RopeTurn::MovedPlayer(_) => UseDisposition::Committed,
+        RopeTurn::PullItem { .. } => panic!("expected a rope spot decision"),
+    }
+}
+
 impl FreshAdmissionAuthority for Owner {
     async fn admit(
         &self,
@@ -665,18 +676,21 @@ fn tools_rope_spot_hidden_target_epoch_and_pz_landing() {
     let now = SemanticTimeMicros::from_micros(100);
     let mut states = owner.states.borrow_mut();
     assert_eq!(
-        rope_in_channel(
+        disposition(rope_in_channel(
             &mut runtime,
             &mut states,
             &owner.cells,
             owner.actor,
-            command,
-            &intent,
-            None,
-            0,
-            now,
-            Some(&overlay)
-        ),
+            RopeUse {
+                command,
+                intent: &intent,
+                target: None,
+                reset_epoch: 0,
+                now,
+                overlay: Some(&overlay),
+                ground: None,
+            },
+        )),
         UseDisposition::StaleState
     );
     let mut handled = intent;
@@ -687,18 +701,21 @@ fn tools_rope_spot_hidden_target_epoch_and_pz_landing() {
         reset_epoch: 1,
     };
     assert_eq!(
-        rope_in_channel(
+        disposition(rope_in_channel(
             &mut runtime,
             &mut states,
             &owner.cells,
             owner.actor,
-            command,
-            &handled,
-            Some(key),
-            0,
-            now,
-            None
-        ),
+            RopeUse {
+                command,
+                intent: &handled,
+                target: Some(key),
+                reset_epoch: 0,
+                now,
+                overlay: None,
+                ground: None,
+            },
+        )),
         UseDisposition::StaleState
     );
     assert_eq!(runtime.read_actor_position(owner.actor).unwrap(), before);
