@@ -345,24 +345,39 @@ class QuestCallbackProfiles(unittest.TestCase):
             self.assertEqual(self.generated, before, 'refused charge proof must not partially update generated outputs')
 
     def test_grizzly_icon_and_every_complete_chest_child_have_native_profiles(self):
+        fire_axe = 'oteryn:item.tibia.i3320'
+        self.document['records'] = [row for row in self.document['records']
+                                    if row['production_definition']['production_key'] != fire_axe]
+        self.generated[PROFILE] = json.dumps(self.document).encode()
         self.admit()
         rows = {row['production_definition']['production_key']: row
                 for row in json.loads(self.generated[PROFILE])['records']}
         expected = {'oteryn:item.tibia.i9388'}
+        fire_axe_rewards = []
         for path in sorted((ROOT / 'content/interactions/reward_claims').glob('reward-claim*.json')):
             for record in json.loads(path.read_bytes())['records']:
-                for placement in record['definition'].get('native_contents', {}).get('placements', []):
+                definition = record['definition']
+                for placement in definition.get('native_contents', {}).get('placements', []):
                     expected.add(placement['root']['key'])
                     expected.update(child['item']['key'] for child in placement['contents'])
-        # The Global Fire Axe correction leaves the axe in the separate reward
-        # pile. The complete container closure therefore has one fewer item.
+                if definition['identity']['key'] == 'oteryn:reward-claim.kv.fireaxe2':
+                    self.assertEqual(definition['readiness'], 'ready')
+                    fire_axe_rewards.extend(item['item']['key'] for placement in definition['placements']
+                                            for item in placement['reward']['items'])
+        # The Tibia Global correction leaves the axe in the direct reward from
+        # the Pile of Bones (fireaxe2). The fireaxe1 bag still has the necklace.
+        self.assertIn('oteryn:item.tibia.i3085', expected)
+        self.assertNotIn(fire_axe, expected)
         self.assertEqual(len(expected), 159)
+        self.assertEqual(fire_axe_rewards, [fire_axe])
+        expected.update(fire_axe_rewards)
+        # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
+        # 3083), with 3083 also used by Triangle Tower; retain the complete closure.
+        self.assertEqual(len(expected), 160)
         # Goblin Temple adds pan3466 and snowball2992; vial2874 was already present.
         self.assertTrue({'oteryn:item.tibia.i3466','oteryn:item.tibia.i2992'} <= expected)
         # Draconia adds the one-charge ice rapier and serpent sword to full bags.
         self.assertTrue({'oteryn:item.tibia.i3284', 'oteryn:item.tibia.i3297'} <= expected)
-        self.assertIn('oteryn:item.tibia.i3085', expected)
-        self.assertNotIn('oteryn:item.tibia.i3320', expected)
         # Dreamer adds certificate, bread and the source-selected wine vial to the exact closure.
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (6498, 3602, 2874)} <= expected)
         # Desert2 adds exactly its three previously absent child identities;
