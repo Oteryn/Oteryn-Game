@@ -839,6 +839,15 @@ async fn pvp_journey(
             .any(|entry| entry.item.item_definition_ref == axe)
     });
     if !wielded {
+        let carried = bots[0].client()?.inventory().is_some_and(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .any(|entry| entry.item_definition_ref == axe)
+        });
+        if !carried {
+            return Err("Open PvP knight provisioning did not publish a carried axe".into());
+        }
         let equipped = bots[0]
             .client()?
             .session_mut()
@@ -862,6 +871,19 @@ async fn pvp_journey(
             });
             return Err(format!(
                 "axe equip refused:{equipped:?};refusal_detail={detail:?};observed_inventory={observed:?};source:apps/game-server/src/qualification/client_phases/mp/bots.rs:197"
+            )
+            .into());
+        }
+        let published = bots[0].client()?.inventory().is_some_and(|inventory| {
+            inventory
+                .equipment
+                .iter()
+                .any(|entry| entry.item.item_definition_ref == axe)
+        });
+        if !published {
+            return Err(format!(
+                "axe command {} moved the axe without publishing equipment",
+                equipped.command_id
             )
             .into());
         }
