@@ -625,15 +625,15 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                 .protection_zone,
         )
     }
-    /// Keep the original census order. Residual conditions and retained entries
+    /// Mark candidates in census order. Residual conditions and retained entries
     /// still need a tile read after movement, replacement, or field removal.
-    pub async fn retain_creature_field_candidates(
+    pub async fn creature_field_candidates(
         &mut self,
         runtime: &ChannelRuntimeV1,
-        creatures: &mut Vec<VisibleRuntimeActor>,
-    ) -> Result<(), SpellItemError> {
+        creatures: &[VisibleRuntimeActor],
+    ) -> Result<Vec<bool>, SpellItemError> {
         if creatures.is_empty() {
-            return Ok(());
+            return Ok(Vec::new());
         }
         if !self.view.matches(runtime)
             || self.authority.runtime_scope() != runtime.binding().runtime_scope()
@@ -657,12 +657,16 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                 ]
             })
             .collect::<Vec<_>>();
-        if let Some(positions) =
+        let Some(positions) =
             read_creature_field_positions_in_transaction(self.tx, self.authority, &field_keys)
                 .await?
-        {
-            let positions: BTreeSet<Vec<u8>> = positions.into_iter().collect();
-            creatures.retain(|visible| {
+        else {
+            return Ok(vec![true; creatures.len()]);
+        };
+        let positions: BTreeSet<Vec<u8>> = positions.into_iter().collect();
+        Ok(creatures
+            .iter()
+            .map(|visible| {
                 let at = visible.position;
                 let mut address = [0; 10];
                 address[..4].copy_from_slice(&at.x.to_be_bytes());
@@ -670,9 +674,8 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                 address[8..].copy_from_slice(&at.floor.to_be_bytes());
                 positions.contains(address.as_slice())
                     || runtime.has_creature_periodic_state(visible.actor)
-            });
-        }
-        Ok(())
+            })
+            .collect())
     }
 
     /// Prefetch the current census's exact addresses in bounded SQL batches. A sparse

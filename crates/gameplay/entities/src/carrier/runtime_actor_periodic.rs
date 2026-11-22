@@ -221,14 +221,48 @@ impl ChannelRuntimeV1 {
         self.commit_creature_periodic_turn(prepared)
     }
 
-    fn stage_creature_periodic_turn_inner(
+    /// Preserve the empty turn's shared work stamp and condition clock without
+    /// staging damage or copying the complete slot and contributor ledger.
+    pub fn advance_empty_creature_periodic_turn(
         &mut self,
         actor: ExactActorRef,
         now_us: u64,
-        facts: TickFacts,
-        mut player_source: Option<&mut CurrentPlayerPeriodicSource<'_>>,
-        observations: &[super::native_health_change::NativeHealthChangeObservation],
-    ) -> Result<PreparedCreaturePeriodicTurn, CarrierError> {
+        observation: Option<&super::native_health_change::NativeHealthChangeObservation>,
+    ) -> Result<(), CarrierError> {
+        let before = self.creature_periodic_predecessor(actor, now_us)?;
+        if before.state.conditions.has_periodic_state() {
+            return Err(CarrierError::PlanConflict);
+        }
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let stamp = self.issue_owner_work()?;
+        self.soul_war_health_callback(actor)?;
+        if !self.owner_fence()?.accepts_stamp(stamp) {
+            return Err(CarrierError::PlanConflict);
+        }
+        if let Some(observation) = observation {
+            self.validate_native_health_change_observation(observation)?;
+        }
+        if let Some(master) = before.state.master {
+            self.carrier
+                .player_slot_index(&self.continuity, master.actor.0, master.session)?;
+        }
+        let Slot::CreatureOccupied {
+            companion: Some(state),
+            ..
+        } = &mut self.carrier.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        // No instances or cleanse immunities remain and only the pass clock advances.
+        let _ = state.conditions.take_due(now_us, TickFacts::default());
+        Ok(())
+    }
+
+    fn creature_periodic_predecessor(
+        &self,
+        actor: ExactActorRef,
+        now_us: u64,
+    ) -> Result<CompanionSnapshot, CarrierError> {
         if self.actor_spell_reserved(actor) {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
@@ -247,6 +281,18 @@ impl ChannelRuntimeV1 {
         if !before.state.conditions.accepts_time(now_us) {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
+        Ok(before)
+    }
+
+    fn stage_creature_periodic_turn_inner(
+        &mut self,
+        actor: ExactActorRef,
+        now_us: u64,
+        facts: TickFacts,
+        mut player_source: Option<&mut CurrentPlayerPeriodicSource<'_>>,
+        observations: &[super::native_health_change::NativeHealthChangeObservation],
+    ) -> Result<PreparedCreaturePeriodicTurn, CarrierError> {
+        let before = self.creature_periodic_predecessor(actor, now_us)?;
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied {
             committed,
