@@ -416,41 +416,6 @@
       "clear_topic_on_refusal": true
     },
     {
-      "key": "oteryn:quest-reward/jorge-exchange-19150",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "norseman doll"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i19150",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 norseman doll."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
       "key": "oteryn:quest-reward/jorge-exchange-19151",
       "quest": "oteryn:quest.hunting_for_tokens",
       "npc": "oteryn:npc.jorge",
@@ -486,11 +451,11 @@
       "clear_topic_on_refusal": true
     },
     {
-      "key": "oteryn:quest-reward/jorge-exchange-19152",
+      "key": "oteryn:quest-reward/jorge-exchange-28897",
       "quest": "oteryn:quest.hunting_for_tokens",
       "npc": "oteryn:npc.jorge",
       "keywords": [
-        "key of numerous locks"
+        "assassin doll"
       ],
       "topic": 101,
       "next_topic": 0,
@@ -502,469 +467,14 @@
         }
       ],
       "give": {
-        "item": "oteryn:item.tibia.i19152",
+        "item": "oteryn:item.tibia.i28897",
         "count": 1,
         "contents": []
       },
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You just swapped 20 silver raid tokens for 1 key of numerous locks."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-19153",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "friendship amulet"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i19153",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 friendship amulet."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-19154",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "the mexcalibur"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i19154",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 the mexcalibur."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-19155",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "orc's jaw shredder"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i19155",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 orc's jaw shredder."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-19156",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "frozen heart"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i19156",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 frozen heart."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-22026",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "phoenix statue"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i22026",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 phoenix statue."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-22027",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "dragon eye"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i22027",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 dragon eye."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-22028",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "noble sword"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i22028",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 noble sword."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-23676",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "hand puppets"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i23676",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 hand puppets."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-23677",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "music box"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i23677",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 music box."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-23678",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "encyclopedia"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i23678",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 encyclopedia."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-23679",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "doll of durin the almighty"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i23679",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 doll of durin the almighty."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-23680",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "medusa skull"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i23680",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 medusa skull."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-23681",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "golden newspaper"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i23681",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 golden newspaper."
+        "You just swapped 20 silver raid tokens for 1 assassin doll."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
@@ -1011,11 +521,11 @@
       "clear_topic_on_refusal": true
     },
     {
-      "key": "oteryn:quest-reward/jorge-exchange-23683",
+      "key": "oteryn:quest-reward/jorge-exchange-28895",
       "quest": "oteryn:quest.hunting_for_tokens",
       "npc": "oteryn:npc.jorge",
       "keywords": [
-        "imortus"
+        "bookworm doll"
       ],
       "topic": 101,
       "next_topic": 0,
@@ -1027,14 +537,189 @@
         }
       ],
       "give": {
-        "item": "oteryn:item.tibia.i23683",
+        "item": "oteryn:item.tibia.i28895",
         "count": 1,
         "contents": []
       },
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You just swapped 20 silver raid tokens for 1 imortus."
+        "You just swapped 20 silver raid tokens for 1 bookworm doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-43511",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "citizen doll"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i43511",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 citizen doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-25981",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "crimson doll"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i25981",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 crimson doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-23679",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "doll of durin the almighty"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i23679",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 doll of durin the almighty."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-22027",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "dragon eye"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i22027",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 dragon eye."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-31265",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "dragon goblet"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i31265",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 dragon goblet."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
@@ -1116,11 +801,11 @@
       "clear_topic_on_refusal": true
     },
     {
-      "key": "oteryn:quest-reward/jorge-exchange-25981",
+      "key": "oteryn:quest-reward/jorge-exchange-23678",
       "quest": "oteryn:quest.hunting_for_tokens",
       "npc": "oteryn:npc.jorge",
       "keywords": [
-        "crimson doll"
+        "encyclopedia"
       ],
       "topic": 101,
       "next_topic": 0,
@@ -1132,14 +817,14 @@
         }
       ],
       "give": {
-        "item": "oteryn:item.tibia.i25981",
+        "item": "oteryn:item.tibia.i23678",
         "count": 1,
         "contents": []
       },
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You just swapped 20 silver raid tokens for 1 crimson doll."
+        "You just swapped 20 silver raid tokens for 1 encyclopedia."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
@@ -1151,11 +836,11 @@
       "clear_topic_on_refusal": true
     },
     {
-      "key": "oteryn:quest-reward/jorge-exchange-25982",
+      "key": "oteryn:quest-reward/jorge-exchange-19153",
       "quest": "oteryn:quest.hunting_for_tokens",
       "npc": "oteryn:npc.jorge",
       "keywords": [
-        "mathmaster shield"
+        "friendship amulet"
       ],
       "topic": 101,
       "next_topic": 0,
@@ -1167,14 +852,14 @@
         }
       ],
       "give": {
-        "item": "oteryn:item.tibia.i25982",
+        "item": "oteryn:item.tibia.i19153",
         "count": 1,
         "contents": []
       },
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You just swapped 20 silver raid tokens for 1 mathmaster shield."
+        "You just swapped 20 silver raid tokens for 1 friendship amulet."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
@@ -1186,11 +871,11 @@
       "clear_topic_on_refusal": true
     },
     {
-      "key": "oteryn:quest-reward/jorge-exchange-28894",
+      "key": "oteryn:quest-reward/jorge-exchange-19156",
       "quest": "oteryn:quest.hunting_for_tokens",
       "npc": "oteryn:npc.jorge",
       "keywords": [
-        "old radio"
+        "frozen heart"
       ],
       "topic": 101,
       "next_topic": 0,
@@ -1202,49 +887,14 @@
         }
       ],
       "give": {
-        "item": "oteryn:item.tibia.i28894",
+        "item": "oteryn:item.tibia.i19156",
         "count": 1,
         "contents": []
       },
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You just swapped 20 silver raid tokens for 1 old radio."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-28895",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "bookworm doll"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i28895",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 bookworm doll."
+        "You just swapped 20 silver raid tokens for 1 frozen heart."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
@@ -1291,11 +941,11 @@
       "clear_topic_on_refusal": true
     },
     {
-      "key": "oteryn:quest-reward/jorge-exchange-28897",
+      "key": "oteryn:quest-reward/jorge-exchange-23681",
       "quest": "oteryn:quest.hunting_for_tokens",
       "npc": "oteryn:npc.jorge",
       "keywords": [
-        "assassin doll"
+        "golden newspaper"
       ],
       "topic": 101,
       "next_topic": 0,
@@ -1307,154 +957,14 @@
         }
       ],
       "give": {
-        "item": "oteryn:item.tibia.i28897",
+        "item": "oteryn:item.tibia.i23681",
         "count": 1,
         "contents": []
       },
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You just swapped 20 silver raid tokens for 1 assassin doll."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-31265",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "dragon goblet"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i31265",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 dragon goblet."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-31266",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "pigeon trophy"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i31266",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 pigeon trophy."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-31267",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "loremaster doll"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i31267",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 loremaster doll."
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ],
-      "failure_reply": [
-        "I need at least 20 silver raid tokens for that."
-      ],
-      "msg_contains": true,
-      "clear_topic_on_refusal": true
-    },
-    {
-      "key": "oteryn:quest-reward/jorge-exchange-31268",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "jade amulet"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i31268",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You just swapped 20 silver raid tokens for 1 jade amulet."
+        "You just swapped 20 silver raid tokens for 1 golden newspaper."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
@@ -1501,6 +1011,146 @@
       "clear_topic_on_refusal": true
     },
     {
+      "key": "oteryn:quest-reward/jorge-exchange-23676",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "hand puppets"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i23676",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 hand puppets."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-23683",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "imortus"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i23683",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 imortus."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-31268",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "jade amulet"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i31268",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 jade amulet."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-19152",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "key of numerous locks"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i19152",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 key of numerous locks."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
       "key": "oteryn:quest-reward/jorge-exchange-37058",
       "quest": "oteryn:quest.hunting_for_tokens",
       "npc": "oteryn:npc.jorge",
@@ -1525,6 +1175,41 @@
       "achievement": null,
       "reply": [
         "You just swapped 20 silver raid tokens for 1 little adventurer doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-31267",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "loremaster doll"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i31267",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 loremaster doll."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
@@ -1571,11 +1256,11 @@
       "clear_topic_on_refusal": true
     },
     {
-      "key": "oteryn:quest-reward/jorge-exchange-37060",
+      "key": "oteryn:quest-reward/jorge-exchange-25982",
       "quest": "oteryn:quest.hunting_for_tokens",
       "npc": "oteryn:npc.jorge",
       "keywords": [
-        "shield of endless search"
+        "mathmaster shield"
       ],
       "topic": 101,
       "next_topic": 0,
@@ -1587,14 +1272,14 @@
         }
       ],
       "give": {
-        "item": "oteryn:item.tibia.i37060",
+        "item": "oteryn:item.tibia.i25982",
         "count": 1,
         "contents": []
       },
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You just swapped 20 silver raid tokens for 1 shield of endless search."
+        "You just swapped 20 silver raid tokens for 1 mathmaster shield."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
@@ -1606,11 +1291,11 @@
       "clear_topic_on_refusal": true
     },
     {
-      "key": "oteryn:quest-reward/jorge-exchange-43510",
+      "key": "oteryn:quest-reward/jorge-exchange-23680",
       "quest": "oteryn:quest.hunting_for_tokens",
       "npc": "oteryn:npc.jorge",
       "keywords": [
-        "tibiora's box"
+        "medusa skull"
       ],
       "topic": 101,
       "next_topic": 0,
@@ -1622,14 +1307,14 @@
         }
       ],
       "give": {
-        "item": "oteryn:item.tibia.i43510",
+        "item": "oteryn:item.tibia.i23680",
         "count": 1,
         "contents": []
       },
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You just swapped 20 silver raid tokens for 1 tibiora's box."
+        "You just swapped 20 silver raid tokens for 1 medusa skull."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
@@ -1641,11 +1326,11 @@
       "clear_topic_on_refusal": true
     },
     {
-      "key": "oteryn:quest-reward/jorge-exchange-43511",
+      "key": "oteryn:quest-reward/jorge-exchange-23677",
       "quest": "oteryn:quest.hunting_for_tokens",
       "npc": "oteryn:npc.jorge",
       "keywords": [
-        "citizen doll"
+        "music box"
       ],
       "topic": 101,
       "next_topic": 0,
@@ -1657,14 +1342,224 @@
         }
       ],
       "give": {
-        "item": "oteryn:item.tibia.i43511",
+        "item": "oteryn:item.tibia.i23677",
         "count": 1,
         "contents": []
       },
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You just swapped 20 silver raid tokens for 1 citizen doll."
+        "You just swapped 20 silver raid tokens for 1 music box."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-22028",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "noble sword"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i22028",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 noble sword."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-19150",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "norseman doll"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i19150",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 norseman doll."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-28894",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "old radio"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i28894",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 old radio."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-19155",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "orc's jaw shredder"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i19155",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 orc's jaw shredder."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-22026",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "phoenix statue"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i22026",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 phoenix statue."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-31266",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "pigeon trophy"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i31266",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 pigeon trophy."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
@@ -1700,6 +1595,111 @@
       "achievement": null,
       "reply": [
         "You just swapped 20 silver raid tokens for 1 shield of destiny."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-37060",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "shield of endless search"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i37060",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 shield of endless search."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-19154",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "the mexcalibur"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i19154",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 the mexcalibur."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ],
+      "failure_reply": [
+        "I need at least 20 silver raid tokens for that."
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
+    },
+    {
+      "key": "oteryn:quest-reward/jorge-exchange-43510",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "tibiora's box"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i43510",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You just swapped 20 silver raid tokens for 1 tibiora's box."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"

@@ -69,3 +69,55 @@ class TokenExchangeOffers(unittest.TestCase):
                         self.assertTrue(offer.get("msg_contains"))
                     if word != "token":
                         self.assertTrue(offer.get("any_topic"))
+
+    def test_committed_exchange_precedence_and_quote_topics(self):
+        offers = json.loads(
+            (q.ROOT / "content/quests/shared-reward-offers.json").read_text()
+        )["offers"]
+        callbacks = json.loads((q.ROOT / q.token_exchanges.SHARD).read_text())[
+            "callbacks"
+        ]
+        with self.subTest(npc="jorge"):
+            self.assertEqual(
+                [
+                    row["keywords"][0]
+                    for row in callbacks
+                    if row["npc"] == "oteryn:npc.jorge"
+                ],
+                [name for name, *_ in q.token_exchanges.JORGE],
+            )
+        with self.subTest(npc="cledwyn"):
+            self.assertEqual(
+                [
+                    row["keywords"][0]
+                    for row in offers
+                    if row["npc"] == "oteryn:npc.cledwyn"
+                    and row.get("reward_order") == "before"
+                ],
+                ["token", "information", "talk", "silver", "enchant"],
+            )
+        with self.subTest(npc="storkus"):
+            first = next(row for row in offers if row["npc"] == "oteryn:npc.storkus")
+            self.assertEqual(first["keywords"], ["mission"])
+            self.assertTrue(first.get("preserve_topic"))
+            self.assertEqual(first.get("reward_order"), "before")
+        gnomally = [row for row in offers if row["npc"] == "oteryn:npc.gnomally"]
+        for topic in range(101, 121):
+            with self.subTest(npc="gnomally", topic=topic, action="replace"):
+                self.assertTrue(
+                    any(
+                        row["next_topic"] == topic and row.get("any_topic")
+                        for row in gnomally
+                    ),
+                    "cannot replace pending quote",
+                )
+            with self.subTest(npc="gnomally", topic=topic, action="cancel"):
+                self.assertTrue(
+                    any(
+                        row["topic"] == topic
+                        and row["keywords"] == ["no"]
+                        and row["next_topic"] == 0
+                        for row in gnomally
+                    ),
+                    "cannot cancel pending quote",
+                )

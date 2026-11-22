@@ -1991,3 +1991,59 @@ fn gnomus_charting_bonus_plans_two_separate_jar_outputs() -> Result<(), NpcRuleE
     assert_eq!(gifts, [("oteryn:item.tibia.i27654", 1); 2]);
     Ok(())
 }
+
+#[test]
+fn completed_regional_hunts_explain_the_boss_route_hold() -> Result<(), NpcRuleError> {
+    let rules = NpcRuleCatalog::runtime()?;
+    let loaded = crate::quest::loader::load_embedded_quest_state("regional-hunt-dialogue")
+        .map_err(|error| NpcRuleError::Invalid(format!("{error:?}")))?;
+    let mut missing = Vec::new();
+    for (npc, hunt, quota) in [
+        ("oteryn:npc.budrik", "minotaurs", 5000),
+        ("oteryn:npc.malor", "blue-djinns", 500),
+        ("oteryn:npc.gabel", "green-djinns", 500),
+        ("oteryn:npc.lugri", "necromancers", 4000),
+    ] {
+        let tracks = BTreeMap::from([
+            (
+                format!("oteryn:quest-progress/hunting-tasks/{hunt}/phase"),
+                1,
+            ),
+            (
+                format!("oteryn:quest-progress/hunting-tasks/{hunt}/count"),
+                quota,
+            ),
+        ]);
+        let input = NpcRuleInput {
+            npc,
+            trigger: NpcRuleTrigger::Say,
+            message: "task",
+            player_name: None,
+            topic: 0,
+            tracks: &tracks,
+            inventory: &NpcInventorySnapshot::default(),
+            now_epoch_seconds: 1_700_000_000,
+            calendar_month: 11,
+            premium_current: false,
+            level: 100,
+            vocation: "oteryn:vocation.knight",
+            sex: 0,
+            outfits: &BTreeMap::new(),
+        };
+        let admitted = rules
+            .admitted_for_npc(npc, loaded.catalogue())?
+            .ok_or_else(|| NpcRuleError::Invalid(format!("missing hunt programme: {hunt}")))?;
+        match admitted.plan_storage(&input)? {
+            Some(plan) if plan.reply.iter().any(|line| line.contains("boss route")) => {
+                assert!(plan.track_changes.is_empty(), "{hunt}");
+                assert!(plan.effects.is_empty(), "{hunt}");
+            }
+            plan => missing.push((hunt, plan.map(|p| p.reply))),
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "completed report dialogue missing: {missing:?}"
+    );
+    Ok(())
+}

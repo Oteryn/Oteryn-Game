@@ -152,11 +152,14 @@ def donor_replies():
             sources[npc] = data.decode()
 
     def reply(npc, keyword):
-        pattern = rf'MsgContains\(message, "{keyword}"\)[^\n]* then\s+npcHandler:say\("([^"\n]+)"'
-        lines = re.findall(pattern, sources[npc])
-        if len(lines) != 1:
+        pattern = (
+            rf'MsgContains\(message, "{keyword}"\)[^\n]* then\s+npcHandler:say\('
+            r'("[^"\n]+"|\{[^\n]+\})'
+        )
+        replies = re.findall(pattern, sources[npc])
+        if len(replies) != 1:
             raise ValueError(f"missing unique exchange dialogue: {npc}/{keyword}")
-        return lines[0]
+        return re.findall(r'"([^"\n]+)"', replies[0])
 
     return reply
 
@@ -170,7 +173,7 @@ def append(add, storage, callbacks, offers):
                 "topic": topic,
                 "next_topic": next_topic,
                 "storage": [],
-                "reply": [reply],
+                "reply": [reply] if isinstance(reply, str) else reply,
                 **predicates,
             }
         )
@@ -200,13 +203,18 @@ def append(add, storage, callbacks, offers):
         return ", ".join("{" + name + "}" for name, *_ in rows)
 
     donor_reply = donor_replies()
-    for word in ("token", "information"):
+    for word in ("token", "information", "talk", "silver"):
+        reply = (
+            "My silver token shop is unavailable."
+            if word == "silver"
+            else donor_reply("cledwyn", word)
+        )
         offer(
             "cledwyn",
             word,
             0,
             0,
-            donor_reply("cledwyn", word),
+            reply,
             msg_contains=True,
             any_topic=True,
             preserve_topic=True,
@@ -274,6 +282,15 @@ def append(add, storage, callbacks, offers):
             preserve_topic=True,
             reward_order="before",
         )
+    # The retained vouchers and supply package share the same quote lifecycle.
+    retained = [
+        row
+        for row in offers
+        if row["npc"] == "oteryn:npc.gnomally" and 101 <= row["next_topic"] <= 105
+    ]
+    for row in retained:
+        row["any_topic"] = True
+
     for topic, (name, token, cost, output) in enumerate(GNOMALLY, 106):
         currency = "minor" if token == 16128 else "major"
         offer(
@@ -284,7 +301,6 @@ def append(add, storage, callbacks, offers):
             f"Trade {cost} {currency} crystal tokens for {name}?",
             any_topic=True,
         )
-        offer("gnomally", "no", topic, 0, gnomally_no, msg_contains=True)
         recipe(
             "gnomally",
             "bigfoot_s_burden_quest",
@@ -294,6 +310,9 @@ def append(add, storage, callbacks, offers):
             "Thank you for your help.",
             f"You don't have enough {currency} crystal tokens.",
         )
+
+    for topic in range(101, 106 + len(GNOMALLY)):
+        offer("gnomally", "no", topic, 0, gnomally_no, msg_contains=True)
 
     # The donor charges immediately on the named selection after "souvenir".
     # The existing Abacus commission owns a distinct conversation and state.
@@ -376,6 +395,20 @@ def append(add, storage, callbacks, offers):
         for name, maximum in (("rank", 6), ("door", 1))
     ]
     next_rank = [{"track": INQUISITION, "minimum": 11, "maximum": 2147483647}]
+    # At this stage the earlier mission branch consumes the request without
+    # changing the pending quote or reopening the completed parent mission.
+    offer(
+        "storkus",
+        "mission",
+        0,
+        0,
+        [],
+        requires=next_rank,
+        msg_contains=True,
+        any_topic=True,
+        preserve_topic=True,
+        reward_order="before",
+    )
     for previous, (cost, xp) in enumerate(RANKS):
         rank = previous + 1
         topic = 3 + previous

@@ -262,6 +262,18 @@ pub(super) async fn exercise(
     owner.admit_quest_session(admitted).await;
     owner.admit_progression_session(admitted).await;
 
+    wire_conversation(
+        owner,
+        admitted,
+        storkus,
+        first,
+        false,
+        vec!["hi", "vampire lord token", "yes mission"],
+    )
+    .await?;
+    assert_eq!(quantity(h, 8192).await?, 100, "yes mission spent tokens");
+    assert_eq!(track(h, RANK).await?, None, "yes mission advanced rank");
+
     let mut tokens = 100;
     let mut xp = experience(h).await?;
     for (index, (cost, earned)) in [
@@ -333,6 +345,54 @@ pub(super) async fn exercise(
             vec![(29429, 1), (22516, 2)],
             30344,
             0,
+        ),
+        (
+            cledwyn,
+            "cledwyn-exchange-30344",
+            vec!["hi", "enchant", "pendulet", "enchant tokens", "yes"],
+            vec![(29429, 1), (22516, 2)],
+            30344,
+            1,
+        ),
+        (
+            cledwyn,
+            "cledwyn-exchange-30344",
+            vec!["hi", "enchant", "pendulet", "yes silver", "no", "yes"],
+            vec![(29429, 1), (22516, 2)],
+            30344,
+            0,
+        ),
+        (
+            cledwyn,
+            "cledwyn-exchange-30344",
+            vec!["hi", "enchant", "pendulet", "yes silver", "yes"],
+            vec![(29429, 1), (22516, 2)],
+            30344,
+            1,
+        ),
+        (
+            gnomally,
+            "l9-gnomish-supply",
+            vec!["hi", "muck", "supply", "yes"],
+            vec![(16128, 8)],
+            15698,
+            1,
+        ),
+        (
+            gnomally,
+            "l9-gnomish-supply",
+            vec!["hi", "supply", "no", "yes"],
+            vec![(16128, 2)],
+            15698,
+            0,
+        ),
+        (
+            jorge,
+            "jorge-exchange-28897",
+            vec!["hi", "souvenir", "music box or assassin doll"],
+            vec![(19083, 20)],
+            28897,
+            1,
         ),
         (
             gnomally,

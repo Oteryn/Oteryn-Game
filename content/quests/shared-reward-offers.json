@@ -1738,27 +1738,17 @@
     {
       "npc": "oteryn:npc.cledwyn",
       "keywords": [
-        "addon"
+        "token",
+        "tokens"
       ],
       "topic": 0,
-      "next_topic": 3,
+      "next_topic": 0,
       "storage": [],
       "reply": [
-        "Will you help me with this task?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.cledwyn",
-      "keywords": [
-        "enchant"
-      ],
-      "topic": 0,
-      "next_topic": 1,
-      "storage": [],
-      "reply": [
-        "I can enchant {pendulet}, {sleep shawl}, {blister ring}, {theurgic amulet}, {ring of souls}, {spiritthorn ring}, {alicorn ring}, {arcanomancer sigil}, {arboreal ring}, {turtle amulet}. Which item?"
+        "If you have any {silver} tokens with you, let's have a look! Maybe I can offer you something in exchange."
       ],
       "any_topic": true,
+      "preserve_topic": true,
       "reward_order": "before",
       "msg_contains": true
     },
@@ -1781,19 +1771,63 @@
     {
       "npc": "oteryn:npc.cledwyn",
       "keywords": [
-        "token",
-        "tokens"
+        "talk"
       ],
       "topic": 0,
       "next_topic": 0,
       "storage": [],
       "reply": [
-        "If you have any {silver} tokens with you, let's have a look! Maybe I can offer you something in exchange."
+        "Why, certainly! I'm always up for some small talk. ...",
+        "The weather continues just fine here, don't you think? Just the day for a little walk around the town! ...",
+        "Actually, I haven't been around much yet, but I'm looking forward to exploring the city once I've finished trading {token}s."
       ],
       "any_topic": true,
       "preserve_topic": true,
       "reward_order": "before",
       "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "silver"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "My silver token shop is unavailable."
+      ],
+      "any_topic": true,
+      "preserve_topic": true,
+      "reward_order": "before",
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "enchant"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "I can enchant {pendulet}, {sleep shawl}, {blister ring}, {theurgic amulet}, {ring of souls}, {spiritthorn ring}, {alicorn ring}, {arcanomancer sigil}, {arboreal ring}, {turtle amulet}. Which item?"
+      ],
+      "any_topic": true,
+      "reward_order": "before",
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
     },
     {
       "npc": "oteryn:npc.cledwyn",
@@ -2898,7 +2932,8 @@
       "storage": [],
       "reply": [
         "Will you help me with this task?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2910,7 +2945,8 @@
       "storage": [],
       "reply": [
         "Will you help me with this task?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2935,7 +2971,8 @@
       "storage": [],
       "reply": [
         "Will you help me with this task?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2947,7 +2984,8 @@
       "storage": [],
       "reply": [
         "Will you help me with this task?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -3189,7 +3227,73 @@
       "storage": [],
       "reply": [
         "Will you help me with this task?"
-      ]
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 102,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 103,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 104,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 105,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -6676,6 +6780,27 @@
       "reply": [
         "Will you retrieve my favourite staff?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 2147483647
+        }
+      ],
+      "any_topic": true,
+      "preserve_topic": true,
+      "reward_order": "before",
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.storkus",

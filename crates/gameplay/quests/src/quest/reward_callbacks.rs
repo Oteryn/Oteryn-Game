@@ -3598,24 +3598,30 @@ fn jorge_selects_the_first_matching_souvenir_from_the_live_catalogue() -> Result
     let loaded = super::loader::load_embedded_quest_state("jorge-source-order")
         .map_err(|error| format!("{error:?}"))?;
     let callbacks = offered_for(loaded.catalogue())?;
-    let mut matches = callbacks.iter().filter(|callback| {
-        callback.npc == "oteryn:npc.jorge"
-            && callback.topic == 101
-            && callback.matches_keyword("music box or abacus")
-    });
-    let first = matches.next().ok_or("missing first souvenir match")?;
-    assert_eq!(
-        first.give.as_ref().map(|reward| reward.item.as_str()),
-        Some("oteryn:item.tibia.i19151")
-    );
-    let another_match = matches.next().is_some();
-    assert!(
-        another_match,
-        "both souvenir names match the same utterance"
-    );
-    assert!(
-        first.accepts_npc_match(another_match),
-        "the first match must win"
-    );
+    for (text, expected) in [
+        ("music box or abacus", "oteryn:item.tibia.i19151"),
+        ("music box or assassin doll", "oteryn:item.tibia.i28897"),
+    ] {
+        let mut matches = callbacks.iter().filter(|callback| {
+            callback.npc == "oteryn:npc.jorge"
+                && callback.topic == 101
+                && callback.matches_keyword(text)
+        });
+        let first = matches.next().ok_or("missing first souvenir match")?;
+        assert_eq!(
+            first.give.as_ref().map(|reward| reward.item.as_str()),
+            Some(expected),
+            "{text}"
+        );
+        let another_match = matches.next().is_some();
+        assert!(
+            another_match,
+            "both souvenir names match the same utterance"
+        );
+        assert!(
+            first.accepts_npc_match(another_match),
+            "the first match must win"
+        );
+    }
     Ok(())
 }

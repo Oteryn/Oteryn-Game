@@ -1098,7 +1098,10 @@ def build():
     exchange_callbacks = [c for c in callbacks[exchange_start:] if c["npc"] != "oteryn:npc.gnomally"]
     callbacks = callbacks[:exchange_start] + [c for c in callbacks[exchange_start:] if c not in exchange_callbacks]
     exchange_document = {"schema": 1, "tracks": exchange_tracks,
-                         "callbacks": sorted(exchange_callbacks, key=lambda c: c["key"])}
+                         # The stable sort retains Jorge's authored table order.
+                         "callbacks": sorted(exchange_callbacks, key=lambda c:
+                             c["key"] if c["npc"] != "oteryn:npc.jorge"
+                             else "oteryn:quest-reward/jorge-exchange-")}
     validate_callbacks(exchange_document)
     l13_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith('l13-')]
     callbacks = [c for c in callbacks if c not in l13_callbacks]
@@ -1120,7 +1123,13 @@ def build():
         elif name in ('l6-citizen-rook-backpack', 'qb-citizen-backpack'):
             callback['account_reservation'] = {'action': 'finish', 'key': backpack}
     callbacks.sort(key=lambda c:c['key'])
-    offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
+    # Cledwyn's early branches overlap and must retain their authored order.
+    offers.sort(key=lambda c: (
+        c['npc'],
+        c['topic'],
+        [] if c['npc'] == 'oteryn:npc.cledwyn' and c.get('reward_order') == 'before'
+        else c['keywords'],
+    ))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises})
     validate_callbacks({'schema':1,'callbacks':fibula_callbacks})
