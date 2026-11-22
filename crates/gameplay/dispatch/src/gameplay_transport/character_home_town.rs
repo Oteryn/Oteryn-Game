@@ -51,21 +51,84 @@ fn premium_area_town(town: u32) -> Option<bool> {
 
 /// Crystal `login.lua:15`.
 const PREMIUM_EXPIRED_TEXT: &str = "Your premium time has expired!";
+const PREMIUM_TILE_EXPIRED_TEXT: &str =
+    "Your premium has expired. You are being teleported to a free town.";
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// P20: at login, a Character whose account's Premium entitlement ended and whose home town
-    /// is in the premium area becomes a citizen of Thais and enters at its temple (Crystal
-    /// `login.lua:8-15`). `None` leaves the admission as it was: Premium current or unknown, a
-    /// free-area town, or no hometown catalogue. Citizenship is committed only after placement.
+    /// Crystal 201189f8, `data/XML/specialtiles.xml`: one tile and an inclusive rectangle.
+    /// Interpret them only in the saved row's admitted World and coordinate frame.
+    pub(super) async fn saved_premium_tile(
+        &self,
+        decided: &last_position::AdmissionPosition,
+    ) -> bool {
+        let last_position::AdmissionPosition::Stored(stored) = decided else {
+            return false;
+        };
+        let cell = stored.record.cell;
+        if stored.record.world_id != self.world_id
+            || cell.floor != 7
+            || !((cell.x == 32367 && cell.y == 32231)
+                || ((32358..=32363).contains(&cell.x) && (32239..=32244).contains(&cell.y)))
+        {
+            return false;
+        }
+        let Some(map) = self.bundle_map() else {
+            return false;
+        };
+        use crate::map::view::MapFacts;
+        let tile = crate::map::overlay::TilePos {
+            x: cell.x as u16,
+            y: cell.y as u16,
+            floor: -7,
+        };
+        if map.facts.house_tile(tile) {
+            return false;
+        }
+        let pinned_digest = {
+            let runtime = self.runtime.lock().await;
+            let pin = runtime.content_pin();
+            if stored.record.coordinate_frame_digest != pin.frame_binding_digest() {
+                return false;
+            }
+            pin.server_artifact_digest()
+        };
+        let door = self.door.lock().await;
+        respawn_cell_admissible(
+            self.movement_cells().index(),
+            self.movement_cells().scope(),
+            self.world_id,
+            pinned_digest,
+            door.blocking_cells(),
+            MovementLocalPosition {
+                x: cell.x,
+                y: cell.y,
+                floor: cell.floor,
+            },
+        )
+    }
+
+    #[cfg(test)]
     pub(super) async fn premium_ended_temple(
         &self,
         account: [u8; 16],
         session: GameSessionId,
     ) -> Option<MovementLocalPosition> {
+        self.premium_ended_entry_temple(account, session, false)
+            .await
+    }
+
+    /// P20 selects Thais for an ended entitlement on a special tile or with a Premium hometown.
+    pub(super) async fn premium_ended_entry_temple(
+        &self,
+        account: [u8; 16],
+        session: GameSessionId,
+        on_premium_tile: bool,
+    ) -> Option<MovementLocalPosition> {
         let coordinator = self.premium_coordinator?;
         let table = &self.bundle_map()?.overlay.base().subareas;
         let temple = table.town(FREE_ACCOUNT_DEFAULT_TOWN)?.temple?;
-        if premium_area_town(self.home_town(session, None).await?) != Some(true) {
+        if !on_premium_tile && premium_area_town(self.home_town(session, None).await?) != Some(true)
+        {
             return None;
         }
         // Settle delivery, then load the durable fence: this account's pulls start only after
@@ -89,6 +152,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         decided: &last_position::AdmissionPosition,
         placed: crate::durability::character_last_position::FinalLastPosition,
+        on_premium_tile: bool,
     ) -> bool {
         use last_position::AdmissionPosition;
         let relocation = crate::durability::character_home_town::HomeTownRelocation {
@@ -115,9 +179,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return false;
         }
-        self.states
-            .chat
-            .push_quest_feedback(session, PREMIUM_EXPIRED_TEXT);
+        let text = if on_premium_tile {
+            PREMIUM_TILE_EXPIRED_TEXT
+        } else {
+            PREMIUM_EXPIRED_TEXT
+        };
+        self.states.chat.push_quest_feedback(session, text);
         true
     }
 
