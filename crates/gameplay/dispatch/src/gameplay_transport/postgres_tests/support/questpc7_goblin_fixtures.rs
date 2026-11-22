@@ -258,7 +258,7 @@ pub(super) async fn exercise_signs(
     let first = SIGN_SITES[0];
     let target = |appearance| -> TestResult<_> {
         let payload = super::questpc7_hoist_story_fixtures::target(owner, first, appearance)?;
-        Ok(oteryn_protocol_oteryn::world_object::decode_use_intent(&payload).map_err(debug)?)
+        oteryn_protocol_oteryn::world_object::decode_use_intent(&payload).map_err(debug)
     };
     let placed = target(17680)?;
     assert_eq!(placed.expected_revision, 1);
