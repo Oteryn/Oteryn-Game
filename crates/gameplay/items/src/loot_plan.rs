@@ -17,6 +17,11 @@ pub const COMBAT01_LOOT_PLAN_BYTES_MAX: usize = 4096 * 1792 + 2048;
 /// loot factor.
 pub const COMBAT01_LOOT_RNG_DRAWS_MAX: usize = 8192;
 
+const DAILY_BOOSTED_EXTRA_ROLLS_MAX: u8 = 3;
+// Reserve a disjoint ordinal range for each additional stack, including across boosted rolls.
+const STACK_MINT_ORDINAL_STRIDE: u32 =
+    COMBAT01_LOOT_PLAN_ENTRIES_MAX as u32 * (1 + DAILY_BOOSTED_EXTRA_ROLLS_MAX as u32);
+
 /// Content schema `probability_ppm` scale (parts per million), matching
 /// `content::reference_playable::REFERENCE_LOOT_PROBABILITY_PPM_SCALE`.
 const LOOT_PROBABILITY_PPM_SCALE: u32 = 1_000_000;
@@ -72,6 +77,7 @@ pub use oteryn_gameplay_domain::domain::loot_data::{
 pub struct LootPlanEntry {
     pub item: LootDefinitionRef,
     pub quantity: u32,
+    /// The original roll's ordinal for the first stack, or a derived MINT ordinal for a split.
     pub draw_ordinal: u32,
     pub purpose_key: String,
     /// Index of the parent in this flattened, parent-before-child plan; None means corpse.
@@ -390,35 +396,24 @@ fn roll_entries(
         if quantity == 0 {
             return Err(LootPlanError::InvalidQuantityRange);
         }
-        let index = state.entries.len();
         let maximum = entry
             .details
             .corpse_stack_maximum
             .map_or(quantity, std::num::NonZeroU32::get);
-        let mut remaining = quantity;
-        for stack in 0..quantity.div_ceil(maximum) {
-            // The first stack keeps the original cause. Extra stacks share the
-            // source roll but need their own deterministic mint causes.
-            let purpose_key = if stack == 0 {
-                entry.item.production_key.clone()
-            } else {
-                format!("{}.stack-{stack}", entry.item.production_key)
-            };
-            state.bytes = charge_plan_bytes(
-                state.bytes,
-                entry_footprint_bytes(&entry.item, &purpose_key),
-            )?;
+        let index = state.entries.len();
+        for stack_index in 0..quantity.div_ceil(maximum) {
             if state.entries.len() >= COMBAT01_LOOT_PLAN_ITEMS_MAX {
                 return Err(LootPlanError::TooManyPlanItems);
             }
-            let count = remaining.min(maximum);
-            remaining -= count;
+            let purpose = &entry.item.production_key;
+            state.bytes =
+                charge_plan_bytes(state.bytes, entry_footprint_bytes(&entry.item, purpose))?;
             placement_ordinal += 1;
             state.entries.push(LootPlanEntry {
                 item: entry.item.clone(),
-                quantity: count,
-                draw_ordinal,
-                purpose_key,
+                quantity: (quantity - stack_index * maximum).min(maximum),
+                draw_ordinal: draw_ordinal + stack_index * STACK_MINT_ORDINAL_STRIDE,
+                purpose_key: purpose.clone(),
                 parent,
                 placement_ordinal,
                 subtype: entry.details.subtype,
@@ -476,7 +471,9 @@ fn plan_daily_boosted(
     extra_rolls: u8,
     boosted_entries: usize,
 ) -> Result<LootPlan, LootPlanError> {
-    if !(1..=3).contains(&extra_rolls) || boosted_entries > table.entries.len() {
+    if !(1..=DAILY_BOOSTED_EXTRA_ROLLS_MAX).contains(&extra_rolls)
+        || boosted_entries > table.entries.len()
+    {
         return Err(LootPlanError::UnsupportedAlgorithm);
     }
     if table.entries.len() > COMBAT01_LOOT_PLAN_ENTRIES_MAX {
@@ -699,6 +696,7 @@ fn deterministic_draw(
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::item_transfer::GAMEITEM01_STACK_QUANTITY_MAX;
 
     #[test]
     fn instance_loot_entropy_is_separate_and_preserves_channel_draws() {
@@ -730,6 +728,110 @@ mod tests {
             u32::from(seed) + 1,
             u64::from(seed) + 2,
         )
+    }
+
+    #[test]
+    fn clomp_loot_keeps_the_committed_roll_in_collectable_stacks()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_content::content::creature_reward::{
+            CreatureRewardTable, LootTablesSection,
+        };
+
+        let profiles = serde_json::from_str(include_str!(
+            "../../../../content/creatures/definitions/spell-native-profiles.json"
+        ))?;
+        let section = LootTablesSection::decode(
+            include_bytes!("../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &profiles,
+        )?;
+        let rewards = CreatureRewardTable::from_pin(&profiles, Some(&section));
+        let limit = GAMEITEM01_STACK_QUANTITY_MAX;
+        for creature in ["oteryn:creature.animated_clomp", "oteryn:creature.clomp"] {
+            let reward = rewards.row(creature).map_err(|reason| reason.as_str())?;
+            let reference = reward.loot_table_ref.as_ref().ok_or("missing loot table")?;
+            let (ordinal, source) = reward
+                .loot_table
+                .entries
+                .iter()
+                .enumerate()
+                .find(|(_, entry)| entry.item.production_key == "oteryn:item.tibia.i3031")
+                .ok_or("missing gold entry")?;
+            assert!(source.details.stackable);
+            let ordinal = u32::try_from(ordinal)?;
+            let probability = source.probability_ppm.ok_or("missing gold probability")?;
+            let (death, total) = (0..=u8::MAX)
+                .map(death_key)
+                .find_map(|death| {
+                    let chance = deterministic_draw(death, reference, ordinal, DrawKind::Chance);
+                    let factor = loot_factor_percent(deterministic_draw(
+                        death,
+                        reference,
+                        ordinal,
+                        DrawKind::Factor,
+                    ));
+                    let total = quantity_in_range(chance, source.min_count, source.max_count);
+                    (total > limit && factored_success(chance, probability, factor, 0))
+                        .then_some((death, total))
+                })
+                .ok_or("no successful oversized gold roll")?;
+            let plan = plan_creature_loot(death, reference, &reward.loot_table)?;
+            let gold: Vec<_> = plan
+                .entries
+                .iter()
+                .filter(|entry| entry.item == source.item)
+                .collect();
+            assert_eq!(
+                gold.iter().map(|entry| entry.quantity).collect::<Vec<_>>(),
+                [limit, total - limit],
+                "{creature}"
+            );
+            assert_eq!(gold[0].draw_ordinal, ordinal);
+            assert_ne!(gold[0].draw_ordinal, gold[1].draw_ordinal);
+            assert_eq!(gold[0].placement_ordinal + 1, gold[1].placement_ordinal);
+            assert_eq!(
+                plan,
+                plan_creature_loot(death, reference, &reward.loot_table)?
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn daily_nested_loot_gives_collectable_stacks_distinct_slots_and_causes()
+    -> Result<(), LootPlanError> {
+        let limit = GAMEITEM01_STACK_QUANTITY_MAX;
+        let total = 2 * limit + 1;
+        let mut table = one_entry_table("oteryn:item.fixture.container", 1, 1, Some(1_000_000));
+        let container = &mut table.entries[0].details;
+        container.container_capacity = Some(3);
+        container.children =
+            one_entry_table("oteryn:item.fixture.stack", total, total, Some(1_000_000)).entries;
+        container.children[0].details.stackable = true;
+        container.children[0].details.corpse_stack_maximum = std::num::NonZeroU32::new(limit);
+        apply_configured_loot_rate(&mut table, 200);
+        table.algorithm = LootSelectionAlgorithm::DailyBoosted {
+            extra_rolls: 1,
+            boosted_entries: 1,
+        };
+
+        let plan = plan_creature_loot(death_key(0), &table_ref("oteryn:loot.fixture"), &table)?;
+        assert_eq!(plan.entries.len(), 8);
+        let mut ordinals = std::collections::HashSet::new();
+        for (parent, entries) in plan.entries.as_chunks::<4>().0.iter().enumerate() {
+            assert_eq!(entries[0].parent, None);
+            for (slot, (entry, quantity)) in entries[1..].iter().zip([limit, limit, 1]).enumerate()
+            {
+                assert_eq!(entry.parent, Some(parent * 4));
+                assert_eq!(entry.placement_ordinal as usize, slot + 1);
+                assert_eq!(entry.quantity, quantity);
+            }
+            assert!(
+                entries
+                    .iter()
+                    .all(|entry| ordinals.insert(entry.draw_ordinal))
+            );
+        }
+        Ok(())
     }
 
     pub(super) fn one_entry_table(
@@ -820,8 +922,8 @@ mod tests {
                     plan_creature_loot(death, reference, &reward.loot_table)?
                 );
                 assert!(gold_stacks.windows(2).all(|pair| {
-                    pair[0].draw_ordinal == pair[1].draw_ordinal
-                        && pair[0].purpose_key != pair[1].purpose_key
+                    pair[0].draw_ordinal != pair[1].draw_ordinal
+                        && pair[0].purpose_key == pair[1].purpose_key
                         && pair[0].placement_ordinal + 1 == pair[1].placement_ordinal
                 }));
                 largest = largest.max(total);
