@@ -295,9 +295,9 @@ pub async fn begin_projection<'a>(
 
 /// Retry checkout only. Once a pass runs, a publication or commit error must
 /// go through the scheduler's normal reconciliation on its next pass.
-async fn issue_snapshot_pass<T>(
+async fn issue_snapshot_pass<T, F: Future<Output = ()>>(
     mut issue: impl FnMut() -> std::result::Result<T, DurabilityError>,
-    mut wait: impl AsyncFnMut(tokio::time::Instant, tokio::time::Instant),
+    mut wait: impl FnMut(tokio::time::Instant, tokio::time::Instant) -> F,
 ) -> std::result::Result<T, DurabilityError> {
     use tokio::time::Instant;
 

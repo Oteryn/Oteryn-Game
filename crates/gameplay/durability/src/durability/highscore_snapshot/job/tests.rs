@@ -108,9 +108,12 @@ fn snapshot_checkout_retries_a_busy_holder_before_the_next_scheduled_pass() -> s
                 Ok(42)
             }
         },
-        async |earliest, latest| {
-            assert!(earliest <= latest);
-            assert!(holder_busy.replace(false));
+        |earliest, latest| {
+            let holder_busy = &holder_busy;
+            async move {
+                assert!(earliest <= latest);
+                assert!(holder_busy.replace(false));
+            }
         },
     ));
     assert!(matches!(result, Ok(42)), "{result:?}");
@@ -120,12 +123,12 @@ fn snapshot_checkout_retries_a_busy_holder_before_the_next_scheduled_pass() -> s
 #[test]
 fn snapshot_checkout_preserves_noncontention_errors() -> std::io::Result<()> {
     let runtime = tokio::runtime::Builder::new_current_thread().build()?;
-    let mut waited = false;
+    let waited = std::cell::Cell::new(false);
     let result = runtime.block_on(super::super::issue_snapshot_pass(
         || Err::<(), _>(DurabilityError::InvalidConfiguration),
-        async |_, _| waited = true,
+        |_, _| async { waited.set(true) },
     ));
     assert!(matches!(result, Err(DurabilityError::InvalidConfiguration)));
-    assert!(!waited);
+    assert!(!waited.get());
     Ok(())
 }
