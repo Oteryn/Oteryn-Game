@@ -73,7 +73,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             area: area.area,
             legacy_area: area.legacy_area,
             subarea: area.subarea,
-            subareas: area.subareas,
+            areas: area.areas,
+            cosmetics: area.cosmetics,
             pool: area.pool,
             at,
             fee: None,
@@ -99,6 +100,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if wire::decode_retained_result(&bytes).is_ok_and(|result| {
                     result.discovered && result.found == 7 && result.revision > before.get()
                 }) {
+                    self.states.title_refresh.mark([current.character_id]);
                     self.states.tutorial_sessions.notice(
                         session,
                         oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(

@@ -3,53 +3,25 @@
 //! not individual POIs or subareas. Unconverted legacy progress cannot grant this title.
 use crate::domain::CharacterId;
 use crate::durability::DurabilityError;
-use std::collections::BTreeMap;
+use crate::durability::character_cyclopedia::DiscoveryAreas;
 
-pub(super) struct Source {
-    mains: BTreeMap<u32, Vec<u32>>,
-}
+pub(super) struct Source(DiscoveryAreas);
+
 impl Source {
-    /// The transport supplies the current admitted bundle's table, never client data.
+    /// The transport supplies the current admitted bundle's table.
     pub(super) fn new(table: &oteryn_world_bundle::subarea::Table) -> Option<Self> {
-        let mut mains: BTreeMap<_, Vec<_>> = table
-            .areas
-            .iter()
-            .filter(|area| area.parent.is_none())
-            .map(|area| (area.id, Vec::new()))
-            .collect();
-        if mains.is_empty() || table.areas.len() > oteryn_world_bundle::subarea::MAX_AREAS {
-            return None;
-        }
-        for area in &table.areas {
-            if let Some(parent) = area.parent {
-                mains.get_mut(&parent)?.push(area.id);
-            }
-        }
-        Some(Self { mains })
+        DiscoveryAreas::from_table(table).map(Self)
     }
 
     fn percent(&self, progress: &serde_json::Value) -> u8 {
-        let Some(subareas) = progress
-            .get("subareas")
-            .and_then(serde_json::Value::as_object)
-        else {
-            return 0;
-        };
-        let done = self
-            .mains
-            .values()
-            .filter(|ids| {
-                !ids.is_empty()
-                    && ids.iter().all(|id| {
-                        subareas
-                            .get(&id.to_string())
-                            .and_then(|state| state.get("discovered"))
-                            .and_then(serde_json::Value::as_bool)
-                            == Some(true)
-                    })
-            })
-            .count();
-        u8::try_from(done * 100 / self.mains.len()).unwrap_or(0)
+        self.0.completion(|id| {
+            progress
+                .get("subareas")
+                .and_then(|subareas| subareas.get(&id.to_string()))
+                .and_then(|state| state.get("discovered"))
+                .and_then(serde_json::Value::as_bool)
+                == Some(true)
+        }).1
     }
 
     pub(super) async fn read(
@@ -80,18 +52,29 @@ impl Source {
 mod tests {
     use super::*;
     #[test]
-    fn srv6_exploration_counts_complete_main_areas_not_pois_or_legacy() {
-        let source = Source {
-            mains: BTreeMap::from([
-                (1, vec![11, 12]),
-                (2, vec![21]),
-                (3, vec![31]),
-                (4, vec![41]),
-            ]),
+    fn srv6_exploration_counts_complete_main_areas_not_pois_or_legacy() -> Result<(), &'static str> {
+        use oteryn_world_bundle::subarea::{Area, Table};
+        let table = Table {
+            areas: [(1, None), (2, None), (3, None), (4, None), (11, Some(1)),
+                     (12, Some(1)), (21, Some(2)), (31, Some(3)), (41, Some(4))]
+                .into_iter()
+                .map(|(id, parent)| Area {
+                    id,
+                    key: format!("oteryn:content.area.fixture{id}"),
+                    name: format!("Area {id}"),
+                    parent,
+                    source_record_sha256: "a".repeat(64),
+                    town_id: None,
+                    hometown: false,
+                    temple: None,
+                }).collect(),
+            ..Table::default()
         };
+        let source = Source::new(&table).ok_or("invalid exploration source")?;
         assert_eq!(source.percent(&serde_json::json!({"discovered":true})), 0);
         assert_eq!(source.percent(&serde_json::json!({"subareas":{"11":{"discovered":true},"21":{"discovered":true},"999":{"discovered":true}}})),25);
         assert_eq!(source.percent(&serde_json::json!({"subareas":{"11":{"discovered":true},"12":{"discovered":true},"21":{"discovered":true}}})),50);
         assert_eq!(source.percent(&serde_json::json!({"subareas":{"11":{"discovered":true},"12":{"discovered":true},"21":{"discovered":true},"31":{"discovered":true},"41":{"discovered":true}}})),100);
+        Ok(())
     }
 }

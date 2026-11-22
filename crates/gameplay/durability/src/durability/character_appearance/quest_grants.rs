@@ -2,7 +2,7 @@
 //! The caller has already fenced and locked the granting Character and accepted its Quest
 //! transition in this same transaction. A recorded grant does not manufacture a catalogue:
 //! selection still requires an admitted, explicit grant mapping compatible with its provenance.
-use crate::content::native_gameplay::NativeGameplayState;
+use crate::content::native_gameplay::{NativeCosmeticsView, NativeGameplayState};
 use crate::domain::CharacterId;
 use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, UnlockFact};
 use crate::durability::DurabilityError;
@@ -15,9 +15,15 @@ pub(crate) fn outfit_compatible(
     native: &NativeGameplayState,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
 ) -> bool {
-    let Some(cosmetics) = native.cosmetics() else {
-        return false;
-    };
+    native
+        .cosmetics()
+        .is_some_and(|cosmetics| outfit_matches_cosmetics(cosmetics, reward))
+}
+
+pub(crate) fn outfit_matches_cosmetics(
+    cosmetics: &NativeCosmeticsView,
+    reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
+) -> bool {
     reward.addons <= 3
         && (0..=2).all(|addon| {
             if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 {
@@ -57,7 +63,20 @@ pub(crate) async fn grant_content_outfit(
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
     native: &NativeGameplayState,
 ) -> Result<Vec<String>, DurabilityError> {
-    if occurrence.is_empty() || occurrence.len() > 4096 || !outfit_compatible(native, reward) {
+    if !outfit_compatible(native, reward) {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    grant_cosmetics_outfit(tx, character, occurrence, reward).await
+}
+
+/// Write a grant after the caller has verified its mapping in the admitted cosmetics view.
+pub(crate) async fn grant_cosmetics_outfit(
+    tx: &mut Transaction<'_, Postgres>,
+    character: CharacterId,
+    occurrence: &[u8],
+    reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
+) -> Result<Vec<String>, DurabilityError> {
+    if occurrence.is_empty() || occurrence.len() > 4096 {
         return Err(DurabilityError::InvalidStoredState);
     }
     let account: sqlx::types::Uuid = sqlx::query_scalar(

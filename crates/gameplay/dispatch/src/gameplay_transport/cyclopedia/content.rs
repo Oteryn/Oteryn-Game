@@ -1,5 +1,7 @@
 //! W12: discovery membership and POI candidates come from admitted native subarea masks.
 use super::*;
+use crate::content::native_gameplay::NativeCosmeticsView;
+use crate::durability::character_cyclopedia::DiscoveryAreas;
 
 pub(in crate::gameplay_transport) struct AdmittedArea {
     pub digest: [u8; 32],
@@ -7,7 +9,8 @@ pub(in crate::gameplay_transport) struct AdmittedArea {
     pub area: u32,
     pub legacy_area: u32,
     pub subarea: Option<u32>,
-    pub subareas: Vec<(u32, u32)>,
+    pub areas: DiscoveryAreas,
+    pub cosmetics: Option<NativeCosmeticsView>,
 }
 pub(super) fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<AdmittedArea> {
     let map = owner.bundle_map()?;
@@ -72,11 +75,7 @@ pub(super) fn admit_at(
     if !walkable(start) {
         return None;
     }
-    let subareas: Vec<_> = table
-        .areas
-        .iter()
-        .filter_map(|a| a.parent.map(|parent| (parent, a.id)))
-        .collect();
+    let areas = DiscoveryAreas::from_table(table)?;
     let mut pool = Vec::new();
     'candidates: for run in table.runs.iter().filter(|run| run.subarea == subarea) {
         for x in run.begin..run.end {
@@ -102,6 +101,7 @@ pub(super) fn admit_at(
         area,
         legacy_area,
         subarea: Some(subarea),
-        subareas,
+        areas,
+        cosmetics: native.cosmetics().cloned(),
     })
 }

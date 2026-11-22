@@ -252,7 +252,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             area: area.area,
             legacy_area: area.legacy_area,
             subarea: area.subarea,
-            subareas: area.subareas,
+            areas: area.areas,
+            cosmetics: area.cosmetics,
             epoch: self.reset_epoch,
             pool: area.pool,
             at,
@@ -316,6 +317,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return GuildReply::Unavailable;
                 };
                 if discovered_now {
+                    self.states.title_refresh.mark([fence.character_id]);
                     self.states.tutorial_sessions.notice(
                         admitted.game_session_id,
                         oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(

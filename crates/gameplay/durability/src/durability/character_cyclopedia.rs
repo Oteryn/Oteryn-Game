@@ -12,14 +12,17 @@ use super::item_fee_burn::{
 use super::item_mint_audit::Type2Transaction;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
+use crate::content::native_gameplay::NativeCosmeticsView;
 use crate::domain::cyclopedia::{BasicArea, MapAction, MapProgress, MapRefusal, Point};
 use crate::foundation::CommandRef;
 use oteryn_protocol_oteryn::cyclopedia::{MapResult, encode_result};
 use sqlx::Row;
 
+mod milestones;
 mod speed;
 mod storage;
 mod world;
+pub use milestones::DiscoveryAreas;
 pub use world::CyclopediaWorldBinding;
 #[derive(Debug, Clone)]
 pub struct MapRequest {
@@ -32,7 +35,8 @@ pub struct MapRequest {
     pub area: u32,
     pub legacy_area: u32,
     pub subarea: Option<u32>,
-    pub subareas: Vec<(u32, u32)>,
+    pub areas: DiscoveryAreas,
+    pub cosmetics: Option<NativeCosmeticsView>,
     pub pool: Vec<Point>,
     pub at: Point,
     pub fee: Option<FeeChangeFacts>,
@@ -65,7 +69,7 @@ impl DurabilityRoot {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
-            if request.command.game_session_id() != fence.game_session_id || !(1..=1024).contains(&request.area) || !(1..=1024).contains(&request.legacy_area) || request.subarea.is_none_or(|id| !request.subareas.contains(&(request.area,id))) || request.subareas.len() > 512 || request.pool.len() > 128 || request.pool.len() < 7 || request.now <= 0 {
+            if request.command.game_session_id() != fence.game_session_id || !(1..=1024).contains(&request.area) || !(1..=1024).contains(&request.legacy_area) || request.subarea.is_none_or(|id| !request.areas.subareas(request.area).contains(&id)) || request.areas.subarea_count() > 512 || request.pool.len() > 128 || request.pool.len() < 7 || request.now <= 0 {
                 return Ok(Err(CharacterProgressionError::InvalidInput));
             }
             // Current authority is checked even on replay; a retained receipt grants no custody.
@@ -91,13 +95,16 @@ impl DurabilityRoot {
                 return Ok(Err(CharacterProgressionError::AuthorityRejected));
             }
             let area=BasicArea::embedded().ok_or(DurabilityError::InvalidStoredState)?;
-            let mut progress=storage::load(&mut tx,&fence,&request).await?;
-            let changed = match area.apply(&mut progress,request.action,&request.pool,request.at,false,&request.occurrence) {
+            let mut all=storage::load_all(&mut tx,&fence,&request).await?;
+            let id=request.subarea.ok_or(DurabilityError::InvalidStoredState)?;
+            let progress=all.subareas.entry(id).or_default();
+            let was_discovered=progress.discovered;
+            let changed = match area.apply(progress,request.action,&request.pool,request.at,false,&request.occurrence) {
                 Ok(changed)=>changed,
                 Err(reason)=> {
                     let code=match reason { MapRefusal::Invalid=>1, MapRefusal::PremiumRequired=>2, MapRefusal::AlreadyDiscovered=>3, MapRefusal::NoExploration=>4, MapRefusal::InsufficientPool=>5 };
                     let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch,request.area,request.legacy_area).await?;
-                    return Ok(Ok((root.revision,projection(code,root.revision,&progress,pool,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?)));
+                    return Ok(Ok((root.revision,projection(code,root.revision,all.current(id)?,pool,improved,&request,all.percentage(&request)?)?)));
                 }
             };
             // Gold owner locks root, eligible coins, bank in that order, before the pool.
@@ -110,7 +117,7 @@ impl DurabilityRoot {
                     Ok(FeeBurnOutcome::AlreadyBurned(_))=>return Err(DurabilityError::InvalidStoredState),
                     Err(FeeBurnError::InsufficientFunds|FeeBurnError::ChangeDoesNotFit|FeeBurnError::CapacityExceeded)=> {
                         let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch,request.area,request.legacy_area).await?;
-                        return Ok(Ok((root.revision,projection(6,root.revision,&progress,pool,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?)));
+                        return Ok(Ok((root.revision,projection(6,root.revision,all.current(id)?,pool,improved,&request,all.percentage(&request)?)?)));
                     }
                     Err(FeeBurnError::Unavailable(e))=>return Err(e),
                     Err(_)=>return Ok(Err(CharacterProgressionError::InvalidInput)),
@@ -121,9 +128,15 @@ impl DurabilityRoot {
             let pool_after=pool.checked_add(donation).filter(|v|*v<=i64::MAX as u64).ok_or(DurabilityError::InvalidStoredState)?;
             let advanced=changed || donation>0;
             let revision=root.revision.checked_add(u64::from(advanced)).ok_or(DurabilityError::InvalidStoredState)?;
-            let bytes=projection(0,revision,&progress,pool_after,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?;
+            let current=all.current(id)?;
+            let bytes=projection(0,revision,current,pool_after,improved,&request,all.percentage(&request)?)?;
             if advanced || request.action != MapAction::Query {
-                storage::save(&mut tx,&fence,&request,&progress,advanced,donation,pool,pool_after,&bytes).await?;
+                storage::save(&mut tx,&fence,&request,&all,advanced,donation,pool,pool_after,&bytes).await?;
+            }
+            // Query also reconciles canonical discoveries earned before the milestone consumer existed.
+            let completed_now=!was_discovered && current.discovered;
+            if completed_now || (request.action == MapAction::Query && !all.legacy.discovered) {
+                milestones::grant(&mut tx, fence.character_id, &request, &all).await?;
             }
             tx.commit(deadline).await?;
             Ok(Ok((revision,bytes)))

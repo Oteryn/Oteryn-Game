@@ -105,6 +105,22 @@ pub(in super::super) fn world_with_subareas(
     generation: &crate::content::ActiveGeneration,
     canonical: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    world_with_regions(deps, generation, canonical, false)
+}
+
+pub(in super::super) fn world_with_two_main_areas(
+    deps: &Dependencies,
+    generation: &crate::content::ActiveGeneration,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_with_regions(deps, generation, true, true)
+}
+
+fn world_with_regions(
+    deps: &Dependencies,
+    generation: &crate::content::ActiveGeneration,
+    canonical: bool,
+    two_mains: bool,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{
         bundle,
         sector::{Attrs, Item, Tile},
@@ -128,7 +144,8 @@ pub(in super::super) fn world_with_subareas(
     // Two rows hold at most six POIs four tiles apart outside the entry window (x <= 10),
     // so x >= 11 extends to eight rows; walks to POIs stay on rows that exist.
     let mut tiles = Vec::new();
-    for y in 0..if canonical { 9 } else { 8 } {
+    let rows = if two_mains { 10 } else if canonical { 9 } else { 8 };
+    for y in 0..rows {
         for x in (0..32).filter(|x| y < 2 || *x >= 11) {
             tiles.push(Tile {
                 x,
@@ -158,11 +175,16 @@ pub(in super::super) fn world_with_subareas(
             candidate_sha256: hash.clone(),
             areas: [1, 2, 3]
                 .into_iter()
+                .chain(two_mains.then_some([4, 5]).into_iter().flatten())
                 .map(|id| Area {
                     id,
                     key: format!("oteryn:content.area.fixture{id}"),
                     name: format!("Area {id}"),
-                    parent: (id != 1).then_some(1),
+                    parent: match id {
+                        2 | 3 => Some(1),
+                        5 => Some(4),
+                        _ => None,
+                    },
                     source_record_sha256: hash.clone(),
                     town_id: None,
                     hometown: false,
@@ -171,6 +193,7 @@ pub(in super::super) fn world_with_subareas(
                 .collect(),
             masks: [2, 3]
                 .into_iter()
+                .chain(two_mains.then_some(5))
                 .map(|subarea| Mask {
                     subarea,
                     asset: format!("content/assets/files/subarea-{subarea:04}-{hash}.bmp.lzma"),
@@ -196,6 +219,13 @@ pub(in super::super) fn world_with_subareas(
                     end: 18,
                     subarea: 3,
                 }])
+                .chain(two_mains.then_some(Run {
+                    floor: -7,
+                    y: 9,
+                    begin: 11,
+                    end: 18,
+                    subarea: 5,
+                }))
                 .collect(),
             ..Table::default()
         };
