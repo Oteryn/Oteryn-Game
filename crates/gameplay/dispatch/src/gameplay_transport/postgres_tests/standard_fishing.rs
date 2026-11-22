@@ -149,8 +149,11 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look_fixtures::seed_main_backpack(&harness, &[(rod, 1), ("oteryn:item.tibia.i3492", 3)])
-            .await?;
+        super::item_look_fixtures::seed_main_backpack(
+            &harness,
+            &[(rod, 1), ("oteryn:item.tibia.i3492", 3)],
+        )
+        .await?;
         super::achievement_granters::seed_gathering(&harness).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
@@ -286,6 +289,47 @@ fn m09_gathering_wire_mechanical_sewer_water_reaches_complete_classifier() -> Te
 fn m09_gathering_wire_mechanical_water_outside_sewers_returns_nothing_to_use() -> TestResult {
     run_gathering_at(9306, 4597, Some(4597), None, false, false)
 }
+
+#[test]
+fn m09_mechanical_sewer_failed_roll_shocks_without_minting_fish() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_sewer_shock(SewerShock {
+        admin,
+        replay: false,
+    })
+}
+
+#[test]
+fn m09_mechanical_sewer_shock_replay_does_not_apply_twice() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_sewer_shock(SewerShock {
+        admin,
+        replay: true,
+    })
+}
+
+struct SewerShock {
+    admin: String,
+    replay: bool,
+}
+
+fn run_sewer_shock(shock: SewerShock) -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            // Keep the same PostgreSQL runtime and authority setup as the other wire cases.
+            gathering_scenario(9306, 4597, Some(4597), None, false, true, Some(shock))
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "sewer shock e2e panic")??;
+    Ok(())
+}
+
 #[test]
 fn m09_gathering_wire_failed_catch_keeps_hole_and_bait() -> TestResult {
     run_gathering(3483, 7236, Some(7236), None, false)
@@ -337,7 +381,7 @@ fn run_gathering_at(
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
-            gathering_scenario(tool, target, after, yield_item, committed, in_sewers)
+            gathering_scenario(tool, target, after, yield_item, committed, in_sewers, None)
                 .map_err(|e| e.to_string())
         })?
         .join()
@@ -356,8 +400,11 @@ fn gathering_scenario(
     yield_item: Option<u16>,
     committed: bool,
     in_sewers: bool,
+    shock: Option<SewerShock>,
 ) -> TestResult {
     run(async |admin| {
+        let replay_shock = shock.as_ref().map(|shock| shock.replay);
+        let admin = shock.map_or(admin, |shock| shock.admin);
         let harness =
             Harness::create_with_admission_seed(admin, "m09_gathering", true, false).await?;
         super::reset();
@@ -614,29 +661,17 @@ fn gathering_scenario(
                 let Ok(actual) = encode_item_use_intent(&candidate) else {
                     return false;
                 };
-                use sha2::{Digest, Sha256};
-                let digest = Sha256::new()
-                    .chain_update(b"oteryn.fishing.catch.v1")
-                    .chain_update(session.as_bytes())
-                    .chain_update(1_u64.to_be_bytes())
-                    .chain_update(&actual)
-                    .finalize();
-                let mut occurrence = [0; 16];
-                occurrence.copy_from_slice(&digest[..16]);
-                let draw = oteryn_simulation_determinism::deterministic_decision_u64(
-                    &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
-                        native.source_digest(),
-                    ),
-                    oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(occurrence),
-                    "fishing.catch",
-                    0,
-                )
-                .ok();
-                let catch_roll = draw
-                    .map(|draw| {
-                        u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).unwrap_or(0)
-                    })
-                    .unwrap_or(0);
+                let Some(rolls) = crate::gameplay_transport::item_craft::fishing_rolls(
+                    native.source_digest(),
+                    session,
+                    1,
+                    &actual,
+                ) else {
+                    return false;
+                };
+                if replay_shock.is_some() {
+                    return rolls.catch > 50_000 && rolls.shock <= 10;
+                }
                 let roll = crate::gameplay_transport::item_craft::gathering_roll(
                     native.source_digest(),
                     session,
@@ -645,7 +680,11 @@ fn gathering_scenario(
                 )
                 .unwrap_or(0);
                 let attempt = oteryn_gameplay_items::fishing::gathering_attempt(
-                    tool, target_id, 10, catch_roll, roll,
+                    tool,
+                    target_id,
+                    10,
+                    rolls.catch,
+                    roll,
                 );
                 if !committed {
                     attempt.is_none()
@@ -656,6 +695,27 @@ fn gathering_scenario(
             .ok_or("deterministic handle history exists")?;
         admitted.continuity.item_view.handle_counter = counter;
         let command_id = 1;
+        let _clock = replay_shock.map(|_| owner.freeze_owner_clock_for_test());
+        let read_player = async || -> TestResult<_> {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let state = states
+                .get(&runtime, deps.actor, session)
+                .ok_or("fishing player")?;
+            let now = owner.owner_now().get();
+            let conditions = state.owned_conditions();
+            Ok((
+                state.vitals().health,
+                conditions.outfit_at(now),
+                conditions.outfit_at(now + 3_999_999),
+                conditions.outfit_at(now + 4_000_000),
+            ))
+        };
+        let before_shock = if replay_shock.is_some() {
+            Some(read_player().await?)
+        } else {
+            None
+        };
         let (next, result, actual) =
             exchange(&owner, admitted, command_id, &payload, reference(rod)).await?;
         let actual_intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
@@ -669,7 +729,7 @@ fn gathering_scenario(
         );
         assert_eq!(
             result,
-            if committed {
+            if committed || replay_shock.is_some() {
                 UseDisposition::Committed
             } else {
                 UseDisposition::NothingToUse
@@ -681,6 +741,36 @@ fn gathering_scenario(
                 .await?;
         assert_eq!(state, committed.then(|| after.map_or(0, i64::from)));
         let map = owner.bundle_map().ok_or("bundle map")?;
+        if let Some((health, _, _, _)) = before_shock {
+            let after_shock = read_player().await?;
+            assert_eq!(after_shock, (health - 35, Some(33), Some(33), None));
+            let effects = map.facts.movement_effects_since(0);
+            assert_eq!(
+                effects
+                    .iter()
+                    .map(|&(_, pos, effect)| (pos, effect))
+                    .collect::<Vec<_>>(),
+                [(target_pos, 2), (target_pos, 12)],
+            );
+            if replay_shock == Some(true) {
+                let (_, replay, _) = exchange(&owner, next, command_id, &actual, None).await?;
+                assert_eq!(replay, UseDisposition::Committed);
+                assert_eq!(read_player().await?, after_shock);
+                assert_eq!(map.facts.movement_effects_since(0), effects);
+            }
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
+                    .fetch_one(&harness.pool)
+                    .await?,
+                0
+            );
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>(
+                    "SELECT count(*) FROM game_item_instances WHERE definition_production_key IN ('oteryn:item.tibia.i9307', 'oteryn:item.tibia.i3578')"
+                ).fetch_one(&harness.pool).await?,
+                0
+            );
+        }
         let tile = crate::map::view::compose_tile(&map.overlay, &map.facts.pinned(), target_pos)
             .map_err(debug)?
             .ok_or("target tile")?;
