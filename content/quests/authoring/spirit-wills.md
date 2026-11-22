@@ -39,6 +39,8 @@ Crystal scenery. The World overlay restores only the quest furniture.
 
 Each successful source USE atomically commits its leaf MINT and discovery flag.
 A full inventory, stale authority or repeated source leaves discovery unchanged.
+The approach scenery at the second and third pickups uses Crystal's fixed,
+walkable placement traits for Items 8703 and 10538.
 
 NPC callbacks and world callbacks share the same owning quest tracks. The final
 confession requires all three discovery flags and retained custody of at least
