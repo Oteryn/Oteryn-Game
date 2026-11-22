@@ -16,6 +16,7 @@ fn a_sealed_use_carries_its_gate_message_id_only_under_capability_11() -> Result
                 committed: None,
                 earned: EarnedNotice::NoneEarned,
                 gate_message_id: Some(42),
+                potion_utterance: None,
                 refusal_detail: None,
             },
         };
@@ -100,6 +101,7 @@ fn prey_unoffered_command_is_refused_by_real_dispatch() -> Result<(), Box<dyn Er
                     committed: None,
                     earned: EarnedNotice::NoneEarned,
                     gate_message_id: None,
+                    potion_utterance: None,
                     refusal_detail: None,
                 },
             };
@@ -165,6 +167,7 @@ fn depot_search_without_negotiated_capability_is_refused_by_real_dispatch()
                     committed: None,
                     earned: EarnedNotice::NoneEarned,
                     gate_message_id: None,
+                    potion_utterance: None,
                     refusal_detail: None,
                 },
             };

@@ -557,6 +557,66 @@ pub fn encode_use_result(disposition: UseDisposition) -> Result<Vec<u8>, WorldOb
     encode_use_result_with_gate(disposition, None)
 }
 
+pub const CAPABILITY_POTION_UTTERANCE_V1: u32 = 593;
+
+/// The source-qualified text spoken on a committed potion use.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum PotionUtterance {
+    Restore = 1,
+    Berserk = 2,
+    Mastermind = 3,
+    Bullseye = 4,
+    Transcendence = 5,
+}
+
+impl PotionUtterance {
+    pub const fn text(self) -> &'static str {
+        match self {
+            Self::Restore => "Aaaah...",
+            Self::Berserk => "You feel stronger.",
+            Self::Mastermind => "You feel smarter.",
+            Self::Bullseye => "You feel more accurate.",
+            Self::Transcendence => "You feel more balanced.",
+        }
+    }
+}
+
+/// Encodes a USE result for a peer that selected potion utterances.
+pub fn encode_use_result_with_utterance(
+    disposition: UseDisposition,
+    gate_message_id: Option<u8>,
+    utterance: Option<PotionUtterance>,
+) -> Result<Vec<u8>, WorldObjectError> {
+    let mut result = encode_use_result_with_gate(disposition, gate_message_id)?;
+    if let Some(utterance) = utterance {
+        if disposition != UseDisposition::Committed {
+            return Err(WorldObjectError::Malformed);
+        }
+        push_varint_field(&mut result, 3, utterance as u64);
+    }
+    Ok(result)
+}
+
+/// Decodes a USE result under capability 593. PUSH still uses the legacy codec.
+pub fn decode_use_result_with_utterance(
+    payload: &[u8],
+) -> Result<(UseDisposition, Option<u8>, Option<PotionUtterance>), WorldObjectError> {
+    if let [0x08, 1, 0x18, value] | [0x18, value, 0x08, 1] = payload {
+        let utterance = match value {
+            1 => PotionUtterance::Restore,
+            2 => PotionUtterance::Berserk,
+            3 => PotionUtterance::Mastermind,
+            4 => PotionUtterance::Bullseye,
+            5 => PotionUtterance::Transcendence,
+            _ => return Err(WorldObjectError::Malformed),
+        };
+        return Ok((UseDisposition::Committed, None, Some(utterance)));
+    }
+    let (disposition, gate) = decode_use_result_with_gate(payload)?;
+    Ok((disposition, gate, None))
+}
+
 /// The gate message id of a `SEALED` result: 1 to 127, one varint byte, so the result stays within
 /// `MAX_USE_RESULT_BYTES` (disposition 2 + id 2).
 pub const MAX_GATE_MESSAGE_ID: u8 = 127;

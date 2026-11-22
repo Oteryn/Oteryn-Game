@@ -636,7 +636,12 @@ async fn apply_world_party_command_inner(
             if snapshot.leader != Some(character) {
                 disposition = "NOT_LEADER"
             } else {
-                sqlx::query("DELETE FROM game_party_invitations WHERE party_id=encode($1,'hex')::uuid AND invitee=encode($2,'hex')::uuid").bind(party.ok_or(reject("leader party"))?.as_slice()).bind(target.as_slice()).execute(&mut **tx).await?;
+                let removed = sqlx::query("DELETE FROM game_party_invitations WHERE party_id=encode($1,'hex')::uuid AND invitee=encode($2,'hex')::uuid AND expires_at>clock_timestamp()")
+                    .bind(party.ok_or(reject("leader party"))?.as_slice())
+                    .bind(target.as_slice()).execute(&mut **tx).await?.rows_affected();
+                if removed == 0 {
+                    disposition = "NOT_INVITED";
+                }
             }
         }
         PartyAction::Kick { target } => {

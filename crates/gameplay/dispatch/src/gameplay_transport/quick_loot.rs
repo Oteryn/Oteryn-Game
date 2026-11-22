@@ -63,6 +63,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             dead,
             pending,
         )?;
+        // D85 corpse identity and the durable instance have different lifetimes.
+        // Keep the incoming bytes for replay, and move only from the bound item.
+        let corpse = request.corpse.map(|identity| {
+            runtime.bound_corpse(identity).map_or(identity, |corpse| corpse.item.item_instance_id)
+        });
         let position = runtime.read_actor_position(actor).ok()?.position();
         let floor = position.floor;
         let cell = [
@@ -93,6 +98,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 cell,
                 premium,
                 request,
+                corpse,
             )
             .await
             .ok()?;

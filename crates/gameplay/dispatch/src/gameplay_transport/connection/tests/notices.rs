@@ -29,7 +29,7 @@ fn notice_authority(
             disposition: UseDisposition::Committed,
             committed: None,
             earned,
-            gate_message_id: None, refusal_detail: None,
+            gate_message_id: None, potion_utterance: None, refusal_detail: None,
         },
     }
 }

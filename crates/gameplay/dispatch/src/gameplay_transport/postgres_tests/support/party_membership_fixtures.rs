@@ -77,6 +77,7 @@ pub(super) enum Step {
     Query,
     Invite(EntityRef),
     Accept,
+    Revoke(EntityRef),
     Pass(usize),
     Kick(usize),
     Leave,
@@ -128,6 +129,7 @@ pub(super) async fn roundtrip(
         for (offset, step) in steps.iter().enumerate() {
             let command_id = session.continuity.next_command_id + offset as u64;
             let intent = match step {
+                Step::Revoke(target) => Some(PartyIntent::Revoke(*target)),
                 Step::Invite(target) => Some(PartyIntent::Invite(*target)),
                 Step::Accept => Some(PartyIntent::Accept(
                     results
@@ -191,6 +193,7 @@ pub(super) async fn roundtrip(
                 let result = decode_command_result(envelope.payload()).map_err(debug)?;
                 assert_eq!(result.command_id, command_id);
                 if matches!(step, Step::Malformed)
+                    || (matches!(step, Step::Revoke(_)) && !session.continuity.selected_capabilities.contains(CAPABILITY_PARTY_REVOKE_V1))
                     || !session
                         .continuity
                         .selected_capabilities
@@ -386,6 +389,27 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
     assert_eq!(refused[0].disposition, PartyDisposition::Rejected);
     // Carry the stale connection's ended continuity while keeping the current lease.
     admitted[2].continuity = stale.continuity;
+    if !partyskull && !reference_level && !chat {
+        roundtrip(&owner, &mut admitted[0], &[Step::Revoke(targets[1])]).await?;
+        let before = roundtrip(&owner, &mut admitted[1], &[Step::Query]).await?;
+        assert_eq!(before[0].invitations.len(), 1);
+        admitted[0].continuity.selected_capabilities =
+            SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42, CAPABILITY_PARTY_REVOKE_V1])
+                .ok_or("party revoke offer")?;
+        let results = roundtrip(
+            &owner,
+            &mut admitted[0],
+            &[Step::Revoke(targets[1]), Step::Revoke(targets[1])],
+        ).await?;
+        assert_eq!(results[0].disposition, PartyDisposition::Ok);
+        assert_eq!(results[1].disposition, PartyDisposition::NotInvited);
+        let revoked = roundtrip(&owner, &mut admitted[1], &[Step::Query]).await?;
+        assert!(revoked[0].invitations.is_empty());
+        let unaffected = roundtrip(&owner, &mut admitted[2], &[Step::Query]).await?;
+        assert_eq!(unaffected[0].invitations.len(), 1);
+        let invited = roundtrip(&owner, &mut admitted[0], &[Step::Invite(targets[1])]).await?;
+        assert_eq!(invited[0].disposition, PartyDisposition::Ok);
+    }
     if partyskull {
         super::party_skull_fixtures::check(&owner, &mut admitted[0], &targets, &[4, 2, 2], &[2, 0, 0])
             .await?;

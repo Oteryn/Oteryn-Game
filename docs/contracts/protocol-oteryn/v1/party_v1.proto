@@ -4,10 +4,10 @@ package oteryn.party.v1;
 // Strict codecs require all scalar fields shown, reject duplicates/unknowns and zero handles.
 // No durable identity is accepted or returned. Query again after reconnect to obtain handles.
 message PartyIntentV1 {
-  // 1 invite, 2 accept, 3 leave, 4 kick, 5 pass leadership.
+  // 1 invite, 2 accept, 3 leave, 4 kick, 5 pass leadership, 6 revoke (requires capability 592).
   uint32 action = 1;
-  bytes actor_identity = 2; // exactly 16 bytes, invite only
-  uint64 actor_generation = 3; // nonzero, invite only
+  bytes actor_identity = 2; // exactly 16 bytes, invite or revoke only
+  uint64 actor_generation = 3; // nonzero, invite or revoke only
   uint64 handle = 4; // accept: invitation; kick/pass: member; absent otherwise
 }
 message PartyQueryV1 {} // Own current membership and up to 20 live invitations.
@@ -32,3 +32,7 @@ message PartyResultV1 {
 // Intents return only their original receipted disposition. Queries return current data.
 // Transport retains FND-02 sequence/replay rules; mutations use World party receipts.
 // A session retains <=4096 observed handles; exhaustion returns PARTY_UNAVAILABLE.
+// PARTY_REVOKE_V1 uses command 45 and the same current visible player reference as invite.
+// The World owner checks leadership and removes only that party's live invitation.
+// A missing or expired invitation returns NOT_INVITED. Unselected action 6 gets
+// common REJECTED with empty payload. Results and all legacy actions retain their wire shape.

@@ -105,6 +105,13 @@ message UseResultV1 {
   // message id, 1 to 127 (a one-byte varint, which keeps the result within 4 bytes). Any other
   // disposition with this field, and SEALED without it, fail closed.
   uint32 gate_message_id = 2;
+  // Capability 593 only, and only on COMMITTED potion USE. Codes and text are
+  // sourced from Crystal 201189f data/scripts/actions/items/potions.lua.
+  // 1 "Aaaah...", 2 "You feel stronger.", 3 "You feel smarter.",
+  // 4 "You feel more accurate.", 5 "You feel more balanced."
+  // Optional field 3 is absent for legacy peers, other uses and refusals.
+  // It is mutually exclusive with field 2, so the 4-byte bound is unchanged.
+  optional uint32 potion_utterance = 3;
 }
 
 // One world-object overlay entry: the state is a state key, not an Open/Closed enum,
