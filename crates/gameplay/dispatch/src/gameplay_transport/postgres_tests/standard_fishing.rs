@@ -270,6 +270,14 @@ fn cach1_final_ice_sculpture_grants_ice_sculptor_and_cold_as_ice() -> TestResult
     run_gathering(5908, 7445, Some(7446), None, true)
 }
 #[test]
+fn cach1_blessed_stake_finishes_ice_and_grants_both_achievements() -> TestResult {
+    run_gathering(5942, 7445, Some(7446), None, true)
+}
+#[test]
+fn cach1_blessed_stake_finishes_marble_and_grants_both_achievements() -> TestResult {
+    run_gathering(5942, 10426, None, Some(10429), true)
+}
+#[test]
 fn cach1_ice_sculpture_admits_the_third_stage_without_an_award() -> TestResult {
     run_gathering(5908, 7442, Some(7444), None, true)
 }
@@ -673,6 +681,13 @@ fn gathering_scenario(
                     &actual,
                 )
                 .unwrap_or(0);
+                // Exercise the wire at a donor-qualified roll outside the old Crystal tiers.
+                match (target_id, after, yield_item) {
+                    (7442 | 7444 | 7445, Some(_), None) => return (10_000..=20_000).contains(&roll),
+                    (10426, None, Some(10429)) => return (1_000..=10_000).contains(&roll),
+                    (10426, None, Some(10428)) => return (10_001..=26_764).contains(&roll),
+                    _ => {}
+                }
                 let attempt = oteryn_gameplay_items::fishing::gathering_attempt(
                     tool, target_id, 10, catch_roll, roll,
                 );

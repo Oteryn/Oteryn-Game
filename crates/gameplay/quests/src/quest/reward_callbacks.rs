@@ -1344,7 +1344,15 @@ const ROOK_CITIZEN_BEFORE_NORMA_RESTART: [u8; 32] = [
 ];
 
 // Active definitions on 3e099164 before adding full-outfit reward branches.
-const BEFORE_FULL_OUTFIT_REWARDS: [(&str, [u8; 32]); 4] = [
+const BEFORE_FULL_OUTFIT_REWARDS: [(&str, [u8; 32]); 5] = [
+    (
+        "oteryn:quest.battle_mage_outfits_quest",
+        [
+            0x5a, 0xd0, 0xbf, 0xba, 0xd1, 0xd5, 0x80, 0x75, 0x0f, 0xf1, 0x70, 0xaf, 0x78, 0x86,
+            0x93, 0x57, 0x1d, 0xdf, 0x9d, 0xcd, 0x7c, 0xd5, 0x44, 0xa4, 0xa0, 0x01, 0xc3, 0x15,
+            0xe7, 0x4f, 0x38, 0xb9,
+        ],
+    ),
     (
         "oteryn:quest.elementalist_outfits_quest",
         [
@@ -2309,6 +2317,26 @@ mod tests {
                 )
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn battle_mage_loader_retains_the_published_definition() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("battle-mage-upgrade")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let quest = "oteryn:quest.battle_mage_outfits_quest";
+        let mut transitions = catalogue.transitions.clone();
+        for suffix in ["book", "epaulettes"] {
+            let key = format!("oteryn:quest-reward/l2-battle-mage-{suffix}-complete");
+            assert!(transitions.remove(&key).is_some(), "{key}");
+        }
+        let published = super::super::definition_hash(quest, &catalogue.tracks, &transitions);
+        assert_ne!(catalogue.definition_hash(quest), Some(published));
+        assert_eq!(
+            super::super::npc_rules::legacy_defaults(catalogue, quest, &published),
+            Some(&BTreeMap::new())
+        );
         Ok(())
     }
 

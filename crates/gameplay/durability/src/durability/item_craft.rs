@@ -747,11 +747,11 @@ async fn write_with_skinning<C: ItemLoopContent>(
         ) {
             // Crystal 201189f8, skinning.lua:153-191. Earlier stages or
             // lower-quality figurines do not earn either sculpture award.
-            ("oteryn:item.tibia.i5908", 7445, Some(7446), None) => (
+            ("oteryn:item.tibia.i5908" | "oteryn:item.tibia.i5942", 7445, Some(7446), None) => (
                 Some("oteryn:achievement/ice_sculptor"),
                 Some(achievement_granters::COLD_AS_ICE),
             ),
-            ("oteryn:item.tibia.i5908", 10426, None, Some(10429)) => (
+            ("oteryn:item.tibia.i5908" | "oteryn:item.tibia.i5942", 10426, None, Some(10429)) => (
                 Some("oteryn:achievement/marblelous"),
                 Some(achievement_granters::MARBLE_MADNESS),
             ),
