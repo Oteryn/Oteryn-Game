@@ -927,7 +927,6 @@ fn a_trade_intent_names_the_projected_offer_of_the_server_catalogue() {
     assert_eq!(
         offer,
         NpcTradeOffer {
-            currency: None,
             sub_type: None,
             npc_key: "oteryn:npc.alice".to_owned(),
             catalogue_revision: revision,
@@ -940,6 +939,30 @@ fn a_trade_intent_names_the_projected_offer_of_the_server_catalogue() {
             item_revision: "definition-r1".to_owned(),
         }
     );
+}
+
+#[test]
+fn a_retained_item_currency_quote_cannot_resolve_as_gold() {
+    use ProjectV2ServiceOfferDirection::BuyFromPlayer;
+    let gold = offer(ROPE, "definition-r1", BuyFromPlayer, 15, Some(2));
+    let mut tokens = gold.clone();
+    tokens.currency = Some(offer(SWORD, "definition-r1", BuyFromPlayer, 1, None).item);
+    let (runtime, actor, session, npc, chat, conversations) =
+        trading(vec![tokens.clone(), gold.clone()]);
+    {
+        let mut sessions = conversations.sessions.lock().expect("session states");
+        let state = sessions.get_mut(&session).expect("trade session");
+        assert_eq!(state.window_offers, vec![gold.clone()]);
+        state.window_offers = vec![tokens, gold];
+    }
+
+    let revision = chat.npc_talk().expect("book").catalogue_revision();
+    let intent = NpcTradeIntent {
+        offer_index: 0,
+        ..trade(npc, revision)
+    };
+    let result = conversations.trade_in(&chat, &runtime, actor, session, &intent, Some(&items()));
+    assert!(matches!(result, Err(step) if step.disposition == NpcIntentDisposition::Rejected));
 }
 
 #[test]

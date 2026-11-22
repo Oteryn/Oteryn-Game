@@ -540,32 +540,24 @@ impl NpcConversations {
         if intent.catalogue_revision != book.catalogue_revision() {
             return Err(Box::new(stale()));
         }
-        let Some((offer, source)) = usize::try_from(intent.offer_index)
+        let Some(source) = usize::try_from(intent.offer_index)
             .ok()
-            .and_then(|index| projected(&shown_offers, items).nth(index))
+            .and_then(|index| shown_offers.get(index))
         else {
+            return Err(Box::new(stale()));
+        };
+        // Use the exact retained slot before checking the price. Re-projecting
+        // the whole list could shift an old token quote to a later gold offer.
+        if source.currency.is_some() || !entry.offers().contains(source) {
+            return Err(Box::new(rejected()));
+        }
+        let Some((offer, _)) = projected(std::slice::from_ref(source), items).next() else {
             return Err(Box::new(stale()));
         };
         if offer.side != intent.side || offer.unit_price != intent.expected_unit_price {
             return Err(Box::new(stale()));
         }
-        if !entry.offers().contains(source)
-            || source.currency.as_ref().is_some_and(|currency| {
-                currency.family != crate::content::ProjectV2Family::Item
-                    || currency.key == source.item.key
-                    || items
-                        .definition_ref(
-                            crate::content::item_ref::ITEM_FAMILY,
-                            &currency.key,
-                            &currency.revision,
-                        )
-                        .is_none()
-            })
-        {
-            return Err(Box::new(rejected()));
-        }
         Ok(NpcTradeOffer {
-            currency: source.currency.clone(),
             sub_type: source.sub_type,
             npc_key: npc_key.to_owned(),
             catalogue_revision: intent.catalogue_revision,

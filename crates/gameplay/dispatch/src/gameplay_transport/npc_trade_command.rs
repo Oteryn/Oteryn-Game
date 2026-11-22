@@ -90,7 +90,8 @@ const fn side_of(side: NpcTradeSide) -> npc_trade::NpcTradeSide {
 /// Whether the committed trade answered this intent: the same kind, offer, side, quantity and price
 /// (the occurrence already binds the NPC actor). A sell-all's stored quantity is the units it sold.
 fn answers(receipt: &NpcTradeReceipt, intent: &NpcTradeIntent, sell_all: bool) -> bool {
-    receipt.sell_all == sell_all
+    !receipt.item_currency
+        && receipt.sell_all == sell_all
         && receipt.catalogue_revision == intent.catalogue_revision
         && receipt.offer_index == intent.offer_index
         && receipt.side == side_of(intent.side)
@@ -161,11 +162,7 @@ pub(super) async fn trade(
         Ok(Some(receipt)) if answers(&receipt, &intent, sell_all) => {
             return Ok(SoldUnits {
                 units: receipt.quantity,
-                gold: if receipt.item_currency {
-                    0
-                } else {
-                    u64::from(receipt.quantity).saturating_mul(receipt.unit_price)
-                },
+                gold: u64::from(receipt.quantity).saturating_mul(receipt.unit_price),
             });
         }
         Ok(None) => {}
@@ -281,20 +278,6 @@ pub(super) async fn trade(
         .and_then(ActiveGeneration::native_gameplay)
     else {
         return Err(Box::new(NpcTradeStep::rejected()));
-    };
-    let currency = match &offer.currency {
-        Some(currency) => {
-            let definition = TypedDefinitionRef {
-                family: ITEM_FAMILY.to_owned(),
-                production_key: currency.key.clone(),
-                revision_ref: currency.revision.clone(),
-            };
-            let Ok(facts) = generation_item_facts(native, &definition) else {
-                return Err(Box::new(NpcTradeStep::rejected()));
-            };
-            Some(facts)
-        }
-        None => None,
     };
     let target = TypedDefinitionRef {
         family: ITEM_FAMILY.to_owned(),
@@ -445,24 +428,6 @@ pub(super) async fn trade(
                 request,
                 selection,
                 sell_all,
-            )
-            .await
-    } else if let Some(currency) = currency {
-        let weights = super::item_ref_admission::NativeItemWeights(native)
-            .with_wheel(admission.premium_coordinator);
-        admission
-            .root
-            .commit_npc_item_currency_trade(
-                admission.character,
-                admission.holder,
-                fence,
-                request,
-                npc_trade::ItemCurrencyPayment {
-                    currency,
-                    sell_all,
-                    weights: &weights,
-                    yasir_position,
-                },
             )
             .await
     } else if request.cause.side == npc_trade::NpcTradeSide::Buy {

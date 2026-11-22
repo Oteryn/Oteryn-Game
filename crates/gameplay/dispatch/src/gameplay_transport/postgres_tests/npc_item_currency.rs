@@ -3,7 +3,7 @@ use super::TestResult;
 use super::npc_shop_fixtures::{ShopScenario, scenario_for};
 
 #[test]
-fn npc_item_currency_buy_spends_only_matching_tokens_and_refuses_short_payment() -> TestResult {
+fn npc_item_currency_buy_cannot_debit_tokens_against_a_gold_quote() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -12,7 +12,7 @@ fn npc_item_currency_buy_spends_only_matching_tokens_and_refuses_short_payment()
 }
 
 #[test]
-fn npc_item_currency_sell_mints_token_stacks_and_refuses_missing_goods() -> TestResult {
+fn npc_item_currency_sell_cannot_pay_tokens_against_a_gold_quote() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };

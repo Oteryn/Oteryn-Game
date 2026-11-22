@@ -21,7 +21,6 @@ fn steamship_junkar_paid_quote_and_confirmation_require_an_active_working_week()
 fn steamship_quote() -> TestResult {
     use super::fixture::{Harness, debug, run};
     use super::npcfix_m38_travel_guards_fixtures::NoPremium;
-    use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
     use crate::durability::{
         npc_travel::TravelRefusal,
         world_event::changes::{self, ContributionWrite},
@@ -49,23 +48,7 @@ fn steamship_quote() -> TestResult {
             .map_err(|()| "current travel fence")?
             .ok_or("current travel fence")?;
         let world = fence.runtime_scope.world_id();
-        let content = NpcDataCatalogue::load(
-            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
-            std::ffi::OsStr::new("world"),
-            npc_catalogue_preproduction_limits(),
-        )
-        .map_err(debug)?;
-        let model = content.service_model_for_project().map_err(debug)?;
-        let book = crate::gameplay_transport::npc_talk::NpcTalkBook::from_model(&model);
-        let route = book
-            .get("oteryn:npc.junkar_thais")
-            .and_then(|entry| {
-                entry
-                    .travel_routes
-                    .iter()
-                    .find(|route| route.route.key == "kazordoon")
-            })
-            .ok_or("native Junkar route")?;
+        let route = junkar_route("kazordoon")?;
         let quote = || {
             h.root
                 .quote_npc_travel(&authority, &h.node, fence, route.clone(), &NoPremium)
@@ -149,6 +132,29 @@ fn steamship_quote() -> TestResult {
     })
 }
 
+fn junkar_route(key: &str) -> TestResult<crate::content::npc_catalogue::travel::TravelRoute> {
+    use super::fixture::debug;
+    use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
+    let content = NpcDataCatalogue::load(
+        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+        std::ffi::OsStr::new("world"),
+        npc_catalogue_preproduction_limits(),
+    )
+    .map_err(debug)?;
+    let model = content.service_model_for_project().map_err(debug)?;
+    let book = crate::gameplay_transport::npc_talk::NpcTalkBook::from_model(&model);
+    Ok(book
+        .get("oteryn:npc.junkar_thais")
+        .and_then(|entry| {
+            entry
+                .travel_routes
+                .iter()
+                .find(|route| route.route.key == key)
+        })
+        .cloned()
+        .ok_or("native Junkar route")?)
+}
+
 async fn save(
     h: &super::fixture::Harness,
     world: crate::foundation::WorldId,
@@ -169,10 +175,11 @@ async fn save(
 }
 
 #[test]
-fn awash_selected_pump_use_burns_coal_once_and_save_resets_the_pool() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+fn awash_production_pump_opens_the_mines_route_after_save() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run("awash-pump-use", awash_pump)
 }
 
@@ -181,59 +188,40 @@ fn awash_pump() -> TestResult {
     use crate::foundation::{ChannelContentPin, CharacterId, CharacterLease};
     use crate::gameplay_transport::connection::FirstEntryOutcome;
     use oteryn_gameplay_quests::quest::{
-        QuestStateCatalogue,
-        authored_bindings::Bindings,
-        world_callbacks::{Offering, Position},
+        loader::load_embedded_quest_state, world_callbacks::Offering,
     };
     use oteryn_protocol_oteryn::world_object::{
         MapUseTarget, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
     };
-    use sha2::{Digest, Sha256};
     use std::sync::Arc;
 
-    const QUEST: &str = "oteryn:quest.awash_world_change";
     const COAL: &str = "oteryn:item.tibia.i12600";
-    // Third-party content is used only as a witness for the target and operand.
-    const SOURCE: &str =
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm";
-    let pump = Position {
-        x: 32558,
-        y: 32007,
-        floor: -9,
-    };
-    let player = Position {
+    let loaded = load_embedded_quest_state("content-1").map_err(debug)?;
+    let catalogue = Arc::new(loaded.catalogue().clone());
+    let callbacks: Vec<_> = catalogue
+        .authored_bindings()
+        .ok_or("production quest bindings")?
+        .world_callbacks()
+        .filter(|callback| callback.quest == "oteryn:quest.awash_world_change")
+        .collect();
+    assert_eq!(callbacks.len(), 3);
+    let callback = callbacks[0];
+    let native_pump = callback
+        .selector
+        .native
+        .as_ref()
+        .ok_or("native pump selector")?;
+    let pump = native_pump.position;
+    let player = oteryn_gameplay_quests::quest::world_callbacks::Position {
         x: pump.x + 1,
         ..pump
     };
-    let callback = serde_json::json!({
-        "key": "oteryn:quest-callback/authored-awash-pump-east",
-        "quest": QUEST,
-        "trigger": "use",
-        "selector": {"native":{"position":pump,"ordinal":1,"appearance":12666}},
-        "requires_world_admission":true,
-        "reversible":false,"passages":[],"storage":[],"offerings":[],
-        "item_on_target":{"item":COAL,"count":1,"selected_instance":true},
-        "return_on_failure":false,"sources":[SOURCE,"oteryn-authored:source-bound:awash-pump"]
-    });
-    let stages = serde_json::json!([{"key":"fuel-pump","completes":false,
-        "trigger":{"kind":"map_use","callback":callback}}]);
-    let digest = Sha256::digest(serde_json::to_vec(&stages)?)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
-    let bindings = Bindings::parse(&serde_json::to_vec(&serde_json::json!({
-        "schema":1,"quests":[{"quest":QUEST,"recipe_sha256":digest,"tracks":[],"stages":stages,
-            "sources":[SOURCE,"https://www.tibiawiki.com.br/wiki/Awash_World_Change"]}]
-    }))?)?;
-    let callback = bindings
-        .world_callbacks()
-        .next()
-        .ok_or("pump callback")?
-        .clone();
-    let base = QuestStateCatalogue::empty("content-1").ok_or("content revision")?;
-    let catalogue = Arc::new(bindings.attach(&base).map_err(debug)?);
-    let bundle = super::quest_world_callbacks_fixtures::world_ordinal(&callback, pump, 12666, 1)?;
-
+    let bundle = super::quest_world_callbacks_fixtures::world_ordinal(
+        callback,
+        pump,
+        native_pump.appearance,
+        native_pump.ordinal,
+    )?;
     run(async move |admin| {
         super::reset();
         let h = Harness::create_with_admission_seed(admin, "awash_pump", false, false).await?;
@@ -337,22 +325,21 @@ fn awash_pump() -> TestResult {
             .ok_or("item use capabilities")?;
 
         save(&h, world, 1).await?;
-        // Other pump deliveries are fixture setup. This USE supplies the final unit.
-        sqlx::query("INSERT INTO game_world_change_tallies(world_id,reset_epoch,resource,tally) VALUES(encode($1,'hex')::uuid,1,'awash_coal',201)")
-            .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
-
-        super::quest_world_callbacks_fixtures::input_item(
-            &owner,
-            fence.item_fence(),
-            &Offering {
-                position: player,
-                item: COAL.into(),
-                count: 1,
-            },
-            8701,
-            true,
-        )
-        .await?;
+        let route = junkar_route("mines")?;
+        let quote = || {
+            h.root.quote_npc_travel(
+                &authority,
+                &h.node,
+                fence,
+                route.clone(),
+                &super::npcfix_m38_travel_guards_fixtures::NoPremium,
+            )
+        };
+        use crate::durability::npc_travel::TravelRefusal;
+        assert_eq!(
+            quote().await.map_err(debug)?,
+            Err(TravelRefusal::UnavailableRoute)
+        );
         let selected = native
             .item_index()
             .and_then(|index| index.definition_ref("Item", COAL, "definition-r1"))
@@ -373,23 +360,51 @@ fn awash_pump() -> TestResult {
             use_with_position: None,
         })
         .map_err(debug)?;
-        let command = admitted.continuity.next_command_id;
-        let (end, disposition, wire) = super::item_craft_fixtures::exchange(
-            &owner,
-            admitted,
-            command,
-            &payload,
-            Some(selected),
-        )
-        .await?;
-        assert_eq!(disposition, UseDisposition::Committed);
+        let batches = [20; 10].into_iter().chain([2]);
+        for (batch, count) in batches.enumerate() {
+            // Only seed the fuel. Every tally increment comes from a player USE.
+            super::quest_world_callbacks_fixtures::input_item(
+                &owner,
+                fence.item_fence(),
+                &Offering {
+                    position: player,
+                    item: COAL.into(),
+                    count,
+                },
+                8701 + u64::try_from(batch)?,
+                true,
+            )
+            .await?;
+            for unit in 1..=count {
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(1))
+                    .ok_or("advance pump use clock")?;
+                let command = admitted.continuity.next_command_id;
+                let (end, disposition, wire) = super::item_craft_fixtures::exchange(
+                    &owner,
+                    admitted,
+                    command,
+                    &payload,
+                    Some(selected),
+                )
+                .await?;
+                admitted = end;
+                assert_eq!(disposition, UseDisposition::Committed);
+                if batch == 10 && unit == count {
+                    let (end, replay, _) = super::item_craft_fixtures::exchange(
+                        &owner, admitted, command, &wire, None,
+                    )
+                    .await?;
+                    admitted = end;
+                    assert_eq!(replay, UseDisposition::Committed);
+                }
+            }
+        }
         assert_eq!(
             super::qengine_voucher_stories_fixtures::quantity(&h, 12600).await?,
             0
         );
-        let (_, replay, _) =
-            super::item_craft_fixtures::exchange(&owner, end, command, &wire, None).await?;
-        assert_eq!(replay, UseDisposition::Committed);
 
         assert!(h.root.world_change_active(world, "awash_pumping").await?);
         assert!(!h.root.world_change_active(world, "awash").await?);
@@ -399,6 +414,7 @@ fn awash_pump() -> TestResult {
         assert_eq!(tally, "202");
         save(&h, world, 2).await?;
         assert!(h.root.world_change_active(world, "awash").await?);
+        assert_eq!(quote().await.map_err(debug)?, Ok(route.route.price));
         assert!(!h.root.world_change_active(world, "awash_pumping").await?);
         save(&h, world, 3).await?;
         assert!(!h.root.world_change_active(world, "awash").await?);
@@ -452,10 +468,11 @@ async fn prepare_pump_inventory(
 }
 
 #[test]
-fn steamship_junkar_donation_burns_exact_coal_once_per_confirmation() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+fn steamship_production_donations_open_kazordoon_route_after_save() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     super::qengine_rewards_fixtures::scenario("qengine-rewards-l9-steamship-donation")
 }
 
@@ -464,39 +481,17 @@ pub(super) async fn steamship_donation(
     admitted: &mut super::AdmittedSession,
     h: &super::fixture::Harness,
 ) -> TestResult {
-    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
+    use crate::durability::npc_travel::TravelRefusal;
+    use oteryn_gameplay_quests::quest::{loader::load_embedded_quest_state, reward_callbacks};
     use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
-    use sha2::{Digest, Sha256};
 
-    const QUEST: &str = "oteryn:quest.steamship_world_change";
     const NPC: &str = "oteryn:npc.junkar_thais";
-    const SOURCE: &str = "https://tibia.fandom.com/wiki/Steamship_World_Change/Spoiler";
-    let callback = serde_json::json!({
-        "key":"oteryn:quest-reward/authored/steamship/donation",
-        "quest":QUEST,"npc":NPC,"keywords":["yes"],"topic":1,"next_topic":0,
-        "storage":[],"take":[{"item":"oteryn:item.tibia.i12600","count":1}],
-        "repeatable":true,"reply":["Thank you."],"failure_reply":["Sorry, not possible."],
-        "sources":[SOURCE]
-    });
-    let stages = serde_json::json!([{"key":"coal","completes":false,
-        "trigger":{"kind":"npc_dialogue","callback":callback}}]);
-    let digest = Sha256::digest(serde_json::to_vec(&stages)?)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
-    let bindings = Bindings::parse(&serde_json::to_vec(&serde_json::json!({
-        "schema":1,"quests":[{"quest":QUEST,"recipe_sha256":digest,"tracks":[],"stages":stages,
-            "sources":[SOURCE]}]
-    }))?)?;
-    let base = QuestStateCatalogue::empty("content-1").ok_or("content revision")?;
-    owner.quest_catalogue = Some(std::sync::Arc::new(bindings.attach(&base)?));
-    owner.states.npc_conversations.fixture_reward_offers(
-        &serde_json::json!({
-            "schema":1,"offers":[{"npc":NPC,"keywords":["coal"],"topic":0,"next_topic":1,
-            "storage":[],"reply":["Are you here to donate some for my cause?"]}]
-        })
-        .to_string(),
-    )?;
+    let loaded = load_embedded_quest_state("content-1").map_err(super::fixture::debug)?;
+    let callback = reward_callbacks::load_for(loaded.catalogue())?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-reward/authored/steamship/donation")
+        .ok_or("production coal donation")?;
+    owner.quest_catalogue = Some(std::sync::Arc::new(loaded.catalogue().clone()));
     let mut selected = admitted
         .continuity
         .selected_capabilities
@@ -515,7 +510,6 @@ pub(super) async fn steamship_donation(
     let [npc] = super::classic_quests_fixtures::install(owner, admitted, [NPC]).await?;
     let world = admitted.world_id;
     super::worldchg_trader_fixtures::day(h, world, 0).await?;
-    let callback = serde_json::from_value(callback)?;
     let mut ordinal = 8702;
     let (refused, _, _) = super::qengine_rewards_fixtures::wire_conversation(
         owner,
@@ -527,8 +521,44 @@ pub(super) async fn steamship_donation(
     )
     .await?;
     assert_eq!(refused, NpcIntentDisposition::Rejected);
-    super::qengine_voucher_stories_fixtures::mint(owner, admitted, 12600, 2, &mut ordinal).await?;
+    let route = junkar_route("kazordoon")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "travel fence")?
+        .ok_or("travel fence")?;
+    let authority = owner.character;
+    let quote = || {
+        h.root.quote_npc_travel(
+            authority,
+            &h.node,
+            fence,
+            route.clone(),
+            &super::npcfix_m38_travel_guards_fixtures::NoPremium,
+        )
+    };
+    assert_eq!(
+        quote().await.map_err(super::fixture::debug)?,
+        Err(TravelRefusal::UnavailableRoute)
+    );
 
+    for count in [20; 9].into_iter().chain([19]) {
+        super::qengine_voucher_stories_fixtures::mint(owner, admitted, 12600, count, &mut ordinal)
+            .await?;
+        for _ in 0..count {
+            let (accepted, _, _) = super::qengine_rewards_fixtures::wire_conversation(
+                owner,
+                admitted,
+                npc,
+                &callback,
+                false,
+                vec!["hi", "coal", "yes"],
+            )
+            .await?;
+            assert_eq!(accepted, NpcIntentDisposition::Ok);
+        }
+    }
+    super::qengine_voucher_stories_fixtures::mint(owner, admitted, 12600, 2, &mut ordinal).await?;
     let (accepted, _, command) = super::qengine_rewards_fixtures::wire_conversation(
         owner,
         admitted,
@@ -552,6 +582,15 @@ pub(super) async fn steamship_donation(
     let tally: String = sqlx::query_scalar(
         "SELECT tally::text FROM game_world_change_tallies WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0 AND resource='coal'",
     ).bind(world.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-    assert_eq!(tally, "1");
+    assert_eq!(tally, "200");
+    assert_eq!(
+        quote().await.map_err(super::fixture::debug)?,
+        Err(TravelRefusal::UnavailableRoute)
+    );
+    save(h, world, 1).await?;
+    assert_eq!(
+        quote().await.map_err(super::fixture::debug)?,
+        Ok(route.route.price)
+    );
     Ok(())
 }

@@ -1,9 +1,7 @@
 //! NPC conversation payloads and the Channel-local talk ingress window.
 
 use crate::content::item_ref::{ITEM_FAMILY, ItemDefinitionIndex};
-use crate::content::{
-    ProjectV2DefinitionRef, ProjectV2ServiceOffer, ProjectV2ServiceOfferDirection,
-};
+use crate::content::{ProjectV2ServiceOffer, ProjectV2ServiceOfferDirection};
 use oteryn_protocol_oteryn::npc_service::{MAX_OFFERS, NpcOffer, NpcTradeSide};
 
 use oteryn_protocol_oteryn::npc_service::{
@@ -122,6 +120,8 @@ pub fn projected<'a>(
 ) -> impl Iterator<Item = (NpcOffer, &'a ProjectV2ServiceOffer)> {
     offers
         .iter()
+        // NpcOfferV1 carries a gold price and has no denomination field.
+        .filter(|offer| offer.currency.is_none())
         .filter_map(|offer| {
             let shown = NpcOffer {
                 item_definition_ref: items
@@ -142,8 +142,6 @@ pub fn projected<'a>(
 /// The offer a trade intent names, as the server catalogue holds it at the window's revision.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcTradeOffer {
-    /// Exact authored item currency. Missing means ordinary gold.
-    pub currency: Option<ProjectV2DefinitionRef>,
     /// Item subtype from the server offer; never the transaction quantity.
     pub sub_type: Option<u16>,
     pub npc_key: String,

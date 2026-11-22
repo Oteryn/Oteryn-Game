@@ -344,7 +344,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 .ok_or("Cledwyn potion offer missing")?;
             assert_eq!(potion.currency.as_ref().map(|currency| currency.key.as_str()), Some(SILVER));
             assert_eq!(potion.unit_price, 1);
-            vec![potion.clone()]
+            vec![offer.clone(), potion.clone()]
         } else if token_sell {
             // Exercise the item payout direction with a stackable merchandise offer.
             let mut token_offer = offer.clone();
@@ -352,7 +352,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
             currency.key = GOLD_TOKEN.into();
             token_offer.currency = Some(currency);
             token_offer.unit_price = 60;
-            vec![token_offer]
+            vec![offer.clone(), token_offer]
         } else if weight_limit {
             let mut buy = offer.clone();
             buy.item.key = "oteryn:item.tibia.i3447".into();
@@ -509,47 +509,23 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
         )
         .ok_or("npc shop selection")?;
         if token_buy || token_sell {
-            let (side, quantity, expected) = if token_buy {
-                (NpcTradeSide::Buy, 100, vec![
-                    (SILVER.into(), 10), (GOLD_TOKEN.into(), 100),
-                    (GOLD_COIN.into(), 100), (MAGIC_SHIELD_POTION.into(), 100),
-                ])
+            let (side, quantity, unit_price) = if token_buy {
+                (NpcTradeSide::Buy, 100, 1)
             } else {
-                (NpcTradeSide::Sell, 2, vec![
-                    (MEAT.into(), 1), (GOLD_COIN.into(), 100),
-                    (GOLD_TOKEN.into(), 100), (GOLD_TOKEN.into(), 20),
-                ])
+                (NpcTradeSide::Sell, 2, 60)
             };
-            let (_, delta) = bulk_exchange(
-                &owner, &mut admitted, npc, 1, side, quantity, NpcIntentDisposition::Ok,
+            let before = footprint(&h).await?;
+            let inventory = carried(&h).await?;
+            // Submit the stale slot and numeric price the old gold-only window exposed.
+            let (window, delta) = bulk_exchange(
+                &owner, &mut admitted, npc, 1, (side, Some((1, unit_price))), quantity,
+                NpcIntentDisposition::Stale,
             ).await?;
-            assert!(delta.is_some());
-            assert_eq!(carried(&h).await?, expected);
-            let committed = footprint(&h).await?;
-            assert_eq!((committed.0, committed.1), (1, 3));
-            let (key, total, paid, minted, bank): (String, i64, i64, i64, i64) = sqlx::query_as(
-                "SELECT currency_key, total_gold_units, burned_gold_units, minted_gold_units, bank_debit_gold_units FROM game_npc_trades",
-            ).fetch_one(&h.pool).await?;
-            assert_eq!(key, if token_buy { SILVER } else { GOLD_TOKEN });
-            assert_eq!((total, paid, minted, bank), (0, 0, 0, 0));
-            let envelope: Vec<u8> = sqlx::query_scalar(
-                "SELECT a.envelope FROM game_item_audit_outbox a JOIN game_npc_trades t USING (event_id)",
-            ).fetch_one(&h.pool).await?;
-            let (_, event) = crate::durability::npc_trade_audit::decode_npc_trade_envelope(&envelope)
-                .map_err(debug)?;
-            assert_eq!(
-                event.item_currency.map(|currency| currency.production_key),
-                Some(key),
-            );
-
-            // The other token type and ordinary gold are still available in the buy case.
-            // Neither lets the new command spend what is missing from its exact currency.
-            let (_, refused) = bulk_exchange(
-                &owner, &mut admitted, npc, 4, side, quantity, NpcIntentDisposition::Rejected,
-            ).await?;
-            assert!(refused.is_none());
-            assert_eq!(footprint(&h).await?, committed);
-            assert_eq!(carried(&h).await?, expected);
+            assert!(delta.is_none());
+            assert_eq!(footprint(&h).await?, before);
+            assert_eq!(carried(&h).await?, inventory);
+            assert_eq!(window.offers.len(), 1);
+            assert_eq!(window.offers[0].unit_price, 4);
 
             drop(owner);
             drop(authority);
@@ -565,7 +541,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 &mut admitted,
                 npc,
                 1,
-                NpcTradeSide::Buy,
+                (NpcTradeSide::Buy, None),
                 101,
                 NpcIntentDisposition::Rejected,
             )
@@ -584,7 +560,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 &mut admitted,
                 npc,
                 4,
-                NpcTradeSide::Buy,
+                (NpcTradeSide::Buy, None),
                 98,
                 NpcIntentDisposition::Ok,
             )
@@ -609,7 +585,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 &mut admitted,
                 npc,
                 1,
-                NpcTradeSide::Buy,
+                (NpcTradeSide::Buy, None),
                 150,
                 NpcIntentDisposition::Ok,
             )
@@ -642,7 +618,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 &mut admitted,
                 npc,
                 4,
-                NpcTradeSide::Sell,
+                (NpcTradeSide::Sell, None),
                 125,
                 NpcIntentDisposition::Ok,
             )
@@ -881,7 +857,7 @@ async fn bulk_exchange(
     admitted: &mut AdmittedSession,
     npc: EntityRef,
     first: u64,
-    side: NpcTradeSide,
+    (side, stale_quote): (NpcTradeSide, Option<(u32, u32)>),
     quantity: u32,
     expected: NpcIntentDisposition,
 ) -> TestResult<(
@@ -949,37 +925,49 @@ async fn bulk_exchange(
             }
         }
         let window = shown.ok_or("shop window")?;
-        let (offer_index, offer) = window
-            .offers
-            .iter()
-            .enumerate()
-            .find(|(_, offer)| offer.side == side)
-            .ok_or("side offer")?;
-        assert!(!window.details[offer_index].name.is_empty());
-        assert!(quantity <= window.details[offer_index].maximum_quantity);
-        let mut shop = oteryn_dev_client::client_ui::npc_shop::LiveShop {
-            selected: true,
-            ..Default::default()
+        let intent = if let Some((offer_index, expected_unit_price)) = stale_quote {
+            wire::NpcTradeIntent {
+                npc_actor: npc,
+                catalogue_revision: window.open.ok_or("shop closed")?.1,
+                offer_index,
+                side,
+                quantity,
+                expected_unit_price,
+            }
+        } else {
+            let (offer_index, offer) = window
+                .offers
+                .iter()
+                .enumerate()
+                .find(|(_, offer)| offer.side == side)
+                .ok_or("side offer")?;
+            assert!(!window.details[offer_index].name.is_empty());
+            assert!(quantity <= window.details[offer_index].maximum_quantity);
+            let mut shop = oteryn_dev_client::client_ui::npc_shop::LiveShop {
+                selected: true,
+                ..Default::default()
+            };
+            oteryn_dev_client::client_ui::trade_details::apply_window(&mut shop, window.clone());
+            let quote = shop
+                .quotes()
+                .into_iter()
+                .find(|quote| quote.side == side)
+                .ok_or("decoded UI quote")?;
+            assert!(
+                shop.quote_text(quote)
+                    .contains(&window.details[offer_index].name)
+            );
+            assert_eq!(
+                shop.maximum_amount(quote),
+                window.details[offer_index].maximum_quantity
+            );
+            assert!(!shop.valid_amount(quote, shop.maximum_amount(quote) + 1));
+            let intent = shop
+                .trade(quote, quantity)
+                .ok_or("UI trade within authoritative bound")?;
+            assert_eq!(intent.expected_unit_price, offer.unit_price);
+            intent
         };
-        oteryn_dev_client::client_ui::trade_details::apply_window(&mut shop, window.clone());
-        let quote = shop
-            .quotes()
-            .into_iter()
-            .find(|quote| quote.side == side)
-            .ok_or("decoded UI quote")?;
-        assert!(
-            shop.quote_text(quote)
-                .contains(&window.details[offer_index].name)
-        );
-        assert_eq!(
-            shop.maximum_amount(quote),
-            window.details[offer_index].maximum_quantity
-        );
-        assert!(!shop.valid_amount(quote, shop.maximum_amount(quote) + 1));
-        let intent = shop
-            .trade(quote, quantity)
-            .ok_or("UI trade within authoritative bound")?;
-        assert_eq!(intent.expected_unit_price, offer.unit_price);
         let payload = wire::encode_npc_trade_intent(&intent).map_err(debug)?;
         write_frame(
             &mut client,

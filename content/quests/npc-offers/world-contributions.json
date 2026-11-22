@@ -1,0 +1,17 @@
+{
+  "offers": [
+    {
+      "keywords": [
+        "coal"
+      ],
+      "next_topic": 1,
+      "npc": "oteryn:npc.junkar_thais",
+      "reply": [
+        "Would you like to donate coal for the steamship?"
+      ],
+      "storage": [],
+      "topic": 0
+    }
+  ],
+  "schema": 1
+}
