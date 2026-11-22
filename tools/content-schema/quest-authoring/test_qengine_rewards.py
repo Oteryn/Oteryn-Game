@@ -7,6 +7,25 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_between_the_lines_phillip_start(self):
+        row = next(c for c in self.callbacks["callbacks"]
+                   if c["key"] == "oteryn:quest-reward/between-the-lines-phillip-accept")
+        self.assertEqual(row["npc"], "oteryn:npc.phillip")
+        self.assertEqual(row["keywords"], ["yes"])
+        self.assertEqual(row["minimum_level"], 200)
+        self.assertTrue(row["requires_premium"])
+        self.assertEqual(row["storage"][0]["set"], 1)
+
+    def test_brotherhood_dread_lord_exchange(self):
+        row = next(c for c in self.callbacks["callbacks"]
+                   if c["key"] == "oteryn:quest-reward/l10-brotherhood-dread-lord")
+        self.assertEqual(row["take"], [{"item": "oteryn:item.tibia.i6499", "count": 1500}])
+        self.assertIsNone(row["give"])
+        self.assertEqual(row["achievement"], "oteryn:achievement/dread_lord")
+        states = {s["track"].rsplit("/", 1)[-1]: s for s in row["storage"]}
+        self.assertEqual((states["outfits"]["minimum"], states["outfits"]["set"]), (3, 4))
+        self.assertEqual((states["door"]["minimum"], states["door"]["set"]), (0, 1))
+
     def test_royal_costume_completes_only_after_crown_exchange(self):
         rows = {row['key'].split('/')[-1]: row for row in self.callbacks['callbacks']}
         for name, before, after in [('base', -1, 1), ('shield', 1, 2), ('crown', 2, 3)]:

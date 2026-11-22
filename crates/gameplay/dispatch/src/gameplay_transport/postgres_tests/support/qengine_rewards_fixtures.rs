@@ -35,6 +35,10 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             name,
             if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps_fixtures::SOURCE
+            } else if name == super::between_the_lines_fixtures::PHILLIP_SCENARIO {
+                super::between_the_lines_fixtures::PHILLIP
+            } else if name == "qengine-rewards-l10-documents-brotherhood-story" {
+                super::qengine_document_stories_fixtures::BONE_MASTER
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
                     x: 32248,
@@ -239,9 +243,11 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l7-assassin-yarn" => &["10 spools of yarn"],
         "l11-makeshift-base" => &["salvage"],
         "l11-dream-warrior-first" | "l11-dream-warrior-second" => &["addon", "yes", "yes"],
+        "between-the-lines-phillip-accept" => &["book"],
         "l10-brotherhood-join" | "l10-nightmare-join" => &["join", "yes"],
         "l10-brotherhood-officer"
         | "l10-nightmare-officer"
+        | "l10-brotherhood-dread-lord"
         | "l10-brotherhood-leader"
         | "l10-nightmare-leader" => &["advancement"],
         "l10-golden-base" => &["outfit", "yes", "armor"],
@@ -1134,6 +1140,9 @@ pub(super) async fn exercise(
             owner, admitted, h, authority, name,
         ))
         .await;
+    }
+    if name == super::between_the_lines_fixtures::PHILLIP_SCENARIO {
+        return Box::pin(super::between_the_lines_fixtures::phillip(owner, admitted, h, authority)).await;
     }
     if name.starts_with("qengine-rewards-l10-documents-") {
         return Box::pin(super::qengine_document_stories_fixtures::exercise(

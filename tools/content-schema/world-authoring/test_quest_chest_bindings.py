@@ -117,6 +117,32 @@ class QuestChestBindings(unittest.TestCase):
             gate["claims"], ["oteryn:reward-claim.quest.u7_24.the_annihilator.reward"]
         )
 
+    def test_restored_native_quest_chests_and_expertise_doors(self):
+        selected, _ = chests.selections()
+        for position, appearance, unique in (
+            ((32800, 31959, 7), 3634, 5006),
+            ((32813, 31964, 7), 3634, 5007),
+            ((32868, 31955, 11), 3634, 6047),
+            ((32880, 31955, 11), 3634, 6048),
+            ((33295, 31658, 13), 2472, 6052),
+            ((33297, 31658, 13), 2472, 6053),
+            ((33298, 31658, 13), 2472, 6054),
+            ((33199, 31923, 11), 2469, 6066),
+            ((33294, 31658, 13), 2472, 6075),
+            ((32490, 31192, 10), 4024, 6218),
+        ):
+            with self.subTest(position=position):
+                row = selected["unique"][position]
+                self.assertEqual((row["appearance"], row["unique"]), (appearance, unique))
+        for position, appearance, action in (
+            ((32874, 31974, 12), 5102, 1050),
+            ((32875, 31974, 12), 5102, 1050),
+            ((33297, 31670, 14), 1648, 1080),
+        ):
+            with self.subTest(position=position):
+                row = selected["action"][position]
+                self.assertEqual((row["appearance"], row["action"]), (appearance, action))
+
     def test_panpipe_key_uses_the_existing_complete_key_lowering(self):
         definition = chests.claim_definitions(chests.ROOT)[
             "oteryn:reward-claim.quest.key.id4055"

@@ -9817,7 +9817,7 @@
               "regions": [
                 {
                   "path": "content/world/placements/region-z11-x129-y124.b3",
-                  "sha256": "3f67a3ad1905796c40c7b08e04a6293309105a569604212e50e751cc6d05c21f"
+                  "sha256": "8953e7ddf00ae2d33eea54d28c5b9b52811105532c45a5e406fef4942327f1d3"
                 },
                 {
                   "path": "content/world/placements/region-z11-x129-y125.b3",
@@ -10143,7 +10143,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z11-x129-y124.b3",
-                        "sha256": "3f67a3ad1905796c40c7b08e04a6293309105a569604212e50e751cc6d05c21f"
+                        "sha256": "8953e7ddf00ae2d33eea54d28c5b9b52811105532c45a5e406fef4942327f1d3"
                       },
                       {
                         "path": "content/world/placements/region-z11-x129-y125.b3",
@@ -22874,7 +22874,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z11-x129-y124.b3",
-                        "sha256": "3f67a3ad1905796c40c7b08e04a6293309105a569604212e50e751cc6d05c21f"
+                        "sha256": "8953e7ddf00ae2d33eea54d28c5b9b52811105532c45a5e406fef4942327f1d3"
                       }
                     ],
                     "to": {
@@ -48189,7 +48189,7 @@
                       },
                       {
                         "path": "content/world/placements/region-z07-x128-y124.b3",
-                        "sha256": "bdcf1412c9d0ea16670cd16ed415740da23293bc12f30cfc16cbe1bd04194f66"
+                        "sha256": "dccabcc4514174513fa90b5ad5a9bef4c54874042dd7ecd04bf8891b427b0bb9"
                       },
                       {
                         "path": "content/world/placements/region-z07-x128-y125.b3",
@@ -48526,7 +48526,7 @@
                       },
                       {
                         "path": "content/world/placements/region-z07-x128-y124.b3",
-                        "sha256": "bdcf1412c9d0ea16670cd16ed415740da23293bc12f30cfc16cbe1bd04194f66"
+                        "sha256": "dccabcc4514174513fa90b5ad5a9bef4c54874042dd7ecd04bf8891b427b0bb9"
                       }
                     ],
                     "to": {
