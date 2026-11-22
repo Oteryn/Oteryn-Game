@@ -25,7 +25,7 @@ def ground_item(root, palette_index):
     return palette_index in ground_item.cache
 
 
-def choose_cell(root, actual_source, choice, occupied):
+def choose_cell(root, actual_source, choice, occupied, *, compiler_qualified=False):
     if set(choice) != {'source', 'target', 'reason'}:
         raise ValueError('chosen placement requires source, target and reason')
     def point(value):
@@ -49,7 +49,13 @@ def choose_cell(root, actual_source, choice, occupied):
         return (tile is not None and not tile[2] and not tile[3] and len(tile[5]) == 1
                 and (not walkable or ground_item(root, tile[5][0][0])))
     distance = sum(abs(a-b) for a, b in zip(before[:2], after[:2]))
-    if distance != 1:
+    if compiler_qualified:
+        # The mainland compiler regression checks these decorated contact tiles
+        # with the same resolver used by the published bundle.
+        tile = tiles.get(after[:2])
+        if not 1 <= distance <= MAX_MISSING_TILE_DISTANCE or tile is None or tile[3] or not tile[5]:
+            raise ValueError('qualified contact target must be a nearby native tile outside houses')
+    elif distance != 1:
         # A source cell with no native tile at all may move to the uniquely nearest
         # clear ground of its own region and floor, never past a nearer clear cell.
         if (before[:2] in tiles or (before[0]//256, before[1]//256) != (x//256, y//256)
@@ -59,7 +65,7 @@ def choose_cell(root, actual_source, choice, occupied):
                        if cell != (x, y)
                        and abs(cell[0]-before[0]) + abs(cell[1]-before[1]) <= distance)):
             raise ValueError('chosen placement must adjoin its exact retained source cell')
-    if not clear((x, y)):
+    if not compiler_qualified and not clear((x, y)):
         raise ValueError('chosen placement target is not clear native ground')
     return after, {'origin':'oteryn', 'basis':'CHOSEN_OTERYN_APPROXIMATION',
                    'source_cell':{'x':before[0],'y':before[1],'floor':before[2]},
