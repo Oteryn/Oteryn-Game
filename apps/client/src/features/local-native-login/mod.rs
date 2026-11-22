@@ -38,6 +38,10 @@ pub struct LoginSettings {
 
 impl LoginSettings {
     pub fn from_values(values: [String; 6]) -> Self {
+        Self::from_stored_values(values.map(|value| value.trim().to_owned()))
+    }
+
+    fn from_stored_values(values: [String; 6]) -> Self {
         let [
             platform_url,
             gateway_url,
@@ -45,7 +49,7 @@ impl LoginSettings {
             world_ref,
             character_id,
             dev_root,
-        ] = values.map(|value| value.trim().to_owned());
+        ] = values;
         Self {
             platform_url,
             gateway_url,

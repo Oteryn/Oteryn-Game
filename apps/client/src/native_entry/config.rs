@@ -1,7 +1,7 @@
 use crate::CLIENT_BUILD;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex, PoisonError, mpsc};
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
 
 const HELPER_OBSERVATION: Duration = Duration::from_secs(3);
@@ -11,21 +11,15 @@ use oteryn_foundation::CancellationToken;
 
 pub type BrowserOpener = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 
-#[derive(Default)]
-struct BrowserWorkers {
-    shutdown: CancellationToken,
-    handles: Mutex<Vec<std::thread::JoinHandle<()>>>,
-}
-
 #[derive(Clone)]
 pub(crate) struct SystemBrowser {
     opener: BrowserOpener,
-    workers: Arc<BrowserWorkers>,
+    workers: Arc<BrowserEpoch>,
 }
 
 impl Default for SystemBrowser {
     fn default() -> Self {
-        let workers = Arc::<BrowserWorkers>::default();
+        let workers = Arc::<BrowserEpoch>::default();
         let owner = workers.clone();
         Self {
             opener: Arc::new(move |url| deliver_system_url(url, &owner, None, None)),
@@ -36,95 +30,40 @@ impl Default for SystemBrowser {
 
 impl SystemBrowser {
     pub(crate) fn shutdown(&self) {
-        self.workers.shutdown.cancel();
-        let handles = std::mem::take(
-            &mut *self
-                .workers
-                .handles
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner),
-        );
-        let deadline = std::time::Instant::now() + Duration::from_secs(2);
-        for handle in handles {
-            while !handle.is_finished() {
-                if std::time::Instant::now() >= deadline {
-                    return;
-                }
-                std::thread::sleep(Duration::from_millis(1));
-            }
-            let _ = handle.join();
-        }
+        self.workers.close();
     }
 }
 
-/// One admission attempt or Store session. A replacement gets a fresh epoch.
+// Close and OS spawn share this gate. Callback execution and child observation never hold it.
 #[derive(Default)]
 pub(crate) struct BrowserEpoch {
+    spawn: Mutex<()>,
     ended: CancellationToken,
-    delivery: Mutex<Delivery>,
-}
-
-#[derive(Default)]
-struct Delivery {
-    callbacks: usize,
-    helpers: Vec<mpsc::Receiver<()>>,
 }
 
 impl BrowserEpoch {
+    #[cfg(bevy_shell)]
+    pub(crate) fn cancellation(&self) -> CancellationToken {
+        self.ended.clone()
+    }
+
     pub(crate) fn opener(self: &Arc<Self>, config: &NativeLoginConfig) -> BrowserOpener {
-        let epoch = self.clone();
+        let gate = self.clone();
         if Arc::ptr_eq(&config.open_browser, &config.system_browser.opener) {
             let workers = config.system_browser.workers.clone();
             return Arc::new(move |url| {
-                deliver_system_url(url, &workers, None, Some(epoch.clone()))
+                deliver_system_url(url, &workers, None, Some(gate.clone()))
             });
         }
         let browser = config.open_browser.clone();
         Arc::new(move |url| {
-            {
-                let mut delivery = epoch
-                    .delivery
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner);
-                if epoch.ended.is_cancelled() {
-                    return false;
-                }
-                delivery.callbacks += 1;
-            }
-            let delivered = browser(url);
-            let mut delivery = epoch
-                .delivery
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner);
-            delivery.callbacks -= 1;
-            delivered && !epoch.ended.is_cancelled()
+            !gate.ended.is_cancelled() && browser(url) && !gate.ended.is_cancelled()
         })
     }
 
     pub(crate) fn close(&self) {
-        let mut delivery = self.delivery.lock().unwrap_or_else(PoisonError::into_inner);
-        if self.ended.is_cancelled() {
-            return;
-        }
+        let _spawn = self.spawn.lock().unwrap_or_else(PoisonError::into_inner);
         self.ended.cancel();
-        delivery.prune();
-        if delivery.callbacks > 0 || !delivery.helpers.is_empty() {
-            eprintln!("Browser delivery cancelled: URL may already have been delivered.");
-        }
-        let helpers = std::mem::take(&mut delivery.helpers);
-        drop(delivery);
-        let deadline = std::time::Instant::now() + HELPER_OBSERVATION + Duration::from_secs(2);
-        for helper in helpers {
-            let _ =
-                helper.recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()));
-        }
-    }
-}
-
-impl Delivery {
-    fn prune(&mut self) {
-        self.helpers
-            .retain(|helper| matches!(helper.try_recv(), Err(mpsc::TryRecvError::Empty)));
     }
 }
 
@@ -237,7 +176,7 @@ impl NativeLoginConfig {
 
 fn deliver_system_url(
     url: &str,
-    workers: &BrowserWorkers,
+    workers: &Arc<BrowserEpoch>,
     cancel: Option<&CancellationToken>,
     epoch: Option<Arc<BrowserEpoch>>,
 ) -> bool {
@@ -249,37 +188,30 @@ fn deliver_system_url(
         BrowserPlatform::Unix
     };
     let mut command = browser_command(platform, url);
-    let cancel = cancel.cloned();
+    let worker_cancel = cancel.cloned();
+    let worker_epoch = epoch.clone();
+    let worker_scope = workers.clone();
     let (result, delivery) = std::sync::mpsc::channel();
-    // Register before shutdown can take the handles. Delivery itself runs outside the lock.
-    let mut handles = workers
-        .handles
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner);
-    if workers.shutdown.is_cancelled() {
-        return false;
-    }
-    handles.retain(|handle| !handle.is_finished());
-    let shutdown = workers.shutdown.clone();
     let worker = std::thread::Builder::new()
         .name("browser-helper".into())
         .spawn(move || {
-            let mut gate = epoch.as_ref().map(|scope| {
-                scope
-                    .delivery
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-            });
-            let ended = || {
-                epoch
-                    .as_ref()
-                    .is_some_and(|scope| scope.ended.is_cancelled())
-            };
+            let shutdown = worker_scope
+                .spawn
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner);
+            let gate = worker_epoch
+                .as_ref()
+                .map(|scope| scope.spawn.lock().unwrap_or_else(PoisonError::into_inner));
             let cancelled = || {
-                shutdown.is_cancelled()
-                    || cancel.as_ref().is_some_and(CancellationToken::is_cancelled)
+                worker_scope.ended.is_cancelled()
+                    || worker_cancel
+                        .as_ref()
+                        .is_some_and(CancellationToken::is_cancelled)
+                    || worker_epoch
+                        .as_ref()
+                        .is_some_and(|scope| scope.ended.is_cancelled())
             };
-            if cancelled() || ended() {
+            if cancelled() {
                 return;
             }
             let Ok(mut child) = command
@@ -290,22 +222,15 @@ fn deliver_system_url(
             else {
                 return;
             };
-            // Spawn and registration are atomic with closing the epoch. Disconnect
-            // only after the child exits or is killed and reaped.
-            let _completion = gate.as_mut().map(|delivery| {
-                delivery.prune();
-                let (done, finished) = mpsc::channel();
-                delivery.helpers.push(finished);
-                done
-            });
             drop(gate);
+            drop(shutdown);
             let deadline = std::time::Instant::now() + HELPER_OBSERVATION;
             let mut pending = Some(result);
             while !cancelled() {
                 match child.try_wait() {
                     Ok(Some(status)) => {
                         if let Some(result) = pending {
-                            let _ = result.send(status.success() && !ended());
+                            let _ = result.send(status.success() && !cancelled());
                         }
                         return;
                     }
@@ -314,25 +239,24 @@ fn deliver_system_url(
                         if std::time::Instant::now() >= deadline
                             && let Some(result) = pending.take()
                         {
-                            if ended() {
-                                break;
-                            }
-                            let _ = result.send(true);
-                        }
-                        if pending.is_none() && ended() {
-                            break;
+                            let _ = result.send(!cancelled());
                         }
                         std::thread::sleep(Duration::from_millis(10));
                     }
                 }
             }
             let _ = child.kill();
-            let _ = child.wait();
+            // The OS may already have accepted the URL. Only the helper is ours to reap.
+            let deadline = std::time::Instant::now() + Duration::from_secs(2);
+            while matches!(child.try_wait(), Ok(None)) && std::time::Instant::now() < deadline {
+                std::thread::sleep(Duration::from_millis(10));
+            }
         });
-    let Ok(worker) = worker else { return false };
-    handles.push(worker);
-    drop(handles);
-    delivery.recv().unwrap_or(false)
+    worker.is_ok()
+        && delivery.recv().unwrap_or(false)
+        && !workers.ended.is_cancelled()
+        && !cancel.is_some_and(CancellationToken::is_cancelled)
+        && !epoch.is_some_and(|scope| scope.ended.is_cancelled())
 }
 
 enum BrowserPlatform {
@@ -439,6 +363,13 @@ mod browser_command_tests {
             _ => None,
         })?
         .ok_or("missing native config")?;
+        let closed = Arc::<BrowserEpoch>::default();
+        let stale = closed.opener(&config);
+        closed.close();
+        let marker = PathBuf::from(&root).join("pid");
+        std::fs::remove_file(&marker)?;
+        assert!(!stale("0"));
+        assert!(!marker.exists(), "closed epoch spawned the helper");
         let client = crate::ClientBootstrap::new()?.with_native_login(config);
         let browser = client
             .native_login
@@ -451,6 +382,10 @@ mod browser_command_tests {
         let process = PathBuf::from("/proc").join(pid.trim());
         assert!(process.exists());
         entry.shutdown();
+        let deadline = std::time::Instant::now() + Duration::from_secs(1);
+        while process.exists() && std::time::Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(5));
+        }
         assert!(!process.exists(), "browser helper survived shutdown");
         Ok(())
     }
@@ -476,5 +411,34 @@ mod browser_command_tests {
                 assert_eq!(arguments, [url]);
             }
         }
+    }
+
+    #[test]
+    fn close_discards_a_callback_in_flight_and_refuses_later_calls()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut config =
+            NativeLoginConfig::from_env(|_| Some("test".into()))?.ok_or("missing native config")?;
+        let (started, ready) = std::sync::mpsc::channel();
+        let (release, resume) = std::sync::mpsc::channel();
+        let resume = Mutex::new(resume);
+        config.open_browser = Arc::new(move |_| {
+            started.send(()).is_ok()
+                && resume
+                    .lock()
+                    .is_ok_and(|rx| rx.recv_timeout(Duration::from_secs(5)).is_ok())
+        });
+        let epoch = Arc::<BrowserEpoch>::default();
+        let browser = epoch.opener(&config);
+        let in_flight = browser.clone();
+        let worker = std::thread::spawn(move || in_flight("first"));
+        ready.recv_timeout(Duration::from_secs(5))?;
+        let start = std::time::Instant::now();
+        epoch.close();
+        assert!(start.elapsed() < Duration::from_millis(100));
+        release.send(())?;
+        assert!(!worker.join().map_err(|_| "callback panicked")?);
+        assert!(!browser("closed"));
+        assert!(ready.try_recv().is_err());
+        Ok(())
     }
 }

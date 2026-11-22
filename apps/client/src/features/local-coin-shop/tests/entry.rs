@@ -149,6 +149,9 @@ fn store_launcher_fresh_oauth_releases_definitively_refused_request() -> TestRes
 fn fresh_oauth(refused: bool) -> TestResult {
     use crate::account_services::test_server::coins::{CoinAuthority, EventKind, PACKAGE};
     use std::sync::Mutex;
+    let _entry = crate::account_services::test_server::COMMERCE_ENTRY
+        .lock()
+        .map_err(|_| "commerce entry lock")?;
     let stack = test_support::Stack::start(Vec::new())?;
     let mock = MockPlatform::start()?;
     let mut config = stack.config();
@@ -247,23 +250,44 @@ fn fresh_oauth(refused: bool) -> TestResult {
     // Give the second sign-in an independent wallet and order listing.
     let mut other = CoinAuthority::new(mock.base.clone())?;
     other.balance.total_coins = 2000;
+    other.drop_after_create = true;
     mock.authority
         .lock()
         .map_err(|_| "lock")?
         .coin_wallets_by_grant
         .insert(2, other);
-    for total in [2000, 1000] {
-        let fresh = open(vec![Action::Retry, purchase()])?;
-        assert_eq!(fresh.len(), 3);
-        for view in fresh {
-            assert_eq!(view.balance.as_ref().map(|b| b.total_coins), Some(total));
-            assert!(!view.status_text().contains(&original));
-            assert!(!format!("{view:?}").contains(&original));
-            assert!(!view.can_retry());
-            assert!(!view.can_purchase(PACKAGE));
-        }
-        assert_eq!(posts()?, vec![original.clone()]);
+    let fresh = open(vec![Action::Retry, purchase(), Action::Refresh])?;
+    assert_eq!(fresh.len(), 4);
+    for view in &fresh {
+        assert_eq!(view.balance.as_ref().map(|b| b.total_coins), Some(2000));
+        assert!(!view.status_text().contains(&original));
+        assert!(!format!("{view:?}").contains(&original));
     }
+    assert!(!fresh[0].can_retry());
+    assert!(fresh[1].can_purchase(PACKAGE));
+    assert!(fresh[2].can_retry());
+    assert!(!fresh[3].can_retry());
+    assert!(fresh[3].can_purchase(PACKAGE));
+    let requests = posts()?;
+    assert_eq!(requests.len(), 2);
+    assert_ne!(requests[1], original);
+    assert_eq!(
+        fresh[3].order.as_ref().map(|o| &o.request_id),
+        Some(&requests[1])
+    );
+    let hidden = open(vec![Action::Retry])?;
+    assert!(
+        hidden
+            .iter()
+            .all(|v| v.can_purchase(PACKAGE) && !format!("{v:?}").contains(&original))
+    );
+    assert_eq!(hidden.len(), 2);
+    for view in hidden {
+        assert_eq!(view.balance.as_ref().map(|b| b.total_coins), Some(1000));
+        assert!(!view.status_text().contains(&original));
+        assert!(!view.can_retry());
+    }
+    assert_eq!(posts()?, requests);
     let order = mock
         .with_coins(|coins| coins.orders.get(&original).map(|(_, order)| order.clone()))?
         .ok_or("unlisted order")?;
@@ -276,7 +300,7 @@ fn fresh_oauth(refused: bool) -> TestResult {
     assert!(view.order.as_ref().is_some_and(|o| o.state.completed()));
     assert!(view.can_purchase(PACKAGE));
     assert!(!view.pending());
-    assert_eq!(posts()?, vec![original.clone()]);
+    assert_eq!(posts()?, requests);
     assert!(!format!("{view:?}{launcher:?}").contains("services-test-token-"));
     mock.runtime.block_on(device.sign_out(&mock.client()?))?;
     mock.with_coins(|coins| coins.hide_recent_orders = true)?;

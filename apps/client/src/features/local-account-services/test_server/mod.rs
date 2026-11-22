@@ -12,6 +12,8 @@ use tokio::net::TcpListener;
 pub(crate) mod coins;
 pub(crate) mod premium;
 
+// Independent mock applications share the native entry points' process-wide POST permits.
+pub(crate) static COMMERCE_ENTRY: Mutex<()> = Mutex::new(());
 pub(crate) type TestResult = Result<(), Box<dyn std::error::Error>>;
 pub(crate) const CHARACTER: &str = "01890a5d-ac96-774b-bcce-b302099a8058";
 pub(crate) const AUCTION: &str = "01890a5d-ac96-774b-bcce-b302099a8057";
@@ -35,6 +37,10 @@ pub(crate) struct Authority {
     pub effects: u32,
     pub fail_after_commit: bool,
     pub bazaar_post_failure: Option<u16>,
+    pub hold_coin_response: Option<(
+        tokio::sync::oneshot::Sender<()>,
+        tokio::sync::oneshot::Receiver<()>,
+    )>,
     pub coin_post_failure: Option<u16>,
     pub oauth_exchanges: u32,
     pub pending_first: bool,

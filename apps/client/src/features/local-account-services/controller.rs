@@ -172,6 +172,7 @@ async fn apply(
                     Err(NativeLoginError::Platform(HttpStatus(404)))
                         if view.post_refusal_status == Some(409) =>
                     {
+                        view.prior.reconcile(id);
                         view.pending = None;
                         view.post_refusal_status = None;
                         view.quote = None;
@@ -220,7 +221,16 @@ async fn submit(
     let Some(request) = &view.pending else {
         return Ok(());
     };
+    let Some(post) = view.prior.start() else {
+        if !retry {
+            view.pending = None;
+        }
+        view.feedback = tr!("Resolve the pending operation before starting another.").into();
+        return Ok(());
+    };
+    view.prior.retain(request.request_id.clone());
     let result = client.bazaar_command(token, request, cancel).await;
+    drop(post);
     // Only a refusal of the initial POST can rule out its effect.
     view.post_refusal_status = match &result {
         Err(NativeLoginError::Platform(HttpStatus(409))) if !retry => Some(409),
@@ -228,6 +238,7 @@ async fn submit(
         _ => None,
     };
     if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {
+        view.prior.reconcile(&request.request_id);
         view.pending = None;
         view.quote = None;
         view.post_refusal_status = None;
@@ -266,7 +277,9 @@ pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
     } else {
         view.unresolved.remove(&receipt.request_id);
     }
-    view.prior.reconcile(&receipt.request_id);
+    if receipt.state != OperationState::Pending {
+        view.prior.reconcile(&receipt.request_id);
+    }
     view.feedback = match receipt.state {
         OperationState::Pending => {
             tr!("Awaiting the authoritative receipt. Check status or retry with the same identity.")

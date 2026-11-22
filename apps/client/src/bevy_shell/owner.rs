@@ -63,7 +63,10 @@ pub(super) struct HostOwner {
     pub settings: SettingsState,
     preferences_path: Option<PathBuf>,
     draft: Option<Draft>,
-    web_link: Option<std::sync::mpsc::Receiver<bool>>,
+    web_link: Option<(
+        oteryn_foundation::CancellationToken,
+        std::sync::mpsc::Receiver<bool>,
+    )>,
     forget_intent: Option<device_sign_out::PendingIntent>,
     device_sign_out: Option<tokio::sync::watch::Receiver<Option<bool>>>,
     scope: Scope,

@@ -94,6 +94,7 @@ async fn apply(
                 Err(NativeLoginError::Platform(HttpStatus(404)))
                     if view.post_refusal_status == Some(409) && view.pending() =>
                 {
+                    view.prior.reconcile(&id);
                     clear_refused_order(view);
                     view.feedback = tr!("The server refused the request").into();
                     return Ok(());
@@ -134,9 +135,19 @@ async fn submit(
     let Some(request) = &view.pending else {
         return Ok(());
     };
+    let Some(post) = view.prior.start() else {
+        if !retry {
+            view.confirmed = None;
+            view.pending = None;
+        }
+        view.feedback = tr!("Resolve the pending operation before starting another.").into();
+        return Ok(());
+    };
+    view.prior.retain(request.request_id.clone());
     let result = client
         .create_coin_order(token, request, cancel.clone())
         .await;
+    drop(post);
     // Only a refusal of the initial POST can rule out its effect.
     view.post_refusal_status = match &result {
         Err(NativeLoginError::Platform(HttpStatus(409))) if !retry => Some(409),
@@ -144,6 +155,7 @@ async fn submit(
         _ => None,
     };
     if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {
+        view.prior.reconcile(&request.request_id);
         clear_refused_order(view);
     }
     let order = result?;

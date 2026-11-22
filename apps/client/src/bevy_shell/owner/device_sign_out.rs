@@ -11,7 +11,7 @@ pub(super) struct PendingIntent {
     worker: std::thread::JoinHandle<Result<(), String>>,
     action: ForgetAction,
     scope: Scope,
-    config: crate::NativeLoginConfig,
+    config: Option<crate::NativeLoginConfig>,
 }
 
 impl HostOwner {
@@ -63,31 +63,33 @@ impl HostOwner {
         if self.forget_intent.is_some() {
             return;
         }
-        let Some(config) = self
+        let config = self
             .entry
             .as_ref()
             .and_then(Reentry::config_for_forget)
-            .cloned()
-        else {
-            match self.settings.disable_remember_device() {
-                Ok(()) => self.apply_forget(action),
-                Err(error) => self.forget_failed(action, error),
-            }
+            .cloned();
+        if config.is_none() && self.preferences_path.is_none() {
+            self.settings.finish_device_opt_out();
+            self.apply_forget(action);
             return;
-        };
+        }
+        let record_opt_out = self.settings.record_device_opt_out();
         let worker_config = config.clone();
         let picker = matches!(action, ForgetAction::CancelPicker(_));
         match std::thread::Builder::new()
             .name("device-forget".into())
             .spawn(move || {
-                if picker {
-                    worker_config.record_picker_opt_out()
-                } else {
-                    worker_config
-                        .device_sessions
-                        .block_remembered()
-                        .map_err(|error| error.to_string())
+                if let Some(config) = worker_config {
+                    if picker {
+                        config.record_picker_opt_out()?;
+                    } else {
+                        config
+                            .device_sessions
+                            .block_remembered()
+                            .map_err(|error| error.to_string())?;
+                    }
                 }
+                record_opt_out()
             }) {
             Ok(worker) => {
                 self.selection.pause_responses(true);
@@ -124,22 +126,26 @@ impl HostOwner {
                 .join()
                 .unwrap_or_else(|_| Err("Device writer stopped".into()));
             self.selection.pause_responses(false);
-            if let Err(error) = result.and_then(|()| self.settings.disable_remember_device()) {
+            if let Err(error) = result {
                 self.forget_failed(intent.action, error);
             } else {
+                self.settings.finish_device_opt_out();
+                let Some(forgotten) = intent.config else {
+                    if self.scope == intent.scope {
+                        self.apply_forget(intent.action);
+                    }
+                    return;
+                };
                 let current = self
                     .entry
                     .as_ref()
                     .and_then(Reentry::config_for_forget)
                     .is_some_and(|config| {
-                        std::sync::Arc::ptr_eq(
-                            &config.device_sessions,
-                            &intent.config.device_sessions,
-                        )
+                        std::sync::Arc::ptr_eq(&config.device_sessions, &forgotten.device_sessions)
                     });
                 if let Some(entry) = &mut self.entry {
                     entry.set_session_options(self.settings.preferences.miscellaneous);
-                    self.device_sign_out = Some(entry.finish_recorded_forget(intent.config));
+                    self.device_sign_out = Some(entry.finish_recorded_forget(forgotten));
                 }
                 if current && self.scope == intent.scope {
                     self.apply_forget(intent.action);
