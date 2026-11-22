@@ -1778,6 +1778,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
     };
     let mut policies = CompiledCreaturePolicies::from_active_artifact(source_digest, records)
         .map_err(|_| invalid("native gameplay creature policy table"))?;
+    policies.bind_spawn_eligibility(&creatures);
     policies.bind_soul_war_health_callbacks(&creatures);
     Ok(DecodedNativeGameplay {
         baseline: sections[0],
