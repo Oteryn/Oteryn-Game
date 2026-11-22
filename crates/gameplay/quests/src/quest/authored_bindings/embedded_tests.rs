@@ -572,7 +572,7 @@ mod main_native_contract {
         let after = explicit.catalogue();
         // Twenty Miles contributes 26 tracks across both registries, including song times
         // and replacements. Koshei adds its reward door and Sinatuki adds fish progress.
-        assert_eq!(before.tracks.len(), 2136 + 26 + 1 + 1);
+        assert_eq!(before.tracks.len(), 2143 + 26 + 1 + 1);
         for pharaoh in ["omruc", "vashresamun"] {
             let key = format!(
                 "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/{pharaoh}_sarcophagus_claim"

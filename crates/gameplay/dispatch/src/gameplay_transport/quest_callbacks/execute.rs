@@ -104,34 +104,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        let (pos, mut after) =
-            if oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some() {
-                let Some(source) = shared_added_source(map, callback, key) else {
-                    return UseDisposition::Rejected;
-                };
-                source
-            } else {
-                let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
-                    return UseDisposition::Rejected;
-                };
-                let Some(base) = map.overlay.base().tile(pos.x, pos.y, pos.floor) else {
-                    return UseDisposition::Rejected;
-                };
-                let Some(id) = base
-                    .ids()
-                    .iter()
-                    .zip(base.depths())
-                    .filter(|(_, d)| **d == 0)
-                    .nth(usize::from(ordinal))
-                    .map(|(id, _)| *id)
-                else {
-                    return UseDisposition::Rejected;
-                };
-                let Some(after) = map.facts.base_entry(pos, ordinal, id) else {
-                    return UseDisposition::Rejected;
-                };
-                (pos, after)
+        let (pos, mut after) = if callback.effects.loot_merchant
+            || oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some()
+        {
+            let Some(source) = shared_added_source(map, callback, key) else {
+                return UseDisposition::Rejected;
             };
+            source
+        } else {
+            let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
+                return UseDisposition::Rejected;
+            };
+            let Some(base) = map.overlay.base().tile(pos.x, pos.y, pos.floor) else {
+                return UseDisposition::Rejected;
+            };
+            let Some(id) = base
+                .ids()
+                .iter()
+                .zip(base.depths())
+                .filter(|(_, d)| **d == 0)
+                .nth(usize::from(ordinal))
+                .map(|(id, _)| *id)
+            else {
+                return UseDisposition::Rejected;
+            };
+            let Some(after) = map.facts.base_entry(pos, ordinal, id) else {
+                return UseDisposition::Rejected;
+            };
+            (pos, after)
+        };
         if map.facts.object_revision(key) != expected_revision {
             // A known-commit source visual batch may have published its first
             // fixed object before a retry. Only that retained exact post-CAS
@@ -301,6 +302,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 position: pos,
                 remove: Some(key),
                 create: None,
+            });
+        }
+        if callback.effects.loot_merchant {
+            if projection.is_some() {
+                return UseDisposition::Rejected;
+            }
+            projection =
+                Some(crate::map::facts::QuestCallbackProjection::ReleaseMerchant { position: pos });
+        }
+        if let Some(appearance) = callback.effects.place_item {
+            let Some(facts) = map.facts.movement_item_facts(appearance) else {
+                return UseDisposition::Rejected;
+            };
+            if projection.is_some() || facts.pickupable || map.facts.house_tile(pos) {
+                return UseDisposition::Rejected;
+            }
+            let barricade = if let Some(entrance) = callback.effects.merchant_entrance {
+                let at = tile(entrance);
+                let Some(tree) = map.facts.movement_item_facts(3682) else {
+                    return UseDisposition::Rejected;
+                };
+                if tree.pickupable
+                    || at == pos
+                    || map.facts.house_tile(at)
+                    || map
+                        .facts
+                        .quest_callback_blocked(map.overlay.base(), at, false)
+                {
+                    return UseDisposition::Rejected;
+                }
+                Some((at, tree))
+            } else {
+                None
+            };
+            projection = Some(crate::map::facts::QuestCallbackProjection::MerchantTrap {
+                position: pos,
+                entry: facts,
+                barricade,
             });
         }
         if let Some(appearance) = callback
@@ -476,6 +515,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(result) => return result,
         };
         let projection_target = match &projection {
+            // Keep the source and shared entrance reserved until the exact
+            // USE receipt can settle, including when its acknowledgment is lost.
+            Some(crate::map::facts::QuestCallbackProjection::MerchantTrap {
+                barricade, ..
+            }) => match barricade {
+                Some((at, _)) => match crate::map::view::placement_key(*at, 0) {
+                    Some(entrance) => Some(entrance),
+                    None => return UseDisposition::Rejected,
+                },
+                None => Some(key),
+            },
+            Some(crate::map::facts::QuestCallbackProjection::ReleaseMerchant { .. }) => Some(key),
+            Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
+                if callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|tool| tool.selected_instance) =>
+            {
+                Some(key)
+            }
             Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
                 key, ..
             }) => Some(*key),
@@ -706,6 +765,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 if source_flame {
                     3
+                } else if callback.effects.place_item.is_some() || callback.effects.loot_merchant {
+                    8
                 } else {
                     callback.passages.len()
                 },
@@ -965,6 +1026,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 true,
                 cause,
                 None,
+                projection.as_ref(),
             );
             if preflight != UseDisposition::Committed {
                 return preflight;
@@ -1013,6 +1075,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected_revision,
                 after,
                 cause,
+                projection.as_ref(),
             );
             if ready != UseDisposition::Committed {
                 return ready;
@@ -1372,23 +1435,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
             );
         }
-        if court_warlock::owns(callback) && !close {
+        if !close && let Some(lever) = court_warlock::source_boss_lever(callback) {
             return self
-                .execute_court_warlock(
+                .execute_source_boss_lever(
                     runtime,
                     states,
                     actor,
                     session,
-                    map,
-                    callback,
-                    key,
-                    expected_revision,
-                    after,
-                    cause,
+                    court_warlock::SourceBossUse {
+                        map,
+                        callback,
+                        key,
+                        revision: expected_revision,
+                        after,
+                        cause,
+                        lever,
+                    },
                 )
                 .await;
         }
-        if callback.effects.encounter.is_some() && !close {
+        let merchant_projected = if callback.effects.encounter.is_some() && !close {
             let disposition = self.execute_quest_encounter(
                 runtime,
                 states,
@@ -1402,8 +1468,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 false,
                 cause,
                 personal_reservation.as_mut(),
+                projection.as_ref(),
             );
-            if disposition == UseDisposition::Committed {
+            if disposition != UseDisposition::Committed {
+                return disposition;
+            }
+            if !callback.starts_merchant_wave() {
                 if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                     pending.remove(&session);
                 }
@@ -1412,9 +1482,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     self.states.chat.push_quest_feedback(session, &message);
                 }
+                return disposition;
             }
-            return disposition;
-        }
+            true
+        } else {
+            false
+        };
         let flame = self
             .states
             .quest_callbacks
@@ -1579,7 +1652,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if !callback.is_read_only() && !personal_claim_preserves_object && !apply_scene()
+            } else if !merchant_projected
+                && !callback.is_read_only()
+                && !personal_claim_preserves_object
+                && !apply_scene()
             {
                 return UseDisposition::Rejected;
             }
@@ -1684,11 +1760,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
         }
+        if callback.effects.loot_merchant {
+            map.facts.emit_movement_effect(pos, 46);
+        }
         if let Some(magic) = &callback.effects.magic {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);
         }
-        if let Some(effect) = callback.effects.teleport_effect
+        if let Some(effect) = callback
+            .effects
+            .teleport_effect
+            .or_else(|| callback.starts_merchant_wave().then_some(45))
             && let Some(destination) = callback.teleport
         {
             map.facts.emit_movement_effect(tile(destination), effect);

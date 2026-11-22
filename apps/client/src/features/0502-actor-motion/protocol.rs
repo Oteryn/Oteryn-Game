@@ -8,6 +8,7 @@ use oteryn_session::{CommandStatus, SessionEvent};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub(in crate::play) struct PendingMount {
+    requested: bool,
     sent: bool,
     accepted: bool,
     motion_seen: bool,
@@ -32,17 +33,18 @@ impl Outbox {
     pub(in crate::play) fn mount_result(&self, status: CommandStatus) {
         let mut mailbox = lock(&self.0);
         if let Some(pending) = mailbox.mount_pending {
-            mailbox.mount_pending = (status == CommandStatus::Accepted && !pending.motion_seen)
-                .then_some(PendingMount {
-                    accepted: true,
-                    ..pending
-                });
+            mailbox.mount_pending = (status == CommandStatus::Accepted
+                && !pending.motion_seen
+                && mailbox.riding() != Some(pending.requested))
+            .then_some(PendingMount {
+                accepted: true,
+                ..pending
+            });
         }
     }
 }
 
 impl Mailbox {
-    #[cfg(bevy_shell)]
     fn riding(&self) -> Option<bool> {
         if !self.motion_selected {
             return None;
@@ -101,7 +103,10 @@ impl PlayLink {
                 .commands
                 .send(crate::combat_input::PlayCommand::Feature(command))
                 .is_ok()
-                .then(PendingMount::default);
+                .then_some(PendingMount {
+                    requested: riding,
+                    ..Default::default()
+                });
         }
     }
 

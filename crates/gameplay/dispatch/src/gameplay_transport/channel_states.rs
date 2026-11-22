@@ -29,6 +29,7 @@ pub struct ChannelSessionStates {
     pub(super) browse_fields: super::container_view::browse_cache::BrowseFields,
     /// Optional local informational publication; never an admission authority.
     pub(super) bulletin_source: Option<std::sync::Arc<super::bulletin::BulletinSource>>,
+    pub(super) cake_bonus: super::cake_event::BonusCache,
     /// Immutable Cake source geometry derived from the active bundle, never custody.
     pub(super) cake_sources: super::cake_event::SourceCache,
     pub casts: std::sync::OnceLock<super::cast::CastNode>,

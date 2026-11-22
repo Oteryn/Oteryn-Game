@@ -90,7 +90,7 @@ pub(in crate::gameplay_transport) fn trap(id: u16) -> Option<Trap> {
     })
 }
 
-fn tile_position(position: MovementLocalPosition) -> Option<TilePos> {
+pub(super) fn tile_position(position: MovementLocalPosition) -> Option<TilePos> {
     Some(TilePos {
         x: position.x.try_into().ok()?,
         y: position.y.try_into().ok()?,

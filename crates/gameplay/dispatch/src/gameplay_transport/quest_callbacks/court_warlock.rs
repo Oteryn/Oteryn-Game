@@ -1,30 +1,51 @@
-//! Real lever USE -> shared encounter admission -> existing Character boss cooldowns.
+//! Source boss lever USE uses shared encounter admission and Character cooldowns.
 use super::*;
+use crate::durability::{
+    DurabilityError,
+    boss_encounter::{SourceBossAdmission, SourceBossLever, SourceBossReservation},
+};
 use oteryn_gameplay_quests::quest::world_callbacks::court_warlock as source;
 
+pub(super) struct SourceBossUse<'a> {
+    pub(super) map: &'a BundleMap,
+    pub(super) callback: &'a Callback,
+    pub(super) key: u64,
+    pub(super) revision: u64,
+    pub(super) after: crate::map::view::EntryFacts,
+    pub(super) cause: QuestCause,
+    pub(super) lever: SourceBossLever,
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static PRE_SOURCE_BOSS_CHARGE:
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "the source hook shares the existing lever owner turn"
-    )]
-    pub(super) async fn execute_court_warlock(
+    pub(super) async fn execute_source_boss_lever(
         &self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
         session: GameSessionId,
-        map: &BundleMap,
-        callback: &Callback,
-        key: u64,
-        revision: u64,
-        after: crate::map::view::EntryFacts,
-        cause: QuestCause,
+        source_use: SourceBossUse<'_>,
     ) -> UseDisposition {
+        let SourceBossUse {
+            map,
+            callback,
+            key,
+            revision,
+            after,
+            cause,
+            lever,
+        } = source_use;
         let QuestCause::Use(command) = cause else {
             return UseDisposition::Rejected;
         };
         let ready = self.execute_quest_encounter(
-            runtime, states, actor, session, map, callback, key, revision, after, true, cause, None,
+            runtime, states, actor, session, map, callback, key, revision, after, true, cause,
+            None, None,
         );
         if ready != UseDisposition::Committed {
             return ready;
@@ -61,72 +82,111 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             party.push(fence.item_fence());
         }
-        // A command replay belongs to its immutable physical observation and
-        // exact party fences. A later lever revision or reconnect must still
-        // pay the existing cooldown, even if a client repeats a command number.
-        party.sort_by_key(|fence| *fence.character_id.as_bytes());
-        let mut identity = b"cwarlock:lever:v1".to_vec();
+        // Key and revision describe the wire target. Current party fences
+        // authorize the write but are never part of the command identity.
+        let mut identity = match lever {
+            SourceBossLever::CourtWarlock => b"cwarlock:lever:v2".to_vec(),
+            SourceBossLever::Arbaziloth => b"arbaziloth:lever:v2".to_vec(),
+        };
         identity.extend_from_slice(&key.to_be_bytes());
         identity.extend_from_slice(&revision.to_be_bytes());
-        identity.extend_from_slice(&self.reset_epoch.to_be_bytes());
-        identity.extend_from_slice(&runtime.content_pin().server_artifact_digest());
-        identity.extend_from_slice(&runtime.content_pin().frame_binding_digest());
-        for fence in &party {
-            identity.extend_from_slice(fence.character_id.as_bytes());
-            identity.extend_from_slice(fence.game_session_id.as_bytes());
-            identity.extend_from_slice(&fence.connection_generation.get().to_be_bytes());
-            identity.extend_from_slice(&fence.character_lease_generation.to_be_bytes());
-            identity.extend_from_slice(&fence.scope_ownership_generation.get().to_be_bytes());
+        let admission = SourceBossReservation {
+            id: super::super::npc_trade_command::derived(
+                &identity,
+                command.game_session_id(),
+                command.command_id().get(),
+            ),
+            lever,
+            party,
+        };
+        let Some(lever_projection) = map.facts.reserve_source_boss_lever(key, revision, after)
+        else {
+            return UseDisposition::Rejected;
+        };
+        let staged = match self.stage_source_boss(runtime, states, actor, session, &source_use) {
+            Ok(staged) => staged,
+            Err(disposition) => return disposition,
+        };
+        #[cfg(test)]
+        if let Ok(barrier) = PRE_SOURCE_BOSS_CHARGE.try_with(std::sync::Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
         }
-        let admission = super::super::npc_trade_command::derived(
-            &identity,
-            session,
-            command.command_id().get(),
-        );
-        match self
-            .root
-            .court_warlock_admission(
-                self.character,
-                self.holder,
-                party.clone(),
-                admission,
-                self.reset_epoch,
-                false,
-            )
-            .await
+        let retry = super::super::AdmissionRetryBudget::for_command(self.root);
+        let paid = retry
+            .retry_durability("source_boss_admission", || {
+                self.source_boss_admission(&admission, SourceBossAdmission::Commit)
+            })
+            .await;
+        #[cfg(test)]
+        let paid = if matches!(paid, Ok(true))
+            && self
+                .states
+                .quest_callbacks
+                .lose_source_boss_commit_ack
+                .swap(false, std::sync::atomic::Ordering::AcqRel)
         {
-            Ok(true) => {}
-            Ok(false) => return UseDisposition::Rejected,
+            Err(DurabilityError::CommitOutcomeUnknown)
+        } else {
+            paid
+        };
+        let paid = if matches!(
+            paid,
+            Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::RootPassDeadlineExceeded)
+        ) {
+            retry
+                .retry_durability("source_boss_admission_reconcile", || {
+                    self.source_boss_admission(&admission, SourceBossAdmission::Reconcile)
+                })
+                .await
+        } else {
+            paid
+        };
+        match paid {
+            Ok(true) => {
+                #[cfg(test)]
+                if self
+                    .states
+                    .quest_callbacks
+                    .interrupt_source_boss_before_projection
+                    .swap(false, std::sync::atomic::Ordering::AcqRel)
+                {
+                    return UseDisposition::Rejected;
+                }
+                self.publish_source_boss(staged, states, map, lever_projection);
+                UseDisposition::Committed
+            }
+            Ok(false) => UseDisposition::Rejected,
             Err(error) => {
                 super::super::operator_event(&format!(
-                    "cwarlock_admission_deferred reason={error:?}"
+                    "source_boss_admission_deferred reason={error:?}"
                 ));
-                return UseDisposition::Rejected;
+                UseDisposition::Rejected
             }
         }
-        let disposition = self.execute_quest_encounter(
-            runtime, states, actor, session, map, callback, key, revision, after, false, cause,
-            None,
-        );
-        if disposition != UseDisposition::Committed
-            && let Err(error) = self
-                .root
-                .court_warlock_admission(
-                    self.character,
-                    self.holder,
-                    party,
-                    admission,
-                    self.reset_epoch,
-                    true,
-                )
-                .await
-        {
-            super::super::operator_event(&format!("cwarlock_refund_deferred reason={error:?}"));
-        }
-        disposition
+    }
+
+    async fn source_boss_admission(
+        &self,
+        admission: &SourceBossReservation,
+        operation: SourceBossAdmission,
+    ) -> Result<bool, DurabilityError> {
+        self.root
+            .source_boss_lever_admission(
+                self.character,
+                self.holder,
+                admission.clone(),
+                self.reset_epoch,
+                operation,
+            )
+            .await
     }
 }
 
-pub(super) fn owns(callback: &Callback) -> bool {
-    callback.key == source::KEY
+pub(super) fn source_boss_lever(callback: &Callback) -> Option<SourceBossLever> {
+    match callback.key.as_str() {
+        source::KEY => Some(SourceBossLever::CourtWarlock),
+        "oteryn:quest-callback/nrwicked/arbaziloth" => Some(SourceBossLever::Arbaziloth),
+        _ => None,
+    }
 }

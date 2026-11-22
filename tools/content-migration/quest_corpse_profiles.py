@@ -28,7 +28,7 @@ CREATURES = 'content/creatures/definitions/spell-native-profiles.json'
 # crates/gameplay/domain/src/domain/loot_data.rs CORPSE_CONTAINER_ENTRIES_MAX.
 CORPSE_CAPACITY_MAX = 48
 GROUPS = ('physical', 'stack', 'container', 'temporal', 'classification')
-MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 40, 8, 144
+MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 41, 8, 149
 
 
 def item_id(reference):
@@ -114,6 +114,15 @@ def required_with_loot_scope(root, creatures):
     roots.update(quest_shared_boss_corpses.roots(by_creature))
     import questpc7_corpse_requirements
     roots.update(questpc7_corpse_requirements.roots(root, by_creature))
+    # Crystal skinning.lua:123-146 selects the rabbit's second decay stage.
+    for key in ('oteryn:creature.killer_rabbit', 'oteryn:creature.rabbit'):
+        profile = by_creature.get(key)
+        if profile is None:
+            continue
+        corpse = profile['data']['profile']['details'].get('corpse_item')
+        if corpse is None or item_id(corpse) != 6017:
+            raise ValueError('QUEST_CORPSE_RABBIT_SOURCE')
+        roots.add(6017)
     required_roots = roots | loot_roots
     if len(required_roots) > MAX_ROOTS:
         raise ValueError('QUEST_CORPSE_ROOT_BOUNDS')
@@ -207,8 +216,9 @@ def qualify(number, definition, world, node, appearance, physical, bindings, fre
         # them, and their accepted container fact must exactly equal their source XML.
         capacity = definition.get('semantics', {}).get('container')
         source_capacity = grizzly.source.attrs(node).get('containersize')
-        if (fresh or corpse or source_capacity is None or capacity != grizzly.source.K(
-                {'capacity': grizzly.source.K(int(source_capacity))})):
+        rabbit_remains = number in (4302, 4303) and source_capacity is None
+        if (fresh or corpse or (not rabbit_remains and (source_capacity is None
+                or capacity != grizzly.source.K({'capacity': grizzly.source.K(int(source_capacity))})))):
             raise ValueError('QUEST_CORPSE_DECAY_ITEM_OWNER')
     source = grizzly.source.profile(number, node, appearance, physical, bindings, None)
     # The shared Ground-only corpse owner takes decay-stage capacity from XML.
@@ -297,6 +307,12 @@ def qualifications(root=ROOT, creatures=None):
             raise ValueError('QUEST_CORPSE_CLIENT_ITEM_ABSENT')
         records[key] = qualify(number, accepted[key], objects.get(number), xml[number],
                                appearances[number], policies[number], bindings, number in roots, limits.get(number))
+        if number in (50029, 50028):
+            # The pinned Canary XML establishes the chain. Crystal 201189f8
+            # items.xml:84147-84157 supplies its two loot-bearing stages.
+            semantics = records[key]['semantics']
+            semantics['container']['value']['capacity'] = grizzly.source.K(8)
+            semantics['temporal']['value']['duration'] = grizzly.source.K(60_000)
     return Qualification(roots, records, source_capacities, ordinary_loot_only)
 
 

@@ -56,7 +56,7 @@ mod native_aliases;
 /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
 /// variant shards. Keys and the exact W15b native container projection are served;
 /// other source dispositions remain closed.
-pub const REWARD_CLAIM_SHARDS: [&str; 6] = [
+pub const REWARD_CLAIM_SHARDS: [&str; 7] = [
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claims-00000-00099.json"
     ),
@@ -73,6 +73,7 @@ pub const REWARD_CLAIM_SHARDS: [&str; 6] = [
         "../../../../../content/interactions/reward_claims/reward-claim-variants-00100-00104.json"
     ),
     include_str!("../../../../../content/interactions/reward_claims/engclaim-native.json"),
+    include_str!("../../../../../content/interactions/reward_claims/nrwicked-native.json"),
 ];
 
 /// Why a placement is not bound (§1.4). Each is exactly one reason.

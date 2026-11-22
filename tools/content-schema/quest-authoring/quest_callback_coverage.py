@@ -636,7 +636,7 @@ def coverage(canary, crystal):
     claim_directory = ROOT / "content/interactions/reward_claims"
     paths = [
         *claim_directory.glob("reward-claim*.json"),
-        claim_directory / "engclaim-native.json",
+        *claim_directory.glob("*-native.json"),
     ]
     for path in sorted(paths):
         for record in json.loads(path.read_text())["records"]:

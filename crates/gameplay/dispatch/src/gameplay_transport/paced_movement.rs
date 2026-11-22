@@ -2,7 +2,7 @@
 use super::*;
 
 mod autowalk;
-mod drunk;
+pub(super) mod drunk;
 pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
 pub(super) mod monster_trap;
 pub(super) mod special_movement;

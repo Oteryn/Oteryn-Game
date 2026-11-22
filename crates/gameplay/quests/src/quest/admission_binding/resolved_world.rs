@@ -95,9 +95,11 @@ mod tests {
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
         // Twenty Miles adds 44 restored entries and 30 review routes.
-        assert_eq!(base.len(), 1009 + 44 + 30);
+        assert_eq!(base.len(), 1019 + 44 + 30);
         assert_eq!(bindings.world_callbacks().count(), 50);
-        assert_eq!(callbacks.len(), 1059 + 44 + 30);
+        assert_eq!(callbacks.len(), 1069 + 44 + 30);
+        // The combined published set still exceeds the former raw-table limit.
+        assert!(callbacks.len() > 1_024);
         let expected: BTreeSet<_> = base
             .iter()
             .chain(bindings.world_callbacks())

@@ -10,6 +10,8 @@ use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;
 mod court_warlock;
+#[cfg(test)]
+pub(super) use court_warlock::PRE_SOURCE_BOSS_CHARGE;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod definition_target;
@@ -107,6 +109,10 @@ struct ObservedWorldCallback {
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
+    #[cfg(test)]
+    pub(super) lose_source_boss_commit_ack: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) interrupt_source_boss_before_projection: std::sync::atomic::AtomicBool,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     encounters: std::sync::Mutex<Vec<encounter::EncounterVisit>>,
     ground_use_cleanup: std::sync::Mutex<Vec<definition_target::GroundUseTurn>>,
@@ -217,6 +223,18 @@ fn native(p: MovementLocalPosition) -> Option<TilePos> {
         floor: i8::try_from(p.floor).ok()?.checked_neg()?,
     })
 }
+fn captured_merchant(map: &BundleMap, key: u64) -> Option<(TilePos, crate::map::view::EntryFacts)> {
+    use crate::map::view::{EntrySource, MapFacts};
+    if key >> 62 != 2 {
+        return None;
+    }
+    let (pos, id) = map.facts.movement_item(key)?;
+    let entry = map.facts.movement_items(pos).into_iter().find(|entry| {
+        entry.source == EntrySource::Added(id) && entry.facts.appearance_id == 12189
+    })?;
+    (!entry.facts.pickupable && !map.facts.house_tile(pos)).then_some((pos, entry.facts))
+}
+
 /// Resolve only a closed authored shared callback's actual server-created object.
 /// The stable origin and current custody must agree; a dropped lookalike fails.
 fn shared_added_source(
@@ -225,6 +243,17 @@ fn shared_added_source(
     key: u64,
 ) -> Option<(crate::map::overlay::TilePos, crate::map::view::EntryFacts)> {
     use crate::map::view::{EntrySource, MapFacts};
+    if callback.effects.loot_merchant {
+        let (pos, facts) = captured_merchant(map, key)?;
+        return callback
+            .selector
+            .matches_position(Position {
+                x: pos.x,
+                y: pos.y,
+                floor: pos.floor,
+            })
+            .then_some((pos, facts));
+    }
     let (appearance, x, y, z) =
         oteryn_gameplay_items::event_planting::world_change_item_source(key)?;
     let pos = crate::map::overlay::TilePos {
@@ -266,12 +295,23 @@ fn shared_added_source(
 }
 
 pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
-    if oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some() {
+    if callback.effects.loot_merchant
+        || oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some()
+    {
         return shared_added_source(map, callback, key).is_some();
     }
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
+    // Crystal actions_trap.lua bounds the encounter and its cleanup to this clearing.
+    if callback.effects.place_item == Some(12187)
+        && (ordinal != 0
+            || pos.floor != -7
+            || !(32651..=32668).contains(&pos.x)
+            || !(32178..=32190).contains(&pos.y))
+    {
+        return false;
+    }
     // Definition selectors are admitted through live Ground handles.
     if callback.selector.target_definition.is_some() {
         return false;
@@ -431,6 +471,7 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
             .facts
             .quest_callback_matches(key, None, None, selector.appearance)
             || ((selector.position.is_some()
+                || callback.effects.place_item.is_some()
                 || callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE
                 || oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key)
                     .is_some())
@@ -922,7 +963,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (Some(ItemKey::MapAdded(key)), None) => key,
             _ => return None,
         };
-        oteryn_gameplay_items::event_planting::world_change_item_source(key)?;
         let map = self.bundle_map()?;
         let (pos, _) = map.facts.movement_item(key)?;
         let callback = self
@@ -991,6 +1031,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map(u64::from_be_bytes)
             .filter(|key| {
                 oteryn_gameplay_items::event_planting::world_change_item_source(*key).is_some()
+                    || captured_merchant(map, *key).is_some()
             });
         let resolved = if let Some(key) = added_key {
             use crate::map::view::MapFacts;
