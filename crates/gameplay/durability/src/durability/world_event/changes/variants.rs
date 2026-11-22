@@ -25,10 +25,33 @@ pub struct PassageStep {
 
 #[derive(Clone, Copy, Debug)]
 pub struct SpiderDeath {
-    pub epoch: u64,
-    pub occurrence: CreatureDeathOccurrenceKey,
-    pub home: Position,
-    pub principal: CharacterId,
+    epoch: u64,
+    occurrence: CreatureDeathOccurrenceKey,
+    home: Position,
+    principal: CharacterId,
+}
+
+impl SpiderDeath {
+    pub fn capture(
+        runtime: &mut oteryn_gameplay_entities::carrier::ChannelRuntimeV1,
+        actor: oteryn_gameplay_entities::carrier::ExactActorRef,
+        principal: CharacterId,
+        epoch: u64,
+    ) -> Option<Self> {
+        let ("spider_nest", generation, home) = runtime.world_spawn_cohort(actor)? else {
+            return None;
+        };
+        if generation != epoch {
+            return None;
+        }
+        let owner = runtime.borrow_combat_death();
+        if owner.creature_target_identity(actor).ok()? != SPIDER_BOSS.as_bytes() {
+            return None;
+        }
+        let (occurrence, _) = owner.projected_death(actor).ok()?;
+        let home = (u16::try_from(home.x).ok()?, u16::try_from(home.y).ok()?, i8::try_from(home.floor).ok()?);
+        Some(Self { epoch, occurrence, home, principal })
+    }
 }
 
 impl DurabilityRoot {

@@ -51,10 +51,12 @@ fn map_changes(world: WorldId, changes: &DailyWorldChanges) -> crate::map::daily
         items: changes.items().collect(),
         trader: changes.oriental_trader.map(|town| town.layer()),
         variants: changes.variants,
+        unavailable_variants: Vec::new(),
     }
 }
 
-pub(super) fn prepare_map(
+#[cfg(test)]
+pub(crate) fn prepare_map(
     checked: crate::map::boot::CheckedBundle,
     world: WorldId,
     changes: &DailyWorldChanges,
@@ -63,6 +65,34 @@ pub(super) fn prepare_map(
         return checked;
     }
     checked.with_daily_map(map_changes(world, changes))
+}
+
+/// Qualify active recipe creature identities against the exact activated server content.
+pub(super) fn prepare_content_map(
+    checked: crate::map::boot::CheckedBundle,
+    world: WorldId,
+    changes: &DailyWorldChanges,
+    gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> crate::map::boot::CheckedBundle {
+    if changes.reset_epoch == 0 {
+        return checked;
+    }
+    let mut daily = map_changes(world, changes);
+    daily.unavailable_variants = changes
+        .variants
+        .active()
+        .filter(|(_, variant)| {
+            variant.spawns.iter().any(|spawn| {
+                gameplay.is_none_or(|gameplay| {
+                    gameplay
+                        .creature_profile_fingerprint(&spawn.creature)
+                        .is_none()
+                })
+            })
+        })
+        .map(|(definition, _)| definition.key.as_str())
+        .collect();
+    checked.with_daily_map(daily)
 }
 
 /// Places the day's NPCs the loaded catalogue admits; one that cannot stand is logged.
@@ -235,7 +265,7 @@ pub(crate) mod tests {
             .expect("authored daily candidates")
     }
 
-    fn world() -> WorldId {
+    pub(crate) fn world() -> WorldId {
         WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]).expect("world")
     }
 
@@ -520,7 +550,7 @@ pub(crate) mod tests {
                 min_y: 31000,
                 max_x: 34000,
                 max_y: 33000,
-                floors: (-9..=-1).collect(),
+                floors: (-15..=-1).collect(),
             },
             palette,
             draft_areas: Vec::new(),
@@ -564,8 +594,16 @@ pub(crate) mod tests {
         .expect("checked")
     }
 
-    fn boot_physical(changes: &DailyWorldChanges) -> crate::map::boot::BundleWorld {
-        prepare_map(physical_bundle(), world(), changes)
+    pub(crate) fn boot_physical(changes: &DailyWorldChanges) -> crate::map::boot::BundleWorld {
+        let bundle = physical_bundle();
+        let bundle = if changes.variants.installed() {
+            bundle
+                .compose_epoch_admitted_layers(changes.reset_epoch, &[], &[])
+                .expect("variant epoch")
+        } else {
+            bundle
+        };
+        prepare_map(bundle, world(), changes)
             .boot(
                 world(),
                 ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])

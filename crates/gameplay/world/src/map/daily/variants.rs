@@ -1,7 +1,7 @@
 //! Physical projection of the same committed choices used by the admission owner.
 use super::*;
 use crate::map::overlay::TilePos;
-use oteryn_gameplay_world_change::variants::{self, Definition, Portal, Selected, Spawn, Variant};
+use oteryn_gameplay_world_change::variants::{self, Definition, Portal, Spawn, Variant};
 
 #[derive(Debug, Default)]
 pub(crate) struct VariantProjection {
@@ -12,7 +12,8 @@ pub(crate) struct VariantProjection {
 }
 
 impl VariantProjection {
-    pub(super) fn new(manifest: &Manifest, selected: Selected) -> Result<Self, Error> {
+    pub(super) fn new(manifest: &Manifest, daily: &DailyMap) -> Result<Self, Error> {
+        let selected = daily.variants;
         if !selected.validate() {
             return Err(refusal("incompatible daily variant decision"));
         }
@@ -22,6 +23,12 @@ impl VariantProjection {
         }
 
         for definition in variants::definitions().map_err(refusal)? {
+            if daily
+                .unavailable_variants
+                .contains(&definition.key.as_str())
+            {
+                continue;
+            }
             let positions = definition
                 .inactive_tiles
                 .iter()
@@ -159,6 +166,14 @@ impl VariantProjection {
             }
         }
         Ok(())
+    }
+
+    pub(crate) fn owns_npc(&self, key: &str) -> bool {
+        self.definitions
+            .iter()
+            .flat_map(|(d, _)| &d.variants)
+            .flat_map(|v| &v.npcs)
+            .any(|npc| npc.key == key)
     }
 
     pub(crate) fn npcs(&self) -> impl Iterator<Item = (&str, variants::Position)> {

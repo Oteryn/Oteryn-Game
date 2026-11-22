@@ -19,6 +19,7 @@ pub struct DailyMap {
     /// One of the three committed `oriental_trader/<town>` layer keys.
     pub trader: Option<&'static str>,
     pub variants: oteryn_gameplay_world_change::variants::Selected,
+    pub unavailable_variants: Vec<&'static str>,
 }
 
 impl DailyMap {
@@ -67,7 +68,7 @@ impl Projection {
         daily: &DailyMap,
         item: &impl Fn(&str) -> Option<super::facts::ItemDefinition>,
     ) -> Result<Self, Error> {
-        let variants = VariantProjection::new(&manifest, daily.variants)?;
+        let variants = VariantProjection::new(&manifest, daily)?;
         let mut needed: BTreeMap<_, _> = variants.appearances().map(|id| (id, None)).collect();
         let positions: std::collections::BTreeSet<_> =
             daily.items.iter().map(|(_, p)| *p).collect();
@@ -117,6 +118,10 @@ impl Projection {
                     needed.entry(appearance).or_insert(None);
                 }
             }
+        }
+        use oteryn_gameplay_items::fishing::{DESERT_FISHING_SPENT, DESERT_FISHING_WATER};
+        if needed.contains_key(&DESERT_FISHING_WATER) {
+            needed.insert(DESERT_FISHING_SPENT, None);
         }
         for (appearance, terrain) in needed {
             if manifest
@@ -353,7 +358,8 @@ fn project(
             .first_key_value()
             .is_some_and(|(k, _)| *k < key(&sector))
         {
-            if let Some((_, extra)) = pending.pop_first() {
+            if let Some((_, mut extra)) = pending.pop_first() {
+                extra.tiles.retain(|tile| !tile.items.is_empty());
                 visit_variant_sector(projection, extra, &mut visitor)?;
             }
         }
@@ -431,7 +437,8 @@ fn project(
     if placed.len() != daily.items.len() {
         return Err(refusal("Thawing source sector missing"));
     }
-    for sector in pending.into_values() {
+    for mut sector in pending.into_values() {
+        sector.tiles.retain(|tile| !tile.items.is_empty());
         visit_variant_sector(projection, sector, &mut visitor)?;
     }
     Ok(())

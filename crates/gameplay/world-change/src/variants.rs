@@ -9,6 +9,7 @@ const CAPACITY: usize = 16;
 pub type Position = (u16, u16, i8);
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Selected {
     choices: [Option<u8>; CAPACITY],
     digest: [u8; 32],

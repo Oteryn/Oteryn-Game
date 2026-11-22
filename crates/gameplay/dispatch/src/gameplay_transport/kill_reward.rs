@@ -2075,29 +2075,29 @@ pub fn record_creature_kill(
             receipts.kill = true;
         }
     }
-    let world_change = if wild {
+    let spider_death =
+        if wild && creature == crate::durability::world_event::changes::variants::SPIDER_BOSS {
+            let epoch = runtime.world_change_cycles().map(|(epoch, _)| *epoch);
+            epoch
+                .and_then(|epoch| {
+                    crate::durability::world_event::changes::variants::SpiderDeath::capture(
+                        runtime,
+                        target,
+                        principal.character,
+                        epoch,
+                    )
+                })
+                .map(WorldChangeDeath::Spider)
+        } else {
+            None
+        };
+    let world_change = if spider_death.is_some() {
+        spider_death
+    } else if wild {
         runtime.world_change_cycles().and_then(|(epoch, cycles)| {
             let mut credits = world_change_credits(&creature, facts.corpse);
             let cohort = runtime.world_spawn_cohort(target);
-            use crate::durability::world_event::changes::{
-                counters::{CounterKind, Credit},
-                variants::{SPIDER_BOSS, SpiderDeath},
-            };
-            if creature == SPIDER_BOSS
-                && let Some(("spider_nest", generation, home)) = cohort
-                && generation == *epoch
-            {
-                return Some(WorldChangeDeath::Spider(SpiderDeath {
-                    epoch: *epoch,
-                    occurrence: facts.death,
-                    home: (
-                        u16::try_from(home.x).ok()?,
-                        u16::try_from(home.y).ok()?,
-                        i8::try_from(home.floor).ok()?,
-                    ),
-                    principal: principal.character,
-                }));
-            }
+            use crate::durability::world_event::changes::counters::{CounterKind, Credit};
             if let Some((key, _, home)) = cohort {
                 if let Some(wave) = key
                     .strip_prefix("their_masters_voice.wave.")

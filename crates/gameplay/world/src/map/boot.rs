@@ -723,6 +723,10 @@ impl BundleWorld {
         self.variants.spawns()
     }
 
+    pub fn owns_daily_variant_npc(&self, key: &str) -> bool {
+        self.variants.owns_npc(key)
+    }
+
     pub fn daily_variant_npcs(&self) -> impl Iterator<Item = (&str, (u16, u16, i8))> {
         self.variants.npcs()
     }
@@ -1912,6 +1916,7 @@ pub mod tests {
             .compose_epoch_layers(1, &["fury_gates/thais"], &["fury_gates/thais"])?
             .with_daily_map(super::super::daily::DailyMap {
                 variants: Default::default(),
+                unavailable_variants: Vec::new(),
                 seed: [7; 32],
                 fungus: true,
                 grimvale_full_moon: false,
