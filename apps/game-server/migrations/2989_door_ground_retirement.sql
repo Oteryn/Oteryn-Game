@@ -59,8 +59,9 @@ DECLARE
     retirement_id UUID := game_character_uuid_v7();
     written INTEGER;
 BEGIN
+    -- Fresh admission and reconnect commit publish Active (2).
     PERFORM 1 FROM game_durability_reconnect_sessions s
-      WHERE s.game_session_id=p_session AND s.session_state=1
+      WHERE s.game_session_id=p_session AND s.session_state=2
         AND s.runtime_scope_world_id=p_world
         AND s.runtime_scope_channel_id IS NOT DISTINCT FROM p_channel
         AND s.runtime_scope_instance_id IS NOT DISTINCT FROM p_instance

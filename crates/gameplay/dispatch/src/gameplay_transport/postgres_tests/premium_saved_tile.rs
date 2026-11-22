@@ -163,7 +163,11 @@ async fn scenario(admin: String, state: EntitlementState) -> TestResult {
     owner.movement_cells = (&cells).into();
     owner.premium_coordinator = Some(&coordinator);
 
-    let session = deps.admitted.game_session_id;
+    let mut admitted = deps.admitted;
+    let session = admitted.game_session_id;
+    // The saved position and citizenship belong to a character that has already entered.
+    owner.admit_progression_session(&mut admitted).await;
+    assert!(owner.progression_binding(session).is_some());
     let initial_fence = owner
         .current_quest_fence(session)
         .await
@@ -250,7 +254,6 @@ async fn scenario(admin: String, state: EntitlementState) -> TestResult {
             !owner.states.chat.knows(session),
             "CHAT starts with the login snapshot"
         );
-        let mut admitted = deps.admitted;
         admitted.first_entry = outcome;
         admitted.item_fence = item_fence;
         admitted.continuity.selected_capabilities =
