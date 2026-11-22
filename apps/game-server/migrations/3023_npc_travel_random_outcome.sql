@@ -16,3 +16,19 @@ ALTER TABLE game_newhaven_travel_receipts
 REVOKE ALL ON game_newhaven_travel_receipts FROM PUBLIC;
 GRANT SELECT, INSERT, UPDATE(arrived_at) ON game_newhaven_travel_receipts TO oteryn_game_runtime;
 GRANT SELECT ON game_newhaven_travel_receipts TO oteryn_game_control;
+
+-- Commands expose their ordinal and session ID on the wire. Keep the draw root server-side.
+CREATE TABLE game_receipt_random_root (
+ singleton BOOLEAN PRIMARY KEY CHECK (singleton),
+ secret BYTEA NOT NULL CHECK (octet_length(secret) = 32)
+);
+INSERT INTO game_receipt_random_root
+ VALUES (TRUE, sha256(uuid_send(gen_random_uuid()) || uuid_send(gen_random_uuid())));
+CREATE TRIGGER game_receipt_random_root_immutable BEFORE UPDATE OR DELETE
+ ON game_receipt_random_root FOR EACH ROW EXECUTE FUNCTION game_character_immutable();
+CREATE TRIGGER game_receipt_random_root_no_truncate BEFORE TRUNCATE
+ ON game_receipt_random_root EXECUTE FUNCTION game_character_reject_truncate();
+
+REVOKE ALL ON game_receipt_random_root FROM PUBLIC;
+GRANT SELECT ON game_receipt_random_root TO oteryn_game_runtime;
+GRANT SELECT ON game_receipt_random_root TO oteryn_game_control;

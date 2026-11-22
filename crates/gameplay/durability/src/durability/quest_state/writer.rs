@@ -1787,15 +1787,16 @@ impl DurabilityRoot {
                     }
                     // A historical receipt returns above. A fresh random USE records its
                     // draw in the locked snapshot alongside the source state changes.
-                    let roll = if refusal.is_none() && !xp_full {
-                        transition.effects.iter().find_map(|effect| match effect.effect {
-                            oteryn_gameplay_quests::quest::QuestEffectKind::Native(rule) => Some(rule),
-                            _ => None,
-                        }).and_then(|rule| rule.draw_faces(&stored)).map(|faces| {
-                            crate::durability::receipt_random::draw(
-                                character, request.cause.key(), "quest-use-outcome", faces,
-                            )
-                        }).transpose()?
+                    let native_rule = transition.effects.iter().find_map(|effect| match effect.effect {
+                        oteryn_gameplay_quests::quest::QuestEffectKind::Native(rule) => Some(rule),
+                        _ => None,
+                    });
+                    let roll = if refusal.is_none() && !xp_full
+                        && let Some(faces) = native_rule.and_then(|rule| rule.draw_faces(&stored))
+                    {
+                        Some(crate::durability::receipt_random::draw(
+                            &mut tx, character, request.cause.key(), "quest-use-outcome", faces,
+                        ).await?)
                     } else { None };
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(

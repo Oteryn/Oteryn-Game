@@ -23,7 +23,7 @@ fn rngroute_plate_armor_paid_travel_places_the_receipted_ghostship_destination()
         fare: 60,
         normal: (33289, 32481, 6),
         alternate: (33324, 32173, 6),
-        confirmation: 45,
+        confirmation: 12,
     })
 }
 
@@ -39,7 +39,7 @@ fn rngroute_shattered_isles_paid_travel_places_the_receipted_shipwreck_destinati
         fare: 180,
         normal: (32310, 32210, 6),
         alternate: (32161, 32558, 6),
-        confirmation: 4,
+        confirmation: 11,
     })
 }
 
@@ -68,6 +68,7 @@ fn scenario(route: Route) -> TestResult {
 
 async fn exercise(h: &Harness, route: Route) -> TestResult {
     prepare_current_session(h).await?;
+    seed_draw_root(h, 93).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -241,6 +242,7 @@ fn rngroute_travel_commit_replays_the_pending_destination_and_keeps_one_receipt(
                 Harness::create_with_admission_seed(admin, "rngroute_replay", true, false).await?;
             let result: TestResult = async {
                 prepare_current_session(&h).await?;
+                seed_draw_root(&h, 93).await?;
                 let seal = h.recovery.seal_current().map_err(debug)?;
                 let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
                 let deps = Dependencies::new()?;
@@ -248,7 +250,7 @@ fn rngroute_travel_commit_replays_the_pending_destination_and_keeps_one_receipt(
                 let owner = deps.owner(&h, &authority);
                 let fence = owner.current_quest_fence(deps.admitted.game_session_id).await
                     .map_err(|()| "fence")?.ok_or("live fence")?;
-                let mut request = request(&owner, &deps, 4, "jack_fate").await?;
+                let mut request = request(&owner, &deps, 11, "jack_fate").await?;
                 request.route.route.key = "thais".into();
                 request.route.keyword = "thais".into();
                 let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
@@ -256,6 +258,8 @@ fn rngroute_travel_commit_replays_the_pending_destination_and_keeps_one_receipt(
                     owner.root, owner.character, owner.holder, fence, request.clone(), &NoPremium,
                 ).await.map_err(debug)?.map_err(debug)?.ok_or("first pending arrival")?;
                 assert_eq!((first.destination.x, first.destination.y, first.destination.floor), (32161, 32558, 6));
+                // With a different root the same ordinal would select another face.
+                seed_draw_root(&h, 7).await?;
                 let replay = slot.commit_npc_travel(
                     owner.root, owner.character, owner.holder, fence, request, &NoPremium,
                 ).await.map_err(debug)?.map_err(debug)?;
@@ -270,4 +274,26 @@ fn rngroute_travel_commit_replays_the_pending_destination_and_keeps_one_receipt(
             result
         })
     })
+}
+
+async fn seed_draw_root(h: &Harness, seed: u8) -> TestResult {
+    // Let the same test reach placement on the base, where the draw root does not exist.
+    let installed: bool =
+        sqlx::query_scalar("SELECT to_regclass('game_receipt_random_root') IS NOT NULL")
+            .fetch_one(&h.pool)
+            .await?;
+    if installed {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
+        let changed =
+            sqlx::query("UPDATE game_receipt_random_root SET secret = $1 WHERE singleton")
+                .bind(vec![seed; 32])
+                .execute(&mut *tx)
+                .await?;
+        assert_eq!(changed.rows_affected(), 1);
+        tx.commit().await?;
+    }
+    Ok(())
 }

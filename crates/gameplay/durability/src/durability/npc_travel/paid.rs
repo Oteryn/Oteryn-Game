@@ -300,19 +300,22 @@ impl DurabilityRoot {
                     Err(_) => return Ok(Err(CharacterProgressionError::InvalidInput)),
                 }
             }
-            let draw = route.random_destination().map(|policy| {
+            let draw = if let Some(policy) = route.random_destination() {
                 let draw = crate::durability::receipt_random::draw(
+                    &mut tx,
                     fence.character_id,
                     (*request.command.game_session_id().as_bytes(), request.command.command_id().get()),
                     "npc-travel-destination",
                     policy.faces,
-                )?;
+                ).await?;
                 if draw == 1 {
                     let (x, y, floor) = policy.alternate;
                     arrival.destination = LastPositionCell { x, y, floor };
                 }
-                Ok::<_, DurabilityError>(i16::from(draw))
-            }).transpose()?;
+                Some(i16::from(draw))
+            } else {
+                None
+            };
             let selected = draw.map(|_| destination_array(arrival.destination));
             sqlx::query("INSERT INTO game_newhaven_travel_receipts(character_id,game_session_id,command_id,occurrence_id,route,request_binding,fee_transaction_id,fare_gold_units,base_fare_gold_units,postman_discount_applied,random_draw,random_destination) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric(20,0),encode($4,'hex')::uuid,$5,$6,CASE WHEN $7 THEN encode($8,'hex')::uuid END,$9,$10,$11,$12,$13)")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(arrival.occurrence.as_bytes().as_slice()).bind(key).bind(binding).bind(fare>0).bind(request.fee.transaction_id.as_slice()).bind(i64::try_from(fare).map_err(|_| DurabilityError::InvalidStoredState)?).bind(i64::try_from(route.route.price).map_err(|_| DurabilityError::InvalidStoredState)?).bind(fare<route.route.price).bind(draw).bind(selected.as_ref().map(|cell| cell.as_slice())).execute(&mut **tx).await?;

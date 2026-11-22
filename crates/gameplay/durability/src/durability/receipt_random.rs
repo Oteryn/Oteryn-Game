@@ -7,7 +7,8 @@ use sha2::{Digest, Sha256};
 use super::DurabilityError;
 use crate::domain::CharacterId;
 
-pub(super) fn draw(
+pub(super) async fn draw(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
     (occurrence, ordinal): ([u8; 16], u64),
     purpose: &str,
@@ -16,13 +17,21 @@ pub(super) fn draw(
     if faces == 0 {
         return Err(DurabilityError::InvalidStoredState);
     }
+    let secret: Vec<u8> =
+        sqlx::query_scalar("SELECT secret FROM game_receipt_random_root WHERE singleton")
+            .fetch_one(&mut **tx)
+            .await?;
+    let secret: [u8; 32] = secret
+        .try_into()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
     let bound = u64::from(faces);
     let threshold = bound.wrapping_neg() % bound;
     let occurrence = DecisionOccurrenceId::from_bytes(occurrence);
-    for retry in 0_u64.. {
+    for retry in 0_u64..16 {
         let root = GameplayDecisionRoot::from_bytes(
             Sha256::new()
                 .chain_update(b"oteryn:receipt-random:v1")
+                .chain_update(secret)
                 .chain_update(character.as_bytes())
                 .chain_update(retry.to_be_bytes())
                 .finalize()
