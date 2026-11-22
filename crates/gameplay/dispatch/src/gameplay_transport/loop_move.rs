@@ -21,6 +21,7 @@ mod house_container;
 #[path = "loop_map_pickup.rs"]
 mod map_pickup;
 mod map_sources;
+mod parchment;
 mod seed_drop;
 
 use super::ComposedFreshAdmission;
@@ -204,6 +205,7 @@ pub struct LoopGroundOverlay {
     field_pin: ([u8; 32], [u8; 32], u64),
     taken_sources: std::collections::BTreeSet<u64>,
     ground_push_definition: Option<NonZeroU32>,
+    seal_reset_at: Option<std::time::Instant>,
 }
 
 impl LoopGroundOverlay {
@@ -388,6 +390,7 @@ impl LoopGroundOverlay {
             field_pin,
             taken_sources: Default::default(),
             ground_push_definition,
+            seal_reset_at: None,
         }
     }
 
@@ -503,6 +506,7 @@ struct CacheState {
     epoch: u64,
     current: Option<Arc<LoopGroundOverlay>>,
     pending_origins: std::collections::BTreeMap<u64, CommandRef>,
+    published_parchment_removal: Option<[u8; 16]>,
 }
 
 /// The Channel's loop Ground overlay, read once after each change. A leaf lock, never held
@@ -583,7 +587,20 @@ impl LoopGroundCache {
     fn cached(&self) -> (u64, Option<Arc<LoopGroundOverlay>>) {
         self.state
             .lock()
-            .map(|state| (state.epoch, state.current.clone()))
+            .map(|state| {
+                (
+                    state.epoch,
+                    state
+                        .current
+                        .as_ref()
+                        .filter(|overlay| {
+                            overlay
+                                .seal_reset_at
+                                .is_none_or(|at| std::time::Instant::now() < at)
+                        })
+                        .cloned(),
+                )
+            })
             .unwrap_or((0, None))
     }
 
@@ -651,14 +668,14 @@ pub async fn loop_ground(
         |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
     )
     .await?;
-    let taken = if let crate::foundation::RuntimeScopeRefV1::Channel {
+    let (taken, reset_in) = if let crate::foundation::RuntimeScopeRefV1::Channel {
         world_id,
         channel_id,
     } = scope
     {
         projection_read(
             || {
-                admission.root.read_map_item_mint_placements(
+                admission.root.read_map_item_mint_projection(
                     world_id,
                     channel_id,
                     base.digest(),
@@ -677,7 +694,7 @@ pub async fn loop_ground(
         )
         .await?
     } else {
-        Vec::new()
+        (Vec::new(), None)
     };
     let mut built = LoopGroundOverlay::build_with_native(
         base.clone(),
@@ -689,6 +706,7 @@ pub async fn loop_ground(
             .active_generation
             .and_then(|generation| generation.native_gameplay()),
     );
+    built.seal_reset_at = reset_in.and_then(|delay| std::time::Instant::now().checked_add(delay));
     let valid_source = |key| {
         map_sources::is_top_level(base, key)
             || admission
@@ -756,6 +774,18 @@ pub(super) async fn committed_loop_move(
         && !dreamer_ring::reconcile(admission, fence.character_id, command).await
     {
         return None;
+    }
+    if replay == LoopMoveReplay::Moved
+        && admission.bundle_map().is_some_and(|map| {
+            map.facts
+                .base_text(oteryn_gameplay_items::map_pickup::PARCHMENT_SEAL_PLACEMENT)
+                .is_some()
+        })
+    {
+        let _permit = admission.spell_lane_permit().await?;
+        if !parchment::publish(admission, fence, command).await {
+            return None;
+        }
     }
     Some(replay)
 }
@@ -1155,8 +1185,12 @@ pub(super) async fn move_loop_item_with_house_capacity(
             .browse_fields
             .committed_move(request.item, destination);
     }
+    let parchment_removed = matches!(committed, Ok(Ok(_))) && pickup == Some((33063, 31624, -15));
     if touches_ground && !matches!(committed, Ok(Err(_))) {
         admission.states.loop_ground.invalidate();
+    }
+    if parchment_removed && !parchment::publish(admission, fence, command_ref).await {
+        return LoopMoveResult::Unknown;
     }
     drop(permit);
     if touches_ground && matches!(committed, Ok(Ok(_))) {

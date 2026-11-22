@@ -165,6 +165,10 @@ pub(super) async fn move_map_item(
     else {
         return stale;
     };
+    let seal_text = (placement_key == oteryn_gameplay_items::map_pickup::PARCHMENT_SEAL_PLACEMENT
+        && definition.production_key == oteryn_gameplay_items::map_pickup::PARCHMENT_SEAL_ITEM)
+        .then(|| at.map.facts.base_text(placement_key))
+        .flatten();
     let ground_push = matches!(destination, LoopDestination::Ground(_));
     if key_number.is_some()
         && !matches!(
@@ -317,12 +321,13 @@ pub(super) async fn move_map_item(
     } else {
         match admission
             .root
-            .commit_map_item_mint(
+            .commit_map_item_mint_with_seal_text(
                 permit,
                 admission.character,
                 admission.holder,
                 fence,
                 &mut candidate,
+                seal_text,
             )
             .await
         {
@@ -442,6 +447,12 @@ pub(super) async fn move_map_item(
         .lock()
         .await
         .forget_weapon(actor, command.game_session_id);
+    if seal_text.is_some()
+        && matches!(result, Ok(Ok(_)))
+        && !parchment::publish(admission, fence, candidate.request().command).await
+    {
+        return LoopMoveResult::Unknown;
+    }
     match result {
         Ok(Ok(_)) => LoopMoveResult::Committed,
         Ok(Err(reason)) => refused(reason),
