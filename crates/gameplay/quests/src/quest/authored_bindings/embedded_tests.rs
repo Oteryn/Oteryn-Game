@@ -570,7 +570,8 @@ mod main_native_contract {
         assert_eq!(baseline.counts(), explicit.counts());
         let before = baseline.catalogue();
         let after = explicit.catalogue();
-        assert_eq!(before.tracks.len(), 2136);
+        // Rottin dialogue and Bushwhacking add seven tracks. Maryza adds the cookbook track.
+        assert_eq!(before.tracks.len(), 2135 + 7 + 1);
         assert_eq!(
             before.track("oteryn:quest-progress/storage/30022"),
             Some(&QuestTrack {
