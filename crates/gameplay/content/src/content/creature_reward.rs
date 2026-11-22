@@ -534,7 +534,7 @@ impl CreatureRewardTable {
         section: Option<&LootTablesSection>,
         items: Option<&super::native_gameplay::ItemProfilesDocument>,
     ) -> Self {
-        let verified = verified_soul_war_corpses(items);
+        let verified = verified_source_corpses(items);
         section.map_or_else(Self::default, |section| {
             Self::build_with_native_corpses(creatures, section, canonical_races(), &verified)
         })
@@ -778,29 +778,44 @@ fn source_questpc7_corpse_capacity(creature: &str, corpse: &SectionRef) -> Optio
     }
 }
 
-fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
+fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef, private_reward: bool) -> bool {
     corpse.family == "Item"
         && corpse.revision == "definition-r1"
         && matches!(
-            (creature, corpse.key.as_str()),
+            (creature, corpse.key.as_str(), private_reward),
             (
+                "oteryn:creature.glitterscale",
+                "oteryn:item.tibia.i11589",
+                true
+            ) | (
                 "oteryn:creature.symbol_of_hatred",
-                "oteryn:item.tibia.i33792"
-            ) | ("oteryn:creature.hateful_soul", "oteryn:item.tibia.i33793")
-                | ("oteryn:creature.weeping_soul", "oteryn:item.tibia.i33876")
-                | ("oteryn:creature.poor_soul", "oteryn:item.tibia.i33891")
-                | (
-                    "oteryn:creature.aspect_of_power",
-                    "oteryn:item.tibia.i33949"
-                )
-                | (
-                    "oteryn:creature.necromantic_focus",
-                    "oteryn:item.tibia.i33984"
-                )
+                "oteryn:item.tibia.i33792",
+                false
+            ) | (
+                "oteryn:creature.hateful_soul",
+                "oteryn:item.tibia.i33793",
+                false
+            ) | (
+                "oteryn:creature.weeping_soul",
+                "oteryn:item.tibia.i33876",
+                false
+            ) | (
+                "oteryn:creature.poor_soul",
+                "oteryn:item.tibia.i33891",
+                false
+            ) | (
+                "oteryn:creature.aspect_of_power",
+                "oteryn:item.tibia.i33949",
+                false
+            ) | (
+                "oteryn:creature.necromantic_focus",
+                "oteryn:item.tibia.i33984",
+                false
+            )
         )
 }
 
-fn verified_soul_war_corpses(
+fn verified_source_corpses(
     items: Option<&super::native_gameplay::ItemProfilesDocument>,
 ) -> HashSet<String> {
     use super::native_gameplay::{NativeItemDestination, NativeItemStackClass};
@@ -832,7 +847,7 @@ fn verified_soul_war_corpses(
                 if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(48));
         let source_plain = matches!(definition.production_key.as_str(),
-            "oteryn:item.tibia.i33792" | "oteryn:item.tibia.i33793" | "oteryn:item.tibia.i33876"
+            "oteryn:item.tibia.i11589" | "oteryn:item.tibia.i33792" | "oteryn:item.tibia.i33793" | "oteryn:item.tibia.i33876"
             | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984")
             && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
             && record.semantics.container == F::NotApplicable;
@@ -935,8 +950,7 @@ fn row(
         .as_ref()
         .is_some_and(|details| details.system_eligibility.reward_boss);
     let source_plain = verified_source_corpses.contains(&corpse.key)
-        && source_plain_corpse_pair(creature, &corpse)
-        && !private_reward;
+        && source_plain_corpse_pair(creature, &corpse, private_reward);
     if !source_plain {
         items
             .get(&corpse)
@@ -999,7 +1013,8 @@ fn row(
             )
         }
     };
-    if source_plain && !loot_table.entries.is_empty() {
+    // Private rewards go to personal chests. Ordinary loot needs corpse storage.
+    if source_plain && !private_reward && !loot_table.entries.is_empty() {
         return Err(NoSettlementReason::CorpseItemInadmissible);
     }
     Ok(CreatureRewardRow {
@@ -1041,16 +1056,7 @@ mod tusk_shield_tests {
 
     #[test]
     fn clomps_keep_the_donor_tusk_shield_roll() -> Result<(), Box<dyn std::error::Error>> {
-        let (creatures, mut section) = super::protected_loot_tests::documents()?;
-        let body = section
-            .items
-            .iter_mut()
-            .find(|facts| facts.item.key == "oteryn:item.tibia.i22742")
-            .ok_or("Clomp body missing")?;
-        // Qualify the independent body guard in this fixture using Crystal's
-        // 30-slot Item 22742 (201189f8 data/items/items.xml:45404–45408).
-        body.materializable = true;
-        body.container_capacity = Some(30);
+        let (creatures, section) = super::protected_loot_tests::documents()?;
         let rewards = CreatureRewardTable::from_pin(&creatures, Some(&section));
         for creature in ["oteryn:creature.animated_clomp", "oteryn:creature.clomp"] {
             let reward = rewards.row(creature).map_err(NoSettlementReason::as_str)?;
@@ -1375,7 +1381,7 @@ mod source_48_corpse_tests {
         // The exact source closure includes sixteen48-capacity bodies and
         // five plain bodies; unrelated admitted Items remain excluded.
         assert_eq!(
-            verified_soul_war_corpses(Some(&items)),
+            verified_source_corpses(Some(&items)),
             std::collections::HashSet::from(
                 [
                     "oteryn:item.tibia.i33792",
@@ -1414,14 +1420,14 @@ mod source_48_corpse_tests {
             .admission
             .legal_destinations
             .push(NativeItemDestination::CharacterInventory);
-        assert!(!verified_soul_war_corpses(Some(&items)).contains(greed_key));
+        assert!(!verified_source_corpses(Some(&items)).contains(greed_key));
         items.records[original] = record.clone();
         if let F::Known(container) = &mut items.records[original].semantics.container {
             container.capacity = F::Known(47);
         }
-        assert!(!verified_soul_war_corpses(Some(&items)).contains(greed_key));
+        assert!(!verified_source_corpses(Some(&items)).contains(greed_key));
         items.records[original] = record;
-        assert!(verified_soul_war_corpses(Some(&items)).contains(greed_key));
+        assert!(verified_source_corpses(Some(&items)).contains(greed_key));
         let mut profile: ProjectV2CreatureAuthoring = serde_json::from_value(serde_json::json!({
             "details": {
                 "display_name":"Goshnar's Greed","inspection":"","defense":0,"critical_chance_ppm":0,
@@ -1669,6 +1675,21 @@ mod protected_loot_tests {
     }
 
     #[test]
+    fn corrupted_skeleton_settlement_keeps_the_corrected_potion()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, section) = documents()?;
+        let rewards = CreatureRewardTable::from_pin(&creatures, Some(&section));
+        let reward = rewards
+            .row("oteryn:creature.corrupted_skeleton")
+            .map_err(NoSettlementReason::as_str)?;
+        assert!(reward.loot_table.entries.iter().any(|entry| {
+            entry.item.production_key == "oteryn:item.tibia.i266"
+                && entry.probability_ppm == Some(262_800)
+        }));
+        Ok(())
+    }
+
+    #[test]
     fn glitterscale_pins_flexible_dragon_scale() -> Result<(), Box<dyn std::error::Error>> {
         let (creatures, _) = documents()?;
         let loot = LootTablesSection::decode(
@@ -1700,6 +1721,16 @@ mod protected_loot_tests {
             CreatureRewardTable::from_pin(&creatures, Some(&loot)).row(creature),
             Err(NoSettlementReason::CorpseItemInadmissible)
         );
+        let native_items = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        let rewards = CreatureRewardTable::from_pin_with_native_corpses(
+            &creatures,
+            Some(&loot),
+            Some(&native_items),
+        );
+        let reward = rewards.row(creature).map_err(NoSettlementReason::as_str)?;
+        assert_eq!(reward.loot_table.entries, entries);
         Ok(())
     }
 

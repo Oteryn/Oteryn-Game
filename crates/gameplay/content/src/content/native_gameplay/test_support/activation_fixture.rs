@@ -295,11 +295,13 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         "oteryn:creature.ferumbras_mortal_shell",
         "oteryn:creature.fire_overlord",
         "oteryn:creature.gelidrazah_the_frozen",
+        "oteryn:creature.glitterscale",
         "oteryn:creature.glooth_fairy",
         "oteryn:creature.goshnar_s_spite",
         "oteryn:creature.gravelord_oshuran",
         "oteryn:creature.infernatil",
         "oteryn:creature.irgix_the_flimsy",
+        "oteryn:creature.jailer",
         "oteryn:creature.king_zelos",
         "oteryn:creature.lord_azaram",
         "oteryn:creature.lord_retro",
@@ -310,6 +312,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         "oteryn:creature.sir_baeloc",
         "oteryn:creature.soul_of_dragonking_zyrtarch",
         "oteryn:creature.spirit_overlord",
+        "oteryn:creature.teleskor",
         "oteryn:creature.the_blazing_time_guardian",
         "oteryn:creature.the_enraged_thorn_knight",
         "oteryn:creature.the_freezing_time_guardian",
@@ -434,7 +437,28 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 }
             }
         }
-        let expected = if let Some(corpse) = materializable_corpse {
+        // Glitterscale's body is plain Ground custody. Its loot goes to the
+        // personal chest and does not need a container on the corpse.
+        let plain_body = corpse.filter(|corpse| {
+            policy.definition_key == "oteryn:creature.glitterscale"
+                && corpse.key == "oteryn:item.tibia.i11589"
+        });
+        if let Some(corpse) = plain_body {
+            let body = source
+                .item_policy(&corpse.key, &corpse.revision)
+                .ok_or("Glitterscale plain corpse policy")?
+                .record();
+            assert!(body.admission.materializable);
+            assert_eq!(
+                body.admission.legal_destinations,
+                [super::super::NativeItemDestination::Ground]
+            );
+            assert_eq!(
+                body.semantics.container,
+                crate::content::ReferenceItemField::NotApplicable
+            );
+        }
+        let expected = if let Some(corpse) = materializable_corpse.or(plain_body) {
             admitted.push(policy.definition_key.as_str());
             let row = source
                 .reward_table()
@@ -576,7 +600,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 261, 0, 76)
+        (52, 258, 0, 79)
     );
     assert_eq!(
         admitted,
@@ -611,6 +635,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.ferumbras_mortal_shell",
             "oteryn:creature.fire_overlord",
             "oteryn:creature.gelidrazah_the_frozen",
+            "oteryn:creature.glitterscale",
             "oteryn:creature.glooth_fairy",
             "oteryn:creature.goshnar_s_cruelty",
             "oteryn:creature.goshnar_s_greed",
@@ -626,6 +651,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.ichgahal",
             "oteryn:creature.infernatil",
             "oteryn:creature.irgix_the_flimsy",
+            "oteryn:creature.jailer",
             "oteryn:creature.king_zelos",
             "oteryn:creature.lord_azaram",
             "oteryn:creature.lord_retro",
@@ -642,6 +668,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.spirit_overlord",
             "oteryn:creature.sugar_daddy",
             "oteryn:creature.tazhadur",
+            "oteryn:creature.teleskor",
             "oteryn:creature.the_blazing_time_guardian",
             "oteryn:creature.the_enraged_thorn_knight",
             "oteryn:creature.the_first_dragon",
