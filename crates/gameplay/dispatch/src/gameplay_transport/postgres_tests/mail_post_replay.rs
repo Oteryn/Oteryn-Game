@@ -65,7 +65,7 @@ async fn scenario(admin: String) -> TestResult {
         .native_gameplay()
         .and_then(|native| native.item_index())
         .ok_or("item index")?;
-    let reference = |key| index.definition_ref("Item", key, "definition-r1");
+    let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
     let (bytes, mut pins) = bundle_fixture::bundle_with_item_ids(
         (
             MAILBOX,
@@ -114,28 +114,26 @@ async fn scenario(admin: String) -> TestResult {
     let room = activation.qualified_room().clone();
     let cells = map.movement_cells(room.movement_cells()).map_err(debug)?;
     let identity = generation.identity();
+    let start = MovementLocalPosition {
+        x: i32::from(START.x),
+        y: i32::from(START.y),
+        floor: 7,
+    };
     let pin = ChannelContentPin::from_activation(
         initial.admitted.world_id,
-        1,
+        activation.activation_sequence(),
         identity.server_artifact_digest(),
         identity.client_artifact_digest(),
         map.frame_binding_digest(initial.admitted.world_id),
         map.map_revision_digest(),
-        (START.x, START.y, 7),
+        (start.x, start.y, start.floor),
     );
     let deps = Dependencies::with_content(pin, room, initial.spells)?;
     let actor = deps.actor;
     deps.runtime
         .lock()
         .await
-        .initialize_pinned_test_position(
-            actor,
-            MovementLocalPosition {
-                x: START.x,
-                y: START.y,
-                floor: 7,
-            },
-        )
+        .initialize_pinned_test_position(actor, start)
         .map_err(debug)?;
     let mut owner = deps.owner(&harness, &authority);
     owner.active_generation = Some(generation);
@@ -211,7 +209,7 @@ async fn scenario(admin: String) -> TestResult {
         )
         .map_err(debug)?;
         let landed = runtime.commit_source_step(proof).map_err(debug)?;
-        assert_eq!(landed.position().x, mailbox_position.x + 2);
+        assert_eq!(landed.position().x, i32::from(mailbox_position.x) + 2);
     }
 
     assert_eq!(
