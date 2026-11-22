@@ -355,6 +355,38 @@ legacy selectors keep their existing grammars and bounds. The reply adds the
 active content names for exactly the server-filtered custody page. Selector 135
 is rejected without 506; legacy selector 130 and its reply remain unchanged.
 
+## Owned appearance gallery (capability 611)
+
+Capability 611 requires 199. Command 388 accepts
+`136:u8, offset:u16le, outfit_source:u8` when the session selected 611.
+Source 0 returns all owned outfits, mounts and familiars. A positive source
+returns only owned outfits whose sources include that bit. The values below
+are the only valid positive request values. The server applies the filter
+before calculating the total and slicing the page.
+
+The reply is `136:u8, gallery_len:u16le, gallery:bytes`, followed by one
+nonzero `sources:u8` mask per row. The enclosed page uses the selector 129
+codec and ascending order by kind and key. Each row confirms ownership of
+that appearance. The mask combines the sources proven for its base look.
+Starter (1) is a sex-qualified starter outfit. Quest (2), NPC (8), taming (16),
+item action (32) and task board (64) come from accepted, compatible earned
+grant receipts. Store (4) comes from the Character's compatible confirmed
+Store cosmetic. Familiar grant (128) means the look is in this Character's
+durable familiar grants and resolves to a familiar in the active catalogue.
+This is the sole source bit on a familiar row. The server reads ownership
+under the current Character fence, and the reply confers no ownership or
+selection authority.
+
+The page remains bounded to 24 rows. An offset greater than the filtered
+total is refused. Selector 136 is refused without 611. Requests and replies
+on selector 129, including its legacy familiar catalogue, retain their
+existing semantics and byte format.
+
+Crystal 201189f8 sends owned outfits, mounts and familiars and tags their
+source in [ProtocolGame::sendCyclopediaCharacterOutfitsMounts](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp#L4632).
+[TibiaWiki Cyclopedia](https://www.tibiawiki.com.br/wiki/Cyclopedia) describes
+the owned gallery and the quest and Store source distinction.
+
 ## Current and base movement speed (capability 603)
 
 With `CYCLOPEDIA_MOVEMENT_SPEED_V1` selected alongside 199, command 388

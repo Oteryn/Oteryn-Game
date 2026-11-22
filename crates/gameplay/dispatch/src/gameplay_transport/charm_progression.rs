@@ -92,12 +92,30 @@ pub(super) fn canonical_races() -> Option<&'static [BestiaryRace]> {
     bestiary().map(|b| b.races.as_slice())
 }
 
+#[cfg(test)]
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
+    offered_for_sources(base, (available, false))
+}
+
+pub(super) fn offered_for_sources(
+    base: &[OfferedCapability],
+    (bestiary_available, item_index_available): (bool, bool),
+) -> Vec<OfferedCapability> {
     let id = wire::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1;
-    let mut offers: Vec<_> = base.iter().copied().filter(|c| c.id != id).collect();
-    if available {
+    let drops = wire::catalogue::quick_loot::CAPABILITY;
+    let loot = oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1;
+    let mut offers: Vec<_> = base.iter().copied().filter(|c| c.id != id && c.id != drops).collect();
+    if bestiary_available {
         let at = offers.partition_point(|c| c.id < id);
         offers.insert(at, OfferedCapability { id, requires: &[] });
+        if item_index_available && offers.iter().any(|offer| offer.id == loot) {
+            let at = offers.partition_point(|offer| offer.id < drops);
+            offers.insert(at, OfferedCapability {
+                id: drops,
+                requires: &[wire::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1,
+                    oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1],
+            });
+        }
     }
     offers
 }
@@ -364,6 +382,9 @@ macro_rules! authority_methods {
         fn charm_progression_available(&self) -> bool {
             false
         }
+        fn charm_progression_offers_available(&self) -> (bool, bool) {
+            (self.charm_progression_available(), false)
+        }
         fn charm_progression_command(
             &self,
             _admitted: $crate::gameplay_transport::connection::AdmittedSession,
@@ -382,6 +403,13 @@ macro_rules! composed_methods {
     () => {
         fn charm_progression_available(&self) -> bool {
             self.charm_progression_ready()
+        }
+        fn charm_progression_offers_available(&self) -> (bool, bool) {
+            let item_index_available = self.active_generation
+                .and_then(crate::content::ActiveGeneration::native_gameplay)
+                .and_then(|native| native.item_index())
+                .is_some_and(|index| !index.is_empty());
+            (self.charm_progression_available(), item_index_available)
         }
         async fn charm_progression_command(
             &self,

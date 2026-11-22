@@ -71,3 +71,20 @@ message BestiaryCatalogueCardV1 {
 // ff 03 followed by 1..5 strictly ascending nonzero race:u16le IDs (<=1024)
 // returns their active creature catalogue cards in the same page shape, no cursor.
 // The client batches confirmed discovered races to name the eligible race selector.
+
+// Bestiary drop-list Quick Loot, capability 609 (requires 67 and 98).
+// Command 84 accepts ff 04 after:u16le race:u16le (after 0..8192, race 1..1024).
+// The reply is ff 04 catalogue_len:u16le catalogue:bytes, followed by one
+// definition_ref:u32le per displayed drop line, including nested drop lines,
+// in the same order and page as the enclosed BestiaryCataloguePageV1 detail.
+// Zero means the admitted generation cannot resolve an editable Item for that
+// line. Positive references are generation-local Item definition ordinals.
+// The footer has at most 20 entries and no padding. Use catalogue.next for the
+// next request's after. The existing command result bound applies.
+// The client passes a positive reference as filter_definition_ref in command
+// 114 FilterAdd or FilterRemove with the chosen Skip/Accept mode. The existing
+// Quick Loot owner checks the Item and session generation, stores the edit and
+// returns its ordinary command result. The Bestiary query grants no Item or unlock.
+// Unselected 609 is refused on ff 04. All existing selectors are unchanged.
+// Reference: Crystal 201189f8 protocolgame.cpp sends item IDs for visible
+// Bestiary drops and accepts item IDs for its Quick Loot black/whitelist.
