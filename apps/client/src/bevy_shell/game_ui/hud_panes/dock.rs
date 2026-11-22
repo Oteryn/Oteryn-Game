@@ -75,6 +75,8 @@ impl Default for SidebarWidgets {
             left: false,
             extra: false,
             floating: Vec::new(),
+            placements: Vec::new(),
+            reset_pending: false,
             saved_revision: None,
         }
     }
@@ -139,6 +141,8 @@ impl SidebarWidgets {
         }
         Self {
             entries,
+            placements: Vec::new(),
+            reset_pending: false,
             saved_revision: None,
             left: saved.left,
             extra: saved.extra,
@@ -152,6 +156,12 @@ impl SidebarWidgets {
     pub(in crate::bevy_shell) fn save(&mut self, path: &Path) -> io::Result<()> {
         let _lock = crate::atomic_file::try_lock(path)?;
         let mut active = Self::load_for_write(path)?;
+        if self.reset_pending || self.saved_revision == active.saved_revision {
+            self.publish(path)?;
+            self.reset_pending = false;
+            self.placements.clear();
+            return Ok(());
+        }
         let before = self
             .saved_revision
             .as_deref()
@@ -191,7 +201,7 @@ impl SidebarWidgets {
                 }
             }
         }
-        for (index, edit) in edited.entries.iter().enumerate() {
+        for edit in &edited.entries {
             let Some(previous) = before.entry(edit.widget) else {
                 continue;
             };
@@ -218,21 +228,10 @@ impl SidebarWidgets {
             if edit.floating != previous.floating {
                 active.floating = edit.floating;
             }
-            let previous_predecessor = before
-                .entries
-                .iter()
-                .position(|entry| entry.widget == edit.widget)
-                .and_then(|index| index.checked_sub(1))
-                .map(|index| before.entries[index].widget);
-            let edited_predecessor = index
-                .checked_sub(1)
-                .map(|index| edited.entries[index].widget);
-            if previous_predecessor != edited_predecessor {
-                let entry = self.entries.remove(active_index);
-                let insertion = edited_predecessor
-                    .and_then(|widget| self.entries.iter().position(|entry| entry.widget == widget))
-                    .map_or(0, |index| index + 1);
-                self.entries.insert(insertion, entry);
+        }
+        for &(widget, dock, before) in &edited.placements {
+            if let Some(index) = self.entries.iter().position(|entry| entry.widget == widget) {
+                self.reorder(index, dock, before);
             }
         }
     }
@@ -263,13 +262,11 @@ impl SidebarWidgets {
     }
     /// Reset window layout: the Global default dock, saved at once.
     pub(in crate::bevy_shell) fn reset(&mut self, path: Option<&Path>) -> io::Result<()> {
-        let mut reset = Self::default();
+        *self = Self::default();
         if let Some(path) = path {
-            let _lock = crate::atomic_file::try_lock(path)?;
-            let _active = Self::load_for_write(path)?;
-            reset.publish(path)?;
+            self.reset_pending = true;
+            self.save(path)?;
         }
-        *self = reset;
         Ok(())
     }
 }
@@ -283,9 +280,10 @@ fn read_revision(path: &Path) -> io::Result<Option<std::sync::Arc<[u8]>>> {
 }
 
 fn install_snapshot(widgets: &mut ResMut<SidebarWidgets>, snapshot: SidebarWidgets) {
-    let revision = snapshot.saved_revision.clone();
-    widgets.set_if_neq(snapshot);
-    widgets.bypass_change_detection().saved_revision = revision;
+    if **widgets != snapshot {
+        widgets.set_changed();
+    }
+    *widgets.bypass_change_detection() = snapshot;
 }
 
 /// How long the dock must stay unchanged before it is written, so a drag writes once.
@@ -389,6 +387,59 @@ pub(super) fn reset(
 #[cfg(test)]
 mod staging_tests {
     use super::*;
+
+    #[test]
+    fn c2c_stale_dock_move_preserves_disjoint_move() -> io::Result<()> {
+        use Widget::*;
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("dock.json");
+        let mut first = SidebarWidgets::load(&path)?;
+        let mut second = first.clone();
+        first.place(BattleList, Dock::Right, None);
+        first.save(&path)?;
+        second.place(Vip, Dock::Right, Some(Containers));
+        second.save(&path)?;
+        let order: Vec<_> = SidebarWidgets::load(&path)?
+            .entries
+            .into_iter()
+            .map(|e| e.widget)
+            .collect();
+        assert_eq!(
+            order,
+            [Vip, Containers, Skills, AnalyticsSelector, BattleList]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn c2c_contended_reset_retries_on_settle() -> Result<(), Box<dyn std::error::Error>> {
+        let root = tempfile::tempdir()?;
+        let mut owner = HostOwner::new(Some(root.path().join("preferences.json")))?;
+        owner.enter_character(Some([3; 16]));
+        let path = owner.dock_layout_path().ok_or("missing dock path")?;
+        let mut edited = SidebarWidgets {
+            extra: true,
+            ..Default::default()
+        };
+        edited.save(&path)?;
+        let mut app = App::new();
+        app.insert_non_send(owner)
+            .init_resource::<SidebarWidgets>()
+            .init_resource::<Time<Real>>()
+            .add_observer(reset)
+            .add_systems(Last, persist);
+        app.update();
+        let lock = crate::atomic_file::try_lock(&path)?;
+        app.world_mut().trigger(LayoutReset);
+        app.update();
+        drop(lock);
+        app.world_mut()
+            .resource_mut::<Time<Real>>()
+            .advance_by(SAVE_DELAY);
+        app.update();
+        assert_eq!(SidebarWidgets::load(&path)?, SidebarWidgets::default());
+        Ok(())
+    }
 
     #[test]
     fn review_3376_stale_dock_saves_and_resets_rebase() -> io::Result<()> {
