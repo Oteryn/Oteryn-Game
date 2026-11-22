@@ -150,6 +150,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         task_board_recipients: Arc::default(),
         talisman: Arc::default(),
         boss_reward: None,
+        boss_outfit: None,
         activity_death: None,
         grizzly: None,
         objectives: None,

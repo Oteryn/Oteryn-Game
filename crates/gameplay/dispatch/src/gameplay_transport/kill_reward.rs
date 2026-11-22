@@ -32,6 +32,7 @@ use crate::combat::{
 use crate::content::character_progression_content::CHARACTER_EXPERIENCE_TABLE_LEVELS;
 use crate::content::creature_reward::{CreatureRewardRow, CreatureRewardTable};
 use crate::durability::bestiary_progress::{BestiaryKillOutcome, BestiaryProgressError};
+use crate::durability::boss_encounter::reward_chest::{BossOutfit, BossOutfitRecipient};
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::cyclopedia_tracker::TrackerKind;
 use crate::durability::item_mint::ItemMintError;
@@ -46,6 +47,8 @@ use {
 use super::attack::ChannelAttackStates;
 use super::{ComposedFreshAdmission, operator_event};
 
+#[path = "kill_reward/boss_outfits.rs"]
+mod boss_outfits;
 #[path = "boss_reward_contribution.rs"]
 mod boss_reward_contribution;
 #[path = "boss_reward_settlement.rs"]
@@ -155,6 +158,7 @@ pub struct PendingKillSettlement {
     talisman: Arc<OnceLock<crate::durability::bestiary_progress::CapturedBountyTalismanKill>>,
     /// W03: complete contribution census and original loot pin captured on the lethal turn.
     pub(super) boss_reward: Option<boss_reward_contribution::FrozenBossDeath>,
+    pub(super) boss_outfit: Option<(BossOutfit, Vec<BossOutfitRecipient>)>,
     /// Nonreward Instance death metadata captured before releasing the lethal turn.
     pub(super) activity_death: Option<CapturedActivityDeath>,
     pub(super) grizzly: Option<Arc<super::grizzly_kills::FrozenGrizzlyDeath>>,
@@ -273,6 +277,7 @@ impl PendingKillSettlement {
             task_board_recipients: Arc::default(),
             talisman: Arc::default(),
             boss_reward: None,
+            boss_outfit: None,
             activity_death: None,
             grizzly: None,
             objectives: None,
@@ -984,6 +989,11 @@ impl KillSettlementQueue {
                             .iter()
                             .any(|participant| participant.session == session)
                     })
+                    || entry.boss_outfit.as_ref().is_some_and(|(_, recipients)| {
+                        recipients
+                            .iter()
+                            .any(|recipient| recipient.session == session)
+                    })
                     || entry
                         .damage_shares
                         .iter()
@@ -1601,12 +1611,14 @@ impl KillSettlementQueue {
             entry.facts.death,
             principal_of(&entry),
             entry.target,
-            entry.echo.as_ref().map_or_else(Vec::new, |echo| {
-                echo.recipients
-                    .iter()
-                    .map(|recipient| recipient.session)
-                    .collect()
-            }),
+            entry
+                .echo
+                .iter()
+                .flat_map(|echo| echo.recipients.iter().map(|recipient| recipient.session))
+                .chain(entry.boss_outfit.iter().flat_map(|(_, recipients)| {
+                    recipients.iter().map(|recipient| recipient.session)
+                }))
+                .collect(),
         ));
         TakeOutcome::Taken(Box::new(TakenKillSettlement {
             queue: self.clone(),
@@ -2176,6 +2188,7 @@ pub fn record_creature_kill(
             // no fallback invents XP, a loot table, corpse Item or Bestiary race.
             let boss = sink.rewards.boss(&creature);
             if !overlord
+                && BossOutfit::for_death(&creature).is_none()
                 && boss.is_none()
                 && (top.present().is_none()
                     || !super::grizzly_kills::tracks_creature(&creature)
@@ -2223,6 +2236,7 @@ pub fn record_creature_kill(
                             task_board_recipients: Arc::default(),
                             talisman: Arc::default(),
                             boss_reward: None,
+                            boss_outfit: None,
                             activity_death: None,
                             grizzly: None,
                             objectives: None,
@@ -2603,6 +2617,7 @@ pub fn record_creature_kill(
     let entry = PendingKillSettlement {
         world_change,
         boss_reward,
+        boss_outfit: None,
         activity_death,
         forge,
         echo,
@@ -2755,6 +2770,7 @@ fn accept_encounter_kill(
         }
     };
     if entry.soulpit_experience.is_none() {
+        boss_outfits::capture(runtime, &mut entry);
         super::grizzly_kills::capture(runtime, queue, &mut entry);
         super::quest_kill_objectives::capture(runtime, queue, &mut entry);
     }
@@ -3676,7 +3692,9 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         // corpse reward row still has a canonical death and frozen quest recipients.
         if entry.row.is_none()
             && entry.encounter_experience.is_none()
-            && oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some()
+            && (entry.boss_outfit.is_some()
+                || oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature)
+                    .is_some())
         {
             let Some(permit) = admission.spell_lane_permit().await else {
                 return SettleReport {

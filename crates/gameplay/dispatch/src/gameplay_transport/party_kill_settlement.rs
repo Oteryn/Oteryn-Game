@@ -800,6 +800,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         entry: &PendingKillSettlement,
     ) -> Result<(), CharacterProgressionError> {
         if entry.boss_reward.is_none()
+            && entry.boss_outfit.is_none()
             && oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_none()
         {
             return Ok(());
@@ -857,21 +858,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    let plan = entry
-                        .boss_reward_plan
-                        .get()
-                        .ok_or(DurabilityError::InvalidStoredState)?;
-                    if !owner
-                        .root
-                        .settle_boss_death_atomic(
-                            &mut tx,
-                            owner.character,
-                            owner.holder,
-                            entry.facts.death.runtime_scope(),
-                            entry.facts.death.scope_ownership_generation(),
-                            plan.clone(),
-                        )
-                        .await?
+                    if let Some(plan) = entry.boss_reward_plan.get()
+                        && !owner
+                            .root
+                            .settle_boss_death_atomic(
+                                &mut tx,
+                                owner.character,
+                                owner.holder,
+                                entry.facts.death.runtime_scope(),
+                                entry.facts.death.scope_ownership_generation(),
+                                plan.clone(),
+                            )
+                            .await?
                     {
                         return Err(DurabilityError::Unavailable);
                     }
