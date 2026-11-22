@@ -201,6 +201,14 @@ fn vip_private_channel_shortcuts_send_selected_name() -> TestResult {
     ] {
         let (mut app, mut commands, outbox) = super::super::tests::app()?;
         outbox.bevy_vip_owned_channel();
+        let draft = "Someone else";
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_private_name(draft.into());
         publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
         app.update();
         let row = control(&mut app, |action| matches!(action, Action::Edit(73)))?;
@@ -215,6 +223,17 @@ fn vip_private_channel_shortcuts_send_selected_name() -> TestResult {
         app.world_mut().trigger(Activate { entity: button });
         assert!(std::iter::from_fn(|| commands.try_recv().ok()).any(|command| matches!(command,
             crate::combat_input::PlayCommand::ChatPublic(ChatIntent::PrivateChannel(intent)) if intent == expected)));
+        assert_eq!(
+            app.world()
+                .non_send::<HostOwner>()
+                .play
+                .as_ref()
+                .ok_or("play")?
+                .link
+                .chat_private_panel()
+                .name,
+            draft
+        );
     }
     Ok(())
 }
@@ -266,7 +285,7 @@ fn vip_group_switch_shows_each_membership_and_restores_flat_rows() -> TestResult
     let (mut app, _, outbox) = super::super::tests::app()?;
     let contacts = CONTACTS.replace("[1]", "[1,2]").replace(
         r#""name":"Friends"}"#,
-        r#""name":"Friends"},{"group":2,"name":"Guild"}"#,
+        r#""name":"Guild"},{"group":2,"name":"Friends"}"#,
     );
     publish(&outbox, &contacts, 4, VipPresenceStatus::Online);
     app.update();
@@ -293,6 +312,23 @@ fn vip_group_switch_shows_each_membership_and_restores_flat_rows() -> TestResult
             .map(|t| t.0.clone())
             .collect();
         if grouped {
+            let world = app.world();
+            let order: Vec<_> = world
+                .get::<Children>(list)
+                .ok_or("list children")?
+                .iter()
+                .filter_map(|row| world.get::<Children>(row))
+                .filter_map(|children| {
+                    children
+                        .iter()
+                        .find(|child| world.get::<VipNameLabel>(*child).is_some())
+                })
+                .filter_map(|id| world.get::<Text>(id).map(|text| text.0.as_str()))
+                .collect();
+            assert_eq!(
+                order,
+                ["Friends · Alice", "Guild · Alice", "Ungrouped · Bob"]
+            );
             for label in ["Friends · Alice", "Guild · Alice", "Ungrouped · Bob"] {
                 assert!(names.iter().any(|n| n == label));
             }

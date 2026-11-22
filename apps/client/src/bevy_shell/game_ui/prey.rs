@@ -43,7 +43,40 @@ struct Action {
     panel: PreyPanel,
     kind: Kind,
 }
-type Seen = (u64, PreyPanel, Option<u8>, Option<Intent>, Option<(u8, u8)>);
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum RerollPrice {
+    Free,
+    Paid(u32),
+    Unknown,
+}
+impl RerollPrice {
+    fn for_slot(panel: &PreyPanel, slot: u8, link: &crate::play::PlayLink, now: u64) -> Self {
+        if panel
+            .slot(slot)
+            .is_some_and(|slot| slot.free_reroll_at <= now)
+        {
+            Self::Free
+        } else {
+            link.spellbook_actor_level()
+                .map_or(Self::Unknown, Self::Paid)
+        }
+    }
+}
+
+fn now_seconds() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
+type Seen = (
+    u64,
+    PreyPanel,
+    Option<u8>,
+    Option<Intent>,
+    Option<(u8, u8)>,
+    Option<RerollPrice>,
+);
 #[derive(Resource, Default)]
 struct State {
     seen: Option<Seen>,
@@ -186,6 +219,14 @@ fn activate(
         || action.generation != owner.generation()
         || action.panel != play.link.prey_panel()
         || !affordable(&action.panel, &action.kind)
+    {
+        return;
+    }
+    if matches!(action.kind, Kind::Confirm)
+        && state
+            .confirmation
+            .map(|slot| RerollPrice::for_slot(&action.panel, slot, &play.link, now_seconds()))
+            != state.seen.as_ref().and_then(|seen| seen.5)
     {
         return;
     }
@@ -363,10 +404,7 @@ fn button(
 }
 
 fn refresh_rerolls(mut labels: Query<(&FreeReroll, &mut Text)>) {
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
+    let now = now_seconds();
     for (deadline, mut text) in &mut labels {
         let value = reroll_time(deadline.0, now);
         if text.0 != value {

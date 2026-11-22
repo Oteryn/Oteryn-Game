@@ -22,21 +22,25 @@ pub(super) fn project(
     if state
         .seen
         .as_ref()
-        .is_some_and(|(old, old_panel, _, _, _)| *old != generation || old_panel != &panel)
+        .is_some_and(|(old, old_panel, ..)| *old != generation || old_panel != &panel)
     {
         state.confirmation = None;
         state.wildcard = None;
     }
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
+    let now = now_seconds();
+    let reroll_price = state.confirmation.and_then(|slot| {
+        owner
+            .play
+            .as_ref()
+            .map(|play| RerollPrice::for_slot(&panel, slot, &play.link, now))
+    });
     let seen = (
         generation,
         panel.clone(),
         state.confirmation,
         state.wildcard.clone(),
         state.candidate,
+        reroll_price,
     );
     if state.seen.as_ref() == Some(&seen) {
         return;
@@ -229,23 +233,16 @@ pub(super) fn project(
                     }
                 }
             }
-        } else if let Some(slot) = state.confirmation {
-            let price = if panel
-                .slot(slot)
-                .is_some_and(|slot| slot.free_reroll_at <= now)
-            {
-                "Free list reroll available.".into()
-            } else if let Some(level) = owner
-                .play
-                .as_ref()
-                .and_then(|play| play.link.spellbook_actor_level())
-            {
-                format!(
+        } else if let (Some(slot), Some(price)) = (state.confirmation, reroll_price) {
+            let price = match price {
+                RerollPrice::Free => "Free list reroll available.".into(),
+                RerollPrice::Paid(level) => format!(
                     "Paid reroll: {} gold at level {level}.",
                     u64::from(level) * 200
-                )
-            } else {
-                "The server may charge gold; the gold price is not provided.".into()
+                ),
+                RerollPrice::Unknown => {
+                    "The server may charge gold; the gold price is not provided.".into()
+                }
             };
             label(
                 &mut commands,

@@ -155,17 +155,19 @@ fn fixture_level(
         link,
     });
     let mut app = App::new();
-    app.insert_non_send(host).insert_resource(Skins {
-        buttons: source::ButtonImages {
-            up: Handle::default(),
-            down: Handle::default(),
-        },
-        checked: Handle::default(),
-        unchecked: Handle::default(),
-        frame: Handle::default(),
-        inset: Handle::default(),
-        font: Handle::default(),
-    });
+    app.insert_non_send(outbox)
+        .insert_non_send(host)
+        .insert_resource(Skins {
+            buttons: source::ButtonImages {
+                up: Handle::default(),
+                down: Handle::default(),
+            },
+            checked: Handle::default(),
+            unchecked: Handle::default(),
+            frame: Handle::default(),
+            inset: Handle::default(),
+            font: Handle::default(),
+        });
     install(&mut app);
     app.update();
     Ok((app, commands))
@@ -793,6 +795,29 @@ fn prey_offered_rat_has_pinned_portrait() -> TestResult {
             .ok_or("pixels")?
             .size(),
         UVec2::splat(128)
+    );
+    Ok(())
+}
+
+#[test]
+fn prey_open_confirmation_updates_when_actor_level_arrives() -> TestResult {
+    let (mut app, mut commands) = fixture_details(5, i64::MAX as u64)?;
+    click(&mut app, Kind::Reroll(2))?;
+    app.update();
+    app.world()
+        .non_send::<crate::play::Outbox>()
+        .bevy_hud_skills_fixture()?;
+    click(&mut app, Kind::Confirm)?;
+    assert!(
+        commands.try_recv().is_err(),
+        "the previous price cannot authorize the reroll"
+    );
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("6000 gold"))
     );
     Ok(())
 }

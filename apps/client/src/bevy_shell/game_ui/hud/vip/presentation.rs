@@ -257,7 +257,19 @@ pub(super) fn project(
             } else {
                 Display::Flex
             };
-        order.push((entity, contact, row.group));
+        let group_name = row.group.and_then(|id| {
+            snapshot
+                .as_ref()?
+                .groups
+                .iter()
+                .find(|group| group.group == id)
+                .map(|group| group.name.as_str())
+        });
+        order.push((
+            entity,
+            contact,
+            (group_name.is_none(), group_name, row.group),
+        ));
     }
     order.sort_by(|(_, a, ga), (_, b, gb)| {
         let primary = match preferences.sort {
@@ -320,10 +332,7 @@ pub(super) fn project(
     {
         preferences.context = None;
     }
-    let private = play.link.chat_private_panel();
-    let owns_channel = private.selected
-        && !private.pending
-        && private.list.and_then(|list| list.own_channel).is_some();
+    let owns_channel = play.link.vip_private_channel_available();
     let context = preferences.context.map(|key| (key, owns_channel));
     if menu.as_ref().map(|(key, _)| *key) != context {
         if let Some((_, entity)) = menu.take() {

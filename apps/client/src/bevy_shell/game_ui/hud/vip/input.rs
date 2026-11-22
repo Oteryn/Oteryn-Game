@@ -84,21 +84,10 @@ pub(super) fn activate(
                     },
                 ));
             } else {
-                let channel = play.link.chat_private_panel();
-                if channel.pending
-                    || !channel.selected
-                    || channel.list.and_then(|list| list.own_channel).is_none()
-                {
-                    return;
-                }
-                use oteryn_client_ui::chat_private_channel::Intent as PrivateIntent;
-                let intent = if matches!(control.command, Action::Invite(_)) {
-                    PrivateIntent::Invite
-                } else {
-                    PrivateIntent::Exclude
-                };
-                play.link.chat_private_name(contact.name.clone());
-                play.link.chat_private_request(intent);
+                play.link.vip_private_recipient(
+                    &contact.name,
+                    matches!(control.command, Action::Invite(_)),
+                );
             }
             presentation.context = None;
         }

@@ -1,9 +1,6 @@
 #[path = "build_support/launcher_version.rs"]
 mod launcher_version;
 
-#[path = "build_support/release_identity.rs"]
-mod release_identity;
-
 #[path = "build_support/play_features.rs"]
 mod play_features;
 
@@ -12,6 +9,9 @@ mod preference_bindings;
 
 #[path = "build_support/prey_catalogue.rs"]
 mod prey_catalogue;
+
+#[path = "build_support/release_identity.rs"]
+mod release_identity;
 
 #[path = "build_support/update_trust.rs"]
 mod update_trust;
