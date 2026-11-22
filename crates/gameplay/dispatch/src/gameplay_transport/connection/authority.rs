@@ -1238,6 +1238,10 @@ pub trait FreshAdmissionAuthority {
     /// QUEST-LOG-WIRE-1: the session's quest copy with the quest log content, unless the copy
     /// still has version `since` (`Unchanged`). `Unavailable` while the copy is not loaded: the
     /// domain then shows nothing new and every query is `REJECTED`.
+    fn quest_tracker_is_premium(&self, _session: GameSessionId) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     fn observe_quest_log(
         &self,
         _actor: ExactActorRef,

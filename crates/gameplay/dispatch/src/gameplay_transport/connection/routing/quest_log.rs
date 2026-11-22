@@ -5,6 +5,10 @@ use super::super::{
 };
 use super::Dispatch;
 use oteryn_protocol_oteryn::ClientCommandView;
+use oteryn_protocol_oteryn::quest_log::{
+    COMMAND_TYPE_QUEST_MISSION_TRACK, MAX_FREE_TRACKED_MISSIONS, MAX_TRACKED_MISSIONS,
+    decode_quest_mission_track,
+};
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -24,6 +28,25 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 .quest_log
                 .queries
                 .admit(tokio::time::Instant::now());
+        if command.command_type == COMMAND_TYPE_QUEST_MISSION_TRACK {
+            let Some(state) = quest_log.as_mut().filter(|_| admitted_rate) else {
+                return Some(Dispatch::Unregistered);
+            };
+            let Ok(pairs) = decode_quest_mission_track(command.payload) else {
+                return Some(Dispatch::Unregistered);
+            };
+            let limit = if authority.quest_tracker_is_premium(admitted.game_session_id).await {
+                MAX_TRACKED_MISSIONS
+            } else {
+                MAX_FREE_TRACKED_MISSIONS
+            };
+            let observation = authority.observe_quest_log(actor, admitted.game_session_id, None).await;
+            return match state.track_missions(&mut admitted.continuity.quest_log, &pairs, limit, observation) {
+                Some(Ok(domain)) => Some(Dispatch::QuestLog(domain)),
+                Some(Err(_)) => None,
+                None => Some(Dispatch::Unregistered),
+            };
+        }
         match (
             quest_log.as_mut().filter(|_| admitted_rate),
             decode_quest_log_query(command.payload),

@@ -91,6 +91,94 @@ pub(super) async fn inactive_death_without_calendar(
     Ok(())
 }
 
+fn bounty_update_capabilities() -> TestResult<SelectedCapabilities> {
+    SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[1, 72, 474, 578])
+        .ok_or_else(|| "updated Task Board capabilities unavailable".into())
+}
+
+pub(super) async fn canonical_delivery_refs_use_active_catalogue(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    legacy: &wire::full::Reply,
+) -> TestResult {
+    let previous = admitted.continuity.selected_capabilities;
+    admitted.continuity.selected_capabilities = bounty_update_capabilities()?;
+    let updated = full_board(owner, admitted, 4, 0, "").await?;
+    admitted.continuity.selected_capabilities = previous;
+    let native = owner.active_generation.and_then(|generation| generation.native_gameplay())
+        .ok_or("active native catalogue")?;
+    let index = native.item_index().ok_or("item index")?;
+    assert_eq!(updated.weekly.deliveries.len(), legacy.weekly.deliveries.len());
+    let mut differs_from_donor = false;
+    for (old, new) in legacy.weekly.deliveries.iter().zip(&updated.weekly.deliveries) {
+        let policy = native.item_policy_for_source_id(old.item).ok_or("delivery policy")?;
+        let definition = &policy.record().production_definition;
+        let expected = index.definition_ref(&definition.family, &definition.production_key, &definition.revision_ref)
+            .ok_or("definition reference")?.get();
+        assert_eq!(new.item, expected);
+        assert_eq!((new.current, new.required, new.delivered), (old.current, old.required, old.delivered));
+        differs_from_donor |= expected != old.item;
+    }
+    assert!(differs_from_donor);
+    Ok(())
+}
+
+async fn daily_bounty_claim(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    id: u64,
+) -> TestResult<(CommandStatus, Vec<u8>)> {
+    let raw_claim = vec![8, 20, 16, 0, 26, 0];
+    let (_, mut replies) = serve_attempt_kind(owner, admitted, id, &[raw_claim], 6319).await?;
+    assert_eq!(replies.len(), 1);
+    let (_, status, payload) = replies.remove(0);
+    Ok((status, payload))
+}
+
+pub(super) async fn daily_bounty_token_dispatch_claims_once_per_reset(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    let first = admitted.continuity.next_command_id;
+    assert_eq!(daily_bounty_claim(owner, admitted, first).await?.0, CommandStatus::Rejected);
+    admitted.continuity.selected_capabilities = bounty_update_capabilities()?;
+
+    let before = full_board(owner, admitted, 4, 0, "").await?;
+    assert!(before.bounty.daily_reroll_at > 0);
+    let first = admitted.continuity.next_command_id;
+    let (status, payload) = daily_bounty_claim(owner, admitted, first).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    let claimed = wire::full::decode_reply(&payload).map_err(debug)?;
+    assert_eq!((claimed.refusal, claimed.bounty.rerolls), (0, before.bounty.rerolls + 1));
+    assert!(claimed.bounty.daily_reroll_at > before.bounty.daily_reroll_at);
+    assert_eq!(daily_bounty_claim(owner, admitted, first).await?, (CommandStatus::DuplicateReplay, payload));
+
+    let next = admitted.continuity.next_command_id;
+    let (status, payload) = daily_bounty_claim(owner, admitted, next).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    let refused = wire::full::decode_reply(&payload).map_err(debug)?;
+    assert_eq!((refused.refusal, refused.bounty), (5, claimed.bounty.clone()));
+
+    fixture_next_reset(harness).await?;
+    let next = admitted.continuity.next_command_id;
+    let mut stale = *admitted;
+    let mut fence = stale.item_fence.ok_or("item fence")?;
+    fence.connection_generation = ConnectionGeneration::new(fence.connection_generation.get() + 1).map_err(debug)?;
+    stale.item_fence = Some(fence);
+    // The stale attempt owns its command ID. Rejoin from the resulting cursor
+    // with the current fence and prove a new command still claims the token.
+    assert_eq!(daily_bounty_claim(owner, &mut stale, next).await?.0, CommandStatus::Rejected);
+    admitted.continuity = stale.continuity;
+    let next = admitted.continuity.next_command_id;
+    let (status, payload) = daily_bounty_claim(owner, admitted, next).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    let after_reset = wire::full::decode_reply(&payload).map_err(debug)?;
+    assert_eq!((after_reset.refusal, after_reset.bounty.rerolls), (0, claimed.bounty.rerolls + 1));
+    assert!(after_reset.bounty.daily_reroll_at > claimed.bounty.daily_reroll_at);
+    Ok(())
+}
+
 pub(super) fn full_request(action: u8, selection: u16, race: &str) -> Vec<u8> {
     wire::full::encode_request(&wire::full::Request {
         action,
@@ -327,7 +415,7 @@ pub(super) async fn delivery_cases(
     let delivery = &board.weekly.deliveries[0];
     let item = catalogue
         .items
-        .get(&delivery.item)
+        .get(&u16::try_from(delivery.item)?)
         .ok_or("delivery item mapping")?;
     fixture_delivery_units(owner, harness, item, delivery.required, 0).await?;
     super::depot_case::fixture_large_nested_depot(owner, harness, item).await?;
@@ -416,7 +504,7 @@ pub(super) async fn delivery_cases(
     let delivery = &board.weekly.deliveries[1];
     let item = catalogue
         .items
-        .get(&delivery.item)
+        .get(&u16::try_from(delivery.item)?)
         .ok_or("second delivery item")?;
     fixture_delivery_units(owner, harness, item, delivery.required, 1).await?;
     let available = full_board(owner, admitted, 4, 0, "").await?;

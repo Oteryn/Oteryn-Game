@@ -34,6 +34,81 @@ pub const SNAPSHOT_TYPE_QUEST_LOG_V1: u32 = 1;
 pub const DELTA_TYPE_QUEST_LOG_V1: u32 = 1;
 pub const COMMAND_TYPE_QUEST_LOG_QUERY: u32 = 22;
 
+pub const CAPABILITY_QUEST_MISSION_TRACKING_V1: u32 = 577;
+pub const COMMAND_TYPE_QUEST_MISSION_TRACK: u32 = 6318;
+/// Crystal quests.lua:89–91.
+pub const MAX_FREE_TRACKED_MISSIONS: usize = 10;
+pub const MAX_TRACKED_MISSIONS: usize = 25;
+pub const MAX_QUEST_MISSION_TRACK_BYTES: usize = MAX_TRACKED_MISSIONS * 14;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TrackedMission {
+    pub quest_index: u32,
+    pub mission_index: u32,
+}
+
+fn validate_mission_pairs(pairs: impl IntoIterator<Item = TrackedMission>) -> WireResult<()> {
+    let mut seen = BTreeSet::new();
+    for pair in pairs {
+        if seen.len() == MAX_TRACKED_MISSIONS {
+            return Err(QuestLogWireError::LimitExceeded);
+        }
+        if !seen.insert(pair) {
+            return malformed();
+        }
+    }
+    Ok(())
+}
+
+pub fn encode_quest_mission_track(pairs: &[TrackedMission]) -> WireResult<Vec<u8>> {
+    validate_mission_pairs(pairs.iter().copied())?;
+    let mut out = Vec::new();
+    for pair in pairs {
+        let mut body = Vec::new();
+        push_varint_field(&mut body, 1, u64::from(pair.quest_index));
+        push_varint_field(&mut body, 2, u64::from(pair.mission_index));
+        push_message_field(&mut out, 1, &body);
+    }
+    Ok(out)
+}
+
+pub fn decode_quest_mission_track(payload: &[u8]) -> WireResult<Vec<TrackedMission>> {
+    if payload.len() > MAX_QUEST_MISSION_TRACK_BYTES {
+        return Err(QuestLogWireError::LimitExceeded);
+    }
+    let mut cursor = 0;
+    let mut pairs = Vec::new();
+    while cursor < payload.len() {
+        if pairs.len() == MAX_TRACKED_MISSIONS {
+            return Err(QuestLogWireError::LimitExceeded);
+        }
+        if read_varint(payload, &mut cursor)? != 10 {
+            return malformed();
+        }
+        let body = read_bytes(payload, &mut cursor)?;
+        let mut inner = 0;
+        if read_varint(body, &mut inner)? != 8 {
+            return malformed();
+        }
+        let quest_index = read_uint32(body, &mut inner)?;
+        if read_varint(body, &mut inner)? != 16 {
+            return malformed();
+        }
+        let mission_index = read_uint32(body, &mut inner)?;
+        if inner != body.len() {
+            return malformed();
+        }
+        pairs.push(TrackedMission {
+            quest_index,
+            mission_index,
+        });
+    }
+    if encode_quest_mission_track(&pairs)? != payload {
+        return malformed();
+    }
+    Ok(pairs)
+}
+
 /// `QUESTGATE0-RL-06`: tracked quests of one session (`PARITY_PENDING`).
 pub const MAX_TRACKED_QUESTS: usize = 10;
 /// `QUESTGATE0-RL-07`: quests per list projection (as `QUESTSTATE0-RL-05`).
@@ -112,7 +187,7 @@ pub struct QuestLog {
     /// Committed personal Cross markers in this World, replaced with the domain.
     pub map_marks: Vec<QuestMapMark>,
     pub view: Option<QuestLogView>,
-    /// The tracked quests' lines, in the order the client tracked them.
+    /// Tracked lines in request order. With capability 577, each line holds exactly one mission.
     pub tracked: Vec<QuestLine>,
 }
 
@@ -250,14 +325,24 @@ fn validate_tracked_indexes(indexes: impl Iterator<Item = u32>) -> WireResult<()
     Ok(())
 }
 
-fn validate_quest_log(log: &QuestLog) -> WireResult<()> {
+fn validate_quest_log(log: &QuestLog, missions: bool) -> WireResult<()> {
     validate_map_marks(&log.map_marks)?;
     match &log.view {
         Some(QuestLogView::List(entries)) => validate_list(entries)?,
         Some(QuestLogView::Line(line)) => validate_line(line)?,
         None => {}
     }
-    validate_tracked_indexes(log.tracked.iter().map(|line| line.quest_index))?;
+    if missions {
+        if log.tracked.iter().any(|line| line.missions.len() != 1) {
+            return malformed();
+        }
+        validate_mission_pairs(log.tracked.iter().map(|line| TrackedMission {
+            quest_index: line.quest_index,
+            mission_index: line.missions[0].mission_index,
+        }))?;
+    } else {
+        validate_tracked_indexes(log.tracked.iter().map(|line| line.quest_index))?;
+    }
     log.tracked.iter().try_for_each(validate_line)
 }
 
@@ -393,7 +478,16 @@ fn decode_list(input: &[u8]) -> WireResult<Vec<QuestListEntry>> {
 
 /// Domain 16, snapshot type 1 and delta type 1 (the whole domain).
 pub fn encode_quest_log(log: &QuestLog) -> WireResult<Vec<u8>> {
-    validate_quest_log(log)?;
+    encode_quest_log_mode(log, false)
+}
+
+/// Encode domain 16 for a client selecting capability 577.
+pub fn encode_quest_log_missions(log: &QuestLog) -> WireResult<Vec<u8>> {
+    encode_quest_log_mode(log, true)
+}
+
+fn encode_quest_log_mode(log: &QuestLog, missions: bool) -> WireResult<Vec<u8>> {
+    validate_quest_log(log, missions)?;
     let mut output = Vec::new();
     match &log.view {
         Some(QuestLogView::List(entries)) => {
@@ -409,11 +503,18 @@ pub fn encode_quest_log(log: &QuestLog) -> WireResult<Vec<u8>> {
         Some(QuestLogView::Line(line)) => push_message_field(&mut output, 2, &encode_line(line)?),
         None => {}
     }
-    for line in &log.tracked {
-        push_message_field(&mut output, 3, &encode_line(line)?);
+    if !missions {
+        for line in &log.tracked {
+            push_message_field(&mut output, 3, &encode_line(line)?);
+        }
     }
     for mark in &log.map_marks {
         push_message_field(&mut output, 4, &encode_map_mark(mark));
+    }
+    if missions {
+        for line in &log.tracked {
+            push_message_field(&mut output, 5, &encode_line(line)?);
+        }
     }
     Ok(output)
 }
@@ -424,6 +525,7 @@ pub fn decode_quest_log(payload: &[u8]) -> WireResult<QuestLog> {
     }
     let mut cursor = 0;
     let mut log = QuestLog::default();
+    let mut tracker_tag = None;
     while cursor < payload.len() {
         match read_varint(payload, &mut cursor)? {
             0x0a => set_once(
@@ -434,8 +536,19 @@ pub fn decode_quest_log(payload: &[u8]) -> WireResult<QuestLog> {
                 &mut log.view,
                 QuestLogView::Line(decode_line(read_bytes(payload, &mut cursor)?)?),
             )?,
-            0x1a => {
-                if log.tracked.len() == MAX_TRACKED_QUESTS {
+            tag @ (0x1a | 0x2a) => {
+                if tracker_tag
+                    .replace(tag)
+                    .is_some_and(|previous| previous != tag)
+                {
+                    return malformed();
+                }
+                let limit = if tag == 0x2a {
+                    MAX_TRACKED_MISSIONS
+                } else {
+                    MAX_TRACKED_QUESTS
+                };
+                if log.tracked.len() == limit {
                     return Err(QuestLogWireError::LimitExceeded);
                 }
                 log.tracked
@@ -451,7 +564,7 @@ pub fn decode_quest_log(payload: &[u8]) -> WireResult<QuestLog> {
             _ => return malformed(),
         }
     }
-    validate_quest_log(&log)?;
+    validate_quest_log(&log, tracker_tag == Some(0x2a))?;
     Ok(log)
 }
 

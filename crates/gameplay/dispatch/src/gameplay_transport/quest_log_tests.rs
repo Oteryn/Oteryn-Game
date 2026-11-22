@@ -275,17 +275,21 @@ fn the_session_copy_is_read_as_the_projection_facts() {
 fn the_snapshot_has_no_view_and_the_carried_tracked_quests() {
     let mut continuity = QuestLogContinuity::FRESH;
     // No copy: an empty domain at revision 1.
-    let (state, domain) =
-        QuestLogState::snapshot(&mut continuity, QuestLogObservation::Unavailable, false)
-            .expect("snapshot");
+    let (state, domain) = QuestLogState::snapshot(
+        &mut continuity,
+        QuestLogObservation::Unavailable,
+        false,
+        false,
+    )
+    .expect("snapshot");
     assert_eq!(domain.to, 1);
     assert!(domain.payload.is_empty());
     assert_eq!(state.version(), None);
     // A later connection with a tracked quest: above every revision, with that quest's line.
     continuity.tracked = TrackedQuests::new(&[RATS_INDEX]).expect("tracked");
     let facts = Facts::with(&[(RATS_START, 1), (RATS_STAGE, 1)]);
-    let (state, domain) =
-        QuestLogState::snapshot(&mut continuity, changed(facts, 5), false).expect("snapshot");
+    let (state, domain) = QuestLogState::snapshot(&mut continuity, changed(facts, 5), false, false)
+        .expect("snapshot");
     assert_eq!(domain.to, 2);
     assert_eq!(continuity.revision, 2);
     assert_eq!(state.version(), Some(5));
@@ -302,9 +306,13 @@ fn the_snapshot_has_no_view_and_the_carried_tracked_quests() {
 #[test]
 fn list_and_quest_queries_send_the_whole_domain() {
     let mut continuity = QuestLogContinuity::FRESH;
-    let (mut state, _) =
-        QuestLogState::snapshot(&mut continuity, QuestLogObservation::Unavailable, false)
-            .expect("snapshot");
+    let (mut state, _) = QuestLogState::snapshot(
+        &mut continuity,
+        QuestLogObservation::Unavailable,
+        false,
+        false,
+    )
+    .expect("snapshot");
     let facts = Facts::with(&[(RATS_START, 1), (RATS_STAGE, 2)]);
     let listed = state
         .query(
@@ -360,9 +368,13 @@ fn list_and_quest_queries_send_the_whole_domain() {
 #[test]
 fn track_replaces_the_set_and_refuses_unlisted_or_eleven_quests() {
     let mut continuity = QuestLogContinuity::FRESH;
-    let (mut state, _) =
-        QuestLogState::snapshot(&mut continuity, QuestLogObservation::Unavailable, false)
-            .expect("snapshot");
+    let (mut state, _) = QuestLogState::snapshot(
+        &mut continuity,
+        QuestLogObservation::Unavailable,
+        false,
+        false,
+    )
+    .expect("snapshot");
     let facts = Facts::with(&[(RATS_START, 1), (TOMB_START, 2)]);
     let track = |indexes: &[u32]| QuestLogQuery::Track {
         quest_indexes: indexes.to_vec(),
@@ -417,7 +429,8 @@ fn a_changed_copy_sends_a_delta_only_when_the_domain_changes() {
     continuity.tracked = TrackedQuests::new(&[RATS_INDEX]).expect("tracked");
     let at = |stage| Facts::with(&[(RATS_START, 1), (RATS_STAGE, stage)]);
     let (mut state, snapshot) =
-        QuestLogState::snapshot(&mut continuity, changed(at(1), 1), false).expect("snapshot");
+        QuestLogState::snapshot(&mut continuity, changed(at(1), 1), false, false)
+            .expect("snapshot");
     // Unchanged or unavailable: nothing.
     for observation in [
         QuestLogObservation::Unchanged,
@@ -495,6 +508,10 @@ mod connection {
             id: 451,
             requires: &[],
         },
+        OfferedCapability {
+            id: 577,
+            requires: &[16],
+        },
     ];
 
     /// The Channel owner as the quest log sees it: one copy at version 1, the copy a receipt
@@ -505,6 +522,8 @@ mod connection {
         receipt: RefCell<Option<Facts>>,
         reads: RefCell<Vec<Option<u64>>>,
         map_marks: Vec<oteryn_protocol_oteryn::quest_log::QuestMapMark>,
+        content: QuestLogLines,
+        premium: bool,
     }
 
     impl QuestAuthority {
@@ -515,6 +534,8 @@ mod connection {
                 receipt: RefCell::new(None),
                 reads: RefCell::new(Vec::new()),
                 map_marks: Vec::new(),
+                content: content(),
+                premium: false,
             }
         }
     }
@@ -546,6 +567,10 @@ mod connection {
             StepOutcome::rejected()
         }
 
+        async fn quest_tracker_is_premium(&self, _session: GameSessionId) -> bool {
+            self.premium
+        }
+
         async fn observe_quest_log(
             &self,
             _actor: ExactActorRef,
@@ -560,6 +585,7 @@ mod connection {
                 Some(facts) => {
                     let mut source = source(facts, version);
                     source.map_marks.clone_from(&self.map_marks);
+                    source.content = self.content.clone();
                     QuestLogObservation::Changed(source)
                 }
             };
@@ -706,6 +732,98 @@ mod connection {
             }])),
             tracked: Vec::new(),
         }
+    }
+
+    #[test]
+    fn mission_tracker_dispatch_confirms_visible_pairs_and_preserves_them_on_reconnect()
+    -> TestResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                run(async {
+                    let authority = QuestAuthority::new(Some(listed()));
+                    let command = |id, mission| {
+                        encode_client_command(
+                            1,
+                            &ClientCommandValue {
+                                command_id: id,
+                                command_type: 6318,
+                                payload: &[10, 4, 8, 0, 16, mission],
+                            },
+                        )
+                    };
+                    let (end, frames) = serve(
+                        &authority,
+                        session(selected(&[16, 577]))?,
+                        &[command(1, 0)?, command(2, 1)?],
+                    )
+                    .await?;
+                    let expected = QuestLog {
+                        tracked: vec![rats_line("Hunt the rats.", false)],
+                        ..QuestLog::default()
+                    };
+                    let mut payload =
+                        oteryn_protocol_oteryn::quest_log::encode_quest_log(&expected)
+                            .map_err(|error| format!("{error:?}"))?;
+                    payload[0] = 0x2a;
+                    assert!(frames.contains(&result(1, 1, CommandStatus::Accepted)));
+                    assert!(frames.contains(&encode_state_delta(1, 2, 16, 1, 2, 1, &payload)?));
+                    assert!(frames.contains(&result(3, 2, CommandStatus::Rejected)));
+
+                    let (_, rejoined) = serve(&authority, session(ended(end)?)?, &[]).await?;
+                    assert!(
+                        rejoined
+                            .iter()
+                            .any(|frame| frame.windows(payload.len()).any(|part| part == payload))
+                    );
+                    let (_, legacy) =
+                        serve(&authority, session(selected(&[16]))?, &[command(1, 0)?]).await?;
+                    assert!(legacy.contains(&result(1, 1, CommandStatus::Rejected)));
+                    let mut authority = QuestAuthority::new(Some(listed()));
+                    let missions = (0..26)
+                        .map(|index| {
+                            mission(&format!("Rats {index}"), RATS_STAGE, 1, 2, "Hunt the rats.")
+                        })
+                        .collect();
+                    let catalogue = QuestLogCatalogue::new(
+                        &state_catalogue(),
+                        vec![quest(RATS, RATS_START, missions)],
+                    )
+                    .map_err(|error| format!("{error:?}"))?;
+                    authority.content = QuestLogLines::new(QuestLogContent::new(catalogue, vec![]))
+                        .ok_or("mission lines")?;
+                    let track = |id, count| {
+                        let payload = (0..count)
+                            .flat_map(|index| [10, 4, 8, 0, 16, index])
+                            .collect::<Vec<_>>();
+                        encode_client_command(
+                            1,
+                            &ClientCommandValue {
+                                command_id: id,
+                                command_type: 6318,
+                                payload: &payload,
+                            },
+                        )
+                    };
+                    for (premium, limit) in [(false, 10), (true, 25)] {
+                        authority.premium = premium;
+                        let (end, frames) = serve(
+                            &authority,
+                            session(selected(&[16, 577]))?,
+                            &[track(1, limit + 1)?, track(2, limit)?],
+                        )
+                        .await?;
+                        assert!(frames.contains(&result(1, 1, CommandStatus::Rejected)));
+                        assert!(frames.contains(&result(2, 2, CommandStatus::Accepted)));
+                        assert_eq!(ended(end)?.quest_log.missions.len, usize::from(limit));
+                    }
+                    Ok(())
+                })
+                .map_err(|error| error.to_string())
+            })?
+            .join()
+            .map_err(|_| "mission tracker test panicked")??;
+        Ok(())
     }
 
     #[test]
@@ -1010,8 +1128,9 @@ mod connection {
 fn tracker_list_only_does_not_change_the_visible_line_or_continuity() {
     let facts = Facts::with(&[(RATS_START, 1), (RATS_STAGE, 1)]);
     let mut continuity = QuestLogContinuity::FRESH;
-    let (mut state, _) = QuestLogState::snapshot(&mut continuity, changed(facts.clone(), 1), false)
-        .expect("snapshot");
+    let (mut state, _) =
+        QuestLogState::snapshot(&mut continuity, changed(facts.clone(), 1), false, false)
+            .expect("snapshot");
     state
         .query(
             &mut continuity,
@@ -1060,7 +1179,7 @@ fn personal_markers_require_negotiation_on_every_quest_log_projection() {
         let mut continuity = QuestLogContinuity::FRESH;
         let observation = || QuestLogObservation::Changed(source.clone());
         let (mut state, snapshot) =
-            QuestLogState::snapshot(&mut continuity, observation(), include_map_marks)
+            QuestLogState::snapshot(&mut continuity, observation(), include_map_marks, false)
                 .expect("snapshot");
         let expected = if include_map_marks {
             source.map_marks.clone()
