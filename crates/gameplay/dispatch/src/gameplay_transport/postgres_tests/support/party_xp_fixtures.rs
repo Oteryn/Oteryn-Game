@@ -72,6 +72,7 @@ pub(super) enum Case {
     CharmParry,
     T94,
     CharmSecondary,
+    CorpseFree,
 }
 
 impl Case {
@@ -109,10 +110,13 @@ impl Case {
 }
 
 pub(super) fn run(case: Case) -> TestResult {
-    // Without the PostgreSQL route the case skips, as the other dispatch PostgreSQL tests do.
-    if fixture::configured_admin().is_none() {
+    let Some(admin) = fixture::configured_admin() else {
         return Ok(());
-    }
+    };
+    run_with_admin(case, admin)
+}
+
+pub(super) fn run_with_admin(case: Case, admin: String) -> TestResult {
     std::thread::Builder::new()
         .name("party-xp-pg".into())
         .stack_size(64 << 20)
@@ -120,14 +124,17 @@ pub(super) fn run(case: Case) -> TestResult {
             fixture::runtime()
                 .map_err(|e| e.to_string())?
                 .block_on(async move {
-                    let admin = fixture::configured_admin()
-                        .ok_or("canonical PostgreSQL admin URL required")?;
                     // One tag per case: the tag names the database and the retained
                     // recovery directory, which concurrent cases must not share.
                     let tag = format!("party_xp_{}", case as u8);
                     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
                     let (controller, pin) = if matches!(case, Case::Eqmod2 | Case::CharmSecondary) {
                         super::equipment_mods_fixtures::activate(world)?
+                    } else if matches!(case, Case::CorpseFree) {
+                        crate::content::native_gameplay::test_support::activated_corpse_free_rat_fixture(
+                            world,
+                            include_bytes!("../../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"),
+                        )
                     } else {
                         crate::content::native_gameplay::test_support::activated_with_loot_tables(
                             world,
@@ -168,7 +175,8 @@ async fn scenario(
         | Case::TaskBoardParty
         | Case::TaskBoardUnbound
         | Case::TaskBoardPrechange
-        | Case::TaskBoardOrdered => Case::OneHit,
+        | Case::TaskBoardOrdered
+        | Case::CorpseFree => Case::OneHit,
         Case::TaskBoardForeign => Case::Foreign,
         Case::TaskBoardTalisman
         | Case::CharmIncoming
@@ -511,6 +519,7 @@ async fn scenario(
             | Case::TaskBoardUnbound
             | Case::TaskBoardPrechange
             | Case::TaskBoardOrdered
+            | Case::CorpseFree
     ) {
         task_board::install_boards(&mut owner, h, &players, &pin).await?;
     }
@@ -1098,6 +1107,13 @@ async fn scenario(
         }) {
             break;
         }
+        if matches!(task_board_case, Case::CorpseFree) {
+            let runtime = owner.runtime.lock().await;
+            let killed = runtime
+                .companion_snapshot_including_dead(creature.actor)
+                .is_ok_and(|snapshot| snapshot.health == 0);
+            assert!(!killed, "a real lethal swing on a corpse-free creature must queue settlement");
+        }
         assert!(pass + 1 < REAL_SWING_PASSES, "real swings killed the rat");
         owner.clock_origin = owner
             .clock_origin
@@ -1248,12 +1264,20 @@ async fn scenario(
         tx.rollback().await?;
         h.root.maintain_ready_once().await?;
     }
+    if matches!(task_board_case, Case::CorpseFree) {
+        let attack = owner.states.attack.lock().await;
+        let now_ms = crate::gameplay_transport::npc_trade_command::unix_ms_now();
+        let batch = attack.kills().statistics().batch(now_ms, true).ok_or("kill statistics batch")?;
+        assert_eq!(batch.events.len(), 1, "one physical kill without a corpse");
+        assert_eq!(serde_json::to_value(&batch.events[0])?["creature_key"], "oteryn:creature.rat");
+    }
     let task_board_entry = if matches!(
         task_board_case,
         Case::TaskBoardParty
             | Case::TaskBoardForeign
             | Case::TaskBoardUnbound
             | Case::TaskBoardPrechange
+            | Case::CorpseFree
     ) {
         Some(task_board::capture_pending(&owner, &players).await?)
     } else {
@@ -1425,10 +1449,24 @@ async fn scenario(
             entry,
             matches!(
                 task_board_case,
-                Case::TaskBoardParty | Case::TaskBoardUnbound
+                Case::TaskBoardParty | Case::TaskBoardUnbound | Case::CorpseFree
             ),
         )
         .await?;
+    }
+    if matches!(task_board_case, Case::CorpseFree) {
+        let (base, shared): (i64, bool) = sqlx::query_as(
+            "SELECT base_xp, shared FROM game_party_kill_xp_receipts WHERE creature_key='oteryn:creature.rat'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!((base, shared), (5, true));
+        let (bestiary, mints): (i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_character_bestiary_kill_receipts WHERE race_key='oteryn:creature.rat'), (SELECT count(*) FROM game_item_mint_receipts)",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!((bestiary, mints), (1, 0), "Bestiary credit with zero corpse or loot MINTs");
     }
     if matches!(task_board_case, Case::TaskBoardUnbound) {
         let counts: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_character_xp_receipts),(SELECT count(*) FROM game_character_bestiary_kill_receipts)")
