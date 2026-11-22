@@ -359,5 +359,5 @@ async fn send(
     command: u64,
     payload: Vec<u8>,
 ) -> TestResult<UseDisposition> {
-    Ok(decode_use_result(&wire(owner, admitted, command, 2, payload).await?).map_err(debug)?)
+    decode_use_result(&wire(owner, admitted, command, 2, payload).await?).map_err(debug)
 }

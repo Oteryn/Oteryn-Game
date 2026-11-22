@@ -23,7 +23,17 @@ BEGIN
    ||int4send((d->'house_context'->'actor_position'->>1)::integer)
    ||int4send((d->'house_context'->'actor_position'->>2)::integer);
  PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:house-items:'||r.world_id::text||':'||house,0));
- IF game_house_access_tile(r.world_id,house,pos) IS DISTINCT FROM true OR NOT EXISTS(
+ -- The native House owner admits the actor on its door. That cell can be
+ -- absent from the interior tile catalogue, so prove the exact entry as well.
+ IF (game_house_access_tile(r.world_id,house,pos) IS DISTINCT FROM true
+     AND (EXISTS(SELECT 1 FROM game_house_tiles t WHERE t.world_id=r.world_id AND t.spatial_position=pos)
+          OR NOT EXISTS(
+            SELECT 1 FROM game_house_transfer_receipts t
+            WHERE t.destination_game_session_id=r.game_session_id AND t.character_id=r.character_id
+              AND t.world_id=r.world_id AND t.house_key=house AND t.direction=1 AND t.state=2
+              AND t.destination_scope_generation=(r.audit_context->>'scope_generation')::numeric
+              AND int4send(t.tile_x)||int4send(t.tile_y)||int4send(t.tile_floor::integer)=pos)))
+    OR NOT EXISTS(
   SELECT 1 FROM game_house_access(r.world_id,house,r.character_id) a
   WHERE a.role IN ('OWNER','SUBOWNER','GUEST') AND a.content_fenced IS FALSE)
  THEN RETURN NULL; END IF;
@@ -200,6 +210,17 @@ BEGIN
     AND r.created_xact_id=pg_current_xact_id() AND game_item_dispenser_house_overflow_matches(r,NEW))
   THEN RETURN NULL; END IF;
  $arm$ from entry for 5);
+
+ -- An overflow admitted on the exact entry tile remains recoverable through
+ -- the ordinary House TAKE/MOVE source check, even after the placer leaves.
+ body:=pg_get_functiondef('game_house_item_apply(smallint,jsonb,uuid,numeric,bytea)'::regprocedure);
+ anchor:='game_house_access_tile(v.world_id,v.house_key,h.spatial_position) IS DISTINCT FROM true';
+ IF position(anchor IN body)=0 THEN RAISE EXCEPTION 'missing dispenser overflow House source boundary'; END IF;
+ EXECUTE replace(body,anchor,anchor||$arm$
+   AND (EXISTS(SELECT 1 FROM game_house_tiles t WHERE t.world_id=h.world_id AND t.spatial_position=h.spatial_position)
+        OR NOT EXISTS(SELECT 1 FROM game_item_consume_transform_records fill
+          WHERE fill.transaction_id=h.placed_transaction_id AND game_item_dispenser_house_overflow_matches(fill,h)))
+ $arm$);
 
  FOREACH signature IN ARRAY ARRAY[
   'game_item_dispenser_ground_matches(game_item_consume_transform_records,game_item_ground_locations)',

@@ -97,6 +97,22 @@ fn the_boot_catalogue_is_the_served_content_revision() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn the_boot_catalogue_admits_world_contribution_callbacks() -> TestResult {
+    let (catalogue, _) = boot_catalogue()?;
+    let pumps = oteryn_gameplay_quests::quest::world_callbacks::load_for(&catalogue)?;
+    for direction in ["north", "middle", "south"] {
+        let key = format!("oteryn:quest-callback/authored-awash-pump-{direction}");
+        assert!(catalogue.transition(&key).is_some(), "{key}");
+        assert!(pumps.iter().any(|callback| callback.key == key), "{key}");
+    }
+    let donation = "oteryn:quest-reward/authored/steamship/donation";
+    let rewards = oteryn_gameplay_quests::quest::reward_callbacks::offered_for(&catalogue)?;
+    assert!(catalogue.transition(donation).is_some(), "{donation}");
+    assert!(rewards.iter().any(|callback| callback.key == donation));
+    Ok(())
+}
+
 /// TASKBOARD-1: boot serves the code-built weekly Task Board quest beside the lowered quests.
 #[test]
 fn the_boot_catalogue_carries_the_task_board_quest() -> TestResult {

@@ -589,6 +589,14 @@ async fn house_cask(owner:&ComposedFreshAdmission<'_, '_, '_>,h:&Harness,mut adm
         use_with_map_item:Some(MapUseTarget::Item(std::num::NonZeroU64::new(2).ok_or("cask handle")?)),use_with_position:None};
     let command=|id|crate::gameplay_transport::connection::UseCommand{game_session_id:admitted.game_session_id,command_id:id,item_fence:admitted.item_fence};
     let actor=admitted.runtime_actor.ok_or("House actor")?;
+    let feet = {
+        let runtime = owner.runtime.lock().await;
+        let position = runtime.house_actor_state(actor, admitted.game_session_id).map_err(debug)?.position;
+        [position.x, position.y, i32::from(position.floor)].map(i32::to_be_bytes).concat()
+    };
+    assert_ne!(feet, position, "the dispenser is beside the actor");
+    assert!(!sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM game_house_tiles WHERE world_id=encode($1,'hex')::uuid AND spatial_position=$2)")
+        .bind(id(42).as_slice()).bind(&feet).fetch_one(&h.pool).await?);
     let first=owner.use_dispenser_action(actor,command(6),intent.clone(),Some(ItemKey::Instance(id(71))),Some(ItemKey::Instance(id(80)))).await.map_err(|_|"House first use unknown")?.ok_or("House dispenser production route")?;
     assert_eq!(first.disposition,UseDisposition::Committed);
     assert_eq!(sqlx::query_scalar::<_,i32>("SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(80).as_slice()).fetch_one(&h.pool).await?,1);
@@ -619,7 +627,7 @@ async fn house_cask(owner:&ComposedFreshAdmission<'_, '_, '_>,h:&Harness,mut adm
         JOIN game_item_house_reclaim_provenance p USING(item_instance_id)
         WHERE i.definition_production_key='oteryn:item.tibia.i236' AND i.lifecycle=1")
         .fetch_one(&h.pool).await?;
-    assert_eq!(placement, (1, HOUSE.into(), position, id(41).to_vec()));
+    assert_eq!(placement, (1, HOUSE.into(), feet.clone(), id(41).to_vec()));
     let item:(i64,i16)=sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(80).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(item,(0,2));
     assert_eq!(sqlx::query_scalar::<_,i64>("SELECT (SELECT count(*) FROM game_item_house_interior_locations WHERE item_instance_id=encode($1,'hex')::uuid)+(SELECT count(*) FROM game_item_house_reclaim_provenance WHERE item_instance_id=encode($1,'hex')::uuid)").bind(id(80).as_slice()).fetch_one(&h.pool).await?,0);
@@ -630,6 +638,59 @@ async fn house_cask(owner:&ComposedFreshAdmission<'_, '_, '_>,h:&Harness,mut adm
         assert_eq!(replay.disposition,UseDisposition::Committed);
     }
     assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_consume_transform_records WHERE recipe='oteryn:dispenser.fill'").fetch_one(&h.pool).await?,2);
+    move_house_overflow(owner, h, admitted, feet, position).await?;
+    Ok(())
+}
+
+async fn move_house_overflow(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: AdmittedSession,
+    feet: Vec<u8>,
+    destination: Vec<u8>,
+) -> TestResult {
+    use crate::durability::house_interior::{HouseItemAction, HouseItemOutcome, HouseItemRequest};
+    let fence = admitted.item_fence.ok_or("House inventory fence")?;
+    let (item, placement): (Vec<u8>, Vec<u8>) = sqlx::query_as(
+        "SELECT uuid_send(i.item_instance_id),uuid_send(h.placed_transaction_id)
+         FROM game_item_instances i JOIN game_item_house_interior_locations h USING(item_instance_id)
+         WHERE i.definition_production_key='oteryn:item.tibia.i236' AND h.spatial_position=$1",
+    )
+    .bind(feet)
+    .fetch_one(&h.pool)
+    .await?;
+    let item = <[u8; 16]>::try_from(item.as_slice())?;
+    let request = HouseItemRequest {
+        command: crate::foundation::CommandRef::new(
+            fence.game_session_id,
+            crate::foundation::CommandId::new(902).map_err(debug)?,
+        ),
+        house: HouseId::new(admitted.world_id, HOUSE).ok_or("House")?,
+        item_instance_id: item,
+        action: HouseItemAction::TileMove {
+            placement: placement.as_slice().try_into()?,
+            provenance_revision: 1,
+            position: destination.clone(),
+        },
+        expected_acl_revision: 1,
+        expected_guild_revisions: None,
+        backpack: None,
+        content_revision: "content-1".into(),
+        ruleset_revision: "ruleset-1".into(),
+        sim_revision: "sim-1".into(),
+    };
+    let frozen = owner.root.freeze_house_item(owner.character, owner.holder, fence, request).await.map_err(debug)?;
+    assert!(matches!(
+        owner.root.commit_house_item(owner.character, owner.holder, fence, &frozen).await.map_err(debug)?,
+        HouseItemOutcome::Committed(_)
+    ));
+    let stored: Vec<u8> = sqlx::query_scalar(
+        "SELECT spatial_position FROM game_item_house_interior_locations WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(item.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(stored, destination);
     Ok(())
 }
 

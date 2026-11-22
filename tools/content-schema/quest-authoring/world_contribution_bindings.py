@@ -7,7 +7,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 BINDINGS_PATH = "content/quests/authored-bindings/world-contributions.json"
 OFFERS_PATH = "content/quests/npc-offers/world-contributions.json"
-CRYSTAL = "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/"
+CRYSTAL_REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
+CRYSTAL = f"https://github.com/zimbadev/crystalserver/blob/{CRYSTAL_REVISION}/"
 ITEMS = CRYSTAL + "data/items/items.xml"
 AWASH_SOURCE = "https://www.tibiawiki.com.br/wiki/Awash_World_Change"
 STEAMSHIP_SOURCE = "https://tibia.fandom.com/wiki/Steamship_World_Change/Spoiler"
@@ -42,7 +43,8 @@ def build(root):
         return {"quest": key, "recipe_sha256": hashlib.sha256(recipe.encode()).hexdigest(),
                 "tracks": [], "stages": stages, "sources": sources}
 
-    awash_sources = [CRYSTAL + "data-global/world/world.otbm", ITEMS, AWASH_SOURCE]
+    awash_sources = [f"crystal:{CRYSTAL_REVISION}:data-global/world/world.otbm",
+                     CRYSTAL + "data-global/world/world.otbm", ITEMS, AWASH_SOURCE]
     pumps = []
     for direction, x, y, appearance in PUMPS:
         key = f"awash-pump-{direction}"

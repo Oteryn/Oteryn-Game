@@ -4,6 +4,7 @@
       "quest": "oteryn:quest.awash_world_change",
       "recipe_sha256": "bac9203516500a025fdab711c9bf0c28bbc36a690eed5acae3af867bb467789f",
       "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm",
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
         "https://www.tibiawiki.com.br/wiki/Awash_World_Change"
@@ -38,6 +39,7 @@
                 }
               },
               "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
                 "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm",
                 "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
                 "https://www.tibiawiki.com.br/wiki/Awash_World_Change"
@@ -77,6 +79,7 @@
                 }
               },
               "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
                 "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm",
                 "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
                 "https://www.tibiawiki.com.br/wiki/Awash_World_Change"
@@ -116,6 +119,7 @@
                 }
               },
               "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
                 "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm",
                 "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
                 "https://www.tibiawiki.com.br/wiki/Awash_World_Change"

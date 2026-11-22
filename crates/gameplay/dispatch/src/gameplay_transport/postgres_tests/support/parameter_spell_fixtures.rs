@@ -57,6 +57,12 @@ pub(super) fn scenario_in_world(case: u8, world_type: Option<i16>) -> TestResult
 }
 
 async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> TestResult {
+    // Exiva's explicit World variants have their own case numbers. Those
+    // overlap the Find Fiend and equipment spell cases in the default World.
+    let exiva_world = world_type.is_some();
+    let find_fiend = !exiva_world && matches!(case, 7 | 8);
+    let equipment_spell = !exiva_world && matches!(case, 9..=13);
+    let needs_target_player = exiva_world || matches!(case, 0 | 2 | 3 | 4);
     let h = Harness::create_with_admission_seed(
         admin,
         &format!("parameter_spell_{case}"),
@@ -69,7 +75,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     );
     prepare_current_session(&h).await?;
     h.seed_pvp_target().await?;
-    if !matches!(case, 1 | 5..=13) {
+    if needs_target_player {
         observer::admit(&h).await?;
     }
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -107,9 +113,9 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         cp,
         room.clone(),
         native.spell_book().clone(),
-        match case {
-            5..=7 => 4,
-            9..=13 => 5,
+        match (exiva_world, case) {
+            (false, 5..=7) => 4,
+            (false, 9..=13) => 5,
             _ => 2,
         },
     )?;
@@ -118,7 +124,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         SpellPremiumCoordinator, purchase_fixture,
     };
     let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
-    if case >= 9 {
+    if equipment_spell {
         h.root
             .latch_premium_activation(
                 &activation.activation_id,
@@ -136,7 +142,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     );
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
-    if case >= 7 {
+    if find_fiend || equipment_spell {
         owner
             .states
             .test_owner_time
@@ -145,17 +151,17 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     let mut admitted = deps.admitted;
     let actor = deps.actor;
     let session = admitted.game_session_id;
-    if case >= 9 {
+    if equipment_spell {
         owner.premium_coordinator = Some(&premium);
         owner.admit_premium(id(40), session);
     }
     owner.admit_progression_session(&mut admitted).await;
     let progression = owner.progression_binding(session).ok_or("progression")?;
     let formula = native.training_formula().ok_or("training")?;
-    let vocation = match case {
-        9 | 12 => "monk",
-        10 | 11 => "knight",
-        13 => "paladin",
+    let vocation = match (equipment_spell, case) {
+        (true, 9 | 12) => "monk",
+        (true, 10 | 11) => "knight",
+        (true, 13) => "paladin",
         _ => "druid",
     };
     let druid =
@@ -183,10 +189,10 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             current_fence(&owner, session).await?,
             ExperienceAwardRequest {
                 occurrence: ExperienceRewardOccurrence::from_bytes(id(91)).map_err(debug)?,
-                amount: oteryn_simulation_determinism::ExactI64::new(match case {
-                    13 => 30_000_000_000,
-                    9..=12 => 6_000_000,
-                    7 | 8 => 204_800,
+                amount: oteryn_simulation_determinism::ExactI64::new(match (exiva_world, case) {
+                    (false, 13) => 30_000_000_000,
+                    (false, 9..=12) => 6_000_000,
+                    (false, 7 | 8) => 204_800,
                     _ => 98_800,
                 }),
                 context: progression.context.clone(),
@@ -197,7 +203,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         )
         .await
         .map_err(debug)?;
-    if case == 13 {
+    if equipment_spell && case == 13 {
         let data =
             oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded().map_err(debug)?;
         let rules = std::sync::Arc::new(
@@ -261,7 +267,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             crate::durability::character_wheel::WheelCommitOutcome::Committed(_)
         ));
     }
-    let cast_facts = if case >= 7 {
+    let cast_facts = if find_fiend || equipment_spell {
         use crate::gameplay_transport::spell_character_facts::{
             CastFactsLoad, load_character_cast_facts,
         };
@@ -332,7 +338,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                 .actor;
             augment_target = Some((target, position));
         }
-        if case == 7 {
+        if find_fiend && case == 7 {
             let p = runtime
                 .read_actor_position(actor)
                 .map_err(debug)?
@@ -373,7 +379,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                         level: 20,
                         ..crate::gameplay_transport::actor_spell::tests::FACTS
                     }),
-                    (if case == 12 { 3 } else { 0 }, 0),
+                    (if equipment_spell && case == 12 { 3 } else { 0 }, 0),
                     owner.owner_now()
                 )
                 .is_some()
@@ -386,7 +392,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .map_err(debug)?;
     }
     let target_session = GameSessionId::decode(&id(110)).map_err(debug)?;
-    let target_actor = if !matches!(case, 1 | 5..=13) {
+    let target_actor = if needs_target_player {
         Some(observer::initialize(&deps, &owner).await?)
     } else {
         None
@@ -410,7 +416,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
     for current_session in [
         Some(session),
-        (!matches!(case, 1 | 5..=13)).then_some(target_session),
+        needs_target_player.then_some(target_session),
     ]
     .into_iter()
     .flatten()
@@ -424,7 +430,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .await
             .map_err(debug)?;
     }
-    if case >= 9 {
+    if equipment_spell {
         return super::knight_spell_fixtures::cast_case(&h, &owner, actor, session, case).await;
     }
     if case == 0 || case == 3 {
@@ -454,7 +460,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
-    if case >= 7 {
+    if exiva_world {
         return exiva_settings::exercise(
             &h,
             &owner,
@@ -471,7 +477,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         .ok_or("before vitals")?
         .1
         .mana;
-    let words = if case >= 7 {
+    let words = if find_fiend {
         "exiva moe res"
     } else if matches!(case, 5 | 6) {
         "exori vis"
@@ -609,7 +615,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         assert!(feedback.iter().any(|line| matches!(line, chat::ChatLine::Private { speaker_name, text } if speaker_name == "Game" && text == expected)), "{feedback:?}");
         assert!(owner.states.chat.drain(target_session).is_empty());
     }
-    if case >= 7 {
+    if find_fiend {
         return Ok(());
     }
     if case == 4 {
