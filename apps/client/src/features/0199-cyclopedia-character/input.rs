@@ -25,6 +25,9 @@ impl PlayLink {
         let Some(command) = command else {
             return false;
         };
+        if panel.items.pending_offset.is_some() {
+            mailbox.store_inbox_refresh_pending = false;
+        }
         if self.commands.send(PlayCommand::Feature(command)).is_err() {
             mailbox.cyclopedia_character.pending = false;
             mailbox.cyclopedia_character.feedback = Some(tr!("The session has ended"));
@@ -50,7 +53,8 @@ impl PlayLink {
         let panel = &mut mailbox.cyclopedia_character;
         panel.items.open = open;
         if !open {
-            mailbox.store_inbox_refresh_pending = false;
+            // Keep rejecting the superseded holdings reply until it has arrived.
+            mailbox.store_inbox_refresh_pending &= panel.items.pending_offset.is_some();
             return;
         }
         panel.items.page = None;
@@ -68,8 +72,11 @@ impl PlayLink {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mailbox.cyclopedia_character;
         if mailbox.store_inbox_refresh_pending && !panel.pending && !panel.blessings.pending {
+            let open = panel.items.open;
             mailbox.store_inbox_refresh_pending = false;
-            self.cyclopedia_character_request_locked(&mut mailbox, Intent::Items);
+            if open {
+                self.cyclopedia_character_request_locked(&mut mailbox, Intent::Items);
+            }
         }
     }
 }
@@ -88,6 +95,7 @@ impl PlayLink {
         ) else {
             return false;
         };
+        mailbox.store_inbox_refresh_pending = false;
         if self.commands.send(PlayCommand::Feature(command)).is_err() {
             mailbox.cyclopedia_character.pending = false;
             mailbox.cyclopedia_character.feedback = Some(tr!("The session has ended"));
