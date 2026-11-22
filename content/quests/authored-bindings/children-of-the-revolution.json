@@ -1,0 +1,1119 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "recipe_sha256": "89fb4e8b049184a2a9e7b961a53eb6bbe4e64ce4d1c88655c958f8ed1793d482",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission00",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission01",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission02",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission03",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 6
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05",
+          "initial": -1,
+          "minimum": -1,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 21
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/strange_symbols",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building01",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building02",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building03",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "trial",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/children/trial-accept",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "npc": "oteryn:npc.zalamon",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 2,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission00",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Search the outpost for the tactical map."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:257-261"
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+                  "minimum": 2,
+                  "maximum": 2
+                }
+              ],
+              "requires_premium": true
+            }
+          }
+        },
+        {
+          "key": "tactical-map",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/children/tactical-map",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33281,
+                  "y": 31219,
+                  "floor": -7
+                },
+                "unique": 3162,
+                "action": null,
+                "appearance": 10194
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4359-4363"
+              ],
+              "item_reward": {
+                "item": "oteryn:item.tibia.i637",
+                "count": 1,
+                "contents": []
+              },
+              "success_message": "You find a tactical map.",
+              "requires_world_admission": true
+            }
+          }
+        },
+        {
+          "key": "map-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/children/trial-report",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "npc": "oteryn:npc.zalamon",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 4,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission00",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i637",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "These plans will help us track the enemy troops."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:265-275"
+              ]
+            }
+          }
+        },
+        {
+          "key": "temple-assignment",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/children/temple-accept",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "npc": "oteryn:npc.zalamon",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 5,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission01",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Find out what happened to the Temple of Equilibrium."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:276-281"
+              ]
+            }
+          }
+        },
+        {
+          "key": "temple",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/children/temple",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 33177,
+                  "y": 31193,
+                  "floor": -7
+                },
+                "unique": 3163,
+                "action": null,
+                "appearance": null
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission01",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_temple.lua:3-20"
+              ],
+              "effects": {
+                "player_speech": "The temple has fallen to the corruption. Report to Zalamon.",
+                "transform": null,
+                "facing": null,
+                "magic": null,
+                "portals": null,
+                "item_cycle": null,
+                "encounter": null
+              }
+            }
+          }
+        },
+        {
+          "key": "temple-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/children/temple-report",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "npc": "oteryn:npc.zalamon",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 6
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission01",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The temple has fallen. We need to learn more about the enemy."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:88-98"
+              ]
+            }
+          }
+        },
+        {
+          "key": "imperial-weapon-assignment",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/children/imperial-weapon-accept",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "npc": "oteryn:npc.zalamon",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 6,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 6,
+                  "maximum": 6,
+                  "set": 7
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission02",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Inspect the food store, the weapons store and the barracks."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:282-292"
+              ]
+            }
+          }
+        },
+        {
+          "key": "chaochai-1",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/children/chaochai-1",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": null,
+                "unique": null,
+                "action": 8009,
+                "appearance": 10180
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 7,
+                  "maximum": 7,
+                  "set": 7,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building01",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission02",
+                  "minimum": 1,
+                  "maximum": 3,
+                  "set": 1,
+                  "increment": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_spy.lua:1-44"
+              ],
+              "effects": {
+                "player_speech": "The food store is well stocked with fish.",
+                "transform": null,
+                "facing": null,
+                "magic": null,
+                "portals": null,
+                "item_cycle": null,
+                "encounter": null
+              }
+            }
+          }
+        },
+        {
+          "key": "chaochai-2",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/children/chaochai-2",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": null,
+                "unique": null,
+                "action": 8010,
+                "appearance": 10180
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 7,
+                  "maximum": 7,
+                  "set": 7,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building02",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission02",
+                  "minimum": 1,
+                  "maximum": 3,
+                  "set": 1,
+                  "increment": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_spy.lua:1-44"
+              ],
+              "effects": {
+                "player_speech": "The weapons store is packed with equipment.",
+                "transform": null,
+                "facing": null,
+                "magic": null,
+                "portals": null,
+                "item_cycle": null,
+                "encounter": null
+              }
+            }
+          }
+        },
+        {
+          "key": "chaochai-3",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/children/chaochai-3",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": null,
+                "unique": null,
+                "action": 8011,
+                "appearance": 10180
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 7,
+                  "maximum": 7,
+                  "set": 7,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building03",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission02",
+                  "minimum": 1,
+                  "maximum": 3,
+                  "set": 1,
+                  "increment": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_spy.lua:1-44"
+              ],
+              "effects": {
+                "player_speech": "A large force is stationed in these barracks.",
+                "transform": null,
+                "facing": null,
+                "magic": null,
+                "portals": null,
+                "item_cycle": null,
+                "encounter": null
+              }
+            }
+          }
+        },
+        {
+          "key": "imperial-weapon-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/children/imperial-weapon-report",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "npc": "oteryn:npc.zalamon",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 7,
+                  "maximum": 7,
+                  "set": 8
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission02",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The enemy is too well supplied to fight directly."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:108-120"
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building01",
+                  "minimum": 1,
+                  "maximum": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building02",
+                  "minimum": 1,
+                  "maximum": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building03",
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "killing-fields-assignment",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/children/killing-fields-accept",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "npc": "oteryn:npc.zalamon",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 8,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 8,
+                  "maximum": 8,
+                  "set": 9
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission03",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Use the poison on the water at the upper terrace."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:300-307"
+              ]
+            }
+          }
+        },
+        {
+          "key": "poison-chest",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/children/poison-chest",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33318,
+                  "y": 31410,
+                  "floor": -8
+                },
+                "unique": 3164,
+                "action": null,
+                "appearance": 2472
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 9,
+                  "maximum": 9,
+                  "set": 10
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_mission3_chest.lua:3-16"
+              ],
+              "item_reward": {
+                "item": "oteryn:item.tibia.i10183",
+                "count": 1,
+                "contents": []
+              },
+              "requires_world_admission": true,
+              "success_message": "You find a flask of poison."
+            }
+          }
+        },
+        {
+          "key": "poison-water",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/children/poison-water",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "trigger": "use",
+              "selector": {
+                "position": null,
+                "unique": null,
+                "action": 8012,
+                "appearance": 10133
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 10,
+                  "maximum": 10,
+                  "set": 11
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission03",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_mission3_poison_water.lua:2-17"
+              ],
+              "effects": {
+                "player_speech": "The rice has been poisoned. Report to Zalamon.",
+                "transform": null,
+                "facing": null,
+                "magic": null,
+                "portals": null,
+                "item_cycle": null,
+                "encounter": null
+              },
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i10183",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null
+              }
+            }
+          }
+        },
+        {
+          "key": "killing-fields-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/children/killing-fields-report",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "npc": "oteryn:npc.zalamon",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 11,
+                  "maximum": 11,
+                  "set": 12
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission03",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The sabotage has weakened the emperor’s defenses."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:125-131"
+              ]
+            }
+          }
+        },
+        {
+          "key": "way-of-stones-assignment",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/children/way-of-stones-accept",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "npc": "oteryn:npc.zalamon",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 10,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 12,
+                  "maximum": 12,
+                  "set": 13
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Search the temple east of the village."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:308-317"
+              ]
+            }
+          }
+        },
+        {
+          "key": "strange-symbols",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/children/strange-symbols",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 33357,
+                  "y": 31123,
+                  "floor": -5
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 10180
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 13,
+                  "maximum": 13,
+                  "set": 13,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/strange_symbols",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_symbol.lua:3-20"
+              ],
+              "effects": {
+                "player_speech": "Strange symbols are set into the floor.",
+                "transform": null,
+                "facing": null,
+                "magic": null,
+                "portals": null,
+                "item_cycle": null,
+                "encounter": null
+              }
+            }
+          }
+        },
+        {
+          "key": "way-of-stones-oil",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/children/grease-offer",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "npc": "oteryn:npc.zalamon",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 11,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 13,
+                  "maximum": 13,
+                  "set": 13,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/strange_symbols",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Take the extra greasy oil from the storage room and use it on the levers."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:318-329"
+              ]
+            }
+          }
+        },
+        {
+          "key": "phantom-army-assignment",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/children/phantom-army-accept",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "npc": "oteryn:npc.zalamon",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 13,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                  "minimum": 18,
+                  "maximum": 18,
+                  "set": 19
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05",
+                  "minimum": -1,
+                  "maximum": -1,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Approach the portal and reach the great gate if you can."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:337-348"
+              ]
+            }
+          }
+        },
+        {
+          "key": "phantom-portal",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/children/phantom-portal",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 33356,
+                  "y": 31124,
+                  "floor": -7
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 1959
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33261,
+                "y": 31077,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "read_only": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_teleport.lua:8-32"
+              ]
+            }
+          }
+        },
+        {
+          "key": "phantom-portal-return",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/children/phantom-portal-return",
+              "quest": "oteryn:quest.children_of_the_revolution_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 33261,
+                  "y": 31076,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 775
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33356,
+                "y": 31126,
+                "floor": -7
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "read_only": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_teleport.lua:8-32"
+              ]
+            }
+          }
+        }
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Children_of_the_Revolution_Quest",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:70-161",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_mission4_levers_puzzle.lua:20-64"
+      ]
+    }
+  ]
+}

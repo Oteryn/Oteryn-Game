@@ -2,6 +2,46 @@
   "schema": 1,
   "callbacks": [
     {
+      "key": "oteryn:quest-reward/new-frontier/ztiss-confirm",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "npc": "oteryn:npc.ztiss",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 23,
+          "maximum": 23,
+          "set": 24
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission09_1",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You may leave through the northern teleport. Take the boat to the tournament."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/ztiss.lua#L85-L94"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/chosen/trader/trophy",
       "quest": "oteryn:quest.the_travelling_trader_quest",
       "npc": "oteryn:npc.rashid",
@@ -1261,6 +1301,331 @@
       "reply": [
         "I can make the crimson sword for three iron ores and 250 gold. Agreed?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "reply": [
+        "Will you help the rebellion?"
+      ],
+      "failure_reply": [
+        "Complete mission 8 of The New Frontier before offering your help."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "reply": [
+        "Find the enemy plans in the Muggy Plains outpost. Will you take the assignment?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you find the plans?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you give me the tactical map?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Can you investigate the Temple of Equilibrium?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Can you investigate the supplies, weapons and soldiers in Chaochai?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you help weaken the emperor’s forces?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Take the poison from the storage room. Are you ready to use it on the rice fields?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 10,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 12,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Could you search for another passage to the great gate?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "symbols",
+        "strange symbols"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 13,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/strange_symbols",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you see a pattern the levers could match?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 13,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 18,
+          "maximum": 18,
+          "set": 18,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you go through the portal to the great gate?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ztiss",
+      "keywords": [
+        "guezt"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 23,
+          "maximum": 23,
+          "set": 23,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "My employer has an offer for you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ztiss",
+      "keywords": [
+        "offer"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 23,
+          "maximum": 23,
+          "set": 23,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Agree to work for my employer and you can leave."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ztiss",
+      "keywords": [
+        "work"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 23,
+          "maximum": 23,
+          "set": 23,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "My employer needs a champion in the tournament. Will you enter?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ztiss",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 23,
+          "maximum": 23,
+          "set": 23,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you drink the poison that binds you to the agreement?"
+      ]
     }
   ],
   "greetings": [
@@ -1391,6 +1756,15 @@
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
         "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ztiss",
+      "greet": "Welcome, my guest. Ask why you are a guezt.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/ztiss.lua#L99"
       ]
     }
   ],

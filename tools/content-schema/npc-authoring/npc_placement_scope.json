@@ -145,7 +145,8 @@
     "oteryn:npc.zethra",
     "oteryn:npc.zirella",
     "oteryn:npc.zlak",
-    "oteryn:npc.zoltan"
+    "oteryn:npc.zoltan",
+    "oteryn:npc.ztiss"
   ],
   "position_conflicts": [],
   "placement_cells": {

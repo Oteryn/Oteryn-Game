@@ -1,0 +1,138 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/new-frontier-prison-hidden-note",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33165,
+          "y": 31249,
+          "floor": -11
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 10112
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission07/hidden_note",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_hidden_note.lua:4-15"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i8747",
+        "count": 1,
+        "contents": [],
+        "text": "The secret door is to the north."
+      },
+      "requires_world_admission": true,
+      "success_message": "You find a note under the mat."
+    },
+    {
+      "key": "oteryn:quest-callback/new-frontier-prison-secret-door",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33170,
+          "y": 31248,
+          "floor": -11
+        },
+        "ordinal": 2,
+        "unique": null,
+        "action": null,
+        "appearance": 10111
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33170,
+        "y": 31247,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 0,
+          "maximum": 22,
+          "set": 23
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission07/hidden_note",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_prision_secret_door.lua:4-17"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/new-frontier-prison-secret-door-return",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33170,
+          "y": 31248,
+          "floor": -11
+        },
+        "ordinal": 2,
+        "unique": null,
+        "action": null,
+        "appearance": 10111
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33170,
+        "y": 31247,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 23,
+          "maximum": 27,
+          "set": 23,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission07/hidden_note",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_prision_secret_door.lua:4-17"
+      ]
+    }
+  ]
+}

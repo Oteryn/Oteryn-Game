@@ -27,6 +27,16 @@ SPECS = (
     # Nightmare Isle exit (nightmare_isles.lua uid 35020).
     ("item.lua", "ItemAction", 9715, "action"),
     ("teleport.lua", "TeleportUnique", 35020, "unique"),
+    # Children of the Revolution: the trial shelf, temple, poison chest,
+    # Chaochai reconnaissance tiles, rice water and five grease targets.
+    ("item.lua", "ItemUnique", 3162, "unique"),
+    ("item.lua", "ItemUnique", 3163, "unique"),
+    ("chest.lua", "ChestUnique", 3164, "unique"),
+    ("item.lua", "ItemAction", 8009, "action"),
+    ("item.lua", "ItemAction", 8010, "action"),
+    ("item.lua", "ItemAction", 8011, "action"),
+    ("item.lua", "ItemAction", 8012, "action"),
+    ("lever.lua", "LeverAction", 8013, "action"),
 )
 
 
