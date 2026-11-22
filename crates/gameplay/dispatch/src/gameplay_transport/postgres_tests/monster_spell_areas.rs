@@ -221,7 +221,7 @@ async fn scenario(harness: &Harness, caster: &str, heal: Option<(i32, i64, i64)>
         .map(|(x, key)| {
             let health =
                 u64::try_from(runtime.companion_policy(key).map_err(debug)?.maximum_health)?;
-            Ok(((x, y, -7), 60_000, key.to_owned(), health, false))
+            Ok(((x, y, -7), 60_000, key.to_owned(), health, false, None))
         })
         .collect::<TestResult<Vec<_>>>()?;
     let count = spawns.len();

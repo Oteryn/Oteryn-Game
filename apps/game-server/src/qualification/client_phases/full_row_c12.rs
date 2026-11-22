@@ -284,6 +284,7 @@ fn c12_selects_spell_target_in_one_reachability_search() -> TestResult {
             direction: Direction::North,
             respawn_ms: 60_000,
             boss_policy: None,
+            weight: None,
         });
     let health = [("fallback", 500), ("inaccessible", 3_000), ("preferred", 3_100), ("stronger", 4_000)];
     let spawns = Table {
