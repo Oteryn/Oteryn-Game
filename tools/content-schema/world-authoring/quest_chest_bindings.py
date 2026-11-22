@@ -134,7 +134,7 @@ def supported_claim(definition):
     return (
         definition["readiness"] == "ready"
         or panpipe_key_claim(definition)
-        or any(key_claim(definition, number, item) for number, item in OUTLAW_KEYS.items())
+        or outlaw_key_claim(definition)
         or (
             definition.get("definition_profile") == "authored_variant_v1"
             and definition.get("readiness") == "waiting_implementation"
@@ -154,6 +154,10 @@ def supported_claim(definition):
 
 
 OUTLAW_KEYS = {3301: 2970, 3302: 2969, 3303: 2970, 3304: 2972}
+
+
+def outlaw_key_claim(definition):
+    return any(key_claim(definition, number, item) for number, item in OUTLAW_KEYS.items())
 
 
 def panpipe_key_claim(definition):
