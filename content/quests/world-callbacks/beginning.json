@@ -36,7 +36,7 @@
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
           "minimum": 5,
-          "maximum": 5,
+          "maximum": 6,
           "set": 6
         },
         {

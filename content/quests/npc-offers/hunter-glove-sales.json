@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "premium": false,
+      "reply": [
+        "I can only grant the addon to Premium players. Would you sell the gloves for 2,000 gold pieces?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "premium": false,
+      "reply": [
+        "I can only grant the addon to Premium players. Would you sell the gloves for 2,000 gold pieces?"
+      ]
+    }
+  ]
+}

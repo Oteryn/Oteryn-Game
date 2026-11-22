@@ -133,7 +133,9 @@ class QuestChestBindings(unittest.TestCase):
         ):
             with self.subTest(position=position):
                 row = selected["unique"][position]
-                self.assertEqual((row["appearance"], row["unique"]), (appearance, unique))
+                self.assertEqual(
+                    (row["appearance"], row["unique"]), (appearance, unique)
+                )
         for position, appearance, action in (
             ((32874, 31974, 12), 5102, 1050),
             ((32875, 31974, 12), 5102, 1050),
@@ -141,7 +143,22 @@ class QuestChestBindings(unittest.TestCase):
         ):
             with self.subTest(position=position):
                 row = selected["action"][position]
-                self.assertEqual((row["appearance"], row["action"]), (appearance, action))
+                self.assertEqual(
+                    (row["appearance"], row["action"]), (appearance, action)
+                )
+
+    def test_ape_city_mission_chests_have_startup_claim_selectors(self):
+        selected, _, _ = chests.selections()
+        for position, appearance, unique in (
+            ((32782, 32910, 8), 2469, 6102),
+            ((32935, 32886, 7), 2473, 6103),
+        ):
+            with self.subTest(position=position):
+                row = selected["unique"][position]
+                self.assertEqual(
+                    (row["appearance"], row["unique"]), (appearance, unique)
+                )
+        chests.apply(check=True)
 
     def test_panpipe_key_uses_the_existing_complete_key_lowering(self):
         definition = chests.claim_definitions(chests.ROOT)[
@@ -182,13 +199,20 @@ class QuestChestBindings(unittest.TestCase):
         path = "content/quests/world-callbacks/qd-steal-from-thieves.json"
         captures = index["source"]["quest_world_uses"]
         self.assertEqual(captures["imported"], 1)
-        self.assertEqual(captures["captures"], [{
-            "path": path,
-            "sha256": hashlib.sha256((chests.ROOT / path).read_bytes()).hexdigest(),
-        }])
-        self.assertNotIn(path, [
-            pin["path"] for pin in index["source"]["quest_chests"]["captures"]
-        ])
+        self.assertEqual(
+            captures["captures"],
+            [
+                {
+                    "path": path,
+                    "sha256": hashlib.sha256(
+                        (chests.ROOT / path).read_bytes()
+                    ).hexdigest(),
+                }
+            ],
+        )
+        self.assertNotIn(
+            path, [pin["path"] for pin in index["source"]["quest_chests"]["captures"]]
+        )
 
     def test_naginata_pick_access_is_selected_with_its_reward(self):
         selected, _, _ = chests.selections()

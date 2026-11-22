@@ -3438,6 +3438,10 @@ mod ape_city_map_tests {
             .ok_or("beginning cellar")?;
         assert_eq!(cellar.trigger, Trigger::StepIn);
         assert_eq!(cellar.storage[0].minimum, 5);
+        assert!(
+            (cellar.storage[0].minimum..=cellar.storage[0].maximum).contains(&6),
+            "the active cockroach task must allow returning to the cellar"
+        );
         assert_eq!(cellar.storage[0].set, 6);
         assert!(cellar.return_on_failure);
         assert_eq!(cellar.teleport.ok_or("cellar destination")?.floor, -7);

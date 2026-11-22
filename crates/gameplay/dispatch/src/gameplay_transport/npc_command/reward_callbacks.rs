@@ -38,6 +38,8 @@ pub(super) struct Offer {
     #[serde(default)]
     minimum_level: Option<u32>,
     #[serde(default)]
+    premium: Option<bool>,
+    #[serde(default)]
     failure_reply: Vec<String>,
 }
 
@@ -194,11 +196,20 @@ pub(super) fn prepare(
             if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
                 return rottin_dialogue(topic, &text, tracks, refusal);
             }
-            if let Some(offer) = offers
-                .offers
-                .iter()
-                .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
-            {
+            let account_matches = |offer: &Offer| {
+                offer.premium.is_none_or(|required| {
+                    let premium = admission
+                        .session_account(command.game_session_id)
+                        .zip(admission.premium_coordinator)
+                        .is_some_and(|(account, owner)| {
+                            owner.view(account).premium_gate().premium_current()
+                        });
+                    premium == required
+                })
+            };
+            if let Some(offer) = offers.offers.iter().find(|c| {
+                c.admits(&context.2, topic.number, &text, catalogue, tracks) && account_matches(c)
+            }) {
                 if !meets_level(offer.minimum_level) {
                     return refusal(&offer.failure_reply);
                 }
@@ -231,6 +242,7 @@ pub(super) fn prepare(
                     && offer.matches_topic(topic.number)
                     && offer.keywords.contains(&text)
                     && eligible(&offer.storage)
+                    && account_matches(offer)
                     && !offer.requires.iter().all(|r| r.holds(catalogue, tracks))
             });
             if let Some(offer) = blocked.next()

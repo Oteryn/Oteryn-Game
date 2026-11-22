@@ -175,10 +175,13 @@ def fibula_amulet_claim(definition):
         and definition.get("data_holds", []) == []
         and native.get("schema") == "OTERYN_NATIVE_CONTAINER_REWARD/v1"
         and native.get("revision") == REVISION
-        and native.get("source_difference") == "EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"
+        and native.get("source_difference")
+        == "EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"
         and native.get("source_sha256")
         == "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
-        and [(p["unique_id"], p["root_charges_remaining"]) for p in native["placements"]]
+        and [
+            (p["unique_id"], p["root_charges_remaining"]) for p in native["placements"]
+        ]
         == [(6011, 1)]
     )
 
@@ -410,12 +413,17 @@ def capture(source_root, selected, root=ROOT, *, route_access=False):
             groups = lua_tables.as_python(field["value"])
             for group in groups:
                 positions = group["itemPos"]
-                for position in positions if isinstance(positions, list) else [positions]:
+                for position in (
+                    positions if isinstance(positions, list) else [positions]
+                ):
                     xyz = tuple(position[axis] for axis in "xyz")
                     if xyz not in ROUTE_DOORS:
                         continue
                     appearance, action = ROUTE_DOORS[xyz]
-                    if field["key"] != action or group["itemId"] not in (False, appearance):
+                    if field["key"] != action or group["itemId"] not in (
+                        False,
+                        appearance,
+                    ):
                         raise ValueError("QUEST_ROUTE_LEVEL_ACCESS_SOURCE_DRIFT")
                     route_doors[xyz] = {
                         "position": list(xyz),
@@ -423,7 +431,9 @@ def capture(source_root, selected, root=ROOT, *, route_access=False):
                         "action": action,
                         "source_line": field["line"],
                     }
-        if route_doors.keys() != ROUTE_DOORS.keys() or len(document["returns"]) != len(FIBULA_RETURNS):
+        if route_doors.keys() != ROUTE_DOORS.keys() or len(document["returns"]) != len(
+            FIBULA_RETURNS
+        ):
             raise ValueError("QUEST_ROUTE_SOURCE_SELECTORS_MISSING")
         document["route_doors"] = [route_doors[xyz] for xyz in sorted(route_doors)]
     return document
@@ -484,13 +494,18 @@ def selections(root=ROOT):
                 raise ValueError("QUEST_CHEST_LEVEL_ACCESS_MISSING")
         for row in document.get("route_doors", []):
             position = tuple(row["position"])
-            if position in doors or ROUTE_DOORS.get(position) != (row["appearance"], row["action"]):
+            if position in doors or ROUTE_DOORS.get(position) != (
+                row["appearance"],
+                row["action"],
+            ):
                 raise ValueError("QUEST_ROUTE_LEVEL_ACCESS_DRIFT")
             doors[position] = row
         for row in document.get("returns", []):
             position = tuple(row["position"])
-            if (document.get("teleport_source_sha256") != TELEPORT_SHA256
-                    or position in returns):
+            if (
+                document.get("teleport_source_sha256") != TELEPORT_SHA256
+                or position in returns
+            ):
                 raise ValueError("QUEST_ROUTE_TELEPORT_DRIFT")
             returns[position] = {**row, "teleport": tuple(row["teleport"])}
         for row in document.get("item_access", []):
@@ -559,7 +574,11 @@ def selections(root=ROOT):
         "action": selector["action"],
     }
     world_use = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
-    return {"unique": bindings, "action": doors, "teleport": returns}, sources, (position, world_use)
+    return (
+        {"unique": bindings, "action": doors, "teleport": returns},
+        sources,
+        (position, world_use),
+    )
 
 
 def overlay_region(raw, palette, bindings, attribute="unique"):
@@ -652,14 +671,19 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
     if require_all and imported != len(bindings):
         raise ValueError("QUEST_CHEST_INCOMPLETE_OVERLAY")
     x, y, z = world_use_cell
-    world_use_region = f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"
+    world_use_region = (
+        f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"
+    )
     world_use_imported = int(world_use_region in paths)
     index["source"]["quest_chests"] = {
         "captures": sources,
         "imported": imported - world_use_imported,
     }
     if world_use_imported:
-        index["source"]["quest_world_uses"] = {"captures": [world_use], "imported": world_use_imported}
+        index["source"]["quest_world_uses"] = {
+            "captures": [world_use],
+            "imported": world_use_imported,
+        }
     outputs[INDEX] = canonical(index)
     summary = json.loads(outputs[SUMMARY])
     summary["source"] = index["source"]
@@ -694,7 +718,11 @@ def apply_return_transitions(returns, check):
         for position, row in returns.items()
     ]
     rows, _ = metadata.teleports(
-        candidates, {row["to"] for row in candidates}, {1949: "oteryn:item.tibia.i1949"}, {}, {}
+        candidates,
+        {row["to"] for row in candidates},
+        {1949: "oteryn:item.tibia.i1949"},
+        {},
+        {},
     )
     for row in rows:
         row["source_bindings"][0]["source_revision"] = REVISION
@@ -779,7 +807,13 @@ if __name__ == "__main__":
     elif args.capture:
         if not args.claims or not args.output:
             parser.error("--capture requires --claims and --output")
-        raw = (json.dumps(capture(args.capture, args.claims, route_access=args.route_access), indent=2) + "\n").encode()
+        raw = (
+            json.dumps(
+                capture(args.capture, args.claims, route_access=args.route_access),
+                indent=2,
+            )
+            + "\n"
+        ).encode()
         if args.check:
             if args.output.read_bytes() != raw:
                 raise ValueError("QUEST_CHEST_CAPTURE_DRIFT")

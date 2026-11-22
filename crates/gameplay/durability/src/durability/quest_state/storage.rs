@@ -616,17 +616,18 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
         quest: &str,
     ) -> Option<oteryn_gameplay_quests::quest::log::QuestLogState<'_>> {
         let state = self.states().get(quest)?;
-        if let Some(completed) = oteryn_gameplay_quests::quest::world_change_journals::hive_journal_completion(quest, self.tracks()) {
+        if let Some(helper) = oteryn_gameplay_quests::quest::authored_bindings::counter_helper_quest(quest) {
+            let personal = oteryn_gameplay_quests::quest::world_change_journals::hive_journal_completion(
+                quest, self.tracks(),
+            );
+            if personal.is_none() && !self.save_event_snapshot_valid {
+                return None;
+            }
+            let shared = self.save_event_snapshot_valid
+                && self.counter_quests.get(helper).is_some_and(|progress| progress.completed);
             return Some(oteryn_gameplay_quests::quest::log::QuestLogState {
                 pinned_content_revision: &state.pinned_content_revision,
-                completed,
-            });
-        }
-        let helper = oteryn_gameplay_quests::quest::authored_bindings::counter_helper_quest(quest);
-        if let Some(helper) = helper {
-            return self.save_event_snapshot_valid.then(|| oteryn_gameplay_quests::quest::log::QuestLogState {
-                pinned_content_revision: &state.pinned_content_revision,
-                completed: self.counter_quests.get(helper).is_some_and(|progress| progress.completed),
+                completed: personal.unwrap_or(false) || shared,
             });
         }
         let scoped = self.save_restart_defaults.contains_key(quest);
@@ -643,5 +644,41 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
                 state.completed
             },
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_gameplay_quests::quest::log::QuestLogFacts;
+
+    #[test]
+    fn hive_checkpoint_keeps_completed_shared_mission_in_the_journal() {
+        let quest = "oteryn:quest.authored.hive_born_world_change";
+        let phase = "oteryn:quest-progress/world-change-journal/hive_born/phase";
+        let helper = oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST;
+        let mut copy = QuestStateCopy {
+            save_event_snapshot_valid: true,
+            ..QuestStateCopy::default()
+        };
+        copy.states.insert(
+            quest.into(),
+            QuestStateRecord {
+                pinned_content_revision: "content-1".into(),
+                definition_hash: [0; 32],
+                completed: false,
+            },
+        );
+        copy.counter_quests.insert(
+            helper.into(),
+            CounterQuestProgress {
+                occurrence_generation: 1,
+                completed: true,
+                tracks: BTreeMap::new(),
+            },
+        );
+        assert!(copy.quest_state(quest).is_some_and(|state| state.completed));
+        copy.tracks.insert(phase.into(), 4);
+        assert!(copy.quest_state(quest).is_some_and(|state| state.completed));
     }
 }

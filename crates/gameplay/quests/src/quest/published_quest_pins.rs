@@ -157,6 +157,10 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
 ];
 
+// Published by the production loader on main at 95e63dc1c, before Dread Lord.
+pub(super) const BROTHERHOOD_BEFORE_DREAD_LORD: DefinitionHash =
+    hash(b"4269816e523e2daa58821cadf770d45b98da24e8d149800499f151904dee2905");
+
 pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> DefinitionHash {
     CITATION_REFRESHES
         .iter()
@@ -203,6 +207,22 @@ mod tests {
                 &hash(b"5054575cd55c76480522bdc31bab711873fc7dd859b3832d4bcacbeeede0259e"),
             )
             .is_some()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn brotherhood_preserves_the_definition_for_existing_death_dealers() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let quest = "oteryn:quest.brotherhood_outfits_quest";
+        let previous = BROTHERHOOD_BEFORE_DREAD_LORD;
+        assert_ne!(loaded.catalogue().definition_hash(quest), Some(previous));
+        let defaults = npc_rules::legacy_defaults(loaded.catalogue(), quest, &previous)
+            .ok_or("published Brotherhood definition is no longer admitted")?;
+        assert_eq!(
+            defaults.get("oteryn:quest-progress/quest/u7_9/brotherhood_outfits/door"),
+            Some(&0)
         );
         Ok(())
     }

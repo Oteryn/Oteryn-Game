@@ -10,6 +10,8 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
         offers: Vec::new(),
     };
     for source in [
+        // The free-account price takes precedence over the shared Hunter addon offer.
+        include_str!("../../../../../../../content/quests/npc-offers/hunter-glove-sales.json"),
         SHARED_OFFERS,
         include_str!("../../../../../../../content/quests/chosen-reward-offers.json"),
         include_str!("../../../../../../../content/quests/npc-offers/ape-city.json"),

@@ -71,6 +71,40 @@ fn hunter_glove_contacts_share_the_addon_and_allow_later_sales() -> Result<(), S
     Ok(())
 }
 
+#[test]
+fn hunter_contacts_load_a_free_account_sale_before_the_addon() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let rewards = reward_callbacks::offered_for(catalogue)?;
+    for npc in ["oteryn:npc.elane", "oteryn:npc.legola"] {
+        let callback = rewards
+            .iter()
+            .find(|row| {
+                row.npc == npc
+                    && !row.requires_premium
+                    && row.repeatable
+                    && row.keywords.iter().any(|word| word == "yes")
+                    && row
+                        .take
+                        .iter()
+                        .any(|item| item.item == "oteryn:item.tibia.i5875")
+                    && row.storage.iter().all(|guard| {
+                        catalogue.track(&guard.track).is_some_and(|track| {
+                            (guard.minimum..=guard.maximum).contains(&track.initial)
+                        })
+                    })
+            })
+            .ok_or_else(|| format!("{npc} has no free-account sale before the addon"))?;
+        let payment = callback.give.as_ref().ok_or("glove payment")?;
+        assert_eq!(
+            (payment.item.as_str(), payment.count),
+            ("oteryn:item.tibia.i3035", 20)
+        );
+    }
+    Ok(())
+}
+
 fn assert_native_source(callback: &Callback, position: Position, ordinal: u8, appearance: u16) {
     assert_eq!(callback.selector.position, None);
     assert_eq!(callback.selector.appearance, None);

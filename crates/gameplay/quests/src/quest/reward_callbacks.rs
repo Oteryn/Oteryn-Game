@@ -549,6 +549,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/ape-city.json"),
     include_str!("../../../../../content/quests/npc-callbacks/beginning.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/hunter-glove-sales.json"),
     include_str!("../../../../../content/quests/npc-callbacks/hunter-hymn.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
@@ -1668,6 +1669,8 @@ fn later_outfit_reward(callback: &RewardCallback) -> bool {
             "oteryn:quest-reward/l8-hunter-elane-gloves"
                 | "oteryn:quest-reward/l8-hunter-elane-gloves-sale"
                 | "oteryn:quest-reward/l8-hunter-gloves-sale"
+                | "oteryn:quest-reward/l8-hunter-elane-gloves-sale-free"
+                | "oteryn:quest-reward/l8-hunter-gloves-sale-free"
         )
 }
 
@@ -1675,6 +1678,14 @@ fn later_outfit_reward(callback: &RewardCallback) -> bool {
 pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
     type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
     const PREVIOUS: &[DefinitionPin] = &[
+        (
+            "oteryn:quest.brotherhood_outfits_quest",
+            super::published_quest_pins::BROTHERHOOD_BEFORE_DREAD_LORD,
+            &[(
+                "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/door",
+                0,
+            )],
+        ),
         (
             "oteryn:quest.sam_s_old_backpack_quest",
             SAMS_BACKPACK_BEFORE_KROOX_ALIAS,
@@ -2442,7 +2453,7 @@ mod tests {
         // and the Forgemaster and Rottin Wood additions.
         assert_eq!(
             load()?.len(),
-            250 + 132 + 125 + 4 + 4 + 4 + 3 + 2 + 1 + 1 + 13 + 12
+            250 + 132 + 125 + 4 + 4 + 4 + 3 + 2 + 1 + 1 + 13 + 12 + 2
         );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
@@ -3371,8 +3382,8 @@ mod outfit_reward_predecessor_tests {
                 .iter()
                 .filter(|callback| callback.quest == QUEST)
                 .count(),
-            // 112 retained rows, 31 QB rows, and seven Hunter callbacks.
-            150
+            // 112 retained rows, 31 QB rows, and nine Hunter callbacks.
+            152
         );
         document
             .callbacks
