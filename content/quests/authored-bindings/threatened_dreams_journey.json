@@ -10,6 +10,12 @@
           "initial": 0,
           "minimum": 0,
           "maximum": 16
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 16
         }
       ],
       "stages": [
@@ -32,6 +38,12 @@
                   "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
                   "minimum": 1,
                   "maximum": 1,
+                  "set": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+                  "minimum": 0,
+                  "maximum": 16,
                   "set": 2
                 }
               ],
@@ -94,6 +106,12 @@
                   "minimum": 2,
                   "maximum": 2,
                   "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+                  "minimum": 0,
+                  "maximum": 16,
+                  "set": 3
                 }
               ],
               "offerings": [],
@@ -103,8 +121,8 @@
                 "selected_instance": true
               },
               "return_on_failure": false,
-              "failure_message": null,
-              "success_message": "You place the book on the table where the poachers can find it.",
+              "failure_message": "You are not on that mission.",
+              "success_message": "You are placing the book on the table, hopefully the poachers will discover it soon.",
               "sources": [
                 "oteryn-authored:threatened-dreams/poacher-book",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/action_poacher_book.lua:3-19",
@@ -141,6 +159,12 @@
                   "minimum": 2,
                   "maximum": 2,
                   "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+                  "minimum": 0,
+                  "maximum": 16,
+                  "set": 3
                 }
               ],
               "offerings": [],
@@ -150,8 +174,8 @@
                 "selected_instance": true
               },
               "return_on_failure": false,
-              "failure_message": null,
-              "success_message": "You place the book on the table where the poachers can find it.",
+              "failure_message": "You are not on that mission.",
+              "success_message": "You are placing the book on the table, hopefully the poachers will discover it soon.",
               "sources": [
                 "oteryn-authored:threatened-dreams/poacher-book",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/action_poacher_book.lua:3-19",

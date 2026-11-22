@@ -23,6 +23,7 @@ const TABLE: Position = Position {
 };
 const BOOK: &str = "oteryn:item.tibia.i25235";
 const PLATINUM: &str = "oteryn:item.tibia.i3035";
+const JOURNAL_ANIMALS: &str = "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1";
 
 #[test]
 fn threatened_dreams_poacher_book_journey() -> TestResult {
@@ -253,6 +254,10 @@ fn scenario(configured_admin: &str) -> TestResult {
             );
             assert_eq!(quantity(&h, BOOK).await?, 1);
             assert_eq!(quantity(&h, PLATINUM).await?, 0);
+            assert_eq!(
+                progress(&owner, &admitted, &authority, JOURNAL_ANIMALS).await?,
+                2
+            );
 
             let book = native
                 .item_index()
@@ -279,6 +284,10 @@ fn scenario(configured_admin: &str) -> TestResult {
             );
             assert_eq!(quantity(&h, BOOK).await?, 0);
             assert_eq!(quantity(&h, PLATINUM).await?, 0);
+            assert_eq!(
+                progress(&owner, &admitted, &authority, JOURNAL_ANIMALS).await?,
+                3
+            );
             let replay = wire(&owner, &mut admitted, command, 2, payload.clone()).await?;
             assert_eq!(replay, reply);
             let fresh_command = admitted.continuity.next_command_id;
