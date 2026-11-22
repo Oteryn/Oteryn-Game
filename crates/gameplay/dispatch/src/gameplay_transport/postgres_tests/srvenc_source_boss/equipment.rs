@@ -170,12 +170,16 @@ pub(super) async fn activity_equipment_clocks_charge_worn_items(
         let mut lock = h.pool.begin().await?;
         sqlx::query("LOCK TABLE game_durability_admission_account_guards IN EXCLUSIVE MODE")
             .execute(&mut *lock).await?;
-        tokio::time::timeout(std::time::Duration::from_millis(500), owner.tick_timed_items())
-            .await.map_err(|_| "periodic activity equipment checkpoint waited on the admission writer")?;
-        lock.rollback().await?;
-        owner.clock_origin -= std::time::Duration::from_secs(1);
+        tokio::time::timeout(std::time::Duration::from_millis(500), async {
+            owner.tick_timed_items().await;
+            lock.rollback().await?;
+            owner.clock_origin -= std::time::Duration::from_secs(1);
+            owner.tick_timed_items().await;
+            Ok::<_, sqlx::Error>(())
+        }).await.map_err(|_| "periodic activity equipment checkpoint or retry timed out")??;
+    } else {
+        owner.tick_timed_items().await;
     }
-    owner.tick_timed_items().await;
     let (boots_remaining, remaining) = remaining_budgets(h).await?;
     if case != Case::LostExpiry {
         assert!(remaining < 72_000_000, "a worn imbuement must tick in an activity");
