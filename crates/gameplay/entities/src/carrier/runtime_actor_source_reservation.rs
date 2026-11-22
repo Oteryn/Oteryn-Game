@@ -777,48 +777,70 @@ impl ChannelRuntimeV1 {
     }
 }
 
+#[cfg(any(test, feature = "test-support"))]
+struct Proof {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    position: crate::MovementPositionSnapshot,
+    affected: Vec<ExactActorRef>,
+    event: [u8; 16],
+}
+#[cfg(any(test, feature = "test-support"))]
+impl source_reservation_seal::Sealed for Proof {}
+#[cfg(any(test, feature = "test-support"))]
+impl SourceActorReservationProof for Proof {
+    fn owner(&self) -> (ExactActorRef, GameSessionId) {
+        (self.actor, self.session)
+    }
+    fn event_identity(&self) -> [u8; 16] {
+        self.event
+    }
+    fn source_binding_digest(&self) -> [u8; 32] {
+        [8; 32]
+    }
+    fn affected_actors(&self) -> &[ExactActorRef] {
+        &self.affected
+    }
+    fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
+        runtime.owner_fence().is_ok()
+            && runtime.read_actor_position(self.actor) == Ok(self.position)
+            && runtime
+                .player_control_facts(self.actor, self.session)
+                .is_ok_and(|p| p.control_loss.is_none())
+    }
+}
+
+#[cfg(feature = "test-support")]
+impl ChannelRuntimeV1 {
+    /// Build the owner crate's reservation proof for a test holding only its Player source.
+    pub fn test_source_actor_reservation_proof(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        event: [u8; 16],
+    ) -> Result<impl SourceActorReservationProof + use<>, CarrierError> {
+        Ok(Proof {
+            actor,
+            session,
+            position: self.read_actor_position(actor)?,
+            affected: Vec::new(),
+            event,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
     use crate::ControlLossMark;
     use crate::MovementLocalPosition;
-    use crate::MovementPositionSnapshot;
     use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
     use oteryn_gameplay_foundation::foundation::ChannelId;
     use oteryn_gameplay_foundation::foundation::NodeId;
     use oteryn_gameplay_foundation::foundation::WorldId;
     fn id(tag: u8) -> [u8; 16] {
         [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
-    }
-    struct Proof {
-        actor: ExactActorRef,
-        session: GameSessionId,
-        position: MovementPositionSnapshot,
-        affected: Vec<ExactActorRef>,
-        event: [u8; 16],
-    }
-    impl source_reservation_seal::Sealed for Proof {}
-    impl SourceActorReservationProof for Proof {
-        fn owner(&self) -> (ExactActorRef, GameSessionId) {
-            (self.actor, self.session)
-        }
-        fn event_identity(&self) -> [u8; 16] {
-            self.event
-        }
-        fn source_binding_digest(&self) -> [u8; 32] {
-            [8; 32]
-        }
-        fn affected_actors(&self) -> &[ExactActorRef] {
-            &self.affected
-        }
-        fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
-            runtime.owner_fence().is_ok()
-                && runtime.read_actor_position(self.actor) == Ok(self.position)
-                && runtime
-                    .player_control_facts(self.actor, self.session)
-                    .is_ok_and(|p| p.control_loss.is_none())
-        }
     }
     #[test]
     fn commandless_original_reserves_real_slots_and_only_exact_prewrite_rollback_releases() {
