@@ -836,7 +836,6 @@ mod tests {
     use super::*;
     use crate::ControlLossMark;
     use crate::MovementLocalPosition;
-    use crate::MovementPositionSnapshot;
     use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
     use oteryn_gameplay_foundation::foundation::ChannelId;
     use oteryn_gameplay_foundation::foundation::NodeId;
