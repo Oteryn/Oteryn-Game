@@ -22,14 +22,14 @@ fn blue_present_full_backpack_drops_one_reward_and_consumes_one_present_once() -
     };
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(&admin).map_err(|error| error.to_string()))?
+        .spawn(move || scenario(admin).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "full backpack reward scenario thread")??;
     Ok(())
 }
 
-fn scenario(admin: &str) -> TestResult {
-    run(async |_| {
+fn scenario(admin: String) -> TestResult {
+    run(async move |_| {
         let harness =
             Harness::create_with_admission_seed(admin, "w19a_full_pack", true, false).await?;
         super::reset();
