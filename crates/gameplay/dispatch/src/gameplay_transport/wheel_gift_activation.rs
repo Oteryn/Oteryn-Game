@@ -14,11 +14,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let runtime = self.runtime.lock().await;
-        if runtime.player_control_facts(actor, session).ok()?.control_loss.is_some() {
+        if runtime
+            .player_control_facts(actor, session)
+            .ok()?
+            .control_loss
+            .is_some()
+        {
             return None;
         }
         let states = self.states.spell_states.lock().await;
-        let generation = states.get(&runtime, actor, session)?.wheel_gift_activation();
+        let generation = states
+            .get(&runtime, actor, session)?
+            .wheel_gift_activation();
         let registration = self.holder.fact();
         Some(GiftActivationReply(generation.map(|generation| {
             let digest = Sha256::new()

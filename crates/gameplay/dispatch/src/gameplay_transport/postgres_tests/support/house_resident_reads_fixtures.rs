@@ -9,12 +9,12 @@ use crate::gameplay_transport::{
         serve_admitted,
     },
 };
-use oteryn_protocol_oteryn::mail::{self, MailIntent, MailOutcome};
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
-use oteryn_protocol_oteryn::{actor_motion, appearance};
 use oteryn_protocol_oteryn::{item_inscription, item_view, world_spatial_entities as entities};
+use oteryn_protocol_oteryn::{actor_motion, appearance};
+use oteryn_protocol_oteryn::mail::{self, MailIntent, MailOutcome};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -81,13 +81,9 @@ pub(super) async fn presentation_exchange(
     use oteryn_protocol_oteryn::server_info::{self, Query, Reply};
     if case == Case::ResidentQuest {
         let (status, bytes) = super::cyclopedia_fixtures::support::exchange(
-            owner,
-            &mut admitted,
-            1,
-            server_info::COMMAND_TYPE_SERVER_INFO_QUERY,
+            owner, &mut admitted, 1, server_info::COMMAND_TYPE_SERVER_INFO_QUERY,
             &Query::Quests.encode().ok_or("quest query")?,
-        )
-        .await?;
+        ).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert!(matches!(Reply::decode(&bytes), Some(Reply::Quests(titles))
             if titles.len() == 1 && !titles[0].1.is_empty()));
@@ -103,9 +99,7 @@ pub(super) async fn presentation_exchange(
     let observing = async {
         loop {
             let raw = super::item_look_fixtures::read_frame(&mut client).await?;
-            if decode_wire_envelope(&raw).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit
-            {
+            if decode_wire_envelope(&raw).map_err(debug)?.message_type() == MessageType::SnapshotCommit {
                 break;
             }
         }
@@ -133,16 +127,9 @@ pub(super) async fn presentation_exchange(
             let motion = next_motion(&mut client, admitted).await?;
             assert_eq!(motion.mount_look_type, look);
             let actor = admitted.runtime_actor.ok_or("mount observer")?;
-            let view = owner
-                .observe_visible_entities(actor)
-                .await
-                .ok_or("mounted visibility")?;
-            let motion = view
-                .entities
-                .iter()
-                .find(|entity| entity.identity == actor.placement_identity())
-                .and_then(|entity| entity.motion)
-                .ok_or("House resident motion")?;
+            let view = owner.observe_visible_entities(actor).await.ok_or("mounted visibility")?;
+            let motion = view.entities.iter().find(|entity| entity.identity == actor.placement_identity())
+                .and_then(|entity| entity.motion).ok_or("House resident motion")?;
             assert_eq!(motion.mount_look_type, look);
             use oteryn_protocol_oteryn::world_spatial::{
                 self as spatial, StepDirection, StepDisposition,
@@ -194,8 +181,7 @@ pub(super) async fn presentation_exchange(
     };
     let (_, result) = tokio::time::timeout(std::time::Duration::from_secs(12), async {
         tokio::join!(serving, observing)
-    })
-    .await?;
+    }).await?;
     result
 }
 
@@ -246,43 +232,25 @@ pub(super) async fn select_mount(
         .bind(id(40).as_slice()).bind(id(199).as_slice()).execute(&h.pool).await?;
     owner.admit_progression_session(admitted).await;
     let actor = admitted.runtime_actor.ok_or("mount actor")?;
-    let initial = owner
-        .appearance_observation(actor, admitted.game_session_id, Vec::new())
-        .await
-        .ok_or("mount catalogue")?;
+    let initial = owner.appearance_observation(actor, admitted.game_session_id, Vec::new()).await.ok_or("mount catalogue")?;
     let change = appearance::Change {
         context: initial.catalogue.context,
         expected_root_revision: initial.catalogue.root_revision,
         prior: None,
         selection: appearance::Selection {
-            outfit_key: initial
-                .catalogue
-                .outfits
-                .first()
-                .ok_or("outfit")?
-                .key
-                .clone(),
+            outfit_key: initial.catalogue.outfits.first().ok_or("outfit")?.key.clone(),
             colours: [0; 4],
             addons: 0,
             mount_key: Some(mount_key),
         },
         content_revision: "content-1".into(),
     };
-    let outcome = owner
-        .change_appearance(
-            actor,
-            crate::gameplay_transport::connection::UseCommand {
-                game_session_id: admitted.game_session_id,
-                command_id: 100,
-                item_fence: admitted.item_fence,
-            },
-            change,
-        )
-        .await;
-    assert!(matches!(
-        outcome,
-        Some(appearance::ChangeResult::Committed(_))
-    ));
+    let outcome = owner.change_appearance(actor, crate::gameplay_transport::connection::UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: 100,
+        item_fence: admitted.item_fence,
+    }, change).await;
+    assert!(matches!(outcome, Some(appearance::ChangeResult::Committed(_))));
     Ok(())
 }
 
@@ -371,12 +339,16 @@ pub(super) async fn exchange(
         );
         writer.rollback().await?;
     }
-    let writer_name: String = sqlx::query_scalar(
-        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
-    )
-    .bind(id(41).as_slice())
-    .fetch_one(&h.pool)
-    .await?;
+    let writer_name: Option<String> = if case == Case::ResidentLetter {
+        Some(sqlx::query_scalar(
+            "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .fetch_one(&h.pool)
+        .await?)
+    } else {
+        None
+    };
     let shared = &*owner;
     let expiry = case == Case::ResidentExpiryTick;
     let policy = if expiry {
@@ -579,14 +551,16 @@ pub(super) async fn exchange(
                         assert_eq!(reply.payload, [MailOutcome::TextWritten as u8]);
                         break;
                     }
-                    let inscription: serde_json::Value = serde_json::from_slice(reply.payload)?;
-                    assert_eq!(inscription["text"], "House letter");
-                    assert_eq!(inscription["writable"], true);
-                    assert_eq!(inscription["max_length"], 1999);
                     let handle = letter_handle.ok_or("letter handle missing")?.get();
                     if reply.command_id == 1 {
-                        assert!(inscription.get("writer_name").is_none());
-                        assert!(inscription.get("written_at_unix_ms").is_none());
+                        assert_eq!(
+                            item_inscription::LegacyReply::decode(reply.payload),
+                            Some(item_inscription::LegacyReply {
+                                text: "House letter".into(),
+                                writable: true,
+                                max_length: 1999,
+                            })
+                        );
                         let payload = item_inscription::Request {
                             item_handle: handle,
                         }
@@ -607,8 +581,16 @@ pub(super) async fn exchange(
                         continue;
                     }
                     assert_eq!(reply.command_id, 2);
-                    assert_eq!(inscription["writer_name"], writer_name);
-                    assert_eq!(inscription["written_at_unix_ms"], 1_700_000_000_000_i64);
+                    assert_eq!(
+                        item_inscription::Reply::decode(reply.payload),
+                        Some(item_inscription::Reply {
+                            text: "House letter".into(),
+                            writable: true,
+                            max_length: 1999,
+                            writer_name: writer_name.clone(),
+                            written_at_unix_ms: Some(1_700_000_000_000),
+                        })
+                    );
                     let payload = mail::encode_intent(&MailIntent::WriteText {
                         item_handle: letter_handle.ok_or("letter handle missing")?.get(),
                         text: "Edited in the House".into(),

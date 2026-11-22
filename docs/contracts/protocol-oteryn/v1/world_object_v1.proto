@@ -105,8 +105,8 @@ message UseResultV1 {
   // message id, 1 to 127 (a one-byte varint, which keeps the result within 4 bytes). Any other
   // disposition with this field, and SEALED without it, fail closed.
   uint32 gate_message_id = 2;
-  // Bundle-world capability 594 (GAMEPLAY_OCCURRENCES_V1) only. Exactly 16 nonzero
-  // bytes identifying the committed treasure reward's durable mint event. Present
+  // Bundle-world capability 594 (GAMEPLAY_OCCURRENCES_V1) only. The 16-byte
+  // nonzero identifier of the committed treasure reward's durable mint event. Present
   // only for an admitted chest reward with COMMITTED. Exact command replay keeps
   // the same event ID; clients deduplicate on this ID. Refusals, other uses and
   // clients without capability 594 keep the existing payload.

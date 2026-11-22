@@ -8,11 +8,16 @@ use oteryn_protocol_oteryn::{
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn death_occurrence_wire(&self, admitted: AdmittedSession) -> Option<Vec<u8>> {
         let fence = super::death_protection::query_fence(admitted)?;
-        let death = self.root.read_latest_character_death(self.character, self.holder, fence).await.ok()?;
+        let death = self
+            .root
+            .read_latest_character_death(self.character, self.holder, fence)
+            .await
+            .ok()?;
         DeathOccurrenceReply(death.map(|(death, final_blow)| DeathOccurrence {
             occurrence: *death.occurrence.as_bytes(),
             final_blow,
-        })).encode()
+        }))
+        .encode()
     }
 
     pub(super) async fn player_kill_credits_wire(
@@ -21,7 +26,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         page: PageRequest,
     ) -> Option<Vec<u8>> {
         let fence = super::death_protection::query_fence(admitted)?;
-        let credits = self.root.read_player_kill_credits(self.character, self.holder, fence, page).await.ok()?;
+        let credits = self
+            .root
+            .read_player_kill_credits(self.character, self.holder, fence, page)
+            .await
+            .ok()?;
         kill_credits::encode_reply(&credits)
     }
 }
@@ -48,10 +57,7 @@ pub(super) use authority_methods;
 
 macro_rules! composed_methods {
     () => {
-        async fn death_occurrence(
-            &self,
-            admitted: connection::AdmittedSession,
-        ) -> Option<Vec<u8>> {
+        async fn death_occurrence(&self, admitted: connection::AdmittedSession) -> Option<Vec<u8>> {
             self.death_occurrence_wire(admitted).await
         }
 

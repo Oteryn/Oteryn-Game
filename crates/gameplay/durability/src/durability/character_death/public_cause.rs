@@ -26,6 +26,8 @@ pub enum PublicDeathCause {
     PlayerSession {
         game_session_id: [u8; 16],
     },
+    /// The hit owner proves a creature source kind, even after its identity is gone.
+    UnidentifiedCreature,
     Creature {
         key: [u8; 128],
         key_len: u8,
@@ -111,6 +113,7 @@ impl PublicDeathCause {
         match self {
             Self::Player { .. } | Self::PlayerSession { .. } => Some("player"),
             Self::Creature { .. } => self.creature_parts().map(|(key, _)| key),
+            Self::UnidentifiedCreature => Some("unknown"),
             Self::Unpublishable { .. } => self.unpublishable_key(),
         }
     }
@@ -119,7 +122,7 @@ impl PublicDeathCause {
     ) -> Option<oteryn_gameplay_foundation::foundation::condition::ConditionHistoricalSource> {
         use oteryn_gameplay_foundation::foundation::condition::ConditionHistoricalSource as H;
         match self {
-            Self::Player { .. } => None, // player fields already retain their accepted lineage.
+            Self::Player { .. } | Self::UnidentifiedCreature => None,
             Self::PlayerSession { game_session_id } => Some(H::PlayerSession {
                 game_session_id: *game_session_id,
             }),
@@ -148,6 +151,18 @@ impl PublicDeathCause {
             } => Self::unpublishable(*source_digest, creature_key.as_deref()),
         }
     }
+    /// Use frozen attribution when available and otherwise retain the source kind
+    /// the condition owner already proved.
+    pub fn from_condition<S>(
+        provenance: &oteryn_gameplay_foundation::foundation::condition::ConditionProvenance<S>,
+    ) -> Option<Self> {
+        use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
+        provenance.historical_source.as_ref().map(Self::from_historical_source).or(
+            (provenance.source_kind == ConditionSourceKind::Creature)
+                .then_some(Self::UnidentifiedCreature)
+        )
+    }
+
     fn creature_parts(&self) -> Option<(&str, &str)> {
         let Self::Creature {
             key,
@@ -191,6 +206,7 @@ impl PublicDeathCause {
                 semantic.push(2);
                 semantic.extend_from_slice(game_session_id);
             }
+            Self::UnidentifiedCreature => semantic.push(5),
             Self::Creature { .. } => {
                 let (key, name) = self
                     .creature_parts()
@@ -336,12 +352,13 @@ pub(super) async fn capture(
             .bind(occurrence.as_bytes().as_slice()).bind(ordinal).bind(key).bind(name).execute(&mut **tx).await?;
         ordinal += 1;
     }
+    use oteryn_protocol_oteryn::death_protection::FinalBlowKind;
     let final_blow_kind = match cause {
-        None => 1_i16,
-        Some(PublicDeathCause::Creature { .. } | PublicDeathCause::Unpublishable { .. }) => 2,
-        Some(PublicDeathCause::Player { .. } | PublicDeathCause::PlayerSession { .. }) => 3,
+        None => FinalBlowKind::Environment,
+        Some(PublicDeathCause::Creature { .. } | PublicDeathCause::Unpublishable { .. } | PublicDeathCause::UnidentifiedCreature) => FinalBlowKind::Creature,
+        Some(PublicDeathCause::Player { .. } | PublicDeathCause::PlayerSession { .. }) => FinalBlowKind::Player,
     };
-    if final_blow_kind == 3 {
+    if final_blow_kind == FinalBlowKind::Player {
         capture_player_kill_credits(tx, occurrence, &players).await?;
     }
     for (_, name, character) in players.players {
@@ -353,7 +370,7 @@ pub(super) async fn capture(
         ordinal += 1;
     }
     sqlx::query("INSERT INTO game_public_death_classifications(death_occurrence_id,pvp,publishable,killer_key,most_damage_ordinal,final_blow_kind) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5,$6)")
-        .bind(occurrence.as_bytes().as_slice()).bind(pvp).bind(!matches!(cause,Some(PublicDeathCause::Unpublishable {..}))).bind(cause.as_ref().map_or(Some("unknown"),PublicDeathCause::killer_key)).bind(most_damage).bind(final_blow_kind).execute(&mut **tx).await?;
+        .bind(occurrence.as_bytes().as_slice()).bind(pvp).bind(!matches!(cause,Some(PublicDeathCause::Unpublishable {..}))).bind(cause.as_ref().map_or(Some("unknown"),PublicDeathCause::killer_key)).bind(most_damage).bind(final_blow_kind as i16).execute(&mut **tx).await?;
     Ok(())
 }
 

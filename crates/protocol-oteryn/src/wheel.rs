@@ -531,7 +531,10 @@ fn occurrence_gift_requires_a_nonzero_identity() -> Result<(), &'static str> {
     assert_eq!(GiftActivationReply::decode(&wire), Some(activation));
     wire.push(0);
     assert_eq!(GiftActivationReply::decode(&wire), None);
-    assert_eq!(GiftActivationReply::decode(&[0]), Some(GiftActivationReply(None)));
+    assert_eq!(
+        GiftActivationReply::decode(&[0]),
+        Some(GiftActivationReply(None))
+    );
     assert!(GiftActivationReply(Some([0; 16])).encode().is_none());
     Ok(())
 }

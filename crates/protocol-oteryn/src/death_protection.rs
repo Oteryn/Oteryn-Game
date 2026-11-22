@@ -169,7 +169,10 @@ fn occurrence_death_kind_is_bound_to_one_occurrence() -> Result<(), &'static str
         FinalBlowKind::Creature,
         FinalBlowKind::Player,
     ] {
-        let reply = DeathOccurrenceReply(Some(DeathOccurrence { occurrence: [7; 16], final_blow }));
+        let reply = DeathOccurrenceReply(Some(DeathOccurrence {
+            occurrence: [7; 16],
+            final_blow,
+        }));
         let mut wire = reply.encode().ok_or("encode")?;
         assert_eq!(DeathOccurrenceReply::decode(&wire), Some(reply));
         assert!(DeathProtectionReply::decode(&wire).is_none());

@@ -72,7 +72,13 @@ fn occurrence_kill_credits_roundtrip_both_roles() -> Result<(), &'static str> {
         at_unix_ms: 1_700_000_000_000,
         final_blow: true,
     };
-    for row in [final_hit, PlayerKillCredit { final_blow: false, ..final_hit }] {
+    for row in [
+        final_hit,
+        PlayerKillCredit {
+            final_blow: false,
+            ..final_hit
+        },
+    ] {
         let mut wire = encode_reply(&[row]).ok_or("encode")?;
         assert_eq!(decode_reply(&wire), Some(vec![row]));
         wire[41] = 2;

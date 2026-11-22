@@ -19,7 +19,7 @@ snapshot under the session's current item fence.
 
 ## Reply
 
-UTF-8 JSON, at most 32768 bytes, closed fields, as `item_inscription::Reply` defines:
+UTF-8 JSON, at most 32768 bytes, closed fields, as `item_inscription::LegacyReply` defines:
 `{"text":"...","max_length":1999,"writable":true}`.
 
 - `text` is the stored text, empty when the item has none; at most `max_length` characters,

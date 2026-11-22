@@ -17,10 +17,10 @@ pub mod profile;
 
 #[path = "cyclopedia_character/gallery.rs"]
 pub mod gallery;
-pub mod kill_credits;
 
 #[path = "cyclopedia_character/items.rs"]
 pub mod items;
+pub mod kill_credits;
 
 #[path = "cyclopedia_character/protection.rs"]
 pub mod protection;

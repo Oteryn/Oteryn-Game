@@ -58,9 +58,11 @@ fn death_projection_scenario() -> TestResult {
             "oteryn:blessing.spiritual_shielding".into(),
             "oteryn:blessing.twist_of_fate".into(),
         ];
-        request.public_cause = Some(crate::durability::character_death::PublicDeathCause::Player {
-            character_id: id(60),
-        });
+        request.public_cause = Some(
+            crate::durability::character_death::PublicDeathCause::Player {
+                character_id: id(60),
+            },
+        );
         request.pvp_contributors = vec![PvpDeathContributor {
             character_id: CharacterId::from_bytes(id(60)).map_err(debug)?,
             kind: PvpContributorKind::Damage,
@@ -116,8 +118,14 @@ fn death_projection_scenario() -> TestResult {
         admitted.continuity.connection_generation = current.connection_generation.get();
         admitted.first_entry = FirstEntryOutcome::Positioned;
         let offers = [
-            OfferedCapability { id: 382, requires: &[] },
-            OfferedCapability { id: 595, requires: &[382] },
+            OfferedCapability {
+                id: 382,
+                requires: &[],
+            },
+            OfferedCapability {
+                id: 595,
+                requires: &[382],
+            },
         ];
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(&offers, &[382, 595]).ok_or("death capability")?;
@@ -139,11 +147,16 @@ fn death_projection_scenario() -> TestResult {
         use oteryn_protocol_oteryn::death_protection::{
             COMMAND_TYPE_DEATH_OCCURRENCE, DeathOccurrence, DeathOccurrenceReply, FinalBlowKind,
         };
-        let (status, bytes) = exchange(&owner, &mut admitted, 2, COMMAND_TYPE_DEATH_OCCURRENCE, &[]).await?;
+        let (status, bytes) =
+            exchange(&owner, &mut admitted, 2, COMMAND_TYPE_DEATH_OCCURRENCE, &[]).await?;
         assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
-        assert_eq!(DeathOccurrenceReply::decode(&bytes), Some(DeathOccurrenceReply(Some(
-            DeathOccurrence { occurrence: *death.occurrence.as_bytes(), final_blow: FinalBlowKind::Player }
-        ))));
+        assert_eq!(
+            DeathOccurrenceReply::decode(&bytes),
+            Some(DeathOccurrenceReply(Some(DeathOccurrence {
+                occurrence: *death.occurrence.as_bytes(),
+                final_blow: FinalBlowKind::Player
+            })))
+        );
         let mut stale = admitted;
         stale.continuity.connection_generation += 1;
         assert!(owner.death_protection_page(stale).await.is_none());

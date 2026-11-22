@@ -1702,11 +1702,17 @@ mod count_bounds_tests {
 fn occurrence_reward_extension_accepts_only_committed_rewards() -> Result<(), WorldObjectError> {
     let mut wire = encode_use_reward_result([7; 16])?;
     assert_eq!(wire.len(), MAX_USE_REWARD_RESULT_BYTES);
-    assert_eq!(decode_use_reward_result(&wire)?, (UseDisposition::Committed, None, Some([7; 16])));
+    assert_eq!(
+        decode_use_reward_result(&wire)?,
+        (UseDisposition::Committed, None, Some([7; 16]))
+    );
     assert!(decode_use_result(&wire).is_err());
     wire[1] = UseDisposition::NothingToUse as u8;
     assert!(decode_use_reward_result(&wire).is_err());
     let legacy = encode_use_result(UseDisposition::Committed)?;
-    assert_eq!(decode_use_reward_result(&legacy)?, (UseDisposition::Committed, None, None));
+    assert_eq!(
+        decode_use_reward_result(&legacy)?,
+        (UseDisposition::Committed, None, None)
+    );
     Ok(())
 }

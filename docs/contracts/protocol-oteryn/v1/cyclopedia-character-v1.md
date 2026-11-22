@@ -194,8 +194,10 @@ No native owner currently records these facts:
 
 - Monster killers in a death cause and the "most damage" killer: the death
   receipt records no killer.
-- Justified (0), assisted (3) and arena (4) kill statuses: only unjustified
-  kills and guild war frags are recorded.
+- The legacy PvP kills tab still carries only unjustified kills and guild war
+  frags. Justified kills and assist roles are available through
+  [player kill credit occurrences](#player-kill-credit-occurrences). Arena
+  status (4) remains unavailable.
 - General stats speed, capacity, maximum health and mana, soul, food and
   skill percentages: live state.
 - The outfit/mount split of appearance unlocks: the keys are opaque.

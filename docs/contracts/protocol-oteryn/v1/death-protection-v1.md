@@ -32,5 +32,6 @@ self-only request uses the same current session fence as command 664.
 death occurrence as command 664, and one kind byte. Values are 0 for a receipt
 without a recorded kind, 1 for environment (no attributed combatant at the
 native lethal transition), 2 for creature and 3 for player. A player-owned
-summon follows the native owner attribution. Recent damage and assists do not
+summon follows the native owner attribution. A creature field keeps the
+creature kind when its source identity is unavailable. Recent damage and assists do not
 classify the final blow. Command 664's wire format is unchanged.
