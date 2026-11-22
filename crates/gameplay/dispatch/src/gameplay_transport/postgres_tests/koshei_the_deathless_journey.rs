@@ -491,6 +491,29 @@ pub(super) async fn exercise(
     }
 
     commission(owner, admitted, h, &mut expected).await?;
+    // The fragments and forge already existed before the tomb journey shipped.
+    // Resume the same durable state under the exact pre-journey definition pin.
+    let previous = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state_with_bindings(
+        "content-1",
+        &oteryn_gameplay_quests::quest::authored_bindings::Bindings::parse_documents(&[])?,
+    )
+    .map_err(debug)?;
+    let pin = previous.catalogue().definition_hash(QUEST).ok_or("pre-journey Koshei pin")?;
+    let mut saved = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *saved)
+        .await?;
+    let updated = sqlx::query(
+        "UPDATE game_character_quest_states SET definition_hash=$2
+         WHERE character_id=encode($1,'hex')::uuid AND quest_key=$3",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(pin.as_slice())
+    .bind(QUEST)
+    .execute(&mut *saved)
+    .await?;
+    assert_eq!(updated.rows_affected(), 1);
+    saved.commit().await?;
     move_to(owner, admitted, at(DOOR.x + 1, DOOR.y, DOOR.floor)).await?;
     let door = target(owner, DOOR, 1)?;
     assert_eq!(

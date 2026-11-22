@@ -80,7 +80,7 @@ fn an_interest_in_botany_full_journey() -> TestResult {
         return Ok(());
     };
     let started = Instant::now();
-    super::kill_reward_e2e_fixtures::scenario_thread::run("an-interest-in-botany", journey)?;
+    super::kill_reward_e2e_fixtures::scenario_thread::run("an-interest-in-botany", || journey(false))?;
     println!(
         "POSTGRES_CASE_COMPLETED an_interest_in_botany_full_journey duration={:?}",
         started.elapsed()
@@ -88,8 +88,17 @@ fn an_interest_in_botany_full_journey() -> TestResult {
     Ok(())
 }
 
-fn journey() -> TestResult {
-    run(async |admin| {
+#[test]
+fn botany_sampling_accepts_a_web_already_burned_by_another_player() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("botany-open-web", || journey(true))
+}
+
+fn journey(web_already_burned: bool) -> TestResult {
+    run(async move |admin| {
         let catalogue = super::quest_container_chests_fixtures::embedded_catalogue()?;
         assert!(
             catalogue.authored_bindings().is_some_and(|bindings| {
@@ -188,7 +197,7 @@ fn journey() -> TestResult {
                 }, 600 + u64::try_from(index)?, true).await?;
             }
             let initial_log = log(&owner, &mut admitted).await?;
-            exercise(&mut owner, &mut admitted, &h, npc).await?;
+            exercise(&mut owner, &mut admitted, &h, npc, web_already_burned).await?;
 
             // A new admission owner rebuilds the quest and NPC projections for the reconnect.
             // The wire helper has already closed the first transport and retained its continuity.
@@ -306,6 +315,7 @@ async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
     npc: EntityRef,
+    web_already_burned: bool,
 ) -> TestResult {
     checkpoint(h, None, 0, 0, 0).await?;
     assert_eq!(stage(h, DOOR_TRACK).await?, None);
@@ -372,16 +382,23 @@ async fn exercise(
     checkpoint(h, Some(2), 1, 0, 0).await?;
 
     arrive(owner, admitted, Position { y: 31377, ..WEB }).await?;
-    let before = target(owner, WEB, 4)?.expected_revision;
-    assert_eq!(
-        use_object(owner, admitted, WEB, 4, Some(FIRE_BUG)).await?,
-        UseDisposition::Committed
-    );
-    assert!(
-        target(owner, WEB, 4)?.expected_revision > before,
-        "the real web changed on the map"
-    );
-    checkpoint(h, Some(3), 1, 0, 0).await?;
+    if web_already_burned {
+        let map = owner.bundle_map().ok_or("Botany map")?;
+        let key = crate::map::view::placement_key(tile(WEB), 4).ok_or("web placement")?;
+        assert!(map.facts.transform_movement_item(key, 188));
+        checkpoint(h, Some(2), 1, 0, 0).await?;
+    } else {
+        let before = target(owner, WEB, 4)?.expected_revision;
+        assert_eq!(
+            use_object(owner, admitted, WEB, 4, Some(FIRE_BUG)).await?,
+            UseDisposition::Committed
+        );
+        assert!(
+            target(owner, WEB, 4)?.expected_revision > before,
+            "the real web changed on the map"
+        );
+        checkpoint(h, Some(3), 1, 0, 0).await?;
+    }
 
     arrive(
         owner,

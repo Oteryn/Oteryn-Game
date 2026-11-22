@@ -557,7 +557,7 @@ mod main_native_contract {
             track(&stage.track, &arena.quest, stage.goal)?;
         }
         // Package C adds three Skull of Ratha claim markers and one Legion Helmet marker.
-        assert_eq!(additions.len(), 70);
+        assert_eq!(additions.len(), 72);
 
         let baseline = crate::quest::loader::lower_embedded_quest_state("native-admission-fixture")
             .map_err(|error| format!("{error:?}"))?;

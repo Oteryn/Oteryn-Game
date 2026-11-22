@@ -219,10 +219,13 @@
               "completes": true,
               "effects": {
                 "item_reward": {
-                  "item": "oteryn:item.tibia.i3295",
+                  "item": "oteryn:item.tibia.i2853",
                   "count": 1,
-                  "contents": [],
-                  "additional": [
+                  "contents": [
+                    {
+                      "item": "oteryn:item.tibia.i3295",
+                      "count": 1
+                    },
                     {
                       "item": "oteryn:item.tibia.i3039",
                       "count": 1

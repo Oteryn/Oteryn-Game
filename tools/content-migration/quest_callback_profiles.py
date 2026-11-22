@@ -230,13 +230,13 @@ def _requested_inputs(root, extra_keys=()):
                     authored_keys.add(tool['replacement'])
                     keys.add(tool['replacement'])
     # The Outlaw Camp binding is embedded by the Quest crate. Its terminal
-    # multi-item reward uses the existing canonical Item profile admission.
+    # bag and its contents use the existing canonical Item profile admission.
     outlaw = json.loads((root / 'content/quests/authored-bindings/outlaw_camp_journey.json').read_bytes())
     (reward,) = [stage['trigger']['callback']['effects']['item_reward']
                  for quest in outlaw['quests'] for stage in quest['stages']
                  if stage['completes']]
     keys.add(reward['item'])
-    keys.update(item['item'] for item in reward['additional'])
+    keys.update(item['item'] for item in reward['contents'])
     # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.

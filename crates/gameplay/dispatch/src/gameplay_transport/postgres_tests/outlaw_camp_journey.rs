@@ -525,6 +525,7 @@ async fn assert_snapshot(
     .await?;
     let wanted = if completed {
         vec![
+            ("oteryn:item.tibia.i2853".into(), 1),
             ("oteryn:item.tibia.i3039".into(), 1),
             ("oteryn:item.tibia.i3295".into(), 1),
         ]
@@ -532,6 +533,20 @@ async fn assert_snapshot(
         Vec::new()
     };
     assert_eq!(rewards, wanted);
+    let bag_contents: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT child.definition_production_key, child.quantity::bigint
+         FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c
+         JOIN game_item_nested_entries entry ON entry.item_instance_id=c.item
+         JOIN game_item_instances child USING (item_instance_id)
+         JOIN game_item_instances bag ON bag.item_instance_id=entry.parent_item_instance_id
+         WHERE child.lifecycle=1 AND bag.definition_production_key='oteryn:item.tibia.i2853'
+         ORDER BY child.definition_production_key",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(owner.world_id.as_bytes().as_slice())
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(bag_contents, if completed { wanted[1..].to_vec() } else { Vec::new() });
     let terminal_count: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts
          WHERE character_id=encode($1,'hex')::uuid AND transition_key=$2",

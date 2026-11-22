@@ -32,6 +32,12 @@
           "maximum": 1
         },
         {
+          "key": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 4
+        },
+        {
           "key": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
           "initial": 0,
           "minimum": 0,
@@ -92,6 +98,20 @@
                   "maximum": 5,
                   "set": 5,
                   "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+                  "minimum": 0,
+                  "maximum": 4,
+                  "set": 4,
+                  "at_least": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+                  "minimum": 0,
+                  "maximum": 2,
+                  "set": 1,
+                  "at_least": true
                 }
               ],
               "offerings": [

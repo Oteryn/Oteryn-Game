@@ -251,7 +251,7 @@
               "storage": [
                 {
                   "track": "oteryn:quest-progress/an-interest-in-botany/stage",
-                  "minimum": 3,
+                  "minimum": 2,
                   "maximum": 3,
                   "set": 4
                 }
