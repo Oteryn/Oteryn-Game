@@ -155,7 +155,7 @@
     "oteryn:creature.the_pit_lord": 7349,
     "oteryn:creature.the_plasmother": 6532,
     "oteryn:creature.the_red_knight": 36434,
-    "oteryn:creature.the_rootkraken": 49124,
+    "oteryn:creature.the_rootkraken": 49120,
     "oteryn:creature.the_sandking": 25866,
     "oteryn:creature.the_sandking_fake": 25866,
     "oteryn:creature.the_scourge_of_oblivion": 23561,
@@ -328,9 +328,10 @@
     "oteryn:creature.tentacle9": {"item": 35136, "source": "data-global/monster/quests/a_pirates_tail_quest/tentacle_1.lua:14"},
     "oteryn:creature.weak_spot": {"item": 35686, "source": "data-global/monster/quests/a_pirates_tail_quest/weak_spot.lua:13"}
   },
-  "new_item_bindings": [35136, 35600, 35686, 43762, 43771, 48349, 48353, 49124],
-  "new_item_definitions": [35136, 35686],
+  "new_item_bindings": [35136, 35600, 35686, 43762, 43771, 48349, 48353, 49120, 49124],
+  "new_item_definitions": [35136, 35686, 48109, 49120],
   "items": {
+    "49120": {"capacity": 8, "weight": 0, "movable": true, "pickupable": false, "has_height": false, "blocks_movement": false, "blocks_projectile": false, "duration_ms": 0, "decay_target": null, "xml_line": null},
     "276": {"capacity": 15, "weight": 0, "movable": false, "pickupable": false, "blocks_movement": false, "blocks_projectile": false, "has_height": false, "duration_ms": 10000, "decay_target": 277, "xml_line": 475},
     "861": {"capacity": 7, "weight": 0, "movable": false, "pickupable": false, "blocks_movement": false, "blocks_projectile": false, "has_height": false, "duration_ms": 10000, "decay_target": 862, "xml_line": 2971},
     "949": {"capacity": 40, "weight": 60000, "movable": false, "pickupable": false, "blocks_movement": false, "blocks_projectile": false, "has_height": false, "duration_ms": 10000, "decay_target": 951, "xml_line": 3224},

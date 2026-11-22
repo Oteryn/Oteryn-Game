@@ -1206,9 +1206,13 @@ async fn apply_loop_move<C: ItemLoopContent>(
             return refuse(LoopMoveRefusal::NotSupported);
         }
         let source_plain_corpse: bool = row.try_get("source_plain_corpse")?;
+        // Current authority is already fenced above. A plain corpse keeps its
+        // original Ground generation as part of the lethal MINT proof.
         if source_plain_corpse
             && row.try_get::<String, _>("ground_generation")?
-                != fence.scope_ownership_generation.get().to_string()
+                .parse::<u64>()
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+                > fence.scope_ownership_generation.get()
         {
             return refuse(LoopMoveRefusal::Stale);
         }

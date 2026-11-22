@@ -2492,7 +2492,7 @@ mod tests {
             }
         }
         let chains = cohort["chains"].as_object().ok_or("source chains")?;
-        assert_eq!(chains.len(), 252);
+        assert_eq!(chains.len(), 260);
         for stages in chains.values() {
             for stage in stages.as_array().ok_or("source chain")? {
                 let id = stage[0].as_u64().ok_or("stage Item id")?;

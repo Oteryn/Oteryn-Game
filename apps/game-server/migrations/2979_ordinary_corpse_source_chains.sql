@@ -10,6 +10,14 @@ DECLARE
     chain_anchor CONSTANT TEXT := 'SELECT CASE p_key';
     duration_anchor CONSTANT TEXT := 'SELECT CASE';
     chain_rows CONSTANT TEXT := $chains$
+ WHEN 'oteryn:item.tibia.i4992' THEN ARRAY[4992,4378]
+ WHEN 'oteryn:item.tibia.i44708' THEN ARRAY[44708,44707,44706]
+ WHEN 'oteryn:item.tibia.i44712' THEN ARRAY[44712,44711,44710]
+ WHEN 'oteryn:item.tibia.i44716' THEN ARRAY[44716,44715,44714]
+ WHEN 'oteryn:item.tibia.i48260' THEN ARRAY[48260,48259,48258,48257]
+ WHEN 'oteryn:item.tibia.i48276' THEN ARRAY[48276,48275,48274]
+ WHEN 'oteryn:item.tibia.i48388' THEN ARRAY[48388,48387,48386]
+ WHEN 'oteryn:item.tibia.i48392' THEN ARRAY[48392,48391,48390]
  WHEN 'oteryn:item.tibia.i3994' THEN ARRAY[3994,3995,3996]
  WHEN 'oteryn:item.tibia.i3998' THEN ARRAY[3998,3999,4000]
  WHEN 'oteryn:item.tibia.i4116' THEN ARRAY[4116,4117,4118]
@@ -168,6 +176,14 @@ DECLARE
  WHEN 'oteryn:item.tibia.i54674' THEN ARRAY[54674,54675,54676,54677]
 $chains$;
     duration_rows CONSTANT TEXT := $durations$
+ WHEN p_key='oteryn:item.tibia.i4992' THEN ARRAY[60000,0]::BIGINT[]
+ WHEN p_key='oteryn:item.tibia.i44708' THEN ARRAY[300000,300000,60000]::BIGINT[]
+ WHEN p_key='oteryn:item.tibia.i44712' THEN ARRAY[300000,300000,60000]::BIGINT[]
+ WHEN p_key='oteryn:item.tibia.i44716' THEN ARRAY[300000,300000,60000]::BIGINT[]
+ WHEN p_key='oteryn:item.tibia.i48260' THEN ARRAY[5000,5000,5000,5000]::BIGINT[]
+ WHEN p_key='oteryn:item.tibia.i48276' THEN ARRAY[5000,5000,5000]::BIGINT[]
+ WHEN p_key='oteryn:item.tibia.i48388' THEN ARRAY[5000,5000,5000]::BIGINT[]
+ WHEN p_key='oteryn:item.tibia.i48392' THEN ARRAY[5000,5000,5000]::BIGINT[]
  WHEN p_key='oteryn:item.tibia.i3994' THEN ARRAY[300000,300000,60000]::BIGINT[]
  WHEN p_key='oteryn:item.tibia.i3998' THEN ARRAY[300000,300000,60000]::BIGINT[]
  WHEN p_key='oteryn:item.tibia.i4116' THEN ARRAY[300000,300000,60000]::BIGINT[]
@@ -307,7 +323,7 @@ $chains$;
  WHEN p_key='oteryn:item.tibia.i51533' THEN ARRAY[300000,300000,60000,60000]::BIGINT[]
  WHEN p_key='oteryn:item.tibia.i51538' THEN ARRAY[300000,300000,60000,60000]::BIGINT[]
  WHEN p_key='oteryn:item.tibia.i52117' THEN ARRAY[600000,600000,10000,600000]::BIGINT[]
- WHEN p_key='oteryn:item.tibia.i52559' THEN ARRAY[300000]::BIGINT[]
+ WHEN p_key='oteryn:item.tibia.i52559' THEN ARRAY[0]::BIGINT[]
  WHEN p_key='oteryn:item.tibia.i52684' THEN ARRAY[300000,300000,300000,300000]::BIGINT[]
  WHEN p_key='oteryn:item.tibia.i52688' THEN ARRAY[300000,300000,300000,300000]::BIGINT[]
  WHEN p_key='oteryn:item.tibia.i52692' THEN ARRAY[300000,300000,300000,300000]::BIGINT[]

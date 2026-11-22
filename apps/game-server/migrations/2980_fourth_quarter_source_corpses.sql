@@ -21,7 +21,50 @@ BEGIN
     THEN
         RAISE EXCEPTION 'Source corpse registry predecessor changed';
     END IF;
+    -- Crystal retains these admitted roots with no timer. Candy Horror's
+    -- positive timer also leaves the same body: target 48297 has no ItemType.
     FOR source IN SELECT * FROM (VALUES
+        (2983, ARRAY[2983], ARRAY[0]::BIGINT[]),
+        (4378, ARRAY[4378], ARRAY[0]::BIGINT[]),
+        (21815, ARRAY[21815], ARRAY[0]::BIGINT[]),
+        (21887, ARRAY[21887], ARRAY[0]::BIGINT[]),
+        (22495, ARRAY[22495], ARRAY[0]::BIGINT[]),
+        (22698, ARRAY[22698], ARRAY[0]::BIGINT[]),
+        (23567, ARRAY[23567], ARRAY[0]::BIGINT[]),
+        (23729, ARRAY[23729], ARRAY[0]::BIGINT[]),
+        (26125, ARRAY[26125], ARRAY[0]::BIGINT[]),
+        (27586, ARRAY[27586], ARRAY[0]::BIGINT[]),
+        (31203, ARRAY[31203], ARRAY[0]::BIGINT[]),
+        (31204, ARRAY[31204], ARRAY[0]::BIGINT[]),
+        (31205, ARRAY[31205], ARRAY[0]::BIGINT[]),
+        (31206, ARRAY[31206], ARRAY[0]::BIGINT[]),
+        (35136, ARRAY[35136], ARRAY[0]::BIGINT[]),
+        (35384, ARRAY[35384], ARRAY[0]::BIGINT[]),
+        (35388, ARRAY[35388], ARRAY[0]::BIGINT[]),
+        (35600, ARRAY[35600], ARRAY[0]::BIGINT[]),
+        (35686, ARRAY[35686], ARRAY[0]::BIGINT[]),
+        (35846, ARRAY[35846], ARRAY[0]::BIGINT[]),
+        (36434, ARRAY[36434], ARRAY[0]::BIGINT[]),
+        (36929, ARRAY[36929], ARRAY[0]::BIGINT[]),
+        (39949, ARRAY[39949], ARRAY[0]::BIGINT[]),
+        (43762, ARRAY[43762], ARRAY[0]::BIGINT[]),
+        (43771, ARRAY[43771], ARRAY[0]::BIGINT[]),
+        (43959, ARRAY[43959], ARRAY[0]::BIGINT[]),
+        (44666, ARRAY[44666], ARRAY[0]::BIGINT[]),
+        (44670, ARRAY[44670], ARRAY[0]::BIGINT[]),
+        (48109, ARRAY[48109], ARRAY[0]::BIGINT[]),
+        (48112, ARRAY[48112], ARRAY[0]::BIGINT[]),
+        (48268, ARRAY[48268], ARRAY[0]::BIGINT[]),
+        (48271, ARRAY[48271], ARRAY[0]::BIGINT[]),
+        (48340, ARRAY[48340], ARRAY[0]::BIGINT[]),
+        (48349, ARRAY[48349], ARRAY[0]::BIGINT[]),
+        (48353, ARRAY[48353], ARRAY[0]::BIGINT[]),
+        (48366, ARRAY[48366], ARRAY[0]::BIGINT[]),
+        (48382, ARRAY[48382], ARRAY[0]::BIGINT[]),
+        (48405, ARRAY[48405], ARRAY[0]::BIGINT[]),
+        (49120, ARRAY[49120], ARRAY[0]::BIGINT[]),
+        (50311, ARRAY[50311], ARRAY[0]::BIGINT[]),
+        (51560, ARRAY[51560], ARRAY[0]::BIGINT[]),
         (2127, ARRAY[2127], ARRAY[2000]::BIGINT[]),
         (4388, ARRAY[4388,4389,4390], ARRAY[300000,300000,60000]::BIGINT[]),
         (5013, ARRAY[5013,4378], ARRAY[60000,0]::BIGINT[]),
@@ -184,3 +227,132 @@ BEGIN
     EXECUTE replace(lifetime_body,lifetime_anchor,lifetime_anchor||lifetime_cases);
     EXECUTE replace(plain_body,plain_anchor,$plain$ 'oteryn:item.tibia.i2127', 'oteryn:item.tibia.i24256', 'oteryn:item.tibia.i35686', 'oteryn:item.tibia.i36434'$plain$||', '||plain_anchor);
 END $source_corpses$;
+
+-- A custody-only mutation preserves the exact applied stage through the
+-- installed immutable handoff receipt. The retirement mutation consumes one
+-- further revision, so its deferred guard proves the preceding revision.
+DO $corpse_decay_custody$
+DECLARE
+    f TEXT;
+    body TEXT;
+    original CONSTANT TEXT := 'i.state_revision=r.state_revision_before+1 AND i.last_transaction_id=r.transaction_id';
+    retired CONSTANT TEXT := 'i.state_revision=r.state_revision_before+2';
+    handoff CONSTANT TEXT := $proof$EXISTS(
+        SELECT 1 FROM game_item_decay_handoffs h
+         WHERE h.item_instance_id=r.item_instance_id
+           AND h.source_stage=r.source_stage AND h.stage_transaction_id=r.transaction_id
+           AND h.result_revision=i.state_revision AND h.custody_transaction_id=i.last_transaction_id)$proof$;
+BEGIN
+    FOREACH f IN ARRAY ARRAY['game_corpse_terminal_stage_ready(uuid)','game_item_decay_retire_consistency_guard()'] LOOP
+        body := pg_get_functiondef(f::regprocedure);
+        IF (length(body)-length(replace(body,original,'')))/length(original) <> 1 THEN
+            RAISE EXCEPTION 'Corpse terminal stage predecessor changed in %', f;
+        END IF;
+        body := replace(body,original,'(('||original||') OR '||handoff||')');
+        IF f = 'game_item_decay_retire_consistency_guard()' THEN
+            IF (length(body)-length(replace(body,retired,'')))/length(retired) <> 1 THEN
+                RAISE EXCEPTION 'Corpse retirement predecessor changed';
+            END IF;
+            body := replace(body,retired,'('||retired||' OR EXISTS(
+                SELECT 1 FROM game_item_decay_handoffs h
+                 WHERE h.item_instance_id=r.item_instance_id
+                   AND h.source_stage=r.source_stage AND h.stage_transaction_id=r.transaction_id
+                   AND h.result_revision=i.state_revision-1))');
+        END IF;
+        EXECUTE body;
+    END LOOP;
+END $corpse_decay_custody$;
+
+-- These admitted definitions have both movable and pickupable source facts.
+-- Inventory admission still checks the active native Item policy and the
+-- exact move receipt. An occupied corpse container keeps its Ground owner.
+CREATE FUNCTION game_ordinary_corpse_portable_key(p_key TEXT) RETURNS BOOLEAN
+LANGUAGE sql IMMUTABLE STRICT AS $$
+    SELECT p_key IN (
+        'oteryn:item.tibia.i2983','oteryn:item.tibia.i3994','oteryn:item.tibia.i3995',
+        'oteryn:item.tibia.i3996','oteryn:item.tibia.i3998','oteryn:item.tibia.i3999',
+        'oteryn:item.tibia.i4000','oteryn:item.tibia.i4024','oteryn:item.tibia.i4116',
+        'oteryn:item.tibia.i4117','oteryn:item.tibia.i4118','oteryn:item.tibia.i4156',
+        'oteryn:item.tibia.i4157','oteryn:item.tibia.i4188','oteryn:item.tibia.i4189',
+        'oteryn:item.tibia.i4190','oteryn:item.tibia.i4378','oteryn:item.tibia.i4991',
+        'oteryn:item.tibia.i4992','oteryn:item.tibia.i4993','oteryn:item.tibia.i5565',
+        'oteryn:item.tibia.i5566','oteryn:item.tibia.i5567','oteryn:item.tibia.i10332',
+        'oteryn:item.tibia.i10334','oteryn:item.tibia.i10335','oteryn:item.tibia.i10440',
+        'oteryn:item.tibia.i10441','oteryn:item.tibia.i10442','oteryn:item.tibia.i22698',
+        'oteryn:item.tibia.i23729','oteryn:item.tibia.i31203','oteryn:item.tibia.i31204',
+        'oteryn:item.tibia.i31205','oteryn:item.tibia.i31206','oteryn:item.tibia.i50311')
+$$;
+REVOKE ALL ON FUNCTION game_ordinary_corpse_portable_key(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_ordinary_corpse_portable_key(TEXT) TO oteryn_game_runtime;
+
+DO $portable_ordinary_corpse$
+DECLARE
+    body TEXT;
+    original CONSTANT TEXT := 'm.loot_table_production_key=i.definition_production_key';
+    keys CONSTANT TEXT := 'i.definition_production_key IN (';
+    provenance CONSTANT TEXT := 'AND g.world_id=m.death_world_id';
+    guard CONSTANT TEXT := $old$OR game_item_loop_drop_ref(ground_body.corpse_ref)))),false) THEN$old$;
+    timed CONSTANT TEXT := 'OR p.map_source_transaction_id IS NOT NULL';
+BEGIN
+    body := pg_get_functiondef('game_item_plain_corpse_source(uuid)'::regprocedure);
+    IF (length(body)-length(replace(body,original,'')))/length(original) <> 1
+        OR (length(body)-length(replace(body,keys,'')))/length(keys) <> 1
+        OR (length(body)-length(replace(body,provenance,'')))/length(provenance) <> 1
+    THEN
+        RAISE EXCEPTION 'Plain corpse provenance predecessor changed';
+    END IF;
+    body := replace(body,original,'('||original||' OR (
+        game_ordinary_corpse_portable_key(i.definition_production_key)
+        AND EXISTS (
+            SELECT 1 FROM game_spell_field_temporal_schedules p
+            JOIN game_spell_field_temporal_receipts r USING(item_instance_id,source_stage)
+            WHERE p.item_instance_id=i.item_instance_id
+              AND p.source_transaction_id=m.transaction_id AND p.source_ordinal=0
+              AND (p.target_family,p.target_production_key,p.target_revision)=
+                  (i.definition_family,i.definition_production_key,i.definition_revision_ref)
+              AND ((r.transaction_id=i.last_transaction_id AND r.state_revision_before+1=i.state_revision)
+                   OR EXISTS (
+                      SELECT 1 FROM game_item_decay_handoffs h
+                       WHERE h.item_instance_id=r.item_instance_id
+                         AND h.source_stage=r.source_stage AND h.stage_transaction_id=r.transaction_id
+                         AND h.result_revision=i.state_revision AND h.custody_transaction_id=i.last_transaction_id
+                   ))
+        )))');
+    body := replace(body,keys,'(game_ordinary_corpse_portable_key(i.definition_production_key) OR '||keys);
+    body := replace(body,provenance,') AND NOT EXISTS (
+        SELECT 1 FROM game_item_corpse_container_entries e WHERE e.parent_item_instance_id=i.item_instance_id
+    ) '||provenance);
+    EXECUTE body;
+
+    body := pg_get_functiondef('game_item_loop_line_admit()'::regprocedure);
+    IF (length(body)-length(replace(body,guard,'')))/length(guard) <> 1
+        OR (length(body)-length(replace(body,timed,'')))/length(timed) <> 1 THEN
+        RAISE EXCEPTION 'Portable corpse inventory predecessor changed';
+    END IF;
+    body := replace(body,timed,timed||$timed$
+        OR (NEW.quantity_before=1 AND NEW.quantity_after=1 AND (
+            (NEW.from_kind=3 AND NEW.to_kind=3 AND game_item_loop_native_corpse_source(NEW.item_instance_id))
+            OR (NEW.from_kind IN (1,2,3) AND NEW.to_kind IN (1,2,3)
+                AND game_ordinary_corpse_portable_key(NEW.definition_production_key)
+                AND p.source_ordinal=0 AND EXISTS (
+                    SELECT 1 FROM game_item_mint_receipts m
+                     WHERE m.item_instance_id=p.item_instance_id
+                       AND m.transaction_id=p.source_transaction_id
+                       AND m.loot_purpose_key='CORPSE_MATERIALIZATION'
+                       AND m.materialized_at IS NOT NULL
+                ))
+        ))$timed$);
+    EXECUTE replace(body,guard,$new$OR game_item_loop_drop_ref(ground_body.corpse_ref)))),false)
+      AND NOT (NEW.to_kind IN (1,2) AND NEW.quantity_before=1 AND NEW.quantity_after=1
+        AND NEW.definition_family='Item' AND NEW.definition_revision_ref='definition-r1'
+        AND game_ordinary_corpse_portable_key(NEW.definition_production_key)
+        AND EXISTS (
+             SELECT 1 FROM game_item_ground_locations portable_ground
+             JOIN game_item_instances portable_item USING(item_instance_id)
+             WHERE portable_ground.item_instance_id=NEW.item_instance_id
+               AND (game_item_plain_corpse_source(NEW.item_instance_id)
+                    OR game_item_loop_drop_ref(portable_ground.corpse_ref))
+               AND (portable_item.definition_family,portable_item.definition_production_key,portable_item.definition_revision_ref)=
+                   (NEW.definition_family,NEW.definition_production_key,NEW.definition_revision_ref)
+        )) THEN$new$);
+END $portable_ordinary_corpse$;
