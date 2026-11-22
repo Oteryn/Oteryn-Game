@@ -13,8 +13,10 @@ fn configured_preference_utilities_reach_settings_owner() -> Result<(), Box<dyn 
     owner.phase = crate::bevy_shell::owner::Phase::Playing;
     let mut preferences = owner.settings.preferences.clone();
     preferences.add_hotkey_profile("Zeta")?;
+    preferences.hud_npc_names = Some(true);
     owner.settings.apply(preferences);
     for action in [
+        UtilityAction::ToggleCreatureHuds,
         UtilityAction::ToggleCreatureHuds,
         UtilityAction::ToggleFpsLagIndicator,
         UtilityAction::NextHotkeyPreset,
@@ -36,7 +38,9 @@ fn configured_preference_utilities_reach_settings_owner() -> Result<(), Box<dyn 
         let after = &owner.settings.preferences;
         match action {
             UtilityAction::ToggleCreatureHuds => {
-                assert_eq!(after.creature_bars, !before.creature_bars)
+                assert_eq!(after.creature_bars, !before.creature_bars);
+                assert_eq!(after.hud_names, [after.creature_bars; 3]);
+                assert_eq!(after.hud_npc_names, Some(after.creature_bars));
             }
             UtilityAction::ToggleFpsLagIndicator => {
                 assert_ne!(after.performance.show_fps, before.performance.show_fps)
