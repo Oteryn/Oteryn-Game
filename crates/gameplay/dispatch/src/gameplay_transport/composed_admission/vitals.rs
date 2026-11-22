@@ -42,22 +42,59 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor_spell::observe_vitals(&runtime, &states, actor, game_session_id)
     }
 
+    async fn prepare_actor_vitals(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        // Named House residents also own these persistent native conditions.
+        self.drome_sync(session, false).await
+            && self.reconcile_pending_item_effects(actor, session).await
+            && super::super::item_use::gourmet::checkpoint(self, actor, session, false).await
+    }
+
+    pub(in crate::gameplay_transport) async fn tick_house_actor_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        let session = admitted.game_session_id;
+        let fence = admitted.item_fence?;
+        if fence.connection_generation.get() != admitted.continuity.connection_generation {
+            return None;
+        }
+        let ready = self.prepare_actor_vitals(actor, session).await;
+        if ready {
+            self.load_wheel_gift(actor, session).await;
+        }
+        let deadline = self.cake_regeneration_deadline();
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if ready
+            && self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .is_some()
+            && !states.has_pending_spell_commit(actor, session)
+            && runtime
+                .assert_house_actor_spell_unreserved(actor, session)
+                .is_ok()
+            && runtime.house_player_writes_fenced(actor, session) == Ok(false)
+            && let Some(state) = states.house_state_mut(&runtime, actor, session, fence)
+        {
+            super::super::cake_event::tick_house_regeneration(
+                state,
+                deadline,
+                self.owner_now().get(),
+                runtime.content_pin().server_artifact_digest(),
+                session,
+            );
+        }
+        states.house_vitals(&runtime, actor, session, fence)
+    }
+
     pub(in crate::gameplay_transport) async fn tick_actor_vitals(
         &self,
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
-        if !self.drome_sync(game_session_id, false).await {
-            return None;
-        }
-        // Named House residents also own these persistent native conditions.
-        // Checkpoint before unrelated Channel-only cadence may return early.
-        if !self
-            .reconcile_pending_item_effects(actor, game_session_id)
-            .await
-            || !super::super::item_use::gourmet::checkpoint(self, actor, game_session_id, false)
-                .await
-        {
+        if !self.prepare_actor_vitals(actor, game_session_id).await {
             return None;
         }
         if self
@@ -67,6 +104,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .house_actor_state(actor, game_session_id)
             .is_ok()
         {
+            self.load_wheel_gift(actor, game_session_id).await;
             // The House service projects vitals from its admitted item fence.
             // Here the cadence only needs to advance the condition owners.
             return None;
