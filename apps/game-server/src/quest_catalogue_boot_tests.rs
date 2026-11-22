@@ -23,9 +23,15 @@ fn served_revision() -> &'static str {
 
 /// The catalogue and event line exactly as `boot_and_serve` loads them.
 fn boot_catalogue() -> Result<(Arc<QuestStateCatalogue>, String), Box<dyn Error>> {
-    load_quest_catalogue(load_embedded_quest_state, served_revision())
-        .map(|(catalogue, _, event)| (catalogue, event))
-        .map_err(|error| format!("{error:?}").into())
+    load_quest_catalogue(
+        |revision| {
+            load_embedded_quest_state(revision)
+                .inspect_err(|error| eprintln!("embedded quest state: {error:?}"))
+        },
+        served_revision(),
+    )
+    .map(|(catalogue, _, event)| (catalogue, event))
+    .map_err(|error| format!("{error:?}").into())
 }
 
 /// The committed document's transitions, read independently of the loader.
@@ -94,6 +100,87 @@ fn the_boot_catalogue_is_the_served_content_revision() -> TestResult {
     assert_eq!(catalogue.content_revision(), served_revision());
     assert!(line.starts_with("event=quest_catalogue state=loaded "));
     assert!(line.contains(&format!("content_revision={} ", served_revision())));
+    Ok(())
+}
+
+#[test]
+fn the_boot_catalogue_registers_guarded_quest_dialogue_topics() -> TestResult {
+    use oteryn_gameplay_quests::quest::reward_callbacks;
+
+    let (catalogue, _) = boot_catalogue()?;
+    let offered = reward_callbacks::offered_for(&catalogue)?;
+    for (suffix, topic, next_topic) in [
+        ("new-frontier/project", 0, 1),
+        ("new-frontier/briefing", 1, 2),
+        ("new-frontier/briefing-long", 1, 2),
+        ("new-frontier/bait-offer", 0, 1),
+        ("new-frontier/bait-replacement-offer", 0, 2),
+        ("new-frontier/peace-offer", 0, 10),
+        ("new-frontier/ask-humgolf", 0, 1),
+        ("new-frontier/ask-wyrdin", 0, 1),
+        ("new-frontier/ask-angus", 0, 1),
+        ("new-frontier/ask-telas", 0, 1),
+        ("new-frontier/ask-king_tibianus", 0, 1),
+        ("to-blind-the-enemy/offer", 0, 1),
+    ] {
+        let key = format!("oteryn:quest-reward/{suffix}");
+        let callback = offered.iter().find(|c| c.key == key).ok_or(key.clone())?;
+        assert_eq!(
+            (callback.topic, callback.next_topic),
+            (topic, next_topic),
+            "{key}"
+        );
+        assert_eq!(
+            callback.requires_premium,
+            suffix.starts_with("new-frontier/"),
+            "{key}"
+        );
+        let transition = catalogue.transition(&key).ok_or(key.clone())?;
+        assert!(!transition.completes, "{key}");
+        let stored = callback
+            .storage
+            .iter()
+            .map(|guard| (guard.track.clone(), guard.minimum))
+            .collect();
+        let changes = catalogue
+            .evaluate(transition, &stored, 0)
+            .map_err(|error| format!("{key}: {error:?}"))?;
+        assert!(!changes.is_empty(), "{key} must retain its storage guard");
+        assert!(
+            changes.iter().all(|change| change.before == change.after),
+            "{key}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn the_boot_binding_parser_rejects_effects_on_a_guarded_quest_prompt() -> TestResult {
+    use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
+    use serde_json::json;
+
+    let source: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../content/quests/authored-bindings/the-new-frontier.json"
+    ))?;
+    for (field, value) in [
+        (
+            "give",
+            json!({"item": "oteryn:item.tibia.i3031", "count": 1}),
+        ),
+        ("completes", json!(true)),
+        ("next_topic", json!(0)),
+    ] {
+        let mut document = source.clone();
+        let callback = &mut document["quests"][0]["stages"][0]["trigger"]["callback"];
+        assert_eq!(callback["key"], "oteryn:quest-reward/new-frontier/project");
+        callback[field] = value;
+        let result = Bindings::parse(&serde_json::to_vec(&document)?);
+        assert_eq!(
+            result.err().as_deref(),
+            Some("invalid reward callback oteryn:quest-reward/new-frontier/project"),
+            "{field} must not pass as a guarded topic change"
+        );
+    }
     Ok(())
 }
 
