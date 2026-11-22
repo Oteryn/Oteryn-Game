@@ -7,6 +7,7 @@ use crate::durability::item_loop_move::LoopMoveReplay;
 use crate::foundation::ChannelRuntimeV1;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::gameplay_transport::item_move::LoopMoveResult;
+use crate::gameplay_transport::paced_movement::underwater_drown::underwater;
 use crate::map::floor::{self, BundleDoors};
 use crate::map::overlay::{ChannelOverlay, TilePos};
 use crate::map::view::EntrySource;
@@ -393,9 +394,17 @@ fn rope_in_channel(
         next.groups.insert(STAIRHOP_COOLDOWN_KEY.into(), until);
         next
     });
-    if runtime.commit_source_step(proof).is_err() {
+    let Ok(landing) = runtime.commit_source_step(proof) else {
         return done(UseDisposition::Rejected);
-    }
+    };
+    states.stage_underwater_step(
+        runtime,
+        actor,
+        session,
+        now.get(),
+        underwater(at.map, expected.position()),
+        underwater(at.map, landing.position()),
+    );
     if let Some(cooldowns) = cooldowns
         && let Some(state) = states.get_mut(runtime, actor, session)
     {
@@ -412,7 +421,7 @@ struct RopeGround<'a> {
 
 fn pull_from_below(
     runtime: &mut ChannelRuntimeV1,
-    states: &ChannelSpellStates,
+    states: &mut ChannelSpellStates,
     cells: &NativeEntryMovementCells,
     map: &crate::map::boot::BundleMap,
     below: TilePos,
@@ -454,9 +463,17 @@ fn pull_from_below(
                 runtime, cells, subject, session, from, to, pz_blocked, &blocker,
             )
             .map_err(|_| impossible)?;
-            runtime
+            let landing = runtime
                 .commit_source_step(proof)
                 .map_err(|_| UseDisposition::Rejected)?;
+            states.stage_underwater_step(
+                runtime,
+                subject,
+                session,
+                now.get(),
+                underwater(map, from.position()),
+                underwater(map, landing.position()),
+            );
             return Ok(RopeTurn::MovedPlayer(session));
         }
         floor::commit_bundle_rope_creature(runtime, cells, subject, from, &blocker)

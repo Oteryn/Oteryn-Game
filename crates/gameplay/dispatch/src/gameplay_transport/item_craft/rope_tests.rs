@@ -58,6 +58,14 @@ struct Owner {
 }
 impl Owner {
     fn new() -> Self {
+        Self::at(MovementLocalPosition {
+            x: 10,
+            y: 10,
+            floor: 8,
+        })
+    }
+
+    fn at(start: MovementLocalPosition) -> Self {
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
         use oteryn_world_bundle::writer::{
             self as writer, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -83,7 +91,7 @@ impl Owner {
                 max_y: 32,
                 floors: vec![-8, -7],
             },
-            palette: [100, 386]
+            palette: [100, 386, 394, 5404]
                 .into_iter()
                 .enumerate()
                 .map(|(n, id)| PaletteEntry {
@@ -124,7 +132,7 @@ impl Owner {
                 tiles: vec![
                     tile(10, 10, 1),
                     tile(11, 10, 0),
-                    tile(12, 10, 0),
+                    tile(12, 10, 3),
                     tile(13, 10, 0),
                 ],
             },
@@ -137,7 +145,9 @@ impl Owner {
                     tile(9, 10, 0),
                     tile(10, 10, 0),
                     tile(11, 10, 0),
+                    tile(12, 10, 2),
                     tile(10, 11, 0),
+                    tile(12, 11, 0),
                 ],
             },
         ];
@@ -170,9 +180,9 @@ impl Owner {
                 ),
                 bundle: pins,
                 start: crate::map::overlay::TilePos {
-                    x: 10,
-                    y: 10,
-                    floor: -8,
+                    x: u16::try_from(start.x).unwrap(),
+                    y: u16::try_from(start.y).unwrap(),
+                    floor: -i8::try_from(start.floor).unwrap(),
                 },
             },
             world,
@@ -188,7 +198,7 @@ impl Owner {
             room.compiled().client_digest(),
             booted.frame_binding_digest(world),
             booted.map_revision_digest(),
-            (10, 10, 8),
+            (start.x, start.y, start.floor),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
@@ -233,9 +243,14 @@ impl Owner {
                 .unwrap();
         let mut placement = at.map.overlay.base().digest().to_vec();
         placement.extend_from_slice(
-            &oteryn_world_bundle::bundle::placement_key(-8, x, 10, 0)
-                .unwrap()
-                .to_be_bytes(),
+            &oteryn_world_bundle::bundle::placement_key(
+                i8::try_from(at.at.floor).unwrap(),
+                x,
+                10,
+                0,
+            )
+            .unwrap()
+            .to_be_bytes(),
         );
         UseIntent {
             target: UseTarget::ItemByDefinition(NonZeroU32::new(2).unwrap()),
@@ -333,6 +348,77 @@ impl FreshAdmissionAuthority for Owner {
             ..UseOutcome::rejected()
         })
     }
+}
+
+#[test]
+fn rope_pull_clears_drowning_when_a_player_lands_on_dry_ground() {
+    use crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown;
+
+    let owner = Owner::at(MovementLocalPosition {
+        x: 11,
+        y: 10,
+        floor: 7,
+    });
+    let session = GameSessionId::decode(&id(8)).unwrap();
+    let actor = {
+        let mut runtime = owner.runtime.borrow_mut();
+        let reservation = runtime.reserve_fresh_session(session).unwrap();
+        let actor = runtime.commit_fresh_session(reservation).unwrap();
+        runtime
+            .initialize_pinned_test_position(
+                actor,
+                MovementLocalPosition {
+                    x: 12,
+                    y: 10,
+                    floor: 8,
+                },
+            )
+            .unwrap();
+        let mut states = owner.states.borrow_mut();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                crate::gameplay_transport::actor_spell::tests::FACTS,
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .unwrap();
+        assert!(states.stage_underwater_step(&runtime, actor, session, 0, false, true));
+        actor
+    };
+    let drowns = || {
+        owner
+            .states
+            .borrow()
+            .get(&owner.runtime.borrow(), actor, session)
+            .unwrap()
+            .owned_conditions()
+            .instances()
+            .iter()
+            .any(|instance| is_environment_drown(instance.provenance()))
+    };
+    assert!(drowns());
+
+    assert_eq!(
+        owner.apply(&owner.intent(12, 0), None),
+        UseDisposition::Committed
+    );
+    assert_eq!(
+        owner
+            .runtime
+            .borrow()
+            .read_actor_position(actor)
+            .unwrap()
+            .position(),
+        MovementLocalPosition {
+            x: 12,
+            y: 11,
+            floor: 7
+        }
+    );
+    assert!(!drowns());
 }
 
 #[test]
