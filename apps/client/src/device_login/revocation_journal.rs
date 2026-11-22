@@ -9,6 +9,7 @@ const PREFIX: &str = "revoke-credential-";
 struct ProcessCredential {
     credential: Option<DeviceCredential>,
     forgetting: bool,
+    pending: Vec<DeviceCredential>,
 }
 
 pub(super) struct Journal {
@@ -44,8 +45,8 @@ impl Journal {
     /// entry, is the target. The marker contains only a digest that names a vault entry.
     pub(super) fn record_process_intent(&self) -> Result<bool, NativeLoginError> {
         let mut process = self.process.lock().map_err(|_| storage_error())?;
-        if let Some(credential) = &process.credential {
-            self.stage(credential)?;
+        if let Some(credential) = process.credential.clone() {
+            self.stage_process(&mut process, &credential)?;
             process.forgetting = true;
             return Ok(true);
         }
@@ -61,7 +62,7 @@ impl Journal {
         if process.forgetting
             && let Some(credential) = credential
         {
-            self.stage(credential)?;
+            self.stage_process(&mut process, credential)?;
         }
         process.credential = credential.cloned();
         Ok(())
@@ -73,22 +74,64 @@ impl Journal {
     }
 
     pub(super) fn stage(&self, credential: &DeviceCredential) -> Result<(), NativeLoginError> {
+        self.publish(credential, false).map(|_| ())
+    }
+
+    fn stage_process(
+        &self,
+        process: &mut ProcessCredential,
+        credential: &DeviceCredential,
+    ) -> Result<(), NativeLoginError> {
+        if !self.publish(credential, true)? && !process.pending.contains(credential) {
+            process.pending.push(credential.clone());
+        }
+        Ok(())
+    }
+
+    fn publish(
+        &self,
+        credential: &DeviceCredential,
+        process_only: bool,
+    ) -> Result<bool, NativeLoginError> {
         let Some(folder) = &self.folder else {
-            return Ok(());
+            return Ok(false);
         };
         let reference = credential_reference(credential.expose());
         let marker = folder.join(format!("{PREFIX}{reference}"));
         let _publication = crate::atomic_file::try_lock(&folder.join("revocations"))
             .map_err(|_| storage_error())?;
-        (self.resolve)(&reference)
-            .write(credential.expose().as_bytes())
-            .map_err(|_| storage_error())?;
+        let vault = (self.resolve)(&reference);
+        let bytes = credential.expose().as_bytes();
+        if process_only {
+            if !vault.write_process(bytes).map_err(|_| storage_error())? {
+                return Ok(false);
+            }
+        } else {
+            vault.write(bytes).map_err(|_| storage_error())?;
+        }
         crate::atomic_file::replace(&marker, reference.as_bytes(), true)
             .map_err(|_| storage_error())?;
-        sync_directory(folder)
+        sync_directory(folder)?;
+        Ok(true)
     }
 
     pub(super) async fn replay(&self, client: &NativeLoginClient) -> Result<(), NativeLoginError> {
+        let pending = self
+            .process
+            .lock()
+            .map_err(|_| storage_error())?
+            .pending
+            .clone();
+        for credential in pending {
+            client
+                .revoke_device(&credential, CancellationToken::new())
+                .await?;
+            self.process
+                .lock()
+                .map_err(|_| storage_error())?
+                .pending
+                .retain(|item| item != &credential);
+        }
         let Some(folder) = &self.folder else {
             return Ok(());
         };

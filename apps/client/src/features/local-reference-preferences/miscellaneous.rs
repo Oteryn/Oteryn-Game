@@ -88,15 +88,6 @@ impl MiscellaneousPreferences {
         active.publish(path)
     }
 
-    pub(crate) fn disable_remember_device_at(path: &std::path::Path) -> std::io::Result<()> {
-        let _lock = crate::atomic_file::lock(path)?;
-        let before = Self {
-            remember_device: true,
-            ..Self::default()
-        };
-        Self::default().publish_edits(before, path)
-    }
-
     fn publish(&self, path: &std::path::Path) -> std::io::Result<()> {
         crate::atomic_file::replace(path, &serde_json::to_vec(self)?, true)
     }

@@ -45,6 +45,7 @@ impl HostOwner {
         if self.play.is_some() {
             return;
         }
+        self.login.cancel_save();
         // Before the first sign-in of this process the entry has no Platform yet.
         let configured = self.login.form.settings.config().is_ok_and(|config| {
             self.entry
