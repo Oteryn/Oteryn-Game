@@ -325,6 +325,22 @@ mod tests {
                 .message()
                 .contains("connection settings")
         );
+        let folder = tempfile::tempdir()?;
+        let origin = "https://support.example.test";
+        let mut config = crate::reentry::Reentry::device_test_config(folder.path().into(), origin)?;
+        let (sent, received) = std::sync::mpsc::channel();
+        config.open_browser = std::sync::Arc::new(move |uri| sent.send(uri.to_owned()).is_ok());
+        assert!(
+            app.world_mut()
+                .non_send_mut::<HostOwner>()
+                .configure_test_web_link(config)
+        );
+        app.world_mut().trigger(Activate { entity: link });
+        let destination = received.recv_timeout(std::time::Duration::from_secs(3))?;
+        assert!(
+            destination.starts_with(origin) && destination.ends_with("/support/tickets"),
+            "{destination}"
+        );
         Ok(())
     }
     #[test]

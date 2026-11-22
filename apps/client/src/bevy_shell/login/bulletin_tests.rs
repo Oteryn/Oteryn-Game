@@ -249,6 +249,14 @@ fn login_news_projects_today_and_tomorrow_without_moving_the_calendar_cursor() -
     activate_action(&mut app, Action::Next)?;
     activate_action(&mut app, Action::News)?;
     assert_eq!(body(&mut app)?, news);
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let state = &mut owner.login.bulletin;
+        state.news_day = Some(0);
+        state.body = "previous UTC day".into();
+    }
+    app.update();
+    assert_eq!(body(&mut app)?, news);
     Ok(())
 }
 
@@ -281,5 +289,25 @@ fn login_shows_a_gameplay_hint_with_its_matching_control_icon() -> TestResult {
         .ok_or("login parent")?
         .parent();
     assert!(app.world().get::<LoginDialog>(parent).is_some());
+    Ok(())
+}
+
+#[test]
+fn review_login_menu_handle_hides_and_restores_the_account_actions() -> TestResult {
+    let mut app = app()?;
+    let find = |app: &mut App, key: &str| -> Result<Entity, Box<dyn std::error::Error>> {
+        app.world_mut()
+            .query::<(Entity, &Name)>()
+            .iter(app.world())
+            .find_map(|(id, name)| (name.as_str() == key).then_some(id))
+            .ok_or_else(|| key.to_owned().into())
+    };
+    let bar = find(&mut app, "login.top_bar")?;
+    let toggle = find(&mut app, "login.toggle_top_bar")?;
+    for expected in [Display::None, Display::Flex] {
+        app.world_mut().trigger(Activate { entity: toggle });
+        app.update();
+        assert_eq!(app.world().get::<Node>(bar).ok_or("bar")?.display, expected);
+    }
     Ok(())
 }

@@ -217,6 +217,40 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     ] {
         control_button(&mut commands, &skins, top_bar, control, caption, width);
     }
+    let menu_handle = commands
+        .spawn((
+            source::button(skins.buttons.clone(), 52.),
+            Name::new("login.toggle_top_bar"),
+        ))
+        .observe(
+            move |event: On<Activate>, mut commands: Commands, guard: ModalGuard| {
+                if guard.allows(event.entity) {
+                    commands
+                        .entity(top_bar)
+                        .entry::<Node>()
+                        .and_modify(|mut node| {
+                            node.display = if node.display == Display::None {
+                                Display::Flex
+                            } else {
+                                Display::None
+                            };
+                        });
+                }
+            },
+        )
+        .id();
+    commands
+        .entity(menu_handle)
+        .entry::<Node>()
+        .and_modify(|mut node| {
+            node.position_type = PositionType::Absolute;
+            node.left = px(2.);
+            node.top = px(2.);
+        });
+    let caption = commands
+        .spawn(source::button_caption("Menu", skins.font.clone()))
+        .id();
+    commands.entity(menu_handle).add_child(caption);
     let panel = commands
         .spawn((
             super::window_drag::DraggableDialog,
@@ -248,7 +282,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let hint = bulletin::featured_hint(&mut commands, &skins);
     commands
         .entity(modal)
-        .add_children(&[background, hint, top_bar, panel]);
+        .add_children(&[background, hint, top_bar, menu_handle, panel]);
     source::dialog_caption(&mut commands, panel, "Login", skins.font.clone());
     let advanced = commands
         .spawn((

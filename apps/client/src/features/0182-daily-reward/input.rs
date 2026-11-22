@@ -10,7 +10,12 @@ impl PlayLink {
     #[cfg(bevy_shell)]
     pub(crate) fn open_reward_store_offers(&self, search: &str) -> bool {
         let mut mailbox = lock(&self.mailbox);
-        if mailbox.store.confirmed_purchase.is_some() {
+        if !mailbox.store.selected {
+            mailbox.daily_reward.feedback = Some(tr!("Store unavailable in this session"));
+            return false;
+        }
+        if mailbox.store.pending || mailbox.store.confirmed_purchase.is_some() {
+            mailbox.daily_reward.feedback = Some(tr!("Waiting for the server"));
             return false;
         }
         let Some(command) = oteryn_client_ui::store::browse(&mut mailbox.store, "featured", search, 0, 0) else {

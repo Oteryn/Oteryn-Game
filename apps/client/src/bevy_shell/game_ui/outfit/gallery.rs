@@ -21,6 +21,16 @@ pub(super) struct Gallery {
     familiar: Option<u32>,
 }
 impl Gallery {
+    pub(super) fn attach_title(&self, commands: &mut Commands, skin: &Skins, picture: Entity) {
+        if self.title_visible
+            && let Some(title) = self.title
+        {
+            let label = commands
+                .spawn(source::button_caption(title, skin.font.clone()))
+                .id();
+            commands.entity(picture).add_child(label);
+        }
+    }
     pub(super) fn refresh(&mut self, link: &crate::play::PlayLink) -> bool {
         let title = link
             .character_info_panel()
@@ -147,11 +157,6 @@ pub(super) fn build(
             .id();
         commands.entity(root).add_child(entity);
     };
-    if gallery.title_visible
-        && let Some(title) = gallery.title
-    {
-        label(title.into());
-    }
     if gallery.all
         && let Some(catalogue) = &panel.catalogue
     {
@@ -178,5 +183,15 @@ pub(super) fn build(
         } else {
             label("Full appearance catalogue unavailable".into());
         }
+    }
+}
+
+impl State {
+    pub(super) fn reset_gallery(&mut self) {
+        self.gallery = Default::default();
+        self.preset = None;
+        self.preset_riding = None;
+        self.playback = Default::default();
+        self.rendered = None;
     }
 }

@@ -178,6 +178,13 @@ fn outfit_preview_buttons_project_confirmed_title_and_familiar()
             .iter(app.world())
             .any(|t| t.0 == title.name())
     );
+    let title_parent = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == title.name()).then_some(parent.parent()))
+        .ok_or("preview title")?;
+    assert!(app.world().get::<ImageNode>(title_parent).is_some());
     click_caption(&mut app, "Hide title")?;
     assert!(
         !app.world_mut()
@@ -242,6 +249,82 @@ fn mount_visibility_keeps_the_selected_mount() -> Result<(), Box<dyn std::error:
             .appearance_panel()
             .fields[2],
         key
+    );
+    Ok(())
+}
+
+#[test]
+fn review_preview_redraw_preserves_the_unsubmitted_preset_name()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, _) = editor_app()?;
+    click_caption(&mut app, "Create preset")?;
+    let entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<presets::NameField>>()
+        .single(app.world())?;
+    app.world_mut()
+        .get_mut::<bevy::text::EditableText>(entity)
+        .ok_or("editor")?
+        .editor_mut()
+        .set_text("Travelling");
+    click_caption(&mut app, "Show title")?;
+    click_caption(&mut app, "Rename preset")?;
+    click_caption(&mut app, "Travelling")
+}
+
+#[test]
+fn accepting_a_preset_after_clearing_its_mount_keeps_the_actor_on_foot()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::{
+        ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
+        actor_motion::ActorMotion,
+    };
+    let (mut app, _) = editor_app()?;
+    let (link, mut receiver, outbox) = crate::play::play_channel();
+    let mut draft = panel();
+    draft.open = true;
+    draft.fields[2] = "horse".into();
+    outbox.bevy_outfit_test_panel(draft.clone());
+    outbox.bevy_mount_test_actor(WorldSpatialEntity {
+        motion: Some(ActorMotion::default()),
+        display_name: None,
+        kind: EntityKind::Player,
+        entity: EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        },
+        position: ActorPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        },
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    });
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.play.as_mut().ok_or("play")?.link = link;
+        owner.settings.preferences.outfit_presets.insert(
+            "Mounted".into(),
+            (std::array::from_fn(|i| draft.fields[i].clone()), Some(true)),
+        );
+    }
+    app.update();
+    click_caption(&mut app, "Mounted")?;
+    click_caption(&mut app, "No mount")?;
+    click_caption(&mut app, "OK")?;
+    let crate::combat_input::PlayCommand::Feature(command) = receiver.try_recv()? else {
+        return Err("missing appearance change".into());
+    };
+    let change = oteryn_client_runtime::appearance::Change::decode(&command.payload)
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(change.selection.mount_key.is_none());
+    assert!(
+        receiver.try_recv().is_err(),
+        "clearing the mount cancels the riding request"
     );
     Ok(())
 }

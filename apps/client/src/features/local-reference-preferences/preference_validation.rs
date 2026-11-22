@@ -44,7 +44,7 @@ impl ReferencePreferences {
     }
 
     pub(crate) fn validate(&self) -> Result<(), PreferenceError> {
-        if self.outfit_presets.len() > 64 || self.outfit_presets.iter().any(|(name, fields)| {
+        if self.outfit_presets.len() > 64 || self.outfit_presets.iter().any(|(name, (fields, _))| {
             name.trim().is_empty() || name.len() > 128 || name.chars().any(char::is_control) || fields.iter().any(|field| field.len() > 255 || field.chars().any(char::is_control))
         }) {
             return Err(PreferenceError);

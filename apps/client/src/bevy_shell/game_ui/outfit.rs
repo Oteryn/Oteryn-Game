@@ -38,6 +38,7 @@ struct State {
     gallery: gallery::Gallery,
     riding: Option<bool>,
     preset: Option<String>,
+    preset_riding: Option<bool>,
     search: String,
     dirty: bool,
     playback: animation::Playback,
@@ -166,7 +167,7 @@ fn activate(
         );
         return;
     }
-    send(&play.link, &action.kind);
+    presets::send_selection(&play.link, &action.kind, &mut state);
 }
 fn restore_draft(link: &crate::play::PlayLink) {
     let panel = link.appearance_panel();
@@ -254,23 +255,31 @@ type ProjectQueries<'w, 's> = (
     Res<'w, ButtonInput<KeyCode>>,
     Query<'w, 's, Entity, With<Window>>,
     Query<'w, 's, Entity, With<search::Field>>,
+    Query<'w, 's, (Entity, &'static presets::NameField)>,
 );
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
-    (keys, windows, searches): ProjectQueries,
+    (keys, windows, searches, names): ProjectQueries,
     skin: Res<Skins>,
     mut images: ResMut<Assets<Image>>,
     mut state: ResMut<State>,
     guard: ModalGuard,
 ) {
+    let generation = owner.generation();
+    if state
+        .rendered
+        .as_ref()
+        .is_some_and(|(old, _)| *old != generation)
+    {
+        state.reset_gallery();
+        state.search.clear();
+    }
     let Some(play) = &owner.play else {
         for entity in &windows {
             commands.entity(entity).despawn();
         }
-        state.gallery = Default::default();
-        state.preset = None;
-        state.rendered = None;
+        state.reset_gallery();
         return;
     };
     if keys.just_pressed(KeyCode::Escape)
@@ -287,12 +296,9 @@ fn project(
         for entity in &windows {
             commands.entity(entity).despawn();
         }
-        state.gallery = Default::default();
-        state.preset = None;
-        state.rendered = None;
+        state.reset_gallery();
         return;
     }
-    let generation = owner.generation();
     state.dirty |= state.gallery.refresh(&play.link);
     let riding = play.link.riding();
     state.dirty |= state.riding != riding;
@@ -306,6 +312,20 @@ fn project(
             .as_ref()
             .is_some_and(|(previous, _)| *previous == generation)
     });
+    let retained_name = names
+        .single()
+        .ok()
+        .filter(|(_, field)| {
+            state
+                .rendered
+                .as_ref()
+                .is_some_and(|(old, _)| *old == generation)
+                && state.preset.as_deref() == Some(field.0.as_str())
+        })
+        .map(|(id, _)| id);
+    if let Some(entity) = retained_name {
+        commands.entity(entity).remove::<ChildOf>();
+    }
     if let Some(field) = retained {
         commands.entity(field).remove::<ChildOf>();
     }
@@ -350,6 +370,7 @@ fn project(
         generation,
         &owner,
         state.preset.as_deref(),
+        retained_name,
     );
     for key in outfits(&panel)
         .into_iter()
@@ -428,7 +449,11 @@ fn project(
                 root,
                 generation,
                 Kind::Riding,
-                if riding { "Mount: on" } else { "Mount: off" },
+                if state.preset_riding.unwrap_or(riding) {
+                    "Mount: on"
+                } else {
+                    "Mount: off"
+                },
             );
         }
         for key in catalogue
@@ -474,12 +499,15 @@ fn project(
                     .spawn((
                         ImageNode::new(handle),
                         Node {
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Start,
                             width: px(192.),
                             height: px(192.),
                             ..default()
                         },
                     ))
                     .id();
+                state.gallery.attach_title(&mut commands, &skin, picture);
                 commands.entity(root).add_child(picture);
             }
             Some(Err(message)) => {

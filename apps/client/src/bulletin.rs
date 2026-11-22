@@ -43,9 +43,8 @@ impl Browser {
     pub fn news(&self) -> String {
         self.feed.news_text()
     }
-    pub fn admission_news(&self) -> String {
+    pub fn admission_news(&self, now: std::time::SystemTime) -> String {
         let mut body = self.news();
-        let now = std::time::SystemTime::now();
         for (offset, heading) in [(0, "Today"), (1, "Tomorrow")] {
             let date = utc_date(now, offset);
             body.push_str(&format!(

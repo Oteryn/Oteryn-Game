@@ -17,13 +17,40 @@ struct DayCell;
 #[derive(Component)]
 struct ResetClock;
 
-fn update_clock(owner: NonSend<HostOwner>, mut clocks: Query<&mut Text, With<ResetClock>>) {
+fn update_clock(
+    owner: NonSend<HostOwner>,
+    mut clocks: Query<&mut Text, With<ResetClock>>,
+    time: Res<Time<Real>>,
+    mut running: Local<Option<(u64, std::time::Instant)>>,
+) {
+    if clocks.is_empty() {
+        *running = None;
+        return;
+    }
+    let Some(play) = &owner.play else {
+        *running = None;
+        return;
+    };
+    let deadline = play.link.reward_reset_deadline();
+    let now = time.last_update().unwrap_or_else(std::time::Instant::now);
+    if let Some(time) = deadline {
+        if time > now {
+            *running = Some((owner.generation(), time));
+        } else if *running == Some((owner.generation(), time)) {
+            let panel = play.link.daily_reward_panel();
+            if play
+                .link
+                .daily_reward_request_bound(&panel, Intent::Refresh)
+            {
+                *running = None;
+            }
+        }
+    } else {
+        *running = None;
+    }
     for mut clock in &mut clocks {
-        let label = owner
-            .play
-            .as_ref()
-            .and_then(|play| play.link.reward_reset_deadline())
-            .and_then(|deadline| deadline.checked_duration_since(std::time::Instant::now()))
+        let label = deadline
+            .and_then(|deadline| deadline.checked_duration_since(now))
             .map(|duration| {
                 let seconds = duration.as_millis().div_ceil(1000);
                 format!("Reward resets in {}:{:02}", seconds / 60, seconds % 60)

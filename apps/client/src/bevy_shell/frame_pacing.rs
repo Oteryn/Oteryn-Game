@@ -55,7 +55,7 @@ pub(super) fn pace(
     owner: NonSend<HostOwner>,
     mut pacer: NonSendMut<PerformancePacer>,
     windows: Query<&Window, With<PrimaryWindow>>,
-    mut previous: Local<Option<(u64, bool)>>,
+    mut previous: Local<Option<(u64, bool, bool)>>,
     mut indicators: Query<
         (
             &mut Text,
@@ -66,7 +66,11 @@ pub(super) fn pace(
     >,
 ) {
     let settings = owner.settings.preferences.render_performance();
-    let session = (owner.generation(), owner.play.is_some());
+    let session = (
+        owner.generation(),
+        owner.play.is_some(),
+        owner.settings.preferences.graphics.vsync,
+    );
     if previous.is_some_and(|value| value != session) || owner.play.is_none() {
         pacer.reset_range();
     }
@@ -254,6 +258,31 @@ fn hovering_online_indicator_shows_measured_extrema_and_midpoint()
             .ok_or("indicator")?
             .0
             .contains("Min:")
+    );
+    app.world_mut()
+        .get_mut::<bevy::ui::RelativeCursorPosition>(indicator)
+        .ok_or("cursor")?
+        .cursor_over = true;
+    let previous_sync = app
+        .world()
+        .non_send::<HostOwner>()
+        .settings
+        .preferences
+        .graphics
+        .vsync;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .graphics
+        .vsync = !previous_sync;
+    app.update();
+    assert!(
+        !app.world()
+            .get::<Text>(indicator)
+            .ok_or("indicator")?
+            .0
+            .contains("Min: 2")
     );
     Ok(())
 }

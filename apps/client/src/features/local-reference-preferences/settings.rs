@@ -116,7 +116,7 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub stash_stock_order: bool,
     #[serde(default)]
-    pub outfit_presets: std::collections::BTreeMap<String, [String; 4]>,
+    pub outfit_presets: std::collections::BTreeMap<String, ([String; 4], Option<bool>)>,
     #[serde(skip)]
     pub miscellaneous: MiscellaneousPreferences,
     #[serde(default)]

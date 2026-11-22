@@ -361,7 +361,7 @@ fn reward_wall_store_buttons_request_filtered_catalogues() -> TestResult {
 
 #[test]
 fn reward_reset_clock_uses_the_matching_server_save_notice() -> TestResult {
-    let (mut app, _, outbox) = fixture()?;
+    let (mut app, mut commands, outbox) = fixture()?;
     outbox.bevy_reward_wall(panel());
     app.update();
     for (sequence, epoch) in [(1, 41), (2, 42)] {
@@ -382,5 +382,27 @@ fn reward_reset_clock_uses_the_matching_server_save_notice() -> TestResult {
             epoch == 42
         );
     }
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualInstant(
+        std::time::Instant::now() + std::time::Duration::from_secs(181),
+    ));
+    app.update();
+    assert!(!texts(&mut app).contains("Reward resets in"));
+    assert!(matches!(commands.try_recv()?, PlayCommand::DailyReward(_)));
+    outbox.bevy_reward_wall(panel());
+    app.update();
+    assert!(
+        commands.try_recv().is_err(),
+        "one refresh per expired notice"
+    );
+    Ok(())
+}
+
+#[test]
+fn review_unavailable_store_gives_feedback_on_the_wall() -> TestResult {
+    let (mut app, _, outbox) = fixture()?;
+    outbox.bevy_reward_wall(panel());
+    app.update();
+    click(&mut app, Kind::Offers("Premium"))?;
+    assert!(texts(&mut app).contains("Store unavailable"));
     Ok(())
 }

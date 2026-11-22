@@ -8,6 +8,7 @@ pub(in crate::bevy_shell) struct State {
     pub visible: bool,
     calendar: bool,
     body: String,
+    news_day: Option<u64>,
 }
 impl State {
     pub fn receive(&mut self, document: &str) -> Result<(), String> {
@@ -28,10 +29,12 @@ impl State {
     }
     fn refresh(&mut self) {
         if let Some(browser) = &self.browser {
+            let now = std::time::SystemTime::now();
+            self.news_day = Some(day_number(now));
             self.body = if self.calendar {
                 browser.month()
             } else {
-                browser.admission_news()
+                browser.admission_news(now)
             };
         }
     }
@@ -250,8 +253,14 @@ fn keyboard(
         keys.clear();
     }
 }
+fn day_number(now: std::time::SystemTime) -> u64 {
+    now.duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+        / 86400
+}
 fn project(
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
     mut dialogs: Query<&mut Node, With<Dialog>>,
     mut bodies: Query<&mut Text, With<Body>>,
     actions: Query<(Entity, &Action)>,
@@ -267,7 +276,14 @@ fn project(
         };
     }
     if visible {
-        let value = owner.login.bulletin.text();
+        let state = &mut owner.login.bulletin;
+        if !state.calendar
+            && state.browser.is_some()
+            && state.news_day != Some(day_number(std::time::SystemTime::now()))
+        {
+            state.refresh();
+        }
+        let value = state.text();
         for mut text in &mut bodies {
             if text.0 != value {
                 text.0 = value.to_owned();
