@@ -1,4 +1,4 @@
-//! P11 counters for successful donor gathering and completed NPC travel.
+//! Counted achievements on committed craft and NPC travel receipts.
 //! Crystal `201189f`: `data-global/scripts/actions/tools/skinning.lua:176-201,317-321`,
 //! `data-global/scripts/actions/other/fishing.lua:290-314`,
 //! `data-global/scripts/actions/other/mechanical_fishing.lua:348-372`, and
@@ -34,6 +34,25 @@ pub const POLISHER: Counted = Counted {
     key: "oteryn:achievement/polisher",
     total: 1000,
 };
+
+/// Only a committed oven recipe counts. TibiaWiki achievement pages
+/// 62798@753222 and 62794@753351 define the plain and chocolate thresholds.
+pub fn baking(recipe: &str) -> Option<Counted> {
+    let (dough, _) = recipe
+        .strip_prefix("oteryn:item-conversion.bake-")?
+        .split_once('-')?;
+    match dough {
+        "6276" => Some(Counted {
+            key: "oteryn:achievement/the_cake_s_the_truth",
+            total: 30,
+        }),
+        "8018" => Some(Counted {
+            key: "oteryn:achievement/sweet_tooth",
+            total: 10,
+        }),
+        _ => None,
+    }
+}
 
 /// Classify a successful, owner-validated gathering outcome. The existing gathering
 /// rules own the permitted tool/target pairs and their yield; this is not a second

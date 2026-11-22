@@ -706,9 +706,10 @@ async fn write_with_skinning<C: ItemLoopContent>(
     use oteryn_gameplay_progression::achievement_granters;
     let achievement = if let Some(gathering) = &request.gathering {
         achievement_granters::gathering(&gathering.mutation.tool_key, gathering.attempt.yield_item)
+    } else if conversion.recipe == "oteryn:fishing.global.standard" {
+        Some(achievement_granters::HERE_FISHY_FISHY)
     } else {
-        (conversion.recipe == "oteryn:fishing.global.standard")
-            .then_some(achievement_granters::HERE_FISHY_FISHY)
+        achievement_granters::baking(&conversion.recipe)
     };
     if let Some(achievement) = achievement {
         super::account_achievement::add_progress(

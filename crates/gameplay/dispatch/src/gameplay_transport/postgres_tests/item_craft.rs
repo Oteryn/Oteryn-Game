@@ -1,5 +1,6 @@
 //! CRAFT-1: admitted USE bytes → real composed owner → atomic PG rows → result/reload.
-use super::item_craft_fixtures::{exchange};
+use super::achievement_granters::{assert_progress, seed_progress};
+use super::item_craft_fixtures::exchange;
 
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -20,14 +21,33 @@ fn item_craft_cooking_wire_atomic_replay_restart_and_refusals() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(|| scenario(None).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "craft e2e panic")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
-    run(async |admin| {
+#[test]
+fn slice_two_plain_cake_counts_at_thirty_without_crediting_chocolate() -> TestResult {
+    cake_case("oteryn:item.tibia.i6276", "oteryn:item.tibia.i6277")
+}
+
+#[test]
+fn slice_two_chocolate_cake_counts_at_ten_without_crediting_plain_cake() -> TestResult {
+    cake_case("oteryn:item.tibia.i8018", "oteryn:item.tibia.i8019")
+}
+
+fn cake_case(dough: &'static str, cake: &'static str) -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("slice-two-baking", move || {
+        scenario(Some((dough, cake)))
+    })
+}
+
+fn scenario(cake: Option<(&'static str, &'static str)>) -> TestResult {
+    run(async move |admin| {
         let harness = Harness::create_with_admission_seed(admin, "item_craft", true, false).await?;
         super::reset();
         prepare_current_session(&harness).await?;
@@ -48,8 +68,8 @@ fn scenario() -> TestResult {
         let index = native.item_index().ok_or("index")?;
         let oven = "oteryn:item.tibia.i2535";
         let bag = "oteryn:item.tibia.i2854";
-        let dough = "oteryn:item.tibia.i3604";
-        let bread = "oteryn:item.tibia.i3600";
+        let (dough, baked_output) =
+            cake.unwrap_or(("oteryn:item.tibia.i3604", "oteryn:item.tibia.i3600"));
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
         let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
             (bag, reference(bag).ok_or("bag")?.get() - 1),
@@ -172,7 +192,7 @@ fn scenario() -> TestResult {
         let used_definition = crate::gameplay_transport::item_look::typed_definition(index, reference(dough).ok_or("dough reference")?).ok_or("used definition")?;
         let station_definition = crate::gameplay_transport::item_look::typed_definition(index, reference(oven).ok_or("oven reference")?).ok_or("station definition")?;
         let plan = oteryn_gameplay_items::item_craft::cooking_conversion(native, &used_definition, &station_definition).ok_or("admitted cooking recipe")?;
-        assert_eq!(plan.outputs[0].0.production_key, bread);
+        assert_eq!(plan.outputs[0].0.production_key, baked_output);
         let typed = |key: &str| reference(key).and_then(|r| crate::gameplay_transport::item_look::typed_definition(index, r)).ok_or("cooking Item ref");
         let milled = oteryn_gameplay_items::item_craft::cooking_conversion(native, &typed("oteryn:item.tibia.i3605")?, &typed("oteryn:item.tibia.i1943")?).ok_or("milling recipe")?;
         assert_eq!(milled.outputs[0].0.production_key, "oteryn:item.tibia.i3603");
@@ -183,6 +203,15 @@ fn scenario() -> TestResult {
         assert_eq!(tray.outputs.len(), 2);
         assert_eq!(tray.outputs[0].0.production_key, "oteryn:item.tibia.i3464");
         assert_eq!((tray.outputs[1].0.production_key.as_str(), tray.outputs[1].1), ("oteryn:item.tibia.i3598", 12));
+        let cake_achievements = [
+            ("oteryn:achievement/the_cake_s_the_truth", 30, "oteryn:item.tibia.i6277"),
+            ("oteryn:achievement/sweet_tooth", 10, "oteryn:item.tibia.i8019"),
+        ];
+        if cake.is_some() {
+            for (key, target, _) in cake_achievements {
+                seed_progress(&harness, key, target - 1).await?;
+            }
+        }
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
         let (end, result, payload) = exchange(&owner, admitted, 1, &payload, reference(dough)).await?;
         assert_eq!(result, UseDisposition::Committed);
@@ -198,7 +227,7 @@ fn scenario() -> TestResult {
             durable
                 .entries
                 .iter()
-                .any(|e| e.item.definition.production_key == bread && e.item.quantity == 1)
+                .any(|e| e.item.definition.production_key == baked_output && e.item.quantity == 1)
         );
         // The immutable receipt and bounded outbox carry the same committed cooking proof.
         let (before, outputs, envelope, hash_matches): (serde_json::Value, serde_json::Value, Vec<u8>, bool) = sqlx::query_as(
@@ -206,16 +235,44 @@ fn scenario() -> TestResult {
         ).fetch_one(&harness.pool).await?;
         assert!(envelope.len() <= 9_216 && hash_matches);
         assert_eq!(before["quantity"], 3);
-        assert_eq!(outputs[0]["key"], bread);
+        assert_eq!(outputs[0]["key"], baked_output);
         // Reconstruct the owner and replay the original bytes without trusting current handles.
         drop(owner);
         let mut restarted = deps.owner(&harness, &authority);
         restarted.active_generation = Some(active);
         restarted.movement_cells = (&cells).into();
         deps.initialize(&restarted).await;
+        let mut awarded = Vec::new();
+        if cake.is_some() {
+            for (key, target, output) in cake_achievements {
+                let earned = baked_output == output;
+                awarded.push(
+                    assert_progress(
+                        &harness, key, target - i64::from(!earned), earned, "oteryn:item-craft",
+                    )
+                    .await?,
+                );
+            }
+        }
         let (_, replayed, _) = exchange(&restarted, admitted, 1, &payload, None).await?;
         assert_eq!(replayed, UseDisposition::Committed);
         assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records").fetch_one(&harness.pool).await?, 1);
+        if cake.is_some() {
+            for ((key, target, output), fact) in cake_achievements.into_iter().zip(awarded) {
+                let earned = baked_output == output;
+                assert_eq!(
+                    assert_progress(
+                        &harness, key, target - i64::from(!earned), earned, "oteryn:item-craft",
+                    )
+                    .await?,
+                    fact
+                );
+            }
+            drop(restarted);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let mut next = end;
         next.continuity.next_command_id = 2;
         // Unknown pair: a food item on the oven never consumes or mints anything.
@@ -239,7 +296,7 @@ fn scenario() -> TestResult {
             .await?;
         for n in 0..17 {
             sqlx::query("WITH i AS (INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,'Item',$2,'definition-r1',1,1,game_character_uuid_v7()) RETURNING item_instance_id) INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,encode($1,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,game_character_uuid_v7() FROM i")
-                .bind(id(42).as_slice()).bind(bread).bind(id(41).as_slice()).bind(id(70).as_slice()).bind(100_i64+n).execute(&mut *tx).await?;
+                .bind(id(42).as_slice()).bind(baked_output).bind(id(41).as_slice()).bind(id(70).as_slice()).bind(100_i64+n).execute(&mut *tx).await?;
         }
         tx.commit().await?;
         let (next, result, _) = exchange(&restarted, next, 3, &payload, reference(dough)).await?;
@@ -255,7 +312,7 @@ fn scenario() -> TestResult {
         let retired: (i64,i16,i64) = sqlx::query_as("SELECT quantity,lifecycle,(SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(retired, (0,2,0));
         let old_slot: String = sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND e.placement_ordinal=1").bind(id(70).as_slice()).fetch_one(&harness.pool).await?;
-        assert_eq!(old_slot, bread);
+        assert_eq!(old_slot, baked_output);
         let stale = UseIntent {target: UseTarget::Item(std::num::NonZeroU64::MAX), ..intent};
         let (_, result, _) = exchange(&restarted, next, 5, &encode_item_use_intent(&stale).map_err(debug)?, None).await?;
         assert_eq!(result, UseDisposition::StaleState);
