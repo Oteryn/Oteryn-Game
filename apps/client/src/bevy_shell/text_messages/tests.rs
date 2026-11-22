@@ -409,6 +409,20 @@ fn incoming_private_message_projects_over_world() -> TestResult {
             .iter(app.world())
             .any(|t| t.0 == "Ann: Here")
     );
+    outbox.push(vec![SessionEvent::ChatSnapshot(AppliedDelta {
+        server_sequence: 2,
+        base_revision: 1,
+        new_revision: 2,
+        value: oteryn_session::ChatLog::default(),
+    })]);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .all(|t| t.0.is_empty()),
+        "a recovery snapshot must not replay the previous private message"
+    );
     Ok(())
 }
 
@@ -443,7 +457,7 @@ fn confirmed_loot_paints_each_item_at_its_own_value() -> TestResult {
                 item_type: item,
                 count: std::num::NonZeroU16::MIN,
             }],
-            gold: 0,
+            gold: 10000,
         }],
     })]);
     app.update();
@@ -470,6 +484,85 @@ fn confirmed_loot_paints_each_item_at_its_own_value() -> TestResult {
             .iter(app.world())
             .any(|(span, color)| span.0.contains("Crystal coin")
                 && color.0 == Color::srgb_u8(159, 157, 253))
+    );
+    assert_eq!(
+        app.world_mut()
+            .query::<&TextSpan>()
+            .iter(app.world())
+            .count(),
+        1,
+        "the currency total already includes the coin shown on the corpse"
+    );
+    // These are separate wire fragments of one committed loot batch.
+    use oteryn_protocol_oteryn::market_details as market;
+    let value = 125_000;
+    let stats = market::Statistics {
+        definition: 2,
+        as_of_us: 2_592_000_000_000,
+        trades: 1,
+        units: 1,
+        minimum: Some(value),
+        maximum: Some(value),
+        average: Some(value),
+        sell: market::PriceSummary {
+            trades: 1,
+            units: 1,
+            minimum: Some(value),
+            maximum: Some(value),
+            average: Some(value),
+        },
+        ..Default::default()
+    };
+    outbox.bevy_market_initialize(true);
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .market_query(market::Query::Statistics { definition: 2 })
+    );
+    let crate::combat_input::PlayCommand::Feature(query) = commands.try_recv()? else {
+        return Err("market query".into());
+    };
+    outbox.bevy_market_reply(
+        &query,
+        &oteryn_session::GatedCommandResult {
+            command_id: 2,
+            server_sequence: 3,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: market::encode_reply(&market::Reply::Statistics(stats))
+                .map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 4,
+        base_revision: 1,
+        new_revision: 2,
+        value: [
+            std::num::NonZeroU32::MIN,
+            std::num::NonZeroU32::new(2).ok_or("item definition")?,
+        ]
+        .into_iter()
+        .map(|id| AnalyserFact::KillLoot {
+            race: None,
+            corpse_items: vec![AnalyserItemCount {
+                item_type: id,
+                count: std::num::NonZeroU16::MIN,
+            }],
+            gold: 0,
+        })
+        .collect(),
+    })]);
+    app.update();
+    let mut spans = app.world_mut().query::<(&TextSpan, &TextColor)>();
+    assert_eq!(spans.iter(app.world()).count(), 2);
+    assert!(
+        spans
+            .iter(app.world())
+            .any(|(_, color)| color.0 == Color::srgb_u8(170, 85, 255)),
+        "confirmed market value colours the non-currency item"
     );
     Ok(())
 }

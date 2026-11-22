@@ -118,7 +118,14 @@ fn project(
         .id();
     commands.entity(root).add_child(title);
     for (id, title) in offered {
-        let icons = [[21, 19], [102, 41], [46, 153], [38, 155], [177, 169]];
+        let (icons, spells) = match id {
+            1 => ([21, 19], "Fierce Berserk · Front Sweep"),
+            2 => ([102, 41], "Great Fire Wave · Great Energy Beam"),
+            3 => ([46, 153], "Terra Wave · Ice Burst"),
+            4 => ([38, 155], "Divine Missile · Divine Grenade"),
+            5 => ([177, 169], "Greater Flurry of Blows · Focus Serenity"),
+            _ => continue,
+        };
         let row = commands
             .spawn(Node {
                 align_items: AlignItems::Center,
@@ -127,7 +134,7 @@ fn project(
             })
             .id();
         commands.entity(root).add_child(row);
-        for icon in icons[usize::from(id - 1)] {
+        for icon in icons {
             let x = (icon * 32) as f32;
             let image = commands
                 .spawn((
@@ -170,6 +177,13 @@ fn project(
             .id();
         commands.entity(button).add_child(caption);
         commands.entity(row).add_child(button);
+        let spell_names = commands
+            .spawn(source::text(
+                spells,
+                source::font(skins.font.clone(), false),
+            ))
+            .id();
+        commands.entity(row).add_child(spell_names);
     }
     if let Some(feedback) = panel.feedback {
         let feedback = commands
@@ -264,6 +278,14 @@ mod tests {
             .collect();
         icons.sort_unstable();
         assert_eq!(icons, [19, 21, 38, 41, 46, 102, 153, 155, 169, 177]);
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0.contains("Great Fire Wave")
+                    && text.0.contains("Great Energy Beam")),
+            "the installed theme can preview genuine spells without an external atlas"
+        );
         let entity = app
             .world_mut()
             .query::<(Entity, &Choice)>()

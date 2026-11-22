@@ -5,6 +5,7 @@ use super::*;
 pub(super) struct Display {
     scope: Option<(u64, u64)>,
     receipt: u64,
+    last_query: Option<Duration>,
     dismissals: u64,
     expires: Duration,
     rendered: Vec<(String, u64)>,
@@ -31,17 +32,24 @@ pub(super) fn project(
 ) {
     let mut values = Vec::new();
     if let Some(play) = &owner.play {
-        let (enabled, _, dismissals, namespace) = play.view.screen_message_controls();
+        let (_, _, dismissals, namespace) = play.view.screen_message_controls();
         let scope = Some((owner.generation(), namespace));
         let receipt = play.link.loot_receipt();
         if state.scope != scope {
             state.expires = Duration::ZERO;
-            state.receipt = if state.scope.is_some() { receipt } else { 0 };
+            state.receipt = if state
+                .scope
+                .is_some_and(|(generation, _)| generation == owner.generation())
+            {
+                receipt
+            } else {
+                0
+            };
             state.scope = scope;
         }
         if receipt != state.receipt {
             state.receipt = receipt;
-            play.link.analyser_resolve_items();
+            state.last_query = None;
             let message = play.link.loot_values();
             let length = message
                 .iter()
@@ -55,7 +63,13 @@ pub(super) fn project(
             state.dismissals = dismissals;
             state.expires = Duration::ZERO;
         }
-        if enabled && clock.elapsed() < state.expires {
+        if owner.settings.preferences.game_window.loot_messages && clock.elapsed() < state.expires {
+            if state.last_query.is_none_or(|last| {
+                clock.elapsed().saturating_sub(last) >= Duration::from_millis(500)
+            }) {
+                play.link.analyser_resolve_items();
+                state.last_query = Some(clock.elapsed());
+            }
             values = play.link.loot_values();
         }
     } else {

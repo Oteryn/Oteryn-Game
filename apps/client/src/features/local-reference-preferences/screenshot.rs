@@ -1,5 +1,8 @@
 //! Screenshot requests share the settings caller on every platform; native capture supplies pixels.
 use super::{PreferenceStore, SettingsState};
+#[path = "boss_capture.rs"]
+mod boss_capture;
+pub(in crate::play) use boss_capture::BossCapture;
 #[path = "screenshot_backlog.rs"]
 mod backlog;
 pub(super) use backlog::ScreenshotRuntime;
@@ -265,6 +268,11 @@ pub trait CaptureSource {
 }
 
 impl SettingsState {
+    #[cfg(bevy_shell)]
+    pub(crate) fn manual_capture_requested(&self) -> bool {
+        self.screenshot_requested
+    }
+
     pub fn request_screenshot(&mut self) {
         self.screenshot_requested = true;
     }

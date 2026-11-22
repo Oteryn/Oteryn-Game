@@ -396,3 +396,52 @@ fn impact_capture_records_survive_character_relogin() -> Result<(), Box<dyn std:
     }
     Ok(())
 }
+
+#[test]
+fn untracked_boss_kill_uses_confirmed_bosstiary_progress() -> Result<(), Box<dyn std::error::Error>>
+{
+    use oteryn_protocol_oteryn::boss_encounter::{BosstiaryProgressEntry, encode_bosstiary_list};
+    let folder = tempfile::tempdir()?;
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.boss_encounter_initialize(true);
+    let mut settings = SettingsState::new(None);
+    settings.preferences.screenshots.on_boss_defeat = true;
+    settings.preferences.screenshots.directory = folder.path().to_string_lossy().into_owned();
+    let start = std::time::Instant::now();
+    for (index, count) in [(0_u64, 2), (1, 3), (2, 3)] {
+        let now = start + std::time::Duration::from_secs(index * 6);
+        assert!(
+            settings
+                .process_screenshots(now, Some(&link), &mut Source(vec![]))?
+                .is_empty()
+        );
+        let crate::combat_input::PlayCommand::Feature(query) = commands.try_recv()? else {
+            return Err("boss progress query".into());
+        };
+        assert_eq!((query.capability, query.kind), (117, 133));
+        outbox.boss_encounter_result(&oteryn_session::GatedCommandResult {
+            command_id: index + 1,
+            server_sequence: index + 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: encode_bosstiary_list(
+                index,
+                &[],
+                false,
+                &[BosstiaryProgressEntry {
+                    boss_key: "oteryn:creature.ferumbras".into(),
+                    kill_count: count,
+                }],
+                0,
+                false,
+            )
+            .map_err(|e| format!("{e:?}"))?,
+        });
+        assert_eq!(
+            settings
+                .process_screenshots(now, Some(&link), &mut Source(vec![]))?
+                .len(),
+            usize::from(index == 1)
+        );
+    }
+    Ok(())
+}

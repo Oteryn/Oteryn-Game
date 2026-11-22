@@ -26,18 +26,20 @@ struct BestiaryCapture {
     queried_kills: Option<u64>,
     last_request: Option<Instant>,
     awaiting: bool,
+    reply_revision: u64,
 }
 impl BestiaryCapture {
     fn observe(&mut self, now: Instant, link: &PlayLink, kills: u64) -> (bool, bool, bool) {
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        let kill_feed = mailbox.analyser.selected;
         let panel = &mailbox.properties.charm_progression;
         if !panel.selected || panel.pending {
-            return (panel.selected, false, false);
+            return (panel.selected && self.stages.is_some(), false, false);
         }
         let mut unlocked = false;
         let mut completed = false;
-        if self.awaiting {
-            self.awaiting = false;
+        if self.reply_revision != panel.reply_revision {
+            self.reply_revision = panel.reply_revision;
             if let Some(reply) = &panel.reply {
                 let stages = reply
                     .bestiary
@@ -53,11 +55,18 @@ impl BestiaryCapture {
                     }
                 }
                 self.stages = Some(stages);
-            } else {
-                self.queried_kills = None;
             }
+        } else if self.awaiting {
+            // The owner retains the previous good reply on a refusal.
+            self.queried_kills = None;
         }
-        if self.queried_kills != Some(kills)
+        self.awaiting = false;
+        let refresh = self.queried_kills != Some(kills)
+            || (!kill_feed
+                && self
+                    .last_request
+                    .is_none_or(|at| now.saturating_duration_since(at) >= Duration::from_secs(5)));
+        if refresh
             && self
                 .last_request
                 .is_none_or(|last| now.saturating_duration_since(last) >= Duration::from_secs(2))
@@ -71,7 +80,7 @@ impl BestiaryCapture {
             self.last_request = Some(now);
             self.awaiting = true;
         }
-        (true, unlocked, completed)
+        (self.stages.is_some(), unlocked, completed)
     }
 }
 struct Signals {
@@ -222,6 +231,11 @@ impl SettingsState {
                 runtime.incoming_situations = None;
                 runtime.last_pvp_query = None;
             }
+            let (boss_baseline, boss_advanced) = link.boss_capture(
+                !preferences.automatic_disabled && preferences.on_boss_defeat,
+                now,
+            );
+            runtime.automatic_pending |= boss_advanced;
             let signals = Signals::read(link);
             let (full, unlocked, completed) = if !preferences.automatic_disabled
                 && (preferences.on_bestiary_unlock || preferences.on_bestiary_complete)
@@ -259,6 +273,7 @@ impl SettingsState {
                         && !full
                         && signals.events.tracker[1] != previous.events.tracker[1])
                     || (preferences.on_boss_defeat
+                        && !boss_baseline
                         && signals.events.tracker[2] != previous.events.tracker[2])
                     || (preferences.on_valuable_loot
                         && previous.events.tracked_loot != signals.events.tracked_loot)

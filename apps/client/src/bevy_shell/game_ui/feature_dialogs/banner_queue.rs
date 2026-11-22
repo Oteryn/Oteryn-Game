@@ -1,4 +1,4 @@
-//! Session-local FIFO presentation for achievement banners.
+//! Session-local FIFO for confirmed progression and unlock banners.
 use super::*;
 use std::{collections::VecDeque, time::Duration};
 
@@ -57,7 +57,14 @@ fn feed(owner: NonSend<HostOwner>, time: Res<Time>, mut queue: ResMut<Queue>) {
         };
     }
     if let Some(play) = &owner.play {
-        queue.pending.extend(play.link.take_achievement_banners());
+        let notices = play.link.take_achievement_banners();
+        if !owner.settings.preferences.game_window.banner || !play.view.screen_message_controls().0
+        {
+            queue.pending.clear();
+            queue.current = None;
+            return;
+        }
+        queue.pending.extend(notices);
         if queue.current.is_none() {
             queue.next(time.elapsed());
         }
@@ -176,6 +183,17 @@ mod tests {
                 .single(app.world())?
                 .0,
             "Unlocked mount: horse"
+        );
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences
+            .game_window
+            .banner = false;
+        app.update();
+        assert!(
+            text(&mut app).is_empty(),
+            "disabling banners clears the active unlock"
         );
         Ok(())
     }

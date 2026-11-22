@@ -689,5 +689,12 @@ fn untracked_bestiary_stage_is_captured_after_credited_kill() -> Result {
             index == 1
         );
     }
+    // This session admitted bestiary queries independently of the analyser feed.
+    settings.cancel_screenshot();
+    settings.prepare_screenshots(start + std::time::Duration::from_secs(10), Some(&link));
+    assert!(
+        commands.try_recv().is_ok(),
+        "refresh bestiary progress without a kill feed"
+    );
     Ok(())
 }
