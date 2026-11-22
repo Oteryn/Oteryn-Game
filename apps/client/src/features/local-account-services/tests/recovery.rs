@@ -412,3 +412,76 @@ fn fresh_grant_filters_previously_accepted_bazaar_receipt() -> TestResult {
         Ok(())
     })
 }
+
+fn seed_bids(
+    mock: &MockPlatform,
+    client: &NativeLoginClient,
+    token: &AccessToken,
+    count: usize,
+) -> TestResult {
+    for _ in 0..count {
+        let request = BazaarRequest {
+            version: 1,
+            request_id: AttemptRef::generate()?.as_str().into(),
+            command: BazaarCommand::Bid {
+                auction_id: AUCTION.into(),
+                expected_revision: 1,
+                coins: 50,
+            },
+        };
+        mock.runtime
+            .block_on(client.bazaar_command(token, &request, CancellationToken::new()))?;
+    }
+    Ok(())
+}
+
+#[test]
+fn transient_status_failure_fences_until_status_retry() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        seed_bids(&mock, &client, &token, 1)?;
+        mock.authority.lock().map_err(|_| "lock")?.fail_status_once = true;
+        let mut view = View::default();
+        mock.runtime.block_on(controller::execute(
+            &mut view,
+            Action::Refresh(AuctionView::All),
+            &client,
+            &token,
+            CancellationToken::new(),
+        ));
+        assert!(view.pending());
+        mock.runtime.block_on(controller::execute(
+            &mut view,
+            Action::Status,
+            &client,
+            &token,
+            CancellationToken::new(),
+        ));
+        assert!(!view.pending());
+        Ok(())
+    })
+}
+
+#[test]
+fn bazaar_refresh_looks_up_both_rows_concurrently() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        seed_bids(&mock, &client, &token, 2)?;
+        mock.authority.lock().map_err(|_| "lock")?.status_barrier =
+            Some(Arc::new(tokio::sync::Barrier::new(2)));
+        let mut view = View::default();
+        mock.runtime.block_on(controller::execute(
+            &mut view,
+            Action::Refresh(AuctionView::All),
+            &client,
+            &token,
+            CancellationToken::new(),
+        ));
+        assert_eq!(view.page.ok_or("page")?.recent_operations.len(), 2);
+        Ok(())
+    })
+}

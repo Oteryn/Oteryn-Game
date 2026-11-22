@@ -168,7 +168,10 @@ async fn apply(
             return Ok(());
         }
         Action::Status => {
-            if let Some(id) = view.pending_id() {
+            if let Some(id) = view
+                .pending_id()
+                .or_else(|| view.unverified.0.first().map(String::as_str))
+            {
                 match client.bazaar_status(token, id, cancel).await {
                     Ok(receipt) => accept(view, receipt),
                     Err(NativeLoginError::Platform(HttpStatus(404)))
@@ -179,6 +182,12 @@ async fn apply(
                         view.post_refusal_status = None;
                         view.quote = None;
                         view.feedback = tr!("The server refused the request").into();
+                    }
+                    Err(NativeLoginError::Platform(HttpStatus(403 | 404)))
+                        if view.unverified.0.contains(id) && view.pending_id().is_none() =>
+                    {
+                        let id = id.to_owned();
+                        view.unverified.0.remove(&id);
                     }
                     Err(error @ NativeLoginError::Platform(HttpStatus(404))) => {
                         view.post_refusal_status = None;
@@ -249,6 +258,7 @@ async fn submit(
     Ok(())
 }
 pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
+    view.unverified.0.remove(&receipt.request_id);
     if view.receipt.as_ref().is_some_and(|old| {
         old.request_id == receipt.request_id
             && old.state != OperationState::Pending

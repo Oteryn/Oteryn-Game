@@ -2,7 +2,6 @@ use crate::CLIENT_BUILD;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::path::PathBuf;
 use std::sync::Arc;
-#[cfg(test)]
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -39,7 +38,10 @@ impl SystemBrowser {
 #[derive(Default)]
 pub(crate) struct BrowserEpoch {
     #[cfg(test)]
-    spawn_for_test: Option<Arc<dyn Fn() -> std::io::Result<std::process::Child> + Send + Sync>>,
+    prepare_for_test: Option<Arc<dyn Fn() -> std::io::Result<std::process::Command> + Send + Sync>>,
+    #[cfg(test)]
+    launches: std::sync::atomic::AtomicUsize,
+    spawn_guard: Mutex<()>,
     ended: CancellationToken,
 }
 
@@ -47,11 +49,22 @@ impl BrowserEpoch {
     fn spawn_helper(
         &self,
         command: &mut std::process::Command,
+        epoch: Option<&BrowserEpoch>,
+        cancelled: impl Fn() -> bool,
     ) -> std::io::Result<std::process::Child> {
         #[cfg(test)]
-        if let Some(spawn) = &self.spawn_for_test {
-            return spawn();
+        if let Some(spawn) = &self.prepare_for_test {
+            *command = spawn()?;
         }
+        let _owner = self.spawn_guard.lock().unwrap_or_else(|e| e.into_inner());
+        let _session =
+            epoch.map(|scope| scope.spawn_guard.lock().unwrap_or_else(|e| e.into_inner()));
+        if cancelled() {
+            return Err(std::io::ErrorKind::Interrupted.into());
+        }
+        #[cfg(test)]
+        self.launches
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         command.spawn()
     }
 
@@ -75,6 +88,7 @@ impl BrowserEpoch {
     }
 
     pub(crate) fn close(&self) {
+        let _guard = self.spawn_guard.lock().unwrap_or_else(|e| e.into_inner());
         self.ended.cancel();
     }
 }
@@ -223,7 +237,9 @@ fn deliver_system_url(
             if cancelled() {
                 return;
             }
-            let Ok(mut child) = worker_scope.spawn_helper(&mut command) else {
+            let Ok(mut child) =
+                worker_scope.spawn_helper(&mut command, worker_epoch.as_deref(), cancelled)
+            else {
                 return;
             };
             let deadline = std::time::Instant::now() + HELPER_OBSERVATION;
@@ -421,7 +437,7 @@ mod browser_command_tests {
         let (release, resume) = std::sync::mpsc::channel();
         let resume = Mutex::new(resume);
         let workers = Arc::new(BrowserEpoch {
-            spawn_for_test: Some(Arc::new(move || {
+            prepare_for_test: Some(Arc::new(move || {
                 let _ = start.send(());
                 if let Ok(receiver) = resume.lock() {
                     let _ = receiver.recv_timeout(Duration::from_secs(5));
@@ -448,6 +464,44 @@ mod browser_command_tests {
         closer.join().map_err(|_| "shutdown panicked")?;
         assert!(!launch.join().map_err(|_| "launch panicked")?);
         result?;
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn shutdown_before_spawn_prevents_helper_side_effect() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let (ready, started) = std::sync::mpsc::channel();
+        let (resume, wait) = std::sync::mpsc::channel();
+        let wait = Mutex::new(wait);
+        let workers = Arc::new(BrowserEpoch {
+            prepare_for_test: Some(Arc::new(move || {
+                ready.send(()).map_err(std::io::Error::other)?;
+                wait.lock()
+                    .map_err(|_| std::io::Error::other("lock"))?
+                    .recv_timeout(Duration::from_secs(5))
+                    .map_err(std::io::Error::other)?;
+                Ok(std::process::Command::new("true"))
+            })),
+            ..Default::default()
+        });
+        let helper = workers.clone();
+        let system = SystemBrowser {
+            opener: Arc::new(move |url| deliver_system_url(url, &helper, None, None)),
+            workers: workers.clone(),
+        };
+        let mut config = NativeLoginConfig::from_env(|_| Some("test".into()))?.ok_or("config")?;
+        config.bind_system_browser(system);
+        let open = config.scoped_browser(CancellationToken::new());
+        let launch = std::thread::spawn(move || open("about:blank"));
+        started.recv_timeout(Duration::from_secs(5))?;
+        config.system_browser.shutdown();
+        resume.send(())?;
+        assert!(!launch.join().map_err(|_| "launch panicked")?);
+        assert_eq!(
+            workers.launches.load(std::sync::atomic::Ordering::SeqCst),
+            0
+        );
         Ok(())
     }
 

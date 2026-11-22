@@ -78,3 +78,14 @@ impl Session {
         }
     }
 }
+
+#[derive(Default, Clone)]
+pub(super) struct Unverified(pub(super) BTreeSet<String>);
+
+impl std::fmt::Debug for Unverified {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Unverified")
+            .field("count", &self.0.len())
+            .finish()
+    }
+}

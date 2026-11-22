@@ -177,29 +177,19 @@ async fn refresh(
     cancel: CancellationToken,
 ) -> Result<(), NativeLoginError> {
     view.quote_until.clear();
-    let requested_at = Instant::now();
     let mut catalogue = client
         .coin_catalogue(token, view.character_id.as_deref(), cancel.clone())
         .await?;
-    let mut quote_until: std::collections::BTreeMap<_, _> = catalogue
-        .packages
+    let listed = std::mem::take(&mut catalogue.recent_orders);
+    let lookups = listed
         .iter()
-        .map(|p| {
-            (
-                p.quote_id.clone(),
-                requested_at + Duration::from_secs(u64::from(p.valid_for_seconds)),
-            )
-        })
+        .map(|row| client.coin_order_status(token, &row.request_id, cancel.clone()));
+    catalogue.recent_orders = crate::account_services::status_lookup::collect(lookups)
+        .await
+        .into_iter()
+        .flatten()
+        .filter_map(Result::ok)
         .collect();
-    for listed in std::mem::take(&mut catalogue.recent_orders) {
-        let Ok(order) = client
-            .coin_order_status(token, &listed.request_id, cancel.clone())
-            .await
-        else {
-            continue;
-        };
-        catalogue.recent_orders.push(order);
-    }
     if let Some(request_id) = view
         .pending
         .as_ref()
@@ -233,6 +223,17 @@ async fn refresh(
     }) {
         return Err(PlatformClientError::InvalidPayload.into());
     }
+    let quoted_at = Instant::now();
+    let mut quote_until: std::collections::BTreeMap<_, _> = catalogue
+        .packages
+        .iter()
+        .map(|p| {
+            (
+                p.quote_id.clone(),
+                quoted_at + Duration::from_secs(u64::from(p.valid_for_seconds)),
+            )
+        })
+        .collect();
     if let Some(order) = &view.order {
         quote_until.remove(&order.quote_id);
     }

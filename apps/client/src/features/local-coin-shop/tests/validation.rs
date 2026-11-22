@@ -346,3 +346,56 @@ fn failed_reopen_requires_current_order_before_enabling_checkout() -> TestResult
         Ok(())
     })
 }
+
+#[test]
+fn coin_refresh_looks_up_both_rows_before_starting_quotes() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        mock.runtime.block_on(async {
+            for _ in 0..2 {
+                let catalogue = client
+                    .coin_catalogue(&token, None, CancellationToken::new())
+                    .await?;
+                let request = CoinOrderRequest {
+                    version: 1,
+                    request_id: AttemptRef::generate()?.as_str().into(),
+                    package_id: PACKAGE.into(),
+                    character_id: None,
+                    quote_id: catalogue.packages[0].quote_id.clone(),
+                };
+                client
+                    .create_coin_order(&token, &request, CancellationToken::new())
+                    .await?;
+            }
+            mock.authority.lock().map_err(|_| "lock")?.status_barrier =
+                Some(Arc::new(tokio::sync::Barrier::new(2)));
+            let mut view = View::new(None);
+            let browser: Browser = Arc::new(|_| true);
+            controller::execute(
+                &mut view,
+                Action::Refresh,
+                &client,
+                &token,
+                &browser,
+                CancellationToken::new(),
+            )
+            .await;
+            let catalogue = view.catalogue.as_ref().ok_or("catalogue")?;
+            assert_eq!(catalogue.recent_orders.len(), 2);
+            let last = mock
+                .authority
+                .lock()
+                .map_err(|_| "lock")?
+                .last_status
+                .ok_or("status")?;
+            let package = &catalogue.packages[0];
+            assert!(
+                view.quote_until[&package.quote_id]
+                    >= last + std::time::Duration::from_secs(package.valid_for_seconds.into())
+            );
+            Ok(())
+        })
+    })
+}
