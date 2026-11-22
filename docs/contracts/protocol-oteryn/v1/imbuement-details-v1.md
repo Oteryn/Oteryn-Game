@@ -44,6 +44,10 @@ current World under the item session fence. The server sets a quote’s affordab
 and the observed funds cover its gold price. The result concerns funds only.
 Premium, materials, shrine reach, coin change capacity and concurrent spending
 are checked independently on application. Command 731 remains byte-identical.
+The reference window supplies carried and bank resources before sending its
+offers, and the archive records the current tier prices.
+[Crystal's window route](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp#L9588-L9592) ·
+[Tibia Fandom archive](https://tibia.fandom.com/wiki/Imbuing#Gold_Fees)
 
 ## Protection purchase
 
@@ -54,3 +58,4 @@ empty payload. The server does not burn gold, consume materials or apply an
 imbuement. Crystal's current apply request has no protection flag and Oteryn's
 accepted R2 ruling makes all applications succeed. The command-85 format and
 semantics remain unchanged.
+[Crystal's apply request](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp#L1988-L1992).
