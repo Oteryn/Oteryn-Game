@@ -97,7 +97,7 @@ impl DurabilityRoot {
             let area=BasicArea::embedded().ok_or(DurabilityError::InvalidStoredState)?;
             let mut all=storage::load_all(&mut tx,&fence,&request).await?;
             let id=request.subarea.ok_or(DurabilityError::InvalidStoredState)?;
-            let progress=all.subareas.entry(id).or_default();
+            let progress=all.subareas.get_mut(&id).ok_or(DurabilityError::InvalidStoredState)?;
             let was_discovered=progress.discovered;
             let changed = match area.apply(progress,request.action,&request.pool,request.at,false,&request.occurrence) {
                 Ok(changed)=>changed,
@@ -131,7 +131,14 @@ impl DurabilityRoot {
             let current=all.current(id)?;
             let bytes=projection(0,revision,current,pool_after,improved,&request,all.percentage(&request)?)?;
             if advanced || request.action != MapAction::Query {
-                storage::save(&mut tx,&fence,&request,&all,advanced,donation,pool,pool_after,&bytes).await?;
+                let settlement = storage::Settlement {
+                    advanced,
+                    donation,
+                    pool_before: pool,
+                    pool_after,
+                    result: &bytes,
+                };
+                storage::save(&mut tx, &fence, &request, &all, settlement).await?;
             }
             // Query also reconciles canonical discoveries earned before the milestone consumer existed.
             let completed_now=!was_discovered && current.discovered;

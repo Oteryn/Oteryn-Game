@@ -43,7 +43,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 y: position.at.y,
                 floor: position.at.floor,
             };
-            content::admit_at(self, at).map(|area| (area, at))
+            content::admit_at(self, at).map(|mut area| {
+                let digest = runtime.content_pin().server_artifact_digest();
+                area.cosmetics = area.cosmetics.filter(|view| view.source_digest() == digest);
+                (area, at)
+            })
         };
         let Some((area, at)) = area_at else {
             return;

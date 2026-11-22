@@ -202,6 +202,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let cosmetics = area.cosmetics.filter(|view| {
+            view.source_digest() == runtime.content_pin().server_artifact_digest()
+        });
         drop(runtime);
         let fee = if let Some((gold, platinum, crystal, fallback)) = fee_definitions {
             let backpack = match self
@@ -253,7 +256,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             legacy_area: area.legacy_area,
             subarea: area.subarea,
             areas: area.areas,
-            cosmetics: area.cosmetics,
+            cosmetics,
             epoch: self.reset_epoch,
             pool: area.pool,
             at,

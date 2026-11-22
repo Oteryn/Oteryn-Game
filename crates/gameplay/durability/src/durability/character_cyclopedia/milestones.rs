@@ -93,7 +93,7 @@ pub(super) async fn grant(
             sex: None,
         };
         if outfit_matches_cosmetics(cosmetics, &reward) {
-            grant_cosmetics_outfit(tx, character, &request.occurrence, &reward).await?;
+            grant_cosmetics_outfit(tx, character, &request.occurrence, &reward, cosmetics).await?;
         }
     }
     grant_missing(

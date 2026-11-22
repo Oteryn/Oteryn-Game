@@ -63,20 +63,19 @@ pub(crate) async fn grant_content_outfit(
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
     native: &NativeGameplayState,
 ) -> Result<Vec<String>, DurabilityError> {
-    if !outfit_compatible(native, reward) {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    grant_cosmetics_outfit(tx, character, occurrence, reward).await
+    let cosmetics = native.cosmetics().ok_or(DurabilityError::InvalidStoredState)?;
+    grant_cosmetics_outfit(tx, character, occurrence, reward, cosmetics).await
 }
 
-/// Write a grant after the caller has verified its mapping in the admitted cosmetics view.
+/// Write a grant validated against the admitted cosmetics view.
 pub(crate) async fn grant_cosmetics_outfit(
     tx: &mut Transaction<'_, Postgres>,
     character: CharacterId,
     occurrence: &[u8],
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
+    cosmetics: &NativeCosmeticsView,
 ) -> Result<Vec<String>, DurabilityError> {
-    if occurrence.is_empty() || occurrence.len() > 4096 {
+    if occurrence.is_empty() || occurrence.len() > 4096 || !outfit_matches_cosmetics(cosmetics, reward) {
         return Err(DurabilityError::InvalidStoredState);
     }
     let account: sqlx::types::Uuid = sqlx::query_scalar(

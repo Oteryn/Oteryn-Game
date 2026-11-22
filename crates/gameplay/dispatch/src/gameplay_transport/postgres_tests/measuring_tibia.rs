@@ -253,6 +253,14 @@ async fn assert_rewards(h: &Harness, achievements: &[&str], addons: &[u8]) -> Te
     .fetch_all(&h.pool)
     .await?;
     assert_eq!(earned, achievements);
+    let held: Vec<String> = sqlx::query_scalar(
+        "SELECT split_part(achievement_key,'/',2) FROM game_account_achievements
+         WHERE achievement_key IN ('oteryn:achievement/widely_travelled','oteryn:achievement/measuring_the_world')
+         ORDER BY achievement_key",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(held, achievements);
     let granted: Vec<String> = sqlx::query_scalar(
         "SELECT unlock_key FROM game_account_appearance_unlock_receipts          WHERE unlock_key LIKE 'oteryn:outfit.discoverer/quest-grant/%' ORDER BY unlock_key",
     )
@@ -263,5 +271,12 @@ async fn assert_rewards(h: &Harness, achievements: &[&str], addons: &[u8]) -> Te
         .map(|addon| format!("oteryn:outfit.discoverer/quest-grant/{addon}"))
         .collect();
     assert_eq!(granted, expected);
+    let unlocked: Vec<String> = sqlx::query_scalar(
+        "SELECT unlock_key FROM game_account_appearance_unlocks
+         WHERE unlock_key LIKE 'oteryn:outfit.discoverer/quest-grant/%' ORDER BY unlock_key",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(unlocked, expected);
     Ok(())
 }

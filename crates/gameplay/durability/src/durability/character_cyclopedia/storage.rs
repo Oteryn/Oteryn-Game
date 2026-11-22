@@ -82,7 +82,11 @@ pub(super) async fn load_all(
     let row=sqlx::query("SELECT bundle_digest,catalogue_digest,progress::text FROM game_character_cyclopedia WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     match row {
-        None => Ok(CanonicalProgress::default()),
+        None => {
+            let mut progress = CanonicalProgress::default();
+            progress.convert(request);
+            Ok(progress)
+        }
         Some(row) => {
             if !BasicArea::reads_content_digest(&row.try_get::<Vec<u8>, _>("catalogue_digest")?) {
                 return Err(DurabilityError::InvalidStoredState);
@@ -169,21 +173,25 @@ pub(super) async fn world(
     Ok((remaining, improved))
 }
 
-#[allow(clippy::too_many_arguments)]
+pub(super) struct Settlement<'a> {
+    pub(super) advanced: bool,
+    pub(super) donation: u64,
+    pub(super) pool_before: u64,
+    pub(super) pool_after: u64,
+    pub(super) result: &'a [u8],
+}
+
 pub(super) async fn save(
     tx: &mut Type2Transaction<'_>,
     fence: &CurrentCharacterGameplayFence,
     request: &MapRequest,
     progress: &CanonicalProgress,
-    advanced: bool,
-    donation: u64,
-    pool: u64,
-    pool_after: u64,
-    result: &[u8],
+    settlement: Settlement<'_>,
 ) -> Result<(), DurabilityError> {
+    let Settlement { advanced, donation, pool_before, pool_after, result } = settlement;
     let character = fence.character_id.as_bytes().as_slice();
     sqlx::query("INSERT INTO game_character_cyclopedia_receipts(occurrence,character_id,world_id,command_session_id,command_id,binding,result,fee_transaction_id,donation,pool_before,pool_after,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,area_id,reset_subarea) SELECT encode($1,'hex')::uuid,s.character_id,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,encode($7,'hex')::uuid,$8,$9,$10,s.character_revision,CASE WHEN $11 THEN s.character_revision+1 ELSE NULL END,s.level,s.level,s.total_experience,s.total_experience,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,$13,$14 FROM game_character_progression_state s WHERE s.character_id=encode($12,'hex')::uuid")
-        .bind(request.occurrence.as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(request.binding.as_slice()).bind(result).bind((donation>0).then_some(request.transaction.as_slice())).bind(donation as i64).bind(pool as i64).bind(pool_after as i64).bind(advanced).bind(character).bind(i64::from(request.area)).bind((advanced && request.action == MapAction::Shuffle).then_some(request.subarea.map(i64::from)).flatten()).execute(&mut ***tx).await?;
+        .bind(request.occurrence.as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(request.binding.as_slice()).bind(result).bind((donation>0).then_some(request.transaction.as_slice())).bind(donation as i64).bind(pool_before as i64).bind(pool_after as i64).bind(advanced).bind(character).bind(i64::from(request.area)).bind((advanced && request.action == MapAction::Shuffle).then_some(request.subarea.map(i64::from)).flatten()).execute(&mut ***tx).await?;
     if advanced {
         let progress =
             serde_json::to_string(progress).map_err(|_| DurabilityError::InvalidStoredState)?;
