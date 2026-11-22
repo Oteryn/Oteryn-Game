@@ -149,6 +149,9 @@ fn store_launcher_fresh_oauth_releases_definitively_refused_request() -> TestRes
 fn fresh_oauth(refused: bool) -> TestResult {
     use crate::account_services::test_server::coins::{CoinAuthority, EventKind, PACKAGE};
     use std::sync::Mutex;
+    let _entry = crate::account_services::test_server::COMMERCE_ENTRY
+        .lock()
+        .map_err(|_| "commerce entry lock")?;
     let stack = test_support::Stack::start(Vec::new())?;
     let mock = MockPlatform::start()?;
     let mut config = stack.config();

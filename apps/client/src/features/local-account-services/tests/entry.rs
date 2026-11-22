@@ -8,6 +8,7 @@ use std::sync::{
 #[test]
 fn account_services_selection_uses_separate_scope_and_returns_to_fresh_game_login() -> TestResult {
     test_thread(|| {
+        let _entry = COMMERCE_ENTRY.lock().map_err(|_| "commerce entry lock")?;
         let stack = test_support::Stack::start(Vec::new())?;
         let mock = MockPlatform::start()?;
         let client = mock.client()?;
@@ -137,6 +138,7 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
     use crate::character_selection::SelectionAction;
     use crate::coin_shop::Action as CoinAction;
     test_thread(move || {
+        let _entry = COMMERCE_ENTRY.lock().map_err(|_| "commerce entry lock")?;
         let stack = test_support::Stack::start(Vec::new())?;
         let mock = MockPlatform::start()?;
         let client = mock.client()?;
