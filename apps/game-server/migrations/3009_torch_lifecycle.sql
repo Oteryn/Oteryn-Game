@@ -113,7 +113,7 @@ RETURNS SMALLINT LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
  r game_torch_transitions%ROWTYPE; i game_item_instances%ROWTYPE; c game_torch_clocks%ROWTYPE;
  s game_durability_reconnect_sessions%ROWTYPE; k RECORD; stage RECORD; pos BYTEA;
- now_ms BIGINT:=floor(extract(epoch FROM clock_timestamp())*1000)::bigint;
+ now_ms BIGINT;
 BEGIN
  SELECT * INTO s FROM game_durability_reconnect_sessions s0 WHERE s0.game_session_id=p_session;
  IF NOT FOUND OR p_intent IS NULL OR octet_length(p_intent) NOT BETWEEN 1 AND 529
@@ -122,8 +122,7 @@ BEGIN
  IF FOUND THEN RETURN CASE WHEN r.intent=p_intent THEN 1 ELSE 2 END; END IF;
  SELECT * INTO i FROM game_item_instances i0 WHERE i0.item_instance_id=p_item
   AND i0.definition_family='Item' AND i0.definition_revision_ref='definition-r1'
-  AND i0.definition_production_key IN ('oteryn:item.tibia.i2920','oteryn:item.tibia.i2921',
-       'oteryn:item.tibia.i2922','oteryn:item.tibia.i2923','oteryn:item.tibia.i2924','oteryn:item.tibia.i2925','oteryn:item.tibia.i2926')
+  AND EXISTS(SELECT 1 FROM game_torch_stage(i0.definition_production_key))
   FOR UPDATE;
  IF NOT FOUND THEN RETURN 0; END IF;
  IF i.lifecycle<>1 OR i.quantity<>1 OR s.session_state<>2 OR s.runtime_scope_kind<>1
@@ -143,7 +142,7 @@ BEGIN
    OR k.ground->>'native_room_placement_context' IS DISTINCT FROM ('\x'||encode(p_frame,'hex'))
    OR cardinality(p_position) IS DISTINCT FROM 3 OR array_position(p_position,NULL) IS NOT NULL
    OR p_position[1] NOT BETWEEN 0 AND 65535 OR p_position[2] NOT BETWEEN 0 AND 65535
-   OR p_position[3] NOT BETWEEN -32767 AND 32767
+   OR p_position[3] NOT BETWEEN 0 AND 32767
   THEN RETURN 2; END IF;
   pos:=decode(substring(k.ground->>'spatial_position' FROM 3),'hex');
   IF octet_length(pos)<>10 THEN RETURN 2; END IF;
@@ -154,7 +153,8 @@ BEGIN
  ELSIF k.character_id IS DISTINCT FROM s.character_id THEN RETURN 2;
  END IF;
 
- SELECT * INTO stage FROM game_torch_stage(i.definition_production_key);
+ now_ms:=floor(extract(epoch FROM clock_timestamp())*1000)::bigint;
+ SELECT * INTO STRICT stage FROM game_torch_stage(i.definition_production_key);
  SELECT * INTO c FROM game_torch_clocks t WHERE t.item_instance_id=p_item;
  IF stage.id=2926 OR c.deadline_ms<=now_ms THEN RETURN 4; END IF;
  r.transaction_id:=game_character_uuid_v7();
@@ -306,7 +306,7 @@ LANGUAGE sql STABLE AS $$
   WHERE r.transaction_id=(p_new->>'last_transaction_id')::uuid
    AND r.created_xact_id=pg_current_xact_id() AND r.before_item=p_old
    AND p_new->>'definition_production_key'=r.target_key
-   AND (p_new->>'quantity')::integer=CASE WHEN num_nonnulls(r.deadline_after_ms,r.remaining_after_ms)=0 THEN 0 ELSE 1 END
+   AND (p_new->>'quantity')::bigint=CASE WHEN num_nonnulls(r.deadline_after_ms,r.remaining_after_ms)=0 THEN 0 ELSE 1 END
    AND (p_new->>'lifecycle')::integer=CASE WHEN num_nonnulls(r.deadline_after_ms,r.remaining_after_ms)=0 THEN 2 ELSE 1 END
    AND (p_new-ARRAY['definition_production_key','quantity','lifecycle','last_transaction_id','state_revision'])
      =(p_old-ARRAY['definition_production_key','quantity','lifecycle','last_transaction_id','state_revision']))

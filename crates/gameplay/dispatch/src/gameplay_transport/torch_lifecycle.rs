@@ -27,17 +27,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
-        let Some(index) = self
+        let Some(native) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
-            .and_then(|native| native.item_index())
         else {
             return Ok(None);
         };
+        let Some(index) = native.item_index() else {
+            return Ok(None);
+        };
+        // A bundle needs both the client references and the portable native
+        // profiles before any use can create one of the successor stages.
         if (2920..=2926).any(|id| {
+            use crate::content::native_gameplay::{NativeItemDestination, NativeItemStackClass};
+            let key = format!("oteryn:item.tibia.i{id}");
             index
-                .definition_ref("Item", &format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .definition_ref("Item", &key, "definition-r1")
                 .is_none()
+                || native
+                    .item_policy(&key, "definition-r1")
+                    .is_none_or(|policy| {
+                        let admission = &policy.record().admission;
+                        !admission.materializable
+                            || admission.stack_class != NativeItemStackClass::NonStackable
+                            || !admission
+                                .legal_destinations
+                                .contains(&NativeItemDestination::CharacterInventory)
+                            || !admission
+                                .legal_destinations
+                                .contains(&NativeItemDestination::Ground)
+                    })
         }) {
             return Ok(None);
         }
