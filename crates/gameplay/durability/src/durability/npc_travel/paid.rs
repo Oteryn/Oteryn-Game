@@ -9,6 +9,8 @@ use sha2::{Digest, Sha256};
 
 #[path = "clear_gate.rs"]
 mod clear_gate;
+#[path = "guards.rs"]
+mod guards;
 #[path = "ticket.rs"]
 mod ticket;
 
@@ -21,6 +23,9 @@ pub enum TravelRefusal {
     ArrivalPending,
     StaleQuote,
     InsufficientFunds,
+    SinbeardScarabCheese,
+    PetrosScarabCheese,
+    HoneymoonIneligible,
 }
 
 pub trait NpcTravelGate: Sync {
@@ -124,6 +129,9 @@ async fn quote(
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
+    if let Some(refusal) = guards::quote(tx, fence, route).await? {
+        return Ok(Err(refusal));
+    }
     let level: Option<i64> = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     if level.is_none_or(|level| level < i64::from(route.route.min_level.unwrap_or(0))) {
@@ -214,7 +222,10 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
             let permitted = premium(&mut tx, fence, &request.route, *gate).await?;
-            if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {return Ok(Err(error));}
+            let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                Ok(root) => root,
+                Err(error) => return Ok(Err(error)),
+            };
             let arrival = request.arrival;
             let route = &request.route;
             let key = format!("{}/{}", route.service, route.route.key);
@@ -285,6 +296,9 @@ impl DurabilityRoot {
             if !permitted {return Ok(Ok(Err(TravelRefusal::PremiumRequired)));}
             let fare = match quote(&mut tx, fence, route).await? {Ok(fare)=>fare,Err(refusal)=>return Ok(Ok(Err(refusal)))};
             if fare!=request.fee.fee_gold_units {return Ok(Ok(Err(TravelRefusal::StaleQuote)));}
+            if let Some(refusal) = guards::confirmation(&mut tx, fence, root, route).await? {
+                return Ok(Ok(Err(refusal)));
+            }
             if fare>0 {
                 match burn_fee_in_transaction(&mut tx,&fence,&request.fee).await {
                     Ok(_) => (),
