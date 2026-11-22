@@ -50,6 +50,16 @@ pub enum LevelUpPlanError {
     FactsMismatch,
 }
 
+/// Match the session, connection, lease and scope of the prepared work at the facts revision.
+pub(super) fn level_up_binding_matches(
+    binding: CurrentCharacterGameplayFence,
+    facts_revision: CharacterRevision,
+    current: CurrentCharacterGameplayFence,
+) -> bool {
+    binding.item_fence() == current.item_fence()
+        && facts_revision == current.expected_character_revision
+}
+
 /// Prepare only a newly acknowledged XP commit. Replay never emits another effect.
 ///
 /// Both maxima inputs are data, not qualified sources or authority. The caller must retain
@@ -123,11 +133,13 @@ fn fresh_level_up(
     {
         return Err(LevelUpPlanError::InvalidReceipt);
     }
-    let mut expected_after = before_fence;
-    expected_after.expected_character_revision = receipt.committed_character_revision;
     if before_fence.character_id != receipt.character_id
         || before_fence.expected_character_revision != receipt.original_character_revision
-        || current_fence != expected_after
+        || !level_up_binding_matches(
+            before_fence,
+            receipt.committed_character_revision,
+            current_fence,
+        )
         || before_maxima.level != receipt.level_before
     {
         return Err(LevelUpPlanError::BindingMismatch);
