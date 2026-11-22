@@ -97,6 +97,17 @@ fn corrections() -> &'static [Correction] {
 }
 
 impl TravelRoute {
+    /// Expected Postman mission 1 stage before paying for this exact tour leg.
+    pub fn postman_tour_stage(&self) -> Option<i64> {
+        match (self.service.as_str(), self.route.key.as_str()) {
+            ("oteryn:service.travel.captain_bluebear", "carlin") => Some(1),
+            ("oteryn:service.travel.uzon", "edron") => Some(2),
+            ("oteryn:service.travel.captain_seahorse", "venore") => Some(3),
+            ("oteryn:service.travel.brodrosch", "cormaya") => Some(4),
+            _ => None,
+        }
+    }
+
     /// Existing routes retain both their spoken destination and their route key.
     pub fn matches_keyword(&self, text: &str) -> bool {
         text == self.keyword
@@ -326,12 +337,12 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 235);
+        assert_eq!(corrections.len(), 236);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys.len(), 235);
+        assert_eq!(keys.len(), 236);
         let dalbrect = corrections
             .iter()
             .find(|row| row.key == "oteryn:service.travel.dalbrect/isle_of_kings")
@@ -380,18 +391,7 @@ mod tests {
             if facts["quest_requirements"]["value"] != serde_json::json!([])
                 || !facts["travel_guard_conditions"]["value"].is_null()
             {
-                // Each of these scripts registers an unconditional travel confirmation.
-                let crystal_qualified = matches!(
-                    row.key.as_str(),
-                    "oteryn:service.travel.captain_jack/tibia"
-                        | "oteryn:service.travel.ferryman_kamil/meluna"
-                        | "oteryn:service.travel.ferryman_kamil_meluna/fibula"
-                        | "oteryn:service.travel.harlow_vengoth/yalahar"
-                        | "oteryn:service.travel.hawkhurst/passage"
-                        | "oteryn:service.travel.hawkhurst_ingol/passage"
-                        | "oteryn:service.travel.tonar/passage"
-                );
-                assert_eq!(row.held, !crystal_qualified, "{}", row.key);
+                assert!(row.held, "{}", row.key);
             }
         }
         Ok(())
@@ -600,12 +600,7 @@ mod tests {
             assert!(row.yalahar_town_gate.is_some());
         }
         // These donor routes cannot be safely offered with the currently admitted owners.
-        for key in [
-            "captain_max/yalahar",
-            "captain_bluebear/targuna",
-            "captain_bluebear/carlin",
-            "captain_seahorse/venore",
-        ] {
+        for key in ["captain_max/yalahar", "captain_bluebear/targuna"] {
             assert!(
                 rows.iter()
                     .find(|row| row.key == format!("oteryn:service.travel.{key}"))

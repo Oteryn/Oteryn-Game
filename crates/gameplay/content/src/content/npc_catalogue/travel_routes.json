@@ -49,6 +49,19 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.brodrosch/cormaya",
+    "keyword": "cormaya",
+    "price": 160,
+    "premium": false,
+    "x": 33311,
+    "y": 31989,
+    "floor": 15,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.brodrosch/gnomprona",
     "keyword": "gnomprona",
     "price": 200,
@@ -81,7 +94,7 @@
     "y": 31820,
     "floor": 6,
     "postman": true,
-    "held": true,
+    "held": false,
     "carpet": false,
     "native_addition": true
   },
@@ -617,7 +630,7 @@
     "y": 31756,
     "floor": 6,
     "postman": false,
-    "held": false,
+    "held": true,
     "carpet": false
   },
   {
@@ -949,7 +962,7 @@
     "y": 32022,
     "floor": 6,
     "postman": true,
-    "held": true,
+    "held": false,
     "carpet": false,
     "native_addition": true
   },
@@ -1258,7 +1271,7 @@
     "y": 32470,
     "floor": 7,
     "postman": false,
-    "held": false,
+    "held": true,
     "carpet": false
   },
   {
@@ -1270,7 +1283,7 @@
     "y": 32457,
     "floor": 7,
     "postman": false,
-    "held": false,
+    "held": true,
     "carpet": false
   },
   {
@@ -1390,7 +1403,7 @@
     "y": 31366,
     "floor": 7,
     "postman": false,
-    "held": false,
+    "held": true,
     "carpet": false
   },
   {
@@ -1402,7 +1415,7 @@
     "y": 32602,
     "floor": 6,
     "postman": false,
-    "held": false,
+    "held": true,
     "carpet": false
   },
   {
@@ -1414,7 +1427,7 @@
     "y": 31983,
     "floor": 7,
     "postman": false,
-    "held": false,
+    "held": true,
     "carpet": false
   },
   {
@@ -2627,7 +2640,7 @@
     "y": 32916,
     "floor": 7,
     "postman": true,
-    "held": false,
+    "held": true,
     "carpet": false
   },
   {

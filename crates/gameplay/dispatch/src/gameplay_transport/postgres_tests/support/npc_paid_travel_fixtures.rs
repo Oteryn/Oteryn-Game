@@ -60,7 +60,7 @@ pub(super) async fn talk(
     assert_eq!(
         result.disposition,
         NpcIntentDisposition::Ok,
-        "{text}: {}",
+        "command {command_id} {text}: {}",
         line(&result)
     );
     Ok(result)
@@ -829,34 +829,60 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
         sqlx::query("UPDATE game_character_quest_tracks SET value=0 WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/ab_dendriel'")
             .bind(id(41).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
-        for (index, (captain, destination, fare, tile)) in S10T_PASSAGES.iter().enumerate() {
-            sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
-            let captain_key = format!("oteryn:npc.{captain}");
-            let npc = {
-                let mut runtime = dependencies.runtime.lock().await;
-                runtime
-                    .place_admitted_respawn(
-                        dependencies.actor,
-                        session,
-                        Some(crate::foundation::MovementLocalPosition {
-                            x: 32310,
-                            y: 32210,
-                            floor: 6,
-                        }),
-                        |_| true,
-                    )
-                    .map_err(debug)?;
-                let placed = runtime
-                    .visible_entities()
-                    .npcs
-                    .into_iter()
-                    .find(|npc| runtime.npc_key(npc.actor) == Some(captain_key.as_str()))
-                    .ok_or("S10T captain")?;
-                EntityRef {
+        let mission = || async {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01'",
+            ).bind(id(41).as_slice()).fetch_one(&h.pool).await
+        };
+        let at_start = |stem: &str| {
+            let key = format!("oteryn:npc.{stem}");
+            let runtime = &dependencies.runtime;
+            let actor = dependencies.actor;
+            async move {
+                let mut runtime = runtime.lock().await;
+                runtime.place_admitted_respawn(
+                    actor, session, Some(crate::foundation::MovementLocalPosition {
+                        x: 32310, y: 32210, floor: 6,
+                    }), |_| true,
+                ).map_err(debug)?;
+                let placed = runtime.visible_entities().npcs.into_iter()
+                    .find(|npc| runtime.npc_key(npc.actor) == Some(key.as_str()))
+                    .ok_or("placed travel contact")?;
+                Ok::<_, Box<dyn std::error::Error>>(EntityRef {
                     identity: placed.actor.placement_identity(),
                     generation: placed.generation,
-                }
-            };
+                })
+            }
+        };
+        if !reward_fixture {
+            dependencies.initialize(&owner).await;
+            let fence = owner.current_quest_fence(session).await
+                .map_err(|()| "current fence")?.ok_or("live session")?;
+            dependencies.runtime.lock().await.bind_attacker_lease(
+                dependencies.actor,
+                session,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                    fence.character_lease_generation,
+                ).map_err(debug)?,
+            ).map_err(debug)?;
+            owner.quest_catalogue = Some(Arc::new(
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?.catalogue().clone(),
+            ));
+            owner.refresh_quest_session(session, true).await;
+            let kevin = at_start("kevin").await?;
+            for (index, text) in ["hi", "yes", "mission", "yes", "yes", "yes", "yes", "yes", "yes", "yes"].into_iter().enumerate() {
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                talk(&owner, &dependencies, kevin, 300 + u64::try_from(index)?, text).await?;
+            }
+            assert_eq!(mission().await?, 1);
+        }
+        let all_passages = S10T_PASSAGES.iter().chain(POSTMAN_TOUR.iter().filter(|_| !reward_fixture));
+        for (index, (captain, destination, fare, tile)) in all_passages.enumerate() {
+            sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
+            let captain_key = format!("oteryn:npc.{captain}");
+            let npc = at_start(captain).await?;
             let route = crate::content::npc_catalogue::travel::resolve(
                 &model,
                 &captain_key,
@@ -871,9 +897,25 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
             .into_iter()
             .find(|route| route.keyword == *destination)
             .ok_or("S10T route")?;
-            let command_id = 100 + u64::try_from(index)? * 10;
+            let command_id = 400 + u64::try_from(index)? * 10;
             owner.clock_origin -= std::time::Duration::from_secs(1);
             talk(&owner, &dependencies, npc, command_id, "hi").await?;
+            if matches!(*captain, "captain_jack" | "ferryman_kamil" | "ferryman_kamil_meluna"
+                | "harlow_vengoth" | "hawkhurst" | "hawkhurst_ingol" | "tonar")
+            {
+                let before = gold(&h).await?;
+                let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts")
+                    .fetch_one(&h.pool).await?;
+                let refused = talk(&owner, &dependencies, npc, command_id + 1, destination).await?;
+                assert!(line(&refused).contains("don't sail there"), "{captain}: {}", line(&refused));
+                let confirmed = talk(&owner, &dependencies, npc, command_id + 2, "yes").await?;
+                assert!(!confirmed.inventory_changed);
+                assert_eq!(gold(&h).await?, before);
+                let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts")
+                    .fetch_one(&h.pool).await?;
+                assert_eq!(after, receipts);
+                continue;
+            }
             let track = route.quest_gate.clone().or_else(|| route.yalahar_town_gate.as_ref()
                 .map(|town|format!("oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/{town}")));
             if let Some(track) = track {
@@ -935,6 +977,11 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
             assert!(failed.unknown);
             assert_eq!(failed.disposition, NpcIntentDisposition::Rejected);
             assert_eq!(gold(&h).await?, before);
+            let tour_stage = POSTMAN_TOUR.iter().position(|(npc, dest, ..)| npc == captain && dest == destination)
+                .map(|stage| i64::try_from(stage).map(|stage| stage + 1)).transpose()?;
+            if let Some(stage) = tour_stage {
+                assert_eq!(mission().await?, stage, "rolled-back {captain} trip");
+            }
             let request = {
                 let holds = owner
                     .states
@@ -961,7 +1008,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                 )
                 .await
                 .ok_or("S10T reconciliation")?;
-            assert!(!travelled.unknown);
+            assert!(!travelled.unknown, "{captain} {destination}: retained arrival did not finish");
             assert_eq!(travelled.inventory_changed, *fare > 0);
             assert_eq!(gold(&h).await?, before - fare);
             let position = dependencies
@@ -988,9 +1035,31 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                     .fetch_one(&h.pool)
                     .await?;
             assert_eq!(after, receipts + 1);
+            if let Some(stage) = tour_stage {
+                assert_eq!(mission().await?, stage + 1, "confirmed and replayed {captain} trip");
+                let receipts: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_character_quest_receipts
+                     WHERE character_id=encode($1,'hex')::uuid
+                       AND transition_key='oteryn:quest-transition/postman/complete-tour-passage'",
+                ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(receipts, stage, "one quest receipt per completed passage");
+            }
             eprintln!(
                 "POSTGRES_EXECUTED S10T {captain} {destination} fare={fare} arrival={tile:?} replay charged once"
             );
+        }
+        if !reward_fixture {
+            let kevin = at_start("kevin").await?;
+            owner.clock_origin -= std::time::Duration::from_secs(1);
+            talk(&owner, &dependencies, kevin, 700, "hi").await?;
+            let report = talk(&owner, &dependencies, kevin, 701, "mission").await?;
+            assert!(line(&report).contains("You finished the route"));
+            let next = talk(&owner, &dependencies, kevin, 702, "yes").await?;
+            assert!(line(&next).contains("jammed mailbox"));
+            let mailbox: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/quest/u7_24/the_postman_missions/mission02'",
+            ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(mailbox, 1);
         }
         assert_eq!(
             first_achievement,
@@ -1109,7 +1178,7 @@ pub(super) fn travel_world(
             min_y: 0,
             max_x: 65535,
             max_y: 65535,
-            floors: vec![-7, -6, -5],
+            floors: vec![-15, -7, -6, -5, -3],
         },
         palette: vec![PaletteEntry {
             key: "terrain:grass".into(),
@@ -1141,7 +1210,7 @@ pub(super) fn travel_world(
     let mut grouped = std::collections::BTreeMap::<_, Vec<Tile>>::new();
     let mut points = points.to_vec();
     points.extend_from_slice(extra_points);
-    for (_, _, _, (x, y, floor)) in S10T_PASSAGES {
+    for (_, _, _, (x, y, floor)) in S10T_PASSAGES.iter().chain(POSTMAN_TOUR) {
         let point = (
             u16::try_from(*x)?,
             u16::try_from(*y)?,
@@ -1211,6 +1280,7 @@ pub(super) fn travel_world(
 }
 
 const S10T_CAPTAINS: &[&str] = &[
+    "brodrosch",
     "captain_fearless",
     "captain_greyhound",
     "captain_jack",
@@ -1229,7 +1299,9 @@ const S10T_CAPTAINS: &[&str] = &[
     "jack_fate",
     "karith",
     "kendra",
+    "kevin",
     "tonar",
+    "uzon",
 ];
 
 type Passage = (&'static str, &'static str, i64, (i32, i32, i16));
@@ -1256,6 +1328,13 @@ const S10T_PASSAGES: &[Passage] = &[
     ("hawkhurst_ingol", "passage", 400, (33356, 31983, 7)),
     ("kendra", "thais", 180, (32259, 32262, 7)),
     ("tonar", "passage", 0, (33070, 32916, 7)),
+];
+
+const POSTMAN_TOUR: &[Passage] = &[
+    ("captain_bluebear", "carlin", 110, (32387, 31820, 6)),
+    ("uzon", "edron", 50, (33193, 31783, 3)),
+    ("captain_seahorse", "venore", 40, (32954, 32022, 6)),
+    ("brodrosch", "cormaya", 160, (33311, 31989, 15)),
 ];
 
 async fn gold(h: &Harness) -> TestResult<i64> {

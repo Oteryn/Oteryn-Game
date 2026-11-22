@@ -902,6 +902,33 @@ fn crowded(
     others >= MAX_OPEN_CONVERSATIONS_PER_NPC as usize
 }
 
+/// Keep authored replies within the same scalar and UTF-8 bounds as player chat.
+fn npc_chat_chunks(mut remaining: &str) -> impl Iterator<Item = &str> {
+    use crate::durability::chat_text::TEXT_MAX_CHARS;
+
+    std::iter::from_fn(move || {
+        remaining = remaining.trim_start();
+        if remaining.is_empty() {
+            return None;
+        }
+        let split_at = remaining.char_indices().nth(TEXT_MAX_CHARS).map_or(
+            remaining.len(),
+            |(limit, next)| {
+                if next.is_whitespace() {
+                    limit
+                } else {
+                    remaining[..limit]
+                        .rfind(char::is_whitespace)
+                        .unwrap_or(limit)
+                }
+            },
+        );
+        let (chunk, tail) = remaining.split_at(split_at);
+        remaining = tail;
+        Some(chunk)
+    })
+}
+
 /// The answer of a nearby NPC to a `say`, queued like any other local line (NPC-TALK-1).
 #[allow(
     clippy::too_many_arguments,
@@ -993,22 +1020,24 @@ fn npc_answer(
         generation: *generation,
     };
     for raw in reply.into_lines() {
-        let raw = oteryn_gameplay_npc::quest_greetings::render_player_name(&raw, &name);
-        let Ok(line) = ChatText::parse(&raw) else {
-            continue;
-        };
-        for (listener, heard) in
-            local_listeners(SpeechMode::Say, *position, listeners.iter().copied())
-        {
-            if let Some(entry_of) = sessions.get_mut(&listener) {
-                entry_of.egress.push(local_line(
-                    npc_speaker,
-                    &entry.name,
-                    SpeechMode::Say,
-                    &line,
-                    *position,
-                    heard,
-                ));
+        let rendered = oteryn_gameplay_npc::quest_greetings::render_player_name(&raw, &name);
+        for chunk in npc_chat_chunks(&rendered) {
+            let Ok(line) = ChatText::parse(chunk) else {
+                continue;
+            };
+            for (listener, heard) in
+                local_listeners(SpeechMode::Say, *position, listeners.iter().copied())
+            {
+                if let Some(entry_of) = sessions.get_mut(&listener) {
+                    entry_of.egress.push(local_line(
+                        npc_speaker,
+                        &entry.name,
+                        SpeechMode::Say,
+                        &line,
+                        *position,
+                        heard,
+                    ));
+                }
             }
         }
     }
@@ -1968,6 +1997,75 @@ mod tests {
         assert_eq!(
             texts(chat.drain(second.1)).last().map(|l| l.1.clone()),
             Some("Farewell.".to_owned())
+        );
+    }
+
+    #[test]
+    fn local_say_delivers_muriels_complete_rune_reply_within_chat_limits() {
+        use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
+        const MURIEL: &str = "oteryn:npc.muriel";
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .expect("NPC catalogue");
+        let book =
+            NpcTalkBook::from_model(&catalogue.service_model_for_project().expect("NPC model"));
+        let (mut runtime, chat, first, second) = two_players(0);
+        let spot = runtime
+            .read_actor_position(first.0)
+            .expect("position")
+            .position();
+        runtime
+            .place_npcs(
+                &NpcPlacementTable {
+                    npcs: vec![NpcPlacements {
+                        key: MURIEL.into(),
+                        placements: vec![NpcPlacement {
+                            floor: -i8::try_from(spot.floor).expect("floor"),
+                            y: u16::try_from(spot.y).expect("y"),
+                            x: u16::try_from(spot.x + 2).expect("x"),
+                            direction: MovementFacing::South,
+                        }],
+                    }],
+                },
+                |_| true,
+                true,
+            )
+            .expect("Muriel placed");
+        chat.install_npc_talk(Arc::new(book));
+        chat.set_npc_service(first.1);
+        assert_eq!(
+            speak(&chat, &runtime, first, &say("hi"), BASE),
+            result(ChatDisposition::Ok)
+        );
+        chat.drain(first.1);
+        chat.drain(second.1);
+        assert_eq!(
+            speak(&chat, &runtime, first, &say("runes"), BASE),
+            result(ChatDisposition::Ok)
+        );
+        let heard = texts(chat.drain(first.1));
+        assert_eq!(heard, texts(chat.drain(second.1)));
+        let replies: Vec<_> = heard
+            .iter()
+            .filter(|(speaker, _)| speaker == "Muriel")
+            .map(|(_, reply)| reply.as_str())
+            .collect();
+        let authored = include_str!("../../../npc/src/npc_talk/source_dialogue.json");
+        let source: serde_json::Value = serde_json::from_str(authored).expect("source replies");
+        let keyword = source[MURIEL]["keywords"]
+            .as_array()
+            .expect("keywords")
+            .iter()
+            .find(|row| row["key"] == "runes")
+            .expect("runes");
+        assert!(replies.len() > 1);
+        assert!(replies.iter().all(|line| ChatText::parse(line).is_ok()));
+        assert_eq!(
+            replies.join(" "),
+            keyword["reply"][0].as_str().expect("authored reply")
         );
     }
 

@@ -138,6 +138,78 @@ fn placed_npcs_answer_source_keywords() -> Result<(), String> {
 }
 
 #[test]
+fn crystal_keywords_match_stems_and_first_occurrences_in_source_order() -> Result<(), String> {
+    let book = book()?;
+    let position = ChatPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    for (key, greet, request, expected) in [
+        (
+            "al_dee",
+            "hi",
+            "Cookies",
+            Some(
+                "I you want to find someone who may want to buy your cookies, you should meet Lily.",
+            ),
+        ),
+        ("blind_orc", "charach", "goshak ikem", None),
+        ("blind_orc", "charach", "goshak ikem goshak", None),
+        (
+            "blind_orc",
+            "charach",
+            "ikem ... goshak",
+            Some("Ikem pashak porak, bata, dora. Ba goshak maruk?"),
+        ),
+    ] {
+        let entry = book.get(&format!("oteryn:npc.{key}")).ok_or(key)?;
+        let npc = [TalkNpc {
+            id: 1u8,
+            position,
+            entry,
+        }];
+        let mut focused = None;
+        assert!(talk(position, greet, &npc, &mut focused).is_some());
+        assert_eq!(
+            talk(position, request, &npc, &mut focused)
+                .map(|reply| reply.text)
+                .as_deref(),
+            expected,
+            "{key}: {request}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn crystal_ferries_retain_oteryn_access_holds() -> Result<(), String> {
+    let book = book()?;
+    for (npc, keyword) in [
+        ("captain_jack", "tibia"),
+        ("ferryman_kamil", "meluna"),
+        ("ferryman_kamil_meluna", "fibula"),
+        ("harlow_vengoth", "yalahar"),
+        ("hawkhurst", "passage"),
+        ("hawkhurst_ingol", "passage"),
+        ("tonar", "passage"),
+    ] {
+        let key = format!("oteryn:npc.{npc}");
+        let route = book
+            .get(&key)
+            .and_then(|entry| {
+                entry
+                    .travel_routes
+                    .iter()
+                    .find(|route| route.keyword == keyword)
+            })
+            .ok_or_else(|| format!("missing {key}/{keyword}"))?;
+        assert!(route.held, "unguarded {key}/{keyword}");
+    }
+    Ok(())
+}
+
+#[test]
 fn crystal_return_ferries_resolve_source_routes() -> Result<(), String> {
     let book = book()?;
     for (npc, keyword, fare, destination) in [
@@ -156,8 +228,9 @@ fn crystal_return_ferries_resolve_source_routes() -> Result<(), String> {
         let route = entry
             .travel_routes
             .iter()
-            .find(|route| !route.held && route.keyword == keyword)
+            .find(|route| route.keyword == keyword)
             .ok_or_else(|| format!("missing {key}/{keyword}"))?;
+        assert_eq!(route.held, !matches!(npc, "eremo" | "kendra"), "{key}");
         assert_eq!(route.route.price, fare, "{key}");
         assert_eq!(route.route.premium, npc == "kendra", "{key}");
         assert_eq!(route.postman, matches!(npc, "kendra" | "tonar"), "{key}");

@@ -208,6 +208,7 @@ pub struct NpcTalkEntry {
     bank: bool,
     admitted_dialogue: bool,
     dialogue_keywords: Vec<crate::content::ProjectV2DialogueKeyword>,
+    source_keyword_count: usize,
     greetings: Vec<String>,
     farewells: Vec<String>,
     greeting_reply: String,
@@ -241,7 +242,7 @@ impl NpcTalkEntry {
             .any(|greeting| contains_words(&said, &words(greeting)))
             || self.is_farewell(&said)
             || says_any(&said, &TRADE_WORDS)
-            || self.dialogue_keyword(&said).is_some()
+            || self.dialogue_keyword(text, &said).is_some()
     }
 
     /// Whether the focused NPC's authored dialogue consumes the message before its shop: an
@@ -249,15 +250,19 @@ impl NpcTalkEntry {
     /// `trade` or `ariki` keywords, which reply and open the window).
     pub fn dialogue_keyword_preempts_trade(&self, npc_key: &str, text: &str) -> bool {
         let said = words(text);
-        self.dialogue_keywords.iter().any(|keyword| {
-            let trigger: Vec<_> = keyword
-                .triggers
-                .iter()
-                .flat_map(|part| words(part))
-                .collect();
-            dialogue_triggers_match(&said, &keyword.triggers)
-                && !asks_to_trade_for(npc_key, &trigger.join(" "))
-        })
+        let lower = text.to_ascii_lowercase();
+        self.dialogue_keywords
+            .iter()
+            .enumerate()
+            .any(|(index, keyword)| {
+                let trigger: Vec<_> = keyword
+                    .triggers
+                    .iter()
+                    .flat_map(|part| words(part))
+                    .collect();
+                self.keyword_matches(index, &lower, &said, &keyword.triggers)
+                    && !asks_to_trade_for(npc_key, &trigger.join(" "))
+            })
     }
 
     fn is_farewell(&self, said: &[String]) -> bool {
@@ -266,13 +271,40 @@ impl NpcTalkEntry {
             .any(|word| contains_words(said, &words(word)))
     }
 
+    fn keyword_matches(
+        &self,
+        index: usize,
+        lower: &str,
+        said: &[String],
+        triggers: &[String],
+    ) -> bool {
+        if index >= self.source_keyword_count {
+            return dialogue_triggers_match(said, triggers);
+        }
+        // Crystal compares the first position of each trigger in the full utterance.
+        let mut previous = 0;
+        !triggers.is_empty()
+            && triggers.iter().all(|trigger| {
+                let Some(found) = lower.find(trigger.as_str()) else {
+                    return false;
+                };
+                let ordered = found >= previous;
+                previous = found;
+                ordered
+            })
+    }
+
     fn dialogue_keyword(
         &self,
+        text: &str,
         said: &[String],
     ) -> Option<&crate::content::ProjectV2DialogueKeyword> {
+        let lower = text.to_ascii_lowercase();
         self.dialogue_keywords
             .iter()
-            .find(|keyword| dialogue_triggers_match(said, &keyword.triggers))
+            .enumerate()
+            .find(|(index, keyword)| self.keyword_matches(*index, &lower, said, &keyword.triggers))
+            .map(|(_, keyword)| keyword)
     }
 
     /// The line that ends a conversation.
@@ -304,6 +336,7 @@ impl NpcTalkEntry {
             bank: false,
             admitted_dialogue: false,
             dialogue_keywords: Vec::new(),
+            source_keyword_count: 0,
             greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
             farewells: FAREWELLS.iter().map(|word| (*word).to_owned()).collect(),
             greeting_continuation: Vec::new(),
@@ -945,6 +978,7 @@ impl NpcTalkBook {
                     },
                     topic_reply,
                     dialogue_keywords,
+                    source_keyword_count: source_dialogue.map_or(0, |source| source.keywords.len()),
                     offers: npc
                         .services
                         .iter()
@@ -1085,7 +1119,7 @@ pub fn talk<K: Copy + PartialEq>(
             *engaged = None;
             return start(speaker, text, npcs, engaged);
         };
-        if let Some(keyword) = npc.entry.dialogue_keyword(&said) {
+        if let Some(keyword) = npc.entry.dialogue_keyword(text, &said) {
             return Some(NpcReply {
                 id: npc.id,
                 text: keyword.reply[0].clone(),
@@ -1605,9 +1639,10 @@ mod tests {
                 entry
                     .travel_routes
                     .iter()
-                    .find(|route| route.keyword == keyword && !route.held)
+                    .find(|route| route.keyword == keyword)
             });
             if let Some(binding) = route {
+                assert_eq!(binding.held, !matches!(stem, "eremo" | "kendra"), "{key}");
                 let route = &binding.route;
                 assert_eq!(
                     (route.price, route.premium, binding.quest_gate.as_deref()),

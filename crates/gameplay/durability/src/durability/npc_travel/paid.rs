@@ -4,6 +4,7 @@ use crate::durability::character_progression::assert_gameplay_fence;
 use crate::durability::db::begin_type2_transaction;
 use crate::durability::item_fee_burn::{FeeBurnError, FeeBurnRequest, burn_fee_in_transaction};
 use crate::durability::item_mint_audit::Type2Transaction;
+use crate::durability::quest_state::credit_postman_passage;
 use oteryn_gameplay_content::content::npc_catalogue::travel::TravelRoute;
 use sha2::{Digest, Sha256};
 
@@ -285,8 +286,14 @@ impl DurabilityRoot {
             if !permitted {return Ok(Ok(Err(TravelRefusal::PremiumRequired)));}
             let fare = match quote(&mut tx, fence, route).await? {Ok(fare)=>fare,Err(refusal)=>return Ok(Ok(Err(refusal)))};
             if fare!=request.fee.fee_gold_units {return Ok(Ok(Err(TravelRefusal::StaleQuote)));}
+            // The quest writer owns the next Character revision. The item-only fare
+            // binds to that revision and commits with the quest receipt and arrival.
+            let mut fee_fence = fence;
+            if let Some(stage) = route.postman_tour_stage() {
+                fee_fence.expected_character_revision = credit_postman_passage(&mut tx, fence, request.command, stage).await?;
+            }
             if fare>0 {
-                match burn_fee_in_transaction(&mut tx,&fence,&request.fee).await {
+                match burn_fee_in_transaction(&mut tx,&fee_fence,&request.fee).await {
                     Ok(_) => (),
                     Err(FeeBurnError::InsufficientFunds | FeeBurnError::ChangeDoesNotFit | FeeBurnError::CapacityExceeded) => return Ok(Ok(Err(TravelRefusal::InsufficientFunds))),
                     Err(FeeBurnError::Unavailable(error)) => return Err(error),
