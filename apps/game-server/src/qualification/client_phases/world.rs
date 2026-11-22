@@ -5,6 +5,9 @@ use crate::map::overlay::TilePos;
 use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
 
+#[path = "full_e2ef3.rs"]
+mod full_e2ef3;
+
 #[path = "general_stats.rs"]
 mod general_stats;
 
@@ -470,8 +473,19 @@ fn route_avoiding(
     goal: impl Fn(TilePos) -> bool,
     available: impl Fn(TilePos) -> bool,
 ) -> Option<Vec<StepDirection>> {
+    route_with_landings(from, goal, available, |at, direction| {
+        destination(world, at, direction)
+    })
+}
+
+fn route_with_landings(
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    available: impl Fn(TilePos) -> bool,
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+) -> Option<Vec<StepDirection>> {
     find_route(from, goal, |at, direction| {
-        let next = destination(world, at, direction)?;
+        let next = landing(at, direction)?;
         (next.x.abs_diff(from.x) <= 160
             && next.y.abs_diff(from.y) <= 160
             && next.floor.abs_diff(from.floor) <= 2
@@ -479,6 +493,24 @@ fn route_avoiding(
         .then_some(next)
     })
     .ok()
+}
+
+fn route_around_occupant(
+    from: TilePos,
+    occupied: TilePos,
+    remaining: &VecDeque<StepDirection>,
+    available: impl Fn(TilePos) -> bool,
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+) -> Option<Vec<StepDirection>> {
+    let goal = remaining
+        .iter()
+        .try_fold(occupied, |at, &direction| landing(at, direction))?;
+    route_with_landings(
+        from,
+        |at| at == goal,
+        |at| at != occupied && available(at),
+        landing,
+    )
 }
 
 fn find_route(
@@ -766,7 +798,9 @@ async fn walk(
     world: &BundleWorld,
     path: &[StepDirection],
 ) -> TestResult {
-    for &direction in path {
+    let mut path = VecDeque::from(path.to_vec());
+    let mut blocked = std::collections::BTreeSet::new();
+    while let Some(direction) = path.pop_front() {
         let before = client.world_spatial().actor_position;
         let mut outcome = client.step_retrying(direction).await?;
         for attempt in 1..=6 {
@@ -790,17 +824,51 @@ async fn walk(
             tokio::time::sleep(delay).await;
             outcome = client.step_retrying(direction).await?;
         }
+        let from = tile(before)?;
+        let expected = destination(world, from, direction);
+        if outcome.disposition == StepDisposition::Blocked
+            && client.world_spatial().actor_position == before
+            && let Some(occupied) = expected
+            && let Some(entities) = client.world_entities()
+        {
+            use oteryn_dev_client::EntityKind;
+            let visible_blockers: std::collections::BTreeSet<_> = entities
+                .iter()
+                .filter(|entity| {
+                    &entity.entity.identity != entities.own_identity()
+                        && matches!(
+                            entity.kind,
+                            EntityKind::Creature | EntityKind::Npc | EntityKind::Player
+                        )
+                })
+                .filter_map(|entity| tile(entity.position).ok())
+                .collect();
+            if visible_blockers.contains(&occupied)
+                && blocked.len() < 8
+                && blocked.insert(occupied)
+                && let Some(detour) = route_around_occupant(
+                    from,
+                    occupied,
+                    &path,
+                    |at| !blocked.contains(&at) && !visible_blockers.contains(&at),
+                    |at, next| destination(world, at, next),
+                )
+            {
+                path = detour.into();
+                continue;
+            }
+        }
         if outcome.disposition != StepDisposition::Moved || outcome.world_spatial_delta.is_none() {
             return Err(format!(
                 "town route step {direction:?} from={before:?} expected={:?} actual={:?}: {outcome:?}",
-                destination(world, tile(before)?, direction),
+                expected,
                 client.world_spatial().actor_position,
             )
             .into());
         }
         verdict::Harness::global().progress("walk");
         let after = client.world_spatial().actor_position;
-        if Some(tile(after)?) != destination(world, tile(before)?, direction) {
+        if Some(tile(after)?) != expected {
             return Err(format!(
                 "town step changed position unexpectedly: {before:?} -> {after:?}"
             )
@@ -3650,4 +3718,36 @@ fn qualification_nbroute_retries_only_stationary_rejections_with_a_bound() {
             assert_eq!(town_route_retry_delay(disposition, false, attempt), None);
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_town_route_detours_around_live_wolf() -> TestResult {
+    use StepDirection::*;
+    let from = TilePos {
+        x: 32427,
+        y: 32158,
+        floor: -7,
+    };
+    let wolf = TilePos { x: 32428, ..from };
+    let goal = TilePos { x: 32429, ..from };
+    let landing = |pos: TilePos, direction: StepDirection| {
+        let (dx, dy) = direction.delta();
+        let x = pos.x.checked_add_signed(dx as i16)?;
+        let y = pos.y.checked_add_signed(dy as i16)?;
+        ((from.x..=goal.x).contains(&x) && (32157..=32158).contains(&y)).then_some(TilePos {
+            x,
+            y,
+            ..pos
+        })
+    };
+    assert_eq!(
+        route_with_landings(from, |at| at == goal, |_| true, landing),
+        Some(vec![East, East])
+    );
+    let detour = route_around_occupant(from, wolf, &VecDeque::from([East]), |_| true, landing)
+        .ok_or("missing wolf detour")?;
+    assert_eq!(detour, [North, East, East, South]);
+    assert!(route_around_occupant(from, wolf, &VecDeque::new(), |_| true, landing).is_none());
+    Ok(())
 }
