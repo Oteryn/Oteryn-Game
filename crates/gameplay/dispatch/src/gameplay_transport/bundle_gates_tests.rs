@@ -203,6 +203,7 @@ const INVENTORY: &[Entry] = &[
                 1,
             ),
             ("gameplay_transport/postgres_tests/m26_spite_chain.rs", 2),
+            ("gameplay_transport/postgres_tests/nrwicked_doomforge.rs", 1),
             // Primal cadence uses the actual activated Source combat seam.
             (
                 "gameplay_transport/postgres_tests/primal_menace_native.rs",
