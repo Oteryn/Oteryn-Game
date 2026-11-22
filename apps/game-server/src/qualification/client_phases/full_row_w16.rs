@@ -12,8 +12,8 @@
 //!    position delta.  This proves an invalid destination is not mistaken for map reachability.
 //! 5. Log out, obtain a fresh admission, and require a new game session at the last reached cell;
 //!    NPC dialogue is static population, so no inventory, quest, or economy mutation is expected.
-//! 6. Follow the compiled spawn routes to the Summer creatures and boss encounters.
-//!    Require each distinct creature's live name in the spatial roster.
+//! 6. Follow the compiled Radiant spawn routes and require each live creature in the roster.
+//!    Report the missing player-facing boss encounters after the population checks.
 
 
 use super::*;
@@ -26,11 +26,6 @@ const SUMMER_ACTORS: &[(&str, &str)] = &[
     ("radiant_templar", "Radiant Templar"),
     ("radiant_warden", "Radiant Warden"),
     ("radiant_zealot", "Radiant Zealot"),
-    ("maior_domus", "Maior Domus"),
-    ("mimar_haffar", "Mimar Haffar"),
-    ("phosphorus", "Phosphorus"),
-    ("rakesh_moonfang", "Rakesh Moonfang"),
-    ("the_moonsnow_magnolia", "The Moonsnow Magnolia"),
 ];
 
 const NPCS: [&str; 2] = ["oteryn:npc.mayor_pocaro", "oteryn:npc.wayland_smythers"];
@@ -170,7 +165,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=final-logout observed=refused".into());
     }
-    Ok(())
+    Err("step=summer-boss-encounters observed=no-authored-player-entry need=Maior-Domus,Mimar-Haffar,Phosphorus,Rakesh-Moonfang,The-Moonsnow-Magnolia".into())
 }
 
 async fn wait_for_destination(
@@ -267,6 +262,12 @@ fn evidence_token(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn review_regression_population_plan_excludes_encounter_bosses() {
+        assert_eq!(super::SUMMER_ACTORS.len(), 6);
+        assert!(super::SUMMER_ACTORS.iter().all(|(key, _)| key.starts_with("radiant_")));
+    }
+
     #[test]
     fn journey_regression_requires_each_summer_npcs_placements() {
         assert!(super::summer_placements_match(1, 2));

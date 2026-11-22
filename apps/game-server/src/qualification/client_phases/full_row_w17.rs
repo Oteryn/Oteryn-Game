@@ -222,11 +222,15 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let start = tile(client.world_spatial().actor_position)?;
-    let path = route(world, start, arena_entrance).ok_or_else(|| {
-        format!("step-4 Svargrond entrance has no starter walking route from {start:?}; need x=32220..32260,y=31080..31105,floor=6")
-    })?;
-    walk(&mut client, world, &path).await?;
-    let entered = command(&mut client, ArenaAction::Enter).await?;
+    let path = route(world, start, arena_entrance);
+    if let Some(path) = &path {
+        walk(&mut client, world, path).await?;
+    }
+    let entered = probe_entry(
+        path.is_some(),
+        after_relog.state,
+        command(&mut client, ArenaAction::Enter),
+    ).await?;
     if entered.disposition != ArenaDisposition::Applied
         || entered.state.active_rank == 0
         || entered.state.pit != 1
@@ -250,9 +254,40 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     Err(format!("step-5 unexpected Advance-after-Enter observed={premature:?}").into())
 }
 
+async fn probe_entry(
+    route_found: bool,
+    before: ArenaState,
+    send: impl std::future::Future<Output = TestResult<wire::ArenaResult>>,
+) -> TestResult<wire::ArenaResult> {
+    let reply = send.await?;
+    if !route_found {
+        if reply.disposition != ArenaDisposition::WrongState || reply.state != before {
+            return Err(format!("step-4 off-site Enter expected unchanged WrongState; observed={reply:?} before={before:?}").into());
+        }
+        return Err("step-4 Enter observed=WrongState with unchanged arena state; need=starter route to Svargrond entrance x=32220..32260,y=31080..31105,floor=6".into());
+    }
+    Ok(reply)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn review_regression_missing_route_still_sends_enter() -> TestResult {
+        let mut sent = false;
+        let state = ArenaState::default();
+        let reply = wire::ArenaResult { disposition: ArenaDisposition::WrongState, state };
+        let result = probe_entry(false, state, async {
+            sent = true;
+            Ok(reply)
+        }).await;
+        assert!(sent);
+        assert!(result.err().is_some_and(|error| error.to_string().contains("observed=WrongState")));
+        assert_eq!(probe_entry(true, state, async { Ok(reply) }).await?, reply);
+        Ok(())
+    }
+
 
     #[test]
     fn journey_regression_names_the_first_unobserved_arena_step() {

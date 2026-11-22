@@ -42,6 +42,10 @@ impl Row {
             Err(error) => { self.failures.push(format!("step-{step}:{error}")); evidence(&format!("W22B_CHECK step={step} FAIL observed={error}")); }
         }
     }
+    fn blocked(&mut self, step: u8, reason: &str) {
+        self.failures.push(format!("step-{step}:blocked:{reason}"));
+    }
+
     fn finish(self) {
         let complete = STEPS.iter().all(|step| self.ran.contains(step) && self.passed.contains(step));
         let executed = self.ran.iter().map(u8::to_string).collect::<Vec<_>>().join(",");
@@ -216,7 +220,39 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }.await;
     row.observed(4, step4);
 
-    row.observed(5, Err("need a starter acquisition and USE route for Wealth Duplex (oteryn:item.tibia.i36727) before its independent loot roll can be observed".into()));
+    let duplex = provisioning::item_reference(&provisioning::item_index()?, 36727)?;
+    let carried = client.inventory().ok_or("Wealth Duplex requires an inventory snapshot")?
+        .entries.iter().find(|entry| entry.item_definition_ref == duplex)
+        .map(|entry| entry.handle);
+    if let Some(handle) = carried {
+        let step5 = async {
+            use oteryn_protocol_oteryn::{mechanics_status as wire, world_object::UseDisposition};
+            let used = client.use_item(handle).await?;
+            if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {
+                return Err(format!("Wealth Duplex USE observed={used:?}").into());
+            }
+            let reply = command(
+                &mut client,
+                wire::CAPABILITY_MECHANICS_STATUS_V1,
+                wire::COMMAND_TYPE_MECHANICS_STATUS_QUERY,
+                &[],
+            ).await?;
+            if reply.status != CommandStatus::Accepted {
+                return Err(format!("Wealth Duplex status query observed={:?}", reply.status).into());
+            }
+            let status = wire::MechanicsStatus::decode(&reply.payload)
+                .ok_or("invalid mechanics status after Wealth Duplex USE")?;
+            let timer = status.timers.iter().find(|timer| {
+                timer.key == "wealth_duplex" && timer.online_only && timer.remaining_ms > 0
+            }).ok_or("Wealth Duplex USE did not expose an active online timer")?;
+            let count = hunt_rat(&mut client, world, spawns).await?;
+            evidence(&format!("W22B_LOOT wealth_duplex active_ms={} corpse_entries={count}", timer.remaining_ms));
+            Ok(())
+        }.await;
+        row.observed(5, step5);
+    } else {
+        row.blocked(5, "starter carries no Wealth Duplex (oteryn:item.tibia.i36727); need a player acquisition route");
+    }
 
     let step6 = async { let stamina = stamina(&mut client).await?; let count = hunt_rat(&mut client, world, spawns).await?; if stamina > 840 { return Err(format!("low-stamina kill executed at served stamina={stamina}, corpse_entries={count}; need <=840 obtained through ordinary hunting").into()); } else if count != 0 { return Err(format!("low-stamina corpse was not empty: stamina={stamina} entries={count}").into()); } Ok(()) }.await;
     row.observed(6, step6);
@@ -233,9 +269,21 @@ fn decode_boosted_creature(payload: &[u8]) -> TestResult<String> {
 
 async fn stamina(client: &mut DevClientSession) -> TestResult<u16> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
-    let reply = command(client, wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1, wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, &[1, 0, 0, 50]).await?;
-    if reply.status != CommandStatus::Accepted || reply.payload.len() < 43 { return Err(format!("stamina tab status={:?} bytes={}", reply.status, reply.payload.len()).into()); }
-    Ok(u16::from_be_bytes([reply.payload[41], reply.payload[42]]))
+    let reply = command(client, wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1, wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, &[wire::CharacterTab::GeneralStats as u8, 0, 0, 50]).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("stamina tab status={:?}", reply.status).into());
+    }
+    decode_stamina(&reply.payload, general_stats::selected(client))
+}
+
+fn decode_stamina(payload: &[u8], vocation_selected: bool) -> TestResult<u16> {
+    use oteryn_protocol_oteryn::cyclopedia_character::CharacterTab;
+    if payload.first() != Some(&(CharacterTab::GeneralStats as u8)) {
+        return Err("expected native GeneralStats reply for stamina".into());
+    }
+    general_stats::validate(payload, vocation_selected)?;
+    // The validated GeneralStats body places stamina after the seven skills.
+    Ok(u16::from_le_bytes(payload[29..31].try_into()?))
 }
 
 async fn hunt_rat(
@@ -255,6 +303,34 @@ async fn release(client: &mut DevClientSession) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn review_regression_unavailable_concoction_is_not_executed() {
+        let mut row = Row::new();
+        row.blocked(5, "no carried Wealth Duplex");
+        assert!(!row.ran.contains(&5));
+        assert_eq!(row.failures.len(), 1);
+    }
+
+    #[test]
+    fn review_regression_stamina_decodes_both_native_layouts() -> TestResult {
+        use oteryn_protocol_oteryn::cyclopedia_character::{GeneralStats, TabExtension, TabView};
+        let view = TabView::GeneralStats(GeneralStats {
+            stamina_minutes: 840,
+            last_vitals: Some((321, 123)),
+            ..Default::default()
+        });
+        let legacy = view.encode().map_err(|_| "legacy encode")?;
+        let extended = view.encode_extended(&TabExtension {
+            vocation_id: Some(1),
+            ..Default::default()
+        }).map_err(|_| "extended encode")?;
+        for (payload, selected) in [(legacy, false), (extended, true)] {
+            assert_eq!(decode_stamina(&payload, selected)?, 840);
+            assert!(decode_stamina(&payload, !selected).is_err());
+        }
+        Ok(())
+    }
+
     #[test]
     fn gut_assignment_uses_current_canonical_indices() -> TestResult {
         let (gut, rat) = gut_and_rat_indexes()?;
