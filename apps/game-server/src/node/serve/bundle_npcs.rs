@@ -744,7 +744,10 @@ pub(crate) mod tests {
         let boot = bind(frame, Some(&loaded(&[SMITH, TRADER], &catalogue)), true).expect("bind");
         assert_eq!(catalogue_sha256(Some(&boot)), Some(catalogue.as_str()));
         let mut runtime = channel_runtime();
-        assert_eq!(place(&mut runtime, Some(&boot), &[], None).expect("placed"), 2);
+        assert_eq!(
+            place(&mut runtime, Some(&boot), &[], None).expect("placed"),
+            2
+        );
         assert_eq!(catalogue_sha256(Some(&boot)), Some(catalogue.as_str()));
         let binding = runtime.binding();
         // W02: the scoped binding now returns Option; this fixture still requires Channel.
@@ -1157,7 +1160,10 @@ pub(crate) mod tests {
 
         let boot = bind(read(&bytes).expect("frame"), Some(&only_smith), false).expect("bind");
         let mut runtime = channel_runtime();
-        assert_eq!(place(&mut runtime, Some(&boot), &[], None).expect("placed"), 1);
+        assert_eq!(
+            place(&mut runtime, Some(&boot), &[], None).expect("placed"),
+            1
+        );
         let visible = runtime.visible_entities();
         assert_eq!(visible.npcs.len(), 1);
         assert_eq!(runtime.npc_key(visible.npcs[0].actor), Some(SMITH));
@@ -1186,7 +1192,10 @@ pub(crate) mod tests {
                 }
             ));
             let mut runtime = channel_runtime();
-            assert_eq!(place(&mut runtime, Some(&boot), &[], None).expect("skipped"), 0);
+            assert_eq!(
+                place(&mut runtime, Some(&boot), &[], None).expect("skipped"),
+                0
+            );
             assert!(runtime.visible_entities().npcs.is_empty());
         }
         // A bundle without NPCs needs no catalogue, in production too.

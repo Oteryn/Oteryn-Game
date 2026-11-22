@@ -28,14 +28,18 @@ ALTER TABLE game_character_cosmetic_token_entries
     DROP CONSTRAINT game_character_cosmetic_token_entries_amount_check,
     ADD CONSTRAINT game_character_cosmetic_token_entries_amount_check CHECK (amount BETWEEN 1 AND 20);
 
+-- Keep the Store branch and let game_daily_wildcard_guard enforce exact credit
+-- against any pending Store reservation, as installed by migration 3025.
 ALTER TABLE game_account_prey_wildcard_entries DROP CONSTRAINT prey_wildcard_entry_values;
 ALTER TABLE game_account_prey_wildcard_entries ADD CONSTRAINT prey_wildcard_entry_values CHECK (
     balance_before BETWEEN 0 AND 52 AND balance_after BETWEEN 0 AND 52
     AND (previous_claim_id IS NOT NULL OR balance_before=0)
     AND ((kind='DAILY_REWARD' AND requested IN(1,2,3,4)
-          AND credited=least(requested,52-balance_before) AND balance_after=balance_before+credited)
+          AND credited BETWEEN 0 AND requested AND balance_after=balance_before+credited)
       OR (kind='SPEND' AND requested BETWEEN 1 AND 15 AND credited=0
-          AND balance_after=balance_before-requested))
+          AND balance_after=balance_before-requested)
+      OR (kind='STORE' AND requested IN (5,20) AND credited=requested
+          AND balance_after=balance_before+credited AND balance_after<=50))
 );
 
 -- Each nonstackable scroll has its own existing line proof and expiry. All
