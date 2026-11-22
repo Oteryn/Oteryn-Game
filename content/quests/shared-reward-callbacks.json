@@ -133,6 +133,17 @@
       ]
     },
     {
+      "key": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/door",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_bone_master.lua:78-80,123-128:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1"
+      ]
+    },
+    {
       "key": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/document_claim_0",
       "quest": "oteryn:quest.brotherhood_outfits_quest",
       "initial": 0,
@@ -309,6 +320,36 @@
     }
   ],
   "callbacks": [
+    {
+      "key": "oteryn:quest-reward/between-the-lines-phillip-accept",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "npc": "oteryn:npc.phillip",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/between_the_lines/phase",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Follow the ink traces outside Carlin to find the creature."
+      ],
+      "sources": [
+        "tibia_fandom:108521:1206800:Pen and Sword/Inkwing"
+      ],
+      "minimum_level": 200,
+      "requires_premium": true
+    },
     {
       "key": "oteryn:quest-reward/deepling-helmet",
       "quest": "oteryn:quest.outfit_and_addon_quests",
@@ -756,6 +797,58 @@
           "count": 1
         }
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/l10-brotherhood-dread-lord",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6499",
+          "count": 1500
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/dread_lord",
+      "reply": [
+        "You advanced to Dread Lord rank."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_bone_master.lua:78-80,123-128:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/l10-brotherhood-join",

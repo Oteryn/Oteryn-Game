@@ -2,6 +2,14 @@ use super::fixture::Harness;
 
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 
+use oteryn_gameplay_quests::quest::world_callbacks::Position;
+
+pub(super) const BONE_MASTER: Position = Position {
+    x: 32793,
+    y: 32225,
+    floor: -14,
+};
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -124,7 +132,30 @@ pub(super) async fn exercise(
     } else {
         "oteryn:npc.the_dream_master"
     };
-    let [npc] = super::classic_quests_fixtures::install(owner, admitted, [npc_key]).await?;
+    let [npc] = if family == "brotherhood" {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let source = oteryn_world_bundle_compiler::source::project_regions(
+            &root,
+            &[(BONE_MASTER.x / 256, BONE_MASTER.y / 256)],
+        )?;
+        let position = source
+            .families
+            .npc_placements
+            .iter()
+            .find(|placement| placement.npc == npc_key)
+            .ok_or("production Bone Master placement")?;
+        let (x, y, floor) = position.cell;
+        let position = Position {
+            x,
+            y,
+            floor: -i8::try_from(floor)?,
+        };
+        assert_eq!(position, BONE_MASTER);
+        super::classic_quests_fixtures::install_positions(owner, admitted, [npc_key], [position])
+            .await?
+    } else {
+        super::classic_quests_fixtures::install(owner, admitted, [npc_key]).await?
+    };
     let find = |stage: &str| {
         callbacks
             .iter()
@@ -257,6 +288,42 @@ pub(super) async fn exercise(
     }
     let key = format!("oteryn:outfit.{family}");
     if family == "brotherhood" {
+        let dread = find("dread-lord")?;
+        let (refused, _, _) =
+            super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, dread, false).await?;
+        assert_eq!(refused, NpcIntentDisposition::Rejected);
+        super::qengine_outfit_stories_fixtures::supply(
+            owner,
+            admitted,
+            h,
+            &dread.take[0],
+            &mut bags,
+            &mut ordinal,
+        )
+        .await?;
+        let before = super::qengine_voucher_stories_fixtures::quantity(h, 6499).await?;
+        let (result, _, _) =
+            super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, dread, false).await?;
+        assert_eq!(result, NpcIntentDisposition::Ok);
+        assert_eq!(
+            super::qengine_voucher_stories_fixtures::quantity(h, 6499).await?,
+            before - 1500
+        );
+        for state in &dread.storage {
+            let value: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(&state.track)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(value, state.set);
+        }
+        let granted: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key='oteryn:achievement/dread_lord')",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(granted);
         super::qengine_voucher_stories_fixtures::use_native(owner, admitted, 769, UseDisposition::Rejected)
             .await?;
         assert_eq!(

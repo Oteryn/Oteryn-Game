@@ -333,7 +333,7 @@ def build():
         return {'track': track, 'minimum': before, 'maximum': before if maximum is None else maximum,
                 'set': after, **({'preserve': True} if preserve else {})}
     def add(name, quest, npc, keywords, states, take=(), give=None, outfit=None, topic=0, next_topic=0,
-            requires=(), present=(), achievement=None, fee=None):
+            requires=(), present=(), achievement=None, fee=None, source=None):
         path = f'data-global/npc/{npc}.lua'
         callbacks.append({'key': 'oteryn:quest-reward/' + name, 'quest': 'oteryn:quest.' + quest,
             'npc': 'oteryn:npc.' + npc, 'keywords': keywords, 'topic': topic, 'next_topic': next_topic,
@@ -342,7 +342,7 @@ def build():
             'outfit': None if outfit is None else {'outfit': 'oteryn:outfit.' + outfit[0], 'addons': outfit[1]},
             'achievement': achievement or ('oteryn:achievement/backpack_tourist' if name == 'sam-backpack' else None),
             'reply': ['Thank you for your help.'],
-            'sources': [f'crystal:{PIN}:{path}:sha256:{sha(inputs[path])}']})
+            'sources': [source or f'crystal:{PIN}:{path}:sha256:{sha(inputs[path])}']})
         if fee is not None:
             callbacks[-1]['fee']=fee
         if requires:
@@ -946,6 +946,17 @@ def build():
     for words,before,after in [(['outfit','addon'],0,1),(['yes'],1,2)]:
         offers.append({'npc':'oteryn:npc.king_tibianus','keywords':words,'topic':before,'next_topic':after,
             'storage':[],'reply':['Choose armor, boots or helmet for your golden commission.']})
+    # The pinned Crystal Phillip contains no book quest dialogue.
+    between = 'between_the_lines_quest'
+    book_stage = prefix + 'between_the_lines/phase'
+    wiki = 'tibia_fandom:108521:1206800:Pen and Sword/Inkwing'
+    add('between-the-lines-phillip-accept', between, 'phillip', ['yes'],
+        [storage(book_stage, -1, 1, 0)], topic=1, source=wiki)
+    callbacks[-1].update(minimum_level=200, requires_premium=True,
+        reply=['Follow the ink traces outside Carlin to find the creature.'])
+    source_offer('phillip', ['book'], 0, 1, [storage(book_stage, -1, 0, 0, preserve=True)])
+    offers[-1]['reply'] = ['A creature escaped from my book. Will you track it down?']
+
     # Distinct order ranks choose the shared three documents' actual USE branch.
     parent='oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4'
     declarations.append({'key':parent,'quest':'oteryn:quest.dreamer_s_challenge_quest','initial':0,
@@ -966,6 +977,22 @@ def build():
             source_offer(npc,['join'] if stage=='join' else ['advancement','demonic','essence'],0,1 if stage=='join' else topic,
                 [storage(rank,before,before,preserve=True)])
             offers[-1]['requires']=requirements
+        if family == 'brotherhood':
+            source = ('crystal:201189f871d23597b82caf88fd611454a2ddefb8:'
+                      'data-global/npc/the_bone_master.lua:78-80,123-128:sha256:'
+                      '65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1')
+            door = prefix + 'u7_9/brotherhood_outfits/door'
+            declarations.append({'key': door, 'quest': 'oteryn:quest.' + quest,
+                'initial': 0, 'min': 0, 'max': 1, 'writable': True, 'sources': [source]})
+            add('l10-brotherhood-dread-lord', quest, npc, ['yes'],
+                [storage(rank, 3, 4), storage(door, 0, 1)], take=[(6499, 1500)],
+                topic=5, requires=requirements, achievement='oteryn:achievement/dread_lord')
+            callbacks[-1].update(requires_premium=True, sources=[source],
+                reply=['You advanced to Dread Lord rank.'])
+            source_offer(npc, ['advancement', 'demonic', 'essence'], 0, 5,
+                [storage(rank, 3, 3, preserve=True)])
+            offers[-1].update(requires=requirements,
+                reply=['Did you bring 1500 demonic essences to advance to Dread Lord?'])
         source_offer(npc,['yes'],1,2,[storage(rank,0,0,preserve=True)])
         offers[-1]['requires']=requirements
         for stage,item,threshold,bit in [('follower',768,1,0),('officer',769,2,1),('leader',770,3,2)]:

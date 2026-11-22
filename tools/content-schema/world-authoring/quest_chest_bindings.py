@@ -31,8 +31,14 @@ ITEM_SHA256 = "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
 ITEM_ACCESS = {
     "oteryn:reward-claim.kv.naginata": ((32356, 32074, 10), 1791, 40031),
 }
-# Crystal door_level.lua:65-83. Restoring a reward must retain its source level gate.
+# Restoring a reward must retain its pinned Crystal expertise door.
 LEVEL_ACCESS = {
+    **{
+        f"oteryn:reward-claim.kv.behemothquest{i}": ((33297, 31670, 14), 1648, 1080)
+        for i in range(1, 5)
+    },
+    "oteryn:reward-claim.kv.blackknight1": ((32874, 31974, 12), 5102, 1050),
+    "oteryn:reward-claim.kv.blackknight2": ((32875, 31974, 12), 5102, 1050),
     **{
         f"oteryn:reward-claim.kv.desert{i}": ((32673, 32100, 8), 5102, 1020)
         for i in (1, 2)
@@ -133,7 +139,7 @@ def supported_claim(definition):
     native = definition.get("native_contents", {})
     return (
         definition["readiness"] == "ready"
-        or panpipe_key_claim(definition)
+        or startup_key_number(definition) is not None
         or (
             definition.get("definition_profile") == "authored_variant_v1"
             and definition.get("readiness") == "waiting_implementation"
@@ -152,12 +158,32 @@ def supported_claim(definition):
     )
 
 
-def panpipe_key_claim(definition):
-    """Select the existing key-only lowering, with its exact source key number."""
+def startup_key_number(definition):
+    """Recognize the complete native key-only rewards selected for startup."""
     variant = definition.get("source_variant", {})
-    return (
-        definition["identity"]["key"] == "oteryn:reward-claim.quest.key.id4055"
-        and definition.get("definition_profile") == "authored_variant_v1"
+    numbers = {
+        "oteryn:reward-claim.quest.key.id4055": (4055, 1),
+        "oteryn:reward-claim.quest.key.id5010": (5010, 2),
+    }
+    selection = numbers.get(definition["identity"]["key"])
+    if selection is None:
+        return None
+    number, placements = selection
+    reward = {
+        "items": [
+            {
+                "item": {
+                    "family": "Item",
+                    "key": "oteryn:item.tibia.i2969",
+                    "revision": "definition-r1",
+                },
+                "count": 1,
+            }
+        ],
+        "key_binding": f"canary:door-key/{number}",
+    }
+    if (
+        definition.get("definition_profile") == "authored_variant_v1"
         and definition.get("readiness") == "waiting_implementation"
         and definition.get("native_admission") == "WAITING_IMPLEMENTATION"
         and definition.get("data_holds") == []
@@ -169,22 +195,11 @@ def panpipe_key_claim(definition):
             "status": "WAITING_IMPLEMENTATION",
             "pending_implementation": ["KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED"],
         }
-        and len(definition["placements"]) == 1
-        and definition["placements"][0]["reward"]
-        == {
-            "items": [
-                {
-                    "item": {
-                        "family": "Item",
-                        "key": "oteryn:item.tibia.i2969",
-                        "revision": "definition-r1",
-                    },
-                    "count": 1,
-                }
-            ],
-            "key_binding": "canary:door-key/4055",
-        }
-    )
+        and len(definition["placements"]) == placements
+        and all(p["reward"] == reward for p in definition["placements"])
+    ):
+        return number
+    return None
 
 
 def capture(source_root, selected, root=ROOT):
@@ -260,6 +275,17 @@ def capture(source_root, selected, root=ROOT):
                 ),
                 items,
             )
+            if unique in container_native.ACCEPTED_TWO_STACKS:
+                stacked_item = container_native.ACCEPTED_TWO_STACKS[unique]
+                source_reward = [
+                    stack
+                    for item, count in source_reward
+                    for stack in (
+                        [[item, 100], [item, 100]]
+                        if item == stacked_item and count == 200
+                        else [[item, count]]
+                    )
+                ]
             if (
                 setting["itemPos"] != position
                 or setting["itemId"] != placement["appearance_tibia_id"]
@@ -267,9 +293,10 @@ def capture(source_root, selected, root=ROOT):
                 or setting.get("container") != container_id
             ):
                 raise ValueError("QUEST_CHEST_SOURCE_SELECTOR_OR_REWARD_DRIFT")
-            if panpipe_key_claim(definition) and (
+            number = startup_key_number(definition)
+            if number is not None and (
                 setting.get("isKey") is not True
-                or setting.get("storage") != {"expr": "Storage.Quest.Key.ID4055"}
+                or setting.get("storage") != {"expr": f"Storage.Quest.Key.ID{number}"}
             ):
                 raise ValueError("QUEST_CHEST_SOURCE_KEY_DRIFT")
             rows.append(

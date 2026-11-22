@@ -1606,6 +1606,7 @@ fn scenario_case(
             || name.contains("l7-knight-")
             || name.contains("l8-")
             || name.contains("l9-")
+            || name == super::super::between_the_lines_fixtures::PHILLIP_SCENARIO
             || name.contains("l10-documents-")
             || name.contains("l11-")
             || name.contains("l12-")

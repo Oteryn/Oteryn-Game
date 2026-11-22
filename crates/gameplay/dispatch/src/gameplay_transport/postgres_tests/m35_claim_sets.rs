@@ -64,6 +64,7 @@ enum Case {
     Key3520,
     Koshei,
     BlackKnight,
+    Behemoth,
     FireAxeBag,
     FireAxeAll,
     EmperorCookies,
@@ -317,6 +318,19 @@ fn m35_fire_axe_bag_grants_all_children_without_finishing_on_first_chest() -> Te
     println!("M35_FIRE_AXE_BAG_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
+#[test]
+fn m35_behemoth_dispatch_completes_after_four_native_chests() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false, Case::Behemoth).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Behemoth claim-set scenario panicked")??;
+    Ok(())
+}
+
 // Crystal 201189f8 chest.lua:932-947: independent Crown Armor and Crown Shield.
 #[test]
 fn m35_black_knight_dispatch_requires_both_rewards_in_either_order() -> TestResult {
@@ -449,6 +463,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             "oteryn:quest.fire_axe_quest",
             &[(33078, 6067)],
         ),
+        Case::Behemoth => (
+            (33294, 31658, -13),
+            2472,
+            "oteryn:quest.behemoth_quest",
+            &[(33294, 6075), (33295, 6052), (33297, 6053), (33298, 6054)],
+        ),
         Case::BlackKnight => (
             (32868, 31955, -11),
             3634,
@@ -468,6 +488,15 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             &[(32376, 5018)],
         ),
     };
+    if matches!(case, Case::Behemoth | Case::BlackKnight) {
+        for &(x, unique) in choices {
+            let attrs = super::classic_quest_source_fixtures::committed_attrs(
+                (x, chest.1, chest.2),
+                appearance,
+            )?;
+            assert_eq!(attrs.unique, Some(unique));
+        }
+    }
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "m35_claim_sets", true, false).await?;
         prepare_current_session(&h).await?;
@@ -576,7 +605,9 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         }
         assert_eq!(
             bound.served.len(),
-            if matches!(case, Case::Longsword | Case::GriffinShield) {
+            if matches!(case, Case::Behemoth) {
+                4
+            } else if matches!(case, Case::Longsword | Case::GriffinShield) {
                 3
             } else if matches!(
                 case,
@@ -918,6 +949,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 assert_eq!(
                     state.completed,
                     matches!(case, Case::Fanfare)
+                        || matches!(case, Case::Behemoth) && index == 3
                         || matches!(case, Case::Longsword | Case::GriffinShield) && index == 2
                         || matches!(
                             case,

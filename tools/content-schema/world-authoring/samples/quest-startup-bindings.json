@@ -117,6 +117,18 @@
     {
       "position": [
         33290,
+        31715,
+        12
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "action": 30009,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 799
+    },
+    {
+      "position": [
+        33290,
         31785,
         13
       ],
