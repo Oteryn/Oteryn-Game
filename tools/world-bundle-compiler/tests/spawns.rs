@@ -403,6 +403,82 @@ fn shard(points: usize, respawn_ms: u32) -> Vec<u8> {
     .into_bytes()
 }
 
+const COBRA_SCOUT: &str = "oteryn:creature.cobra_scout";
+
+fn cobra_scout_families() -> Result<Families, Error> {
+    let mut families = Families::default();
+    families.add_creatures(
+        serde_json::json!({
+            "family": "Creature",
+            "records": [{
+                "definition": {"identity": {"key": COBRA_SCOUT}},
+                "authoring": {"profile": {
+                    "details": {
+                        "spawn_eligibility": {"period": "All"},
+                        "system_eligibility": {"reward_boss": false}
+                    },
+                    "encounters": [{
+                        "family": "Encounter",
+                        "key": "oteryn:encounter.cobra_bastion",
+                        "revision": "definition-r1"
+                    }]
+                }}
+            }]
+        })
+        .to_string()
+        .as_bytes(),
+    )?;
+    Ok(families)
+}
+
+#[test]
+fn ordinary_world_spawn_compiles_for_a_creature_used_by_an_encounter() -> TestResult {
+    let mut families = cobra_scout_families()?;
+    let mut spawns: serde_json::Value = serde_json::from_slice(&shard(1, 60_000))?;
+    spawns["records"][0]["declaration"]["points"][0]["creature"] = COBRA_SCOUT.into();
+    families.add_spawns(&serde_json::to_vec(&spawns)?)?;
+
+    let (regions, palette) = (regions()?, palette());
+    let compiled = compile(&input(&regions, &palette, &families), &Resolver)?;
+    let bundle = bundle::read(&compiled.bytes)?;
+    assert!(
+        compiled.spawns.dropped.is_empty(),
+        "{:?}",
+        compiled.spawns.dropped
+    );
+    assert_eq!(bundle.spawns.point_count(), 1);
+    let point = &bundle.spawns.sources[0].points[0];
+    assert_eq!(
+        bundle.spawns.creatures[point.creature as usize].key,
+        COBRA_SCOUT
+    );
+    assert_eq!((point.x, point.y, point.respawn_ms), (1, 1, 60_000));
+    Ok(())
+}
+
+#[test]
+fn encounter_owned_point_stays_out_of_the_world_bundle() -> TestResult {
+    let mut families = cobra_scout_families()?;
+    let mut spawns: serde_json::Value = serde_json::from_slice(&shard(2, 60_000))?;
+    let points = &mut spawns["records"][0]["declaration"]["points"];
+    points[0]["creature"] = COBRA_SCOUT.into();
+    points[1]["creature"] = COBRA_SCOUT.into();
+    points[1]["cell"]["x"] = 8.into();
+    points[1]["owner"] = "Encounter".into();
+    families.add_spawns(&serde_json::to_vec(&spawns)?)?;
+
+    let (regions, palette) = (regions()?, palette());
+    let compiled = compile(&input(&regions, &palette, &families), &Resolver)?;
+    let bundle = bundle::read(&compiled.bytes)?;
+    assert_eq!(bundle.spawns.point_count(), 1);
+    assert_eq!(bundle.spawns.sources[0].points[0].x, 1);
+    assert_eq!(compiled.spawns.dropped.len(), 1);
+    let dropped = &compiled.spawns.dropped[0];
+    assert_eq!(dropped.cell, (8, 1, 7));
+    assert_eq!(dropped.reason, SpawnReason::EncounterBound);
+    Ok(())
+}
+
 #[test]
 fn the_source_shard_checks_its_bounds_before_it_holds_anything() {
     let add = |points, ms| Families::default().add_spawns(&shard(points, ms));
