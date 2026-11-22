@@ -13,6 +13,7 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins) -> Widgets {
         .spawn((
             Overlay,
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("quick_loot"),
             GlobalZIndex(165),
             TabGroup {
                 order: 2,
@@ -26,7 +27,6 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins) -> Widgets {
                 align_items: AlignItems::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
         ))
         .id();
     let panel = commands
@@ -94,6 +94,7 @@ pub(super) fn render(
         .spawn((
             source::frame(skins.inset.clone(), [1.; 4]),
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("quick_loot", 0),
             Node {
                 flex_grow: 1.,
                 min_width: px(0.),
@@ -188,9 +189,12 @@ pub(super) fn render(
     }
     let filters = commands
         .spawn((
+            ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("quick_loot", 1),
             source::frame(skins.inset.clone(), [1.; 4]),
             Node {
                 width: px(234.),
+                overflow: Overflow::scroll_y(),
                 max_width: percent(45.),
                 padding: UiRect::all(px(6.)),
                 flex_direction: FlexDirection::Column,
@@ -201,13 +205,17 @@ pub(super) fn render(
         .id();
     commands.entity(body).add_child(filters);
     text(commands, skins, filters, "QuickLoot filter");
-    let selected = panel.confirmed.iter().rev().find_map(|action| {
-        if let Action::Select(mode) = action {
-            Some(*mode)
-        } else {
-            None
-        }
-    });
+    let selected = panel
+        .confirmed
+        .iter()
+        .rev()
+        .find_map(|action| match action {
+            Action::Select(mode)
+            | Action::Add { mode, .. }
+            | Action::Remove { mode, .. }
+            | Action::Clear(mode) => Some(*mode),
+            _ => None,
+        });
     text(
         commands,
         skins,
@@ -250,6 +258,32 @@ pub(super) fn render(
             130.,
             panel,
         );
+    }
+    let choices = column(commands, filters);
+    for (mode, name, entries) in [
+        (Mode::Skip, "skip", &panel.skipped),
+        (Mode::Accept, "accept", &panel.accepted),
+    ] {
+        filter_button(
+            commands,
+            skins,
+            filters,
+            key,
+            FilterAction::Choose(mode, choices),
+            &format!("Add item to {name} list"),
+            &format!("quick_loot.add.{name}"),
+        );
+        for definition in entries {
+            filter_button(
+                commands,
+                skins,
+                filters,
+                key,
+                FilterAction::Remove(mode, *definition),
+                &format!("Remove #{definition} from {name}"),
+                &format!("quick_loot.remove.{name}.{definition}"),
+            );
+        }
     }
     let known = panel.skipped.len() + panel.accepted.len();
     text(
@@ -380,4 +414,137 @@ fn button(
         .id();
     commands.entity(entity).add_child(text);
     commands.entity(parent).add_child(entity);
+}
+
+#[derive(Component, Clone, Copy)]
+struct FilterControl {
+    key: Key,
+    action: FilterAction,
+}
+#[derive(Clone, Copy)]
+enum FilterAction {
+    Choose(Mode, Entity),
+    Add(Mode, oteryn_session::ItemEntry),
+    Remove(Mode, u32),
+}
+fn carried(owner: &HostOwner) -> Vec<oteryn_session::ItemEntry> {
+    let Some(play) = &owner.play else {
+        return Vec::new();
+    };
+    let mut items = play.link.inventory_panel().rows();
+    if let Some(views) = play.link.container_panel().views {
+        for view in views.views.iter().filter(|view| view.browse.is_none()) {
+            items.extend(&view.entries);
+        }
+    }
+    items.sort_by_key(|item| item.handle);
+    items.dedup_by_key(|item| item.handle);
+    items
+}
+// Each item choice carries the exact snapshot key and authoritative carried handle.
+#[allow(clippy::too_many_arguments)]
+fn filter_button(
+    commands: &mut Commands,
+    skins: &Skins,
+    parent: Entity,
+    key: Key,
+    action: FilterAction,
+    label: &str,
+    name: &str,
+) {
+    let entity = commands
+        .spawn((
+            source::button(skins.buttons.clone(), 210.),
+            FilterControl { key, action },
+            Name::new(name.to_owned()),
+        ))
+        .observe(filter_activate)
+        .id();
+    let caption = commands
+        .spawn(source::button_caption(label, skins.font.clone()))
+        .id();
+    commands.entity(entity).add_child(caption);
+    commands.entity(parent).add_child(entity);
+}
+fn filter_activate(
+    event: On<Activate>,
+    guard: ModalGuard,
+    controls: Query<&FilterControl>,
+    owner: NonSend<HostOwner>,
+    state: Res<State>,
+    mut commands: Commands,
+    skins: Res<Skins>,
+) {
+    if !guard.allows(event.entity) || owner.modal_active() {
+        return;
+    }
+    let Ok(control) = controls.get(event.entity) else {
+        return;
+    };
+    let Some((key, expected)) = &state.snapshot else {
+        return;
+    };
+    let Some(play) = &owner.play else {
+        return;
+    };
+    if *key != control.key
+        || key.generation != owner.generation()
+        || play.link.quick_loot_panel() != *expected
+        || !expected.open
+        || !expected.selected
+        || expected.pending.is_some()
+        || expected.managed
+        || play.view.gameplay_input_blocked(&play.link)
+    {
+        return;
+    }
+    match control.action {
+        FilterAction::Choose(mode, choices) => {
+            commands.entity(choices).despawn_children();
+            let items = carried(&owner);
+            if items.is_empty() {
+                text(&mut commands, &skins, choices, "No carried items available");
+            }
+            for item in items {
+                filter_button(
+                    &mut commands,
+                    &skins,
+                    choices,
+                    *key,
+                    FilterAction::Add(mode, item),
+                    &format!("Item #{} ×{}", item.item_definition_ref, item.count),
+                    &format!("quick_loot.pick.{}", item.handle),
+                );
+            }
+        }
+        FilterAction::Add(mode, item) => {
+            if carried(&owner).contains(&item) {
+                play.link.quick_loot_control(
+                    2,
+                    &[
+                        item.item_definition_ref.to_string(),
+                        if mode == Mode::Skip { "1" } else { "2" }.into(),
+                    ],
+                    0,
+                );
+            }
+        }
+        FilterAction::Remove(mode, definition) => {
+            let entries = if mode == Mode::Skip {
+                &expected.skipped
+            } else {
+                &expected.accepted
+            };
+            if entries.contains(&definition) {
+                play.link.quick_loot_control(
+                    3,
+                    &[
+                        definition.to_string(),
+                        if mode == Mode::Skip { "1" } else { "2" }.into(),
+                    ],
+                    0,
+                );
+            }
+        }
+    }
 }

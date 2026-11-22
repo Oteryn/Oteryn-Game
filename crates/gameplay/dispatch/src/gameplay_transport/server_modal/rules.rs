@@ -51,6 +51,7 @@ fn bed_dialog() -> Dialog {
         })
         .collect(),
         buttons: vec![(1, "Okay".into()), (2, "Cancel".into())],
+        default_button: Some(1),
         cancel_button: Some(2),
         image: None,
     }

@@ -38,6 +38,10 @@ impl FreshAdmissionAuthority for GuardAuthority {
         Some(at(0))
     }
 
+    async fn house_scope_ack(&self, _: AdmittedSession) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        Ok(Some((1, vec![1])))
+    }
+
     async fn house_transfer_input(&self, _: AdmittedSession) -> Result<(), DurabilityError> {
         if self.activity { Ok(()) } else { self.guard() }
     }
@@ -72,6 +76,7 @@ fn guard_case(
     transient: bool,
     command_type: u32,
     capabilities: &'static [u32],
+    house: bool,
 ) -> Result<(), Box<dyn Error>> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -100,6 +105,26 @@ fn guard_case(
                     capabilities,
                 )
                 .ok_or("capability selection")?;
+                if house {
+                    use crate::foundation::{
+                        ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+                    };
+                    admitted.item_fence = Some(CurrentCharacterItemFence {
+                        character_id: crate::domain::CharacterId::from_bytes(CHARACTER)
+                            .map_err(|error| format!("{error:?}"))?,
+                        game_session_id: admitted.game_session_id,
+                        connection_generation: ConnectionGeneration::new(1)
+                            .map_err(|error| format!("{error:?}"))?,
+                        character_lease_generation: 1,
+                        runtime_scope: RuntimeScopeRefV1::instance(
+                            admitted.world_id,
+                            uuid_v7(0x66),
+                        )
+                        .map_err(|error| format!("{error:?}"))?,
+                        scope_ownership_generation: ScopeOwnershipGeneration::new(1)
+                            .map_err(|error| format!("{error:?}"))?,
+                    });
+                }
                 let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
                 for activity in [false, true] {
                     let authority = GuardAuthority {
@@ -144,10 +169,17 @@ fn guard_case(
                         assert_eq!(results[0].command_id, 1);
                         assert_eq!(results[0].status, CommandStatus::Rejected);
                         match command_type {
-                            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT => assert_eq!(
-                                decode_step_result(results[0].payload),
-                                Ok(StepDisposition::Rejected)
-                            ),
+                            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT => {
+                                assert_eq!(
+                                    decode_step_result(results[0].payload),
+                                    Ok(StepDisposition::Rejected)
+                                );
+                                assert_eq!(
+                                    results[0].payload,
+                                    &[0x08, 0x03],
+                                    "STEP refusal receipt in House={house}"
+                                );
+                            }
                             COMMAND_TYPE_CHAT_INTENT
                                 if capabilities.contains(&CAPABILITY_CHAT_V1) =>
                             {
@@ -195,6 +227,7 @@ fn house_transfer_guard_deadline_defers_and_replay_never_executes() -> Result<()
         true,
         COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
         &[],
+        false,
     )
 }
 
@@ -206,6 +239,7 @@ fn house_transfer_guard_unavailable_defers_and_replay_never_executes() -> Result
         true,
         COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
         &[],
+        false,
     )
 }
 
@@ -216,6 +250,7 @@ fn house_transfer_guard_fence_mismatch_disconnects() -> Result<(), Box<dyn Error
         false,
         COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
         &[],
+        false,
     )
 }
 
@@ -226,6 +261,7 @@ fn selected_chat_guard_deferral_returns_typed_rejection() -> Result<(), Box<dyn 
         true,
         COMMAND_TYPE_CHAT_INTENT,
         &[CAPABILITY_CHAT_V1],
+        false,
     )
 }
 
@@ -236,11 +272,31 @@ fn unselected_chat_and_unknown_command_keep_empty_guard_rejection() -> Result<()
         true,
         COMMAND_TYPE_CHAT_INTENT,
         &[],
+        false,
     )?;
     guard_case(
         || DurabilityError::RootUnavailable,
         true,
         999,
         &[CAPABILITY_CHAT_V1],
+        false,
+    )
+}
+
+#[test]
+fn house_scope_step_guard_defers_and_replay_never_executes() -> Result<(), Box<dyn Error>> {
+    guard_case(
+        || DurabilityError::RootPassDeadlineExceeded,
+        true,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        &[],
+        true,
+    )?;
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        &[],
+        true,
     )
 }

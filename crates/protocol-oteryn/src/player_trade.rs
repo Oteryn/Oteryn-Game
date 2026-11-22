@@ -10,6 +10,15 @@ pub const COMMAND_TYPE_PLAYER_TRADE_INTENT: u32 = 78;
 pub const STATE_DOMAIN_PLAYER_TRADE: u32 = 26;
 pub const MAX_INTENT_BYTES: usize = 64;
 pub const MAX_STATE_BYTES: usize = 4608;
+pub const MAX_CONTENTS_ITEMS: usize = 100;
+pub const MAX_CONTENTS_STATE_BYTES: usize = 65_536;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ContentsItem {
+    pub item: Offer,
+    pub parent: Option<u8>,
+    pub name: String,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
@@ -69,6 +78,7 @@ pub struct Offer {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {
+    pub contents: [Vec<ContentsItem>; 2],
     pub trade_id: Option<[u8; 16]>,
     pub partner: Option<EntityRef>,
     pub own: Option<Offer>,
@@ -84,6 +94,7 @@ pub struct State {
 impl Default for State {
     fn default() -> Self {
         Self {
+            contents: Default::default(),
             trade_id: None,
             partner: None,
             own: None,
@@ -187,19 +198,16 @@ pub fn decode_intent(bytes: &[u8]) -> Result<Intent, Error> {
                 }
             }
             let body = body.ok_or(Error::Malformed)?;
-            let number = number.ok_or(Error::Malformed)?;
             if tag == 10 {
                 Intent::Offer {
                     partner: read_entity(body)?,
-                    item: number,
-                }
-            } else if number <= 1 {
-                Intent::Look {
-                    trade_id: id(body)?,
-                    counter_offer: number == 1,
+                    item: number.ok_or(Error::Malformed)?,
                 }
             } else {
-                return Err(Error::Malformed);
+                Intent::Look {
+                    trade_id: id(body)?,
+                    counter_offer: boolean(number.unwrap_or_default())?,
+                }
             }
         }
         _ => return Err(Error::Malformed),
@@ -218,6 +226,11 @@ fn offer(value: Offer) -> Result<Vec<u8>, Error> {
     Ok(out)
 }
 pub fn encode_state(state: &State) -> Result<Vec<u8>, Error> {
+    encode_state_for(state, false)
+}
+
+/// Capability 501 adds the complete frozen contents on each disclosed side.
+pub fn encode_state_for(state: &State, details: bool) -> Result<Vec<u8>, Error> {
     if !(1..=4).contains(&state.phase)
         || state.reason > 5
         || (state.phase == 4) != (state.reason != 0)
@@ -254,14 +267,48 @@ pub fn encode_state(state: &State) -> Result<Vec<u8>, Error> {
     }
     push_message_field(&mut out, 9, state.message.as_bytes());
     push_message_field(&mut out, 10, state.look.as_bytes());
-    if out.len() > MAX_STATE_BYTES {
+    if details {
+        for (side, tree) in state.contents.iter().enumerate() {
+            check_contents(tree, if side == 0 { state.own } else { state.counter })?;
+            for node in tree {
+                let mut body = Vec::new();
+                push_message_field(&mut body, 1, &offer(node.item)?);
+                push_varint_field(
+                    &mut body,
+                    2,
+                    node.parent.map_or(0, |parent| u64::from(parent) + 1),
+                );
+                push_message_field(&mut body, 3, node.name.as_bytes());
+                push_message_field(&mut out, 11 + side as u64, &body);
+            }
+        }
+    }
+    if out.len()
+        > if details {
+            MAX_CONTENTS_STATE_BYTES
+        } else {
+            MAX_STATE_BYTES
+        }
+    {
         return Err(Error::LimitExceeded);
     }
     Ok(out)
 }
 /// Decodes the server-owned player-trade projection.
 pub fn decode_state(bytes: &[u8]) -> Result<State, Error> {
-    if bytes.len() > MAX_STATE_BYTES {
+    decode_state_for(bytes, false)
+}
+
+/// Decode only the tree extension negotiated for this session.
+pub fn decode_state_for(bytes: &[u8], details: bool) -> Result<State, Error> {
+    let mut contents: [Vec<ContentsItem>; 2] = Default::default();
+    if bytes.len()
+        > if details {
+            MAX_CONTENTS_STATE_BYTES
+        } else {
+            MAX_STATE_BYTES
+        }
+    {
         return Err(Error::LimitExceeded);
     }
     let (mut trade_id, mut partner, mut own, mut counter) = (None, None, None, None);
@@ -289,24 +336,32 @@ pub fn decode_state(bytes: &[u8]) -> Result<State, Error> {
             )?,
             74 => set_once(&mut message, text(read_bytes(bytes, &mut at)?, 256)?)?,
             82 => set_once(&mut look, text(read_bytes(bytes, &mut at)?, 4096)?)?,
+            tag @ (90 | 98) if details => {
+                let tree = &mut contents[usize::from(tag == 98)];
+                if tree.len() == MAX_CONTENTS_ITEMS {
+                    return Err(Error::LimitExceeded);
+                }
+                tree.push(read_contents_item(read_bytes(bytes, &mut at)?)?);
+            }
             _ => return Err(Error::Malformed),
         }
     }
     let state = State {
+        contents,
         trade_id,
         partner,
         own,
         counter,
         accepted: [
-            accepted_own.ok_or(Error::Malformed)?,
-            accepted_counter.ok_or(Error::Malformed)?,
+            accepted_own.unwrap_or_default(),
+            accepted_counter.unwrap_or_default(),
         ],
         phase: phase.ok_or(Error::Malformed)?,
-        reason: reason.ok_or(Error::Malformed)?,
-        message: message.ok_or(Error::Malformed)?,
-        look: look.ok_or(Error::Malformed)?,
+        reason: reason.unwrap_or_default(),
+        message: message.unwrap_or_default(),
+        look: look.unwrap_or_default(),
     };
-    encode_state(&state)?;
+    encode_state_for(&state, details)?;
     Ok(state)
 }
 
@@ -343,7 +398,7 @@ fn read_offer(bytes: &[u8]) -> Result<Offer, Error> {
     let value = Offer {
         definition: definition.ok_or(Error::Malformed)?,
         count: count.ok_or(Error::Malformed)?,
-        sub_type: sub_type.ok_or(Error::Malformed)?,
+        sub_type: sub_type.unwrap_or_default(),
     };
     offer(value)?;
     Ok(value)
@@ -373,3 +428,55 @@ pub fn decode_result(bytes: &[u8]) -> Result<ResultCode, Error> {
 #[cfg(test)]
 #[path = "player_trade_tests.rs"]
 mod tests;
+
+fn check_contents(tree: &[ContentsItem], root: Option<Offer>) -> Result<(), Error> {
+    if tree.is_empty() {
+        return Ok(());
+    }
+    if tree.len() > MAX_CONTENTS_ITEMS || Some(tree[0].item) != root {
+        return Err(Error::Malformed);
+    }
+    let mut depths = Vec::with_capacity(tree.len());
+    for (index, node) in tree.iter().enumerate() {
+        if node.name.is_empty()
+            || node.name.len() > 128
+            || node.name.contains('\0')
+            || if index == 0 {
+                node.parent.is_some()
+            } else {
+                node.parent
+                    .is_none_or(|parent| usize::from(parent) >= index)
+            }
+        {
+            return Err(Error::Malformed);
+        }
+        let depth = node
+            .parent
+            .map_or(0, |parent| depths[usize::from(parent)] + 1);
+        if depth > 8 {
+            return Err(Error::Malformed);
+        }
+        depths.push(depth);
+    }
+    Ok(())
+}
+fn read_contents_item(bytes: &[u8]) -> Result<ContentsItem, Error> {
+    let (mut item, mut parent, mut name) = (None, None, None);
+    let mut at = 0;
+    while at < bytes.len() {
+        match read_varint(bytes, &mut at)? {
+            10 => set_once(&mut item, read_offer(read_bytes(bytes, &mut at)?)?)?,
+            16 => set_once(
+                &mut parent,
+                u8::try_from(read_varint(bytes, &mut at)?).map_err(|_| Error::Malformed)?,
+            )?,
+            26 => set_once(&mut name, text(read_bytes(bytes, &mut at)?, 128)?)?,
+            _ => return Err(Error::Malformed),
+        }
+    }
+    Ok(ContentsItem {
+        item: item.ok_or(Error::Malformed)?,
+        parent: parent.unwrap_or_default().checked_sub(1),
+        name: name.ok_or(Error::Malformed)?,
+    })
+}

@@ -1,0 +1,14 @@
+{
+  "id": 508,
+  "name": "INVENTORY_CAPACITY_V1",
+  "owner_decision": "gapd owner task 2026-11-16 (T23 Tibia Global Cap)",
+  "owner": "Character item weight and capacity owner",
+  "requires": [
+    4,
+    6
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Optional field 7 of a header-only domain-1 type-2 delta; unselected sessions are unchanged. See inventory-capacity-v1.md."
+}

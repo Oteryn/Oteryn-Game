@@ -109,6 +109,7 @@ fn nx8_forge_marker_requires_exact_creature_incarnation_and_reference() {
         bindings: [(binding.entity, binding.clone())].into_iter().collect(),
     };
     let mut entity = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: world_spatial_entities::EntityKind::Creature,
         entity: binding.entity,

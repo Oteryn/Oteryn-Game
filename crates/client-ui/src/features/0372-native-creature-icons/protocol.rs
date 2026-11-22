@@ -30,6 +30,7 @@ pub fn labels(entity: &oteryn_client_runtime::WorldSpatialEntity) -> Vec<String>
 #[test]
 fn preserves_entity_identity() {
     let entity = oteryn_client_runtime::WorldSpatialEntity {
+        motion: None,
         entity: oteryn_client_runtime::combat::EntityRef {
             identity: [9; 16],
             generation: 2,

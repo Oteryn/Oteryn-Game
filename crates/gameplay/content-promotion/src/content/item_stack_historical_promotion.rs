@@ -14,6 +14,7 @@ pub const ITEM_STACK_HISTORICAL_PACKET_SHA256: &str =
 pub fn apply_item_stack_historical_promotion_v1(
     draft: &mut ProjectV2Draft,
 ) -> Result<StackFalsePromotion, String> {
+    super::item_identity::validate_unique_item_keys(draft)?;
     if world_project_sha256(ITEM_STACK_HISTORICAL_PACKET) != ITEM_STACK_HISTORICAL_PACKET_SHA256 {
         return Err("historical stack source frame packet digest drift".into());
     }

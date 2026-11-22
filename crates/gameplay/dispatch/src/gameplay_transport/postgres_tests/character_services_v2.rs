@@ -141,29 +141,51 @@ fn scenario(race: bool, tag: &'static str, projection_only: bool) -> TestResult 
                 let out=transfer_intent(30,now,&character,&account,&other);
                 committed(h.root.decide_character_command(&authority,&h.node,"oteryn:character-authority:primary","TransferCharacterOwnership",&operation(30),Input::Intent(&out)).await)?;
                 sqlx::query("UPDATE game_character_service_feed SET phase=2,after_account='00000000-0000-0000-0000-000000000000',after_character='00000000-0000-0000-0000-000000000000' WHERE singleton").execute(&h.pool).await?;
-                let mut held=h.pool.begin().await?;
-                sqlx::query("SELECT 1 FROM game_character_account_guards WHERE account_id=$1::uuid FOR UPDATE").bind(&account).execute(&mut *held).await?;
-                let back=transfer_intent(31,now,&character,&other,&account);
-                let back_operation=operation(31);
-                let transfer=h.root.decide_character_command(&authority,&h.node,"oteryn:character-authority:primary","TransferCharacterOwnership",&back_operation,Input::Intent(&back));
-                let coordinate=async {
-                    wait_for_review_lock(&h.pool,"game_character_account_guards").await?;
-                    let mut resync=h.pool.begin().await?;
-                    sqlx::query("SET LOCAL application_name='charv2-resync-race'").execute(&mut *resync).await?;
-                    let run=async {
-                        sqlx::query("SELECT game_character_service_resync_page()").execute(&mut *resync).await?;
+                // Transfer probes portfolio rows with NOWAIT. Pause it on the next
+                // lock so it holds those rows while resync reads the old snapshot.
+                let mut held = h.pool.begin().await?;
+                sqlx::query("SELECT 1 FROM game_character_roots WHERE character_id=$1::uuid FOR UPDATE")
+                    .bind(&character)
+                    .execute(&mut *held)
+                    .await?;
+                let back = transfer_intent(31, now, &character, &other, &account);
+                let back_operation = operation(31);
+                let transfer = h.root.decide_character_command(
+                    &authority,
+                    &h.node,
+                    "oteryn:character-authority:primary",
+                    "TransferCharacterOwnership",
+                    &back_operation,
+                    Input::Intent(&back),
+                );
+                tokio::pin!(transfer);
+                tokio::select! {
+                    result = &mut transfer => {
+                        return Err(format!("transfer finished before the root lock: {result:?}").into());
+                    }
+                    waiting = wait_for_review_lock(&h.pool, "game_character_roots") => waiting?,
+                }
+                let coordinate = async {
+                    let mut resync = h.pool.begin().await?;
+                    let run = async {
+                        sqlx::query("SELECT game_character_service_resync_page()")
+                            .execute(&mut *resync)
+                            .await?;
                         resync.commit().await?;
-                        Ok::<(),Box<dyn std::error::Error>>(())
+                        Ok::<(), Box<dyn std::error::Error>>(())
                     };
-                    let release=async {
-                        wait_for_review_lock(&h.pool,"game_character_service_resync_page").await?;
-                        held.commit().await?;
-                        Ok::<(),Box<dyn std::error::Error>>(())
-                    };
-                    let (run,release)=tokio::join!(run,release);run?;release?;
-                    Ok::<(),Box<dyn std::error::Error>>(())
+                    tokio::pin!(run);
+                    tokio::select! {
+                        result = &mut run => {
+                            result?;
+                            return Err("resync finished before the portfolio lock".into());
+                        }
+                        waiting = wait_for_review_lock(&h.pool, "game_character_service_resync_page") => waiting?,
+                    }
+                    held.commit().await?;
+                    run.await
                 };
-                let (returned,coordinated)=tokio::join!(transfer,coordinate);committed(returned)?;coordinated?;
+                tokio::try_join!(async { committed(transfer.await) }, coordinate)?;
                 let facts:Value=sqlx::query_scalar("SELECT snapshot FROM game_character_service_outbox WHERE account_id=$1::uuid AND character_id=$2::uuid").bind(&account).bind(&character).fetch_one(&h.pool).await?;
                 assert_eq!(facts["lifecycle"],"ACTIVE");
                 assert_eq!(facts["account_id"],json!(account));

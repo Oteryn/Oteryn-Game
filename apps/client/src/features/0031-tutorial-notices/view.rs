@@ -10,18 +10,13 @@ impl PlayLink {
         lock(&self.mailbox).notices.clone()
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
 #[cfg(test)]
 #[path = "guide_tests.rs"]
 mod guide_tests;
 
 /// The native compendium presenter for live notices and the two player-guide tabs.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(super) fn compendium_text(
     panel: &oteryn_client_ui::tutorial_notices::NoticePanel,
     tab: usize,
@@ -42,14 +37,14 @@ pub(super) fn compendium_text(
 }
 
 /// Read the same bounded package bulletin used by the sign-in news browser.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(super) fn compendium_updates(directory: &std::path::Path) -> String {
     crate::bulletin::Browser::load(directory)
         .map(|browser| browser.news())
         .unwrap_or_else(|error| format!("Updates unavailable: {error}"))
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(super) fn compendium_page_text(
     panel: &oteryn_client_ui::tutorial_notices::NoticePanel,
     tab: usize,

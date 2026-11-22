@@ -46,10 +46,39 @@ pub fn visit_scene_entities<'a, E>(
     player: ((i32, i32), &[Draw]),
     tile_at: impl Fn(i32, i32) -> Option<&'a MapTile>,
     glyph_at: impl Fn(i32, i32) -> Vec<Draw>,
+    emit: impl FnMut((i32, i32), Draw) -> Result<(), E>,
+) -> Result<(), E> {
+    visit_scene_entities_scrolled(origin, anchor, player, tile_at, glyph_at, [0.; 2], emit)
+}
+
+/// Traverse the union of the resting and scrolled viewport, with one guard tile.
+/// `scroll` is measured in tiles, with positive values shifting artwork right/down.
+pub fn visit_scene_entities_scrolled<'a, E>(
+    origin: (i32, i32),
+    anchor: Option<(i32, i32)>,
+    player: ((i32, i32), &[Draw]),
+    tile_at: impl Fn(i32, i32) -> Option<&'a MapTile>,
+    glyph_at: impl Fn(i32, i32) -> Vec<Draw>,
+    scroll: [f32; 2],
     mut emit: impl FnMut((i32, i32), Draw) -> Result<(), E>,
 ) -> Result<(), E> {
-    for row in 0..SCENE_ROWS as i32 + SCAN_MARGIN {
-        for column in 0..SCENE_COLUMNS as i32 + SCAN_MARGIN {
+    let start = scroll.map(|v| (-(v.max(0.).ceil() as i32)).saturating_sub(1));
+    let end = scroll.map(|v| {
+        (v.min(0.).floor() as i32)
+            .saturating_neg()
+            .saturating_add(1)
+    });
+    let rows = start[1]..(SCENE_ROWS as i32 + SCAN_MARGIN).saturating_add(end[1]);
+    let columns = start[0]..(SCENE_COLUMNS as i32 + SCAN_MARGIN).saturating_add(end[0]);
+    for diagonal in rows.start + columns.start
+        ..(rows.end - 1)
+            .saturating_add(columns.end - 1)
+            .saturating_add(1)
+    {
+        for column in columns.start.max(diagonal - (rows.end - 1))
+            ..=(columns.end - 1).min(diagonal - rows.start)
+        {
+            let row = diagonal - column;
             // Past the edge of the coordinate space there is nothing to draw.
             let (Some(x), Some(y)) = (origin.0.checked_add(column), origin.1.checked_add(row))
             else {

@@ -105,12 +105,37 @@ pub(super) fn encode(manifest: &Manifest, layers: &[Layer]) -> Result<Vec<u8>, E
         #[serde(flatten)]
         manifest: &'a Manifest,
     }
+    struct ManifestBytes(Vec<u8>);
+    impl std::io::Write for ManifestBytes {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            if bytes.len() > crate::bundle::MAX_MANIFEST_BYTES - self.0.len() {
+                return Err(std::io::Error::other("manifest too large"));
+            }
+            self.0.extend_from_slice(bytes);
+            Ok(bytes.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
     let encode = |manifest, layers: &[Layer]| {
-        serde_json::to_vec(&Envelope {
-            layers: (!layers.is_empty()).then_some(layers),
-            manifest,
-        })
-        .map_err(format)
+        let mut bytes = ManifestBytes(Vec::new());
+        serde_json::to_writer(
+            &mut bytes,
+            &Envelope {
+                layers: (!layers.is_empty()).then_some(layers),
+                manifest,
+            },
+        )
+        .map_err(|error| {
+            if error.is_io() {
+                Error::Limit("manifest too large".into())
+            } else {
+                format(error)
+            }
+        })?;
+        Ok(bytes.0)
     };
     if FloorEncoding::for_manifest(manifest)? == FloorEncoding::Signed {
         return encode(manifest, layers);

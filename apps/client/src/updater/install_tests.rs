@@ -10,8 +10,8 @@ fn package(path: &Path, name: &str, bytes: &[u8]) -> Result<(), Box<dyn std::err
 #[test]
 fn repair_installs_fresh_slot_and_verification_detects_changed_bytes()
 -> Result<(), Box<dyn std::error::Error>> {
-    let root = std::env::temp_dir().join(format!("oteryn-repair-{}", std::process::id()));
-    let _ = fs::remove_dir_all(&root);
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("oteryn-repair");
     fs::create_dir_all(&root)?;
     let zip = root.join("release.zip");
     package(&zip, "oteryn-client.exe", b"signed executable")?;
@@ -37,7 +37,6 @@ fn repair_installs_fresh_slot_and_verification_detects_changed_bytes()
         fs::read_to_string(root.join("current.txt"))?.trim(),
         "rel-a~1"
     );
-    fs::remove_dir_all(root)?;
     Ok(())
 }
 

@@ -26,7 +26,13 @@ impl PlayView {
                 match code.get() {
                     67 => center.banners_enabled = !center.banners_enabled,
                     68 => center.popups_enabled = !center.popups_enabled,
-                    69 => center.dismiss_all(),
+                    69 => {
+                        center.dismiss_all();
+                        self.game_notifications.0.screen_dismissals.fetch_add(
+                            1,
+                            std::sync::atomic::Ordering::Relaxed,
+                        );
+                    }
                     _ => continue,
                 }
                 handled = true;

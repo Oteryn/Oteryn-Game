@@ -264,7 +264,6 @@ fn relative_media(mut media: PublicMedia, viewport: Viewport) -> Option<PublicMe
             if !viewport.visible(*position) {
                 return None;
             }
-            position.floor = native_position(*position)?.floor;
             project(position)?;
         }
         PublicMedia::Effects(events) => {
@@ -273,15 +272,12 @@ fn relative_media(mut media: PublicMedia, viewport: Viewport) -> Option<PublicMe
                     if !viewport.visible(*position) {
                         return false;
                     }
-                    position.floor = position.floor.saturating_abs();
                     project(position).is_some()
                 }
                 PresentationEventKind::Missile { from, to, .. } => {
                     if !viewport.visible(*from) || !viewport.visible(*to) {
                         return false;
                     }
-                    from.floor = from.floor.saturating_abs();
-                    to.floor = to.floor.saturating_abs();
                     project(from).is_some() && project(to).is_some()
                 }
                 _ => false,
@@ -321,6 +317,7 @@ mod tests {
             floor: 7,
         };
         let entity = world_spatial::WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: world_spatial::EntityKind::Player,
             entity: world_spatial::EntityRef {
@@ -488,6 +485,7 @@ mod tests {
             floor: 7,
         };
         let entity = |id: u8| world_spatial::WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: world_spatial::EntityKind::Player,
             entity: world_spatial::EntityRef {

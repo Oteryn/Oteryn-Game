@@ -296,3 +296,139 @@ fn catalogue_encodings_switch_without_reusing_the_other_cursor()
     );
     Ok(())
 }
+
+#[test]
+fn catalogue_details_and_compact_sources_preserve_browse_pagination()
+-> Result<(), Box<dyn std::error::Error>> {
+    for detail in [
+        Request::Catalogue(10),
+        Request::CatalogueQuery(catalogue::Query::Drops {
+            reference: 10,
+            after: 0,
+        }),
+    ] {
+        let query = catalogue::PageQuery::new(0, "", "").map_err(|_| "query")?;
+        let mut panel = Panel {
+            selected: true,
+            catalogue_query: Some(query),
+            catalogue_page: Some(catalogue::Page {
+                next: Some(20),
+                categories: vec![],
+            }),
+            catalogue_next: Some(20),
+            ..Default::default()
+        };
+        request(&mut panel, detail).ok_or("detail request")?;
+        let reply = Reply {
+            status: 1,
+            requests: vec![],
+            catalogue: None,
+            items: vec![InspectedItem {
+                slot: 0,
+                definition_ref: 10,
+                count: 1,
+                tier: 0,
+                name: "Sword".into(),
+                attributes: vec![],
+            }],
+        };
+        apply_result(
+            &mut panel,
+            &ServerMechanicResponse {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload: encode_reply(&reply).map_err(|_| "reply")?,
+            },
+        );
+        assert_eq!(panel.catalogue_query, Some(query));
+        let next = request_page(&mut panel, true).ok_or("browse continuation")?;
+        assert_eq!(
+            decode_request(&next.payload).map_err(|_| "decode")?,
+            Request::CataloguePage(catalogue::PageQuery::new(20, "", "").map_err(|_| "query")?)
+        );
+        assert_eq!(panel.catalogue_next, Some(20));
+    }
+    Ok(())
+}
+
+#[test]
+fn compact_drop_sources_preserve_inspected_attributes() -> Result<(), Box<dyn std::error::Error>> {
+    let mut panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    let item = InspectedItem {
+        slot: 0,
+        definition_ref: 10,
+        count: 1,
+        tier: 0,
+        name: "Sword".into(),
+        attributes: vec![
+            ("attack".into(), "25".into()),
+            ("Dropped by".into(), "Full source detail".into()),
+        ],
+    };
+    panel.catalogue.insert(10, item);
+    for after in [0, 10] {
+        request(
+            &mut panel,
+            Request::CatalogueQuery(catalogue::Query::Drops {
+                reference: 10,
+                after,
+            }),
+        )
+        .ok_or("sources request")?;
+        let reply = Reply {
+            status: 1,
+            requests: vec![],
+            catalogue: None,
+            items: vec![InspectedItem {
+                slot: 0,
+                definition_ref: 10,
+                count: 1,
+                tier: 0,
+                name: "Sword".into(),
+                attributes: if after == 0 {
+                    vec![
+                        ("Drop sources".into(), format!("Dragon {after}")),
+                        ("Catalogue drop next".into(), "10".into()),
+                    ]
+                } else {
+                    vec![("Drop sources".into(), format!("Dragon {after}"))]
+                },
+            }],
+        };
+        apply_result(
+            &mut panel,
+            &ServerMechanicResponse {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload: encode_reply(&reply).map_err(|_| "reply")?,
+            },
+        );
+        assert_eq!(panel.catalogue_drop_next, (after == 0).then_some(10));
+        let cached = panel.catalogue.get(&10).ok_or("cached item")?;
+        assert!(cached.attributes.contains(&("attack".into(), "25".into())));
+        assert!(
+            cached
+                .attributes
+                .contains(&("Dropped by".into(), "Full source detail".into()))
+        );
+        assert_eq!(
+            cached
+                .attributes
+                .iter()
+                .filter(|(key, _)| key == "Drop sources")
+                .count(),
+            1
+        );
+        assert!(
+            cached
+                .attributes
+                .contains(&("Drop sources".into(), format!("Dragon {after}")))
+        );
+    }
+    Ok(())
+}

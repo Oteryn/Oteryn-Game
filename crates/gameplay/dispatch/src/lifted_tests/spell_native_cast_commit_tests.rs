@@ -23,11 +23,11 @@ fn paid_fixture() -> (
     )
     .expect("actual player state");
     before.cooldowns.spells.insert(
-        "existing:long".into(),
+        book.spells[1].key.clone(),
         SemanticTimeMicros::from_micros(9100000),
     );
     before.cooldowns.spells.insert(
-        "existing:short".into(),
+        book.spells[2].key.clone(),
         SemanticTimeMicros::from_micros(1100000),
     );
     let now = SemanticTimeMicros::from_micros(100000);
@@ -74,14 +74,14 @@ fn beam_reduces_prior_spell_deadlines_then_rearms_new_own_cd_without_extra_payme
         .expect("source order");
     assert_eq!(
         next.cooldowns
-            .spell_ready_at("existing:long")
+            .spell_ready_at(&book.spells[1].key)
             .expect("prior")
             .get(),
         6100000
     );
     assert_eq!(
         next.cooldowns
-            .spell_ready_at("existing:short")
+            .spell_ready_at(&book.spells[2].key)
             .expect("clamped")
             .get(),
         100000

@@ -7,6 +7,8 @@ use super::{
 use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::appearance::{Intent, Panel};
 use oteryn_client_ui_bevy as source;
+mod animation;
+mod search;
 const PARTS: [&str; 4] = ["Head", "Primary", "Secondary", "Detail"];
 #[derive(Component)]
 struct Window;
@@ -17,21 +19,33 @@ struct Action {
 }
 #[derive(Clone)]
 enum Kind {
+    Preview(animation::Control),
     Outfit(String),
     Addon(u8),
     Colour(usize, usize),
     Mount(String),
+    Riding,
     Ok,
     Close,
 }
 #[derive(Resource, Default)]
 struct State {
     rendered: Option<(u64, Panel)>,
+    riding: Option<bool>,
+    search: String,
+    dirty: bool,
+    playback: animation::Playback,
     artwork: Option<preview::Assets>,
     image: Option<Handle<Image>>,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(Update, project);
+    super::install::install_scroll_memory(app);
+    app.init_resource::<bevy::input_focus::InputFocus>()
+        .init_resource::<State>()
+        .add_systems(
+            Update,
+            (search::update, project, animation::animate).chain(),
+        );
 }
 fn outfits(panel: &Panel) -> Vec<&str> {
     panel.catalogue.as_ref().map_or_else(Vec::new, |c| {
@@ -89,7 +103,7 @@ fn edit(panel: &mut Panel, kind: &Kind) -> bool {
             panel.fields[3] = colours.join(",");
             true
         }
-        Kind::Ok | Kind::Close => false,
+        Kind::Preview(_) | Kind::Ok | Kind::Close | Kind::Riding => false,
     }
 }
 fn activate(
@@ -97,6 +111,7 @@ fn activate(
     actions: Query<&Action>,
     owner: NonSend<HostOwner>,
     guard: ModalGuard,
+    mut state: ResMut<State>,
 ) {
     if !guard.allows(event.entity) {
         return;
@@ -104,19 +119,64 @@ fn activate(
     let Ok(action) = actions.get(event.entity) else {
         return;
     };
-    if action.generation != owner.generation() {
+    if action.generation != owner.generation() || owner.modal_active() {
         return;
     }
     let Some(play) = &owner.play else {
         return;
     };
     if matches!(action.kind, Kind::Close) {
-        play.link.appearance_close();
+        cancel(&play.link);
+        return;
+    }
+    if let Kind::Preview(control) = &action.kind {
+        state.playback.edit(control);
         return;
     }
     send(&play.link, &action.kind);
 }
+fn restore_draft(link: &crate::play::PlayLink) {
+    let panel = link.appearance_panel();
+    if panel.pending {
+        return;
+    }
+    let selection = panel
+        .confirmed
+        .as_ref()
+        .map(|confirmed| &confirmed.selection);
+    let fields = if let Some(selection) = selection {
+        let [head, body, legs, feet] = selection.colours;
+        [
+            selection.outfit_key.clone(),
+            selection.addons.to_string(),
+            selection.mount_key.clone().unwrap_or_default(),
+            format!("{head},{body},{legs},{feet}"),
+        ]
+    } else {
+        [
+            panel
+                .catalogue
+                .as_ref()
+                .and_then(|catalogue| catalogue.outfits.first())
+                .map_or_else(String::new, |outfit| outfit.key.clone()),
+            "0".into(),
+            String::new(),
+            "0,0,0,0".into(),
+        ]
+    };
+    for (index, value) in fields.into_iter().enumerate() {
+        link.appearance_edit(index, value);
+    }
+}
+fn cancel(link: &crate::play::PlayLink) {
+    restore_draft(link);
+    link.appearance_close();
+}
 fn send(link: &crate::play::PlayLink, kind: &Kind) {
+    if matches!(kind, Kind::Riding) {
+        link.mount_request();
+        return;
+    }
     let mut panel = link.appearance_panel();
     if panel.pending {
         return;
@@ -157,13 +217,19 @@ fn button(
     commands.entity(parent).add_child(entity);
     entity
 }
+type ProjectQueries<'w, 's> = (
+    Res<'w, ButtonInput<KeyCode>>,
+    Query<'w, 's, Entity, With<Window>>,
+    Query<'w, 's, Entity, With<search::Field>>,
+);
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
-    (keys, windows): (Res<ButtonInput<KeyCode>>, Query<Entity, With<Window>>),
+    (keys, windows, searches): ProjectQueries,
     skin: Res<Skins>,
-    mut state: ResMut<State>,
     mut images: ResMut<Assets<Image>>,
+    mut state: ResMut<State>,
+    guard: ModalGuard,
 ) {
     let Some(play) = &owner.play else {
         for entity in &windows {
@@ -172,8 +238,14 @@ fn project(
         state.rendered = None;
         return;
     };
-    if keys.just_pressed(KeyCode::Escape) {
-        play.link.appearance_close();
+    if keys.just_pressed(KeyCode::Escape)
+        && !owner.modal_active()
+        && windows.iter().any(|entity| guard.allows(entity))
+    {
+        cancel(&play.link);
+    }
+    if state.rendered.is_none() && play.link.appearance_panel().open {
+        restore_draft(&play.link);
     }
     let panel = play.link.appearance_panel();
     if !panel.open {
@@ -184,8 +256,20 @@ fn project(
         return;
     }
     let generation = owner.generation();
-    if state.rendered.as_ref() == Some(&(generation, panel.clone())) {
+    let riding = play.link.riding();
+    state.dirty |= state.riding != riding;
+    state.riding = riding;
+    if !state.dirty && state.rendered.as_ref() == Some(&(generation, panel.clone())) {
         return;
+    }
+    let retained = searches.single().ok().filter(|_| {
+        state
+            .rendered
+            .as_ref()
+            .is_some_and(|(previous, _)| *previous == generation)
+    });
+    if let Some(field) = retained {
+        commands.entity(field).remove::<ChildOf>();
     }
     for entity in &windows {
         commands.entity(entity).despawn();
@@ -194,6 +278,7 @@ fn project(
         .spawn((
             Window,
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("outfit"),
             GlobalZIndex(175),
             Node {
                 position_type: PositionType::Absolute,
@@ -207,6 +292,7 @@ fn project(
                 ..default()
             },
             bevy::ui_widgets::ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("outfit", 0),
             BackgroundColor(Color::srgb(0.16, 0.16, 0.16)),
         ))
         .id();
@@ -214,7 +300,15 @@ fn project(
         .spawn(source::button_caption("Outfit", skin.font.clone()))
         .id();
     commands.entity(root).add_child(title);
-    for key in outfits(&panel) {
+    if let Some(field) = retained {
+        commands.entity(root).add_child(field);
+    } else {
+        search::build(&mut commands, &skin, root, &state.search);
+    }
+    for key in outfits(&panel)
+        .into_iter()
+        .filter(|key| search::matches(key, &state.search))
+    {
         button(
             &mut commands,
             &skin,
@@ -281,7 +375,21 @@ fn project(
             Kind::Mount(String::new()),
             "No mount",
         );
-        for key in &catalogue.mounts {
+        if let Some(riding) = play.link.riding() {
+            button(
+                &mut commands,
+                &skin,
+                root,
+                generation,
+                Kind::Riding,
+                if riding { "Mount: on" } else { "Mount: off" },
+            );
+        }
+        for key in catalogue
+            .mounts
+            .iter()
+            .filter(|key| search::matches(key, &state.search))
+        {
             button(
                 &mut commands,
                 &skin,
@@ -296,25 +404,14 @@ fn project(
         state.artwork = std::env::var_os(crate::map::ASSET_DIR_ENV)
             .and_then(|root| preview::Assets::load(std::path::Path::new(&root)).ok());
     }
-    if let Some(selection) = panel.preview() {
-        let pixels = state.artwork.as_mut().map(|assets| assets.draw(&selection));
+    if panel.preview().is_some() {
+        let pixels = state
+            .artwork
+            .as_mut()
+            .map(|assets| assets.draw_panel(&panel, 2, 0, false));
         match pixels {
-            Some(Ok(mut pixels)) => {
-                for pixel in pixels.as_chunks_mut::<4>().0 {
-                    pixel.swap(0, 2);
-                    pixel[3] = 255;
-                }
-                let image = Image::new(
-                    bevy::render::render_resource::Extent3d {
-                        width: 96,
-                        height: 96,
-                        depth_or_array_layers: 1,
-                    },
-                    bevy::render::render_resource::TextureDimension::D2,
-                    pixels,
-                    bevy::render::render_resource::TextureFormat::Rgba8UnormSrgb,
-                    bevy::asset::RenderAssetUsages::default(),
-                );
+            Some(Ok(pixels)) => {
+                let image = animation::image(pixels);
                 let handle = if let Some(handle) = &state.image {
                     if let Some(mut target) = images.get_mut(handle) {
                         *target = image;
@@ -354,6 +451,21 @@ fn project(
             }
         }
     }
+    for (control, label) in [
+        (animation::Control::Left, "Turn left"),
+        (animation::Control::Right, "Turn right"),
+        (animation::Control::Movement(true), "Movement on"),
+        (animation::Control::Movement(false), "Movement off"),
+    ] {
+        button(
+            &mut commands,
+            &skin,
+            root,
+            generation,
+            Kind::Preview(control),
+            label,
+        );
+    }
     let preview = commands
         .spawn(source::button_caption(
             format!(
@@ -373,9 +485,11 @@ fn project(
         Kind::Close,
         "Cancel",
     );
+    state.dirty = false;
+    state.playback.invalidate();
     state.rendered = Some((generation, panel));
 }
 #[path = "../../features/0025-appearance/preview.rs"]
-mod preview;
+pub(super) mod preview;
 #[cfg(test)]
 mod tests;

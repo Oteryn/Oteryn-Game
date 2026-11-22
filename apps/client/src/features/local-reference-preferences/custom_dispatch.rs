@@ -132,9 +132,22 @@ impl PlayLink {
                 self.open_chat();
                 true
             }
+            UtilityAction::ShowPrey => self.activate_shortcut("prey"),
+            UtilityAction::ToggleVipWidget => {
+                let open = std::mem::take(&mut lock(&self.mailbox).vip.open);
+                open || self.activate_shortcut("vip")
+            }
+            UtilityAction::ToggleSkillsWidget => {
+                let open = std::mem::take(&mut lock(&self.mailbox).loyalty_skills.open);
+                open || self.activate_shortcut("skills")
+            }
+            UtilityAction::ToggleManualSortMode => self.toggle_container_manual_sort(),
+            // Preference and options-window actions belong to the settings owner.
             UtilityAction::ToggleCreatureHuds
             | UtilityAction::ToggleFpsLagIndicator
-            | UtilityAction::NextHotkeyPreset => false,
+            | UtilityAction::ToggleDiagnosticsOverlay
+            | UtilityAction::NextHotkeyPreset
+            | UtilityAction::ShowOptionsHotkeys => false,
         }
     }
 
@@ -177,7 +190,7 @@ impl PlayLink {
             }
             CustomAction::Utility { action } => self.utility_action(*action),
             CustomAction::Text { text, send } => {
-                use oteryn_client_ui::chat::{ComposerMode, Mode};
+                use oteryn_client_ui::chat::ComposerMode;
                 let mut mailbox = lock(&self.mailbox);
                 if mailbox.custom_hotkeys_ended
                     || mailbox.chat_public_shutdown
@@ -187,19 +200,11 @@ impl PlayLink {
                     return false;
                 }
                 if *send {
-                    let old = std::mem::replace(&mut mailbox.chat.text, text.clone());
-                    let mode = mailbox.chat.console.mode;
-                    if mode == ComposerMode::Off {
-                        mailbox.chat.console.mode = ComposerMode::Temporary;
-                    }
-                    crate::play::feature_0007_chat::input::enqueue(
+                    crate::play::feature_0007_chat::input::enqueue_hotkey_text(
                         &mut mailbox,
                         &self.commands,
-                        Mode::Say,
-                        "",
+                        text.clone(),
                     );
-                    mailbox.chat.text = old;
-                    mailbox.chat.console.mode = mode;
                     mailbox.chat.pending
                 } else {
                     mailbox.chat.text.clone_from(text);
@@ -276,7 +281,18 @@ impl PlayLink {
                     return false;
                 }
                 let mut selection = None;
-                let target = match target {
+                let target_mode = if *target == ObjectTarget::CurrentTarget
+                    && mailbox
+                        .battle
+                        .combat
+                        .and_then(|combat| combat.target)
+                        .is_none()
+                {
+                    ObjectTarget::Cursor
+                } else {
+                    *target
+                };
+                let target = match &target_mode {
                     ObjectTarget::Use => Target::Item(item.handle),
                     ObjectTarget::Cursor => {
                         let rune = mailbox

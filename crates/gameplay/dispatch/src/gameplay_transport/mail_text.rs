@@ -55,45 +55,45 @@ pub(super) async fn execute(
     {
         return Some(MailOutcome::Rejected);
     }
+    let house_origin = owner.resident_origin(admitted).await;
     let native = {
         let runtime = owner.runtime.lock().await;
-        runtime
-            .player_control_facts(actor, admitted.game_session_id)
-            .ok()?;
+        let control = if house_origin.is_some() {
+            if runtime
+                .house_player_writes_fenced(actor, admitted.game_session_id)
+                .ok()?
+            {
+                return Some(MailOutcome::Rejected);
+            }
+            runtime.house_player_control_facts(actor, admitted.game_session_id)
+        } else {
+            runtime.player_control_facts(actor, admitted.game_session_id)
+        };
+        if !control.is_ok_and(|facts| facts.control_loss.is_none()) {
+            return Some(MailOutcome::Rejected);
+        }
         let states = owner.states.spell_states.lock().await;
-        crate::gameplay_transport::equipment_move::native_for_move(
+        let busy = if house_origin.is_some() {
+            states.has_pending_spell_commit(actor, admitted.game_session_id)
+        } else {
+            !states.spell_idle(&runtime, actor, admitted.game_session_id)
+        };
+        let Some(native) = crate::gameplay_transport::equipment_move::native_for_move(
             &runtime,
             owner.active_generation,
             states.is_dead(actor),
-            !states.spell_idle(&runtime, actor, admitted.game_session_id),
-        )?
+            busy,
+        ) else {
+            return Some(MailOutcome::Rejected);
+        };
+        native
     };
-    let inventory = owner
+    let definition = owner
         .root
-        .read_item_use_inventory(owner.character, owner.holder, fence)
+        .read_carried_item_text(owner.character, owner.holder, fence, house_origin, item)
         .await
-        .ok()?;
-    let definition = inventory
-        .equipment
-        .iter()
-        .find(|entry| entry.item_instance_id == item)
-        .or_else(|| {
-            inventory
-                .backpack
-                .as_ref()?
-                .entries
-                .iter()
-                .map(|entry| &entry.item)
-                .find(|entry| entry.item_instance_id == item)
-        })
-        .or_else(|| {
-            inventory
-                .nested
-                .iter()
-                .map(|(_, entry)| &entry.item)
-                .find(|entry| entry.item_instance_id == item)
-        })
-        .map(|entry| entry.definition.clone());
+        .ok()?
+        .map(|(definition, _)| definition);
     let Some(definition) = definition else {
         return Some(MailOutcome::Rejected);
     };
@@ -107,20 +107,35 @@ pub(super) async fn execute(
         definition,
         text,
     };
-    match owner
-        .root
-        .commit_item_text_rewrite(
-            &permit,
-            owner.character,
-            owner.holder,
-            fence,
-            policy,
-            request,
-            None,
-            None,
-        )
-        .await
-    {
+    let result = if house_origin.is_some() {
+        owner
+            .root
+            .commit_house_item_text_rewrite(
+                &permit,
+                owner.character,
+                owner.holder,
+                fence,
+                policy,
+                request,
+                admitted.channel_id,
+            )
+            .await
+    } else {
+        owner
+            .root
+            .commit_item_text_rewrite(
+                &permit,
+                owner.character,
+                owner.holder,
+                fence,
+                policy,
+                request,
+                None,
+                None,
+            )
+            .await
+    };
+    match result {
         Ok(_) => Some(MailOutcome::TextWritten),
         Err(error) => refusal(error),
     }

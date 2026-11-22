@@ -16,6 +16,7 @@ fn quote_identity_survives_display_order_but_not_revision() -> Result<(), String
         ..Default::default()
     };
     shop.apply_window(npc_service::NpcTradeWindow {
+        details: Vec::new(),
         open: Some((npc, 9)),
         offers: vec![offer],
     });
@@ -34,6 +35,7 @@ fn quote_identity_survives_display_order_but_not_revision() -> Result<(), String
     shop.result(NpcIntentDisposition::Stale);
     assert!(shop.text().contains("Stale"));
     shop.apply_window(npc_service::NpcTradeWindow {
+        details: Vec::new(),
         open: Some((npc, 10)),
         offers: vec![offer],
     });
@@ -44,7 +46,7 @@ fn quote_identity_survives_display_order_but_not_revision() -> Result<(), String
 }
 
 #[test]
-fn quote_lookup_uses_item_side_count_and_price_not_a_display_position() -> Result<(), String> {
+fn quote_keeps_its_server_index_after_display_reordering() -> Result<(), String> {
     let npc = EntityRef {
         identity: [4; 16],
         generation: 2,
@@ -66,17 +68,19 @@ fn quote_lookup_uses_item_side_count_and_price_not_a_display_position() -> Resul
         ..Default::default()
     };
     shop.apply_window(npc_service::NpcTradeWindow {
+        details: Vec::new(),
         open: Some((npc, 7)),
         offers: vec![first, second],
     });
-    let key = shop.quotes()[0];
-    shop.window.offers.reverse();
+    let mut display = shop.quotes();
+    display.reverse();
+    let key = display[1];
     let request = shop.trade(key, 4).ok_or("trade")?;
-    assert_eq!(request.offer_index, 1);
+    assert_eq!(request.offer_index, 0);
     assert_eq!(request.side, NpcTradeSide::Buy);
     assert_eq!(shop.total(key, 4), "20 items; 76 gold");
     shop.result(NpcIntentDisposition::Rejected);
-    shop.window.offers[1].unit_price = 20;
+    shop.window.offers[0].unit_price = 20;
     assert!(shop.trade(key, 1).is_none());
     shop.window.open = None;
     assert!(shop.trade(key, 1).is_none());
@@ -116,6 +120,7 @@ fn trade_rejects_quantity_101_before_sending() {
         ..Default::default()
     };
     shop.apply_window(npc_service::NpcTradeWindow {
+        details: Vec::new(),
         open: Some((
             EntityRef {
                 identity: [2; 16],
@@ -171,6 +176,7 @@ fn side_totals_and_backpack_free_slots_follow_server_limits() -> Result<(), Stri
             generation: 1,
         },
         revision: 1,
+        offer_index: 0,
         item: 42,
         side: NpcTradeSide::Sell,
         count: 1,
@@ -215,5 +221,113 @@ fn side_totals_and_backpack_free_slots_follow_server_limits() -> Result<(), Stri
         inventory.entries.clear();
     }
     assert_eq!(shop.free_slots(), Some(8));
+    Ok(())
+}
+
+#[test]
+fn npc_shop_identical_offers_keep_the_later_server_index() -> Result<(), String> {
+    let mut shop = LiveShop {
+        selected: true,
+        ..Default::default()
+    };
+    let offer = npc_service::NpcOffer {
+        item_definition_ref: 42,
+        side: NpcTradeSide::Buy,
+        count: 1,
+        unit_price: 2,
+    };
+    shop.apply_window(npc_service::NpcTradeWindow {
+        open: Some((
+            EntityRef {
+                identity: [3; 16],
+                generation: 1,
+            },
+            8,
+        )),
+        offers: vec![offer, offer],
+        details: vec![
+            npc_service::NpcQuoteDetails {
+                name: "beer".into(),
+                maximum_quantity: 1,
+            },
+            npc_service::NpcQuoteDetails {
+                name: "wine".into(),
+                maximum_quantity: 2,
+            },
+        ],
+    });
+    let quote = shop.quotes()[1];
+    assert_eq!(shop.quote_name(quote), Some("wine"));
+    assert_eq!(shop.maximum_amount(quote), 2);
+    assert_eq!(
+        shop.filtered_quotes(Some(NpcTradeSide::Buy), "wine"),
+        vec![quote]
+    );
+    assert_eq!(shop.look(quote).ok_or("look")?.offer_index, 1);
+    assert_eq!(shop.trade(quote, 2).ok_or("buy")?.offer_index, 1);
+    Ok(())
+}
+
+#[test]
+fn npc_shop_full_backpack_can_pay_with_its_last_coin_stack()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::npc_shop::{
+        CharacterInventory, ItemEntry, container_tree::ContainerView, resources::ResourceBalances,
+    };
+    let backpack = ItemEntry {
+        appearance_id: 0,
+        handle: 1.try_into()?,
+        item_definition_ref: 10.try_into()?,
+        count: 1.try_into()?,
+        sub_type: 0,
+    };
+    let mut shop = LiveShop {
+        selected: true,
+        inventory: Some(CharacterInventory {
+            main_backpack: Some(backpack),
+            entries: vec![ItemEntry {
+                appearance_id: 3031,
+                handle: 2.try_into()?,
+                item_definition_ref: 11.try_into()?,
+                count: 2.try_into()?,
+                ..backpack
+            }],
+            ..Default::default()
+        }),
+        balances: Some(ResourceBalances {
+            carried_gold: 2,
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+    shop.containers.views.push(ContainerView {
+        view_id: 0,
+        container_handle: backpack.handle,
+        parent_handle: None,
+        capacity: 1,
+        entries: vec![],
+        browse: None,
+    });
+    shop.apply_window(npc_service::NpcTradeWindow {
+        open: Some((
+            EntityRef {
+                identity: [3; 16],
+                generation: 1,
+            },
+            8,
+        )),
+        offers: vec![npc_service::NpcOffer {
+            item_definition_ref: 42,
+            side: NpcTradeSide::Buy,
+            count: 1,
+            unit_price: 2,
+        }],
+        details: vec![],
+    });
+    let quote = shop.quotes()[0];
+    assert_eq!(shop.free_slots(), Some(0));
+    assert!(!shop.options.ignore_capacity);
+    assert!(shop.can_trade(quote, 1));
+    assert!(shop.trade(quote, 1).is_some());
     Ok(())
 }

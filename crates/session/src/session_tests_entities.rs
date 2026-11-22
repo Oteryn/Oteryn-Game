@@ -128,6 +128,7 @@ fn actor(
     position: ActorPosition,
 ) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind,
         entity: EntityRef {
@@ -151,6 +152,7 @@ fn own(position: ActorPosition) -> WorldSpatialEntity {
 
 fn corpse(marker: u8, position: ActorPosition) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Corpse,
         entity: EntityRef {
@@ -659,6 +661,289 @@ fn negotiated_names_survive_join_delta_and_visibility_leave() -> Result<(), BoxE
         assert_eq!(session.visible_appearances().len(), 1);
         drop(session);
         peer.await??;
+        Ok(())
+    })?
+}
+
+#[test]
+fn retained_entity_handles_are_unique_after_enter_and_update() -> Result<(), BoxError> {
+    block_on(async {
+        let first = loot_corpse(1, 7, at(1, 0));
+        let second = loot_corpse(2, 8, at(2, 0));
+        for native in [false, true] {
+            let capabilities: &[u32] = if native { &[4, 6, 386] } else { &[4, 6] };
+            let (client, peer) =
+                entity_peer(item_snapshot(vec![first, second])?, capabilities, vec![]);
+            let mut session = Session::admit(client, entity_admission()?).await?;
+            for update in [false, true] {
+                let mut incoming = second;
+                if !update {
+                    incoming.entity.identity = [3; 16];
+                }
+                incoming.detail = if native {
+                    EntityDetail::ObjectWithAppearance {
+                        item_definition_ref: 9,
+                        quantity: 1,
+                        item_handle: Some(handle(7)),
+                        appearance_id: std::num::NonZeroU16::MIN,
+                    }
+                } else {
+                    first.detail
+                };
+                assert!(matches!(
+                    retained_entity_delta_error(&mut session, capabilities, incoming, update)?,
+                    SessionError::EntityStoreInconsistent {
+                        reason: "duplicate item handle in entity store"
+                    }
+                ));
+            }
+            assert_eq!(session.visible_appearances().len(), 3);
+            drop(session);
+            peer.await??;
+        }
+        Ok(())
+    })?
+}
+
+#[test]
+fn retained_view_refuses_forecasts_on_other_actors() -> Result<(), BoxError> {
+    block_on(async {
+        let capabilities = &[6, 13, 25, 502];
+        let (appearance, player, _) = appearance_session_tests::appearance_fixture::snapshot()?;
+        let other = actor(EntityKind::Creature, 1, 1, at(1, 0));
+        let appearance = appearance.encode().map_err(|e| format!("{e:?}"))?;
+        for update in [false, true] {
+            let mut entities = vec![player];
+            if update {
+                entities.push(other);
+            }
+            let snapshot = WorldSpatialEntitiesSnapshot {
+                content_generation: CONTENT_GENERATION,
+                actor_position: player.position,
+                own_identity: OWN,
+                entities,
+            };
+            let snapshot =
+                world_spatial_entities::encode_world_spatial_entities_snapshot_with_fields(
+                    &snapshot,
+                    world_spatial_entities::EntityFields::selected(capabilities),
+                    &Default::default(),
+                )
+                .map_err(|e| format!("{e:?}"))?;
+            let (client, mut server) = tokio::io::duplex(256 * 1024);
+            let domain = (21, 1, 1, appearance.clone());
+            let peer = tokio::spawn(async move {
+                join_peer_with(
+                    &mut server,
+                    CLIENT_SUPPORTED_CAPABILITIES,
+                    capabilities,
+                    &[],
+                    (2, snapshot),
+                    &[domain],
+                )
+                .await
+            });
+            let mut session = Session::admit(client, entity_admission()?).await?;
+            peer.await??;
+            let mut forecast = other;
+            forecast.motion = Some(oteryn_protocol_oteryn::actor_motion::ActorMotion {
+                prewalk_ms: [100; 8],
+                ..Default::default()
+            });
+            assert!(matches!(
+                retained_entity_delta_error(&mut session, capabilities, forecast, update)?,
+                SessionError::WorldSpatial(world_spatial::WorldSpatialError::Malformed)
+            ));
+        }
+        Ok(())
+    })?
+}
+
+fn retained_entity_delta_error(
+    session: &mut Session<DuplexStream>,
+    capabilities: &[u32],
+    incoming: WorldSpatialEntity,
+    update: bool,
+) -> Result<SessionError, BoxError> {
+    let delta = entities_delta(
+        at(0, 0),
+        if update { vec![] } else { vec![incoming] },
+        if update { vec![incoming] } else { vec![] },
+        vec![],
+    );
+    let bytes = world_spatial_entities::encode_world_spatial_entities_delta_with_fields(
+        &delta,
+        world_spatial_entities::EntityFields::selected(capabilities),
+        &Default::default(),
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    let frame = encode_state_delta(1, 41, 1, 5, 6, 2, &bytes)?;
+    session
+        .apply_state_delta(41, decode_wire_envelope(&frame)?.payload())
+        .err()
+        .ok_or_else(|| "contradictory visibility delta was applied".into())
+}
+
+#[test]
+fn trade_snapshots_require_registered_type() -> Result<(), BoxError> {
+    block_on(async {
+        for (domain_id, capabilities, payload) in [
+            (8, &[3][..], vec![]),
+            (
+                26,
+                &[4, 6, 60][..],
+                player_trade::encode_state(&Default::default())
+                    .map_err(|error| format!("{error:?}"))?,
+            ),
+        ] {
+            for replacement in [false, true] {
+                let payload = payload.clone();
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let (spatial_type, spatial) = if domain_id == 26 {
+                    item_snapshot(vec![])?
+                } else {
+                    (1, spatial(0))
+                };
+                let peer = tokio::spawn(async move {
+                    join_peer_with(
+                        &mut server,
+                        capabilities,
+                        capabilities,
+                        &[],
+                        (spatial_type, spatial.clone()),
+                        &[(
+                            domain_id,
+                            1,
+                            if replacement { 1 } else { 2 },
+                            payload.clone(),
+                        )],
+                    )
+                    .await?;
+                    if replacement {
+                        let frames = encode_single_chunk_snapshot(
+                            1,
+                            2,
+                            41,
+                            &[
+                                DomainSnapshot {
+                                    domain_id: 1,
+                                    revision: 5,
+                                    snapshot_type: spatial_type,
+                                    payload: &spatial,
+                                },
+                                DomainSnapshot {
+                                    domain_id,
+                                    revision: 2,
+                                    snapshot_type: 2,
+                                    payload: &payload,
+                                },
+                            ],
+                        )?;
+                        for frame in frames {
+                            write_frame(&mut server, &frame).await?;
+                        }
+                    }
+                    Ok::<_, BoxError>(())
+                });
+                let admitted = Session::admit(client, admission_with(capabilities)?).await;
+                let error = if replacement {
+                    let mut session = admitted?;
+                    let result = session.service_liveness(Duration::from_millis(300)).await;
+                    assert_eq!(
+                        session
+                            .gated_snapshot(domain_id)
+                            .ok_or("original trade snapshot")?
+                            .revision,
+                        1
+                    );
+                    result.err()
+                } else {
+                    admitted.err()
+                };
+                peer.await??;
+                assert!(
+                    matches!(error, Some(SessionError::UnregisteredSnapshotType { domain_id: id, snapshot_type: 2 }) if id == domain_id),
+                    "domain {domain_id}, replacement={replacement}: {error:?}"
+                );
+            }
+        }
+        Ok(())
+    })?
+}
+
+#[test]
+fn world_spatial_session_routes_negotiated_sidecars_on_two_global_floors() -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::guild_emblem::{Emblem, GuildEmblem};
+    use oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity;
+    use oteryn_protocol_oteryn::party_skull::PartyIcon;
+    use oteryn_protocol_oteryn::world_spatial_entities::{
+        DeltaSidecar, EntityFields, EntityLights, encode_world_spatial_entities_sidecar_delta,
+        encode_world_spatial_entities_snapshot_with_fields,
+    };
+
+    block_on(async {
+        const SELECTED: &[u32] = &[4, 6, 42, 134, 508, 509];
+        for floor in [7, 8] {
+            let position = ActorPosition {
+                x: 100,
+                y: 100,
+                floor,
+            };
+            let player = own(position);
+            let snapshot = WorldSpatialEntitiesSnapshot {
+                content_generation: CONTENT_GENERATION,
+                actor_position: position,
+                own_identity: OWN,
+                entities: vec![player],
+            };
+            let bytes = encode_world_spatial_entities_snapshot_with_fields(
+                &snapshot,
+                EntityFields::selected(SELECTED),
+                &EntityLights::new(),
+            )
+            .map_err(|e| format!("{e:?}"))?;
+            let (client, peer) = entity_peer((2, bytes), SELECTED, vec![]);
+            let mut session = Session::admit(client, entity_admission()?).await?;
+            let sidecars = [
+                DeltaSidecar::PartyIcons(vec![PartyIcon {
+                    entity: player.entity,
+                    shield: 3,
+                    skull: 2,
+                }]),
+                DeltaSidecar::InventoryCapacity(InventoryCapacity {
+                    capacity: 60_000,
+                    free: 58_750,
+                }),
+                DeltaSidecar::GuildEmblems(vec![GuildEmblem {
+                    entity: player.entity,
+                    emblem: Emblem::Member,
+                }]),
+            ];
+            for (sequence, sidecar) in (41..).zip(sidecars) {
+                let bytes = encode_world_spatial_entities_sidecar_delta(
+                    CONTENT_GENERATION,
+                    position,
+                    &sidecar,
+                )
+                .map_err(|e| format!("{e:?}"))?;
+                let frame =
+                    encode_state_delta(1, sequence, 1, sequence - 36, sequence - 35, 2, &bytes)?;
+                let event =
+                    session.apply_state_delta(sequence, decode_wire_envelope(&frame)?.payload())?;
+                let decoded = match event {
+                    SessionEvent::PartyIcons(delta) => DeltaSidecar::PartyIcons(delta.value),
+                    SessionEvent::InventoryCapacity(delta) => {
+                        DeltaSidecar::InventoryCapacity(delta.value)
+                    }
+                    SessionEvent::GuildEmblems(delta) => DeltaSidecar::GuildEmblems(delta.value),
+                    _ => return Err("expected a typed visibility sidecar".into()),
+                };
+                assert_eq!(decoded, sidecar);
+                assert_eq!(session.world_spatial().actor_position, position);
+            }
+            drop(session);
+            peer.await??;
+        }
         Ok(())
     })?
 }

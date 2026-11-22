@@ -63,6 +63,7 @@ fn npc_prerequisite_reducer_uses_live_quote_and_clears_closed_window() -> Result
     };
     let mut panel = NpcServicePanel::default();
     let window = npc_service::NpcTradeWindow {
+        details: Vec::new(),
         open: Some((npc, 42)),
         offers: vec![npc_service::NpcOffer {
             item_definition_ref: 8,

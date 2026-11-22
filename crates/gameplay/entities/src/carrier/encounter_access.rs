@@ -78,6 +78,7 @@ impl ChannelActorCarrier {
             max_sub_ordinal,
             false,
             now_ms,
+            false,
         )?;
         if let Some(next) = next {
             self.slots[index] = next;
@@ -139,6 +140,7 @@ impl ChannelActorCarrier {
                 max_sub_ordinal,
                 false,
                 now_ms,
+                false,
             )?;
             indexes[i] = index;
             staged[i] = next;

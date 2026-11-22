@@ -15,12 +15,55 @@ use std::sync::Mutex;
 struct TutorialSession {
     notices: VecDeque<TutorialNotice>,
     inventory_changed: bool,
+    vocation: Option<super::vocation_choice::RetainedNpcVocation>,
 }
 
 #[derive(Default)]
 pub(super) struct TutorialSessions(Mutex<HashMap<GameSessionId, TutorialSession>>);
 
 impl TutorialSessions {
+    pub(super) fn vocation(
+        &self,
+        session: GameSessionId,
+    ) -> Result<Option<super::vocation_choice::RetainedNpcVocation>, ()> {
+        Ok(self
+            .0
+            .lock()
+            .map_err(|_| ())?
+            .get(&session)
+            .and_then(|state| state.vocation.clone()))
+    }
+    pub(super) fn retain_vocation(
+        &self,
+        session: GameSessionId,
+        retained: super::vocation_choice::RetainedNpcVocation,
+    ) -> bool {
+        let Ok(mut sessions) = self.0.lock() else {
+            return false;
+        };
+        let pending = &mut sessions.entry(session).or_default().vocation;
+        if pending.as_ref().is_some_and(|old| old != &retained) {
+            return false;
+        }
+        *pending = Some(retained);
+        true
+    }
+    pub(super) fn clear_vocation(
+        &self,
+        session: GameSessionId,
+        occurrence: crate::durability::character_build::BuildOccurrence,
+    ) {
+        if let Ok(mut sessions) = self.0.lock()
+            && let Some(state) = sessions.get_mut(&session)
+            && state
+                .vocation
+                .as_ref()
+                .is_some_and(|retained| retained.request.occurrence == occurrence)
+        {
+            state.vocation = None;
+        }
+    }
+
     pub(super) fn notice(&self, session: GameSessionId, notice: TutorialNotice) {
         if let Ok(mut sessions) = self.0.lock() {
             let queue = &mut sessions.entry(session).or_default().notices;

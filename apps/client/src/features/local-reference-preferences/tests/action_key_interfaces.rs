@@ -5,8 +5,8 @@ fn options_key_edit_uses_action_keys_and_executes_the_live_mixed_slot()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{BarAction, SettingsState};
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
-    let path =
-        std::env::temp_dir().join(format!("cgopt-key-interface-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-key-interface.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut preferences = settings.preferences.clone();
     preferences.rebind("local-spell-action-bar-spell-36", "SUPER+ALT+F12")?;

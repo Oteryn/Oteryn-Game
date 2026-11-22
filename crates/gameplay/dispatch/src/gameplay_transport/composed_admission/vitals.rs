@@ -6,7 +6,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
-        self.load_wheel_gift(actor, game_session_id).await;
         if self
             .runtime
             .lock()
@@ -14,11 +13,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .house_actor_state(actor, game_session_id)
             .is_ok()
         {
-            let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
-                .current_session_at(game_session_id)
+            let fence = self
+                .root
+                .observe_current_gameplay_fence(self.character, game_session_id, true)
                 .await
-                .ok()?;
-            let fence = item_fence_of(current)?;
+                .ok()??
+                .item_fence();
             let runtime = self.runtime.lock().await;
             return self.states.spell_states.lock().await.house_vitals(
                 &runtime,
@@ -27,6 +27,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
             );
         }
+        self.load_wheel_gift(actor, game_session_id).await;
         self.refresh_wheel_vitals(actor, game_session_id).await;
         let restored = pvp_live::tracked(
             &*self.states.spell_states.lock().await,
@@ -66,7 +67,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .house_actor_state(actor, game_session_id)
             .is_ok()
         {
-            return self.observe_actor_vitals(actor, game_session_id).await;
+            // The House service projects vitals from its admitted item fence.
+            // Here the cadence only needs to advance the condition owners.
+            return None;
         }
         if !self.ensure_source_map_initialized().await {
             return None;

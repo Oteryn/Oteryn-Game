@@ -1,4 +1,4 @@
-//! Local miniwindow geometry, independent of server state and general settings writes.
+//! Local window and HUD-pane geometry, independent of server state and general settings writes.
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, io, path::Path};
 
@@ -38,8 +38,8 @@ impl WindowLayout {
             || id.contains('\0')
             || !(-32768..=32768).contains(&x)
             || !(-32768..=32768).contains(&y)
-            || !(200..=4096).contains(&width)
-            || !(100..=4096).contains(&height)
+            || !(1..=4096).contains(&width)
+            || !(1..=4096).contains(&height)
             || (self.0.len() >= 128 && !self.0.contains_key(id))
         {
             return Err(io::Error::other(tr!("Invalid window geometry")));
@@ -49,46 +49,29 @@ impl WindowLayout {
     }
 
     pub fn save(&self, path: &Path) -> io::Result<()> {
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        let temporary = path.with_extension("layout.tmp");
-        std::fs::write(
-            &temporary,
-            serde_json::to_vec(self).map_err(io::Error::other)?,
-        )?;
-        std::fs::rename(temporary, path)
+        let bytes = serde_json::to_vec(self).map_err(io::Error::other)?;
+        crate::atomic_file::replace(path, &bytes, false)
     }
 }
 
-#[cfg(windows)]
-fn path() -> Option<std::path::PathBuf> {
-    crate::play::PreferenceStore::path()
-        .map(|path| path.with_file_name("client-window-layout.json"))
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[cfg(windows)]
-pub(crate) fn restore(id: &str, fallback: [i32; 4]) -> [i32; 4] {
-    path()
-        .and_then(|path| WindowLayout::load(&path).ok())
-        .and_then(|layout| layout.bounds(id))
-        .unwrap_or(fallback)
-}
-
-#[cfg(windows)]
-pub(crate) fn remember(id: &str, bounds: [i32; 4]) {
-    // Each native window has its own thread. Serialize read/merge/write to preserve siblings.
-    static WRITER: std::sync::Mutex<()> = std::sync::Mutex::new(());
-    let _guard = WRITER
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if let Some(path) = path() {
-        let result = WindowLayout::load(&path).and_then(|mut layout| {
-            layout.record(id, bounds)?;
-            layout.save(&path)
-        });
-        if let Err(error) = result {
-            leprintln!("Could not save window layout: {error}", error = error);
-        }
+    #[test]
+    fn layout_save_uses_its_own_staging_path() -> io::Result<()> {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("window.json");
+        let in_progress = path.with_extension("layout.tmp");
+        std::fs::write(&in_progress, b"another writer")?;
+        let mut layout = WindowLayout::default();
+        layout.record("window", [0, 0, 640, 480])?;
+        layout.save(&path)?;
+        assert_eq!(std::fs::read(&in_progress)?, b"another writer");
+        assert_eq!(
+            WindowLayout::load(&path)?.bounds("window"),
+            Some([0, 0, 640, 480])
+        );
+        Ok(())
     }
 }

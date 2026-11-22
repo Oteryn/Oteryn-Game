@@ -91,6 +91,7 @@ async fn peer(
             },
             own_identity: [5; 16],
             entities: vec![world_spatial_entities::WorldSpatialEntity {
+                motion: None,
                 entity: EntityRef {
                     identity: [5; 16],
                     generation: 1,

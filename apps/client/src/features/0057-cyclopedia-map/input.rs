@@ -58,14 +58,15 @@ impl PlayLink {
     pub fn cyclopedia_map_request(&self, intent: Intent) {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
+    /// Shows the previous or next floor of the confirmed exploration result and region atlas.
+    pub fn cyclopedia_map_floor(&self, previous: bool) {
+        lock(&self.mailbox)
+            .properties
+            .cyclopedia_map
+            .select_floor(previous);
+    }
     pub fn cyclopedia_map_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.cyclopedia_map.open = true;
-        }
+        lock(&self.mailbox).properties.cyclopedia_map.open = true;
     }
     pub fn cyclopedia_map_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::cyclopedia_map::open_key(events) {

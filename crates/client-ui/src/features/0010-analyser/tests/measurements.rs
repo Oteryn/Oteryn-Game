@@ -177,7 +177,11 @@ fn impact_uses_wire_damage_types_healing_rates_gauges_and_charts() -> Result<(),
     };
     apply_at(&mut panel, &facts, 0);
     let text = super::view::impact_text(&panel, 60);
-    assert!(text.contains("DPS: 2.00 | HPS: 1.00"));
+    assert!(
+        text.lines()
+            .any(|line| line == "Session average DPS: 2.00 | HPS: 1.00")
+    );
+    assert!(text.lines().any(|line| line == "DPS: 0.00 | HPS: 0.00"));
     assert!(text.contains("Fire: 120"));
     assert!(text.contains("66.66%"));
     assert_eq!(panel.damage_chart.values(60), vec![120, 0]);
@@ -201,8 +205,12 @@ fn input_preserves_wire_sources_elements_rates_and_reset() -> Result<(), &'stati
     };
     apply_at(&mut panel, &facts, 0);
     let text = super::view::input_text(&panel, 60);
+    assert!(text.lines().any(|line| line == "Incoming DPS: 0.00"));
+    assert!(
+        text.lines()
+            .any(|line| line == "Session average Incoming DPS: 2.00")
+    );
     for expected in [
-        "Incoming DPS: 2.00",
         "Fire: 80",
         "Creature race #7: 60",
         "Creature (race unavailable): 30",
@@ -213,9 +221,43 @@ fn input_preserves_wire_sources_elements_rates_and_reset() -> Result<(), &'stati
         assert!(text.contains(expected), "{text}");
     }
     assert_eq!(panel.received_chart.values(60), vec![120, 0]);
+    for second in 1..=10 {
+        apply_at(&mut panel, &facts, second);
+    }
+    assert!(
+        super::view::input_text(&panel, 10)
+            .lines()
+            .any(|line| line == "Incoming DPS: 120.00")
+    );
     reset(&mut panel);
     assert!(panel.input_types.is_empty() && panel.input_sources.is_empty());
     assert_eq!(panel.received_chart.values(0), vec![0]);
     assert!(panel_text(&panel).contains("No damage received yet"));
     Ok(())
+}
+
+#[test]
+fn xp_chart_keeps_partial_reset_minute() {
+    let mut panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    panel.reset_at.fill(58);
+    apply_at(
+        &mut panel,
+        &[AnalyserFact::Experience {
+            raw: 11,
+            gained: 15,
+        }],
+        59,
+    );
+    let text = super::view::xp_text(&panel, 60);
+    for peak in [15, 11] {
+        assert!(
+            text.contains(&format!(
+                "█▁\r\nPer minute · oldest → newest · peak {peak} "
+            )),
+            "{text}"
+        );
+    }
 }

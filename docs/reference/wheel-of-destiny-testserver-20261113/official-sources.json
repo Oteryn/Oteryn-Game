@@ -1,0 +1,761 @@
+{
+  "schema_version": 1,
+  "observed_on": "2026-11-13",
+  "evidence_class": "CIPSOFT_OFFICIAL",
+  "scope": "Current Winter Update test-server public forum and official Wheel of Destiny Planner. These are source observations, not a claim of Oteryn implementation completeness.",
+  "provenance": {
+    "observation_method": "Public pages and controls read through the cloud browser after authoritative web search. No official script or image asset is redistributed.",
+    "date_cut": "2026-11-13; future revisions announced for 2026-11-16 are excluded.",
+    "primary_planner_url": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner&code=M1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA",
+    "planner_skillgrid_asset_url_observed_in_dom": "https://static.test.tibia.com/javascripts/wheelofdestiny/skillgrid.js?version=734b666892ae3b95d7a88354932112e2",
+    "planner_ui_asset_url_observed_in_dom": "https://static.test.tibia.com/javascripts/wheelofdestiny/wheelofdestinyplanner.min.js?version=1a6281e155065a67544409f4521fca24",
+    "asset_limit": "Asset URLs were observed as page metadata. Direct asset downloads were blocked; this record does not claim a fresh JavaScript source extraction."
+  },
+  "sources": [
+    {
+      "key": "official-news-9030",
+      "url": "https://www.tibia.com/news/?id=9030&subtopic=newsarchive",
+      "published_on": "2026-11-09",
+      "title": "Gems Polished Up!",
+      "retrieval": "Authoritative search index; main-site browser later presented security verification.",
+      "supported_facts": [
+        "Eight Gem Vessels replace the previous domain-based gem arrangement.",
+        "The four other former Vessel Resonance slices become Revelation Mastery worth 125 points each and exchange positions with middle-domain convictions.",
+        "Fixed vessel quality order is Lesser, Regular, Greater, Lesser, Greater, Regular, Greater, Greater.",
+        "Twenty new supreme mods are introduced."
+      ]
+    },
+    {
+      "key": "official-forum-summary",
+      "url": "https://www.tibia.com/forum/?action=thread&postid=39618238",
+      "post_id": 39618238,
+      "author": "Mirade",
+      "author_role": "Community Manager",
+      "posted_at": "2026-11-09 13:00:34 CET",
+      "retrieval": "Direct readable browser page.",
+      "supported_facts": [
+        "Each completed Gem Vessel slice grants one damage/healing and unlocks the next vessel.",
+        "A gem must match its vessel quality; smaller-quality gems do not fit larger-quality vessels.",
+        "Domain affinity and Vessel Resonance are removed.",
+        "Reshaping requires Premium status and a temple; costs depend on which mod is reshaped.",
+        "Upgrading a mod from Grade I toward Grade IV grants five Hit Points, five Mana and five Capacity per upgrade.",
+        "A fully upgraded mod grants one Promotion Point.",
+        "A mod uses its own highest unlocked grade independently of preceding mods.",
+        "Older presets remain importable, although manual adjustments can be needed."
+      ],
+      "reshape_costs": [
+        {
+          "mod_position_one_based": 1,
+          "gold": 125000,
+          "fragment_kind": "lesser",
+          "fragments": 1
+        },
+        {
+          "mod_position_one_based": 2,
+          "gold": 1000000,
+          "fragment_kind": "lesser",
+          "fragments": 2
+        },
+        {
+          "mod_position_one_based": 3,
+          "gold": 5000000,
+          "fragment_kind": "greater",
+          "fragments": 3
+        }
+      ]
+    },
+    {
+      "key": "official-forum-quality-faq",
+      "url": "https://www.tibia.com/forum/?action=thread&postid=39618316#post39618316",
+      "post_id": 39618316,
+      "author": "Mirade",
+      "posted_at": "2026-11-09 15:02:56 CET",
+      "retrieval": "Direct readable browser page.",
+      "supported_facts": [
+        "Gem and vessel qualities must match.",
+        "The reply reiterates the middle-conviction exchange without publishing stable slice indices."
+      ]
+    },
+    {
+      "key": "test-forum-gems",
+      "url": "https://www.test.tibia.com/forum/?action=thread&threadid=559",
+      "thread_id": 559,
+      "title": "Gem Atelier and Workshop",
+      "retrieval": "Direct readable browser page, including opening post and staff replies.",
+      "opening_post": {
+        "post_id": 60906,
+        "author": "Niadus",
+        "author_role": "Product Manager",
+        "posted_at": "2026-11-09 10:32:07 CET",
+        "last_edit_seen": "2026-11-10 14:18:20 CET by Fluffey"
+      },
+      "supported_facts": [
+        "Opening post corroborates eight-vessel redesign, independent mod grades, workshop stat bonuses and the new supreme mod families.",
+        "The stated resistance cap is thirty percent for each element independently.",
+        "Opening post described the resistance cap as work in progress, pending deployment notification."
+      ],
+      "resistance_cap_correction": {
+        "post_id": 60965,
+        "author": "Fluffey",
+        "author_role": "Product Manager",
+        "posted_at": "2026-11-10 14:21:27 CET",
+        "corrected_old_percent": 18,
+        "intended_percent": 30,
+        "deployment_status": "UNKNOWN: this staff correction proves the intended cap, not that it had already been deployed."
+      }
+    },
+    {
+      "key": "test-forum-discussion-61319",
+      "url": "https://www.test.tibia.com/forum/?action=thread&postid=61319#post61319",
+      "post_id": 61319,
+      "author": "Fluffey",
+      "author_role": "Product Manager",
+      "posted_at": "2026-11-11 16:22:16 CET",
+      "retrieval": "Direct readable browser page.",
+      "supported_facts": [
+        "Staff were still discussing proposed changes and did not provide concrete revisions in this reply."
+      ]
+    },
+    {
+      "key": "test-forum-future-61698",
+      "url": "https://www.test.tibia.com/forum/?action=thread&postid=61698#post61698",
+      "post_id": 61698,
+      "author": "Niadus",
+      "author_role": "Product Manager",
+      "posted_at": "2026-11-13 13:54:33 CET",
+      "retrieval": "Direct readable browser page.",
+      "status": "FUTURE_UNSETTLED",
+      "supported_facts": [
+        "A larger revision package was being prepared, probably for Monday 2026-11-16.",
+        "Staff mentioned unwanted supreme mod outcomes involving Shield Slam, Intense Wound Cleansing, Divine Barrage, Divine Dazzle and Lightning.",
+        "Further perk movement and retaining an old mod when reshaping were under consideration.",
+        "The reply does not establish final values or completed deployment for these proposed changes."
+      ]
+    },
+    {
+      "key": "test-forum-fixes",
+      "url": "https://www.test.tibia.com/forum/?action=thread&threadid=558",
+      "thread_id": 558,
+      "title": "Fixes and Changes",
+      "retrieval": "All thirteen posts visible at the observation were inspected.",
+      "gem_section_post_id": 60937,
+      "supported_facts": [
+        "The Gem Atelier and Workshop section contained its heading but no deployed-change details at this observation.",
+        "This source did not resolve the resistance-cap deployment question."
+      ]
+    }
+  ],
+  "planner_observations": {
+    "grade_model": {
+      "classification": "FACT",
+      "observed_grade": "IV",
+      "tooltip_meaning": "The official planner displays all mods at their maximum Grade IV.",
+      "grade_image_source": "https://static.test.tibia.com/images/community/wheelofdestiny/icon_modgrade4.png",
+      "control_check": "Clicking the displayed grade image did not change its grade or the selected values.",
+      "consequence": "An imported allocation and mod-ID code does not reproduce the native character's complete Fragment Workshop grade state.",
+      "lower_grades": {
+        "classification": "QUALIFIED_BY_SEPARATE_CURRENT_CLIENT_DATA",
+        "statement": "The planner itself only shows Grade IV. See existing-mod-grades.json for all four current Mastery values and mixed-Mana tables. Mastery category/grade lookup is direct; the Monk row name is a high-confidence inference from its unique Grade IV150 and independent official planner observation."
+      }
+    },
+    "native_preset_round_trip": {
+      "code": "M1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA",
+      "vocation": "Monk",
+      "promotion_points_allocated": 700,
+      "decoded_payload_bytes": 60,
+      "decoded_allocation_bytes": 36,
+      "decoded_gem_bytes": 24,
+      "gem_entries": [
+        {
+          "vessel_one_based": 1,
+          "basic_mod_ids": [
+            39
+          ],
+          "supreme_mod_id": null
+        },
+        {
+          "vessel_one_based": 3,
+          "basic_mod_ids": [
+            33,
+            28
+          ],
+          "supreme_mod_id": 92
+        }
+      ],
+      "direct_selected_third_vessel_dom": {
+        "basic_first": {
+          "id": 33,
+          "mana": 150,
+          "fire_resistance_percent": 1.5
+        },
+        "basic_second": {
+          "id": 28,
+          "life_drain_resistance_percent": 4.5
+        },
+        "supreme": {
+          "id": 92,
+          "revelation": "Spiritual Outburst",
+          "mastery_points": 225
+        }
+      },
+      "summary_at_planner_grade_iv": {
+        "gem_vessel_count": 3,
+        "conviction_revelation_mastery": {
+          "Ascetic": 125
+        },
+        "augmented_spells": {
+          "Chained Penance": 1,
+          "Thousand Fist Blows": 2
+        },
+        "revelation_stages": {
+          "Ascetic": 2,
+          "Spiritual Outburst": 1,
+          "Avatar of Balance": 0,
+          "Gift of Life": 0
+        },
+        "revelation_damage_and_healing": 13,
+        "vessel_damage_and_healing": 3,
+        "vessel_hit_points": 150,
+        "vessel_mana": 150,
+        "vessel_energy_resistance_percent": 1.5,
+        "vessel_fire_resistance_percent": 1.5,
+        "vessel_life_drain_resistance_percent": 4.5,
+        "vessel_spiritual_outburst_mastery": 225
+      },
+      "qualification": "The native client separately showed HP100 and Energy1.0 for its lesser gem. The planner assumes Grade IV; its HP150/Energy1.5 must not be called an exact reproduction of the native Workshop state."
+    },
+    "mastery_supreme_mods_grade_iv": [
+      {
+        "id": 5,
+        "vocation": "all",
+        "revelation": "Gift of Life",
+        "points": 225
+      },
+      {
+        "id": 21,
+        "vocation": "Knight",
+        "revelation": "Avatar of Steel",
+        "points": 225
+      },
+      {
+        "id": 22,
+        "vocation": "Knight",
+        "revelation": "Executioner's Throw",
+        "points": 225
+      },
+      {
+        "id": 23,
+        "vocation": "Knight",
+        "revelation": "Combat Mastery",
+        "points": 225
+      },
+      {
+        "id": 39,
+        "vocation": "Paladin",
+        "revelation": "Avatar of Light",
+        "points": 225
+      },
+      {
+        "id": 40,
+        "vocation": "Paladin",
+        "revelation": "Divine Grenade",
+        "points": 225
+      },
+      {
+        "id": 41,
+        "vocation": "Paladin",
+        "revelation": "Divine Empowerment",
+        "points": 225
+      },
+      {
+        "id": 56,
+        "vocation": "Sorcerer",
+        "revelation": "Avatar of Storm",
+        "points": 225
+      },
+      {
+        "id": 57,
+        "vocation": "Sorcerer",
+        "revelation": "Beam Mastery",
+        "points": 225
+      },
+      {
+        "id": 58,
+        "vocation": "Sorcerer",
+        "revelation": "Lord of Destruction",
+        "points": 225
+      },
+      {
+        "id": 73,
+        "vocation": "Druid",
+        "revelation": "Avatar of Nature",
+        "points": 225
+      },
+      {
+        "id": 74,
+        "vocation": "Druid",
+        "revelation": "Blessing of the Grove",
+        "points": 225
+      },
+      {
+        "id": 75,
+        "vocation": "Druid",
+        "revelation": "Twin Bursts",
+        "points": 225
+      },
+      {
+        "id": 91,
+        "vocation": "Monk",
+        "revelation": "Avatar of Balance",
+        "points": 225
+      },
+      {
+        "id": 92,
+        "vocation": "Monk",
+        "revelation": "Spiritual Outburst",
+        "points": 225
+      },
+      {
+        "id": 93,
+        "vocation": "Monk",
+        "revelation": "Ascetic",
+        "points": 225
+      }
+    ],
+    "monk_mixed_basic_mods_grade_iv": [
+      {
+        "id": 33,
+        "mana": 150,
+        "resistance": "Fire",
+        "resistance_percent": 1.5
+      },
+      {
+        "id": 34,
+        "mana": 150,
+        "resistance": "Energy",
+        "resistance_percent": 1.5
+      },
+      {
+        "id": 35,
+        "mana": 150,
+        "resistance": "Earth",
+        "resistance_percent": 1.5
+      },
+      {
+        "id": 36,
+        "mana": 150,
+        "resistance": "Ice",
+        "resistance_percent": 1.5
+      }
+    ],
+    "new_supreme_mods_grade_iv": [
+      {
+        "id": 94,
+        "vocation": "Knight",
+        "spell": "Shield Slam",
+        "base_damage_percent": 12
+      },
+      {
+        "id": 95,
+        "vocation": "Knight",
+        "spell": "Shield Slam",
+        "critical_extra_damage_percent": 18
+      },
+      {
+        "id": 96,
+        "vocation": "Knight",
+        "spell": "Intense Wound Cleansing",
+        "base_healing_percent": 30
+      },
+      {
+        "id": 97,
+        "vocation": "Knight",
+        "spell": "Intense Wound Cleansing",
+        "cooldown_reduction_seconds": 20,
+        "momentum_percent": 1
+      },
+      {
+        "id": 98,
+        "vocation": "Paladin",
+        "spell": "Divine Barrage",
+        "base_damage_percent": 7.5
+      },
+      {
+        "id": 99,
+        "vocation": "Paladin",
+        "spell": "Divine Barrage",
+        "critical_extra_damage_percent": 18
+      },
+      {
+        "id": 100,
+        "vocation": "Paladin",
+        "spell": "Ethereal Barrage",
+        "base_damage_percent": 7.5
+      },
+      {
+        "id": 101,
+        "vocation": "Paladin",
+        "spell": "Ethereal Barrage",
+        "critical_extra_damage_percent": 18
+      },
+      {
+        "id": 102,
+        "vocation": "Sorcerer",
+        "spell": "Death Echo",
+        "base_damage_percent": 7.5
+      },
+      {
+        "id": 103,
+        "vocation": "Sorcerer",
+        "spell": "Death Echo",
+        "critical_extra_damage_percent": 18
+      },
+      {
+        "id": 104,
+        "vocation": "Sorcerer",
+        "spell": "Lightning",
+        "base_damage_percent": 15
+      },
+      {
+        "id": 105,
+        "vocation": "Sorcerer",
+        "spell": "Lightning",
+        "critical_extra_damage_percent": 22.5
+      },
+      {
+        "id": 106,
+        "vocation": "Druid",
+        "spell": "Forked Glacier",
+        "base_damage_percent": 7.5
+      },
+      {
+        "id": 107,
+        "vocation": "Druid",
+        "spell": "Forked Glacier",
+        "critical_extra_damage_percent": 18
+      },
+      {
+        "id": 108,
+        "vocation": "Druid",
+        "spell": "Forked Thorns",
+        "base_damage_percent": 7.5
+      },
+      {
+        "id": 109,
+        "vocation": "Druid",
+        "spell": "Forked Thorns",
+        "critical_extra_damage_percent": 18
+      },
+      {
+        "id": 110,
+        "vocation": "Monk",
+        "spell": "Chained Penance",
+        "base_damage_percent": 7.5
+      },
+      {
+        "id": 111,
+        "vocation": "Monk",
+        "spell": "Chained Penance",
+        "critical_extra_damage_percent": 18
+      },
+      {
+        "id": 112,
+        "vocation": "Monk",
+        "spell": "Thousand Fist Blows",
+        "base_damage_percent": 7.5
+      },
+      {
+        "id": 113,
+        "vocation": "Monk",
+        "spell": "Thousand Fist Blows",
+        "critical_extra_damage_percent": 18
+      }
+    ],
+    "new_mods_cross_reference": "new-supreme-mods.json retains separate installed-client table evidence for the four-grade numeric arrays.",
+    "topology": {
+      "index_frame": "All slot numbers here are ONE-BASED state_slot / decoded allocation-byte positions. Subtract one for Oteryn runtime array indices.",
+      "full_allocation_code": "M1OzEtJWXaiWkp3t4pQMLIyDsFQkJEToBl_-MAAA",
+      "full_allocation_url": "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner&code=M1OzEtJWXaiWkp3t4pQMLIyDsFQkJEToBl_-MAAA",
+      "full_allocation_observed_points": 4000,
+      "full_allocation_observed_gem_vessels": 8,
+      "full_allocation_observed_mastery_per_domain": 125,
+      "vessel_quality_order": [
+        "Lesser",
+        "Regular",
+        "Greater",
+        "Lesser",
+        "Greater",
+        "Regular",
+        "Greater",
+        "Greater"
+      ],
+      "affected_slices_capacity": 100,
+      "changed_slot_pairs": [
+        [
+          3,
+          8
+        ],
+        [
+          18,
+          11
+        ],
+        [
+          19,
+          26
+        ],
+        [
+          34,
+          29
+        ]
+      ],
+      "proof_method": "For Monk, select each visible slice, read its perk/capacity, subtract one point through the UI, capture the displayed export code, restore one point. Raw-DEFLATE/Base64URL decoding shows exactly one changed allocation byte, 100 to 99. All other vocations were then checked at the same visible slice positions.",
+      "export_delta_checks": [
+        {
+          "slot_one_based": 8,
+          "perk": "Revelation Mastery Gift of Life +125",
+          "after_minus_one_code": "M1OzEtJWXaiWnJ3t4p01K8jYy8UyAkkOMNkgDJ_scBAA"
+        },
+        {
+          "slot_one_based": 11,
+          "perk": "Revelation Mastery Spiritual Outburst +125",
+          "after_minus_one_code": "M1OzEtJWXaiWkp3t7JQMLIyDsFQoJEwBJA4j8OAAA"
+        },
+        {
+          "slot_one_based": 26,
+          "perk": "Revelation Mastery Ascetic +125",
+          "after_minus_one_code": "M1OzEtJWXaiWkp3t4pQMLIyDsFQk5LBomcAMv-xwEA"
+        },
+        {
+          "slot_one_based": 29,
+          "perk": "Revelation Mastery Avatar of Balance +125",
+          "after_minus_one_code": "M1OzEtJWXaiWkp3t4pQMLIyDsFQoJEkkESQNn_OAAA"
+        },
+        {
+          "slot_one_based": 3,
+          "perk": "Augmented Mass Spirit Mend",
+          "after_minus_one_code": "M1OzEtOWXaiWkp3t4pQMLIyDsFQkJEgBJA4j8OAAA"
+        },
+        {
+          "slot_one_based": 18,
+          "perk": "Augmented Mystic Repulse",
+          "after_minus_one_code": "M1OzEtJWXaiWkp3t4pQMLIyDsZTKZARE6AZf_jAAA"
+        },
+        {
+          "slot_one_based": 19,
+          "perk": "Augmented Mystic Repulse",
+          "after_minus_one_code": "M1OzEtJWXaiWkp3t4pQMLIyDslGUxCRE6AZf_jAAA"
+        },
+        {
+          "slot_one_based": 34,
+          "perk": "Augmented Flurry of Blows",
+          "after_minus_one_code": "M1OzEtJWXaiWkp3t4pQMLIyDsFQkJEgBLJ0078xwEA"
+        }
+      ],
+      "cross_vocation_observations": [
+        {
+          "vocation": "Knight",
+          "mastery_slots_8_11_26_29": [
+            "Gift of Life",
+            "Executioner's Throw",
+            "Combat Mastery",
+            "Avatar of Steel"
+          ],
+          "moved_convictions_slots_3_18_19_34": [
+            "Shield Slam",
+            "Groundshaker",
+            "Groundshaker",
+            "Intense Wound Cleansing"
+          ]
+        },
+        {
+          "vocation": "Paladin",
+          "mastery_slots_8_11_26_29": [
+            "Gift of Life",
+            "Divine Grenade",
+            "Divine Empowerment",
+            "Avatar of Light"
+          ],
+          "moved_convictions_slots_3_18_19_34": [
+            "Strong Ethereal Spear",
+            "Divine Dazzle",
+            "Divine Dazzle",
+            "Divine Barrage"
+          ]
+        },
+        {
+          "vocation": "Druid",
+          "mastery_slots_8_11_26_29": [
+            "Gift of Life",
+            "Blessing of the Grove",
+            "Twin Bursts",
+            "Avatar of Nature"
+          ],
+          "moved_convictions_slots_3_18_19_34": [
+            "Mass Healing",
+            "Heal Friend",
+            "Heal Friend",
+            "Terra Wave"
+          ]
+        },
+        {
+          "vocation": "Sorcerer",
+          "mastery_slots_8_11_26_29": [
+            "Gift of Life",
+            "Beam Mastery",
+            "Lord of Destruction",
+            "Avatar of Storm"
+          ],
+          "moved_convictions_slots_3_18_19_34": [
+            "Special Spells",
+            "Death Echo",
+            "Death Echo",
+            "Energy Wave"
+          ]
+        },
+        {
+          "vocation": "Monk",
+          "mastery_slots_8_11_26_29": [
+            "Gift of Life",
+            "Spiritual Outburst",
+            "Ascetic",
+            "Avatar of Balance"
+          ],
+          "moved_convictions_slots_3_18_19_34": [
+            "Mass Spirit Mend",
+            "Mystic Repulse",
+            "Mystic Repulse",
+            "Flurry of Blows"
+          ]
+        }
+      ],
+      "remaining_vessel_slots": {
+        "classification": "DERIVED",
+        "state_slots_one_based": [
+          5,
+          7,
+          10,
+          15,
+          22,
+          27,
+          30,
+          32
+        ],
+        "basis": "Legacy catalogue twelve resonance slots minus the four displaced slots 3,18,19,34, together with official eight-vessel redesign and full-planner count eight.",
+        "limitation": "The remaining eight vessels were not individually identified by export-byte delta in this observation."
+      },
+      "capacity_limit": "All eight affected slices were directly observed at 100/100 for all five vocations. A separate per-slice audit of every other capacity was not performed."
+    },
+    "retained_override_comparison_grade_iv": {
+      "qualification": "Direct current official Grade IV menu descriptions compared with executed Oteryn projection. These establish value/type differences, not independently measured authoritative server combat arithmetic.",
+      "rows": [
+        {
+          "vocation": "Monk",
+          "namespace": "basic",
+          "id": 48,
+          "reference": {
+            "capacity": 700
+          },
+          "oteryn": {
+            "capacity": 750
+          }
+        },
+        {
+          "vocation": "Monk",
+          "namespace": "supreme",
+          "id": 82,
+          "spell": "Flurry of Blows",
+          "reference": {
+            "base_damage_percent": 9.75
+          },
+          "oteryn": {
+            "critical_extra_damage_percent": 9
+          }
+        },
+        {
+          "vocation": "Monk",
+          "namespace": "supreme",
+          "id": 83,
+          "spell": "Flurry of Blows",
+          "reference": {
+            "critical_extra_damage_percent": 12
+          },
+          "oteryn": {
+            "base_damage_percent": 12
+          }
+        },
+        {
+          "vocation": "Monk",
+          "namespace": "supreme",
+          "id": 86,
+          "spell": "Sweeping Takedown",
+          "reference": {
+            "base_damage_percent": 7.5
+          },
+          "oteryn": {
+            "base_damage_percent": 12
+          }
+        },
+        {
+          "vocation": "Paladin",
+          "namespace": "supreme",
+          "id": 29,
+          "spell": "Divine Caldera",
+          "reference": {
+            "critical_extra_damage_percent": 12
+          },
+          "oteryn": {
+            "critical_extra_damage_percent": 18
+          }
+        },
+        {
+          "vocation": "Druid",
+          "namespace": "supreme",
+          "id": 60,
+          "spell": "Nature’s Embrace",
+          "reference": {
+            "cooldown_seconds": -10,
+            "momentum_percent": 1
+          },
+          "oteryn": {
+            "cooldown_seconds": -5,
+            "momentum_percent": 1
+          }
+        }
+      ],
+      "urls": [
+        "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner&code=M1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA",
+        "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner&code=P1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA",
+        "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner&code=D1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA"
+      ],
+      "identity_correction": "Supreme60 is Nature’s Embrace. Supreme71 is Heal Friend, Grade IV base healing7.5%; no Heal Friend cooldown modifier appeared in the current menu.",
+      "lower_grades": "Not separately qualified in this bounded menu check. Current installed-client crosschecks already retain all four values for82/83."
+    }
+  },
+  "unresolved": [
+    {
+      "topic": "Resistance cap deployment",
+      "status": "UNKNOWN",
+      "needed": "A dated staff deployment notice or controlled current test-server resistance observation.",
+      "impact": "Thirty percent per element is an intended official rule; this packet does not prove current server enforcement."
+    },
+    {
+      "topic": "Fully upgraded mod automatic revelation progress",
+      "status": "UNKNOWN",
+      "needed": "A controlled comparison at a revelation threshold before/after one unrelated Grade IV unlock, separating spendable Promotion Points from automatic per-domain progress.",
+      "impact": "Official plus-one Promotion Point wording does not prove donor behavior that also adds one progress point to all four revelation domains."
+    },
+    {
+      "topic": "Current lower grades of existing Mastery and Monk mixed Mana mods",
+      "status": "RESOLVED_WITH_EXPLICIT_VOCATION_ROW_INFERENCE",
+      "needed": "Only a separately named native Monk enum-to-row mapping remains unextracted; the current Grade IV UI uniquely identifies row4.",
+      "impact": "All Mastery grades are directly qualified in current client data. Mixed Mana arrays are current static facts; identifying row4 as Monk is explicitly high-confidence inference from independent official UI.",
+      "resolved_by": "existing-mod-grades.json"
+    },
+    {
+      "topic": "Monday revision package",
+      "status": "FUTURE_UNSETTLED",
+      "needed": "CipSoft final announcement and deployed client/server build after 2026-11-13.",
+      "impact": "Do not implement player proposals or claim parity with final Winter Update from the current test snapshot."
+    }
+  ]
+}

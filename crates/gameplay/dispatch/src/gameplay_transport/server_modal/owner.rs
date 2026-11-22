@@ -20,6 +20,7 @@ struct Entry {
     submitted: Option<Answer>,
     /// Capability 490: dialog replies carry their input block on this connection.
     input_replies: bool,
+    defaults: bool,
     /// The input the pending dialog asks for.
     input: Option<DialogInput>,
     /// The value and "don't show again" choice of the last checked 490 answer.
@@ -33,10 +34,14 @@ pub(super) type AnswerInput = (Option<InputValue>, bool);
 impl Entry {
     /// The pending dialog as this connection receives it.
     fn dialog_reply(&self, dialog: &Dialog) -> Option<Vec<u8>> {
+        let mut dialog = dialog.clone();
+        if !self.defaults {
+            dialog.default_button = None;
+        }
         if self.input_replies {
-            encode_dialog_with_input(dialog, self.input.as_ref()).ok()
+            encode_dialog_with_input(&dialog, self.input.as_ref()).ok()
         } else {
-            Reply::Dialog(dialog.clone()).encode().ok()
+            Reply::Dialog(dialog).encode().ok()
         }
     }
 }
@@ -120,6 +125,18 @@ impl ModalHub {
             return None;
         }
         state.entries.entry(root).or_default().input_replies = true;
+        Some(())
+    }
+
+    pub(in crate::gameplay_transport) fn select_defaults(&self, root: Root) -> Option<()> {
+        if root.1 == 0 {
+            return None;
+        }
+        let mut state = self.state.lock().ok()?;
+        if !state.entries.contains_key(&root) && state.entries.len() >= 256 {
+            return None;
+        }
+        state.entries.entry(root).or_default().defaults = true;
         Some(())
     }
 

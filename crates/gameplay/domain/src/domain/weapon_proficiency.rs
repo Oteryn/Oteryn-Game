@@ -746,7 +746,7 @@ pub fn proficiency_modification_active(
     row: &ProficiencyModifiedPerk,
 ) -> bool {
     proficiency_modification_slot_unlocked(shape.track_shape(), progress, slot)
-        && row.level < shape.track_shape().perk_levels()
+        && row.level < shape.track_shape().unlocked_perk_levels(progress)
         && selections
             .get(usize::from(row.level))
             .is_some_and(Option::is_some)
@@ -916,7 +916,11 @@ pub fn plan_proficiency_modification(
                 return Err(R::SlotOccupied);
             }
             let selected = input.selected_identity.filter(|_| {
-                level < track.shape.track_shape().perk_levels()
+                level
+                    < track
+                        .shape
+                        .track_shape()
+                        .unlocked_perk_levels(track.progress)
                     && track
                         .selections
                         .get(usize::from(level))
@@ -1863,6 +1867,48 @@ mod modification_tests {
         sorted.sort_unstable();
         assert_eq!(sorted, vec![0, 1, 2, 3]);
         assert!(draw_by_weight(&pool, |_, _| false, 5, &a).is_none());
+    }
+
+    #[test]
+    fn retained_locked_modification_is_inactive_after_threshold_raise() {
+        let progress = 2_500_000;
+        let selections = [Some(0); 6];
+        let row = perk("r1", 5, 1, 1);
+        for (class, unlocked, active) in [
+            (ProficiencyThresholdClass::Crossbow, 6, true),
+            (ProficiencyThresholdClass::Standard, 5, false),
+        ] {
+            let shape = ProficiencySelectionShape::new(class, &[1; 6]).expect("shape");
+            assert_eq!(shape.track_shape().unlocked_perk_levels(progress), unlocked);
+            assert_eq!(
+                proficiency_modification_active(shape, progress, &selections, 1, &row),
+                active
+            );
+        }
+    }
+
+    #[test]
+    fn modify_refuses_retained_locked_selection_after_threshold_raise() {
+        let active = shaping("r1", 4);
+        let selections = [Some(0); 6];
+        for (class, admitted) in [
+            (ProficiencyThresholdClass::Crossbow, true),
+            (ProficiencyThresholdClass::Standard, false),
+        ] {
+            let mut track = track(2_500_000, [None; 2]);
+            track.shape = ProficiencySelectionShape::new(class, &[1; 6]).expect("shape");
+            track.selections = &selections;
+            let result = plan_proficiency_modification(&input(
+                Command::Modify { level: 5 },
+                &active,
+                Some(track),
+            ));
+            if admitted {
+                assert!(result.is_ok());
+            } else {
+                assert_eq!(result, Err(R::NoSelection));
+            }
+        }
     }
 
     #[test]

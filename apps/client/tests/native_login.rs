@@ -29,7 +29,8 @@ fn native_login_settings_reject_secrets_in_endpoints() {
 
 #[test]
 fn native_login_round_trip_pending_edit_and_retry() -> Result<(), Box<dyn std::error::Error>> {
-    let directory = std::env::temp_dir().join(format!("oteryn-c01-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let directory = fixture.path().join("oteryn-c01");
     std::fs::create_dir_all(&directory)?;
     let certificate = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
     let root = directory.join("root.pem");
@@ -85,6 +86,5 @@ fn native_login_round_trip_pending_edit_and_retry() -> Result<(), Box<dyn std::e
     std::fs::write(&path, b"{bad-json")?;
     assert!(LoginSettings::load(&path).is_err());
     assert!(LoginSettings::default().save(&path).is_err());
-    std::fs::remove_dir_all(directory)?;
     Ok(())
 }

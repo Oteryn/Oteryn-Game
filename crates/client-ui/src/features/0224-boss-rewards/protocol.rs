@@ -65,7 +65,13 @@ pub fn apply_result(panel: &mut BossRewardsPanel, response: &BossRewardsResponse
             panel.browse = Some(value.clone());
             value.status
         }
-        BossRewardsReply::Collect(value) => value.status,
+        BossRewardsReply::Collect(value) => {
+            // The browsed rows no longer match the server once items moved or none remain.
+            if value.moved > 0 || value.remaining == 0 {
+                panel.browse = None;
+            }
+            value.status
+        }
     };
     panel.feedback = match status {
         boss_rewards::BossRewardStatus::Ok => None,

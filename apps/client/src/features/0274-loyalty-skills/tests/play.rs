@@ -53,7 +53,8 @@ fn skills_widget_uses_server_progress_and_saves_visible_order() -> Result<(), Er
     assert_eq!(widget.rows[0].trained, 20);
     assert_eq!(widget.rows[0].loyalty, Some(23));
     assert_eq!(widget.rows[0].current, Some(24));
-    let path = std::env::temp_dir().join(format!("clientgap-skills-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("clientgap-skills.json");
     let mut settings = crate::play::SettingsState::new(Some(path.clone()));
     {
         let mut mailbox = lock(&link.mailbox);

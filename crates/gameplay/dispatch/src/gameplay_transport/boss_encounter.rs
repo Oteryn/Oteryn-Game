@@ -281,4 +281,61 @@ mod slot_loot_tests {
         assert_eq!(slot_bonus_rolls(250, death, &[2; 16]), 2);
         assert_eq!(slot_bonus_rolls(300, death, &[2; 16]), 3);
     }
+
+    #[test]
+    fn a_slot_bonus_plan_above_forty_eight_corpse_entries_is_refused_whole()
+    -> Result<(), &'static str> {
+        use crate::combat::{
+            CombatResourceLimitError, GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX,
+            check_corpse_container_capacity,
+        };
+        use oteryn_gameplay_items::loot_plan::{
+            LootDefinitionRef, LootPlanDeathKey, LootSelectionAlgorithm, LootTableDefinition,
+            LootTableEntry, plan_creature_loot,
+        };
+        // Mirrors settle_loot: the direct corpse entries of the whole plan are checked
+        // before any MINT. 48 certain equipment drops fill a corpse exactly.
+        let reference = LootDefinitionRef::new("Loot", "oteryn:loot.boss", "definition-r1");
+        let mut table = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
+            entries: (0..GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX)
+                .map(|n| LootTableEntry {
+                    item: LootDefinitionRef::new(
+                        "Item",
+                        format!("oteryn:item.equipment{n}"),
+                        "definition-r1",
+                    ),
+                    min_count: 1,
+                    max_count: 1,
+                    probability_ppm: Some(1_000_000),
+                    details: Default::default(),
+                })
+                .collect(),
+        };
+        let death = [9; 16];
+        let direct = |table: &LootTableDefinition| {
+            plan_creature_loot(
+                LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
+                &reference,
+                table,
+            )
+            .map(|plan| {
+                plan.entries
+                    .iter()
+                    .filter(|entry| entry.parent.is_none())
+                    .count()
+            })
+        };
+        assert_eq!(direct(&table), Ok(48));
+        assert_eq!(check_corpse_container_capacity(48), Ok(()));
+        // The bosstiary bonus rolls every equipment entry again: 96 entries, refused whole.
+        super::apply_slot_loot_bonus(&mut table, 100, death, |_| true);
+        let entries = direct(&table).map_err(|_| "bounded plan")?;
+        assert!(entries > GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, "{entries}");
+        assert_eq!(
+            check_corpse_container_capacity(entries),
+            Err(CombatResourceLimitError::CorpseContainerEntriesExceeded)
+        );
+        Ok(())
+    }
 }

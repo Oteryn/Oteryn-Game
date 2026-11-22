@@ -14,13 +14,8 @@ impl PlayLink {
         lock(&self.mailbox).vip.clone()
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 #[derive(Default)]
 pub(in crate::play) struct ManagementView {
     pub entries: Vec<Row>,
@@ -28,12 +23,12 @@ pub(in crate::play) struct ManagementView {
     pub consents: Vec<Row>,
     pub next_entry: u64,
 }
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) struct Row {
     pub number: u64,
     pub label: String,
 }
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn management_view(
     view: Option<&str>,
 ) -> Result<ManagementView, serde_json::Error> {

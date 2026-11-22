@@ -48,6 +48,7 @@ struct Tile {
 }
 
 pub struct MonsterMap {
+    cells: NativeEntryMovementCells,
     valid: bool,
     scope: crate::foundation::RuntimeScopeRefV1,
     generation: crate::foundation::ScopeOwnershipGeneration,
@@ -331,9 +332,21 @@ impl MonsterMap {
             return Err(CarrierError::WrongScope);
         }
         let before = runtime.read_actor_position(actor)?;
-        runtime
+        let moved = runtime
             .borrow_movement_position()
-            .commit_creature_relocation(actor, before, destination)
+            .commit_creature_relocation(actor, before, destination)?;
+        special_movement::step_in(runtime, &self.cells, actor, moved.position());
+        if let NativeMovementCollisionIndex::Bundle(collision) = self.cells.index() {
+            collision
+                .map()
+                .facts
+                .record_monster_step(crate::map::facts::MonsterStep {
+                    actor,
+                    from: before.position(),
+                    to: moved.position(),
+                });
+        }
+        Ok(moved)
     }
 }
 impl speed::GroundSpeedSource for MonsterMap {
@@ -387,6 +400,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
             read_chunks: BTreeSet::new(),
             source_observed_seconds: None,
             view: MonsterMap {
+                cells: room.movement_cells().clone(),
                 valid: true,
                 scope: binding.runtime_scope(),
                 generation: binding.scope_generation(),

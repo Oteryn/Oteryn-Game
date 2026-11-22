@@ -44,6 +44,7 @@ pub struct CreatureCommitState {
     damage: DamageReceipts,
     pub(super) conditions: ActorConditionState,
     pub(super) field_entry_revision: Option<u64>,
+    pub(super) field_entry: Option<super::runtime_actor_periodic::CreatureFieldEntry>,
 }
 impl std::ops::Deref for CreatureCommitState {
     type Target = DamageReceipts;
@@ -175,6 +176,24 @@ impl ActorConditionState {
         Ok(())
     }
 
+    pub(super) fn remove_type_at(
+        &mut self,
+        kind: ConditionType,
+        now: u64,
+    ) -> Result<(), CarrierError> {
+        if now < self.at || !self.store.accepts_time(now) {
+            return Err(CarrierError::StaleAttackerSequence);
+        }
+        let revision = self
+            .revision
+            .checked_add(1)
+            .ok_or(CarrierError::PlanConflict)?;
+        self.store.remove_type(kind);
+        self.revision = revision;
+        self.at = now;
+        self.receipt = None;
+        Ok(())
+    }
     pub(super) fn die(&mut self) {
         self.store.clear_on_death();
         self.receipt = None;
@@ -544,6 +563,36 @@ impl ChannelRuntimeV1 {
         if now.get() < current.at {
             return Err(ConditionOwnerError::TimeMismatch);
         }
+        if let Slot::CreatureOccupied {
+            companion: Some(companion),
+            ..
+        } = &self.carrier.slots[index]
+        {
+            if !companion.conditions.accepts_time(now.get())
+                || !current.store.accepts_time(now.get())
+            {
+                return Err(ConditionOwnerError::TimeMismatch);
+            }
+            use oteryn_gameplay_domain::domain::condition::ConflictKey;
+            let native = current.store.active_at(ConflictKey::Speed, now.get());
+            let companion_speed = companion
+                .conditions
+                .active_at(ConflictKey::Speed, now.get());
+            let delta = match (native, companion_speed) {
+                (Some(a), Some(b))
+                    if a.definition() == b.definition()
+                        && a.provenance() == b.provenance()
+                        && current.store.active_speed_delta(now.get())
+                            == companion.conditions.active_speed_delta(now.get()) =>
+                {
+                    current.store.active_speed_delta(now.get())
+                }
+                (Some(_), Some(_)) => return Err(ConditionOwnerError::FactsMismatch),
+                (Some(_), None) => current.store.active_speed_delta(now.get()),
+                (None, _) => companion.conditions.active_speed_delta(now.get()),
+            };
+            return Ok(delta.saturating_add(i64::from(companion.creation_speed_delta)));
+        }
         let discovery = match &self.carrier.slots[index] {
             Slot::Occupied { lifecycle, .. } => lifecycle.discovery_speed,
             _ => 0,
@@ -562,6 +611,8 @@ impl ChannelRuntimeV1 {
         bonus: u16,
     ) -> Result<(), ConditionOwnerError> {
         let index = self.condition_index(actor, Some(session))?;
+        self.assert_actor_spell_unreserved(actor)
+            .map_err(ConditionOwnerError::Actor)?;
         let Slot::Occupied { lifecycle, .. } = &mut self.carrier.slots[index] else {
             return Err(ConditionOwnerError::FactsMismatch);
         };
@@ -953,32 +1004,33 @@ impl ChannelRuntimeV1 {
         let index = self.condition_index(actor, None).map_err(|_| {
             oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration
         })?;
-        let current = self.condition_state(index);
-        if now < current.at {
-            return Err(
-                oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleAttackerSequence,
-            );
+        if let Slot::CreatureOccupied {
+            companion: Some(companion),
+            ..
+        } = &self.carrier.slots[index]
+            && !companion.conditions.accepts_time(now)
+        {
+            return Err(CarrierError::StaleAttackerSequence);
         }
-        let revision = current
-            .revision
-            .checked_add(1)
-            .ok_or(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)?;
-        let mut store = current.store.clone();
-        store.remove_type(ConditionType::Paralysis);
-        Ok((
-            index,
-            ActorConditionState {
-                store,
-                revision,
-                at: now,
-                receipt: None,
-            },
-        ))
+        let mut next = self.condition_state(index).clone();
+        next.remove_type_at(ConditionType::Paralysis, now)?;
+        Ok((index, next))
     }
+
     fn publish_creature_condition_removal(&mut self, index: usize, next: ActorConditionState) {
         // Exact native positive-HP heal methods never retire or replace physical slots.
-        if let Slot::CreatureOccupied { committed, .. } = &mut self.carrier.slots[index] {
+        if let Slot::CreatureOccupied {
+            committed,
+            companion,
+            spell_combat,
+            ..
+        } = &mut self.carrier.slots[index]
+        {
             committed.conditions = next;
+            if let Some(companion) = companion {
+                companion.conditions.remove_type(ConditionType::Paralysis);
+            }
+            spell_combat.paralysed = false;
         } else {
             unreachable!("native positive HP heal preserves preflighted slot")
         }
@@ -1173,7 +1225,7 @@ impl ChannelRuntimeV1 {
         actor: ExactActorRef,
     ) -> Result<(bool, bool, u64), CarrierError> {
         self.owner_fence()?;
-        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let index = self.carrier.current_slot_index(&self.continuity, actor.0)?;
         Ok(match &self.carrier.slots[index] {
             Slot::Occupied { lifecycle, .. } => (
                 lifecycle.staff_ghost,

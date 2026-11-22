@@ -33,6 +33,13 @@ pub(super) enum Extra {
 }
 
 impl Extra {
+    pub(super) fn nested_outputs(&self) -> i64 {
+        match self {
+            Self::Trade(_) => 0,
+            Self::Package(selection) => selection.children.len() as i64,
+        }
+    }
+
     pub(super) fn channel(&self) -> ChannelId {
         match self {
             Self::Trade(s) => s.origin_channel,
@@ -64,7 +71,11 @@ impl Extra {
                 if source.item_id == 23721 && request.cause.side == NpcTradeSide::Sell {
                     return Err(NpcTradeError::RequirementNotMet);
                 }
-                let price=match request.cause.side {NpcTradeSide::Buy=>source.buy,NpcTradeSide::Sell=>source.sell,NpcTradeSide::Exchange=>return Err(NpcTradeError::InvalidInput)};
+                let price = match request.cause.side {
+                    NpcTradeSide::Buy => source.buy,
+                    NpcTradeSide::Sell => source.sell,
+                    NpcTradeSide::Exchange => return Err(NpcTradeError::InvalidInput),
+                };
                 let wrapped = request.cause.side == NpcTradeSide::Buy
                     && crate::domain::hireling::catalogue::wrapped_buy(selection.source_row)
                         .is_some();
@@ -208,12 +219,18 @@ impl Extra {
         )
     }
 
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "materialized package and fenced inventory capacity"
+    )]
     pub(super) async fn package_preflight(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
         fence: &CurrentCharacterItemFence,
         request: &NpcTradeRequest,
         weights: Option<&dyn ItemWeightLookup>,
+        plan: &Plan,
+        entries: (usize, usize),
     ) -> Result<()> {
         let Self::Package(selection) = self else {
             return Ok(());
@@ -231,26 +248,9 @@ impl Extra {
                 )
                 .ok_or(NpcTradeError::CapacityExceeded)?;
         }
-        let carried = super::super::item_loop_move::carried_weight(
-            tx,
-            fence.character_id,
-            *fence.runtime_scope.world_id().as_bytes(),
-            weights,
-        )
-        .await
-        .map_err(|_| NpcTradeError::CapacityExceeded)?;
-        let capacity = super::super::item_transfer::read_derived_transfer_capacity_centi_oz(
-            tx,
-            fence.character_id,
-            weights,
-        )
-        .await?;
-        if carried
-            .checked_add(required)
-            .is_none_or(|total| total > capacity)
-        {
-            return Err(NpcTradeError::DoesNotFit);
-        }
+        let bounds = buy_weight_bounds(tx, fence, weights).await?;
+        package_slots_fit(entries, plan)?;
+        buy_weight_fits(bounds, required, plan, request, weights)?;
         let ids: Vec<String> = selection
             .child_ids
             .iter()
@@ -445,5 +445,78 @@ impl DurabilityRoot {
             },
         )
         .await
+    }
+}
+
+fn package_slots_fit((used, entry_capacity): (usize, usize), plan: &Plan) -> Result<()> {
+    let freed = plan
+        .lines
+        .iter()
+        .filter(|line| line_is_burn(line.kind) && line.quantity_after == 0)
+        .count();
+    let minted = plan
+        .lines
+        .iter()
+        .filter(|line| !line_is_burn(line.kind))
+        .count();
+    if used
+        .checked_sub(freed)
+        .and_then(|used| used.checked_add(minted))
+        .is_none_or(|used| used > entry_capacity)
+    {
+        return Err(NpcTradeError::DoesNotFit);
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+fn package_fits(
+    entries: (usize, usize),
+    weight: (u64, u64),
+    required: u64,
+    plan: &Plan,
+    request: &NpcTradeRequest,
+    weights: &dyn ItemWeightLookup,
+) -> Result<()> {
+    package_slots_fit(entries, plan)?;
+    buy_weight_fits(weight, required, plan, request, weights)
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(
+        clippy::unwrap_used,
+        reason = "known valid trade fixtures in assertions"
+    )]
+    use super::super::tests::{coin, entry, request};
+    use super::*;
+    use crate::durability::item_weight_lookup::TEST_WEIGHTS;
+
+    #[test]
+    fn package_capacity_accounts_for_materialized_payment_and_change() {
+        let mut request = request(NpcTradeSide::Buy, 1, 100);
+        request.coins.gold.revision_ref = "definition-r1".into();
+        request.coins.platinum.revision_ref = "definition-r1".into();
+        request.coins.crystal.revision_ref = "definition-r1".into();
+        let mut payment = entry(10, 1, coin(Coin::Gold), 100);
+        payment.definition = request.coins.gold.clone();
+        let plan = plan_buy(&request, 100, 1, 1, &[payment], Type2EventTuple::V2, false).unwrap();
+        assert!(package_fits((1, 1), (1000, 1000), 1000, &plan, &request, &TEST_WEIGHTS).is_ok());
+        assert!(matches!(
+            package_fits((1, 1), (1000, 1000), 1001, &plan, &request, &TEST_WEIGHTS),
+            Err(NpcTradeError::DoesNotFit)
+        ));
+        // An overpaid platinum coin leaves gold change as well as the package.
+        let payment = entry(11, 1, request.coins.platinum.clone(), 1);
+        let plan = plan_buy(&request, 99, 1, 2, &[payment], Type2EventTuple::V2, false).unwrap();
+        assert!(matches!(
+            package_fits((1, 1), (10, 1000), 1, &plan, &request, &TEST_WEIGHTS),
+            Err(NpcTradeError::DoesNotFit)
+        ));
+        assert!(matches!(
+            package_fits((1, 2), (10, 1000), 1000, &plan, &request, &TEST_WEIGHTS),
+            Err(NpcTradeError::DoesNotFit)
+        ));
+        assert!(package_fits((1, 2), (10, 1000), 990, &plan, &request, &TEST_WEIGHTS).is_ok());
     }
 }

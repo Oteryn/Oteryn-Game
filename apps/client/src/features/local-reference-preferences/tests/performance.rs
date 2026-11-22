@@ -5,13 +5,8 @@ fn t061_graphics_performance_preferences_survive_real_settings_apply_and_reload(
     let mut value = serde_json::to_value(ReferencePreferences::default())?;
     value["performance"] = serde_json::json!({"foreground_fps":120,"background_fps":12,"show_fps":true,"show_latency":true});
     let preferences: ReferencePreferences = serde_json::from_value(value)?;
-    let path = std::env::temp_dir().join(format!(
-        "oteryn-t061-{}-{}.json",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos()
-    ));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("performance.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     settings.apply(preferences);
     let loaded = PreferenceStore::load(path.clone())?;
@@ -62,6 +57,11 @@ fn t061_scheduler_tracks_focus_occlusion_successful_frames_and_stale_samples()
         )
         .ok_or("indicator")?;
     assert!(text.contains("FPS: 4") && text.contains("Command RTT: 23 ms"));
+    assert_eq!(
+        pacer.measured(now + Duration::from_secs(1)),
+        Some((4, Duration::from_millis(250)))
+    );
+    assert_eq!(pacer.measured(now + Duration::from_secs(20)), None);
     let stale = pacer
         .indicator(
             now + Duration::from_secs(20),

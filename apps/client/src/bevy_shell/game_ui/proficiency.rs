@@ -1,4 +1,5 @@
 //! Weapon list and level-gated perk grid over the retained proficiency owner.
+mod draft;
 #[cfg(test)]
 mod tests;
 mod widgets;
@@ -10,7 +11,23 @@ use super::{
     GameModal,
     modal::ModalGuard,
 };
-use crate::play::feature_0195_weapon_proficiency::view::ProficiencyAction as Kind;
+use crate::play::feature_0195_weapon_proficiency::view::ProficiencyAction as ModelAction;
+#[derive(Clone, Copy)]
+enum Kind {
+    Close,
+    Refresh,
+    Weapon(usize),
+    Perk(usize, usize),
+    Apply,
+    Reset,
+    SaveClose,
+    DiscardClose,
+    CancelClose,
+    Slot(u8),
+    Offer(u8),
+    Modify(usize),
+    Shape(oteryn_client_ui::weapon_proficiency::Intent),
+}
 use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel;
 
@@ -33,6 +50,8 @@ struct State {
     key: Key,
     snapshot: Option<WeaponProficiencyPanel>,
     root: Option<widgets::Widgets>,
+    draft: draft::Draft,
+    dirty: bool,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
@@ -50,13 +69,14 @@ fn project(
         .as_ref()
         .filter(|_| owner.phase == Phase::Playing)
         .and_then(|play| {
-            if play.link.weapon_proficiency_is_open() {
+            if play.link.weapon_proficiency_is_open() && !state.draft.applying {
                 play.link.weapon_proficiency_tick(std::time::Instant::now());
             }
             let panel = play.link.weapon_proficiency_panel();
             panel.open.then_some(panel)
         });
-    if state.key.generation == owner.generation() && state.snapshot == panel {
+    draft::advance(&owner, &mut state, panel.as_ref());
+    if !state.dirty && state.key.generation == owner.generation() && state.snapshot == panel {
         return;
     }
     if (state.key.generation != owner.generation() || panel.is_none())
@@ -64,20 +84,24 @@ fn project(
     {
         commands.entity(widgets.overlay).despawn();
     }
+    state.dirty = false;
     state.key = Key {
         generation: owner.generation(),
         serial: state.key.serial.saturating_add(1),
     };
     let key = state.key;
     if let Some(panel) = &panel {
+        let projected = draft::projection(panel, &state.draft);
+        let draft_controls = state.draft.controls();
         let widgets = state
             .root
             .get_or_insert_with(|| widgets::build(&mut commands, &skins));
-        widgets::render(&mut commands, &skins, widgets, key, panel);
+        widgets::render(&mut commands, &skins, widgets, key, &projected);
+        draft::render(&mut commands, &skins, widgets, key, draft_controls);
     }
     state.snapshot = panel;
 }
-fn perform(owner: &HostOwner, state: &State, control: Control) {
+fn perform(owner: &HostOwner, state: &mut State, control: Control) {
     if owner.phase != Phase::Playing || owner.modal_active() || state.key != control.key {
         return;
     }
@@ -85,28 +109,28 @@ fn perform(owner: &HostOwner, state: &State, control: Control) {
         && owner.generation() == control.key.generation
         && (matches!(control.kind, Kind::Close) || !play.view.gameplay_input_blocked(&play.link))
     {
-        play.link
-            .weapon_proficiency_action_bound(expected, control.kind);
+        let expected = expected.clone();
+        draft::perform(&play.link, state, &expected, control.kind);
     }
 }
 fn activate(
     event: On<Activate>,
     controls: Query<&Control>,
     owner: NonSend<HostOwner>,
-    state: Res<State>,
+    mut state: ResMut<State>,
     guard: ModalGuard,
 ) {
     if guard.allows(event.entity)
         && let Ok(control) = controls.get(event.entity)
     {
-        perform(&owner, &state, *control);
+        perform(&owner, &mut state, *control);
     }
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     overlays: Query<Entity, With<Overlay>>,
     owner: NonSend<HostOwner>,
-    state: Res<State>,
+    mut state: ResMut<State>,
     guard: ModalGuard,
 ) {
     for event in events.read() {
@@ -115,14 +139,11 @@ fn keyboard(
             && event.key_code == KeyCode::Escape
             && overlays.iter().any(|entity| guard.allows(entity))
         {
-            perform(
-                &owner,
-                &state,
-                Control {
-                    key: state.key,
-                    kind: Kind::Close,
-                },
-            );
+            let control = Control {
+                key: state.key,
+                kind: Kind::Close,
+            };
+            perform(&owner, &mut state, control);
         }
     }
 }

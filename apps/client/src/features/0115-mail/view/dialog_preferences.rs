@@ -49,8 +49,8 @@ mod tests {
         let suffix = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_nanos();
-        let directory =
-            std::env::temp_dir().join(format!("cg-modal-confirm-{}-{suffix}", std::process::id()));
+        let fixture = tempfile::tempdir()?;
+        let directory = fixture.path().join(format!("cg-modal-confirm-{suffix}"));
         let path = directory.join("notices.json");
         assert!(should_ask(&path, "mail-post:v1")?);
         assert!(!record(&path, "mail-post:v1", false, true)?);
@@ -58,7 +58,6 @@ mod tests {
         assert!(record(&path, "mail-post:v1", true, true)?);
         assert!(!should_ask(&path, "mail-post:v1")?);
         assert!(should_ask(&path, "mail-post:v2")?);
-        std::fs::remove_dir_all(directory)?;
         Ok(())
     }
 }

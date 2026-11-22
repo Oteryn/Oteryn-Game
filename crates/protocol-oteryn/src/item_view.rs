@@ -40,6 +40,11 @@ pub const CAPABILITY_ITEM_VIEW_MOVE_V1: u32 = 4;
 /// Optional appearance field 5 on ItemEntryV1; requires item views.
 pub const CAPABILITY_ITEM_APPEARANCE_V1: u32 = 499;
 pub const CAPABILITY_ITEM_APPEARANCE_V1_REQUIRES: &[u32] = &[CAPABILITY_ITEM_VIEW_MOVE_V1];
+/// CORPSE48 (owner decision 2026-11-17): domain 11 shows up to
+/// [`MAX_CORPSE_CONTAINER_48_ENTRIES`] corpse entries; requires item views. Without it every
+/// legacy domain-11 bound stays and the session is never sent more than
+/// [`MAX_OPEN_CONTAINER_ENTRIES`] entries.
+pub const CAPABILITY_CORPSE_CONTAINER_48_V1: u32 = 514;
 /// Capability 4 requires `WORLD_SPATIAL_ENTITIES`, which carries corpses in domain 1.
 pub const CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES: &[u32] = &[
     crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES, // WORLD_SPATIAL_ENTITIES
@@ -58,6 +63,14 @@ pub const CAPABILITY_ITEM_EQUIP_DROP_V1: u32 = 12;
 pub const CAPABILITY_ITEM_STACK_COUNT_V1: u32 = 61;
 /// The largest existing destination plus field 6 (count 1..=100).
 pub const MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES: usize = MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES + 2;
+/// CONTAINER-MANUAL-SORT-1 (Tibia Global's Manual Sort Mode): the optional `slot` field 2 of the
+/// command-9 container destination. Extends command type 9 of capability 14 only.
+pub const CAPABILITY_CONTAINER_MANUAL_SORT_V1: u32 = 510;
+pub const CAPABILITY_CONTAINER_MANUAL_SORT_V1_REQUIRES: &[u32] =
+    &[crate::container_tree::CAPABILITY_CONTAINER_TREE_V1];
+/// The source handle 1 + 10, the largest destination, a slotted `container` 1 + 1 + 11 + 6 (slot
+/// tag 1 + uint32 5; `ground` is 1 + 1 + 16), and the count 2.
+pub const MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES: usize = 11 + 2 + MAX_ITEM_TARGET_BYTES + 6 + 2;
 pub const CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1, // ITEM_VIEW_MOVE_V1
 ];
@@ -68,6 +81,13 @@ pub const MAX_CHARACTER_INVENTORY_ITEMS: usize = 30;
 /// `ITEMV0-RL-02`: entries in one domain-11 view, the corpse container capacity
 /// (`GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX`).
 pub const MAX_OPEN_CONTAINER_ENTRIES: usize = 30;
+/// `ITEMV0-RL-02-CORPSE48`: entries in one domain-11 view of a session that selected
+/// capability 514, the corpse container capacity (`GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX`).
+pub const MAX_CORPSE_CONTAINER_48_ENTRIES: usize = 48;
+/// The live handles capability 514 adds to every `ITEMV0-RL-03*` bound: the extra
+/// domain-11 entries.
+pub const MAX_CORPSE_CONTAINER_48_EXTRA_HANDLES: usize =
+    MAX_CORPSE_CONTAINER_48_ENTRIES - MAX_OPEN_CONTAINER_ENTRIES;
 /// `ITEMV0-RL-03`: live handles of one session. A handle is live while its item is in one of the
 /// session's views: domain 1 shows at most 255 objects besides the own player (`MOVE-RL-11`),
 /// domain 9 at most [`MAX_CHARACTER_INVENTORY_ITEMS`] and domain 11 at most
@@ -111,6 +131,30 @@ pub const MAX_CHARACTER_INVENTORY_EQUIP_DROP_APPEARANCE_BYTES: usize =
     MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES + 4 * MAX_CHARACTER_INVENTORY_ITEMS;
 pub const MAX_OPEN_CONTAINER_APPEARANCE_BYTES: usize =
     MAX_OPEN_CONTAINER_BYTES + 4 * MAX_OPEN_CONTAINER_ENTRIES;
+/// Domain 11 under capability 514: the corpse handle 1 + 10 and 48 entry elements.
+pub const MAX_OPEN_CONTAINER_CORPSE_48_BYTES: usize =
+    11 + MAX_CORPSE_CONTAINER_48_ENTRIES * MAX_ITEM_ENTRY_ELEMENT_BYTES;
+/// Domain 11 under capabilities 514 and 499.
+pub const MAX_OPEN_CONTAINER_CORPSE_48_APPEARANCE_BYTES: usize =
+    MAX_OPEN_CONTAINER_CORPSE_48_BYTES + 4 * MAX_CORPSE_CONTAINER_48_ENTRIES;
+
+/// The domain-11 entry bound of a session: 48 with capability 514, 30 without.
+pub const fn max_open_container_entries(corpse_48: bool) -> usize {
+    if corpse_48 {
+        MAX_CORPSE_CONTAINER_48_ENTRIES
+    } else {
+        MAX_OPEN_CONTAINER_ENTRIES
+    }
+}
+
+const fn max_open_container_bytes(appearances: bool, corpse_48: bool) -> usize {
+    match (appearances, corpse_48) {
+        (false, false) => MAX_OPEN_CONTAINER_BYTES,
+        (true, false) => MAX_OPEN_CONTAINER_APPEARANCE_BYTES,
+        (false, true) => MAX_OPEN_CONTAINER_CORPSE_48_BYTES,
+        (true, true) => MAX_OPEN_CONTAINER_CORPSE_48_APPEARANCE_BYTES,
+    }
+}
 
 /// `ItemTargetV1`: the handle 1 + 10.
 pub const MAX_ITEM_TARGET_BYTES: usize = 11;
@@ -276,8 +320,10 @@ pub enum ItemMoveDestination {
     MainBackpack,
     Equipment(EquipmentSlot),
     Ground(WorldTilePosition),
-    /// Into the named visible container (BAGS-0 §5).
-    Container(ItemHandle),
+    /// Into the named visible container (BAGS-0 §5). Under capability 510 the optional slot is
+    /// the index the item takes in the container's view order (newest first); `None` keeps the
+    /// default placement, the first slot.
+    Container(ItemHandle, Option<u32>),
 }
 
 /// The capabilities of a session's selection that extend command type 9.
@@ -290,6 +336,8 @@ pub struct ItemMoveSelection {
     /// Capability 11 `WORLD_INTERACTION_V1` (WORLD-INTERACTION-0 §10.1): the `ground` destination
     /// for a map-item or Ground source, and the `BLOCKED` result; not the `equipment` destination.
     pub world_interaction: bool,
+    /// Capability 510 `CONTAINER_MANUAL_SORT_V1`: the `slot` of the `container` destination.
+    pub manual_sort: bool,
 }
 
 /// `ItemMoveIntentV1`.
@@ -470,8 +518,8 @@ fn validate_character_inventory(view: &CharacterInventory, equip_drop: bool) -> 
     )
 }
 
-fn validate_open_container(view: &OpenContainer) -> WireResult<()> {
-    if view.entries.len() > MAX_OPEN_CONTAINER_ENTRIES {
+fn validate_open_container(view: &OpenContainer, corpse_48: bool) -> WireResult<()> {
+    if view.entries.len() > max_open_container_entries(corpse_48) {
         return Err(ItemViewWireError::LimitExceeded);
     }
     if view.container_handle.is_none() && !view.entries.is_empty() {
@@ -611,7 +659,16 @@ pub fn encode_open_container_with_appearances(
     view: &OpenContainer,
     appearances: bool,
 ) -> WireResult<Vec<u8>> {
-    validate_open_container(view)?;
+    encode_open_container_for(view, appearances, false)
+}
+
+/// Domain 11 for the selected capabilities 499 (`appearances`) and 514 (`corpse_48`).
+pub fn encode_open_container_for(
+    view: &OpenContainer,
+    appearances: bool,
+    corpse_48: bool,
+) -> WireResult<Vec<u8>> {
+    validate_open_container(view, corpse_48)?;
     let mut output = Vec::new();
     if let Some(handle) = view.container_handle {
         push_varint_field(&mut output, 1, handle.get());
@@ -630,13 +687,16 @@ pub fn decode_open_container_with_appearances(
     payload: &[u8],
     appearances: bool,
 ) -> WireResult<OpenContainer> {
-    if payload.len()
-        > if appearances {
-            MAX_OPEN_CONTAINER_APPEARANCE_BYTES
-        } else {
-            MAX_OPEN_CONTAINER_BYTES
-        }
-    {
+    decode_open_container_for(payload, appearances, false)
+}
+
+/// Domain 11 for the selected capabilities 499 (`appearances`) and 514 (`corpse_48`).
+pub fn decode_open_container_for(
+    payload: &[u8],
+    appearances: bool,
+    corpse_48: bool,
+) -> WireResult<OpenContainer> {
+    if payload.len() > max_open_container_bytes(appearances, corpse_48) {
         return Err(ItemViewWireError::LimitExceeded);
     }
     let mut cursor = 0;
@@ -646,7 +706,7 @@ pub fn decode_open_container_with_appearances(
         match read_varint(payload, &mut cursor)? {
             0x08 => set_once(&mut handle, read_varint(payload, &mut cursor)?)?,
             0x12 => {
-                if entries.len() == MAX_OPEN_CONTAINER_ENTRIES {
+                if entries.len() == max_open_container_entries(corpse_48) {
                     return Err(ItemViewWireError::LimitExceeded);
                 }
                 entries.push(decode_entry_for(
@@ -661,7 +721,7 @@ pub fn decode_open_container_with_appearances(
         container_handle: handle.map(nonzero_u64).transpose()?,
         entries,
     };
-    validate_open_container(&view)?;
+    validate_open_container(&view, corpse_48)?;
     Ok(view)
 }
 
@@ -723,6 +783,26 @@ fn decode_equipment_destination(input: &[u8]) -> WireResult<EquipmentSlot> {
     EquipmentSlot::from_wire(slot.unwrap_or(0))
 }
 
+/// `ContainerDestinationV1`: the handle is required; field 2 `slot` only under capability 510.
+fn decode_container_destination(
+    input: &[u8],
+    manual_sort: bool,
+) -> WireResult<(ItemHandle, Option<u32>)> {
+    if !manual_sort {
+        return decode_item_target(input).map(|handle| (handle, None));
+    }
+    let mut cursor = 0;
+    let (mut handle, mut slot) = (None, None);
+    while cursor < input.len() {
+        match read_varint(input, &mut cursor)? {
+            0x08 => set_once(&mut handle, read_varint(input, &mut cursor)?)?,
+            0x10 => set_once(&mut slot, read_uint32(input, &mut cursor)?)?,
+            _ => return malformed(),
+        }
+    }
+    Ok((nonzero_u64(handle.unwrap_or(0))?, slot))
+}
+
 /// `ClientCommand.payload` of command type 9, without capability 12.
 pub fn encode_item_move_intent(intent: &ItemMoveIntent) -> WireResult<Vec<u8>> {
     encode_item_move_intent_with_equip_drop(intent, false)
@@ -739,6 +819,7 @@ pub fn encode_item_move_intent_with_equip_drop(
             equip_drop,
             container_tree: false,
             world_interaction: false,
+            manual_sort: false,
         },
     )
 }
@@ -752,12 +833,16 @@ pub fn encode_item_move_intent_for(
     push_varint_field(&mut output, 1, intent.source.get());
     match intent.destination {
         ItemMoveDestination::MainBackpack => push_message_field(&mut output, 2, &[]),
-        ItemMoveDestination::Container(handle) if selection.container_tree => {
-            let mut body = Vec::with_capacity(MAX_ITEM_TARGET_BYTES);
+        ItemMoveDestination::Container(_, Some(_)) if !selection.manual_sort => return malformed(),
+        ItemMoveDestination::Container(handle, slot) if selection.container_tree => {
+            let mut body = Vec::with_capacity(MAX_ITEM_TARGET_BYTES + 6);
             push_varint_field(&mut body, 1, handle.get());
+            if let Some(slot) = slot {
+                push_varint_field(&mut body, 2, u64::from(slot));
+            }
             push_message_field(&mut output, 5, &body);
         }
-        ItemMoveDestination::Container(_) => return malformed(),
+        ItemMoveDestination::Container(..) => return malformed(),
         ItemMoveDestination::Ground(_) if !selection.equip_drop && !selection.world_interaction => {
             return malformed();
         }
@@ -795,6 +880,7 @@ pub fn decode_item_move_intent_with_equip_drop(
             equip_drop,
             container_tree: false,
             world_interaction: false,
+            manual_sort: false,
         },
     )
 }
@@ -827,8 +913,11 @@ fn decode_move_intent(
         equip_drop,
         container_tree,
         world_interaction,
+        manual_sort,
     } = selection;
-    let bound = if stack_count {
+    let bound = if manual_sort {
+        MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES
+    } else if stack_count {
         MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES
     } else if equip_drop || container_tree || world_interaction {
         MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES
@@ -858,8 +947,12 @@ fn decode_move_intent(
                 set_once(&mut destination, ItemMoveDestination::Ground(position))?;
             }
             0x2a if container_tree => {
-                let handle = decode_item_target(read_bytes(payload, &mut cursor)?)?;
-                set_once(&mut destination, ItemMoveDestination::Container(handle))?;
+                let (handle, slot) =
+                    decode_container_destination(read_bytes(payload, &mut cursor)?, manual_sort)?;
+                set_once(
+                    &mut destination,
+                    ItemMoveDestination::Container(handle, slot),
+                )?;
             }
             0x30 if stack_count => {
                 let value = read_uint32(payload, &mut cursor)?;

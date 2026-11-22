@@ -15,6 +15,7 @@ pub(super) fn build(
     let root = commands
         .spawn((
             super::super::GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("imbuing"),
             GlobalZIndex(165),
             TabGroup {
                 order: 2,
@@ -28,7 +29,6 @@ pub(super) fn build(
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
         ))
         .id();
     let window = commands
@@ -68,6 +68,20 @@ pub(super) fn build(
         );
         return root;
     }
+    button(
+        commands,
+        skins,
+        window,
+        control(Kind::Tracker),
+        "Imbuement tracker",
+        true,
+    );
+    text(
+        commands,
+        skins,
+        window,
+        &costs::summary(panel, selection.offer),
+    );
     let body = commands
         .spawn(Node {
             width: percent(100.),
@@ -77,7 +91,7 @@ pub(super) fn build(
         })
         .id();
     commands.entity(window).add_child(body);
-    let left = column(commands, body);
+    let left = column(commands, body, 0);
     text(
         commands,
         skins,
@@ -129,7 +143,7 @@ pub(super) fn build(
             );
         }
     }
-    let right = column(commands, body);
+    let right = column(commands, body, 1);
     text(commands, skins, right, "Base type");
     if let Some(model) = &panel.window {
         let tiers: std::collections::BTreeSet<_> =
@@ -208,26 +222,33 @@ pub(super) fn build(
             }
         }
     }
-    if let Some(expected) = &selection.confirmation
+    if let Some((expected, intent)) = &selection.confirmation
         && let Some(quote) = &expected.window
     {
         text(
             commands,
             skins,
             window,
-            &format!(
-                "Clear {} for {} gold?",
-                slot_label(expected, expected.slot),
-                quote.clear_gold
-            ),
+            &match intent {
+                Intent::Apply => quote.offers.get(expected.offer).map_or_else(String::new, |offer| format!("Apply {} tier {} to the selected item, slot {}? This consumes the required materials and {} gold.", family_name(offer.family), offer.tier, expected.slot + 1, offer.gold)),
+                _ => format!("Clear {} for {} gold?", slot_label(expected, expected.slot), quote.clear_gold),
+            },
         );
         button(
             commands,
             skins,
             window,
             control(Kind::Confirm),
-            "Confirm clear",
-            panel.can_clear(),
+            if *intent == Intent::Apply {
+                "Confirm imbuing"
+            } else {
+                "Confirm clear"
+            },
+            if *intent == Intent::Apply {
+                selection.can_apply(panel)
+            } else {
+                panel.can_clear()
+            },
         );
         button(
             commands,
@@ -282,10 +303,11 @@ pub(super) fn build(
     }
     root
 }
-fn column(commands: &mut Commands, parent: Entity) -> Entity {
+fn column(commands: &mut Commands, parent: Entity, role: u32) -> Entity {
     let entity = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("imbuing", role),
             Node {
                 width: percent(50.),
                 min_width: px(0.),

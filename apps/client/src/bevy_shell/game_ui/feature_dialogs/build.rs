@@ -255,6 +255,7 @@ fn action(
             ..default()
         })
         .observe(activate)
+        .observe(choice_double_click)
         .id();
     if matches!(kind, ActionKind::Button(_)) {
         let caption = commands

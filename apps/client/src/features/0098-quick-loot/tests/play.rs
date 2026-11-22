@@ -185,16 +185,23 @@ fn cp02_shortcuts_are_exclusive_and_session_end_clears_all_panels()
 }
 
 #[test]
-fn managed_container_reset_uses_the_selected_category_and_existing_wire() -> Result<(), Box<dyn std::error::Error>> {
+fn managed_container_reset_uses_the_selected_category_and_existing_wire()
+-> Result<(), Box<dyn std::error::Error>> {
     use oteryn_client_ui::quick_loot::{Action, QuickLootCategory, QuickLootRecipient};
     let (link, mut commands, _) = crate::play::play_channel();
     {
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
         mailbox.discovery.loot.selected = true;
-        mailbox.discovery.loot.destinations.push(Action::Destination {
-            category: Some(QuickLootCategory::Gold), recipient: QuickLootRecipient::Container,
-            id: Some([1; 16]), fallback: false,
-        });
+        mailbox
+            .discovery
+            .loot
+            .destinations
+            .push(Action::Destination {
+                category: Some(QuickLootCategory::Gold),
+                recipient: QuickLootRecipient::Container,
+                id: Some([1; 16]),
+                fallback: false,
+            });
     }
     assert!(!link.quick_loot_control(8, &[], 0));
     assert!(link.quick_loot_control(7, &[], 0));
@@ -218,12 +225,21 @@ fn t056_loot_notice_filter_preserves_received_result() {
     {
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
         mailbox.discovery.loot.selected = true;
-        mailbox.discovery.loot.result = Some(oteryn_client_ui::quick_loot::QuickLootResult { items: vec![] });
+        mailbox.discovery.loot.result =
+            Some(oteryn_client_ui::quick_loot::QuickLootResult { items: vec![] });
         mailbox.local_preferences.game_window.loot_messages = false;
     }
-    assert!(!oteryn_client_ui::quick_loot::panel_text(&link.discovery_panel().loot).contains("Looted"));
-    crate::play::mailbox::lock(&link.mailbox).local_preferences.game_window.loot_messages = true;
-    assert!(oteryn_client_ui::quick_loot::panel_text(&link.discovery_panel().loot).contains("Looted 0 of 0"));
+    assert!(
+        !oteryn_client_ui::quick_loot::panel_text(&link.discovery_panel().loot).contains("Looted")
+    );
+    crate::play::mailbox::lock(&link.mailbox)
+        .local_preferences
+        .game_window
+        .loot_messages = true;
+    assert!(
+        oteryn_client_ui::quick_loot::panel_text(&link.discovery_panel().loot)
+            .contains("Looted 0 of 0")
+    );
 }
 
 #[test]
@@ -242,8 +258,14 @@ fn a_finished_loot_run_posts_one_loot_notice_when_loot_messages_are_on()
             status: oteryn_session::CommandStatus::Accepted,
             payload: encode_quick_loot_result(&QuickLootResult {
                 items: vec![
-                    QuickLootItemResult { item: [1; 16], accepted: true },
-                    QuickLootItemResult { item: [2; 16], accepted: false },
+                    QuickLootItemResult {
+                        item: [1; 16],
+                        accepted: true,
+                    },
+                    QuickLootItemResult {
+                        item: [2; 16],
+                        accepted: false,
+                    },
                 ],
             })
             .map_err(|e| format!("{e:?}"))?,
@@ -252,7 +274,9 @@ fn a_finished_loot_run_posts_one_loot_notice_when_loot_messages_are_on()
     let notices = |link: &crate::play::PlayLink| {
         let mailbox = crate::play::mailbox::lock(&link.mailbox);
         let console = &mailbox.chat.console;
-        console.notices.scoped_text(console.filters, console.display, NoticeScope::LootOnly)
+        console
+            .notices
+            .scoped_text(console.filters, console.display, NoticeScope::LootOnly)
     };
     assert!(link.quick_loot_action(Action::LootAll));
     outbox.discovery_result(98, &result()?);
@@ -277,4 +301,11 @@ fn a_finished_loot_run_posts_one_loot_notice_when_loot_messages_are_on()
     outbox.discovery_result(98, &result()?);
     assert_eq!(notices(&link).matches("[Loot]").count(), 1);
     Ok(())
+}
+
+#[cfg(bevy_shell)]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_team_finder_supported(&self) {
+        crate::play::mailbox::lock(&self.0).discovery.teams.selected = true;
+    }
 }

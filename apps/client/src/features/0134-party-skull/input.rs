@@ -43,14 +43,11 @@ impl PlayLink {
     pub fn party_skull_request(&self, intent: Intent) {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
+    pub fn party_skull_close(&self) {
+        lock(&self.mailbox).properties.party_skull.open = false;
+    }
     pub fn party_skull_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.party_skull.open = true;
-        }
+        lock(&self.mailbox).properties.party_skull.open = true;
     }
     pub fn party_skull_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::party_skull::open_key(events) {
@@ -74,5 +71,19 @@ pub(in crate::play) fn edit(
             return;
         }
         *slot = value;
+    }
+}
+
+#[cfg(all(test, bevy_shell))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_pvp_initialize(&self) {
+        lock(&self.0).properties.party_skull.selected = true;
+    }
+    pub(crate) fn bevy_pvp_result(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+    ) {
+        super::protocol::apply(&mut lock(&self.0).properties.party_skull, command, result);
     }
 }

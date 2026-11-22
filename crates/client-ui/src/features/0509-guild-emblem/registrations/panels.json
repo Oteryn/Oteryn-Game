@@ -1,0 +1,7 @@
+{
+  "mechanic": "0509-guild-emblem",
+  "kind": "panels",
+  "id": "0509-guild-emblem-panel",
+  "status": "supported",
+  "entry": "protocol.rs::emblem_of"
+}

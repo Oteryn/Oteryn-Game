@@ -372,6 +372,7 @@ impl ChannelRuntimeV1 {
             false,
             Some(now_ms),
             Some(&source_context),
+            false,
         )?;
         let Some(mut next) = next else {
             return Ok((index, None, result));

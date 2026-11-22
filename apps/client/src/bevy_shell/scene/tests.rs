@@ -3,7 +3,12 @@ use oteryn_renderer::{SpriteBatch, TileCoord, TileView};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-fn bounds(sprite: &Sprite, transform: &Transform, map: WorldViewport, scale: f32) -> Rect {
+pub(super) fn bounds(
+    sprite: &Sprite,
+    transform: &Transform,
+    map: WorldViewport,
+    scale: f32,
+) -> Rect {
     let center = map.origin.as_vec2()
         + map.size.as_vec2() * 0.5
         + Vec2::new(transform.translation.x, -transform.translation.y) * scale;
@@ -37,6 +42,7 @@ fn displaced_first_tile_does_not_draw_in_noninteractive_letterbox() -> TestResul
             size: map.size.as_vec2(),
             offset,
             clip_size: size.as_vec2(),
+            scroll: Vec2::ZERO,
         },
     );
     let (sprite, transform) = projected.ok_or("partially visible quad")?;
@@ -67,6 +73,7 @@ fn real_edge_labels_reuse_dense_projected_entities() -> TestResult {
     for (identity, x) in [(1, right), (2, origin.x)] {
         appearances.push(VisibleAppearance {
             entity: WorldSpatialEntity {
+                motion: None,
                 entity: EntityRef {
                     identity: [identity; 16],
                     generation: 1,
@@ -138,6 +145,8 @@ fn real_edge_labels_reuse_dense_projected_entities() -> TestResult {
         .init_resource::<SceneCache>()
         .init_resource::<Time>()
         .init_resource::<Assets<Image>>()
+        .init_resource::<Assets<Mesh>>()
+        .init_resource::<Assets<ColorMaterial>>()
         .insert_resource(WorldViewport {
             origin: UVec2::ZERO,
             size: UVec2::new(width + 64, height + 64),
@@ -186,6 +195,7 @@ fn clipping_crops_both_uv_axes_without_changing_tint_order_or_dpi() -> TestResul
         size: Vec2::splat(128.),
         offset: Vec2::splat(32.),
         clip_size: Vec2::new(16., 8.),
+        scroll: Vec2::ZERO,
     };
     let (sprite, transform) = project_quad(&quad, tint, 13, &Handle::default(), &atlas, viewport)
         .ok_or("visible intersection")?;
@@ -208,6 +218,7 @@ fn minimap_labels_clip_to_their_own_target_and_discard_invisible_glyphs() -> Tes
         size,
         offset: Vec2::ZERO,
         clip_size: size,
+        scroll: Vec2::ZERO,
     };
     let mut labels = SpriteBatch::new();
     oteryn_renderer::name_text::label_quad_scaled(
@@ -250,145 +261,39 @@ fn minimap_labels_clip_to_their_own_target_and_discard_invisible_glyphs() -> Tes
     Ok(())
 }
 
-fn typing_app() -> Result<(App, crate::play::Outbox), Box<dyn std::error::Error>> {
-    use crate::play::{PlayView, play_channel};
-    use oteryn_session::{
-        ActorPosition, EntityDetail, EntityDisplayName, EntityKind, EntityRef, StepDirection,
-        VisibleAppearance, WorldSpatialEntity,
+#[test]
+fn a_camera_scroll_moves_a_projected_quad_before_clipping() -> TestResult {
+    let atlas = AtlasImage::new(32, 1, 1, vec![255; 32 * 32 * 4])?;
+    let quad = QuadInstance {
+        position: [16., 16.],
+        size: [32., 32.],
+        uv: [0., 0., 1., 1.],
     };
-    let mut view = PlayView::new(TileCoord::new(100, 100), 7, &[])?;
-    view.set_presentations(vec![VisibleAppearance {
-        entity: WorldSpatialEntity {
-            entity: EntityRef {
-                identity: [7; 16],
-                generation: 9,
+    let at = |scroll| {
+        project_quad(
+            &quad,
+            [1.; 4],
+            0,
+            &Handle::default(),
+            &atlas,
+            QuadViewport {
+                scale: 1.,
+                size: Vec2::splat(96.),
+                offset: Vec2::ZERO,
+                clip_size: Vec2::splat(96.),
+                scroll,
             },
-            kind: EntityKind::Player,
-            position: ActorPosition {
-                x: 100,
-                y: 100,
-                floor: 7,
-            },
-            display_name: Some(EntityDisplayName::new("Speaker").map_err(|e| format!("{e:?}"))?),
-            detail: EntityDetail::Actor {
-                direction: StepDirection::South,
-                appearance_ref: 1,
-                health_percent: 100,
-            },
-        },
-        look: None,
-        light: None,
-        forge_stacks: None,
-    }])?;
-    let (link, _, outbox) = play_channel();
-    let mut host = HostOwner::new(None)?;
-    host.play = Some(super::super::owner::ActivePlay { view, link });
-    let mut app = App::new();
-    app.insert_non_send(host)
-        .init_resource::<WorldViewport>()
-        .add_systems(Update, super::typing::project);
-    app.world_mut().spawn((Window::default(), PrimaryWindow));
-    Ok((app, outbox))
-}
-
-fn typing_update(outbox: &crate::play::Outbox, active: bool, generation: u64) -> TestResult {
-    use oteryn_session::{AppliedDelta, ChatSpeaker, SessionEvent, player_typing::TypingUpdate};
-    outbox.push(vec![SessionEvent::PlayerTyping(AppliedDelta {
-        server_sequence: 1,
-        base_revision: 0,
-        new_revision: 1,
-        value: TypingUpdate {
-            speaker: ChatSpeaker {
-                identity: [7; 16],
-                generation: std::num::NonZeroU64::new(generation).ok_or("generation")?,
-            },
-            typing: active,
-        },
-    })]);
-    Ok(())
-}
-
-#[test]
-fn typing_icon_drawn_for_active_indicator() -> TestResult {
-    let (mut app, outbox) = typing_app()?;
-    app.update();
+        )
+    };
+    let (_, rest) = at(Vec2::ZERO).ok_or("visible")?;
+    let (_, scrolled) = at(Vec2::new(-12., 6.)).ok_or("visible")?;
     assert_eq!(
-        app.world_mut()
-            .query_filtered::<Entity, With<super::typing::TypingDot>>()
-            .iter(app.world())
-            .count(),
-        0
+        scrolled.translation - rest.translation,
+        Vec3::new(-12., -6., 0.)
     );
-    typing_update(&outbox, true, 9)?;
-    app.update();
-    let host = app.world().non_send::<HostOwner>();
-    let scene = host.play.as_ref().ok_or("play")?.view.scene();
-    let [x, y] = scene.view().tile_to_screen(TileCoord::new(100, 100));
-    let half_tile = scene.view().tile_px() as f32 / 2.;
-    let scene_size = Vec2::new(
-        scene.view().viewport_px().0 as f32,
-        scene.view().viewport_px().1 as f32,
-    );
-    let window = app
-        .world_mut()
-        .query_filtered::<&Window, With<PrimaryWindow>>()
-        .single(app.world())?;
-    let size = Vec2::new(
-        window.physical_width() as f32,
-        window.physical_height() as f32,
-    );
-    let offset = ((size - scene_size) * 0.5).floor();
-    let first = Vec2::new(x + half_tile + 2. + 1., y - 14. - 4. + 1.);
-    let expected = Vec2::new(
-        first.x + offset.x - size.x / 2.,
-        size.y / 2. - first.y - offset.y,
-    );
-    let mut dots: Vec<_> = app
-        .world_mut()
-        .query_filtered::<(&Sprite, &Transform, &RenderLayers), With<super::typing::TypingDot>>()
-        .iter(app.world())
-        .map(|(s, t, l)| (s.custom_size, t.translation, l.clone()))
-        .collect();
-    dots.sort_by(|a, b| a.1.x.total_cmp(&b.1.x));
-    assert_eq!(dots.len(), 3);
-    assert_eq!(dots[0].0, Some(Vec2::splat(2.)));
-    assert_eq!(dots[0].1.truncate(), expected);
-    assert_eq!(dots[0].2, RenderLayers::layer(1));
-    assert_eq!(dots[2].1.x - dots[0].1.x, 6.);
-    Ok(())
-}
-
-#[test]
-fn typing_icon_cleared() -> TestResult {
-    let (mut app, outbox) = typing_app()?;
-    for (active, generation, count) in [(true, 9, 3), (false, 9, 0), (true, 8, 0), (true, 9, 3)] {
-        typing_update(&outbox, active, generation)?;
-        app.update();
-        assert_eq!(
-            app.world_mut()
-                .query_filtered::<Entity, With<super::typing::TypingDot>>()
-                .iter(app.world())
-                .count(),
-            count
-        );
-    }
-    app.world_mut()
-        .non_send_mut::<HostOwner>()
-        .play
-        .as_mut()
-        .ok_or("play")?
-        .view
-        .set_presentations(Vec::new())?;
-    app.update();
-    assert_eq!(
-        app.world_mut()
-            .query_filtered::<Entity, With<super::typing::TypingDot>>()
-            .iter(app.world())
-            .count(),
-        0
-    );
-    app.world_mut().non_send_mut::<HostOwner>().play = None;
-    app.update();
+    // Scrolled past the left edge, the quad is cropped rather than drawn outside the view.
+    let (cropped, _) = at(Vec2::new(-24., 0.)).ok_or("partly visible")?;
+    assert_eq!(cropped.custom_size, Some(Vec2::new(24., 32.)));
     Ok(())
 }
 
@@ -443,6 +348,8 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
         .init_resource::<SceneCache>()
         .init_resource::<Time>()
         .init_resource::<Assets<Image>>()
+        .init_resource::<Assets<Mesh>>()
+        .init_resource::<Assets<ColorMaterial>>()
         .insert_resource(WorldViewport {
             origin: UVec2::ZERO,
             size: UVec2::new(640, 480),
@@ -495,4 +402,544 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
         Some(&0.5)
     );
     Ok(())
+}
+
+#[test]
+fn walking_projection_keeps_touch_controls_fixed_and_moves_world_quads() -> TestResult {
+    use crate::play::{PlayView, play_channel};
+    use oteryn_session::{
+        ActorPosition, AppliedDelta, CommandStatus, StepDisposition, StepOutcome,
+        WorldSpatialObservation,
+    };
+    let mut view = PlayView::new(TileCoord::new(100, 100), 7, &[])?;
+    view.enable_touch_controls();
+    view.apply(&StepOutcome {
+        step_wait_ms: 0,
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        disposition: StepDisposition::Moved,
+        result_server_sequence: 1,
+        world_spatial_delta: Some(AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: WorldSpatialObservation {
+                content_generation: [0; 32],
+                actor_position: ActorPosition {
+                    x: 101,
+                    y: 100,
+                    floor: 7,
+                },
+            },
+        }),
+        world_object_overlay_delta: None,
+        gate_message_id: None,
+    })?;
+    assert!(view.camera_offset(std::time::Instant::now()).is_some());
+    let scene = view.scene();
+    let count = scene.tiles().instances().len();
+    let (w, h) = scene.view().viewport_px();
+    // Touch controls are appended after world sprites, close to the bottom left.
+    let (i, quad) = scene
+        .sprites()
+        .instances()
+        .iter()
+        .enumerate()
+        .rev()
+        .find(|(_, q)| q.position[0] < 200. && q.position[1] > h as f32 / 2.)
+        .ok_or("touch quad")?;
+    let expected = project_quad(
+        quad,
+        [1.; 4],
+        count + i,
+        &Handle::default(),
+        scene.atlas(),
+        QuadViewport {
+            scale: 1.,
+            size: Vec2::new(w as f32, h as f32),
+            offset: Vec2::ZERO,
+            clip_size: Vec2::new(w as f32, h as f32),
+            scroll: Vec2::ZERO,
+        },
+    )
+    .ok_or("fixed control")?
+    .1;
+    let (link, _, _) = play_channel();
+    let mut host = HostOwner::new(None)?;
+    host.play = Some(super::super::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.insert_non_send(host)
+        .init_resource::<SceneCache>()
+        .init_resource::<Time>()
+        .init_resource::<Assets<Image>>()
+        .init_resource::<Assets<Mesh>>()
+        .init_resource::<Assets<ColorMaterial>>()
+        .insert_resource(WorldViewport {
+            origin: UVec2::ZERO,
+            size: UVec2::new(w, h),
+        })
+        .add_systems(Update, project);
+    app.world_mut().spawn((Window::default(), PrimaryWindow));
+    app.update();
+    let entity = app
+        .world()
+        .resource::<SceneCache>()
+        .entities
+        .iter()
+        .find(|e| {
+            app.world()
+                .get::<Transform>(**e)
+                .is_some_and(|t| t.translation.z == expected.translation.z)
+        })
+        .ok_or("projected control")?;
+    assert_eq!(app.world().get::<Transform>(*entity), Some(&expected));
+    let terrain = app
+        .world()
+        .resource::<SceneCache>()
+        .entities
+        .iter()
+        .filter_map(|e| app.world().get::<Transform>(*e))
+        .find(|t| t.translation.z == 0.)
+        .ok_or("terrain")?;
+    assert!(
+        terrain.translation.x > -(w as f32) / 2. + 24.,
+        "terrain scrolls during walk"
+    );
+    Ok(())
+}
+
+#[test]
+fn resource_gauges_do_not_duplicate_sidebar_hud_in_bevy_scene() -> TestResult {
+    use crate::play::{PlayView, play_channel};
+    use oteryn_session::ActorVitals;
+
+    let (link, _, outbox) = play_channel();
+    link.use_shared_frontend();
+    let mut view = PlayView::new(TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    let mut preferences = view.preferences().clone();
+    preferences.resource_hud.combo = false;
+    preferences.health_circle = false;
+    view.set_preferences(preferences.clone())?;
+    let (width, height) = view.scene().view().viewport_px();
+    let mut host = HostOwner::new(None)?;
+    host.play = Some(super::super::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.insert_non_send(host)
+        .init_resource::<SceneCache>()
+        .init_resource::<Time>()
+        .init_resource::<Assets<Image>>()
+        .init_resource::<Assets<Mesh>>()
+        .init_resource::<Assets<ColorMaterial>>()
+        .insert_resource(WorldViewport {
+            origin: UVec2::ZERO,
+            size: UVec2::new(width, height),
+        })
+        .add_systems(Update, project);
+    app.world_mut().spawn((Window::default(), PrimaryWindow));
+    app.update();
+    let baseline = app.world().resource::<SceneCache>().entities.len();
+    for (health, harmony, serene) in [(50, 3, true), (100, 0, false)] {
+        outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
+            oteryn_session::AppliedDelta {
+                server_sequence: u64::from(health),
+                base_revision: 0,
+                new_revision: 1,
+                value: ActorVitals {
+                    health,
+                    max_health: 100,
+                    mana: 20,
+                    max_mana: 40,
+                    harmony,
+                    serene,
+                    ..default()
+                },
+            },
+        )]);
+        {
+            let mut host = app.world_mut().non_send_mut::<HostOwner>();
+            let play = host.play.as_mut().ok_or("play")?;
+            play.view.tick(&play.link).map_err(|_| "session ended")?;
+            assert_eq!(play.view.actor_vitals().map(|v| v.health), Some(health));
+        }
+        app.update();
+        assert_eq!(
+            app.world().resource::<SceneCache>().entities.len(),
+            baseline
+        );
+    }
+    // Removing corner gauges must preserve the actor-following combo gauge.
+    preferences.resource_hud.combo = true;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view
+        .set_preferences(preferences.clone())?;
+    app.update();
+    assert_eq!(
+        app.world().resource::<SceneCache>().entities.len(),
+        baseline + 5
+    );
+    // Native circle quads are still replaced by Bevy's configurable circle renderer.
+    preferences.health_circle = true;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view
+        .set_preferences(preferences)?;
+    app.update();
+    assert_eq!(
+        app.world().resource::<SceneCache>().entities.len(),
+        baseline + 5
+    );
+    Ok(())
+}
+
+#[test]
+fn constant_uv_preserves_texel_tint_clipping_and_dpi() -> TestResult {
+    let atlas = AtlasImage::new(
+        2,
+        1,
+        1,
+        vec![
+            0, 0, 0, 255, 128, 64, 192, 128, 255, 0, 0, 255, 0, 255, 0, 255,
+        ],
+    )?;
+    let quad = QuadInstance {
+        position: [-8., -4.],
+        size: [32., 16.],
+        uv: [0.75, 0.25, 0.75, 0.25],
+    };
+    let (sprite, transform) = project_quad(
+        &quad,
+        [0.5, 0.25, 1., 0.5],
+        3,
+        &Handle::default(),
+        &atlas,
+        QuadViewport {
+            scale: 2.,
+            size: Vec2::splat(64.),
+            offset: Vec2::ZERO,
+            clip_size: Vec2::new(16., 8.),
+            scroll: Vec2::ZERO,
+        },
+    )
+    .ok_or("palette quad")?;
+    assert_eq!(
+        sprite.rect, None,
+        "constant sampling must not use an empty source rectangle"
+    );
+    let expected = Color::srgba_u8(128, 64, 192, 128).to_linear();
+    assert_eq!(
+        sprite.color.to_linear(),
+        LinearRgba::new(
+            expected.red * 0.5,
+            expected.green * 0.25,
+            expected.blue,
+            expected.alpha * 0.5,
+        )
+    );
+    assert_eq!(sprite.custom_size, Some(Vec2::new(8., 4.)));
+    assert_eq!(transform.translation, Vec3::new(-12., 14., 0.003));
+    Ok(())
+}
+
+/// Set `OTERYN_BEVY_SCENE_CAPTURE=1` to qualify these sprites through native GPU
+/// readback. The test saves `scene.png` in a fresh temporary directory. Pass
+/// `-- --nocapture` to Cargo to see the saved path.
+#[test]
+fn palette_gauges_health_icons_and_text_reach_bevy_and_native_capture() -> TestResult {
+    use crate::play::{PlayView, play_channel};
+    use oteryn_session::*;
+    let mut view = PlayView::new(TileCoord::new(100, 100), 7, &[])?;
+    let mut preferences = view.preferences().clone();
+    preferences.creature_bars = true;
+    preferences.hud_npc_icons = true;
+    view.set_preferences(preferences)?;
+    let (link, _commands, outbox) = play_channel();
+    outbox.bevy_hud_fixture(
+        &[],
+        Some(ActorVitals {
+            health: 50,
+            max_health: 100,
+            mana: 25,
+            max_mana: 100,
+            harmony: 3,
+            serene: true,
+            ..default()
+        }),
+    );
+    let position = ActorPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    let entity = EntityRef {
+        identity: [7; 16],
+        generation: 1,
+    };
+    let actor = WorldSpatialEntity {
+        motion: None,
+        entity,
+        kind: EntityKind::Npc,
+        position,
+        display_name: None,
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 50,
+        },
+    };
+    view = view.with_entities(vec![actor])?;
+    view.set_presentations(vec![VisibleAppearance {
+        entity: actor,
+        look: None,
+        light: None,
+        forge_stacks: None,
+    }])?;
+    outbox.push(vec![SessionEvent::Presentation(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: vec![PresentationEvent {
+            decision_ordinal: 1,
+            emission_ordinal: 1,
+            kind: PresentationEventKind::ValueText {
+                kind: PresentationValueKind::Healed,
+                position,
+                target: entity,
+                attacker: None,
+                primary: PresentationValue {
+                    value: 8,
+                    color: PresentationColor::Orange,
+                },
+                secondary: None,
+            },
+        }],
+    })]);
+    assert!(view.tick(&link).is_ok());
+    let scene = view.scene();
+    let (width, height) = scene.view().viewport_px();
+    let [x, y] = scene.view().tile_to_screen(TileCoord::new(100, 100));
+    let side = scene.view().tile_px() as f32;
+    // Native gauges remain in the packed batch, while Bevy uses its sidebar HUD.
+    let native_samples = [
+        ([12., 60.], [255, 0, 0]),
+        ([100., 60.], [204; 3]),
+        ([12., 74.], [0, 0, 255]),
+        ([100., 74.], [204; 3]),
+        ([12., 89.], [255, 255, 0]),
+        ([108., 89.], [204; 3]),
+        ([12., 103.], [102, 255, 102]),
+    ];
+    for (point, rgb) in native_samples {
+        let (index, quad) = scene
+            .sprites()
+            .instances()
+            .iter()
+            .enumerate()
+            .rfind(|(_, quad)| {
+                Rect::from_corners(
+                    Vec2::from(quad.position),
+                    Vec2::from(quad.position) + Vec2::from(quad.size),
+                )
+                .contains(Vec2::from(point))
+            })
+            .ok_or("native gauge quad")?;
+        assert!(scene.native_hud_quads.contains(&index));
+        let atlas = scene.atlas();
+        let column = (quad.uv[0] * atlas.width() as f32) as usize;
+        let row = (quad.uv[1] * atlas.height() as f32) as usize;
+        let offset = (row * atlas.width() as usize + column) * 4;
+        assert_eq!(
+            &atlas.rgba()[offset..offset + 4],
+            &[rgb[0], rgb[1], rgb[2], 255]
+        );
+    }
+    // Actor health, NPC badge and the first lit pixel of the value glyph remain in Bevy.
+    let samples = vec![
+        ([x + 4., y - 3.], [153, 153, 0]),
+        ([x + side - 7., y + 1.], [0, 204, 255]),
+        ([x + side / 2. - 2., y + 1.], [255, 153, 0]),
+    ];
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(super::super::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.insert_non_send(owner)
+        .init_resource::<SceneCache>()
+        .init_resource::<Time>()
+        .init_resource::<Assets<Image>>()
+        .init_resource::<Assets<Mesh>>()
+        .init_resource::<Assets<ColorMaterial>>()
+        .insert_resource(WorldViewport {
+            origin: UVec2::ZERO,
+            size: UVec2::new(width, height),
+        })
+        .add_systems(Update, project);
+    app.world_mut().spawn((Window::default(), PrimaryWindow));
+    app.update();
+    if std::env::var_os("OTERYN_BEVY_SCENE_CAPTURE").is_some() {
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let path = fixture.join("scene.png");
+        let sprites = app
+            .world_mut()
+            .query_filtered::<(&Sprite, &Transform, &RenderLayers), With<WorldQuad>>()
+            .iter(app.world())
+            .map(|(s, t, l)| (s.clone(), *t, l.clone()))
+            .collect();
+        let handle = app
+            .world()
+            .resource::<SceneCache>()
+            .image
+            .as_ref()
+            .ok_or("atlas handle")?;
+        let atlas = app
+            .world()
+            .resource::<Assets<Image>>()
+            .get(handle)
+            .ok_or("atlas image")?
+            .clone();
+        native_palette_capture(
+            UVec2::new(width, height),
+            atlas,
+            sprites,
+            samples.clone(),
+            path.clone(),
+        )?;
+        fixture.keep();
+        println!("Scene capture saved to {}", path.display());
+    }
+    for (point, rgb) in &samples {
+        let sprite = app
+            .world_mut()
+            .query_filtered::<(&Sprite, &Transform), With<WorldQuad>>()
+            .iter(app.world())
+            .filter(|(s, t)| {
+                bounds(
+                    s,
+                    t,
+                    WorldViewport {
+                        origin: UVec2::ZERO,
+                        size: UVec2::new(width, height),
+                    },
+                    1.,
+                )
+                .contains(Vec2::from(*point))
+            })
+            .max_by(|(_, a), (_, b)| a.translation.z.total_cmp(&b.translation.z))
+            .map(|(s, _)| s)
+            .ok_or("sample sprite")?;
+        assert_eq!(sprite.rect, None, "palette sample at {point:?}");
+        assert_eq!(
+            sprite.color.to_srgba().to_u8_array(),
+            [rgb[0], rgb[1], rgb[2], 255]
+        );
+    }
+    Ok(())
+}
+
+fn native_palette_capture(
+    size: UVec2,
+    atlas: Image,
+    sprites: Vec<(Sprite, Transform, RenderLayers)>,
+    samples: Vec<([f32; 2], [u8; 3])>,
+    path: std::path::PathBuf,
+) -> TestResult {
+    use bevy::{
+        camera::RenderTarget,
+        render::view::screenshot::{Screenshot, ScreenshotCaptured},
+    };
+    use std::sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    };
+    let mut app = App::new();
+    app.add_plugins(
+        DefaultPlugins
+            .set(bevy::render::RenderPlugin {
+                synchronous_pipeline_compilation: true,
+                ..default()
+            })
+            .set(WindowPlugin {
+                primary_window: None,
+                ..default()
+            })
+            .disable::<bevy::winit::WinitPlugin>(),
+    );
+    let ready = std::time::Instant::now();
+    while app.plugins_state() == bevy::app::PluginsState::Adding {
+        if ready.elapsed() > std::time::Duration::from_secs(45) {
+            return Err("native renderer initialization timed out".into());
+        }
+        bevy::tasks::tick_global_task_pools_on_main_thread();
+    }
+    app.finish();
+    app.cleanup();
+    let mut image = Image::new_target_texture(size.x, size.y, TextureFormat::Rgba8UnormSrgb, None);
+    image.texture_descriptor.usage |= bevy::render::render_resource::TextureUsages::COPY_SRC;
+    let target = app.world_mut().resource_mut::<Assets<Image>>().add(image);
+    app.world_mut().spawn((
+        Camera2d,
+        RenderTarget::Image(target.clone().into()),
+        bevy::render::view::Tonemapping::None,
+        RenderLayers::layer(1),
+    ));
+    let atlas = app.world_mut().resource_mut::<Assets<Image>>().add(atlas);
+    for (mut sprite, transform, layer) in sprites {
+        if sprite.image != Handle::default() {
+            sprite.image = atlas.clone();
+        }
+        app.world_mut().spawn((sprite, transform, layer));
+    }
+    let result = Arc::new(Mutex::new(None));
+    let pending = Arc::new(AtomicBool::new(false));
+    let started = std::time::Instant::now();
+    while started.elapsed() < std::time::Duration::from_secs(45) {
+        if !pending.swap(true, Ordering::Relaxed) {
+            let pending = Arc::clone(&pending);
+            let output = Arc::clone(&result);
+            let samples = samples.clone();
+            let path = path.clone();
+            app.world_mut()
+                .spawn(Screenshot::image(target.clone()))
+                .observe(move |event: On<ScreenshotCaptured>| {
+                    pending.store(false, Ordering::Relaxed);
+                    let Ok(image) = event.image.clone().try_into_dynamic() else {
+                        return;
+                    };
+                    let rgba = image.to_rgba8();
+                    if samples.iter().all(|(point, rgb)| {
+                        rgba.get_pixel_checked(point[0] as u32, point[1] as u32)
+                            .is_some_and(|p| {
+                                p.0[..3].iter().zip(rgb).all(|(a, b)| a.abs_diff(*b) <= 1)
+                            })
+                    }) && let Ok(mut result) = output.lock()
+                    {
+                        *result = Some(image.save(&path).map_err(|e| e.to_string()));
+                    }
+                });
+        }
+        app.update();
+        // Headless updates have no window frame pacing. Complete each GPU
+        // submission before queuing another frame, including on a mismatch.
+        app.world()
+            .resource::<bevy::render::renderer::RenderDevice>()
+            .poll(bevy::render::render_resource::PollType::Wait {
+                submission_index: None,
+                timeout: Some(std::time::Duration::from_secs(10)),
+            })
+            .map_err(|error| format!("native GPU readback: {error}"))?;
+        if let Some(result) = result.lock().map_err(|_| "capture lock")?.take() {
+            drop(app);
+            bevy::tasks::tick_global_task_pools_on_main_thread();
+            return result.map_err(Into::into);
+        }
+    }
+    drop(app);
+    bevy::tasks::tick_global_task_pools_on_main_thread();
+    Err("native palette pixel readback timed out".into())
 }

@@ -66,6 +66,16 @@ pub fn bed_payload(handle: ItemHandle, skill: u8) -> Result<Vec<u8>, SessionErro
 
 pub use crate::item_use::use_with_payload;
 
+/// A native position in the raw domain-1 wire frame.
+pub(super) const fn wire_floor(
+    position: oteryn_session::ActorPosition,
+) -> oteryn_session::ActorPosition {
+    oteryn_session::ActorPosition {
+        floor: position.floor.saturating_neg(),
+        ..position
+    }
+}
+
 #[path = "state.rs"]
 mod state;
 pub use state::item_current;
@@ -74,12 +84,23 @@ pub async fn send<S: SessionStream>(
     session: &mut Session<S>,
     command: &Command,
 ) -> Result<String, SessionError> {
+    send_framed(session, command, false).await
+}
+
+/// `command` is selected on the native map. With `raw_wire` the session's domain-1 frame
+/// negates floors: spatial entities are compared there and a position target is encoded
+/// there, while map tiles stay native.
+pub async fn send_framed<S: SessionStream>(
+    session: &mut Session<S>,
+    command: &Command,
+    raw_wire: bool,
+) -> Result<String, SessionError> {
     // The session task continues receiving while the native popup owns the UI loop.
     // Drain already-readable pushes before consulting the session's current stores.
     session
         .service_liveness(std::time::Duration::from_millis(1))
         .await?;
-    if !state::current(session, command) {
+    if !state::current(session, command, raw_wire) {
         return Ok("Target changed".into());
     }
     let label = match command.action {
@@ -98,7 +119,11 @@ pub async fn send<S: SessionStream>(
             {
                 return Ok("Use with unavailable".into());
             }
-            let Ok(payload) = use_with_payload(source, &command.target) else {
+            let target = match command.target {
+                Target::Position(position) if raw_wire => Target::Position(wire_floor(position)),
+                ref other => other.clone(),
+            };
+            let Ok(payload) = use_with_payload(source, &target) else {
                 return Ok("Use with: invalid target".into());
             };
             session.world_context_use(&payload).await?

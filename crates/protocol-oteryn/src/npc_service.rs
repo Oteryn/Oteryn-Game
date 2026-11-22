@@ -19,6 +19,7 @@ use crate::charm_wire::{
     WireResult, push_message_field, push_nonzero_varint_field, push_varint_field, read_bytes,
     read_result_enum, read_uint32, read_varint, set_once,
 };
+pub use crate::trade_details::NpcQuoteDetails;
 use crate::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
 
 /// Registered capability `NPC_SERVICE_V1`: command types 7 and 8, state domains 7 and 8.
@@ -72,6 +73,8 @@ const MAX_OFFER_ELEMENT_BYTES: usize = 2 + MAX_OFFER_BYTES;
 /// elements.
 pub const MAX_NPC_TRADE_WINDOW_BYTES: usize =
     MAX_NPC_FIELD_BYTES + 11 + MAX_OFFERS * MAX_OFFER_ELEMENT_BYTES;
+/// Negotiated quote names and quantity bounds, with per-offer framing slack.
+pub const MAX_NPC_TRADE_WINDOW_DETAILS_BYTES: usize = MAX_NPC_TRADE_WINDOW_BYTES + MAX_OFFERS * 144;
 
 pub(crate) fn malformed<T>() -> WireResult<T> {
     Err(NpcServiceWireError::Malformed)
@@ -177,6 +180,8 @@ pub struct NpcOffer {
 /// `NpcTradeWindowV1`: domain 8. The default is a closed window.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcTradeWindow {
+    /// Index-aligned metadata, present only with capability 501.
+    pub details: Vec<NpcQuoteDetails>,
     /// The NPC and catalogue revision of an open window.
     pub open: Option<(EntityRef, u64)>,
     /// Offers in index order, at most [`MAX_OFFERS`]; empty for a closed window.
@@ -471,6 +476,11 @@ fn check_window(window: &NpcTradeWindow) -> WireResult<()> {
 
 /// Encodes the snapshot (type 1) or delta (type 1) payload of domain 8.
 pub fn encode_npc_trade_window(window: &NpcTradeWindow) -> WireResult<Vec<u8>> {
+    encode_npc_trade_window_for(window, false)
+}
+
+/// Capability 501 adds index-aligned quote metadata; legacy bytes remain unchanged.
+pub fn encode_npc_trade_window_for(window: &NpcTradeWindow, details: bool) -> WireResult<Vec<u8>> {
     check_window(window)?;
     let mut output = Vec::with_capacity(MAX_NPC_TRADE_WINDOW_BYTES);
     if let Some((npc, revision)) = &window.open {
@@ -480,11 +490,52 @@ pub fn encode_npc_trade_window(window: &NpcTradeWindow) -> WireResult<Vec<u8>> {
     for offer in &window.offers {
         push_message_field(&mut output, 3, &encode_offer(offer)?);
     }
+    if details {
+        check_quote_details(window)?;
+        for detail in &window.details {
+            let mut body = Vec::new();
+            push_message_field(&mut body, 1, detail.name.as_bytes());
+            push_varint_field(&mut body, 2, u64::from(detail.maximum_quantity));
+            push_message_field(&mut output, 4, &body);
+        }
+    }
     Ok(output)
 }
 
+fn check_quote_details(window: &NpcTradeWindow) -> WireResult<()> {
+    if !window.details.is_empty() && window.details.len() != window.offers.len() {
+        return malformed();
+    }
+    for (offer, detail) in window.offers.iter().zip(&window.details) {
+        if detail.name.is_empty()
+            || detail.name.len() > 128
+            || detail.name.contains('\0')
+            || detail.maximum_quantity.saturating_mul(offer.count) > 10_000
+        {
+            return malformed();
+        }
+    }
+    Ok(())
+}
+
 pub fn decode_npc_trade_window(payload: &[u8]) -> WireResult<NpcTradeWindow> {
-    check_size(payload, MAX_NPC_TRADE_WINDOW_BYTES)?;
+    decode_npc_trade_window_for(payload, false)
+}
+
+/// Select the same quote extension the server negotiated for this session.
+pub fn decode_npc_trade_window_for(
+    payload: &[u8],
+    details_selected: bool,
+) -> WireResult<NpcTradeWindow> {
+    check_size(
+        payload,
+        if details_selected {
+            MAX_NPC_TRADE_WINDOW_DETAILS_BYTES
+        } else {
+            MAX_NPC_TRADE_WINDOW_BYTES
+        },
+    )?;
+    let mut details = Vec::new();
     let (mut npc, mut revision, mut offers) = (None, None, Vec::new());
     read_fields(payload, |number, wire, input, cursor| {
         match (number, wire) {
@@ -497,10 +548,35 @@ pub fn decode_npc_trade_window(payload: &[u8]) -> WireResult<NpcTradeWindow> {
                 offers.push(decode_offer(read_bytes(input, cursor)?)?);
                 Ok(())
             }
+            (4, 2) if details_selected => {
+                if details.len() == MAX_OFFERS {
+                    return Err(NpcServiceWireError::LimitExceeded);
+                }
+                let body = read_bytes(input, cursor)?;
+                check_size(body, 140)?;
+                let (mut name, mut maximum) = (None, None);
+                read_fields(body, |number, wire, body, cursor| match (number, wire) {
+                    (1, 2) => set_once(
+                        &mut name,
+                        std::str::from_utf8(read_bytes(body, cursor)?)
+                            .map_err(|_| NpcServiceWireError::Malformed)?
+                            .to_owned(),
+                    ),
+                    (2, 0) => set_once(&mut maximum, read_uint32(body, cursor)?),
+                    _ => malformed(),
+                })?;
+                let detail = crate::trade_details::NpcQuoteDetails {
+                    name: name.ok_or(NpcServiceWireError::Malformed)?,
+                    maximum_quantity: maximum.unwrap_or_default(),
+                };
+                details.push(detail);
+                Ok(())
+            }
             _ => malformed(),
         }
     })?;
     let window = NpcTradeWindow {
+        details,
         open: match (npc, revision) {
             (Some(npc), revision) => Some((npc, revision.unwrap_or(0))),
             (None, None) => None,
@@ -509,6 +585,7 @@ pub fn decode_npc_trade_window(payload: &[u8]) -> WireResult<NpcTradeWindow> {
         offers,
     };
     check_window(&window)?;
+    check_quote_details(&window)?;
     Ok(window)
 }
 

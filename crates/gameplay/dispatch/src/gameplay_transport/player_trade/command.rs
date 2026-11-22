@@ -351,7 +351,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(CheckError::from)?
             .map_err(CheckError::from)?;
+        if !leaf.contents().is_empty()
+            && lives.iter().any(|live| {
+                !live
+                    .admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1)
+            })
+        {
+            return Err(ResultCode::NotSupported.into());
+        }
         let projection = self.trade_projection(runtime, &leaf)?;
+        let contents = if lives
+            .iter()
+            .any(|live| live.admitted.continuity.selected_capabilities.contains(501))
+        {
+            self.trade_contents(runtime, &leaf)?
+        } else {
+            Vec::new()
+        };
         let mut backpacks = Vec::new();
         for fence in fences {
             let backpack = self
@@ -375,6 +394,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             old.offers[1] = Some(leaf);
             old.items[1] = Some(item);
             old.projections[1] = Some(projection);
+            old.contents[1] = contents;
             old.commands[1] = command;
             old.pair = Some(command);
             old.id = Some(identity(command, b"pair"));
@@ -392,6 +412,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 items: [Some(item), None],
                 backpacks: backpacks.try_into().map_err(|_| ResultCode::Rejected)?,
                 projections: [Some(projection), None],
+                contents: [contents, Vec::new()],
                 commands: [
                     command,
                     CommandRef::new(

@@ -83,7 +83,7 @@ impl PlayLink {
             panel.close()
         })
     }
-    #[cfg(all(test, feature = "bevy-shell"))]
+    #[cfg(all(test, bevy_shell))]
     pub(crate) fn bevy_items_fixture(
         outbox: &crate::play::Outbox,
         inventory: Option<oteryn_session::CharacterInventory>,
@@ -91,6 +91,9 @@ impl PlayLink {
         counted: bool,
         equipment: bool,
     ) {
+        if views.as_ref().is_some_and(|views| views.views.iter().any(|view| view.browse.is_some())) {
+            outbox.browse_field_initialize(true);
+        }
         outbox.inventory_initialize(inventory, counted);
         outbox.equipment_initialize(equipment);
         outbox.container_initialize(views);
@@ -128,18 +131,12 @@ impl PlayLink {
             }
             true
         };
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).containers.open = true;
-        }
+        lock(&self.mailbox).containers.open = true;
         sent
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn inventory_native_open(
     mailbox: &mut crate::play::mailbox::Mailbox,
     commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,

@@ -6,7 +6,14 @@ pub(super) fn wrap_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    wrap_bundle_with_static_decorations(world, channel, &[])
+    wrap_bundle_with_static_decorations(world, channel, &[], false)
+}
+
+pub(super) fn walkable_house_bundle(
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    wrap_bundle_with_static_decorations(world, channel, &[], true)
 }
 
 pub(super) fn static_decoration_bundle(
@@ -54,13 +61,14 @@ fn static_decoration_bundle_with(
             blocks_projectile:policy.attributes.blocks_projectile.ok_or("decoration projectile fact")?,
             pickupable:false,door:false }});
     }
-    wrap_bundle_with_static_decorations(world,channel,&extras)
+    wrap_bundle_with_static_decorations(world, channel, &extras, false)
 }
 
 fn wrap_bundle_with_static_decorations(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
     extras: &[StaticDecoration],
+    adjacent_ground: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use crate::map::boot::{self, tests as fixture};
     use oteryn_world_bundle::bundle;
@@ -78,6 +86,22 @@ fn wrap_bundle_with_static_decorations(
     let ground=seed.items.first().ok_or("House ground")?.palette;
     let flags=seed.flags;
     // Clear only the fixture seed before placing actual native decorations.
+    if adjacent_ground {
+        let portal = seed.items.last().ok_or("teleport appearance")?.clone();
+        let mut ground_tile = seed.clone();
+        ground_tile.house = 3437;
+        ground_tile.items.truncate(1);
+        for offset in [1, 2] {
+            let mut adjacent = ground_tile.clone();
+            adjacent.x += offset;
+            if offset == 2 {
+                let mut portal = portal.clone();
+                portal.attrs.teleport = Some((32311, 32803, (-7_i8).to_ne_bytes()[0]));
+                adjacent.items.push(portal);
+            }
+            sector.tiles.push(adjacent);
+        }
+    }
     for tile in &mut sector.tiles {
         if tile.x == 7 { tile.items.truncate(1); }
     }
@@ -109,6 +133,16 @@ fn wrap_bundle_with_static_decorations(
         }
         tile.x += 32303;
         tile.y += 32804;
+    }
+    if adjacent_ground {
+        let mut landing = sector
+            .tiles
+            .iter()
+            .find(|tile| tile.x == 32311)
+            .ok_or("east ground")?
+            .clone();
+        landing.y -= 1;
+        sector.tiles.push(landing);
     }
     entrance.x = 32309;
     entrance.y = 32805;

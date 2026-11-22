@@ -96,6 +96,11 @@ impl WorldEntities {
             }
             next.entities.insert(entity.entity, *entity);
         }
+        world_spatial_entities::unique_item_handles(next.entities.values())
+            .map_err(|_| inconsistent("duplicate item handle in entity store"))?;
+        for entity in delta.enter.iter().chain(&delta.update) {
+            entity.validate_forecast_owner(&next.own_identity)?;
+        }
         next.lights.extend(lights);
         if next.entities.len() > MAX_SNAPSHOT_ENTITIES {
             return Err(inconsistent("more entities than the snapshot bound"));

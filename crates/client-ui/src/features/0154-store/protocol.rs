@@ -361,6 +361,7 @@ mod tests {
                 message: "Select a hireling below".into(),
                 choices: vec![(1, "Alex".into())],
                 buttons: vec![(1, "Select".into()), (2, "Cancel".into())],
+                default_button: None,
                 cancel_button: Some(2),
                 image: None,
             };

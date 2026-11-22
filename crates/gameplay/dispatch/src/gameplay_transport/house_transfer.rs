@@ -102,6 +102,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let _lane = self.spell_lane_permit().await?;
+        let tracked_equipment = self
+            .states
+            .timed_items
+            .sessions
+            .lock()
+            .await
+            .get(&admitted.game_session_id)
+            .is_some_and(|clock| !clock.items.is_empty());
+        let tracked_imbuements = self
+            .states
+            .timed_items
+            .imbuements
+            .lock()
+            .await
+            .contains_key(&admitted.game_session_id);
+        if (tracked_equipment || tracked_imbuements)
+            && !self
+                .checkpoint_timed_equipment(actor, admitted.game_session_id, true)
+                .await
+        {
+            return None;
+        }
         let mut runtime = self.runtime.lock().await;
         let mut spells = self.states.spell_states.lock().await;
         let mut attack = self.states.attack.lock().await;
@@ -340,6 +362,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(attack);
         drop(spells);
         drop(runtime);
+        // The same worn items keep their sampling timestamps across the exact handoff.
+        let mut clocks = self.states.timed_items.sessions.lock().await;
+        if let Some(clock) = clocks.remove(&admitted.game_session_id) {
+            clocks.insert(destination, clock);
+        }
+        drop(clocks);
+        let mut imbuements = self.states.timed_items.imbuements.lock().await;
+        if let Some(clock) = imbuements.remove(&admitted.game_session_id) {
+            imbuements.insert(destination, clock);
+        }
+        drop(imbuements);
         let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
             .current_session_at(destination)
             .await

@@ -155,7 +155,7 @@ pub fn reward_bag_conversion(
     if record.production_definition.family != used.family || !record.admission.materializable {
         return None;
     }
-    if event_containers::event_container_rule(&used.production_key).is_some() {
+    if event_containers::legacy_conversion_rule(&used.production_key).is_some() {
         return event_containers::conversion(native, used, draw);
     }
     let bag = playable_bag(reward_bags()?, &used.production_key)?;

@@ -10,6 +10,11 @@ use bevy::{
 };
 use model::{Contact, Snapshot};
 use oteryn_client_ui::vip::Intent;
+#[path = "vip/consent.rs"]
+mod consent;
+#[cfg(test)]
+#[path = "vip/context_menu_tests.rs"]
+mod context_menu_tests;
 #[path = "vip/dialog.rs"]
 mod dialog;
 #[path = "vip/groups.rs"]
@@ -21,6 +26,8 @@ mod groups_tests;
 mod input;
 #[path = "vip/model.rs"]
 mod model;
+#[path = "vip/presentation.rs"]
+mod presentation;
 #[cfg(test)]
 #[path = "vip/tests.rs"]
 mod tests;
@@ -63,6 +70,11 @@ struct Control {
 #[derive(Clone, Copy)]
 enum Action {
     Close,
+    Sort,
+    HideOffline,
+    Context(u64),
+    Message(u64),
+    MenuClose,
     Add,
     GroupAdd,
     GroupRename(u8),
@@ -76,6 +88,8 @@ enum Action {
     Icon(u64, i8),
     Notify(u64),
     Group(u64, u8),
+    Consent(consent::Action),
+    Withdraw(u64),
 }
 #[derive(Component)]
 struct List;
@@ -106,6 +120,7 @@ enum Label {
 
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
+        .init_resource::<presentation::Preferences>()
         .init_resource::<InputFocus>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(
@@ -115,10 +130,16 @@ pub(super) fn install(app: &mut App) {
                 .after(crate::bevy_shell::ui::setup),
         )
         .add_systems(
+            Startup,
+            (consent::setup, presentation::setup).after(view::setup),
+        )
+        .add_systems(
             Update,
             (
                 view::project,
+                presentation::project,
                 groups::project,
+                consent::project,
                 view::dialog,
                 input::keyboard,
             )

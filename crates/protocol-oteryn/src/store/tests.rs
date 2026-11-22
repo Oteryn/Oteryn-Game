@@ -142,3 +142,38 @@ fn purchase_results_are_closed_and_accepted_ids_are_required() {
         .is_err()
     )
 }
+
+#[test]
+fn purchase_result_ids_match_acceptance_independently() {
+    for code in [
+        StorePurchaseCode::Accepted,
+        StorePurchaseCode::StaleQuote,
+        StorePurchaseCode::OfferUnavailable,
+        StorePurchaseCode::PurchaseDisabled,
+        StorePurchaseCode::InsufficientBalance,
+        StorePurchaseCode::AccountRestricted,
+    ] {
+        for order_id in [None, Some(uuid(3))] {
+            for operation_id in [None, Some(uuid(4))] {
+                let result = StorePurchaseResult {
+                    code,
+                    order_id,
+                    operation_id,
+                };
+                let mut wire = vec![8, code as u8];
+                if let Some(id) = order_id {
+                    wire.extend([18, 16]);
+                    wire.extend(id);
+                }
+                if let Some(id) = operation_id {
+                    wire.extend([26, 16]);
+                    wire.extend(id);
+                }
+                let accepted = code == StorePurchaseCode::Accepted;
+                let valid = order_id.is_some() == accepted && operation_id.is_some() == accepted;
+                assert_eq!(decode_purchase_result(&wire).is_ok(), valid, "{result:?}");
+                assert_eq!(encode_purchase_result(&result).is_ok(), valid, "{result:?}");
+            }
+        }
+    }
+}

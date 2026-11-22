@@ -31,7 +31,18 @@ pub struct CommandOutcome<D> {
 }
 
 /// Outcome of `Session::step` (FIRST-CONTROL-WIRE-V1, command type 1).
-pub type StepOutcome = CommandOutcome<StepDisposition>;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StepOutcome {
+    pub command_id: u64,
+    pub status: CommandStatus,
+    pub disposition: StepDisposition,
+    /// Server-committed pacing receipt; zero for an unpaced profile or a refusal.
+    pub step_wait_ms: u32,
+    pub result_server_sequence: u64,
+    pub world_spatial_delta: Option<AppliedDelta<WorldSpatialObservation>>,
+    pub world_object_overlay_delta: Option<AppliedDelta<WorldObjectOverlayEntry>>,
+    pub gate_message_id: Option<u8>,
+}
 /// Outcome of `Session::use_object` (USE-WIRE-V1, command type 2).
 pub type UseOutcome = CommandOutcome<UseDisposition>;
 

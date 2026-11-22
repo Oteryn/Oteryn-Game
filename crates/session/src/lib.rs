@@ -43,6 +43,7 @@ pub mod activity_scope;
 mod achievement_notices_transport;
 pub use oteryn_protocol_oteryn::achievement_notices;
 mod activity_handoff;
+pub use oteryn_protocol_oteryn::actor_motion;
 pub use oteryn_protocol_oteryn::analyser_catalogue;
 pub use oteryn_protocol_oteryn::analyser_party;
 pub use oteryn_protocol_oteryn::battle_metadata;
@@ -63,14 +64,21 @@ mod events;
 mod framing;
 mod pvp_expert;
 pub use events::SessionEvent;
+/// Observer-relative guild emblems (capability 509).
+pub use oteryn_protocol_oteryn::guild_emblem;
 mod gated_command;
 pub use gated_command::world_context;
 /// The in-game Channel switch (capability 512).
 pub use oteryn_protocol_oteryn::channel_switch;
 /// Server-owned highscores query and result codecs.
 pub use oteryn_protocol_oteryn::highscores;
+pub use oteryn_protocol_oteryn::highscores_catalogue;
+/// The own character's capacity (capability 508).
+pub use oteryn_protocol_oteryn::inventory_capacity;
+pub use oteryn_protocol_oteryn::item_inscription;
 /// The own Platform sanction record (capability 497).
 pub use oteryn_protocol_oteryn::sanction_record;
+pub use oteryn_protocol_oteryn::server_info;
 pub mod container_tree;
 mod hotkey_equip_transport;
 #[path = "features/0004-item-view-move/protocol.rs"]
@@ -176,8 +184,9 @@ pub use oteryn_protocol_oteryn::chat::{
 /// `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::item_view::{
     CharacterInventory, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
-    ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
-    decode_character_inventory_with_equip_drop, encode_character_inventory_with_equip_drop,
+    ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_CORPSE_CONTAINER_48_ENTRIES,
+    MAX_OPEN_CONTAINER_ENTRIES, OpenContainer, decode_character_inventory_with_equip_drop,
+    encode_character_inventory_with_equip_drop,
 };
 use oteryn_protocol_oteryn::logout;
 mod server_messages;
@@ -185,6 +194,7 @@ mod server_save_countdown;
 mod tutorial_notices;
 pub use oteryn_protocol_oteryn::server_save_countdown::ServerSaveCountdown;
 pub use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
+pub use oteryn_protocol_oteryn::tutorial_vocation;
 pub use oteryn_protocol_oteryn::{
     arena, boss_difficulty, boss_rewards, character_info, cyclopedia_character, cyclopedia_tracker,
     premium_overview, weapon_proficiency, weapon_proficiency_state, zones_nologout::ServerMessage,
@@ -220,7 +230,7 @@ use oteryn_protocol_oteryn::world_object::{self, UseDisposition, WorldObjectTarg
 use oteryn_protocol_oteryn::world_spatial::{self, CAPABILITY_PACED_MOVEMENT_V1};
 pub use oteryn_protocol_oteryn::world_spatial::{
     ActorPosition, CAPABILITY_DIAGONAL_MOVEMENT_V1, StepDirection, StepDisposition,
-    WorldSpatialObservation,
+    WorldSpatialObservation, native_floor,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::{
     self, CAPABILITY_WORLD_SPATIAL_ENTITIES, MAX_SNAPSHOT_ENTITIES,

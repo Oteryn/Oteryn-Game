@@ -57,8 +57,8 @@ pub(super) fn missile(
 ) -> Result<(), BatchError> {
     let a = view.tile_to_screen(TileCoord::new(from.x, from.y));
     let b = view.tile_to_screen(TileCoord::new(to.x, to.y));
-    let duration = (a[0] - b[0]).hypot(a[1] - b[1]) / view.tile_px() as f32 * 0.05;
-    let duration = duration.clamp(0.05, 1.0);
+    let distance = ((a[0] - b[0]).hypot(a[1] - b[1]) / view.tile_px() as f32).sqrt();
+    let duration = distance * 0.15;
     if elapsed >= duration {
         return Ok(());
     }
@@ -78,6 +78,7 @@ pub(super) fn words(
     batch: &mut SpriteBatch,
     view: &TileView,
     atlas: &AtlasImage,
+    font: Option<&GameFont>,
     position: ActorPosition,
     text: &str,
     progress: f32,
@@ -87,7 +88,12 @@ pub(super) fn words(
         return Ok(());
     }
     let [left, top] = view.tile_to_screen(tile);
-    let text: Vec<_> = text.chars().take(64).collect();
+    if let Some(font) = font {
+        let at = [left + view.tile_px() as f32 / 2.0, top - 12.0 - progress * 20.0];
+        return game_text(batch, view, atlas, font, text, at, rgb(PresentationColor::Orange));
+    }
+    // Tibia does not cap spell words; the catalogue wire bounds them.
+    let text: Vec<_> = text.chars().collect();
     for (index, character) in text.iter().enumerate() {
         let glyph = oteryn_renderer::name_text::glyph_rgba(*character);
         for y in 0..7usize {
@@ -136,8 +142,27 @@ impl PlayView {
                     .find(|entry| entry.cast_index == spell)
             {
                 self.spell_words
-                    .insert(spell, entry.words.chars().take(64).collect());
+                    .insert(spell, entry.words.clone());
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod timing_tests {
+    use super::*;
+    #[test]
+    fn missile_uses_square_root_distance_and_zero_paths_vanish() -> Result<(), BatchError> {
+        let world = crate::map::World::builtin()?;
+        let view = TileView::new(TileCoord::new(0, 0), 32, 15, 11)?;
+        let from = ActorPosition { x: 1, y: 1, floor: 0 };
+        for frame in [None, Some(&[Draw { cell: crate::map::MARKER_CELL, offset: [0, 0] }][..])] {
+            for (distance, elapsed, visible) in [(0, 0.0, false), (1, 0.1, true), (1, 0.15, false), (4, 0.25, true), (4, 0.3, false)] {
+                let mut batch = SpriteBatch::new();
+                missile(&mut batch, &view, world.atlas(), from, ActorPosition { x: from.x + distance, ..from }, elapsed, frame)?;
+                assert_eq!(!batch.is_empty(), visible, "distance {distance}, elapsed {elapsed}");
+            }
+        }
+        Ok(())
     }
 }

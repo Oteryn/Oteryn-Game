@@ -1,18 +1,31 @@
 //! Typed depot request/reply through the existing sequenced session exchange.
 use super::*;
 use oteryn_protocol_oteryn::depot::{
-    CAPABILITY_DEPOT_V1, COMMAND_TYPE_DEPOT_INTENT, decode_depot_reply, encode_depot_intent,
+    CAPABILITY_DEPOT_V1, COMMAND_TYPE_DEPOT_INTENT, decode_depot_reply, encode_depot_intent_at,
 };
 
 impl<S: SessionStream> Session<S> {
     /// Resolve a nearby locker, browse a box, or move one whole item/stack.
     /// Capability absence and ordinary command rejection leave play usable.
     pub async fn depot(&mut self, intent: DepotIntent) -> Result<Option<DepotReply>, SessionError> {
+        self.depot_at(intent, None).await
+    }
+
+    /// [`Self::depot`] with Manual Sort Mode's box slot for a deposit. The slot is sent only
+    /// when capability 510 was negotiated; without it the deposit takes the first slot.
+    pub async fn depot_at(
+        &mut self,
+        intent: DepotIntent,
+        slot: Option<u32>,
+    ) -> Result<Option<DepotReply>, SessionError> {
         self.ensure_usable()?;
         if !self.is_selected(CAPABILITY_DEPOT_V1) {
             return Ok(None);
         }
-        let payload = encode_depot_intent(intent)
+        let slot = slot.filter(|_| {
+            self.is_selected(oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1)
+        });
+        let payload = encode_depot_intent_at(intent, slot)
             .map_err(|_| SessionError::Protocol(FoundationProtocolError::MalformedEnvelope))?;
         let revision = self.inventory_revision;
         let container_revision = self.container_revision;

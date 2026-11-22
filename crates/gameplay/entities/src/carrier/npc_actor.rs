@@ -592,6 +592,29 @@ mod tests {
     }
 
     #[test]
+    fn npc_actor_motion_retains_walk_receipt() {
+        let (mut runtime, actor, _) = movement_fixture();
+        let before = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("NPC position");
+        let next = MovementLocalPosition {
+            x: 20,
+            y: 9,
+            floor: 7,
+        };
+        let snapshot = runtime
+            .borrow_movement_position()
+            .commit_cardinal(before, next)
+            .expect("NPC step");
+        runtime.record_walk(actor, snapshot, std::time::Duration::from_millis(250));
+        assert_eq!(
+            runtime.actor_motion(actor),
+            Some((snapshot.last_translation_revision(), 250, 0, 0))
+        );
+    }
+
+    #[test]
     fn npc_movement_commits_the_native_slot_and_updates_facing_visibility_and_occupancy() {
         let (mut runtime, actor, other) = movement_fixture();
         let mut snapshot = runtime

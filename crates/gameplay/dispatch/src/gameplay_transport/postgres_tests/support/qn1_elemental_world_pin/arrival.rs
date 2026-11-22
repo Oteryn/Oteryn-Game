@@ -107,6 +107,7 @@ pub(super) async fn exercise(
         item_fence: Some(fence),
     };
     let request = |target| LoopMove {
+        slot: None,
         item: ItemKey::Instance(item),
         count: None,
         target,

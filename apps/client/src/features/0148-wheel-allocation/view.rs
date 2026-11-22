@@ -8,40 +8,19 @@ impl PlayLink {
     }
 }
 
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
 #[path = "presets.rs"]
 pub(in crate::play) mod presets;
 
-#[cfg(windows)]
-#[path = "gem_native.rs"]
-pub(in crate::play) mod gem_native;
-#[cfg(windows)]
-pub(in crate::play) fn poll_gems(
-    mailbox: &crate::play::mailbox::SharedMailbox,
-    commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
-) {
-    let review = lock(mailbox).wheel.gems.review.is_some();
-    if review {
-        gem_native::open(mailbox, commands);
-    }
-}
-#[cfg(any(windows, test))]
+#[cfg(test)]
 #[path = "gem_surface.rs"]
 pub(in crate::play) mod gem_surface;
 
-#[cfg(windows)]
-#[path = "wheel_native.rs"]
-pub(in crate::play) mod wheel_native;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 #[path = "wheel_surface.rs"]
 pub(in crate::play) mod wheel_surface;
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(super) fn vessel_choices(panel: &WheelPanel) -> impl ExactSizeIterator<Item = String> {
     (0..panel.vessel_slot_count()).map(oteryn_client_ui::wheel_allocation::vessel_name)
 }

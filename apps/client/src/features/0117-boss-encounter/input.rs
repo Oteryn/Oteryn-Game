@@ -41,26 +41,14 @@ impl PlayLink {
     pub fn boss_encounter_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if oteryn_client_ui::boss_encounter::cooldowns_key(events) {
             self.boss_encounter_request(Intent::Refresh);
-            #[cfg(windows)]
-            if !self.uses_shared_frontend() {
-                super::view::cooldown_window(self);
-            }
-            if cfg!(not(windows)) || self.uses_shared_frontend() {
-                lock(&self.mailbox).boss_encounter.cooldowns_open = true;
-            }
+            lock(&self.mailbox).boss_encounter.cooldowns_open = true;
             return true;
         }
         if !oteryn_client_ui::boss_encounter::open_key(events) {
             return false;
         }
         self.boss_encounter_request(Intent::Refresh);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).boss_encounter.open = true;
-        }
+        lock(&self.mailbox).boss_encounter.open = true;
         true
     }
 }
@@ -69,7 +57,26 @@ pub(in crate::play) fn enqueue(
     commands: &UnboundedSender<PlayCommand>,
     intent: Intent,
 ) {
-    if let Some(command) = request(&mut mailbox.boss_encounter, intent)
+    let panel = &mut mailbox.boss_encounter;
+    if panel
+        .fields
+        .iter()
+        .any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, 512))
+        || !oteryn_client_ui::modal_dialogs::TextEditor::accepts(&panel.browser_search, 512)
+    {
+        panel.feedback = Some("A form field exceeds its UTF-8 byte limit or contains invalid text");
+        return;
+    }
+    if intent == Intent::CatalogueNext
+        && panel.catalogue_query.as_ref().is_none_or(|query| {
+            query.search != panel.browser_search.trim()
+                || query.category != panel.browser_category.server_filter()
+        })
+    {
+        panel.feedback = Some("Browse again after changing boss catalogue filters");
+        return;
+    }
+    if let Some(command) = request(panel, intent)
         && commands.send(PlayCommand::Feature(command)).is_err()
     {
         mailbox.boss_encounter.pending = false;
@@ -82,9 +89,8 @@ pub(in crate::play) fn edit(
     field: usize,
     value: String,
 ) {
+    // Keep invalid input for whole-form validation instead of reusing a stale value.
     if !panel.pending
-        && value.len() <= 512
-        && !value.contains('\0')
         && let Some(slot) = panel.fields.get_mut(field)
     {
         *slot = value;

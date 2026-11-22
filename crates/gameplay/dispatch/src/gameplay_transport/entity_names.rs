@@ -4,9 +4,7 @@ use super::capabilities::SelectedCapabilities;
 use super::connection::{AdmissionRefusal, FreshAdmissionAuthority};
 use super::world_spatial::{ChannelEntities, EntityKind, EntityRef, SessionVisibility};
 use crate::foundation::{ExactActorRef, GameSessionId};
-use oteryn_protocol_oteryn::entity_names::{
-    CAPABILITY_WORLD_SPATIAL_ENTITIES_V2, EntityDisplayName,
-};
+use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
 
 pub(super) async fn observe<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -23,14 +21,7 @@ pub(super) async fn observe_result<A: FreshAdmissionAuthority>(
     actor: ExactActorRef,
     selected: SelectedCapabilities,
 ) -> Result<ChannelEntities, AdmissionRefusal> {
-    if selected.contains(CAPABILITY_WORLD_SPATIAL_ENTITIES_V2) {
-        authority.observe_named_visible_entities_result(actor).await
-    } else {
-        authority
-            .observe_visible_entities(actor)
-            .await
-            .ok_or(AdmissionRefusal::Rejected)
-    }
+    authority.observe_projected_entities(actor, selected).await
 }
 
 enum Source {
@@ -42,8 +33,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn named_channel_entities(
         &self,
         observer: ExactActorRef,
+        forecasts: bool,
     ) -> Result<ChannelEntities, AdmissionRefusal> {
-        let (mut channel, sources) = Box::pin(self.named_entity_sources(observer))
+        let (mut channel, sources) = Box::pin(self.named_entity_sources(observer, forecasts))
             .await
             .ok_or(AdmissionRefusal::Rejected)?;
         // Durable reads run after dropping the runtime guard. Exhausting this shared budget is
@@ -83,8 +75,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     async fn named_entity_sources(
         &self,
         observer: ExactActorRef,
+        forecasts: bool,
     ) -> Option<(ChannelEntities, Vec<(EntityRef, Source)>)> {
-        let channel = self.observe_channel_entities(observer).await?;
+        let channel = self
+            .observe_channel_entities_projected(observer, forecasts)
+            .await?;
         // Use the same interest owner as the session: at most 256 name reads, and none for
         // actors outside this view. Objects have no display name.
         let selected = SessionVisibility::default()
@@ -171,6 +166,7 @@ mod tests {
             entities: vec![ChannelEntity {
                 source_icons:
                     oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+                motion: None,
                 display_name: Some(EntityDisplayName::new("Before")?),
                 health_percent: 100,
                 direction: StepDirection::South,

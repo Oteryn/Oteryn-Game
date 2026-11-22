@@ -44,13 +44,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn character_info_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.character_info.open = true;
-        }
+        lock(&self.mailbox).properties.character_info.open = true;
     }
     pub fn character_titles_open(&self) {
         {
@@ -63,13 +57,7 @@ impl PlayLink {
                 submit(&mut mailbox, &self.commands, Intent::Query);
             }
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_titles(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.character_info.titles_open = true;
-        }
+        lock(&self.mailbox).properties.character_info.titles_open = true;
     }
     pub fn character_info_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if oteryn_client_ui::character_info::titles_key(events) {

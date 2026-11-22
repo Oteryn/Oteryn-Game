@@ -228,8 +228,18 @@ fn e2e_n07c_replays_kill_facts_into_the_analyser_selector() -> Result<(), Error>
     let loot = select(3);
     let line = format!("Gold: {gold} | Looted items: {items}");
     assert!(shows(&loot, "Loot Analyser", &line, dropped > 0), "{loot}");
-    // Reset (index 7) clears the totals and the warning but keeps the selected tool.
-    let reset = select(7);
+    // Reset session (index 7) preserves the independent Loot report.
+    select(7);
+    assert_eq!(link.analyser_panel().gold, 0);
+    let preserved = select(3);
+    assert!(
+        shows(&preserved, "Loot Analyser", &line, dropped > 0),
+        "{preserved}"
+    );
+    // The Loot window's own Reset clears its totals and warning, keeping its selection.
+    crate::play::mailbox::lock(&link.mailbox).analyser.open = true;
+    link.analyser_reset();
+    let reset = link.analyser_text();
     assert!(
         shows(&reset, "Loot Analyser", "Gold: 0 | Looted items: 0", false),
         "{reset}"

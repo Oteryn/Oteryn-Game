@@ -4,11 +4,6 @@ impl PlayLink {
         lock(&self.mailbox).npc_shop.clone()
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
 impl PlayLink {
     /// Cheap retained visibility check for shared frontends before cloning the quote model.

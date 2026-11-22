@@ -617,10 +617,12 @@ impl AutoAttackOwner {
                 .checked_add(source.interval_micros)
                 .ok_or(AttackError::NumericOverflow)?;
         }
-        self.selections.retain(|s| {
-            runtime.contains_live_creature(s.issuer)
-                || runtime.companion_snapshot_including_dead(s.issuer).is_ok()
-        });
+        let retained = |issuer| {
+            runtime.contains_live_creature(issuer)
+                || runtime.companion_snapshot_including_dead(issuer).is_ok()
+        };
+        self.selections.retain(|s| retained(s.issuer));
+        self.entries.retain(|entry| retained(entry.issuer));
         let mut fingerprints: Vec<_> = sources
             .iter()
             .map(|s| (s.entry_index, s.fingerprint))
@@ -654,12 +656,27 @@ impl AutoAttackOwner {
             && self.selections[i].target == target
             && self.selections[i].session == session
             && self.selections[i].sources == binding
+            && sources.iter().all(|source| {
+                self.entries.iter().any(|entry| {
+                    entry.active
+                        && entry.issuer == selection.actor
+                        && entry.entry_index == source.entry_index
+                        && entry.target == target
+                        && entry.session == session
+                        && entry.source == source.fingerprint
+                })
+            })
         {
             // A later think retaining the same target does not postpone melee deadlines.
             self.selections[i].sequence = selection.sequence;
             return Ok(());
         }
-        if old.is_none() && self.selections.len() >= 64 {
+        if old.is_none()
+            && self.selections.len()
+                >= runtime
+                    .actor_slot_capacity()
+                    .min(crate::foundation::carrier::CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX)
+        {
             return Err(AttackError::LedgerFull);
         }
         if old.is_none() {
@@ -676,7 +693,12 @@ impl AutoAttackOwner {
                     .any(|e| e.issuer == selection.actor && e.entry_index == s.entry_index)
             })
             .count();
-        if self.entries.len() + needed > 64 * 16 {
+        if self.entries.len() + needed
+            > runtime
+                .actor_slot_capacity()
+                .min(crate::foundation::carrier::CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX)
+                * 16
+        {
             return Err(AttackError::LedgerFull);
         }
         self.entries
@@ -727,7 +749,12 @@ impl AutoAttackOwner {
         now: SemanticTimeMicros,
     ) -> SwingDispatchResult {
         require_owner(runtime, fence, stamp)?;
-        if sources.len() > 64 * 16 {
+        if sources.len()
+            > runtime
+                .actor_slot_capacity()
+                .min(crate::foundation::carrier::CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX)
+                * 16
+        {
             return Err(AttackError::InvalidSource);
         }
         let mut scheduled = Vec::new();
@@ -846,7 +873,11 @@ impl AutoAttackOwner {
             .entries
             .iter()
             .any(|e| e.issuer == issuer && e.entry_index == source.entry_index)
-            && self.entries.len() >= 64 * 16
+            && self.entries.len()
+                >= runtime
+                    .actor_slot_capacity()
+                    .min(crate::foundation::carrier::CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX)
+                    * 16
         {
             return Err(AttackError::LedgerFull);
         }
@@ -871,7 +902,7 @@ impl AutoAttackOwner {
                 .iter()
                 .any(|b| b.target == target && b.session == session)
             {
-                if self.blocks.len() >= 64 {
+                if self.blocks.len() >= runtime.actor_slot_capacity() {
                     return Err(AttackError::LedgerFull);
                 }
                 self.blocks
@@ -922,7 +953,12 @@ impl AutoAttackOwner {
             e.last = None;
             return Ok(());
         }
-        if self.entries.len() >= 64 * 16 {
+        if self.entries.len()
+            >= runtime
+                .actor_slot_capacity()
+                .min(crate::foundation::carrier::CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX)
+                * 16
+        {
             return Err(AttackError::LedgerFull);
         }
         self.entries
@@ -1250,7 +1286,7 @@ impl AutoAttackOwner {
                 .iter()
                 .position(|b| b.target == facts.target && b.session == facts.session);
             if bi.is_none() {
-                if self.blocks.len() >= 64 {
+                if self.blocks.len() >= runtime.actor_slot_capacity() {
                     return Err(AttackError::LedgerFull);
                 }
                 self.blocks
@@ -1355,7 +1391,7 @@ impl AutoAttackOwner {
                         magnitude,
                         base_damage,
                         None,
-                        crate::player_lethal::PlayerHitKind::Mitigated,
+                        crate::player_lethal::PlayerHitKind::Physical,
                         &occurrence,
                         now,
                         None,
@@ -1386,7 +1422,7 @@ impl AutoAttackOwner {
                         magnitude,
                         base_damage,
                         None,
-                        crate::player_lethal::PlayerHitKind::Mitigated,
+                        crate::player_lethal::PlayerHitKind::Physical,
                         &occurrence,
                         now,
                         Some(crate::player_lethal::SourceHitConditions {
@@ -1474,6 +1510,400 @@ type SwingDispatchResult = Result<Vec<(Ref, Result<SwingOutcome, AttackError>)>,
 #[cfg(test)]
 mod canonical_kernel_tests {
     use super::*;
+    fn fixture() -> (ChannelRuntimeV1, MeleeSource, AttackFacts) {
+        use crate::foundation::*;
+        let uuid = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
+        let world = WorldId::decode(&uuid(1)).expect("world");
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            ChannelId::decode(&uuid(2)).expect("channel"),
+            NodeId::decode(&uuid(3)).expect("node"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            512,
+            ChannelContentPin::test(world),
+        )
+        .expect("runtime");
+        let session = GameSessionId::decode(&uuid(4)).expect("session");
+        let reservation = runtime.reserve_fresh_session(session).expect("reserve");
+        let target = runtime.commit_fresh_session(reservation).expect("commit");
+        runtime
+            .initialize_movement_test_position(
+                target,
+                MovementLocalPosition {
+                    x: 100,
+                    y: 100,
+                    floor: 7,
+                },
+            )
+            .expect("position");
+        let key = "oteryn:creature.1st_mate_ratticus";
+        let issuer = runtime
+            .admit_monster_lab_creature(
+                MovementLocalPosition {
+                    x: 101,
+                    y: 100,
+                    floor: 7,
+                },
+                key,
+                1000,
+            )
+            .expect("creature");
+        let data: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../apps/game-server/src/creature_auto_attack_test_data.json"
+        ))
+        .expect("fixture");
+        let records: Vec<ProjectReferenceRecord> =
+            serde_json::from_value(data["records"].clone()).expect("records");
+        let profiles: Vec<ProjectV2AuthoringProfile> =
+            serde_json::from_value(data["authoring_profiles"].clone()).expect("profiles");
+        let source = MeleeSource::from_native(
+            &Ref {
+                family: ProjectV2Family::Creature,
+                key: key.into(),
+                revision: "definition-r1".into(),
+            },
+            0,
+            &records,
+            &profiles,
+            runtime.content_pin().server_artifact_digest(),
+        )
+        .expect("source");
+        let facts = AttackFacts {
+            issuer,
+            target,
+            session,
+            revision: 1,
+            visible: true,
+            issuer_pz: false,
+            target_pz: false,
+            issuer_protected: false,
+            target_protected: false,
+            defense: 0,
+            armor: 0,
+            player_level: 1,
+            reference_level_party_lowest: None,
+        };
+        (runtime, source, facts)
+    }
+
+    fn select(
+        owner: &mut AutoAttackOwner,
+        runtime: &ChannelRuntimeV1,
+        source: &MeleeSource,
+        facts: AttackFacts,
+        sequence: u64,
+    ) {
+        let binding = runtime.binding();
+        let (fence, stamp) = crate::foundation::crystal_timer_fixture(
+            binding.runtime_scope(),
+            binding.scope_generation(),
+        )
+        .expect("owner fence");
+        owner
+            .accept_ai_target(
+                runtime,
+                &fence,
+                stamp,
+                crate::foundation::ThinkOccurrence {
+                    actor: facts.issuer,
+                    sequence,
+                },
+                facts.target,
+                facts.session,
+                std::slice::from_ref(source),
+                SemanticTimeMicros::from_micros(sequence),
+            )
+            .expect("selection");
+    }
+
+    #[test]
+    fn same_victim_reacquisition_rearms_cleared_entries() {
+        let (runtime, source, facts) = fixture();
+        let mut owner = AutoAttackOwner::default();
+        select(&mut owner, &runtime, &source, facts, 1);
+        let original_ready = owner.entries[0].ready;
+        select(&mut owner, &runtime, &source, facts, 2);
+        assert_eq!(owner.entries[0].ready, original_ready);
+        owner.clear_target(facts.issuer);
+        select(&mut owner, &runtime, &source, facts, 3);
+        assert!(owner.entries[0].active);
+        assert!(owner.entries[0].ready > original_ready);
+        // Lethal/stale clearing also marks entries inactive without removing the memo.
+        owner.entries[0].active = false;
+        select(&mut owner, &runtime, &source, facts, 4);
+        assert!(owner.entries[0].active);
+    }
+
+    #[test]
+    fn sixty_fifth_creature_can_select_and_attack() {
+        let (mut runtime, source, facts) = fixture();
+        let mut owner = AutoAttackOwner::default();
+        for _ in 0..65 {
+            let issuer = runtime
+                .admit_monster_lab_creature(
+                    crate::foundation::MovementLocalPosition {
+                        x: 101,
+                        y: 100,
+                        floor: 7,
+                    },
+                    &source.creature_key,
+                    1000,
+                )
+                .expect("creature");
+            select(
+                &mut owner,
+                &runtime,
+                &source,
+                AttackFacts { issuer, ..facts },
+                1,
+            );
+        }
+        assert_eq!(owner.selections.len(), 65);
+        assert_eq!(
+            owner.entries.iter().filter(|entry| entry.active).count(),
+            65
+        );
+    }
+
+    #[test]
+    fn selection_reclaims_retired_issuers_before_capacity_admission() {
+        let (mut runtime, source, facts) = fixture();
+        let mut owner = AutoAttackOwner::default();
+        let mut retired = Vec::new();
+        // Retain a full ledger of historical issuer generations, as left between AI cycles.
+        for _ in 0..runtime.actor_slot_capacity() {
+            let issuer = runtime
+                .admit_monster_lab_creature(
+                    crate::foundation::MovementLocalPosition {
+                        x: 101,
+                        y: 100,
+                        floor: 7,
+                    },
+                    &source.creature_key,
+                    1000,
+                )
+                .expect("historical issuer");
+            for index in 0..16 {
+                let mut entry_source = source.clone();
+                entry_source.entry_index = index;
+                owner
+                    .set_target(
+                        &runtime,
+                        issuer,
+                        facts.target,
+                        facts.session,
+                        &entry_source,
+                        "historical:1",
+                        SemanticTimeMicros::from_micros(0),
+                    )
+                    .expect("historical target");
+            }
+            retired.append(&mut owner.entries);
+            runtime.remove_test_actor(issuer).expect("retirement");
+        }
+        owner.entries = retired;
+        assert_eq!(owner.entries.len(), runtime.actor_slot_capacity() * 16);
+        select(&mut owner, &runtime, &source, facts, 1);
+        assert_eq!(owner.entries.len(), 1);
+        assert!(owner.entries[0].active);
+    }
+
+    #[derive(Default)]
+    struct HitAdmissionProbe {
+        calls: Vec<(
+            Option<ExactActorRef>,
+            crate::player_lethal::PlayerHitKind,
+            bool,
+        )>,
+    }
+    impl PlayerLethalVitals for HitAdmissionProbe {
+        #[allow(
+            clippy::too_many_arguments,
+            reason = "implements the source incoming-hit vitals admission seam"
+        )]
+        fn apply_source_incoming_hit(
+            &mut self,
+            _runtime: &mut ChannelRuntimeV1,
+            source: ExactActorRef,
+            _target: ExactActorRef,
+            _session: GameSessionId,
+            _magnitude: u32,
+            _base_damage: u32,
+            _charm_occurrence: Option<oteryn_simulation_determinism::DecisionOccurrenceId>,
+            kind: crate::player_lethal::PlayerHitKind,
+            _occurrence: &str,
+            _now: SemanticTimeMicros,
+            conditions: Option<crate::player_lethal::SourceHitConditions<'_>>,
+            _equipment: Option<crate::player_lethal::SourceHitEquipment<'_>>,
+        ) -> Option<PlayerDamageReceipt> {
+            self.calls.push((Some(source), kind, conditions.is_some()));
+            None
+        }
+        fn apply_attack_damage(
+            &mut self,
+            _runtime: &mut ChannelRuntimeV1,
+            _target: ExactActorRef,
+            _session: GameSessionId,
+            _magnitude: u32,
+            _occurrence: &str,
+            _now: SemanticTimeMicros,
+        ) -> Option<PlayerDamageReceipt> {
+            self.calls
+                .push((None, crate::player_lethal::PlayerHitKind::Mitigated, false));
+            None // Admission probe deliberately refuses HP writes after observing the call.
+        }
+        #[allow(
+            clippy::too_many_arguments,
+            reason = "implements the source-qualified vitals admission seam"
+        )]
+        fn apply_source_typed_attack_damage(
+            &mut self,
+            _runtime: &mut ChannelRuntimeV1,
+            source: ExactActorRef,
+            _target: ExactActorRef,
+            _session: GameSessionId,
+            _magnitude: u32,
+            kind: crate::player_lethal::PlayerHitKind,
+            _occurrence: &str,
+            _now: SemanticTimeMicros,
+        ) -> Option<PlayerDamageReceipt> {
+            self.calls.push((Some(source), kind, false));
+            None
+        }
+        #[allow(
+            clippy::too_many_arguments,
+            reason = "implements the atomic composite vitals admission seam"
+        )]
+        fn apply_composite_attack_damage(
+            &mut self,
+            _runtime: &mut ChannelRuntimeV1,
+            _target: ExactActorRef,
+            _session: GameSessionId,
+            _magnitude: u32,
+            _occurrence: &str,
+            source: ExactActorRef,
+            _definitions: &[ConditionDefinition],
+            _facts: &ApplicationFacts<'_>,
+            _immunities: &[ConditionType],
+            _fence: &crate::foundation::ScopeRuntimeFence,
+            _stamp: crate::foundation::RuntimeWorkStamp,
+        ) -> Option<PlayerDamageReceipt> {
+            self.calls.push((
+                Some(source),
+                crate::player_lethal::PlayerHitKind::Mitigated,
+                true,
+            ));
+            None
+        }
+        #[allow(
+            clippy::too_many_arguments,
+            reason = "implements the typed atomic composite vitals admission seam"
+        )]
+        fn apply_typed_composite_attack_damage(
+            &mut self,
+            _runtime: &mut ChannelRuntimeV1,
+            _target: ExactActorRef,
+            _session: GameSessionId,
+            _magnitude: u32,
+            kind: crate::player_lethal::PlayerHitKind,
+            _occurrence: &str,
+            source: ExactActorRef,
+            _definitions: &[ConditionDefinition],
+            _facts: &ApplicationFacts<'_>,
+            _immunities: &[ConditionType],
+            _fence: &crate::foundation::ScopeRuntimeFence,
+            _stamp: crate::foundation::RuntimeWorkStamp,
+        ) -> Option<PlayerDamageReceipt> {
+            self.calls.push((Some(source), kind, true));
+            None
+        }
+    }
+
+    #[test]
+    fn melee_commit_preserves_physical_kind_and_source_for_plain_and_composite_hits() {
+        let mut observed = Vec::new();
+        let mut expected = Vec::new();
+        for composite in [false, true] {
+            let (mut runtime, mut source, facts) = fixture();
+            source.minimum = 100;
+            source.maximum = 100;
+            source.chance_ppm = 1_000_000;
+            if composite {
+                source.conditions.push(
+                    ConditionDefinition::new(
+                        "poison",
+                        1,
+                        ConditionValues::DamageOverTime {
+                            element: crate::foundation::DotElement::Poison,
+                            total_min: 10,
+                            total_max: 10,
+                            per_tick: 1,
+                            interval_ms: 1000,
+                            delayed: true,
+                        },
+                    )
+                    .expect("condition"),
+                );
+            }
+            let mut owner = AutoAttackOwner::default();
+            owner
+                .set_target(
+                    &runtime,
+                    facts.issuer,
+                    facts.target,
+                    facts.session,
+                    &source,
+                    "test:1",
+                    SemanticTimeMicros::from_micros(0),
+                )
+                .expect("target");
+            let binding = runtime.binding();
+            let (fence, stamp) = crate::foundation::crystal_timer_fixture(
+                binding.runtime_scope(),
+                binding.scope_generation(),
+            )
+            .expect("fence");
+            let mut probe = HitAdmissionProbe::default();
+            let revisions = RevisionSet::new(
+                "rules-r1",
+                "content-r1",
+                "policy-r1",
+                &source.formula_revision,
+                "sim-r1",
+            )
+            .expect("revisions");
+            let root =
+                GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+            let result = owner.swing_with_condition_policy(
+                &mut runtime,
+                &mut probe,
+                &source,
+                facts,
+                Some(&CurrentConditionPolicy {
+                    immunities: Vec::new(),
+                    base_speed: 100,
+                }),
+                1,
+                revisions,
+                &root,
+                SemanticTimeMicros::from_micros(source.interval_micros),
+                &fence,
+                stamp,
+            );
+            assert_eq!(result, Err(AttackError::MissingVitals));
+            observed.extend(probe.calls);
+            expected.push((
+                Some(facts.issuer),
+                crate::player_lethal::PlayerHitKind::Physical,
+                composite,
+            ));
+        }
+        assert_eq!(observed, expected);
+    }
+
     #[test]
     fn source_ranges_reuse_main_formula_for_supported_native_skill_inputs() {
         for (attack, skill, expected) in [(20, 20, 30), (35, 70, 140), (1, 1, 1), (222, 88, 1088)] {

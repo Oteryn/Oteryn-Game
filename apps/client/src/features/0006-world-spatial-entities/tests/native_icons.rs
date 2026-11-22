@@ -21,6 +21,7 @@ fn srx3_native_creature_icons_decode_into_native_labels_and_clear_on_removal()
         &[],
     )?;
     let mut entity = wire::WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: wire::EntityKind::Player,
         entity: own,
@@ -91,13 +92,13 @@ fn srx3_native_creature_icons_decode_into_native_labels_and_clear_on_removal()
             "native icon-only label must appear without a creature name and disappear when full source list clears"
         );
         if visible {
-            let expected = scene.cache.name("[Cross 0] [Cross 111] [Up 100]");
+            let expected = scene.cache.name("[Cross 0] [Cross 111] [Up 100]", 100);
             assert_eq!(
                 scene.names[0].1, expected,
                 "native glyph label must retain both RedCross source entries, visible zero, exact counts and source ordering"
             );
             assert!(
-                scene.sprites().len() >= expected.len(),
+                scene.sprites().len() >= expected.glyphs.len(),
                 "labels must create native glyph quads"
             );
         }

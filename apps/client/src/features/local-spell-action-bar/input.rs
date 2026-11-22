@@ -33,13 +33,7 @@ impl crate::play::PlayLink {
         if !oteryn_client_ui::spell_action_bar::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            crate::play::mailbox::lock(&self.mailbox).spell_bar.open = true;
-        }
+        crate::play::mailbox::lock(&self.mailbox).spell_bar.open = true;
         true
     }
     pub fn spell_bar_bind(&self, fields: &[String]) -> bool {
@@ -57,7 +51,7 @@ pub(in crate::play) fn configure(
     panel: &mut oteryn_client_ui::spell_action_bar::ActionBarPanel,
     fields: &[String],
 ) -> bool {
-    if !matches!(fields.len(), 4 | 12 | 36 | ACTION_BAR_SLOTS) {
+    if !matches!(fields.len(), 4 | 12 | 36 | 150 | ACTION_BAR_SLOTS) {
         return false;
     }
     let mut next = panel.bar.clone();
@@ -81,7 +75,7 @@ pub(in crate::play) fn configure(
     true
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn submit(
     mailbox: &mut crate::play::mailbox::Mailbox,
     commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
@@ -111,7 +105,7 @@ pub(in crate::play) fn submit(
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn edit_slot(
     mailbox: &mut crate::play::mailbox::Mailbox,
     commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
@@ -139,6 +133,24 @@ pub(in crate::play) fn edit_slot(
     }
     if action >= 3 {
         use super::view::{BarAction, PassiveAbility};
+        let sub_type = if (9..=13).contains(&action) {
+            match fields
+                .get(8)
+                .map(|value| value.trim())
+                .filter(|value| !value.is_empty())
+            {
+                Some(value) => match value.parse::<u32>() {
+                    Ok(value) => Some(value),
+                    Err(_) => {
+                        mailbox.spell_bar.feedback = "Enter a nonnegative item subtype".into();
+                        return;
+                    }
+                },
+                None => None,
+            }
+        } else {
+            None
+        };
         let extra = match action {
             3 => fields
                 .get(2)
@@ -165,15 +177,17 @@ pub(in crate::play) fn edit_slot(
             7 => Some(BarAction::Passive {
                 ability: PassiveAbility::Serene,
             }),
-            9..=12 => fields
+            9..=13 => fields
                 .get(2)
                 .and_then(|text| text.trim().parse().ok())
                 .map(|definition| BarAction::Use {
                     definition,
+                    sub_type,
                     mode: match action {
                         9 => super::view::ItemUseMode::SelfActor,
                         10 => super::view::ItemUseMode::Target,
                         11 => super::view::ItemUseMode::Cursor,
+                        13 => super::view::ItemUseMode::Use,
                         _ => super::view::ItemUseMode::CursorPosition,
                     },
                 }),

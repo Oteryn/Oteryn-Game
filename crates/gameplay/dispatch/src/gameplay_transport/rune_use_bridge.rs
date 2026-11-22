@@ -271,6 +271,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         visible: bool,
         field_runes: bool,
     ) -> Option<UseOutcome> {
+        let mut intent = intent;
+        // Source targets retain their wire coordinates for replay and enter the
+        // physical frame in target(). Other Bundles retain legacy receipt binding.
+        if !self
+            .effective_rooms()
+            .gate_wire_position()
+            .is_some_and(|room| room.pinned_activity_source_room().is_some())
+            && let Some(position) = &mut intent.use_with_position
+        {
+            position.floor = self.runtime_floor(position.floor);
+        }
         let Ok((current, _)) =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
                 .current_session_at(command.game_session_id)

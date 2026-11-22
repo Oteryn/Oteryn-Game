@@ -39,9 +39,9 @@ impl DeviceAttempt {
     }
     fn take(&mut self) -> Result<DeviceSession, NativeLoginError> {
         let session = self.state.session.take().ok_or_else(storage_error)?;
-        self.state.pending = Some(session.device_credential.clone());
+        self.remember_revocation(session.device_credential.clone());
         // Delete BEFORE the uncertain request. A crash must never reuse a consumed predecessor.
-        self.vault.clear().map_err(|_| storage_error())?;
+        self.clear_vault()?;
         Ok(session)
     }
     async fn save(
@@ -50,17 +50,13 @@ impl DeviceAttempt {
         session: DeviceSession,
     ) -> Result<(), NativeLoginError> {
         if self.remembered && self.vault.write(&session.vault_bytes()?).is_err() {
-            let _ = client
-                .revoke_device(&session.device_credential, CancellationToken::new())
-                .await;
-            let _ = self.vault.clear();
-            self.state.session = None;
-            self.state.pending = None;
+            self.remember_revocation(session.device_credential);
+            self.sign_out(client).await;
             return Err(storage_error());
         }
         self.state.remembered = self.remembered;
         self.state.session = Some(session);
-        self.state.pending = None;
+        self.state.vault_clear_failed = false;
         Ok(())
     }
     pub async fn characters(
@@ -71,6 +67,9 @@ impl DeviceAttempt {
         let previous = self.take()?;
         match client.device_characters(&previous, cancel).await {
             Ok((session, characters)) => {
+                self.state
+                    .pending
+                    .retain(|pending| pending != &previous.device_credential);
                 self.save(client, session).await?;
                 Ok(characters)
             }
@@ -88,6 +87,9 @@ impl DeviceAttempt {
         let previous = self.take()?;
         match client.device_ticket(&previous, cancel).await {
             Ok((session, ticket)) => {
+                self.state
+                    .pending
+                    .retain(|pending| pending != &previous.device_credential);
                 self.save(client, session).await?;
                 Ok(ticket)
             }
@@ -98,20 +100,56 @@ impl DeviceAttempt {
         }
     }
     pub async fn sign_out(&mut self, client: &NativeLoginClient) {
-        let credential = self
-            .state
-            .session
-            .take()
-            .map(|s| s.device_credential)
-            .or_else(|| self.state.pending.take());
-        let _ = self.vault.clear();
-        self.state.key = None;
-        self.state.pending = None;
-        if let Some(credential) = credential {
-            let _ = client
-                .revoke_device(&credential, CancellationToken::new())
-                .await;
+        let _ = self.revoke(client).await;
+    }
+
+    pub(super) async fn revoke(
+        &mut self,
+        client: &NativeLoginClient,
+    ) -> Result<(), NativeLoginError> {
+        if let Some(session) = self.state.session.take() {
+            self.remember_revocation(session.device_credential);
         }
+        self.state.key = None;
+        self.state.remembered = false;
+        let local = self.clear_vault();
+        let remote = self.revoke_pending(client).await;
+        local.and(remote)
+    }
+
+    fn clear_vault(&mut self) -> Result<(), NativeLoginError> {
+        let failed = self.vault.available() && self.vault.clear().is_err();
+        self.state.vault_clear_failed = failed;
+        if failed { Err(storage_error()) } else { Ok(()) }
+    }
+
+    fn remember_revocation(&mut self, credential: DeviceCredential) {
+        if !self.state.pending.contains(&credential) {
+            self.state.pending.push(credential);
+        }
+    }
+
+    pub(super) async fn revoke_pending(
+        &mut self,
+        client: &NativeLoginClient,
+    ) -> Result<(), NativeLoginError> {
+        let mut index = 0;
+        let mut result = Ok(());
+        while let Some(credential) = self.state.pending.get(index) {
+            match client
+                .revoke_device(credential, CancellationToken::new())
+                .await
+            {
+                Ok(()) => {
+                    self.state.pending.remove(index);
+                }
+                Err(error) => {
+                    result = Err(error);
+                    index += 1;
+                }
+            }
+        }
+        result
     }
     pub fn quick_selection(
         &self,

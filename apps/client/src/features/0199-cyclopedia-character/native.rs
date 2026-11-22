@@ -2,7 +2,36 @@
 use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, Intent, request};
 
+pub(in crate::play) fn item_summary_row_text(
+    items: &oteryn_client_ui::cyclopedia_character::ItemSummary,
+    row: &oteryn_client_runtime::cyclopedia_character::items::Row,
+) -> String {
+    let q = row.quantities;
+    format!("{}\t{}\t{}\t{}\t{}", items.display_name(row), q[0], q[1], q[2], q[3])
+}
+
+pub(in crate::play) fn item_summary_detail_text(
+    items: &oteryn_client_ui::cyclopedia_character::ItemSummary,
+    row: &oteryn_client_runtime::cyclopedia_character::items::Row,
+) -> String {
+    format!(
+        "{}\r\nInventory: {} · Depot: {} · Stash: {} · Inboxes: {}",
+        items.display_name(row),
+        row.quantities[0], row.quantities[1], row.quantities[2], row.quantities[3]
+    )
+}
+
 pub(in crate::play) const OVERVIEW_CARD_COUNT: usize = 15;
+
+pub(in crate::play) fn initial_character_fields(p: &CyclopediaCharacterPanel) -> [String; 3] {
+    [
+        p.offset.to_string(),
+        p.limit.to_string(),
+        p.target
+            .map(|id| id.iter().map(|byte| format!("{byte:02x}")).collect())
+            .unwrap_or_default(),
+    ]
+}
 
 pub(in crate::play) fn display(p: &CyclopediaCharacterPanel) -> String {
     let badges = oteryn_client_ui::cyclopedia_character::badge_text(p);
@@ -81,6 +110,17 @@ pub(in crate::play) fn submit(
     p.offset = offset;
     p.limit = limit;
     p.change_target(target);
+    if tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Achievements {
+        if id == 113 {
+            return oteryn_client_ui::cyclopedia_character::achievement_next_request(p);
+        }
+        if id == 112 {
+            return oteryn_client_ui::cyclopedia_character::achievement_request(
+                p,
+                oteryn_client_ui::account_achievements::Intent::Previous,
+            );
+        }
+    }
     request(
         p,
         match id {
@@ -97,42 +137,3 @@ mod augment_input;
 #[path = "view/target.rs"]
 mod target;
 use target::parse_target;
-
-#[cfg(windows)]
-pub(in crate::play) use window::open_window;
-#[cfg(windows)]
-#[path = "view/character_window.rs"]
-mod window;
-
-#[cfg(windows)]
-#[path = "view/controls.rs"]
-mod controls;
-
-#[cfg(windows)]
-#[path = "view/misc_layout.rs"]
-mod misc_layout;
-
-#[cfg(windows)]
-#[path = "view/gallery_window.rs"]
-mod gallery_window;
-
-#[cfg(windows)]
-#[path = "view/browsers.rs"]
-mod browsers;
-#[cfg(windows)]
-#[path = "view/items_window.rs"]
-mod items_window;
-
-#[cfg(windows)]
-#[path = "view/profile_table.rs"]
-mod profile_table;
-#[cfg(windows)]
-#[path = "view/protection_window.rs"]
-mod protection_window;
-
-#[cfg(windows)]
-#[path = "view/character_paint.rs"]
-mod character_paint;
-#[cfg(windows)]
-#[path = "view/offence_table.rs"]
-mod offence_table;

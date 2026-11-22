@@ -86,6 +86,7 @@ async fn play_entry_queries_returner_entitlement_without_opening_daily_wall() ->
         commands: Arc::new(Mutex::new(vec![])),
         claimed: false,
         returner_offer: Some(id),
+        activity_scope: None,
     };
     let task = tokio::spawn(run_session(peer, incoming, outbox));
     tokio::time::timeout(Duration::from_secs(2), async {
@@ -104,6 +105,64 @@ async fn play_entry_queries_returner_entitlement_without_opening_daily_wall() ->
     let panel = link.daily_reward_panel();
     assert!(!panel.open);
     assert_eq!(panel.returner_notified, Some(id));
+    drop(link);
+    task.await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn review_recovered_play_entry_queries_returner_after_scope_presentation() -> Result<(), Error>
+{
+    use oteryn_session::activity_scope::{
+        ActivityScope, ActivityScopeSnapshot, encode_activity_scope,
+    };
+    let id = |value| {
+        let mut id = [value; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        id
+    };
+    let session = id(3);
+    let offer = id(6);
+    let scope = encode_activity_scope(&ActivityScopeSnapshot {
+        handoff: id(1),
+        source_session: id(2),
+        session,
+        scope: ActivityScope::Channel {
+            world: id(4),
+            channel: id(5),
+        },
+        scope_generation: 1,
+        connection_generation: 1,
+        lease_generation: 1,
+        selection: vec![117, 182],
+        requires_ack: false,
+    })
+    .map_err(|_| "invalid recovery receipt")?;
+    let (link, incoming, outbox) = play_channel();
+    let task = tokio::spawn(run_session(
+        Peer {
+            commands: Arc::new(Mutex::new(vec![])),
+            claimed: false,
+            returner_offer: Some(offer),
+            activity_scope: Some(scope),
+        },
+        incoming,
+        outbox,
+    ));
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while !crate::play::mailbox::lock(&link.mailbox).scope_pending {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await?;
+    link.scope_presented(session);
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while link.daily_reward_panel().returner_notified != Some(offer) {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await?;
     drop(link);
     task.await?;
     Ok(())

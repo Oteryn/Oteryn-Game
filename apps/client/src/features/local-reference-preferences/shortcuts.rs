@@ -147,15 +147,9 @@ impl PlayLink {
                 true
             }
             "inventory" => {
-                #[cfg(windows)]
-                if !self.uses_shared_frontend() {
-                    crate::play::feature_0004_item_view_move::view::open_window(self);
-                }
-                if cfg!(not(windows)) || self.uses_shared_frontend() {
-                    let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
-                    if !mailbox.inventory_shutdown {
-                        mailbox.inventory.open = true;
-                    }
+                let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
+                if !mailbox.inventory_shutdown {
+                    mailbox.inventory.open = true;
                 }
                 true
             }

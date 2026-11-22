@@ -68,8 +68,36 @@ pub(in crate::play) fn apply(
         Disposition::InsufficientFunds => tr!("Insufficient funds for repair"),
         Disposition::Ok if !accepted(result) => tr!("The server refused the request"),
         Disposition::Ok => {
+            panel.fields[1] = state.revision.to_string();
             panel.summary = lfmt!("Revision {} | Charges {:?} | Remaining ms {:?}\r\nRetired: {} | Repair fee: {} gold", state.revision, state.charges, state.remaining_ms, state.retired, state.fee_gold);
             tr!("Timed item updated")
         }
     }.into();
+}
+
+#[cfg(test)]
+mod revision_tests {
+    use super::*;
+    #[test]
+    fn confirmed_revision_drives_next_action() -> Result<(), Box<dyn std::error::Error>> {
+        let mut panel = Panel::default();
+        panel.fields[0] = "7".into();
+        panel.fields[1] = "0".into();
+        for revision in [2, 3] {
+            let request = command(&panel, Intent::Inspect)?;
+            panel.pending = true;
+            panel.pending_kind = request.kind;
+            apply(&mut panel, &request, &GatedCommandResult {
+                command_id: 1, server_sequence: 1,
+                status: oteryn_session::CommandStatus::Accepted,
+                payload: wire::encode_timed_item_result(wire::TimedItemResult {
+                    disposition: wire::TimedDisposition::Ok, revision,
+                    charges: Some(8), remaining_ms: None, retired: false, fee_gold: 0,
+                }).map_err(|e| format!("{e:?}"))?,
+            });
+            let next = command(&panel, Intent::Use)?;
+            assert_eq!(wire::decode_timed_item_intent(&next.payload).map_err(|e| format!("{e:?}"))?.expected_revision, revision);
+        }
+        Ok(())
+    }
 }

@@ -113,15 +113,15 @@ pub(in crate::play) fn apply(
         Some(projection) => {
             let flags = projection.as_ref().and_then(|(_, flags)| *flags);
             let projection = projection.map(|(p, _)| p);
-            if let Some(flags) = flags {
-                panel.flags = flags;
-            }
+            panel.flags = flags.unwrap_or_default();
             panel.loaded_item = panel.fields[0].clone();
             panel.revision = Some(projection.as_ref().map_or(0, |p| p.revision));
             if let Some(p) = &projection {
                 panel.fields[1] = p.display_kind.to_string();
                 panel.fields[2] = p.direction.to_string();
                 panel.fields[3] = p.key.clone();
+            } else {
+                panel.fields[1..].fill(String::new());
             }
             panel.projection = projection.map_or_else(
                 || tr!("Empty podium").into(),
@@ -142,5 +142,37 @@ pub(in crate::play) fn apply(
             panel.revision = None;
             panel.feedback = tr!("Invalid podium projection").into();
         }
+    }
+}
+
+#[cfg(test)]
+mod regression_tests {
+    use super::*;
+    #[test]
+    fn empty_podium_projection_resets_all_display_draft_fields() -> Result<(), Box<dyn std::error::Error>> {
+        for flagged in [false, true] {
+            let mut panel = Panel {
+                selected: true, flagged,
+                fields: ["new podium".into(), "3".into(), "2".into(), "old creature".into()],
+                flags: wire::DisplayFlags { show_platform: false, show_outfit: false, show_mount: false },
+                pending: true, pending_kind: wire::COMMAND_PROJECTION,
+                ..Default::default()
+            };
+            let payload = if flagged {
+                wire::Projection::encode_flagged(None)
+            } else {
+                wire::Projection::encode(None)
+            }.ok_or("projection")?;
+            apply(&mut panel, &FeatureCommand { capability: 150, kind: wire::COMMAND_PROJECTION, payload: Vec::new() },
+                &GatedCommandResult { command_id: 1, server_sequence: 1,
+                    status: oteryn_session::CommandStatus::Accepted, payload });
+            assert_eq!(panel.projection, "Empty podium");
+            assert_eq!(panel.fields[0], "new podium");
+            assert_eq!(&panel.fields[1..], &[String::new(), String::new(), String::new()]);
+            assert_eq!(panel.flags, wire::DisplayFlags::default());
+            assert_eq!(panel.revision, Some(0));
+            assert_eq!(panel.loaded_item, "new podium");
+        }
+        Ok(())
     }
 }

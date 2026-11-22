@@ -110,8 +110,12 @@ pub(super) fn meaningful(
                     )
             )
         }),
-        36 => depot::decode_depot_intent(command.payload)
-            .is_ok_and(|intent| intent.action != depot::DepotAction::Browse),
+        36 => depot::decode_depot_intent_at(
+            command.payload,
+            selected
+                .contains(&oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1),
+        )
+        .is_ok_and(|(intent, _)| intent.action != depot::DepotAction::Browse),
         38 => timed_item::decode_timed_item_intent(command.payload)
             .is_ok_and(|intent| intent.action != timed_item::TimedAction::Inspect),
         48 | 49 => {
@@ -148,6 +152,7 @@ pub(super) fn meaningful(
                 world_interaction: selected.contains(
                     &oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
                 ),
+                manual_sort: selected.contains(&CAPABILITY_CONTAINER_MANUAL_SORT_V1),
             };
             if selected.contains(&CAPABILITY_ITEM_STACK_COUNT_V1) {
                 decode_item_move_intent_with_count_for(command.payload, selection).is_ok()

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0501-trade-details",
+  "kind": "panels",
+  "id": "0501-trade-details-quotes-view",
+  "status": "supported",
+  "entry": "protocol.rs::apply_window"
+}

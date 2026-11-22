@@ -107,6 +107,12 @@ impl QuestLogContinuity {
 #[derive(Debug, Clone)]
 pub struct QuestLogLines(Arc<QuestLogContent>);
 
+impl QuestLogSource {
+    pub(in crate::gameplay_transport) fn titles(&self) -> Vec<(u32, String)> {
+        self.content.0.titles(&*self.copy)
+    }
+}
+
 impl QuestLogLines {
     /// `None` (the content does not load) when any quest's worst-case line is over the bound.
     pub fn new(content: QuestLogContent) -> Option<Self> {

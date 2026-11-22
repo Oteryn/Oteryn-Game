@@ -2401,6 +2401,148 @@ mod death_build_postgres {
     }
 
     #[test]
+    fn native_death_invalidates_logout_conditions_atomically_and_replay_keeps_later_snapshot()
+    -> TestResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                run("death_logout_conditions", async |h| {
+                    use super::super::character_condition_snapshot::CharacterConditionSnapshot;
+                    use crate::domain::condition::ConditionValues;
+                    use oteryn_gameplay_foundation::foundation::condition::{
+                        ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionStore,
+                    };
+                    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+                    let seal = h.recovery.seal_current().map_err(debug)?;
+                    let authority = h
+                        .root
+                        .open_character_authority(&seal)
+                        .await
+                        .map_err(debug)?;
+                    let current = fence(1)?;
+                    let definition = ConditionDefinition::new(
+                        "test.death.light",
+                        1,
+                        ConditionValues::SpellLight {
+                            level: 6,
+                            color: 181,
+                            duration_ms: 60_000,
+                        },
+                    )
+                    .ok_or("light definition")?;
+                    let mut conditions = ConditionStore::<String>::new();
+                    let root = GameplayDecisionRoot::from_bytes([7; 32]);
+                    conditions
+                        .apply(
+                            &definition,
+                            None,
+                            ConditionSourceKind::Creature,
+                            &[],
+                            &ApplicationFacts {
+                                now: 0,
+                                base_speed: 220,
+                                mana_shield_capacity: 500,
+                                target_reentry_protected: false,
+                                source_reentry_protected: false,
+                                target_is_player: true,
+                                decision_root: &root,
+                                occurrence: DecisionOccurrenceId::from_bytes(id(77)),
+                            },
+                        )
+                        .map_err(debug)?;
+                    let saved = CharacterConditionSnapshot {
+                        lease_generation: current.character_lease_generation,
+                        content_digest: [7; 32],
+                        conditions: conditions.persistent_snapshot(0).map_err(debug)?,
+                    };
+                    h.root
+                        .save_character_conditions(
+                            &authority,
+                            &h.node,
+                            current.item_fence(),
+                            id(harness::CHANNEL),
+                            saved.clone(),
+                        )
+                        .await
+                        .map_err(debug)?;
+                    let restored = h
+                        .root
+                        .read_character_conditions(&authority, current.character_id)
+                        .await
+                        .map_err(debug)?
+                        .ok_or("logout snapshot missing")?;
+                    assert_eq!(restored.conditions, saved.conditions);
+                    let death = request(88)?;
+                    let mut stale = current;
+                    stale.character_lease_generation += 1;
+                    assert!(matches!(
+                        h.root
+                            .commit_character_death(&authority, &h.node, stale, death.clone())
+                            .await,
+                        Err(CharacterProgressionError::AuthorityRejected)
+                    ));
+                    assert_eq!(
+                        h.root
+                            .read_character_conditions(&authority, current.character_id)
+                            .await
+                            .map_err(debug)?
+                            .ok_or("stale death removed snapshot")?
+                            .conditions,
+                        saved.conditions
+                    );
+                    assert!(matches!(
+                        h.root
+                            .commit_character_death(&authority, &h.node, current, death.clone())
+                            .await
+                            .map_err(debug)?,
+                        CharacterDeathOutcome::Committed(_)
+                    ));
+                    assert!(
+                        h.root
+                            .read_character_conditions(&authority, current.character_id)
+                            .await
+                            .map_err(debug)?
+                            .is_none(),
+                        "fresh admission must not restore pre-death conditions"
+                    );
+                    // A later logout belongs to a later point in the character's life.
+                    // Replaying the original occurrence must not clear that new snapshot.
+                    h.root
+                        .save_character_conditions(
+                            &authority,
+                            &h.node,
+                            current.item_fence(),
+                            id(harness::CHANNEL),
+                            saved.clone(),
+                        )
+                        .await
+                        .map_err(debug)?;
+                    assert!(matches!(
+                        h.root
+                            .commit_character_death(&authority, &h.node, current, death)
+                            .await
+                            .map_err(debug)?,
+                        CharacterDeathOutcome::AlreadyCommitted(_)
+                    ));
+                    assert_eq!(
+                        h.root
+                            .read_character_conditions(&authority, current.character_id)
+                            .await
+                            .map_err(debug)?
+                            .ok_or("replay removed later snapshot")?
+                            .conditions,
+                        saved.conditions
+                    );
+                    Ok(())
+                })
+                .map_err(debug)
+            })?
+            .join()
+            .map_err(|_| "death condition test thread failed")??;
+        Ok(())
+    }
+
+    #[test]
     fn native_death_requires_current_fences_and_content_and_preserves_build() -> TestResult {
         run("death_build_current", async |h| {
             train(h).await?;

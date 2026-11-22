@@ -375,3 +375,20 @@ fn nbhold_scheduled_ordinary_passes_yield_to_foreground_within_command_window() 
         database.cleanup().await
     })
 }
+
+#[test]
+fn highscores_catalogue_reads_during_admission_write() -> TestResult {
+    run_postgres_test(async {
+        let (database, url) = migrated_database("catalogue_admission").await?;
+        let root = ready_root(&url).await?;
+        let mut writer = PgConnection::connect(&url).await?;
+        let mut tx = writer.begin().await?;
+        super::lock_admission_relations(&mut tx).await?;
+        let result = root.read_highscores_world_catalogue().await;
+        tx.rollback().await?;
+        drop(root);
+        database.cleanup().await?;
+        assert!(result?.is_empty());
+        Ok(())
+    })
+}

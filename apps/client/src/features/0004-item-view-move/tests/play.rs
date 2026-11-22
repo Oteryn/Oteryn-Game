@@ -84,6 +84,7 @@ fn ground_entity_projection_preserves_handle_definition_and_quantity() {
     use oteryn_session::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
     use std::num::NonZeroU64;
     let entity = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::GroundItem,
         entity: EntityRef {

@@ -6,6 +6,10 @@ impl PlayLink {
         command.is_some_and(|command| self.discovery_send(command))
     }
     pub fn discovery_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+        if oteryn_client_ui::quick_loot::nearby_key(events) {
+            self.quick_loot_action(oteryn_client_ui::quick_loot::Action::LootAll);
+            return true;
+        }
         let panel = if oteryn_client_ui::quick_loot::open_key(events) {
             98
         } else if oteryn_client_ui::inspection::open_key(events) {

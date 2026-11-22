@@ -133,6 +133,7 @@ impl FreshAdmissionAuthority for Owners {
                     source_icons:
                         oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(
                         ),
+                    motion: None,
                     display_name: None,
                     health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
@@ -146,6 +147,7 @@ impl FreshAdmissionAuthority for Owners {
                     source_icons:
                         oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(
                         ),
+                    motion: None,
                     display_name: None,
                     health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,

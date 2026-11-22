@@ -62,7 +62,12 @@ impl Stepper for DepotPeer {
         self.bag_open = true;
         Ok(Some(oteryn_client_ui::depot::ContainerViewOutcome::Opened))
     }
-    async fn depot(&mut self, intent: DepotIntent) -> Result<Option<DepotReply>, SessionError> {
+    async fn depot(
+        &mut self,
+        intent: DepotIntent,
+        slot: Option<u32>,
+    ) -> Result<Option<DepotReply>, SessionError> {
+        assert_eq!(slot, None, "this legacy peer does not select manual sort");
         let outcome = match intent.action {
             DepotAction::Browse => DepotOutcome::Opened,
             DepotAction::Deposit(handle) => {

@@ -12,6 +12,7 @@ use oteryn_client_ui::party::{Intent, PartyPanel};
 use oteryn_client_ui_bevy as source;
 use oteryn_renderer::TileCoord;
 use oteryn_session::EntityRef;
+mod combat;
 #[cfg(test)]
 mod tests;
 mod widgets;
@@ -89,6 +90,7 @@ struct State {
     serial: u64,
     snapshot: Option<PartyPanel>,
     root: Option<Entity>,
+    refresh_elapsed: std::time::Duration,
 }
 #[derive(Clone, Copy, Component)]
 struct Control {
@@ -100,6 +102,8 @@ struct Control {
 enum Kind {
     Close,
     Refresh,
+    Filter(usize),
+    Sort(oteryn_client_ui::party::ListSort),
     Member(u64),
     Invitation(u64),
     Join,
@@ -109,7 +113,9 @@ enum Kind {
     Shared,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(Update, project);
+    app.init_resource::<State>()
+        .init_resource::<combat::Artwork>()
+        .add_systems(Update, project);
 }
 fn project(
     mut commands: Commands,
@@ -117,12 +123,30 @@ fn project(
     skins: Res<Skins>,
     docks: Query<Entity, With<PartyDock>>,
     mut state: ResMut<State>,
+    (time, mut artwork, mut images): (Res<Time>, ResMut<combat::Artwork>, ResMut<Assets<Image>>),
 ) {
-    let panel = owner
+    let mut panel = owner
         .play
         .as_ref()
         .filter(|play| play.link.party_is_open())
         .map(|play| play.link.party_panel());
+    if panel.is_none() || state.generation != owner.generation() {
+        state.refresh_elapsed = std::time::Duration::ZERO;
+    } else {
+        state.refresh_elapsed = state.refresh_elapsed.saturating_add(time.delta());
+        if state.refresh_elapsed >= std::time::Duration::from_secs(1) {
+            state.refresh_elapsed = std::time::Duration::ZERO;
+            if available(&owner)
+                && let (Some(play), Some(shown)) = (&owner.play, &panel)
+                && shown.selected
+                && shown.pending.is_none()
+            {
+                play.link
+                    .party_action_bound(shown, PartyViewAction::Request(Intent::Refresh));
+                panel = Some(play.link.party_panel());
+            }
+        }
+    }
     if state.generation == owner.generation() && state.snapshot == panel {
         return;
     }
@@ -135,6 +159,7 @@ fn project(
     let (Some(panel), Ok(dock)) = (&state.snapshot, docks.single()) else {
         return;
     };
+    let portraits = artwork.images(panel, &mut images);
     let root = widgets::build(
         &mut commands,
         &skins,
@@ -142,6 +167,7 @@ fn project(
         owner.generation(),
         state.serial,
         panel,
+        &portraits,
     );
     state.root = Some(root);
 }
@@ -172,6 +198,16 @@ fn activate(
         return;
     };
     let action = match control.kind {
+        Kind::Filter(group) => {
+            play.link
+                .party_list_action(oteryn_client_ui::party::ListAction::ToggleGroup(group));
+            return;
+        }
+        Kind::Sort(sort) => {
+            play.link
+                .party_list_action(oteryn_client_ui::party::ListAction::Sort(sort));
+            return;
+        }
         Kind::Close => return,
         Kind::Refresh => PartyViewAction::Request(Intent::Refresh),
         Kind::Member(handle) => PartyViewAction::Member(handle),

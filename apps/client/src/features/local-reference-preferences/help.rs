@@ -46,7 +46,7 @@ impl SettingsState {
 use super::{WINDOW_ACTIONS, preference_bindings};
 use oteryn_client_ui::guide::{Guide, Page};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Topic {
     Faq,
     Manual,

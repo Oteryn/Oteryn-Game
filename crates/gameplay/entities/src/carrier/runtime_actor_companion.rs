@@ -655,40 +655,16 @@ impl ChannelRuntimeV1 {
         position: MovementLocalPosition,
         except: Option<ExactActorRef>,
     ) -> bool {
-        let context = self.pinned_position_context();
-        !self.carrier.slots.iter().enumerate().any(|(index, slot)| {
-            if except.is_some_and(|actor| {
-                usize::try_from(actor.0.actor_local_id.0).ok() == index.checked_add(1)
-            }) {
-                return false;
-            }
-            let position_in_slot = match slot {
-                Slot::Occupied {
-                    committed: true,
-                    position: Some(p),
-                    ..
-                }
-                | Slot::CreatureOccupied {
-                    health: 1..,
-                    position: Some(p),
-                    ..
-                } => Some(p),
-                Slot::CreatureReserved { planned, .. } => match planned.as_ref() {
-                    Slot::CreatureOccupied {
-                        position: Some(p), ..
-                    } => Some(p),
-                    _ => None,
-                },
-                _ => None,
-            };
-            position_in_slot.is_some_and(|p| {
-                p.context == context
-                    && p.position.x == position.x
-                    && p.position.y == position.y
-                    && p.position.floor == position.floor
-            })
-        })
+        !self
+            .position_occupied_excluding_in_context(
+                except,
+                position,
+                self.pinned_position_context(),
+                false,
+            )
+            .unwrap_or(true)
     }
+
     /// Claims the existing free-head slot before SQL. The generation is consumed even if
     /// a definite rollback later releases capacity. A lost COMMIT response retains this slot.
     pub fn reserve_companion_spawn(
@@ -1634,6 +1610,332 @@ mod tests {
             .unwrap();
         (runtime, actor, session)
     }
+    #[test]
+    fn public_npc_blocks_companion_admission_saved_position_and_current_occupancy() {
+        let (mut runtime, actor, session) = owner();
+        let cell = MovementLocalPosition {
+            x: 2,
+            y: 2,
+            floor: 0,
+        };
+        runtime
+            .place_dynamic_npc(
+                "oteryn:npc.test",
+                super::super::npc_actor::NpcPlacement {
+                    x: 2,
+                    y: 2,
+                    floor: 0,
+                    direction: MovementFacing::North,
+                },
+            )
+            .unwrap();
+        assert!(!runtime.companion_creation_available(cell).unwrap());
+        assert!(
+            runtime
+                .create_companion(actor, session, "rat", cell, None, None, 0)
+                .is_err()
+        );
+        assert!(runtime.current_cell_occupied_except(cell, actor));
+        let placed = runtime
+            .place_admitted_respawn(actor, session, Some(cell), |_| true)
+            .unwrap();
+        assert_ne!(placed.position(), cell);
+        runtime
+            .place_respawned_player(actor, session, cell)
+            .unwrap();
+        assert!(!runtime.is_sole_current_actor_on_cell(actor).unwrap());
+    }
+
+    #[test]
+    fn creature_movement_speed_merges_creation_and_condition_stores_and_refuses_conflicts() {
+        use super::super::runtime_actor_conditions::*;
+        use oteryn_simulation_determinism::{
+            DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
+        };
+        let (mut runtime, owner, session) = owner();
+        let creature = runtime
+            .create_companion(
+                owner,
+                session,
+                "rat",
+                MovementLocalPosition {
+                    x: 2,
+                    y: 2,
+                    floor: 0,
+                },
+                None,
+                None,
+                50,
+            )
+            .unwrap();
+        let before = runtime.companion_snapshot(creature).unwrap();
+        let mut after = before.state.clone();
+        after.creation_speed_delta = 50;
+        runtime.compare_companion_state(&before, after).unwrap();
+        let now = SemanticTimeMicros::from_micros(0);
+        assert_eq!(
+            runtime
+                .actor_active_speed_delta(creature, None, now)
+                .unwrap(),
+            50
+        );
+        let root = GameplayDecisionRoot::from_bytes([9; 32]);
+        let definition = ConditionDefinition::new(
+            "test.paralysis",
+            1,
+            ConditionValues::Speed {
+                paralysis: true,
+                range: SpeedRange {
+                    a_min: 0,
+                    a_max: 0,
+                    b_min: 40,
+                    b_max: 40,
+                },
+                duration_ms: 1000,
+            },
+        )
+        .unwrap();
+        let facts = ApplicationFacts {
+            now: 0,
+            base_speed: 220,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: false,
+            decision_root: &root,
+            occurrence: DecisionOccurrenceId::from_bytes([9; 16]),
+        };
+        let before = runtime.companion_snapshot(creature).unwrap();
+        let mut after = before.state.clone();
+        after
+            .conditions
+            .apply(
+                &definition,
+                Some(creature),
+                ConditionSourceKind::SelfUse,
+                &[],
+                &facts,
+            )
+            .unwrap();
+        let delta = after.conditions.active_speed_delta(0);
+        runtime.compare_companion_state(&before, after).unwrap();
+        assert_eq!(
+            runtime
+                .actor_active_speed_delta(creature, None, now)
+                .unwrap(),
+            50 + delta
+        );
+        let plan = runtime
+            .prepare_actor_condition(
+                creature,
+                None,
+                ActorConditionTransition::Apply {
+                    definition: &definition,
+                    source: ConditionSource {
+                        actor: creature,
+                        session: None,
+                        kind: ConditionSourceKind::SelfUse,
+                    },
+                    immunities: &[],
+                    facts,
+                },
+                now,
+            )
+            .unwrap();
+        runtime.commit_actor_condition(&plan, now).unwrap();
+        assert_eq!(
+            runtime
+                .actor_active_speed_delta(creature, None, now)
+                .unwrap(),
+            50 + delta
+        );
+        let different =
+            ConditionDefinition::new("test.other.paralysis", 1, definition.values()).unwrap();
+        let before = runtime.companion_snapshot(creature).unwrap();
+        let mut after = before.state.clone();
+        after.conditions.remove_type(ConditionType::Paralysis);
+        after
+            .conditions
+            .apply(
+                &different,
+                Some(creature),
+                ConditionSourceKind::SelfUse,
+                &[],
+                &facts,
+            )
+            .unwrap();
+        runtime.compare_companion_state(&before, after).unwrap();
+        assert!(
+            runtime
+                .actor_active_speed_delta(creature, None, now)
+                .is_err()
+        );
+    }
+
+    fn paralyzed_creature() -> (
+        ChannelRuntimeV1,
+        ExactActorRef,
+        GameSessionId,
+        ExactActorRef,
+    ) {
+        use super::super::runtime_actor_conditions::*;
+        use oteryn_simulation_determinism::{
+            DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
+        };
+        let (mut runtime, owner, session) = owner();
+        let creature = runtime
+            .create_companion(
+                owner,
+                session,
+                "rat",
+                MovementLocalPosition {
+                    x: 2,
+                    y: 2,
+                    floor: 0,
+                },
+                None,
+                None,
+                0,
+            )
+            .unwrap();
+        let root = GameplayDecisionRoot::from_bytes([9; 32]);
+        let definition = ConditionDefinition::new(
+            "test.paralysis",
+            1,
+            ConditionValues::Speed {
+                paralysis: true,
+                range: SpeedRange {
+                    a_min: 0,
+                    a_max: 0,
+                    b_min: 40,
+                    b_max: 40,
+                },
+                duration_ms: 1000,
+            },
+        )
+        .unwrap();
+        let plan = runtime
+            .prepare_actor_condition(
+                creature,
+                None,
+                ActorConditionTransition::Apply {
+                    definition: &definition,
+                    source: ConditionSource {
+                        actor: creature,
+                        session: None,
+                        kind: ConditionSourceKind::SelfUse,
+                    },
+                    immunities: &[],
+                    facts: ApplicationFacts {
+                        now: 0,
+                        base_speed: 220,
+                        mana_shield_capacity: 0,
+                        target_reentry_protected: false,
+                        source_reentry_protected: false,
+                        target_is_player: false,
+                        decision_root: &root,
+                        occurrence: DecisionOccurrenceId::from_bytes([9; 16]),
+                    },
+                },
+                SemanticTimeMicros::from_micros(0),
+            )
+            .unwrap();
+        runtime
+            .commit_actor_condition(&plan, SemanticTimeMicros::from_micros(0))
+            .unwrap();
+        let before = runtime.companion_snapshot(creature).unwrap();
+        let mut after = before.state.clone();
+        after.conditions = runtime.actor_conditions(creature, None).unwrap().clone();
+        runtime.compare_companion_state(&before, after).unwrap();
+        (runtime, owner, session, creature)
+    }
+    fn assert_creature_cured(runtime: &ChannelRuntimeV1, creature: ExactActorRef) {
+        use oteryn_gameplay_domain::domain::condition::ConditionType;
+        assert!(
+            !runtime
+                .actor_conditions(creature, None)
+                .unwrap()
+                .instances()
+                .iter()
+                .any(|i| i.definition().condition_type() == ConditionType::Paralysis)
+        );
+        assert!(
+            !runtime
+                .companion_snapshot(creature)
+                .unwrap()
+                .state
+                .conditions
+                .instances()
+                .iter()
+                .any(|i| i.definition().condition_type() == ConditionType::Paralysis)
+        );
+    }
+    #[test]
+    fn source_heal_cures_paralysis_in_both_creature_stores() {
+        let (mut runtime, _, _, creature) = paralyzed_creature();
+        let content = runtime.content_pin().server_artifact_digest();
+        runtime
+            .commit_source_creature_heal_and_cure(
+                content,
+                &[(creature, "creature:rat".into(), 812, 1)],
+                &[creature],
+                100,
+            )
+            .unwrap();
+        assert_creature_cured(&runtime, creature);
+    }
+    #[test]
+    fn lowered_heal_batch_cures_both_creature_stores_atomically() {
+        use super::super::runtime_actor_spell_types::*;
+        let (mut runtime, owner, session, creature) = paralyzed_creature();
+        let batch = OwnerCombatBatch {
+            caster: owner,
+            attacker: CharacterId::decode(&id(9)).unwrap(),
+            current_lease_generation: 1,
+            command: CommandRef::new(
+                session,
+                oteryn_gameplay_foundation::foundation::CommandId::new(1).unwrap(),
+            ),
+            occurrence: SpellOccurrenceBinding {
+                id: "test.heal".into(),
+                revisions: ["a", "b", "c", "d", "e"].map(str::to_owned),
+            },
+            binding: b"test.heal.binding".to_vec(),
+            anchor: None,
+            now_us: Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(100)),
+            now_ms: 0,
+            deferred: None,
+            effects: vec![
+                OwnerCombatEffect {
+                    target: creature,
+                    sub_ordinal: 0,
+                    change: OwnerCombatChange::Heal {
+                        target_atom: "creature:rat".into(),
+                        magnitude: 1,
+                    },
+                },
+                OwnerCombatEffect {
+                    target: creature,
+                    sub_ordinal: 1,
+                    change: OwnerCombatChange::DispelParalysis,
+                },
+            ],
+        };
+        let staged = runtime.stage_spell_batch(&batch).unwrap();
+        assert_ne!(
+            runtime
+                .actor_active_speed_delta(
+                    creature,
+                    None,
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(100)
+                )
+                .unwrap(),
+            0
+        );
+        runtime.commit_spell_batch(staged).unwrap();
+        assert_creature_cured(&runtime, creature);
+    }
+
     #[test]
     fn physical_profile_transform_preserves_hp_actor_history_and_returns_with_fresh_epoch() {
         let mut first = policy("guardian");

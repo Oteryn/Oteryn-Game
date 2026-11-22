@@ -134,3 +134,48 @@ fn navigation_frame_pieces_survive_actual_page_activation() -> Result<(), Box<dy
     );
     Ok(())
 }
+
+#[test]
+fn a_hotkey_options_request_turns_the_open_options_to_the_hotkey_page()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        AssetPlugin::default(),
+        source::GlobalUiPlugin,
+    ))
+    .init_asset::<Font>()
+    .init_asset::<Image>()
+    .init_resource::<InputFocus>()
+    .insert_non_send(HostOwner::new(None)?)
+    .insert_resource(OptionsState::default())
+    .add_systems(
+        Startup,
+        (
+            crate::bevy_shell::ui::setup,
+            synthetic_skins,
+            widgets::setup,
+        )
+            .chain(),
+    )
+    .add_systems(Update, projection::project);
+    app.world_mut().non_send_mut::<HostOwner>().open_graphics();
+    app.update();
+    let state = app.world().resource::<OptionsState>();
+    assert_eq!((state.page, state.advanced), (Page::Basic, false));
+    app.world_mut().non_send_mut::<HostOwner>().cancel();
+    app.update();
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .show_hotkey_options();
+    app.update();
+    let state = app.world().resource::<OptionsState>();
+    assert_eq!((state.page, state.advanced), (Page::Controls, true));
+    let hotkeys = app
+        .world_mut()
+        .query::<&Control>()
+        .iter(app.world())
+        .any(|control| matches!(control, Control::Page(Page::Controls)));
+    assert!(hotkeys, "the advanced navigation shows the hotkey page");
+    Ok(())
+}

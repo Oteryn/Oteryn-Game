@@ -8,6 +8,7 @@ fn world_party_target_uses_live_player_kind_floor_and_generation() -> Result<(),
         ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
     };
     let player = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {
@@ -237,5 +238,53 @@ fn party_list_real_play_queue_filters_sorts_and_replaces_nearby_vitals() -> Resu
     apply(&state)?;
     assert_eq!(link.party_panel().list_rows()[0].1.health_percent, None);
     assert_eq!(link.party_panel().list_title, "Healers");
+    Ok(())
+}
+
+#[test]
+fn open_shared_party_refreshes_until_closed() -> Result<(), Error> {
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.party_initialize(true, false);
+    link.open_party();
+    assert!(commands.try_recv().is_ok());
+    let bytes = oteryn_client_ui::party::party::encode_party_result(
+        &oteryn_client_ui::party::party::PartyResult::refused(oteryn_client_ui::party::party::PartyDisposition::Ok),
+    ).map_err(|error| format!("{error:?}"))?;
+    outbox.party_result(&oteryn_client_runtime::party::PartyResponse {
+        status: oteryn_session::CommandStatus::Accepted,
+        operation: bytes.clone(), view: Some(bytes),
+    });
+    let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+    runtime.block_on(async {
+        tokio::time::timeout(std::time::Duration::from_secs(3), commands.recv()).await
+    })??.ok_or("no periodic refresh")?;
+    link.party_close();
+    runtime.block_on(async {
+        assert!(tokio::time::timeout(std::time::Duration::from_millis(1100), commands.recv()).await.is_err());
+    })?;
+    drop(link);
+    runtime.block_on(async {
+        assert!(tokio::time::timeout(std::time::Duration::from_millis(100), commands.recv()).await?.is_none());
+        Ok::<(), Error>(())
+    })??;
+    Ok(())
+}
+
+#[test]
+fn party_targets_other_player_on_own_tile_by_identity() -> Result<(), Error> {
+    use oteryn_session::{ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity};
+    let own = WorldSpatialEntity {
+        motion: None,
+        display_name: None, kind: EntityKind::Player,
+        entity: EntityRef { identity: [1;16], generation: 1 },
+        position: ActorPosition { x: 1, y: 1, floor: 7 },
+        detail: EntityDetail::Actor { direction: StepDirection::South, appearance_ref: 1, health_percent: 100 },
+    };
+    let other = WorldSpatialEntity { entity: EntityRef { identity: [2;16], generation: 4 }, ..own };
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(1,1), 7, &[])?.with_entities(vec![other, own])?;
+    view.scene.set_own_identity(own.entity.identity);
+    assert_eq!(view.party_target(oteryn_renderer::TileCoord::new(1,1)), Some(other.entity));
+    view.entities = vec![own];
+    assert_eq!(view.party_target(oteryn_renderer::TileCoord::new(1,1)), None);
     Ok(())
 }

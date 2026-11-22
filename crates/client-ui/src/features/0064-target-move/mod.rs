@@ -7,9 +7,9 @@ pub mod input;
 pub mod protocol;
 mod state;
 pub mod view;
-pub use input::request;
+pub use input::{cancel, no_way, progress, request, retry, slowest_step};
 pub use protocol::apply;
-pub use state::WalkState;
+pub use state::{MAX_WALK_RETRIES, WALK_STALL, WalkState};
 
 #[cfg(test)]
 #[path = "tests/state.rs"]

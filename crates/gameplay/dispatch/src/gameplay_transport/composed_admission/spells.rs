@@ -67,6 +67,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: actor_spell::SpellCastIntent,
         parameter: Option<&oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent>,
     ) -> Option<actor_spell::SpellCastOutcome> {
+        // Convert once before all ordinary, native combat and world-item consumers.
+        let mut intent = intent;
+        if let actor_spell::SpellTarget::Position(position) = &mut intent.target {
+            position.floor = self.runtime_floor(position.floor);
+        }
         // Magic Rope has no text parameter, but shares the vertical relocation owner.
         // Levitate still requires its explicit up/down parameter in that owner.
         let vertical = self.spells.source_indexed(intent.spell).is_some_and(|(spell, _)| {

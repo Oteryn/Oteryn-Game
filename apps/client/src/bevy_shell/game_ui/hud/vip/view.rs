@@ -1,38 +1,32 @@
 use super::*;
+use bevy::picking::{events::PointerClick, hover::Hovered, pointer::PointerButton};
+use bevy::ui_widgets::Activate;
 use oteryn_session::VipPresenceStatus;
-#[derive(Component)]
-pub(super) struct NameLabel {
-    generation: u64,
-    entry: u64,
-}
 pub(super) fn setup(
     mut commands: Commands,
     regions: Res<super::super::super::GameRegions>,
     skins: Res<Skins>,
 ) {
-    let header = commands
-        .spawn(Node {
-            width: percent(100.),
-            column_gap: px(3.),
-            align_items: AlignItems::Center,
-            ..default()
-        })
-        .id();
-    let title = commands
+    // VipWidget.qml: no header row; the list actions live in the list's right-click menu
+    // and each contact's actions in its own right-click menu.
+    let menu = commands
         .spawn((
-            source::text("VIP", source::font(skins.font.clone(), false)),
+            ListMenu,
+            Name::new("vip.list_menu"),
             Node {
-                flex_grow: 1.,
+                width: percent(100.),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(1.),
+                display: Display::None,
                 ..default()
             },
         ))
         .id();
-    commands.entity(header).add_child(title);
     for (label, command, id) in [
-        ("Add", Action::Add, "vip.add"),
-        ("↻", Action::Refresh, "vip.refresh"),
-        ("Next", Action::Next(0), "vip.next"),
-        ("×", Action::Close, "vip.close"),
+        ("Add new VIP", Action::Add, "vip.add"),
+        ("Next page", Action::Next(0), "vip.next"),
+        ("Refresh", Action::Refresh, "vip.refresh"),
+        ("Close", Action::Close, "vip.close"),
     ] {
         let button = button(
             &mut commands,
@@ -43,14 +37,11 @@ pub(super) fn setup(
                 command,
             },
             label,
-            if matches!(command, Action::Close | Action::Refresh) {
-                18.
-            } else {
-                30.
-            },
+            MENU_WIDTH,
             id,
         );
-        commands.entity(header).add_child(button);
+        commands.entity(button).observe(close_list_menu);
+        commands.entity(menu).add_child(button);
     }
     let list = commands
         .spawn((
@@ -67,8 +58,9 @@ pub(super) fn setup(
                 ..default()
             },
         ))
+        .observe(open_list_menu)
         .id();
-    groups::setup(&mut commands, &skins, list);
+    groups::setup(&mut commands, &skins, list, menu);
     let message = commands
         .spawn((
             Message,
@@ -82,7 +74,64 @@ pub(super) fn setup(
         .id();
     commands
         .entity(regions.vip)
-        .add_children(&[header, list, message]);
+        .add_children(&[menu, list, message]);
+}
+/// Width of the list menu entries.
+pub(super) const MENU_WIDTH: f32 = 160.;
+/// The VIP list's right-click menu.
+#[derive(Component)]
+pub(super) struct ListMenu;
+/// Resolve the physical button using the same preferences for contact and list clicks.
+pub(super) fn button_role(owner: &HostOwner, button: PointerButton) -> PointerButton {
+    let preferences = &owner.settings.preferences;
+    let swapped = (preferences.controls.mouse == crate::play::MousePreset::LeftHanded)
+        ^ preferences.swap_mouse_buttons;
+    match (swapped, button) {
+        (true, PointerButton::Primary) => PointerButton::Secondary,
+        (true, PointerButton::Secondary) => PointerButton::Primary,
+        _ => button,
+    }
+}
+
+/// A right-click on the list itself (not on a contact) toggles the list menu.
+fn open_list_menu(
+    event: On<PointerClick>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    mut commands: Commands,
+    menus: Query<(Entity, &Node), With<ListMenu>>,
+) {
+    if button_role(&owner, event.button) != PointerButton::Secondary
+        || event.original_event_target() != event.entity
+        || !guard.allows(event.entity)
+        || !available(&owner)
+    {
+        return;
+    }
+    for (menu, node) in &menus {
+        let display = if node.display == Display::None {
+            Display::Flex
+        } else {
+            Display::None
+        };
+        commands
+            .entity(menu)
+            .entry::<Node>()
+            .and_modify(move |mut node| node.display = display);
+    }
+}
+/// Choosing a list menu entry closes the menu once the entry's own action has run.
+pub(super) fn close_list_menu(
+    _: On<Activate>,
+    mut commands: Commands,
+    menus: Query<Entity, With<ListMenu>>,
+) {
+    for menu in &menus {
+        commands
+            .entity(menu)
+            .entry::<Node>()
+            .and_modify(|mut node| node.display = Display::None);
+    }
 }
 // The retained entry list, action state and labels are independently mutable ECS roles.
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
@@ -92,11 +141,15 @@ pub(super) fn project(
     skins: Res<Skins>,
     mut state: ResMut<State>,
     lists: Query<Entity, With<List>>,
-    rows: Query<(Entity, &Row)>,
-    mut names: Query<(&NameLabel, &mut Text, &mut TextColor), Without<Message>>,
+    rows: Query<(Entity, &Row, &Hovered, &ComputedNode, &UiGlobalTransform)>,
+    mut names: Query<(&VipNameLabel, &mut Text, &mut TextColor), Without<Message>>,
     mut messages: Query<&mut Text, With<Message>>,
     mut controls: Query<(Entity, &mut Control)>,
     mut entered: Local<Option<u64>>,
+    time: Res<Time<Real>>,
+    mut hover: Local<Option<(Entity, std::time::Duration)>>,
+    metadata: Query<(Entity, &VipMetadata, &Text), (Without<VipNameLabel>, Without<Message>)>,
+    guard: ModalGuard,
 ) {
     let generation = owner.generation();
     if state.generation != Some(generation) || owner.play.is_none() {
@@ -105,11 +158,16 @@ pub(super) fn project(
         state.pending = None;
     }
     let Some(play) = &owner.play else {
-        for (entity, _) in &rows {
+        for (entity, _, _, _, _) in &rows {
             commands.entity(entity).despawn();
         }
         for mut message in &mut messages {
             message.0 = "VIP unavailable in this session".into();
+        }
+        for (entity, role, _) in &metadata {
+            if role.description {
+                commands.entity(entity).despawn();
+            }
         }
         *entered = None;
         return;
@@ -141,7 +199,7 @@ pub(super) fn project(
         }
     }
     let mut retained = std::collections::HashSet::new();
-    for (entity, row) in &rows {
+    for (entity, row, _, _, _) in &rows {
         if row.generation != generation || !entries.iter().any(|entry| entry.entry == row.entry) {
             commands.entity(entity).despawn();
         } else {
@@ -159,12 +217,13 @@ pub(super) fn project(
                         generation,
                         entry: entry.entry,
                     },
-                    bevy::ui_widgets::Button,
                     Control {
                         generation,
                         revision: panel.revision,
                         command: Action::Edit(entry.entry),
                     },
+                    Pickable::default(),
+                    Hovered::default(),
                     Name::new("vip.entry"),
                     TabIndex(0),
                     Node {
@@ -175,24 +234,146 @@ pub(super) fn project(
                     },
                 ))
                 .observe(input::activate)
+                .observe(presentation::click)
+                .observe(presentation::key)
+                .observe(row_click)
                 .id();
+            let glyph = commands
+                .spawn((
+                    VipMetadata {
+                        generation,
+                        entry: entry.entry,
+                        description: false,
+                    },
+                    Name::new(format!("vip.icon.{}", entry.entry)),
+                    source::text(
+                        vip_icon_text(entry.icon),
+                        source::font(skins.font.clone(), false),
+                    ),
+                    // Text alternative of the artwork icon; the ImageNode below is what is drawn.
+                    Node {
+                        display: Display::None,
+                        ..default()
+                    },
+                ))
+                .id();
+            commands.spawn((
+                VipMetadata {
+                    generation,
+                    entry: entry.entry,
+                    description: true,
+                },
+                Name::new(format!("vip.description.{}", entry.entry)),
+                source::text(
+                    entry.description.as_deref().unwrap_or(""),
+                    source::font(skins.font.clone(), false),
+                ),
+                Node {
+                    display: Display::None,
+                    ..default()
+                },
+                BackgroundColor(Color::srgb_u8(32, 32, 32)),
+                GlobalZIndex(280),
+            ));
             let name = commands
                 .spawn((
-                    NameLabel {
+                    VipNameLabel {
                         generation,
                         entry: entry.entry,
                     },
                     source::text(&entry.name, source::font(skins.font.clone(), false)),
                     Node {
-                        width: percent(100.),
+                        flex_grow: 1.,
                         min_width: px(0.),
                         overflow: Overflow::clip_x(),
                         ..default()
                     },
                 ))
                 .id();
-            commands.entity(row).add_child(name);
+            let icon = commands
+                .spawn((
+                    presentation::Icon(entry.entry),
+                    ImageNode::default(),
+                    Name::new("vip.icon"),
+                    Node {
+                        width: px(12.),
+                        height: px(12.),
+                        flex_shrink: 0.,
+                        ..default()
+                    },
+                    Pickable::IGNORE,
+                ))
+                .id();
+            let context = button(
+                &mut commands,
+                &skins,
+                Control {
+                    generation,
+                    revision: panel.revision,
+                    command: Action::Context(entry.entry),
+                },
+                "…",
+                18.,
+                "vip.context",
+            );
+            commands
+                .entity(row)
+                .add_children(&[icon, glyph, name, context]);
             commands.entity(list).add_child(row);
+        }
+    }
+    let target = rows.iter().find(|(entity, _, over, _, _)| {
+        over.get()
+            && owner.settings.preferences.tooltips_enabled
+            && !owner.modal_active()
+            && guard.allows(*entity)
+    });
+    let now = time.elapsed();
+    if hover.map(|(entity, _)| entity) != target.map(|(entity, ..)| entity) {
+        *hover = target.map(|(entity, ..)| (entity, now));
+    }
+    let ready = hover.is_some_and(|(_, since)| {
+        now.saturating_sub(since)
+            >= std::time::Duration::from_millis(owner.settings.preferences.tooltip_delay_ms.into())
+    });
+    for (entity, role, text) in &metadata {
+        let entry = entries
+            .iter()
+            .find(|entry| entry.entry == role.entry && role.generation == generation);
+        let Some(entry) = entry else {
+            if role.description {
+                commands.entity(entity).despawn();
+            }
+            continue;
+        };
+        let value = if role.description {
+            entry.description.as_deref().unwrap_or("")
+        } else {
+            vip_icon_text(entry.icon)
+        };
+        if text.0 != value {
+            commands.entity(entity).insert(Text::new(value));
+        }
+        if role.description {
+            let at = target
+                .filter(|(_, row, ..)| ready && row.entry == role.entry)
+                .map(|(_, _, _, node, transform)| {
+                    (transform.translation + node.size() * Vec2::new(-0.5, 0.5))
+                        * node.inverse_scale_factor
+                });
+            commands.entity(entity).insert(Node {
+                display: if at.is_some() && !value.is_empty() {
+                    Display::Flex
+                } else {
+                    Display::None
+                },
+                position_type: PositionType::Absolute,
+                left: px(at.unwrap_or_default().x),
+                top: px(at.unwrap_or_default().y + 3.),
+                max_width: px(240.),
+                padding: UiRect::all(px(5.)),
+                ..default()
+            });
         }
     }
     for (label, mut text, mut color) in &mut names {
@@ -225,13 +406,18 @@ pub(super) fn project(
     }
     for (entity, mut control) in &mut controls {
         // Retiring rows are already queued for despawn; never queue more component writes.
-        if matches!(control.command,Action::Edit(entry) if control.generation!=generation || !entries.iter().any(|row| row.entry==entry))
+        if matches!(control.command,Action::Edit(entry) | Action::Context(entry) if control.generation!=generation || !entries.iter().any(|row| row.entry==entry))
         {
             continue;
         }
         if matches!(
             control.command,
-            Action::Add | Action::Refresh | Action::Next(_) | Action::Close
+            Action::Add
+                | Action::Refresh
+                | Action::Next(_)
+                | Action::Close
+                | Action::Sort
+                | Action::HideOffline
         ) {
             control.generation = generation;
         } else if control.generation != generation {
@@ -239,7 +425,14 @@ pub(super) fn project(
         }
         if matches!(
             control.command,
-            Action::Add | Action::Refresh | Action::Next(_) | Action::Close | Action::Edit(_)
+            Action::Add
+                | Action::Refresh
+                | Action::Next(_)
+                | Action::Close
+                | Action::Sort
+                | Action::HideOffline
+                | Action::Edit(_)
+                | Action::Context(_)
         ) {
             control.revision = panel.revision;
             if matches!(control.command, Action::Next(_)) {
@@ -347,5 +540,61 @@ pub(super) fn dialog(
         if text.0 != value {
             text.0 = value;
         }
+    }
+}
+
+#[derive(Component, Clone, Copy)]
+struct PrivateMessage {
+    generation: u64,
+    revision: u64,
+    entry: u64,
+}
+fn message(owner: &HostOwner, target: PrivateMessage) {
+    if !available(owner) || target.generation != owner.generation() {
+        return;
+    }
+    let Some(play) = &owner.play else {
+        return;
+    };
+    let panel = play.link.vip_panel();
+    if !panel.selected || panel.pending || panel.revision != target.revision {
+        return;
+    }
+    if let Ok(snapshot) = Snapshot::read(&panel)
+        && let Some(contact) = snapshot
+            .entries
+            .iter()
+            .find(|contact| contact.entry == target.entry)
+    {
+        play.link.chat_open_conversation(&contact.name);
+    }
+}
+fn row_click(
+    event: On<PointerClick>,
+    rows: Query<&Row>,
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+) {
+    let Ok(row) = rows.get(event.entity) else {
+        return;
+    };
+    if !guard.allows(event.entity) || !available(&owner) || row.generation != owner.generation() {
+        return;
+    }
+    let Some(play) = &owner.play else {
+        return;
+    };
+    let panel = play.link.vip_panel();
+    if !panel.selected || panel.pending {
+        return;
+    }
+    let target = PrivateMessage {
+        generation: row.generation,
+        revision: panel.revision,
+        entry: row.entry,
+    };
+    // Secondary clicks open the shared presentation context menu (`presentation::click`).
+    if button_role(&owner, event.button) == PointerButton::Primary && event.count >= 2 {
+        message(&owner, target);
     }
 }

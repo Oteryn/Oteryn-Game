@@ -93,22 +93,74 @@ impl ReferencePreferences {
     }
 }
 
-/// The chat and help chords of Tibia Global, bound on a fresh profile. The features that held
-/// Ctrl+E, Ctrl+O, Ctrl+T and Ctrl+H before have no default key now; Global gives them none.
+/// The chat, help, window and container chords of Tibia Global, bound on a fresh profile. The
+/// features that held Ctrl+E, Ctrl+O, Ctrl+T, Ctrl+H, Ctrl+M, Ctrl+P, Ctrl+V, Ctrl+K and Ctrl+Y
+/// before have no default key now; Global gives them none.
 pub fn default_custom_hotkeys() -> std::collections::BTreeMap<String, CustomAction> {
     use super::UtilityAction::{
         CloseCurrentChannel, NextChannel, OpenChannelList, OpenHelpChannel, PreviousChannel,
-        ToggleLensHelp,
+        ShowOptionsHotkeys, ShowPrey, ToggleLensHelp, ToggleManualSortMode, ToggleServerMessages,
+        ToggleSkillsWidget, ToggleVipWidget,
     };
     [
         ("CTRL+E", CloseCurrentChannel),
+        ("CTRL+M", ToggleServerMessages),
         ("TAB", NextChannel),
         ("SHIFT+TAB", PreviousChannel),
         ("CTRL+O", OpenChannelList),
         ("CTRL+T", OpenHelpChannel),
         ("CTRL+H", ToggleLensHelp),
+        ("CTRL+Y", ShowPrey),
+        ("CTRL+P", ToggleVipWidget),
+        ("ALT+S", ToggleSkillsWidget),
+        ("CTRL+K", ShowOptionsHotkeys),
+        ("SHIFT+S", ToggleManualSortMode),
     ]
     .into_iter()
     .map(|(chord, action)| (chord.to_owned(), CustomAction::Utility { action }))
     .collect()
+}
+
+/// Version 1 added the Global chords below to the default custom hotkeys.
+pub(super) const PREFERENCES_SCHEMA_VERSION: u32 = 1;
+const GLOBAL_CHORDS_V1: [&str; 6] = ["CTRL+M", "CTRL+Y", "CTRL+P", "ALT+S", "CTRL+K", "SHIFT+S"];
+
+impl ReferencePreferences {
+    /// One-time upgrade of a file written before `schema_version` 1: the active custom hotkeys
+    /// and every saved hotkey profile gain each version 1 Global chord that no binding of the
+    /// player already uses. A player binding is never replaced. A profile saved without custom
+    /// hotkeys starts from an empty map.
+    pub(super) fn upgrade_schema(&mut self) {
+        if self.schema_version >= PREFERENCES_SCHEMA_VERSION {
+            return;
+        }
+        let defaults = default_custom_hotkeys();
+        let added: Vec<_> = GLOBAL_CHORDS_V1
+            .iter()
+            .filter_map(|chord| Some((*chord, defaults.get(*chord)?.clone())))
+            .collect();
+        for (chord, action) in &added {
+            let _ = self.assign_custom_hotkey(chord, action.clone());
+        }
+        for (name, bindings) in self.hotkey_profiles.clone() {
+            let mut profile = self.clone();
+            profile.custom_hotkeys = self
+                .custom_hotkey_profiles
+                .get(&name)
+                .cloned()
+                .unwrap_or_default();
+            profile.action_keys = self
+                .bar_hotkey_profiles
+                .get(&name)
+                .cloned()
+                .unwrap_or_default();
+            profile.keybindings = bindings;
+            for (chord, action) in &added {
+                let _ = profile.assign_custom_hotkey(chord, action.clone());
+            }
+            self.custom_hotkey_profiles
+                .insert(name, profile.custom_hotkeys);
+        }
+        self.schema_version = PREFERENCES_SCHEMA_VERSION;
+    }
 }

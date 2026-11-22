@@ -1,5 +1,6 @@
 //! Shared desktop character picker over server-owned rows and the existing selector callback.
 mod bridge;
+mod training;
 use super::{
     game_ui::{GameModal, modal::ModalGuard},
     owner::HostOwner,
@@ -14,7 +15,14 @@ use bevy::{
 pub(super) use bridge::SelectionBridge;
 use oteryn_client_ui_bevy as source;
 
-const PAGE_ROWS: usize = 8;
+/// Tibia Global character list: column widths, Character fills the rest.
+const OUTFIT_WIDTH: f32 = 66.;
+const COLUMNS: [(&str, f32); 4] = [
+    ("Status", 55.),
+    ("Level", 50.),
+    ("Vocation", 115.),
+    ("World", 200.),
+];
 #[derive(Component)]
 pub(super) struct Picker;
 /// Stable semantic identifiers for native UI audits; no character identity is exported.
@@ -27,11 +35,15 @@ pub(super) struct PickerControl {
 enum Choice {
     Row(usize),
     Channel,
-    Previous,
-    Next,
     Play,
+    Train,
+    /// Adds or removes the selected row in the offline-training batch.
+    Mark,
+    /// Trains every marked character, one after another.
+    TrainMarked,
     Refresh,
     Create,
+    Account,
     Cancel,
 }
 #[derive(Component)]
@@ -44,19 +56,34 @@ pub(super) struct PickerState {
     request: Option<u64>,
     selected: Option<usize>,
     channel: Option<usize>,
-    page: usize,
-    page_rows: usize,
+    /// Show outfits: 66px rows with the outfit column, otherwise 29px rows.
+    outfits: bool,
+    list: Option<Entity>,
+    reveal_selection: bool,
     revision: u64,
     rendered: Option<(u64, u64)>,
+    last_click: Option<(u64, usize, std::time::Instant)>,
+    /// Rows marked for offline training with the channel chosen when marked, in marking order.
+    marked: Vec<(usize, Option<usize>)>,
 }
 #[derive(Resource)]
 pub(super) struct Skin {
     buttons: source::ButtonImages,
     frame: Handle<Image>,
+    inset: Handle<Image>,
+    checked: Handle<Image>,
+    unchecked: Handle<Image>,
     font: Handle<Font>,
 }
+/// The Show outfits checkbox of one request.
+#[derive(Component)]
+struct OutfitToggle(u64);
 
-pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
+pub(super) fn setup(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    fallback: Option<Res<crate::bevy_shell::BuiltInFont>>,
+) {
     commands.insert_resource(PickerState::default());
     commands.insert_resource(Skin {
         buttons: source::ButtonImages {
@@ -64,7 +91,10 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
             down: assets.load("images/skin/classic/button-grey-down.png"),
         },
         frame: assets.load("images/skin/classic/dialog-frame-borderimage.png"),
-        font: assets.load("fonts/verdanab.ttf"),
+        inset: assets.load("images/1pixel-down-frame.png"),
+        checked: assets.load("images/skin/classic/checkbox-checked.png"),
+        unchecked: assets.load("images/skin/classic/checkbox-unchecked.png"),
+        font: crate::bevy_shell::ui_font(&assets, fallback.is_some()),
     });
     commands.spawn((
         Picker,
@@ -91,9 +121,9 @@ pub(super) fn project(
     owner: NonSend<HostOwner>,
     skin: Res<Skin>,
     mut state: ResMut<PickerState>,
-    mut roots: Query<(Entity, &mut Node, &ComputedNode), With<Picker>>,
+    mut roots: Query<(Entity, &mut Node), With<Picker>>,
     mut focus: ResMut<InputFocus>,
-    controls: Query<&PickerControl>,
+    (controls, scrolls): (Query<&PickerControl>, Query<&ScrollPosition>),
 ) {
     let Some(request) = owner.selection.pending() else {
         if focus
@@ -102,7 +132,7 @@ pub(super) fn project(
         {
             focus.clear();
         }
-        for (root, mut node, _) in &mut roots {
+        for (root, mut node) in &mut roots {
             node.display = Display::None;
             if state.request.is_some() {
                 commands.entity(root).despawn_children();
@@ -112,97 +142,140 @@ pub(super) fn project(
         return;
     };
     if state.request != Some(request.id) {
-        state.request = Some(request.id);
-        state.selected = request
-            .rows
-            .iter()
-            .position(|row| row.available && row.character.character_id == request.preselect)
-            .or_else(|| request.rows.iter().position(|row| row.available));
-        state.channel = None;
-        state.page = state.selected.unwrap_or(0) / PAGE_ROWS;
-        state.revision = 0;
-        state.rendered = None;
-    }
-    // Reserve the existing 29/16px padding, two 13px text lines, three 20px
-    // control strips and their 5px gaps. Each character row consumes 20 + 5px.
-    // ComputedNode converts the real target/DPI/UI scale back to logical pixels.
-    let page_rows = roots.iter().next().map_or(1, |(_, _, node)| {
-        let logical_height = node.size().y * node.inverse_scale_factor;
-        let fixed_height = 29. + 16. + 13. * 2. + 20. * 3. + 5. * 4.;
-        (((logical_height * 0.95 - fixed_height) / 25.).floor() as usize).clamp(1, PAGE_ROWS)
-    });
-    if state.page_rows != page_rows {
-        state.page_rows = page_rows;
-        state.page = state.selected.unwrap_or(0) / page_rows;
-        state.rendered = None;
+        let outfits = state.outfits;
+        *state = PickerState {
+            request: Some(request.id),
+            selected: request
+                .rows
+                .iter()
+                .position(|row| row.available && row.character.character_id == request.preselect)
+                .or_else(|| request.rows.iter().position(|row| row.available)),
+            outfits,
+            reveal_selection: true,
+            ..PickerState::default()
+        };
     }
     let key = (request.id, state.revision);
     if state.rendered == Some(key) {
         return;
     }
-    for (root, mut node, _) in &mut roots {
+    for (root, mut node) in &mut roots {
         node.display = Display::Flex;
         commands.entity(root).despawn_children();
         let panel = commands
             .spawn((
                 super::window_drag::DraggableDialog,
+                Name::new("selection.window"),
                 TabGroup {
                     order: 5,
                     modal: true,
                 },
                 source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
-                Node {
-                    width: px(620.),
-                    max_width: percent(95.),
-                    max_height: percent(95.),
-                    padding: UiRect {
-                        left: px(16.),
-                        right: px(16.),
-                        top: px(29.),
-                        bottom: px(16.),
+                // Tibia Global character list: 745 wide around a 340px scrolling list.
+                crate::bevy_shell::ui::window_layout::window(
+                    "selection",
+                    Node {
+                        max_width: percent(95.),
+                        max_height: percent(95.),
+                        padding: UiRect {
+                            left: px(16.),
+                            right: px(16.),
+                            top: px(29.),
+                            bottom: px(16.),
+                        },
+                        flex_direction: FlexDirection::Column,
+                        row_gap: px(5.),
+                        overflow: Overflow::clip(),
+                        ..default()
                     },
-                    flex_direction: FlexDirection::Column,
-                    row_gap: px(5.),
-                    overflow: Overflow::clip(),
-                    ..default()
-                },
+                ),
             ))
             .id();
         commands.entity(root).add_child(panel);
         source::dialog_caption(&mut commands, panel, "Select Character", skin.font.clone());
-        let title = commands
-            .spawn(source::text(
-                "Character / World",
-                source::font(skin.font.clone(), false),
+        let mut header = Vec::new();
+        if state.outfits {
+            header.push(("Outfit".to_owned(), Some(OUTFIT_WIDTH)));
+        }
+        header.push(("Character".to_owned(), None));
+        header.extend(COLUMNS.map(|(title, width)| (title.to_owned(), Some(width))));
+        let heading = line(&mut commands, &skin, &header, 13.);
+        commands
+            .entity(heading)
+            .insert(Name::new("selection.columns"));
+        commands.entity(panel).add_child(heading);
+        let list = commands
+            .spawn((
+                bevy::ui_widgets::ScrollArea,
+                state
+                    .list
+                    .and_then(|entity| scrolls.get(entity).ok())
+                    .cloned()
+                    .unwrap_or_default(),
+                Name::new("selection.list"),
+                source::frame(skin.inset.clone(), [1.; 4]),
+                Node {
+                    width: percent(100.),
+                    height: px(340.),
+                    min_height: px(0.),
+                    flex_grow: 1.,
+                    flex_shrink: 1.,
+                    flex_direction: FlexDirection::Column,
+                    overflow: Overflow::scroll_y(),
+                    ..default()
+                },
             ))
             .id();
-        commands.entity(panel).add_child(title);
-        for (index, row) in request
-            .rows
-            .iter()
-            .enumerate()
-            .skip(state.page * page_rows)
-            .take(page_rows)
-        {
-            let label = format!(
-                "{} — {}{}",
-                row.character.name,
-                row.world_name,
-                if row.available { "" } else { " (unavailable)" }
-            );
-            let button = add_button(
-                &mut commands,
-                &skin,
-                request.id,
-                Choice::Row(index),
-                &label,
-                560.,
-                !row.available,
-            );
-            if state.selected == Some(index) {
-                commands.entity(button).insert(Checked);
+        state.list = Some(list);
+        commands.entity(panel).add_child(list);
+        let height = if state.outfits { 66. } else { 29. };
+        for (index, row) in request.rows.iter().enumerate() {
+            // OwnerCharacter carries no level, vocation or outfit: those cells stay empty.
+            let mut cells = Vec::new();
+            if state.outfits {
+                cells.push((String::new(), Some(OUTFIT_WIDTH)));
             }
-            commands.entity(panel).add_child(button);
+            cells.push((
+                format!("{}{}", row.character.name, training::suffix(&state, index)),
+                None,
+            ));
+            cells.push((
+                if row.available { "" } else { "Unavailable" }.to_owned(),
+                Some(COLUMNS[0].1),
+            ));
+            cells.push((String::new(), Some(COLUMNS[1].1)));
+            cells.push((String::new(), Some(COLUMNS[2].1)));
+            cells.push((row.world_name.clone(), Some(COLUMNS[3].1)));
+            let entry = line(&mut commands, &skin, &cells, height);
+            let id = format!("selection.row.{index}");
+            commands
+                .entity(entry)
+                .insert((
+                    bevy::ui_widgets::Button,
+                    bevy::input_focus::tab_navigation::TabIndex(0),
+                    Target {
+                        request: request.id,
+                        choice: Choice::Row(index),
+                    },
+                    PickerControl {
+                        request_id: request.id,
+                        id,
+                    },
+                    BackgroundColor(if state.selected == Some(index) {
+                        Color::srgb_u8(88, 88, 88)
+                    } else {
+                        Color::NONE
+                    }),
+                ))
+                .observe(activate)
+                .observe(row_click);
+            if !row.available {
+                commands.entity(entry).insert(InteractionDisabled);
+            }
+            if state.selected == Some(index) {
+                commands.entity(entry).insert(Checked);
+            }
+            commands.entity(list).add_child(entry);
         }
         if request.rows.is_empty() {
             let text = commands
@@ -211,44 +284,45 @@ pub(super) fn project(
                     source::font(skin.font.clone(), false),
                 ))
                 .id();
-            commands.entity(panel).add_child(text);
+            commands.entity(list).add_child(text);
         }
-        let navigation = commands
+        let row = state.selected.and_then(|index| request.rows.get(index));
+        let options = commands
             .spawn(Node {
                 column_gap: px(5.),
+                align_items: AlignItems::Center,
+                flex_shrink: 0.,
                 ..default()
             })
             .id();
-        let pages = request.rows.len().max(1).div_ceil(page_rows);
-        let previous = add_button(
-            &mut commands,
-            &skin,
-            request.id,
-            Choice::Previous,
-            "Previous",
-            70.,
-            state.page == 0,
-        );
-        let next = add_button(
-            &mut commands,
-            &skin,
-            request.id,
-            Choice::Next,
-            "Next",
-            70.,
-            state.page + 1 >= pages,
-        );
-        let page = commands
+        let toggle = commands
+            .spawn((
+                source::checkbox(source::checkbox_row(false)),
+                OutfitToggle(request.id),
+                PickerControl {
+                    request_id: request.id,
+                    id: "selection.show_outfits".into(),
+                },
+            ))
+            .observe(toggle_outfits)
+            .id();
+        if state.outfits {
+            commands.entity(toggle).insert(Checked);
+        }
+        let indicator = commands
+            .spawn(source::checkbox_indicator(if state.outfits {
+                skin.checked.clone()
+            } else {
+                skin.unchecked.clone()
+            }))
+            .id();
+        let caption = commands
             .spawn(source::text(
-                format!("Page {} / {}", state.page + 1, pages),
+                "Show Outfits",
                 source::font(skin.font.clone(), false),
             ))
             .id();
-        commands
-            .entity(navigation)
-            .add_children(&[previous, page, next]);
-        commands.entity(panel).add_child(navigation);
-        let row = state.selected.and_then(|index| request.rows.get(index));
+        commands.entity(toggle).add_children(&[indicator, caption]);
         let channel = row
             .and_then(|row| state.channel.and_then(|index| row.channels.get(index)))
             .map_or_else(|| "Default channel".to_owned(), ChannelChoice::label);
@@ -258,31 +332,35 @@ pub(super) fn project(
             request.id,
             Choice::Channel,
             &channel,
-            300.,
+            200.,
             row.is_none_or(|row| row.channels.is_empty()),
         );
-        commands.entity(panel).add_child(channel);
-        let unavailable = commands
-            .spawn(source::text(
-                "Training and account services are unavailable in this frontend.",
-                source::font(skin.font.clone(), false),
-            ))
-            .insert(TextColor(source::DISABLED_TEXT_COLOR))
-            .id();
-        commands.entity(panel).add_child(unavailable);
+        let [mark, train_marked] =
+            training::buttons(&mut commands, &skin, request.id, &state, &request.rows);
+        commands
+            .entity(options)
+            .add_children(&[toggle, channel, mark, train_marked]);
+        commands.entity(panel).add_child(options);
         let footer = commands
             .spawn(Node {
                 column_gap: px(5.),
-                justify_content: JustifyContent::End,
+                flex_shrink: 0.,
                 ..default()
             })
             .id();
         for (choice, label, width, disabled) in [
-            (Choice::Create, "Create", 60., false),
+            (Choice::Create, "Create Character", 108., false),
+            (Choice::Account, "Manage Account", 108., false),
             (Choice::Refresh, "Refresh", 60., false),
             (
+                Choice::Train,
+                "Offline Training",
+                110.,
+                row.is_none_or(|row| !row.available),
+            ),
+            (
                 Choice::Play,
-                "Play",
+                "Ok",
                 43.,
                 row.is_none_or(|row| !row.available),
             ),
@@ -294,11 +372,23 @@ pub(super) fn project(
                 &mut commands,
                 &skin,
                 request.id,
-                choice,
+                choice.clone(),
                 label,
                 width,
                 disabled,
             );
+            if matches!(choice, Choice::Play) {
+                commands.entity(button).insert(Node {
+                    width: px(width),
+                    height: px(20.),
+                    margin: UiRect::left(Val::Auto),
+                    border: px(1.).all(),
+                    flex_shrink: 0.,
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                });
+            }
             if initial_focus {
                 focus.set(button, FocusCause::Navigated);
             }
@@ -307,6 +397,86 @@ pub(super) fn project(
         commands.entity(panel).add_child(footer);
     }
     state.rendered = Some(key);
+}
+/// One list line: fixed-width cells, a `None` width fills the remaining space.
+/// The widget scrolls from the laid-out row bounds, which account for outfit height and zoom.
+pub(super) fn reveal_selection(
+    mut commands: Commands,
+    mut state: ResMut<PickerState>,
+    mut lists: Query<(&Children, &ComputedNode, &mut ScrollPosition)>,
+) {
+    if std::mem::take(&mut state.reveal_selection)
+        && let Some(list) = state.list
+        && let Some(index) = state.selected
+        && let Ok((rows, node, mut scroll)) = lists.get_mut(list)
+        && let Some(&entity) = rows.get(index)
+    {
+        // A rebuilt list can be shorter than the requested scroll offset.
+        scroll.0.y = node.scroll_position.y * node.inverse_scale_factor();
+        commands.trigger(bevy::ui_widgets::ScrollIntoView { entity });
+    }
+}
+
+fn line(
+    commands: &mut Commands,
+    skin: &Skin,
+    cells: &[(String, Option<f32>)],
+    height: f32,
+) -> Entity {
+    let entry = commands
+        .spawn((
+            crate::bevy_shell::ui::window_layout::Scaled {
+                height: Some(height),
+                ..default()
+            },
+            Node {
+                width: percent(100.),
+                height: px(height),
+                flex_shrink: 0.,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
+    for (value, width) in cells {
+        let cell = commands
+            .spawn(source::text(value, source::font(skin.font.clone(), false)))
+            .insert((
+                TextLayout::no_wrap(),
+                bevy::picking::Pickable::IGNORE,
+                crate::bevy_shell::ui::window_layout::Scaled {
+                    width: *width,
+                    ..default()
+                },
+                Node {
+                    width: width.map_or(Val::Auto, px),
+                    flex_grow: if width.is_none() { 1. } else { 0. },
+                    flex_shrink: 0.,
+                    min_width: px(0.),
+                    padding: UiRect::horizontal(px(4.)),
+                    overflow: Overflow::clip(),
+                    ..default()
+                },
+            ))
+            .id();
+        commands.entity(entry).add_child(cell);
+    }
+    entry
+}
+fn toggle_outfits(
+    event: On<bevy::ui_widgets::ValueChange<bool>>,
+    toggles: Query<&OutfitToggle>,
+    guard: ModalGuard,
+    mut state: ResMut<PickerState>,
+) {
+    if guard.allows(event.source)
+        && let Ok(toggle) = toggles.get(event.source)
+        && state.request == Some(toggle.0)
+    {
+        state.outfits = event.value;
+        state.reveal_selection = true;
+        state.revision = state.revision.wrapping_add(1);
+    }
 }
 fn add_button(
     commands: &mut Commands,
@@ -320,10 +490,12 @@ fn add_button(
     let id = match &choice {
         Choice::Row(index) => format!("selection.row.{index}"),
         Choice::Channel => "selection.channel".into(),
-        Choice::Previous => "selection.previous".into(),
-        Choice::Next => "selection.next".into(),
         Choice::Play => "selection.play".into(),
+        Choice::Train => "selection.training".into(),
+        Choice::Mark => "selection.training.mark".into(),
+        Choice::TrainMarked => "selection.training.batch".into(),
         Choice::Refresh => "selection.refresh".into(),
+        Choice::Account => "selection.account".into(),
         Choice::Create => "selection.create".into(),
         Choice::Cancel => "selection.cancel".into(),
     };
@@ -337,6 +509,7 @@ fn add_button(
             },
         ))
         .observe(activate)
+        .observe(row_click)
         .id();
     if disabled {
         commands.entity(button).insert(InteractionDisabled);
@@ -347,97 +520,9 @@ fn add_button(
     commands.entity(button).add_child(text);
     button
 }
-fn activate(
-    event: On<Activate>,
-    choices: Query<(&Target, Has<InteractionDisabled>)>,
-    guard: ModalGuard,
-    mut owner: NonSendMut<HostOwner>,
-    mut state: ResMut<PickerState>,
-) {
-    if !guard.allows(event.entity) {
-        return;
-    }
-    let Ok((target, disabled)) = choices.get(event.entity) else {
-        return;
-    };
-    if disabled || state.request != Some(target.request) {
-        return;
-    }
-    let Some(request) = owner
-        .selection
-        .pending()
-        .filter(|request| request.id == target.request)
-    else {
-        return;
-    };
-    let action = match target.choice {
-        Choice::Row(index) => {
-            if request.rows.get(index).is_some_and(|row| row.available) {
-                state.selected = Some(index);
-                state.channel = None;
-            }
-            None
-        }
-        Choice::Channel => {
-            if let Some(row) = state.selected.and_then(|index| request.rows.get(index)) {
-                state.channel = match state.channel {
-                    None if !row.channels.is_empty() => Some(0),
-                    Some(index) if index + 1 < row.channels.len() => Some(index + 1),
-                    _ => None,
-                };
-            }
-            None
-        }
-        Choice::Previous => {
-            state.page = state.page.saturating_sub(1);
-            None
-        }
-        Choice::Next => {
-            state.page = (state.page + 1)
-                .min(request.rows.len().max(1).div_ceil(state.page_rows.max(1)) - 1);
-            None
-        }
-        Choice::Play => state
-            .selected
-            .and_then(|index| request.rows.get(index))
-            .filter(|row| row.available)
-            .map(|row| SelectionAction::Play {
-                character_id: row.character.character_id.clone(),
-                channel_id: state
-                    .channel
-                    .and_then(|index| row.channels.get(index))
-                    .map(|channel| channel.id.clone()),
-            }),
-        Choice::Create => Some(SelectionAction::Create),
-        Choice::Refresh => Some(SelectionAction::Refresh),
-        Choice::Cancel => Some(SelectionAction::Cancel),
-    };
-    if let Some(action) = action {
-        owner.selection.respond(target.request, action);
-    }
-    state.revision = state.revision.wrapping_add(1);
-}
-
-/// Escape replies through the same request identity as the Cancel button.
-pub(super) fn keyboard(
-    mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    roots: Query<Entity, With<Picker>>,
-    guard: ModalGuard,
-    mut owner: NonSendMut<HostOwner>,
-) {
-    if !roots.iter().any(|entity| guard.allows(entity)) {
-        keys.clear();
-        return;
-    }
-    if keys.read().any(|key| {
-        key.key_code == KeyCode::Escape
-            && key.state == bevy::input::ButtonState::Pressed
-            && !key.repeat
-    }) && let Some(id) = owner.selection.pending().map(|request| request.id)
-    {
-        owner.selection.respond(id, SelectionAction::Cancel);
-    }
-}
+mod interaction;
+pub(super) use interaction::keyboard;
+use interaction::{activate, row_click};
 
 #[cfg(test)]
 mod tests;

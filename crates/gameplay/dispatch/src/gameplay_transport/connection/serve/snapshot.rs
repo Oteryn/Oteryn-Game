@@ -217,6 +217,13 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         {
             view = view.with_appearances();
         }
+        if admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_CORPSE_CONTAINER_48_V1)
+        {
+            view = view.with_corpse_container_48();
+        }
         if admitted.continuity.selected_capabilities.contains(
             oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
         ) {
@@ -297,7 +304,11 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
             ));
         };
         let mut view = SessionVisibility::with_objects(item_view.is_some())
-            .lit(selected_capabilities.contains(CAPABILITY_WORLD_LIGHT_V1));
+            .lit(selected_capabilities.contains(CAPABILITY_WORLD_LIGHT_V1))
+            .with_motion(
+                selected_capabilities
+                    .contains(oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1),
+            );
         let Some(encoded) = appearances
             .initial(
                 authority,
