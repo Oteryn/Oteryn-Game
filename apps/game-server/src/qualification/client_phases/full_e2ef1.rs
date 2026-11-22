@@ -9,7 +9,10 @@ pub(super) async fn with_peer_liveness<T>(
     work: impl std::future::Future<Output = TestResult<T>>,
 ) -> TestResult<T> {
     super::mp::observations::while_servicing_liveness(work, async || {
+        // The idle peer needs current projections, but this wait does not observe individual events.
+        client.take_events();
         client.service_liveness(Duration::from_millis(25)).await?;
+        client.take_events();
         Ok(())
     })
     .await?

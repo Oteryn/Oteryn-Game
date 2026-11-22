@@ -721,3 +721,35 @@ fn m01_peer_operation_services_idle_client_across_three_probes() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn m01_peer_operation_drains_idle_client_deltas() -> TestResult {
+    run_transport(|| async {
+        let completed = Arc::new(Notify::new());
+        let server_completed = Arc::clone(&completed);
+        let (mut client, peer) = connect_peer(reading(359), 9, move |mut stream| async move {
+            for batch in 0..9 {
+                for revision in (batch * 32 + 1)..=(batch + 1) * 32 {
+                    send_clock(&mut stream, revision, reading(360)).await?;
+                }
+                probe(&mut stream, batch + 1, (batch + 1) * 32).await?;
+                // Space bursts beyond one idle read window, as in a long peer operation.
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+            server_completed.notify_one();
+            wait_for_close(&mut stream).await;
+            Ok(())
+        })
+        .await?;
+        super::super::provisioning::with_peer_liveness(&mut client, async {
+            completed.notified().await;
+            Ok(())
+        })
+        .await?;
+        assert_eq!(client.last_server_sequence(), 288);
+        assert!(client.take_events().is_empty());
+        drop(client);
+        peer.await??;
+        Ok(())
+    })
+}
