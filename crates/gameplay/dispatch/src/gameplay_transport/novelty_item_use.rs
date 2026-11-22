@@ -43,6 +43,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         visible_target: bool,
     ) -> Result<Option<UseOutcome>, ()> {
+        if let Some(outcome) = self
+            .use_torch_intent(actor, command, &intent, source)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
         if intent.use_with.is_none()
             && intent.use_with_map_item.is_none()
             && intent.use_with_position.is_none()

@@ -68,6 +68,7 @@ pub mod support_intake;
 pub mod task_board;
 pub mod terrain_tool;
 pub mod tibiadrome;
+pub mod torch_lifecycle;
 pub mod tutorial_viola;
 pub mod vip;
 pub mod vip_presence;

@@ -1,6 +1,6 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
-use crate::foundation::{MovementLocalPosition, WorldId};
+use crate::foundation::{ChannelContentPin, CharacterId, CharacterLease, MovementLocalPosition, WorldId};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::item_move::{LoopMove, LoopMoveResult, LoopTarget};
 use crate::gameplay_transport::item_view::ItemKey;
@@ -58,17 +58,33 @@ fn scenario(moves: bool) -> TestResult {
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
         let world = WorldId::decode(&id(42)).map_err(debug)?;
-        let (controller, pin) =
-            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
+        let (controller, pin) = fixture_content(world)?;
         let generation = controller.active().ok_or("active content")?;
-        let room = pin.qualified_room().clone();
-        let frame_digest = pin.frame_binding().digest();
+        let native = generation.native_gameplay().ok_or("native content")?;
+        let map = fixture_map(world, native)?;
+        let cells = map.movement_cells(pin.qualified_room().movement_cells()).map_err(debug)?;
+        let room = super::rust_lottery_fixtures::bundle_action_room(pin.qualified_room(), &map, world, &cells)?;
+        let channel_pin = ChannelContentPin::from_activation(
+            world, pin.activation_sequence(), pin.identity().server_artifact_digest(),
+            pin.identity().client_artifact_digest(), room.frame_binding().digest(),
+            room.map_revision_digest(), (START.x, START.y, START.floor),
+        );
+        let frame_digest = channel_pin.frame_binding_digest();
         let deps = Dependencies::with_content(
-            pin.into_channel_pin(), room, crate::spell::cast::v1_spell_book().map_err(debug)?,
+            channel_pin, room.clone(), crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;
-        deps.runtime.lock().await.initialize_pinned_test_position(deps.actor, START).map_err(debug)?;
+        {
+            let mut runtime = deps.runtime.lock().await;
+            runtime.initialize_pinned_test_position(deps.actor, START).map_err(debug)?;
+            runtime.bind_attacker_lease(
+                deps.actor, deps.admitted.game_session_id,
+                CharacterLease::new(CharacterId::decode(&id(41)).map_err(debug)?, 2).map_err(debug)?,
+            ).map_err(debug)?;
+        }
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(generation);
+        owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
         deps.initialize(&owner).await;
         let pool = &harness.pool;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
@@ -115,8 +131,21 @@ fn scenario(moves: bool) -> TestResult {
             let relit = timer(pool).await?;
             assert_eq!(move_torch(5, LoopTarget::Container(ItemKey::Instance(id(BAG)))).await, LoopMoveResult::Committed);
             assert_eq!(timer(pool).await?, relit);
-            // Model a delayed deadline pass without sleeping or altering the production clock.
-            shift_deadline(pool, 1_500_000).await?;
+            // Put the first stage 20 seconds in the past. The next stage uses
+            // the original boundary, even when the deadline worker runs late.
+            shift_deadline(pool, 620_000).await?;
+            owner.drain_source_item_deadlines().await;
+            assert_eq!(read(pool).await?, ("oteryn:item.tibia.i2923".into(), 1));
+            let medium = relit.0.ok_or("relit deadline")? - 320_000;
+            assert_eq!(timer(pool).await?, (Some(medium), None));
+            assert_eq!(use_torch(6).await?, Some(UseDisposition::Committed));
+            assert_eq!(read(pool).await?, ("oteryn:item.tibia.i2922".into(), 1));
+            assert_eq!(use_torch(7).await?, Some(UseDisposition::Committed));
+            assert_eq!(read(pool).await?, ("oteryn:item.tibia.i2923".into(), 1));
+            // Re-arm only the fixture's worker cadence. The production worker
+            // reads and settles overdue stages from its own database clock.
+            shift_deadline(pool, 920_000).await?;
+            owner.states.spell_states.lock().await.next_item_deadline_pass_us = 0;
             owner.drain_source_item_deadlines().await;
             assert_eq!(read(pool).await?, ("oteryn:item.tibia.i2926".into(), 2));
             let nested: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid)")
@@ -146,4 +175,79 @@ fn scenario(moves: bool) -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+// The source profiles are supplied in the test activation only while the
+// separate content lane owns the corresponding production profile inputs.
+fn fixture_content(
+    world: WorldId,
+) -> TestResult<(crate::content::ContentActivationController, crate::content::NativeEntryContentPin)> {
+    use sha2::{Digest, Sha256};
+    let mut input = super::death_ml_loss_composed_fixtures::production_input_with_source("content-1", None)?;
+    let profiles = input.item_profiles.as_mut().ok_or("profile pin")?;
+    let mut document: serde_json::Value = serde_json::from_slice(&profiles.bytes)?;
+    let bindings: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"), "/../../../imports/crystalserver/bindings/items.json",
+    )))?;
+    let records = document["records"].as_array_mut().ok_or("profiles")?;
+    let unlit = records.iter().find(|r| r["production_binding"]["external_id"] == "2920")
+        .ok_or("base torch profile")?.clone();
+    // Crystal 201189f8 data/items/items.xml:6317-6349.
+    for (id, name, weight) in [
+        (2921, "lit torch", 500), (2922, "torch", 500), (2923, "lit torch", 450),
+        (2924, "torch", 500), (2925, "lit torch", 400), (2926, "burnt down torch", 350),
+    ] {
+        let id_text = id.to_string();
+        if records.iter().any(|r| r["production_binding"]["external_id"] == id_text) {
+            continue;
+        }
+        let binding = bindings["bindings"].as_array().ok_or("bindings")?.iter()
+            .find(|r| r["external_id"] == id_text).ok_or("exact torch source binding")?;
+        let mut profile = unlit.clone();
+        profile["authoring"]["item"]["key"] = format!("candidate:item/{id}").into();
+        profile["production_binding"] = binding.clone();
+        profile["production_definition"]["production_key"] = binding["target"]["key"].clone();
+        profile["semantics"]["physical"]["value"]["weight"]["value"] = weight.into();
+        profile["semantics"]["presentation"]["value"]["name"]["value"] = name.into();
+        records.push(profile);
+    }
+    profiles.bytes = serde_json::to_vec(&document)?;
+    profiles.sha256 = format!("{:x}", Sha256::digest(&profiles.bytes));
+    crate::content::native_gameplay::test_support::try_activate_input(world, &input).map_err(debug)
+}
+
+fn fixture_map(
+    world: WorldId,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let index = native.item_index().ok_or("item index")?;
+    let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
+    let bag = "oteryn:item.tibia.i2854";
+    let oven = "oteryn:item.tibia.i2535";
+    let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
+        (bag, reference(bag).ok_or("bag")?.get()-1),
+        (oven, reference(oven).ok_or("oven")?.get()-1),
+    );
+    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+    crate::map::boot::boot(
+        &bytes,
+        &crate::map::boot::BootPins {
+            map_revision: crate::map::overlay::map_revision(&base),
+            bundle: pins,
+            start: crate::map::overlay::TilePos { x: 7, y: 0, floor: -7 },
+        },
+        world,
+        crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
+        |key| {
+            let policy = native.item_policy(key, "definition-r1")?.record();
+            let crate::content::ReferenceItemField::Known(physical) = &policy.semantics.physical else { return None; };
+            Some(crate::map::facts::ItemDefinition {
+                reference: reference(key)?,
+                solid: policy.attributes.blocks_movement,
+                blocks_projectile: policy.attributes.blocks_projectile.unwrap_or(true),
+                pickupable: physical.pickupable == crate::content::ReferenceItemField::Known(true),
+                door: false,
+            })
+        },
+    ).map_err(debug)
 }
