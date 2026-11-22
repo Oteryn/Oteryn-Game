@@ -4,7 +4,6 @@
 //! `kill_reward_refused` line with the reason.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::num::NonZeroU32;
 use std::sync::{Arc, LazyLock};
 
 use oteryn_simulation_determinism::ExactI64;
@@ -17,7 +16,6 @@ use super::{
 };
 use crate::domain::bestiary::BestiaryRace;
 use crate::domain::bosstiary::{BosstiaryBoss, progress};
-use oteryn_gameplay_domain::domain::currency::{COIN_STACK_MAXIMUM, Coin};
 use oteryn_gameplay_domain::domain::loot_data::{
     LootDefinitionRef, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry,
 };
@@ -360,7 +358,6 @@ fn has_quest_loot(entry: &SectionLootEntry) -> bool {
 }
 
 fn lower_loot_entries(
-    table: &SectionRef,
     entries: &[SectionLootEntry],
     items: &HashMap<&SectionRef, &SectionItemFacts>,
     depth: usize,
@@ -392,7 +389,6 @@ fn lower_loot_entries(
             probability_ppm: entry.probability_ppm,
             details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
                 children: lower_loot_entries(
-                    table,
                     &entry.children,
                     items,
                     depth + 1,
@@ -402,19 +398,7 @@ fn lower_loot_entries(
                 container_capacity: facts.container_capacity,
                 charges: facts.charges,
                 stackable: facts.stackable,
-                // The Clomp tables roll a total above the gold stack ceiling.
-                // Carry the ceiling to the planner without changing the source roll.
-                corpse_stack_maximum: if facts.stackable
-                    && entry.item.key == Coin::Gold.production_key()
-                    && table.revision == "definition-r1"
-                    && matches!(
-                        table.key.as_str(),
-                        "oteryn:loot.creature.animated_clomp" | "oteryn:loot.creature.clomp"
-                    ) {
-                    NonZeroU32::new(COIN_STACK_MAXIMUM)
-                } else {
-                    None
-                },
+                corpse_stack_maximum: None,
                 subtype: entry.subtype,
                 unique: entry.unique,
                 creature_product: facts.creature_product,
@@ -1018,7 +1002,6 @@ fn row(
                 && !is_boss(profile);
             let admits_tusk_shield = source_tusk_shield_pair(creature, reference);
             let entries = lower_loot_entries(
-                reference,
                 &table.entries,
                 items,
                 0,
@@ -1633,7 +1616,6 @@ mod protected_loot_tests {
                 bindings[creature].ok_or_else(|| format!("{creature}: missing loot"))?;
             let entries = &tables[reference].entries;
             match lower_loot_entries(
-                reference,
                 entries,
                 &items,
                 0,
@@ -1661,18 +1643,11 @@ mod protected_loot_tests {
         assert!(settled > 0, "expected pre-existing corpse admission");
         let reference = bindings["oteryn:creature.general_murius"]
             .ok_or("General Murius loot binding missing")?;
-        let horn = lower_loot_entries(
-            reference,
-            &tables[reference].entries,
-            &items,
-            0,
-            false,
-            false,
-        )
-        .map_err(NoSettlementReason::as_str)?
-        .into_iter()
-        .find(|entry| entry.item.production_key == "oteryn:item.tibia.i11472")
-        .ok_or("Minotaur horn missing")?;
+        let horn = lower_loot_entries(&tables[reference].entries, &items, 0, false, false)
+            .map_err(NoSettlementReason::as_str)?
+            .into_iter()
+            .find(|entry| entry.item.production_key == "oteryn:item.tibia.i11472")
+            .ok_or("Minotaur horn missing")?;
         assert!(horn.details.stackable);
         assert_eq!((horn.min_count, horn.max_count), (1, 2));
         for (creature, id, chance) in [
@@ -1736,7 +1711,7 @@ mod protected_loot_tests {
             .ok_or("Glitterscale loot table missing")?;
         assert_eq!(table.algorithm, "IndependentBernoulliPpm");
         let items = loot.items.iter().map(|row| (&row.item, row)).collect();
-        let entries = lower_loot_entries(&table.identity, &table.entries, &items, 0, false, false)
+        let entries = lower_loot_entries(&table.entries, &items, 0, false, false)
             .map_err(NoSettlementReason::as_str)?;
         assert_eq!(entries.len(), 1);
         let entry = &entries[0];
