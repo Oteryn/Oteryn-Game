@@ -137,9 +137,10 @@ async fn submit(
     let result = client
         .create_coin_order(token, request, cancel.clone())
         .await;
-    // A retry's 403 does not bound the earlier POST. Keep its identity even after status 404.
+    // Only a refusal of the initial POST can rule out its effect.
     view.post_refusal_status = match &result {
-        Err(NativeLoginError::Platform(HttpStatus(status @ (403 | 409)))) => Some(*status),
+        Err(NativeLoginError::Platform(HttpStatus(409))) if !retry => Some(409),
+        Err(NativeLoginError::Platform(HttpStatus(403))) => Some(403),
         _ => None,
     };
     if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {
@@ -189,6 +190,11 @@ async fn refresh(
             .find(|o| &o.request_id == request_id)
     {
         accept(view, order.clone())?;
+    }
+    for order in &catalogue.recent_orders {
+        if view.prior.contains(&order.request_id) {
+            accept(view, order.clone())?;
+        }
     }
     if view.order.is_none()
         && !view.pending()
@@ -254,6 +260,7 @@ fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
         view.confirmed = None;
         view.post_refusal_status = None;
     }
+    view.prior.reconcile(&order.request_id);
     view.quote_until.remove(&order.quote_id);
     view.order = Some(order);
     view.checkout_unverified = false;
@@ -279,7 +286,11 @@ fn open_checkout(
     if cancel.is_cancelled() {
         return;
     }
-    view.feedback = if browser(url.as_str()) {
+    let opened = browser(url.as_str());
+    if cancel.is_cancelled() {
+        return;
+    }
+    view.feedback = if opened {
         tr!("Sandbox checkout opened. Return here and check purchase status after completing it.")
     } else {
         tr!(
