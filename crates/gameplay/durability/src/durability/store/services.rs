@@ -576,7 +576,7 @@ async fn reserve(
             }
             None
         }
-        StoreService::PremiumTime { days } if matches!(days, 30 | 90 | 180 | 360) => None,
+        StoreService::PremiumTime { days: 30 | 90 | 180 | 360 } => None,
         StoreService::PremiumTime { .. } => return Ok(false),
     };
     let inserted = sqlx::query(

@@ -232,7 +232,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
     if let Some(gathering) = &request.gathering
         && u16::try_from(gathering.mutation.before)
             .is_ok_and(|id| matches!(id, DESERT_FISHING_WATER | DESERT_FISHING_SPENT))
-        && !super::world_event::changes::variants::desert_fishing_admitted(&mut **tx, world, gathering).await?
+        && !super::world_event::changes::variants::desert_fishing_admitted(tx, world, gathering).await?
     {
         return Ok(UseDisposition::NothingToUse);
     }

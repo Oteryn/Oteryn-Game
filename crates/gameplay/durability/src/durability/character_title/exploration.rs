@@ -17,7 +17,7 @@ impl Source {
         self.0.completion(|id| {
             progress
                 .get("subareas")
-                .and_then(|subareas| subareas.get(&id.to_string()))
+                .and_then(|subareas| subareas.get(id.to_string()))
                 .and_then(|state| state.get("discovered"))
                 .and_then(serde_json::Value::as_bool)
                 == Some(true)
