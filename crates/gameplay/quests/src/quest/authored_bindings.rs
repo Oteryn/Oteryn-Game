@@ -225,7 +225,9 @@ impl Bindings {
                                 .iter()
                                 .any(|op| !state_operations::valid(quest, op))
                             || (callback.storage.is_empty()
-                                && super::world_contributions::ship_coal(callback).is_none())
+                                && !super::world_contributions::is_stateless_npc_contribution(
+                                    callback,
+                                ))
                             || callback.storage.iter().any(|s| {
                                 s.increment
                                     || s.at_least

@@ -30,35 +30,77 @@ async fn steamship_saves(h: &fixture::Harness) -> fixture::TestResult {
     let world = fixture::scope()?.world_id();
     let foreign = crate::foundation::WorldId::decode(&fixture::id(90)).map_err(fixture::debug)?;
     let seal = h.recovery.seal_current().map_err(fixture::debug)?;
-    let authority = h.root.open_character_authority(&seal).await.map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
     let recovery = authority.record_for(&h.root).map_err(fixture::debug)?;
 
     for epoch in 1..=10_i64 {
-        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,'2031-06-13T12:00:00Z'::timestamptz + $2 * interval '1 day','2031-06')")
-            .bind(world.as_bytes().as_slice()).bind(epoch).bind([1u8; 32].as_slice())
-            .execute(&h.pool).await?;
+        seed_epoch(h, world, epoch).await?;
     }
+    seed_epoch(h, foreign, 3).await?;
+    activate(h, foreign, 3).await?;
     for epoch in 1..=2 {
         activate(h, world, epoch).await?;
         assert!(!h.root.world_change_active(world, "steamship").await?);
-            let mut tx = h.pool.begin().await?;
-            sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
-            let id = [u8::try_from(epoch)?; 16];
-            let amount = if epoch == 1 { 199 } else { 1 };
-            assert_eq!(
-                changes::contribute(&mut tx, &recovery, world, u64::try_from(epoch)?, id, ContributionKind::Coal, amount).await?,
-                ContributionWrite::Applied(u64::from(amount))
-            );
-            assert_eq!(
-                changes::contribute(&mut tx, &recovery, world, u64::try_from(epoch)?, id, ContributionKind::Coal, amount).await?,
-                ContributionWrite::Replayed(u64::from(amount))
-            );
-            tx.commit().await?;
-            assert!(!h.root.world_change_active(world, "steamship").await?);
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        let id = [u8::try_from(epoch)?; 16];
+        let amount = if epoch == 1 { 199 } else { 1 };
+        assert_eq!(
+            changes::contribute(
+                &mut tx,
+                &recovery,
+                world,
+                u64::try_from(epoch)?,
+                id,
+                ContributionKind::Coal,
+                amount
+            )
+            .await?,
+            ContributionWrite::Applied(u64::from(amount))
+        );
+        assert_eq!(
+            changes::contribute(
+                &mut tx,
+                &recovery,
+                world,
+                u64::try_from(epoch)?,
+                id,
+                ContributionKind::Coal,
+                amount
+            )
+            .await?,
+            ContributionWrite::Replayed(u64::from(amount))
+        );
+        tx.commit().await?;
+        assert!(!h.root.world_change_active(world, "steamship").await?);
     }
     activate(h, world, 3).await?;
     assert!(h.root.world_change_active(world, "steamship").await?);
     assert!(!h.root.world_change_active(foreign, "steamship").await?);
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    assert_eq!(
+        changes::contribute(
+            &mut tx,
+            &recovery,
+            world,
+            2,
+            [29; 16],
+            ContributionKind::Coal,
+            200
+        )
+        .await?,
+        ContributionWrite::Rejected
+    );
+    tx.rollback().await?;
     for epoch in 4..=9 {
         activate(h, world, epoch).await?;
         assert!(h.root.world_change_active(world, "steamship").await?);
@@ -68,9 +110,29 @@ async fn steamship_saves(h: &fixture::Harness) -> fixture::TestResult {
     Ok(())
 }
 
-async fn activate(h: &fixture::Harness, world: crate::foundation::WorldId, epoch: i64) -> fixture::TestResult {
+async fn seed_epoch(
+    h: &fixture::Harness,
+    world: crate::foundation::WorldId,
+    epoch: i64,
+) -> fixture::TestResult {
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,'2031-06-13T12:00:00Z'::timestamptz + $2 * interval '1 day','2031-06')")
+        .bind(world.as_bytes().as_slice()).bind(epoch).bind([1u8; 32].as_slice())
+        .execute(&h.pool).await?;
+    Ok(())
+}
+
+async fn activate(
+    h: &fixture::Harness,
+    world: crate::foundation::WorldId,
+    epoch: i64,
+) -> fixture::TestResult {
     sqlx::query("INSERT INTO game_world_reset_active(world_id,reset_epoch) VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT(world_id) DO UPDATE SET reset_epoch=EXCLUDED.reset_epoch")
         .bind(world.as_bytes().as_slice()).bind(epoch).execute(&h.pool).await?;
-    assert!(h.root.world_changes(world, u64::try_from(epoch)?).await?.is_some());
+    assert!(
+        h.root
+            .world_changes(world, u64::try_from(epoch)?)
+            .await?
+            .is_some()
+    );
     Ok(())
 }

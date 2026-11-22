@@ -10,7 +10,7 @@ ALTER TABLE game_world_change_contributions
 CREATE TABLE game_world_contribution_days (
     world_id UUID NOT NULL,
     reset_epoch NUMERIC(20,0) NOT NULL,
-    ship_carry BIGINT NOT NULL CHECK (ship_carry >= 0),
+    ship_carry BIGINT NOT NULL CHECK (ship_carry BETWEEN 0 AND 200),
     ship_saves_remaining SMALLINT NOT NULL CHECK (ship_saves_remaining BETWEEN 0 AND 7),
     pump_carry BIGINT NOT NULL CHECK (pump_carry BETWEEN 0 AND 201),
     awash_drained BOOLEAN NOT NULL,

@@ -55,11 +55,16 @@ pub fn pump_coal(callback: &world_callbacks::Callback) -> Option<u32> {
             (32558, 32007, -9, 12666) | (32560, 32014, -9, 12667) | (32567, 32024, -9, 12666)
         )
         && selector.ordinal == 1
+        && callback.selector.position.is_none()
+        && callback.selector.unique.is_none()
+        && callback.selector.action.is_none()
         && callback.passages.is_empty()
         && input.item == COAL
         && input.selected_instance
         && !input.on_step
         && !input.reusable
+        && !input.target_remove
+        && input.ingredients.is_empty()
         && input.replacement.is_none()
         && input.alternatives.is_empty()
         && input.count == 1)
@@ -79,8 +84,12 @@ pub(super) fn is_stateless_contribution(stage: &super::authored_bindings::Stage)
             Trigger::NpcDialogue {
                 callback,
                 alternatives,
-            } => alternatives.is_empty() && ship_coal(callback).is_some(),
+            } => alternatives.is_empty() && is_stateless_npc_contribution(callback),
             Trigger::MapUse { callback } => pump_coal(callback).is_some(),
             _ => false,
         }
+}
+
+pub(super) fn is_stateless_npc_contribution(callback: &RewardCallback) -> bool {
+    ship_coal(callback).is_some() || (callback.quest == SWAMP_FEVER && medicine(callback).is_some())
 }

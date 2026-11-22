@@ -63,7 +63,9 @@ pub(super) async fn record_save(
         save.ship_saves_remaining = SHIP_WORKING_WEEK;
         save.ship_carry = 0;
     } else {
-        save.ship_carry = i64::try_from(ship).map_err(|_| DurabilityError::InvalidStoredState)?;
+        // Surplus beyond the next working week cannot fund another activation.
+        save.ship_carry =
+            i64::try_from(ship.min(SHIP_COAL)).map_err(|_| DurabilityError::InvalidStoredState)?;
     }
 
     let pump = stock(tx, world, previous, ContributionKind::AwashCoal, save.pump_carry).await?;
