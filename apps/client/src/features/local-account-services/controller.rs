@@ -1,5 +1,5 @@
 use super::*;
-use oteryn_platform_client::native_login::NativeLoginError;
+use oteryn_platform_client::{PlatformClientError::HttpStatus, native_login::NativeLoginError};
 use std::time::Duration;
 
 pub(super) async fn execute(
@@ -157,16 +157,25 @@ async fn apply(
             }
         }
         Action::Retry => {
-            if let Some(request) = &view.pending {
-                let receipt = client.bazaar_command(token, request, cancel).await?;
-                accept(view, receipt);
+            if view.can_retry() {
+                submit(view, client, token, cancel, true).await?;
             }
             return Ok(());
         }
         Action::Status => {
             if let Some(id) = view.pending_id() {
-                let receipt = client.bazaar_status(token, id, cancel).await?;
-                accept(view, receipt);
+                match client.bazaar_status(token, id, cancel).await {
+                    Ok(receipt) => accept(view, receipt),
+                    Err(NativeLoginError::Platform(HttpStatus(404)))
+                        if view.post_refusal_status == Some(409) =>
+                    {
+                        view.pending = None;
+                        view.post_refusal_status = None;
+                        view.quote = None;
+                        view.feedback = tr!("The server refused the request").into();
+                    }
+                    Err(error) => return Err(error),
+                }
             }
             return Ok(());
         }
@@ -191,11 +200,31 @@ async fn apply(
         command,
     };
     view.pending = Some(request);
+    submit(view, client, token, cancel, false).await
+}
+
+async fn submit(
+    view: &mut View,
+    client: &NativeLoginClient,
+    token: &AccessToken,
+    cancel: CancellationToken,
+    retry: bool,
+) -> Result<(), NativeLoginError> {
     let Some(request) = &view.pending else {
         return Ok(());
     };
-    let receipt = client.bazaar_command(token, request, cancel).await?;
-    accept(view, receipt);
+    let result = client.bazaar_command(token, request, cancel).await;
+    // A retry's 403 does not bound the earlier POST. Keep its identity even after status 404.
+    view.post_refusal_status = match &result {
+        Err(NativeLoginError::Platform(HttpStatus(status @ (403 | 409)))) => Some(*status),
+        _ => None,
+    };
+    if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {
+        view.pending = None;
+        view.quote = None;
+        view.post_refusal_status = None;
+    }
+    accept(view, result?);
     Ok(())
 }
 pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
@@ -208,6 +237,13 @@ pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
             tr!("Conflicting terminal receipt; keep the original receipt and contact support.")
                 .into();
         return;
+    }
+    if view
+        .pending
+        .as_ref()
+        .is_some_and(|p| p.request_id == receipt.request_id)
+    {
+        view.post_refusal_status = None;
     }
     if receipt.state != OperationState::Pending
         && view

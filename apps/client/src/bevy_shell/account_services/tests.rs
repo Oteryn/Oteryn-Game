@@ -74,6 +74,7 @@ fn premium_bevy_buttons_fetch_refresh_report_errors_and_return_to_account_menu()
                     &client,
                     &token,
                     &config,
+                    &mut Default::default(),
                     CancellationToken::new(),
                 ))
                 .map_err(|e| format!("{e:?}"))
@@ -301,6 +302,7 @@ fn get_coins_reopens_and_inspects_an_awaiting_payment_order_by_request_id() -> T
                     &client,
                     &token,
                     &config,
+                    &mut Default::default(),
                     CancellationToken::new(),
                 ))
                 .map_err(|e| format!("{e:?}"))
@@ -396,6 +398,7 @@ fn bazaar_page_keeps_auction_details_during_bid_retry_and_status_recovery() -> T
                     &client,
                     &token,
                     &config,
+                    &mut Default::default(),
                     CancellationToken::new(),
                 ))
                 .map_err(|e| format!("{e:?}"))
@@ -570,6 +573,7 @@ fn commerce_cancel_invalidates_queued_confirmation() -> TestResult {
                     &client,
                     &token,
                     &config,
+                    &mut Default::default(),
                     worker_token,
                 ))
                 .map_err(|err| format!("{err:?}"))
@@ -635,4 +639,170 @@ fn unavailable_coin_shop_offers_back_without_refresh() -> TestResult {
         crate::coin_shop::Action::Back
     ));
     Ok(())
+}
+
+fn with_coin_offer(
+    ambiguous: bool,
+    check: impl FnOnce(&mut App, u64, &MockPlatform) -> TestResult + Send + 'static,
+) -> TestResult {
+    use crate::account_services::test_server::coins::PACKAGE;
+    test_thread(move || {
+        let mock = std::sync::Arc::new(MockPlatform::start()?);
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        if ambiguous {
+            mock.with_coins(|coins| {
+                coins.drop_after_create = true;
+                coins.hide_recent_orders = true;
+            })?;
+        }
+        let (mut app, config) = commerce_app()?;
+        let cancel = CancellationToken::new();
+        let worker_cancel = cancel.clone();
+        let runner = mock.clone();
+        let worker = thread::Builder::new().stack_size(64 << 20).spawn(move || {
+            runner.runtime.block_on(crate::account_services::run(
+                &client,
+                &token,
+                &config,
+                &mut Default::default(),
+                worker_cancel,
+            ))
+        })?;
+        let result = (|| {
+            let account = wait(&mut app, None)?;
+            click_named(&mut app, "account.coins")?;
+            let shop = wait(&mut app, Some(account))?;
+            click_named(&mut app, &format!("coin.package.{PACKAGE}"))?;
+            check(&mut app, shop, &mock)
+        })();
+        cancel.cancel();
+        worker.join().map_err(|_| "account presenter")??;
+        result
+    })
+}
+
+#[test]
+fn ambiguous_coin_order_keeps_identity_when_shop_reopens() -> TestResult {
+    with_coin_offer(true, |app, shop, mock| {
+        click_named(app, "commerce.confirm")?;
+        let pending = wait(app, Some(shop))?;
+        let id = mock
+            .with_coins(|coins| coins.orders.keys().next().cloned())?
+            .ok_or("order")?;
+        click(app, Action::Back)?;
+        let account = wait(app, Some(pending))?;
+        click_named(app, "account.coins")?;
+        let reopened = wait(app, Some(account))?;
+        let world = app.world_mut();
+        let body = world.query_filtered::<&Text, With<Body>>().single(world)?;
+        assert!(
+            body.0.contains(&id),
+            "reopened shop lost unresolved request {id}"
+        );
+        click_named(app, "coin.status")?;
+        wait(app, Some(reopened))?;
+        let state = mock.authority.lock().map_err(|_| "lock")?;
+        let target = format!("GET /api/v1/native-account/coin-purchases/requests/{id} ");
+        assert!(state.requests.iter().any(|r| r.starts_with(&target)));
+        assert_eq!(state.coins.as_ref().ok_or("coins")?.creations, 1);
+        Ok(())
+    })
+}
+
+#[test]
+fn rejected_expired_order_can_refresh_and_confirm_again() -> TestResult {
+    use crate::account_services::test_server::coins::PACKAGE;
+    with_coin_offer(false, |app, shop, mock| {
+        mock.with_coins(|coins| coins.expire_quotes())?;
+        click_named(app, "commerce.confirm")?;
+        let pending = wait(app, Some(shop))?;
+        click_named(app, "coin.status")?;
+        let resolved = wait(app, Some(pending))?;
+        let world = app.world_mut();
+        let body = world.query_filtered::<&Text, With<Body>>().single(world)?;
+        assert!(
+            !body.0.contains("Unresolved order request"),
+            "a rejected POST and missing status have no effect"
+        );
+        click_named(app, "coin.refresh")?;
+        let refreshed = wait(app, Some(resolved))?;
+        click_named(app, &format!("coin.package.{PACKAGE}"))?;
+        click_named(app, "commerce.confirm")?;
+        wait(app, Some(refreshed))?;
+        assert_eq!(mock.with_coins(|coins| coins.creations)?, 1);
+        Ok(())
+    })
+}
+
+#[test]
+fn expired_coin_offer_disables_review_and_closes_confirmation() -> TestResult {
+    with_coin_offer(false, |app, _, _| {
+        use crate::account_services::test_server::coins::PACKAGE;
+        let offer = format!("coin.package.{PACKAGE}");
+        let controls = |world: &mut World| {
+            let mut names = world.query_filtered::<&Name, Without<bevy::ui::InteractionDisabled>>();
+            let mut present = |wanted| names.iter(world).any(|name| name.as_str() == wanted);
+            (present(offer.as_str()), present("commerce.confirm"))
+        };
+        assert_eq!(controls(app.world_mut()), (true, true));
+        app.insert_resource(bevy::time::TimeUpdateStrategy::ManualInstant(
+            Instant::now() + Duration::from_secs(121),
+        ));
+        app.update();
+        assert_eq!(
+            controls(app.world_mut()),
+            (false, false),
+            "expired offer and confirmation must be disabled"
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn expired_transfer_offer_disables_review_and_closes_confirmation() -> TestResult {
+    use crate::account_services::test_server::{CHARACTER, DESTINATION};
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let (mut app, config) = commerce_app()?;
+        let cancel = CancellationToken::new();
+        let worker_cancel = cancel.clone();
+        let worker = thread::Builder::new().stack_size(64 << 20).spawn(move || {
+            mock.runtime.block_on(crate::account_services::run(
+                &client,
+                &token,
+                &config,
+                &mut Default::default(),
+                worker_cancel,
+            ))
+        })?;
+        let result = (|| {
+            let account = wait(&mut app, None)?;
+            click_named(&mut app, &format!("account.character.{CHARACTER}"))?;
+            click_named(&mut app, &format!("account.transfer.{DESTINATION}"))?;
+            wait(&mut app, Some(account))?;
+            click_named(&mut app, "account.transfer.confirm")?;
+            let controls = |world: &mut World| {
+                let mut names =
+                    world.query_filtered::<&Name, Without<bevy::ui::InteractionDisabled>>();
+                let mut active = |wanted| names.iter(world).any(|name| name.as_str() == wanted);
+                (
+                    active("account.transfer.confirm"),
+                    active("commerce.confirm"),
+                )
+            };
+            assert_eq!(controls(app.world_mut()), (true, true));
+            app.insert_resource(bevy::time::TimeUpdateStrategy::ManualInstant(
+                Instant::now() + Duration::from_secs(121),
+            ));
+            app.update();
+            assert_eq!(controls(app.world_mut()), (false, false));
+            Ok(())
+        })();
+        cancel.cancel();
+        worker.join().map_err(|_| "account presenter")??;
+        result
+    })
 }
