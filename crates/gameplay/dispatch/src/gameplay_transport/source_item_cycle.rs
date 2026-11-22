@@ -211,9 +211,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         15 => {
                             self.root
-                                .with_background_operation(
-                                    self.refund_unpublished_source_boss_lever(),
-                                )
+                                .with_background_operation(self.settle_source_boss_lever())
                                 .await;
                         }
                         _ => {

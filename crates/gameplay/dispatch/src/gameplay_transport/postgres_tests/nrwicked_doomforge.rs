@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::{channel_content_pin::ChannelContentPin, qualify_native_entry_room};
+use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::runtime_scope_assignment::{AssignmentReceipt, NodeIncarnationProof};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
@@ -109,6 +110,14 @@ fn nrwicked_successor_refunds_confirmed_installation_interrupted_before_publicat
 }
 
 #[test]
+fn nrwicked_successor_keeps_cooldown_when_seal_fails_after_publication() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, "nrwicked_published_seal_failure", FORGE, Scenario::PublishedSealFailure)
+}
+
+#[test]
 fn nrwicked_confirm_with_stale_party_session_preserves_pending_admission() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -126,6 +135,7 @@ enum Scenario {
     AdmissionRecovery,
     ProjectionOwnerLoss,
     ConfirmedOwnerLoss,
+    PublishedSealFailure,
     StaleConfirmation,
 }
 
@@ -579,6 +589,8 @@ async fn two_player_encounter(
     if matches!(case, Scenario::AdmissionAckLost) {
         owner.states.quest_callbacks.lose_source_boss_commit_ack.store(true, Ordering::Release);
         owner.states.quest_callbacks.lose_source_boss_publish_ack.store(true, Ordering::Release);
+    }
+    if matches!(case, Scenario::AdmissionAckLost | Scenario::PublishedSealFailure) {
         owner.states.quest_callbacks.defer_source_boss_seal.store(true, Ordering::Release);
     }
     if matches!(case, Scenario::ProjectionOwnerLoss) {
@@ -642,11 +654,13 @@ async fn two_player_encounter(
         if matches!(case, Scenario::StaleConfirmation) {
             return Ok(());
         }
-        return exercise_source_boss_handoff(h, deps, owner, fence.item_fence(), None).await;
+        return exercise_source_boss_handoff(h, deps, owner, SourceBossHandoff::Unpublished(fence.item_fence())).await;
     }
     assert_eq!(outcome.disposition, UseDisposition::Committed, "production Arbaziloth lever");
     if let Some(unpublished) = unpublished {
-        return exercise_source_boss_handoff(h, deps, owner, fence.item_fence(), Some(unpublished)).await;
+        return exercise_source_boss_handoff(h, deps, owner, SourceBossHandoff::Mixed {
+            published: fence.item_fence(), unpublished,
+        }).await;
     }
     if matches!(case, Scenario::AdmissionAckLost) {
         assert!(!owner.states.quest_callbacks.lose_source_boss_commit_ack.load(Ordering::Acquire));
@@ -701,6 +715,19 @@ async fn two_player_encounter(
         runtime.companion_snapshot(forgemaster).map_err(debug)?.health,
         10_500
     );
+    if matches!(case, Scenario::PublishedSealFailure) {
+        assert!(!owner.states.quest_callbacks.defer_source_boss_seal.load(Ordering::Acquire));
+        assert_eq!(states.encounter_phases.active.lock().map_err(|_| "phases")?.len(), 1);
+        let key = bundle::placement_key(LEVER.floor, LEVER.x, LEVER.y, 2).ok_or("lever key")?;
+        assert_eq!(crate::map::view::MapFacts::object_revision(facts, key), 1);
+        drop(states);
+        drop(runtime);
+        let peer = owner.current_quest_fence(other_session).await
+            .map_err(|()| "published peer fence")?.ok_or("missing published peer fence")?;
+        return exercise_source_boss_handoff(h, deps, owner, SourceBossHandoff::UnsealedPublication([
+            fence.item_fence(), peer.item_fence(),
+        ])).await;
+    }
     if matches!(case, Scenario::AdmissionAckLost) {
         assert_eq!(states.encounter_phases.active.lock().map_err(|_| "phases")?.len(), 1);
         return Ok(());
@@ -1168,28 +1195,47 @@ async fn drive_encounter_ai_until(
     Ok(())
 }
 
+#[derive(Clone, Copy)]
+enum SourceBossHandoff {
+    Unpublished(CurrentCharacterItemFence),
+    Mixed {
+        published: CurrentCharacterItemFence,
+        unpublished: [u8; 16],
+    },
+    UnsealedPublication([CurrentCharacterItemFence; 2]),
+}
+
 async fn exercise_source_boss_handoff(
     h: &Harness,
     deps: &Dependencies,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    published: crate::durability::item_transfer::CurrentCharacterItemFence,
-    unpublished: Option<[u8; 16]>,
+    case: SourceBossHandoff,
 ) -> TestResult {
     use crate::durability::runtime_scope_assignment::{
         AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey,
         RuntimeScopeAssignmentWriter,
     };
-    let scope = published.runtime_scope;
     let before = source_boss_admission_state(h).await?;
-    if unpublished.is_some() {
-        assert_eq!(before, [(1, false, false, 1), (2, false, true, 1)]);
+    let (scope, refunded, after) = match case {
+        SourceBossHandoff::Unpublished(member) => {
+            assert!(matches!(before.as_slice(), [(2, true, _, 2)]));
+            (member.runtime_scope, true, vec![(3, false, false, 0)])
+        }
+        SourceBossHandoff::Mixed { published, .. } => {
+            assert_eq!(before, [(1, false, false, 1), (2, false, true, 1)]);
+            (published.runtime_scope, true, vec![(2, false, true, 1), (3, false, false, 0)])
+        }
+        SourceBossHandoff::UnsealedPublication([member, _]) => {
+            assert_eq!(before, [(2, true, true, 2)], "native publication happened on the unsealed admission");
+            (member.runtime_scope, false, vec![(2, false, true, 2)])
+        }
+    };
+    let published_cooldowns = if matches!(case, SourceBossHandoff::UnsealedPublication(_)) {
+        let cooldowns = active_source_boss_cooldowns(h).await?;
+        assert_eq!(cooldowns.len(), 2);
+        cooldowns
     } else {
-        assert!(matches!(before.as_slice(), [(2, true, _, 2)]));
-    }
-    let after = if unpublished.is_some() {
-        vec![(2, false, true, 1), (3, false, false, 0)]
-    } else {
-        vec![(3, false, false, 0)]
+        Vec::new()
     };
     sqlx::query(
         "INSERT INTO game_control_scope_grants VALUES
@@ -1249,11 +1295,11 @@ async fn exercise_source_boss_handoff(
     let runtime = tokio::sync::Mutex::new(runtime);
     let mut replacement = deps.owner_from(&h.root, &successor, owner.character);
     replacement.runtime = (&runtime).into();
-    assert!(replacement.recover_source_boss_admission().await?, "successor applied the refund");
+    assert_eq!(replacement.recover_source_boss_admission().await?, refunded, "successor refund decision");
     assert_eq!(source_boss_admission_state(h).await?, after);
-    assert!(!replacement.recover_source_boss_admission().await?, "refund replay is a no-op");
+    assert!(!replacement.recover_source_boss_admission().await?, "recovery replay is a no-op");
     assert_eq!(source_boss_admission_state(h).await?, after);
-    if let Some(unpublished) = unpublished {
+    if let SourceBossHandoff::Mixed { published, unpublished } = case {
         let retained: (Vec<u8>, Vec<u8>) = sqlx::query_as(
             "SELECT uuid_send(character_id),uuid_send(admission) FROM game_character_boss_cooldowns
               WHERE boss_key='oteryn:boss.arbaziloth'",
@@ -1263,6 +1309,74 @@ async fn exercise_source_boss_handoff(
         assert_eq!(retained.0, published.character_id.as_bytes());
         assert_ne!(retained.1, unpublished);
     }
+    if let SourceBossHandoff::UnsealedPublication(party) = case {
+        assert_eq!(active_source_boss_cooldowns(h).await?, published_cooldowns);
+        assert_source_boss_cooldown_refuses_fresh_admission(h, &replacement, party, assignment.ownership_generation).await?;
+        assert_eq!(source_boss_admission_state(h).await?, after);
+        assert_eq!(active_source_boss_cooldowns(h).await?, published_cooldowns);
+    }
+    Ok(())
+}
+
+async fn active_source_boss_cooldowns(h: &Harness) -> TestResult<Vec<(Vec<u8>, Vec<u8>, i64)>> {
+    Ok(sqlx::query_as(
+        "SELECT uuid_send(character_id),uuid_send(admission),available_at
+           FROM game_character_boss_cooldowns
+          WHERE boss_key='oteryn:boss.arbaziloth'
+            AND available_at > floor(extract(epoch FROM statement_timestamp())*1000)::bigint
+          ORDER BY character_id",
+    )
+    .fetch_all(&h.pool)
+    .await?)
+}
+
+async fn assert_source_boss_cooldown_refuses_fresh_admission(
+    h: &Harness,
+    replacement: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut party: [CurrentCharacterItemFence; 2],
+    generation: u64,
+) -> TestResult {
+    use super::fixture::id;
+    use crate::durability::boss_encounter::{SourceBossAdmission, SourceBossLever, SourceBossReservation};
+    use crate::durability::item_transfer::character_item_fence_is_current;
+    use crate::foundation::{CommandId, CommandRef, ScopeOwnershipGeneration};
+
+    let generation = ScopeOwnershipGeneration::new(generation).map_err(debug)?;
+    for member in &mut party {
+        // Bind the seeded sessions to the independently committed successor
+        // scope so the reserve is refused on cooldown with current item fences.
+        let changed = sqlx::query(
+            "UPDATE game_durability_reconnect_sessions SET scope_ownership_generation=$2::text::numeric
+              WHERE game_session_id=encode($1,'hex')::uuid AND scope_ownership_generation=$3::text::numeric",
+        )
+        .bind(member.game_session_id.as_bytes().as_slice())
+        .bind(generation.get().to_string())
+        .bind(member.scope_ownership_generation.get().to_string())
+        .execute(&h.pool)
+        .await?;
+        assert_eq!(changed.rows_affected(), 1);
+        member.scope_ownership_generation = generation;
+    }
+    let mut tx = h.pool.begin().await?;
+    for member in &party {
+        assert!(character_item_fence_is_current(
+            &mut tx,
+            replacement.holder,
+            member,
+            CommandRef::new(member.game_session_id, CommandId::new(2).map_err(debug)?),
+            member.character_id,
+            *replacement.world_id.as_bytes(),
+            *replacement.channel_id.as_bytes(),
+        ).await?, "fresh admission has current party fences");
+    }
+    tx.rollback().await?;
+    assert!(!replacement.root.source_boss_lever_admission(
+        replacement.character,
+        replacement.holder,
+        SourceBossReservation { id: id(204), lever: SourceBossLever::Arbaziloth, party: party.into() },
+        replacement.reset_epoch,
+        SourceBossAdmission::Reserve,
+    ).await?, "the same party cannot reserve a new attempt within its cooldown");
     Ok(())
 }
 

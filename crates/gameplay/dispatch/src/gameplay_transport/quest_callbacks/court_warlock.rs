@@ -4,7 +4,6 @@ use crate::durability::{
     DurabilityError,
     boss_encounter::{SourceBossAdmission, SourceBossLever, SourceBossReservation},
 };
-use oteryn_gameplay_entities::carrier::encounter_access::PublishedQuestEncounterProof;
 use oteryn_gameplay_quests::quest::world_callbacks::court_warlock as source;
 
 pub(super) struct SourceBossUse<'a> {
@@ -15,12 +14,6 @@ pub(super) struct SourceBossUse<'a> {
     pub(super) after: crate::map::view::EntryFacts,
     pub(super) cause: QuestCause,
     pub(super) lever: SourceBossLever,
-}
-
-#[derive(Clone)]
-pub(super) struct SourceBossSeal {
-    admission: SourceBossReservation,
-    proof: PublishedQuestEncounterProof,
 }
 
 #[cfg(test)]
@@ -50,7 +43,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let QuestCause::Use(command) = cause else {
             return UseDisposition::Rejected;
         };
-        let Ok(mut publications) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
+        let Ok(_turn) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
             return UseDisposition::Exhausted;
         };
         let ready = self.execute_quest_encounter(
@@ -166,8 +159,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return disposition;
             }
         };
-        // Authorize the staged publication. Until installation is confirmed,
-        // the same durable admission remains eligible for recovery.
+        // Authorize installation. The admission remains refundable until the
+        // durable publication decision.
         let retry = super::super::AdmissionRetryBudget::for_command(self.root);
         let publish = || self.source_boss_admission(&admission, SourceBossAdmission::Publish);
         let publication = retry.retry_durability("source_boss_publish", publish).await;
@@ -242,29 +235,71 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         {
                             return UseDisposition::Rejected;
                         }
+                        // The decision precedes native publication. Any later
+                        // owner seals it and retains the cooldowns.
+                        let commit = || {
+                            self.source_boss_admission(
+                                &admission,
+                                SourceBossAdmission::CommitPublication(proof),
+                            )
+                        };
+                        let committed = retry
+                            .retry_durability("source_boss_commit_publication", commit)
+                            .await;
+                        let committed = if matches!(
+                            committed,
+                            Err(DurabilityError::CommitOutcomeUnknown
+                                | DurabilityError::RootPassDeadlineExceeded)
+                        ) {
+                            retry
+                                .retry_durability(
+                                    "source_boss_commit_publication_reconcile",
+                                    commit,
+                                )
+                                .await
+                        } else {
+                            committed
+                        };
+                        match committed {
+                            Ok(true) => {}
+                            Ok(false) => return UseDisposition::Rejected,
+                            Err(error) => {
+                                super::super::operator_event(&format!(
+                                    "source_boss_publication_commit_deferred reason={error:?}"
+                                ));
+                                return UseDisposition::Rejected;
+                            }
+                        }
                         let proof = self.publish_installed_source_boss(
                             installed,
                             states,
                             map,
                             lever_projection,
                         );
-                        // Keep proof before any await, even if this command is cancelled
-                        // or the seal commits without an acknowledgement.
-                        let pending = SourceBossSeal { admission, proof };
-                        publications.push_back(pending.clone());
                         #[cfg(test)]
-                        if self
+                        let fail_seal = self
                             .states
                             .quest_callbacks
                             .defer_source_boss_seal
-                            .swap(false, std::sync::atomic::Ordering::AcqRel)
-                        {
-                            return UseDisposition::Committed;
-                        }
-                        let seal = || self.seal_source_boss(&pending);
-                        let sealed = retry.retry_durability("source_boss_seal", seal).await;
-                        if matches!(sealed, Ok(true)) {
-                            publications.pop_back();
+                            .swap(false, std::sync::atomic::Ordering::AcqRel);
+                        #[cfg(not(test))]
+                        let fail_seal = false;
+                        let sealed = if fail_seal {
+                            Err(DurabilityError::CommitRejected)
+                        } else {
+                            retry
+                                .retry_durability("source_boss_seal", || {
+                                    self.source_boss_admission(
+                                        &admission,
+                                        SourceBossAdmission::SealProjection(proof),
+                                    )
+                                })
+                                .await
+                        };
+                        if !matches!(sealed, Ok(true)) {
+                            super::super::operator_event(&format!(
+                                "source_boss_seal_deferred result={sealed:?}"
+                            ));
                         }
                         UseDisposition::Committed
                     }
@@ -317,17 +352,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    async fn seal_source_boss(&self, pending: &SourceBossSeal) -> Result<bool, DurabilityError> {
-        self.source_boss_admission(
-            &pending.admission,
-            SourceBossAdmission::SealProjection(pending.proof),
-        )
-        .await
-    }
-
-    pub(in crate::gameplay_transport) async fn refund_unpublished_source_boss_lever(&self) {
+    pub(in crate::gameplay_transport) async fn settle_source_boss_lever(&self) {
         if let Err(error) = self.recover_source_boss_admission().await {
-            super::super::operator_event(&format!("source_boss_refund_deferred reason={error:?}"));
+            super::super::operator_event(&format!(
+                "source_boss_recovery_deferred reason={error:?}"
+            ));
         }
     }
 
@@ -337,23 +366,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use crate::foundation::RuntimeScopeRefV1;
 
         let scope = RuntimeScopeRefV1::channel(self.world_id, self.channel_id);
-        let published: Vec<_> = {
-            let Ok(publications) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
-                return Ok(false);
-            };
-            publications
-                .iter()
-                .map(|pending| pending.admission.id)
-                .collect()
-        };
-        let has_unsealed_publication = !published.is_empty();
-        let candidate = self.root.source_boss_recovery(scope, published).await?;
-        if candidate.is_none() && !has_unsealed_publication {
+        let Some(candidate) = self.root.source_boss_recovery(scope).await? else {
             return Ok(false);
-        }
+        };
         // The source command excludes recovery for its whole turn. This gate
-        // does not block the Channel runtime while SQL revalidates the refund.
-        let Ok(mut publications) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
+        // does not hold the Channel runtime while SQL revalidates the decision.
+        let Ok(_turn) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
             return Ok(false);
         };
         let generation = {
@@ -368,23 +386,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             fence.generation()
         };
-        if let Some(candidate) = candidate
-            && !publications
-                .iter()
-                .any(|pending| pending.admission.id == candidate.admission())
-        {
-            return self
-                .root
-                .refund_source_boss_recovery(self.character, self.holder, generation, candidate)
-                .await;
-        }
-        if let Some(pending) = publications.front().cloned() {
-            publications.rotate_left(1);
-            if self.seal_source_boss(&pending).await? {
-                publications.pop_back();
-            }
-        }
-        Ok(false)
+        self.root
+            .settle_source_boss_recovery(self.character, self.holder, generation, candidate)
+            .await
     }
 }
 

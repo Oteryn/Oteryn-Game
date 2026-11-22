@@ -39,20 +39,15 @@ pub enum SourceBossAdmission {
     Reconcile,
     Publish,
     ConfirmProjection(InstalledQuestEncounterProof),
+    CommitPublication(InstalledQuestEncounterProof),
     SealProjection(PublishedQuestEncounterProof),
     Refund,
 }
 
-/// Exact recovery candidate. The read does not authorize a refund.
+/// Exact recovery candidate. The read does not authorize settlement.
 pub struct SourceBossRecovery {
     scope: RuntimeScopeRefV1,
     admission: [u8; 16],
-}
-
-impl SourceBossRecovery {
-    pub fn admission(&self) -> [u8; 16] {
-        self.admission
-    }
 }
 
 impl SourceBossLever {
@@ -74,7 +69,7 @@ impl SourceBossLever {
 
 impl DurabilityRoot {
     /// Reserve the exact staging party, authorize publication, and seal the
-    /// installed native projection. Only an unsealed admission can be refunded.
+    /// installed native projection. The publication decision ends refund eligibility.
     pub async fn source_boss_lever_admission(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -95,7 +90,8 @@ impl DurabilityRoot {
         let scope = party[0].runtime_scope;
         let generation = party[0].scope_ownership_generation;
         let proof_matches = match operation {
-            SourceBossAdmission::ConfirmProjection(proof) => {
+            SourceBossAdmission::ConfirmProjection(proof)
+            | SourceBossAdmission::CommitPublication(proof) => {
                 proof.matches(admission, scope, generation)
             }
             SourceBossAdmission::SealProjection(proof) => {
@@ -133,19 +129,20 @@ impl DurabilityRoot {
             let party_bytes: Vec<u8> = keys.iter()
                 .flat_map(|key| key.character.as_bytes().iter().copied()).collect();
             let scope_key = assignment_scope_key(scope);
-            let row: Option<(bool, i16, bool, bool)> = sqlx::query_as(
+            let row: Option<(bool, i16, bool, bool, bool)> = sqlx::query_as(
                 "SELECT scope_key=$2 AND scope_generation=$3::text::numeric AND boss_key=$4 AND party=$5,
-                        state,projection_pending,installation_confirmed FROM game_source_boss_admissions
+                        state,projection_pending,installation_confirmed,publication_committed
+                   FROM game_source_boss_admissions
                   WHERE admission=encode($1,'hex')::uuid FOR UPDATE",
             )
             .bind(admission.as_slice()).bind(scope_key.as_slice()).bind(generation.get().to_string())
             .bind(lever.boss()).bind(&party_bytes).fetch_optional(&mut *tx).await?;
 
-            if row.is_some_and(|(exact, _, _, _)| !exact) {
+            if row.is_some_and(|(exact, ..)| !exact) {
                 return Ok(false);
             }
             if operation == SourceBossAdmission::Refund {
-                if matches!(row, Some((true, RESERVED, false, _) | (true, PUBLISHED, true, _))) {
+                if matches!(row, Some((true, RESERVED, false, _, false) | (true, PUBLISHED, true, _, false))) {
                     refund_source_admission(&mut tx, &keys, &admission).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                 }
@@ -153,14 +150,15 @@ impl DurabilityRoot {
             }
             match (operation, row) {
                 // These replays only read the previously fenced decisions.
-                (SourceBossAdmission::Publish, Some((true, PUBLISHED, _, _)))
-                | (SourceBossAdmission::SealProjection(_), Some((true, PUBLISHED, false, true))) => {
+                (SourceBossAdmission::Publish, Some((true, PUBLISHED, ..)))
+                | (SourceBossAdmission::SealProjection(_), Some((true, PUBLISHED, false, true, true))) => {
                     return Ok(true);
                 }
-                (SourceBossAdmission::ConfirmProjection(_) | SourceBossAdmission::SealProjection(_),
-                    Some((true, PUBLISHED, true, _))) => {}
-                (SourceBossAdmission::ConfirmProjection(_) | SourceBossAdmission::SealProjection(_), _)
-                | (_, Some((true, PUBLISHED, _, _))) => return Ok(false),
+                (SourceBossAdmission::ConfirmProjection(_) | SourceBossAdmission::CommitPublication(_)
+                    | SourceBossAdmission::SealProjection(_), Some((true, PUBLISHED, true, ..))) => {}
+                (SourceBossAdmission::ConfirmProjection(_) | SourceBossAdmission::CommitPublication(_)
+                    | SourceBossAdmission::SealProjection(_), _)
+                | (_, Some((true, PUBLISHED, ..))) => return Ok(false),
                 _ => {}
             }
             for fence in &party {
@@ -168,7 +166,7 @@ impl DurabilityRoot {
                     return Ok(false);
                 }
             }
-            if let Some((true, PUBLISHED, true, installed)) = row {
+            if let Some((true, PUBLISHED, true, installed, published)) = row {
                 if !exact_cooldowns(&mut tx, &keys, &admission).await? {
                     return Ok(false);
                 }
@@ -177,7 +175,11 @@ impl DurabilityRoot {
                         confirm_source_installation(&mut tx, &admission).await?;
                     }
                     SourceBossAdmission::ConfirmProjection(_) => {}
-                    SourceBossAdmission::SealProjection(_) if installed => {
+                    SourceBossAdmission::CommitPublication(_) if installed && !published => {
+                        commit_source_publication(&mut tx, &admission).await?;
+                    }
+                    SourceBossAdmission::CommitPublication(_) if published => {}
+                    SourceBossAdmission::SealProjection(_) if published => {
                         seal_source_projection(&mut tx, &admission).await?;
                     }
                     _ => return Ok(false),
@@ -185,7 +187,7 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(true);
             }
-            if row == Some((true, RESERVED, false, false)) {
+            if row == Some((true, RESERVED, false, false, false)) {
                 if !exact_cooldowns(&mut tx, &keys, &admission).await? {
                     return Ok(false);
                 }
@@ -244,9 +246,7 @@ impl DurabilityRoot {
     pub async fn source_boss_recovery(
         &self,
         scope: RuntimeScopeRefV1,
-        published: Vec<[u8; 16]>,
     ) -> Result<Option<SourceBossRecovery>, DurabilityError> {
-        let published: Vec<_> = published.into_iter().map(Vec::from).collect();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
@@ -254,11 +254,9 @@ impl DurabilityRoot {
                     let admission: Option<Vec<u8>> = sqlx::query_scalar(
                         "SELECT uuid_send(admission) FROM game_source_boss_admissions
                           WHERE scope_key=$1 AND (state=1 OR (state=2 AND projection_pending))
-                            AND uuid_send(admission) <> ALL($2::bytea[])
                           ORDER BY scope_generation,admission LIMIT 1 FOR UPDATE SKIP LOCKED",
                     )
                     .bind(assignment_scope_key(scope).as_slice())
-                    .bind(published)
                     .fetch_optional(&mut *tx)
                     .await?;
                     commit_semantic_transaction(tx, deadline).await?;
@@ -276,8 +274,8 @@ impl DurabilityRoot {
     }
 
     /// Revalidate the candidate against the ready owner and lock the exact row.
-    /// The caller excludes a live source lever turn without holding the runtime.
-    pub async fn refund_source_boss_recovery(
+    /// Return whether a refund was applied. A committed publication is sealed.
+    pub async fn settle_source_boss_recovery(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -299,8 +297,8 @@ impl DurabilityRoot {
                     {
                         return Ok(false);
                     }
-                    let row: Option<(String, Vec<u8>)> = sqlx::query_as(
-                        "SELECT boss_key,party FROM game_source_boss_admissions
+                    let row: Option<(String, Vec<u8>, bool)> = sqlx::query_as(
+                        "SELECT boss_key,party,publication_committed FROM game_source_boss_admissions
                           WHERE scope_key=$1 AND scope_generation<=$2::text::numeric
                             AND admission=encode($3,'hex')::uuid
                             AND (state=1 OR (state=2 AND projection_pending)) FOR UPDATE",
@@ -310,9 +308,14 @@ impl DurabilityRoot {
                     .bind(candidate.admission.as_slice())
                     .fetch_optional(&mut *tx)
                     .await?;
-                    let Some((boss, party)) = row else {
+                    let Some((boss, party, published)) = row else {
                         return Ok(false);
                     };
+                    if published {
+                        seal_source_projection(&mut tx, &candidate.admission).await?;
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(false);
+                    }
                     let (members, _) = party.as_chunks::<16>();
                     let keys = members
                         .iter()
@@ -374,7 +377,8 @@ async fn refund_source_admission(
     let changed = sqlx::query(
         "UPDATE game_source_boss_admissions
              SET state=$2, projection_pending=false, installation_confirmed=false
-          WHERE admission=encode($1,'hex')::uuid AND (state=1 OR (state=2 AND projection_pending))",
+          WHERE admission=encode($1,'hex')::uuid
+            AND (state=1 OR (state=2 AND projection_pending)) AND NOT publication_committed",
     )
     .bind(admission.as_slice())
     .bind(REFUNDED)
@@ -415,6 +419,22 @@ async fn confirm_source_installation(
     require_one_transition(changed.rows_affected())
 }
 
+async fn commit_source_publication(
+    tx: &mut Transaction<'_, Postgres>,
+    admission: &[u8; 16],
+) -> Result<(), DurabilityError> {
+    let changed = sqlx::query(
+        "UPDATE game_source_boss_admissions SET publication_committed=true
+          WHERE admission=encode($1,'hex')::uuid AND state=$2
+            AND projection_pending AND installation_confirmed AND NOT publication_committed",
+    )
+    .bind(admission.as_slice())
+    .bind(PUBLISHED)
+    .execute(&mut **tx)
+    .await?;
+    require_one_transition(changed.rows_affected())
+}
+
 async fn seal_source_projection(
     tx: &mut Transaction<'_, Postgres>,
     admission: &[u8; 16],
@@ -422,7 +442,7 @@ async fn seal_source_projection(
     let changed = sqlx::query(
         "UPDATE game_source_boss_admissions SET projection_pending=false
           WHERE admission=encode($1,'hex')::uuid AND state=$2
-            AND projection_pending AND installation_confirmed",
+            AND projection_pending AND installation_confirmed AND publication_committed",
     )
     .bind(admission.as_slice())
     .bind(PUBLISHED)
