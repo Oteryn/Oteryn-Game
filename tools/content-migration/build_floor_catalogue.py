@@ -53,14 +53,14 @@ def render(root: Path) -> str:
         flags = appearances[identifier]["flags"]
         if identifier not in members or not flags.get("flags.unmove") or flags.get("flags.unpass"):
             raise ValueError(f"Item {identifier} is not a fixed walkable fixture")
-    lines.append("pub(super) const ITEM: &[(u16, u8)] = &[")
-    lines.extend(
-        f"    ({identifier}, {BITS[direction]}),"
+    item_facts = ", ".join(
+        f"({identifier}, {BITS[direction]})"
         for identifier, direction in sorted(ITEM_FLOOR_CHANGES.items())
     )
-    lines.extend(["];", ""])
     fixtures = ", ".join(str(identifier) for identifier in WALKABLE_ITEM_FIXTURES)
     lines.extend([
+        f"pub(super) const ITEM: &[(u16, u8)] = &[{item_facts}];",
+        "",
         "/// Source-qualified collision fallback for fixed Items on these traversal routes.",
         f"pub(super) const WALKABLE_TRAVERSAL_FIXTURES: &[u16] = &[{fixtures}];",
     ])
