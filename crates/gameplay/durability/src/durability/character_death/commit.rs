@@ -292,11 +292,23 @@ impl DurabilityRoot {
                         usize::from(regular_blessings),
                         has_twist,
                     );
-                    let blessings_after = match disposition {
+                    let after_disposition = match disposition {
                         oteryn_gameplay_combat_rules::pvp::death::BlessingDisposition::KeepAll => held.clone(),
                         oteryn_gameplay_combat_rules::pvp::death::BlessingDisposition::ConsumeRegular => held.iter().filter(|key| key.as_str() == twist_key).cloned().collect(),
                         oteryn_gameplay_combat_rules::pvp::death::BlessingDisposition::ConsumeTwist => held.iter().filter(|key| key.as_str() != twist_key).cloned().collect(),
                     };
+                    let candidates: Vec<String> = held.iter().filter(|key| !after_disposition.contains(key)).cloned().collect();
+                    let stacked: Vec<String> = sqlx::query_scalar(
+                        "SELECT blessing_key FROM game_character_blessing_extra_charges
+                         WHERE character_id=encode($1,'hex')::uuid AND blessing_key=ANY($2) ORDER BY blessing_key COLLATE \"C\"",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(&candidates)
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    let blessings_after: Vec<String> = held.iter()
+                        .filter(|key| after_disposition.contains(key) || stacked.contains(key))
+                        .cloned().collect();
                     let items = match selection_root {
                         Some(root) => Some(items::select(
                             &mut tx, fence.character_id, &request, level,
@@ -327,12 +339,12 @@ impl DurabilityRoot {
                            ruleset_revision, content_revision, simulation_revision, \
                            evidence_revision, declaration_revision, policy_revision, \
                            reward_revision, committed_at, \
-                           vocation, magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before, magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after, death_scope_kind, death_instance_id, death_scope_generation) \
+                           vocation, magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before, magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after, death_scope_kind, death_instance_id, death_scope_generation, stacked_blessings_consumed) \
                          VALUES (encode($1,'hex')::uuid, $2, $3, encode($4,'hex')::uuid, \
                            $5::text::numeric(20,0), $6::text::numeric(20,0), $7, $8, $9, $10, \
                            $11, $12, $13, $25::text::uuid, $26::text[]::uuid[], $27, encode($14,'hex')::uuid, \
                            encode($15,'hex')::uuid, $16, $17, $18, $19, ($20::text[])[1], ($20::text[])[2], ($20::text[])[3], ($20::text[])[4], \
-                           ($20::text[])[5], ($20::text[])[6], ($20::text[])[7], ($20::text[])[8], $21, $22, ($23::bigint[])[1]::integer, ($23::bigint[])[2], ($23::bigint[])[3]::integer, ($23::bigint[])[4], ($23::bigint[])[5]::integer, ($23::bigint[])[6], ($23::bigint[])[7]::integer, ($23::bigint[])[8], ($23::bigint[])[9]::integer, ($23::bigint[])[10], ($23::bigint[])[11]::integer, ($23::bigint[])[12], ($23::bigint[])[13]::integer, ($23::bigint[])[14], ($23::bigint[])[15]::integer, ($23::bigint[])[16], ($24::bigint[])[1]::integer, ($24::bigint[])[2], ($24::bigint[])[3]::integer, ($24::bigint[])[4], ($24::bigint[])[5]::integer, ($24::bigint[])[6], ($24::bigint[])[7]::integer, ($24::bigint[])[8], ($24::bigint[])[9]::integer, ($24::bigint[])[10], ($24::bigint[])[11]::integer, ($24::bigint[])[12], ($24::bigint[])[13]::integer, ($24::bigint[])[14], ($24::bigint[])[15]::integer, ($24::bigint[])[16], $28, encode($29,'hex')::uuid, $30::text::numeric)",
+                           ($20::text[])[5], ($20::text[])[6], ($20::text[])[7], ($20::text[])[8], $21, $22, ($23::bigint[])[1]::integer, ($23::bigint[])[2], ($23::bigint[])[3]::integer, ($23::bigint[])[4], ($23::bigint[])[5]::integer, ($23::bigint[])[6], ($23::bigint[])[7]::integer, ($23::bigint[])[8], ($23::bigint[])[9]::integer, ($23::bigint[])[10], ($23::bigint[])[11]::integer, ($23::bigint[])[12], ($23::bigint[])[13]::integer, ($23::bigint[])[14], ($23::bigint[])[15]::integer, ($23::bigint[])[16], ($24::bigint[])[1]::integer, ($24::bigint[])[2], ($24::bigint[])[3]::integer, ($24::bigint[])[4], ($24::bigint[])[5]::integer, ($24::bigint[])[6], ($24::bigint[])[7]::integer, ($24::bigint[])[8], ($24::bigint[])[9]::integer, ($24::bigint[])[10], ($24::bigint[])[11]::integer, ($24::bigint[])[12], ($24::bigint[])[13]::integer, ($24::bigint[])[14], ($24::bigint[])[15]::integer, ($24::bigint[])[16], $28, encode($29,'hex')::uuid, $30::text::numeric, $31)",
                     )
                     .bind(request.occurrence.0.as_slice())
                     .bind(&binding)
@@ -366,7 +378,8 @@ impl DurabilityRoot {
                         .bind(items.as_ref().map(|i| i.root.to_vec()))
                         .bind(death_kind)
                         .bind(death_instance)
-                        .bind(fence.scope_ownership_generation.get().to_string());
+                        .bind(fence.scope_ownership_generation.get().to_string())
+                        .bind(&stacked);
                     receipt
                         .execute(&mut *tx)
                         .await?;
@@ -406,6 +419,11 @@ impl DurabilityRoot {
                         contributors,
                     )
                     .await?;
+                    if !stacked.is_empty() {
+                        super::super::store::service_blessings::consume_extra_charges(
+                            &mut tx, fence.character_id.as_bytes(), &stacked,
+                        ).await?;
+                    }
                     let consumed = sqlx::query(
                         "DELETE FROM game_character_blessings \
                           WHERE character_id = encode($1,'hex')::uuid \

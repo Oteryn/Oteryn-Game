@@ -167,9 +167,9 @@ impl DurabilityRoot {
                      WHERE character_id=encode($1,'hex')::uuid AND cause_kind=3 \
                      ORDER BY committed_character_revision DESC LIMIT 20) UNION ALL \
                     (SELECT committed_character_revision, committed_at, false AS acquired, \
-                     ARRAY(SELECT k FROM unnest(blessings_before) k WHERE NOT k=ANY(blessings_after) ORDER BY k COLLATE \"C\") AS blessings \
+                     ARRAY(SELECT k FROM unnest(blessings_before) k WHERE NOT k=ANY(blessings_after) OR k=ANY(stacked_blessings_consumed) ORDER BY k COLLATE \"C\") AS blessings \
                      FROM game_character_death_receipts \
-                     WHERE character_id=encode($1,'hex')::uuid AND blessings_before<>blessings_after \
+                     WHERE character_id=encode($1,'hex')::uuid AND (blessings_before<>blessings_after OR cardinality(stacked_blessings_consumed)>0) \
                      ORDER BY committed_character_revision DESC LIMIT 20)) events \
                      ORDER BY committed_character_revision DESC LIMIT 20")
                     .bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut *tx).await?;

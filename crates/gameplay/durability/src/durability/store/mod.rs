@@ -13,6 +13,7 @@ mod prey_expansion;
 mod prey_purchase;
 mod purchase;
 mod purchase_history;
+pub(super) mod service_blessings;
 mod services;
 mod storage;
 pub use codec::{

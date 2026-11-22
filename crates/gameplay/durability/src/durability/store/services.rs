@@ -7,7 +7,7 @@ use super::super::{
     runtime_scope_assignment::NodeIncarnationProof,
 };
 use super::codec::{uuid_string, uuid_v7};
-use super::storage::{account_matches, assert_store_fence, lookup_delivery, write_receipt};
+use super::storage::{account_matches, assert_store_fence, lookup_delivery, write_service_receipt};
 use super::{
     DeliveryIdentity, DeliveryReceipt, PurchaseRequest, PurchaseRequestState, StoreDurabilityError,
 };
@@ -48,12 +48,18 @@ impl StorePreyPack {
 pub enum StoreService {
     PreyWildcards { count: StorePreyPack },
     XpBoost { tier: i16 },
+    Blessings { blessing_id: Option<u8>, count: i16 },
 }
 
 impl StoreService {
     pub fn matches_price(self, price: u64) -> bool {
         match self {
             Self::PreyWildcards { .. } => price > 0,
+            Self::Blessings { blessing_id, count } => {
+                price > 0
+                    && matches!(count, 1 | 5)
+                    && super::service_blessings::keys(blessing_id).is_some()
+            }
             // Crystal gamestore/init.lua ExpBoostValues. Each price is a distinct
             // fixed-price offer on Platform, selected by the current World reset.
             Self::XpBoost { tier } => match tier {
@@ -71,6 +77,7 @@ impl StoreService {
         match self {
             Self::PreyWildcards { .. } => "PREY_WILDCARDS",
             Self::XpBoost { .. } => "XP_BOOST",
+            Self::Blessings { .. } => "BLESSINGS",
         }
     }
 
@@ -78,6 +85,21 @@ impl StoreService {
         match self {
             Self::PreyWildcards { count } => count.quantity(),
             Self::XpBoost { tier } => tier,
+            Self::Blessings { count, .. } => count,
+        }
+    }
+    fn blessing_keys(self) -> Result<&'static [&'static str], sqlx::Error> {
+        match self {
+            Self::Blessings {
+                blessing_id,
+                count: 1 | 5,
+            } => super::service_blessings::keys(blessing_id).ok_or(sqlx::Error::Protocol(
+                "invalid Store blessing identity".into(),
+            )),
+            Self::Blessings { .. } => {
+                Err(sqlx::Error::Protocol("invalid Store blessing count".into()))
+            }
+            _ => Ok(&[]),
         }
     }
 }
@@ -260,7 +282,7 @@ impl DurabilityRoot {
                 Ok(None) if !state => {}
                 _ => return Ok(Err(StoreDurabilityError::ConflictingOperation)),
             }
-            let receipt = match write_receipt(&mut tx, &recovery, operation_id, &identity, None, None, None).await {
+            let receipt = match write_service_receipt(&mut tx, &recovery, operation_id, &identity).await {
                 Ok(receipt) => receipt,
                 Err(error) => return Ok(Err(error)),
             };
@@ -272,6 +294,9 @@ impl DurabilityRoot {
                 StoreService::PreyWildcards { count } => credit(&mut tx, &identity, operation_id, count.quantity()).await?,
                 StoreService::XpBoost { .. } => super::super::store_hunting_xp::grant(
                     &mut tx, &identity, operation_id
+                ).await?,
+                StoreService::Blessings { count, .. } => super::service_blessings::grant(
+                    &mut tx, &identity, operation_id, service.blessing_keys()?, count
                 ).await?,
             }
             commit_semantic_transaction(tx, deadline).await?;
@@ -311,16 +336,18 @@ async fn reserve(
     service: StoreService,
     world: &[u8; 16],
 ) -> Result<bool, sqlx::Error> {
+    let keys = service.blessing_keys()?;
     let pending = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_store_service_purchases
          WHERE purchase_id=encode($1,'hex')::uuid AND account_id=encode($2,'hex')::uuid
-           AND world_id=encode($3,'hex')::uuid AND amount=$4 AND kind=$5 AND operation_id IS NULL)",
+           AND world_id=encode($3,'hex')::uuid AND amount=$4 AND kind=$5 AND blessing_keys=$6 AND operation_id IS NULL)",
     )
     .bind(request.purchase_request_id.as_slice())
     .bind(request.account_id.as_slice())
     .bind(world.as_slice())
     .bind(service.amount())
     .bind(service.kind())
+    .bind(keys)
     .fetch_one(&mut **tx)
     .await?;
     if pending {
@@ -349,14 +376,22 @@ async fn reserve(
             }
             Some(epoch)
         }
+        StoreService::Blessings { count, .. } => {
+            if !super::service_blessings::can_reserve(tx, &request.character_id, keys, count)
+                .await?
+            {
+                return Ok(false);
+            }
+            None
+        }
     };
     let inserted = sqlx::query(
-        "INSERT INTO game_store_service_purchases(purchase_id,account_id,world_id,character_id,kind,amount,reset_epoch)
-         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7::text::numeric)
+        "INSERT INTO game_store_service_purchases(purchase_id,account_id,world_id,character_id,kind,amount,reset_epoch,blessing_keys)
+         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7::text::numeric,$8)
          ON CONFLICT DO NOTHING",
     ).bind(request.purchase_request_id.as_slice()).bind(request.account_id.as_slice())
         .bind(world.as_slice()).bind(request.character_id.as_slice()).bind(service.kind())
-        .bind(service.amount()).bind(reset).execute(&mut **tx).await?;
+        .bind(service.amount()).bind(reset).bind(keys).execute(&mut **tx).await?;
     Ok(inserted.rows_affected() == 1)
 }
 
@@ -372,14 +407,14 @@ async fn settlement_state(
         "SELECT p.operation_id IS NOT NULL FROM game_store_service_purchases p
          JOIN store_purchase_requests r ON r.purchase_request_id=p.purchase_id
          WHERE p.purchase_id=encode($1,'hex')::uuid AND p.account_id=encode($2,'hex')::uuid
-           AND p.world_id=encode($3,'hex')::uuid AND p.amount=$4 AND p.kind=$8 AND r.character_id=encode($5,'hex')::uuid AND r.character_id=p.character_id
+           AND p.world_id=encode($3,'hex')::uuid AND p.amount=$4 AND p.kind=$8 AND p.blessing_keys=$9 AND r.character_id=encode($5,'hex')::uuid AND r.character_id=p.character_id
            AND r.account_id=p.account_id AND r.binding_digest=$6 AND r.state=2
            AND (p.operation_id IS NULL OR p.operation_id=$7::text::uuid)
            AND convert_from(r.answer,'UTF8')::jsonb->>'result'='ACCEPTED'
            AND convert_from(r.answer,'UTF8')::jsonb->'operation_ids'=jsonb_build_array($7::text)",
     ).bind(request.purchase_request_id.as_slice()).bind(identity.account_id.as_slice())
         .bind(identity.world_id.as_slice()).bind(service.amount()).bind(identity.character_id.as_slice())
-        .bind(request.binding_digest().as_slice()).bind(uuid_string(&operation)).bind(service.kind()).fetch_optional(&mut **tx).await
+        .bind(request.binding_digest().as_slice()).bind(uuid_string(&operation)).bind(service.kind()).bind(service.blessing_keys()?).fetch_optional(&mut **tx).await
 }
 
 async fn credit(
