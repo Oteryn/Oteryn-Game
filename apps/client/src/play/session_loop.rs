@@ -224,11 +224,16 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             Ok(PlayCommand::Feature(command)) => {
                 let item_scope = outbox.bar_action_scope();
                 let started = std::time::Instant::now();
+                if command.capability == 502 {
+                    outbox.mount_sent();
+                }
                 match session.feature(&command).await {
                 Ok(result) => {
                     outbox.performance_command_result(started.elapsed());
+                    let mount_accepted = command.capability == 502
+                        && result.status == oteryn_session::CommandStatus::Accepted;
                     match command.capability {
-                        502 => outbox.mount_result(result.status),
+                        502 if !mount_accepted => outbox.mount_result(result.status),
                         7 => outbox.console_result(&result),
                         10 => outbox.analyser_result(&command, &result),
                         63 => outbox.market_details_result(&command, &result),
@@ -284,6 +289,10 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);
+                    // The exchange can drain own-actor motion received before the reply.
+                    if mount_accepted {
+                        outbox.mount_result(result.status);
+                    }
                     continue;
                 }
                 Err(error) => error,

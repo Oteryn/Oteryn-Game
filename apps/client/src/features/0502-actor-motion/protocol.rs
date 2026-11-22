@@ -4,11 +4,13 @@ use crate::play::{
     Outbox,
     mailbox::{Mailbox, lock},
 };
+use oteryn_session::{CommandStatus, SessionEvent};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub(in crate::play) struct PendingMount {
-    riding: bool,
+    sent: bool,
     accepted: bool,
+    motion_seen: bool,
 }
 
 impl Outbox {
@@ -18,11 +20,17 @@ impl Outbox {
         mailbox.mount_pending = None;
     }
 
-    pub(in crate::play) fn mount_result(&self, status: oteryn_session::CommandStatus) {
+    pub(in crate::play) fn mount_sent(&self) {
+        if let Some(pending) = &mut lock(&self.0).mount_pending {
+            pending.sent = true;
+        }
+    }
+
+    pub(in crate::play) fn mount_result(&self, status: CommandStatus) {
         let mut mailbox = lock(&self.0);
         if let Some(pending) = mailbox.mount_pending {
-            mailbox.mount_pending =
-                (status == oteryn_session::CommandStatus::Accepted).then_some(PendingMount {
+            mailbox.mount_pending = (status == CommandStatus::Accepted && !pending.motion_seen)
+                .then_some(PendingMount {
                     accepted: true,
                     ..pending
                 });
@@ -31,6 +39,7 @@ impl Outbox {
 }
 
 impl Mailbox {
+    #[cfg(bevy_shell)]
     fn riding(&self) -> Option<bool> {
         if !self.motion_selected {
             return None;
@@ -38,15 +47,31 @@ impl Mailbox {
         Some(self.bar_actions.own_actor?.motion?.mount_look_type != 0)
     }
 
-    pub(in crate::play) fn mount_actor_published(&mut self) {
-        // The command reply can arrive before the corresponding actor delta.
-        if let Some(PendingMount {
-            riding,
-            accepted: true,
-        }) = self.mount_pending
-            && self.riding() == Some(riding)
-        {
-            self.mount_pending = None;
+    pub(in crate::play) fn mount_actor_published(&mut self, events: &[SessionEvent]) {
+        let Some(pending) = self.mount_pending.as_mut().filter(|pending| pending.sent) else {
+            return;
+        };
+        let Some(own) = self.bar_actions.own_actor else {
+            return;
+        };
+        // Publish also projects the cached actor on idle turns. Only fresh own-actor
+        // motion carried by the visibility stream can finish the command.
+        if events.iter().any(|event| match event {
+            SessionEvent::WorldSpatialEntities(delta) => delta
+                .value
+                .enter
+                .iter()
+                .chain(&delta.value.update)
+                .any(|actor| actor.entity == own.entity && actor.motion.is_some()),
+            SessionEvent::GatedSnapshotReplaced(snapshot) => {
+                snapshot.value.domain_id == 1 && own.motion.is_some()
+            }
+            _ => false,
+        }) {
+            pending.motion_seen = true;
+            if pending.accepted {
+                self.mount_pending = None;
+            }
         }
     }
 }
@@ -73,10 +98,7 @@ impl PlayLink {
                 .commands
                 .send(crate::combat_input::PlayCommand::Feature(command))
                 .is_ok()
-                .then_some(PendingMount {
-                    riding,
-                    accepted: false,
-                });
+                .then(PendingMount::default);
         }
     }
 

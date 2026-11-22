@@ -58,7 +58,6 @@ impl Outbox {
             actor.position = frame.to_native(actor.position);
             actor
         });
-        mailbox.mount_actor_published();
     }
 }
 

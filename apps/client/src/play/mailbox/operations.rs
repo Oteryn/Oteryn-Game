@@ -100,6 +100,7 @@ impl Outbox {
         );
         super::super::feature_0287_actor_spell_catalog::protocol::reduce(&mut mailbox, &events);
         super::super::feature_0291_cast_chat::protocol::reduce(&mut mailbox, &events);
+        mailbox.mount_actor_published(&events);
         mailbox.coalesce_events(events);
         // A full activity handoff publishes domain 99 without a typed scope event.
         if replacement.is_some() && mailbox.scope_pending {
