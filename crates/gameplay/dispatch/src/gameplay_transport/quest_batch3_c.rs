@@ -33,7 +33,7 @@ pub(super) fn capture(
     };
     let mut rules = rules
         .iter()
-        .filter(|rule| rule.creature == entry.creature)
+        .filter(|rule| rule.matches_creature(&entry.creature))
         .peekable();
     if rules.peek().is_none() {
         return Vec::new();
@@ -91,7 +91,7 @@ pub(super) fn capture(
             let Some(rule) = source_deaths::rule(key) else {
                 continue;
             };
-            if rule.creature != entry.creature
+            if !rule.matches_creature(&entry.creature)
                 || !rule.recipient_with_party(position, damaged, in_top_damage_party)
                 || (rule.top_damage_only
                     && (!principal_present

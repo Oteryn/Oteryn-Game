@@ -382,6 +382,67 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn vampire_coffins_share_the_live_count_reservation() -> TestResult {
+        let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()?;
+        let coffins: Vec<_> = callbacks
+            .iter()
+            .filter(|row| {
+                row.key
+                    .starts_with("oteryn:quest-callback/inquisition-vampire-hunt-coffin")
+            })
+            .collect();
+        let [first, side] = coffins.as_slice() else {
+            return Err("expected both shipped coffin selectors".into());
+        };
+        for (opening, other) in [(first, side), (side, first)] {
+            let mut runtime = runtime(1)?;
+            let pool = Cohorts::default();
+            let mut reservation =
+                checked(pool.reserve(&runtime, opening.encounter_reservation_key(), origin()?))?;
+            let encounter = opening
+                .effects
+                .encounter
+                .as_ref()
+                .ok_or("coffin encounter")?;
+            let boss = encounter.monsters.first().ok_or("coffin boss")?;
+            let spawn = MovementLocalPosition {
+                x: i32::from(boss.position.x),
+                y: i32::from(boss.position.y),
+                floor: -i16::from(boss.position.floor),
+            };
+            let actor = checked(runtime.admit_encounter_actor(&boss.creature, 20, spawn))?;
+            checked(reservation.publish(&runtime, vec![actor]))?;
+            drop(reservation);
+            let at = checked(runtime.read_actor_position(actor))?;
+            checked(
+                runtime
+                    .borrow_movement_position()
+                    .commit_creature_relocation(
+                        actor,
+                        at,
+                        MovementLocalPosition {
+                            y: spawn.y + 2,
+                            ..spawn
+                        },
+                    ),
+            )?;
+            assert!(
+                matches!(
+                    pool.reserve(&runtime, other.encounter_reservation_key(), origin()?),
+                    Err(UseDisposition::Occupied)
+                ),
+                "the living Count must occupy both source selectors"
+            );
+            checked(runtime.remove_encounter_actor(actor))?;
+            assert!(
+                pool.reserve(&runtime, other.encounter_reservation_key(), origin()?)
+                    .is_ok()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn worldchg_failed_activation_releases_the_bounded_projection_reservation() -> TestResult {
         let runtime = runtime(1)?;
         let pool = Cohorts::default();

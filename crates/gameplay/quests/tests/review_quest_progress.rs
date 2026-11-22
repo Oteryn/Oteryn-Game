@@ -198,3 +198,103 @@ fn nomad_death_binding_rejects_damage_without_party_evidence() -> Result<(), Str
     );
     Ok(())
 }
+
+#[test]
+fn all_donor_nomads_are_admitted_by_the_source_death_loader() -> Result<(), String> {
+    let loaded =
+        loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+    let key =
+        "oteryn:quest-transition/quest/u8_2/the_thieves_guild_quest/mission04/creature_event_1";
+    assert!(loaded.catalogue().transition(key).is_some());
+    for creature in ["nomad", "nomad_female", "nomad_blue"] {
+        let creature = format!("oteryn:creature.{creature}");
+        assert!(source_deaths::tracks_creature(&creature), "{creature}");
+    }
+    Ok(())
+}
+
+#[test]
+fn storkus_accepts_partial_dust_and_finishes_existing_partial_saves() -> Result<(), String> {
+    let loaded =
+        loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = reward_callbacks::offered_for(catalogue)?;
+    let questline = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline";
+    let mission = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03";
+    let dust = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust";
+    let item = "oteryn:item.tibia.i5905";
+    for (saved, carried, consumed, after, stage) in [
+        (0, 7, 7, 8, 6),
+        (8, 3, 3, 11, 6),
+        (8, 17, 13, 21, 7),
+        (20, 4, 1, 21, 7),
+        (0, 22, 20, 21, 7),
+    ] {
+        let mut tracks = BTreeMap::from([
+            (questline.into(), 6),
+            (mission.into(), 1),
+            (dust.into(), saved),
+        ]);
+        let inventory = BTreeMap::from([(item.into(), carried)]);
+        let mut candidates = callbacks.iter().filter(|callback| {
+            callback.npc == "oteryn:npc.storkus"
+                && callback.topic == 9
+                && callback.keywords.iter().any(|word| word == "yes")
+                && callback.storage.iter().all(|guard| {
+                    tracks
+                        .get(&guard.track)
+                        .is_some_and(|value| (guard.minimum..=guard.maximum).contains(value))
+                })
+                && callback
+                    .state_ops
+                    .iter()
+                    .all(|op| op.advisory_holds(catalogue, &tracks))
+                && callback
+                    .inventory
+                    .iter()
+                    .all(|guard| guard.holds(&inventory))
+        });
+        let selected = candidates
+            .next()
+            .ok_or_else(|| format!("no loaded deposit for {saved}+{carried}"))?;
+        assert!(
+            candidates.next().is_none(),
+            "ambiguous deposit for {saved}+{carried}"
+        );
+        assert_eq!(selected.take[0].count, consumed);
+        advance(catalogue, &mut tracks, &selected.key)?;
+        assert_eq!((tracks[dust], tracks[questline]), (after, stage));
+    }
+    Ok(())
+}
+
+#[test]
+fn both_live_coffin_selectors_have_a_weakened_count_offering_plan() -> Result<(), String> {
+    let loaded =
+        loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+    let callbacks = world_callbacks::load_for(loaded.catalogue())?;
+    for suffix in ["", "-side"] {
+        let key = format!("oteryn:quest-callback/inquisition-vampire-hunt-coffin{suffix}");
+        let ordinary = callbacks.iter().find(|row| row.key == key).ok_or(&key)?;
+        let weakened = callbacks
+            .iter()
+            .find(|row| {
+                row.selector == ordinary.selector
+                    && row.effects.encounter.as_ref().is_some_and(|encounter| {
+                        encounter
+                            .monsters
+                            .iter()
+                            .any(|monster| monster.creature == "oteryn:creature.the_weakened_count")
+                    })
+            })
+            .ok_or_else(|| format!("no live weakened variant for {key}"))?;
+        assert_eq!(weakened.storage, ordinary.storage);
+        assert_eq!(weakened.offerings.len(), 3);
+        assert!(
+            weakened.offerings.iter().all(|offering| {
+                offering.item == "oteryn:item.tibia.i3083" && offering.count == 1
+            })
+        );
+    }
+    Ok(())
+}

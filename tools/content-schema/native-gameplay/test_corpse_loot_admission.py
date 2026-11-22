@@ -62,6 +62,24 @@ class CorpseLootAdmissionTests(unittest.TestCase):
                           for entry in diblis['entries'] if entry['item']['key'] == token],
                          [(1000000, 1, 1)])
 
+    def test_both_counts_drop_a_materializable_storkus_ring(self):
+        _, creatures = full.read(full.CREATURE_PROFILES)
+        document = json.loads(full.loot_tables(creatures))
+        ring = 'oteryn:item.tibia.i7924'
+        facts = {row['item']['key']: row for row in document['items']}
+        tables = {row['identity']['key']: row for row in document['tables']}
+        bindings = {row['creature']['key']: row['loot'] for row in document['creature_loot']}
+        for count in ('the_count', 'the_weakened_count'):
+            with self.subTest(count=count):
+                table = tables[bindings[f'oteryn:creature.{count}']['key']]
+                drops = [row for row in table['entries'] if row['item']['key'] == ring]
+                self.assertEqual([(1_000_000, 1, 1)], [
+                    (drop["probability_ppm"], drop["min_count"], drop["max_count"])
+                    for drop in drops
+                ])
+                self.assertTrue(facts[ring]['materializable'])
+                self.assertFalse(facts[ring].get("stackable", False))
+
     def produce(self, profile, *, body_is_yield=False, candidate_profile=None):
         body = {'family': 'Item', 'key': 'oteryn:item.tibia.i5969', 'revision': 'definition-r1'}
         creature = {'family': 'Creature', 'key': 'oteryn:creature.test-corpse', 'revision': 'definition-r1'}

@@ -583,6 +583,27 @@ fn is_default_use_range(value: &u8) -> bool {
 }
 
 impl Callback {
+    /// A garlic offering selects the alternate encounter on the same coffin.
+    pub fn vampire_coffin_fallback(&self) -> Option<&'static str> {
+        match self.key.as_str() {
+            "oteryn:quest-callback/inquisition-weakened-coffin" => {
+                Some("oteryn:quest-callback/inquisition-vampire-hunt-coffin")
+            }
+            "oteryn:quest-callback/inquisition-weakened-coffin-side" => {
+                Some("oteryn:quest-callback/inquisition-vampire-hunt-coffin-side")
+            }
+            _ => None,
+        }
+    }
+
+    pub fn encounter_reservation_key(&self) -> &str {
+        const COFFIN: &str = "oteryn:quest-callback/inquisition-vampire-hunt-coffin";
+        match self.vampire_coffin_fallback().unwrap_or(self.key.as_str()) {
+            COFFIN | "oteryn:quest-callback/inquisition-vampire-hunt-coffin-side" => COFFIN,
+            _ => &self.key,
+        }
+    }
+
     /// Uses the same-floor Chebyshev rule; legacy callbacks retain one-cell reach.
     #[must_use]
     pub fn reaches(&self, actor: Position, target: Position) -> bool {
@@ -798,9 +819,12 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/feaster-phase-routes.json"
     ))?);
-    callbacks.extend(parse(include_str!(
+    let (coffin_variants, quest_contacts): (Vec<_>, Vec<_>) = parse(include_str!(
         "../../../../../content/quests/world-callbacks/quest-contacts.json"
-    ))?);
+    ))?
+    .into_iter()
+    .partition(|callback| callback.vampire_coffin_fallback().is_some());
+    callbacks.extend(quest_contacts);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/rottin-wood.json"
     ))?);
@@ -869,6 +893,11 @@ pub fn load() -> Result<Vec<Callback>, String> {
         return Err("callback bounds including djinn access".into());
     }
     counterparts::apply(&mut callbacks)?;
+    callbacks.extend(
+        coffin_variants
+            .into_iter()
+            .filter(|callback| super::in_runtime_scope(&callback.quest)),
+    );
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));
     Ok(callbacks)
@@ -881,12 +910,27 @@ pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
 }
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
-    if callbacks.len() > MAX_RUNTIME_CALLBACKS {
+    // The two exact alternate routes share the existing coffin selectors.
+    let coffin_variants = callbacks
+        .iter()
+        .filter(|callback| callback.vampire_coffin_fallback().is_some())
+        .count();
+    if coffin_variants > 2 || callbacks.len() - coffin_variants > MAX_RUNTIME_CALLBACKS {
         return Err("callback runtime registry bounds".into());
     }
     let mut keys = BTreeSet::new();
     let mut selectors = BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
     for callback in callbacks {
+        if let Some(fallback) = callback.vampire_coffin_fallback()
+            && !callbacks.iter().any(|ordinary| {
+                ordinary.key == fallback
+                    && ordinary.quest == callback.quest
+                    && ordinary.selector == callback.selector
+                    && ordinary.storage == callback.storage
+            })
+        {
+            return Err("weakened coffin requires its matching source selector".into());
+        }
         if callback
             .item_on_target
             .as_ref()
@@ -910,7 +954,10 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         let peers = selectors.entry(selector).or_default();
         if peers.len() >= MAX_EFFECTS
             || peers.iter().any(|peer| {
-                !phase::exclusive(peer, callback)
+                let coffin_pair = peer.vampire_coffin_fallback() == Some(callback.key.as_str())
+                    || callback.vampire_coffin_fallback() == Some(peer.key.as_str());
+                !coffin_pair
+                    && !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
                     && !(selector_gates::disjoint(peer, callback)

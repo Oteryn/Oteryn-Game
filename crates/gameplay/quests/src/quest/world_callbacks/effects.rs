@@ -899,7 +899,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && callback.lever.is_none()
             && !callback.opening_only
             && !callback.reversible
-            && callback.offerings.is_empty()
+            && (callback.offerings.is_empty()
+                || (callback.vampire_coffin_fallback().is_some()
+                    && callback.offerings.len() == 3
+                    && callback.offerings.iter().all(|offering| {
+                        offering.item == "oteryn:item.tibia.i3083" && offering.count == 1
+                    })))
             && callback.item_on_target.is_none()
             && encounter.players.len() == 1
             && encounter.timing.is_none()

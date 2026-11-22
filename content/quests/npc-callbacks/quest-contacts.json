@@ -1166,6 +1166,13 @@
           "count": 20
         }
       ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5905",
+          "minimum": 20,
+          "maximum": 4294967295
+        }
+      ],
       "give": null,
       "outfit": null,
       "achievement": null,

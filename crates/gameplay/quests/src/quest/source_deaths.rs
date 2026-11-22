@@ -51,6 +51,8 @@ impl Comparison {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Rule {
     pub creature: String,
+    #[serde(default)]
+    creature_aliases: Vec<String>,
     pub transition: String,
     pub effects: Vec<Effect>,
     pub room: Option<[i32; 5]>,
@@ -68,6 +70,10 @@ pub struct Rule {
     pub quest: String,
 }
 impl Rule {
+    pub fn matches_creature(&self, creature: &str) -> bool {
+        self.creature == creature || self.creature_aliases.iter().any(|alias| alias == creature)
+    }
+
     pub fn active(&self, tracks: &BTreeMap<String, i64>) -> bool {
         self.effects.iter().all(|e| {
             e.from
@@ -190,6 +196,7 @@ fn documents() -> Result<Vec<Document>, String> {
             .into_iter()
             .map(|element| Rule {
                 creature: format!("oteryn:creature.{element}_overlord"),
+                creature_aliases: Vec::new(),
                 transition: format!(
                     "oteryn:quest-transition/elemental-spheres/{element}-overlord-death"
                 ),
@@ -258,6 +265,7 @@ fn arbaziloth_first_clear_rules() -> [Rule; 3] {
     };
     let rule = |name, effects| Rule {
         creature: "oteryn:creature.arbaziloth".into(),
+        creature_aliases: Vec::new(),
         transition: String::from(name),
         effects,
         room: None,
@@ -306,6 +314,7 @@ fn arbaziloth_hard_rules() -> Vec<Rule> {
     };
     let hard_rule = |suffix: &str, effects| Rule {
         creature: ARBAZILOTH_ENRAGED.into(),
+        creature_aliases: Vec::new(),
         transition: format!("oteryn:quest-transition/native/no_rest_for_the_wicked/{suffix}"),
         effects,
         room: None,
@@ -417,7 +426,7 @@ pub fn rule(key: &str) -> Option<&'static Rule> {
     rules().ok()?.iter().find(|rule| rule.transition == key)
 }
 pub fn tracks_creature(creature: &str) -> bool {
-    rules().is_ok_and(|rules| rules.iter().any(|rule| rule.creature == creature))
+    rules().is_ok_and(|rules| rules.iter().any(|rule| rule.matches_creature(creature)))
 }
 
 #[cfg(test)]

@@ -1079,6 +1079,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut selection_permit = None;
         let mut selection_deadline = None;
+        if let [first, second] = selected.as_slice()
+            && let Some((ordinary, weakened)) =
+                if first.vampire_coffin_fallback() == Some(second.key.as_str()) {
+                    Some((*second, *first))
+                } else if second.vampire_coffin_fallback() == Some(first.key.as_str()) {
+                    Some((*first, *second))
+                } else {
+                    None
+                }
+        {
+            let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
+            let selection = tokio::time::timeout_at(deadline, async {
+                let permit = self.spell_lane_permit().await?;
+                let index = {
+                    let runtime = self.runtime.lock().await;
+                    permit.check_scope(runtime.binding().runtime_scope()).ok()?;
+                    super::item_ref_admission::pinned_index(&runtime, self.active_generation)?
+                };
+                let ground = super::loop_move::loop_ground(self, map.overlay.base(), Some(index)).await?;
+                let has_garlic = weakened.offerings.iter().all(|input| {
+                    ground.overlay().tile(tile(input.position)).is_some_and(|tile| {
+                        tile.added().iter().any(|item| {
+                            matches!(item.item(), crate::map::overlay::AddedItem::Ground(item)
+                                if item.definition.production_key == input.item
+                                    && item.quantity >= u32::from(input.count)
+                                    && item.ground.corpse_ref.starts_with(
+                                        crate::durability::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX))
+                        })
+                    })
+                });
+                Some((permit, if has_garlic { weakened } else { ordinary }))
+            }).await;
+            let Ok(Some((permit, callback))) = selection else {
+                return Some(UseOutcome::rejected());
+            };
+            selected = vec![callback];
+            selection_permit = Some(permit);
+            selection_deadline = Some(deadline);
+        }
         if selected.len() > 1
             && selected.iter().all(|callback| {
                 !callback.requires_live_premium()

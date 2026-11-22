@@ -1059,7 +1059,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 match self.states.quest_callbacks.personal.reserve(
                     runtime,
-                    &callback.key,
+                    callback.encounter_reservation_key(),
                     personal_encounter::Origin::new(
                         *fence.character_id.as_bytes(),
                         cause,

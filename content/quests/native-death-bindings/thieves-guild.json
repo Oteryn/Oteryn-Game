@@ -22,7 +22,13 @@
         }
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/creaturescripts_nomad_kill.lua:1-11:sha256:eb6b88a53dc362c485f8600e4c347ebff52a706480d188d32dae7cf5eb2af991"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/creaturescripts_nomad_kill.lua:1-11:sha256:eb6b88a53dc362c485f8600e4c347ebff52a706480d188d32dae7cf5eb2af991",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/monster/humans/nomad_blue.lua:17-19:sha256:68c034cdcc3aae47856ee7df672da50c4643b948385b7995c945bde3be257224",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/monster/humans/nomad_female.lua:17-19:sha256:9642293dab4e27ea912df422803ae5cb23530d37e81b597d1574d397b225c89e"
+      ],
+      "creature_aliases": [
+        "oteryn:creature.nomad_blue",
+        "oteryn:creature.nomad_female"
       ]
     }
   ]

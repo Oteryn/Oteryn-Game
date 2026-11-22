@@ -651,7 +651,75 @@ fn parse_documents(sources: &[&str]) -> Result<Document, String> {
         combined.callbacks.extend(document.callbacks);
     }
     colours_peer::append_after_opening(&mut combined)?;
+    append_storkus_dust_deposits(&mut combined.callbacks)?;
     validate_document_with_capacity(combined, maximum)
+}
+
+// Storkus follows Crystal's counter convention: stored 1 means the collection
+// has started, and stored 21 means twenty dust were paid. Keep the published
+// full deposit and lower the remaining cases to the existing fenced exchanges.
+fn append_storkus_dust_deposits(callbacks: &mut Vec<RewardCallback>) -> Result<(), String> {
+    let Some(full) = callbacks
+        .iter()
+        .find(|row| row.key == "oteryn:quest-reward/inquisition-vampire-hunt-dust")
+        .cloned()
+    else {
+        return Ok(());
+    };
+    let [questline, mission, dust] = full.storage.as_slice() else {
+        return Err("Storkus dust storage".into());
+    };
+    let [payment] = full.take.as_slice() else {
+        return Err("Storkus dust payment".into());
+    };
+    if dust.minimum != 0
+        || dust.maximum != 0
+        || dust.set != i64::from(payment.count) + 1
+        || !(1..=20).contains(&payment.count)
+    {
+        return Err("Storkus dust counter bounds".into());
+    }
+    for saved in dust.minimum..dust.set {
+        let remaining = payment
+            .count
+            .min(u16::try_from(dust.set - saved).map_err(|e| e.to_string())?);
+        for count in 1..=remaining {
+            if saved == dust.minimum && count == payment.count {
+                continue;
+            }
+            let mut deposit = full.clone();
+            deposit.key = format!("{}/deposit-{saved}-{count}", full.key);
+            deposit.take[0].count = count;
+            let finished = count == remaining;
+            deposit.inventory = vec![InventoryRequirement {
+                item: payment.item.clone(),
+                minimum: u32::from(count),
+                maximum: if finished { u32::MAX } else { u32::from(count) },
+            }];
+            deposit.storage[2].minimum = saved;
+            deposit.storage[2].maximum = saved;
+            if !finished {
+                deposit.storage[0].preserve = true;
+                deposit.storage[0].set = questline.minimum;
+                deposit.storage[1].preserve = true;
+                deposit.storage[1].set = mission.minimum;
+                deposit.storage[2].set = saved.max(1) + i64::from(count);
+                deposit.reply = vec!["Bring me more vampire dust when you have it.".into()];
+            }
+            callbacks.push(deposit);
+        }
+    }
+    let paid_value = dust.set;
+    let mut paid = full;
+    paid.key.push_str("/already-paid");
+    paid.keywords = vec!["mission".into()];
+    paid.topic = 0;
+    paid.storage[2].minimum = paid_value;
+    paid.storage[2].maximum = paid_value;
+    paid.take.clear();
+    paid.inventory.clear();
+    callbacks.push(paid);
+    Ok(())
 }
 
 pub(crate) fn validate_callbacks(callbacks: &[RewardCallback]) -> Result<(), String> {
