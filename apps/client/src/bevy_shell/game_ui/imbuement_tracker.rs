@@ -117,8 +117,8 @@ fn build(
     for (label, kind) in [
         ("Under 1 hour", Kind::Group(0)),
         ("1–3 hours", Kind::Group(1)),
-        ("Over 3 hours", Kind::Group(2)),
-        ("Unused slots", Kind::Group(3)),
+        ("3 hours or more", Kind::Group(2)),
+        ("Items without active imbuements", Kind::Group(3)),
         ("All times", Kind::Filter("0")),
         ("5 minutes or less", Kind::Filter("5")),
         ("60 minutes or less", Kind::Filter("60")),

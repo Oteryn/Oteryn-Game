@@ -402,6 +402,7 @@ mod tests;
 
 #[derive(Component)]
 struct VipNameLabel {
+    group: Option<u8>,
     generation: u64,
     entry: u64,
 }

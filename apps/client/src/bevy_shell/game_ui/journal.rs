@@ -57,6 +57,7 @@ enum Kind {
     Previous,
     Next,
     Vocation,
+    MyVocation,
     Premium,
     Group,
     Assign(usize),
@@ -392,6 +393,7 @@ fn refresh_labels(
                 oteryn_client_ui::quest_log::QUEST_SORT_LABELS[quest.list_sort.selection()].into()
             }
             Kind::Castable => "Only castable level".into(),
+            Kind::MyVocation => "My vocation".into(),
             Kind::Vocation if !book.selected => catalogue
                 .vocation
                 .clone()
@@ -489,7 +491,7 @@ fn fallback_controls(commands: &mut Commands, skin: &Skins, parent: Entity, key:
         })
         .id();
     commands.entity(parent).add_child(row);
-    for kind in [Kind::Vocation, Kind::Group, Kind::Premium] {
+    for kind in [Kind::MyVocation, Kind::Vocation, Kind::Group, Kind::Premium] {
         let button = commands
             .spawn((
                 source::button(skin.buttons.clone(), 220.),

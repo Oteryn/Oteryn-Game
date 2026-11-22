@@ -473,3 +473,32 @@ fn read_only_minimap_cannot_edit_or_remove_remembered_marks() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn minimap_clock_follows_world_clock_pushes() -> TestResult {
+    let mut app = fixture()?;
+    for (minute, expected) in [(1439, "23:59"), (0, "00:00")] {
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .play
+            .as_mut()
+            .ok_or("play")?
+            .view
+            .apply_pushed(&crate::play::Pushed {
+                world_clock: Some(oteryn_session::world_clock::WorldClock {
+                    tibian_minute: minute,
+                    light_level: 128,
+                    light_color: 180,
+                }),
+                ..Default::default()
+            })?;
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<(&Name, &Text)>()
+                .iter(app.world())
+                .any(|(name, text)| name.as_str() == "Minimap clock" && text.0 == expected)
+        );
+    }
+    Ok(())
+}

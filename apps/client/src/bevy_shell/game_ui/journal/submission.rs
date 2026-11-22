@@ -23,7 +23,13 @@ pub(super) fn request(
     state.pending = None;
     if matches!(
         action.kind,
-        Kind::Search | Kind::Sort | Kind::Refresh | Kind::Vocation | Kind::Premium | Kind::Group
+        Kind::Search
+            | Kind::Sort
+            | Kind::Refresh
+            | Kind::MyVocation
+            | Kind::Vocation
+            | Kind::Premium
+            | Kind::Group
     ) && fields.iter().any(|(_, _, text)| editing(text))
     {
         state.pending = Some(Pending {

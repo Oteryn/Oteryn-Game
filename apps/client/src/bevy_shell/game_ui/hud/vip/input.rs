@@ -1,5 +1,7 @@
 use super::*;
 use bevy::{input::ButtonState, input::keyboard::KeyboardInput};
+// The VIP observer binds the current contact, modal, editors and clipboard.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn activate(
     event: On<Activate>,
     guard: ModalGuard,
@@ -8,6 +10,7 @@ pub(super) fn activate(
     mut owner: NonSendMut<HostOwner>,
     mut state: ResMut<State>,
     mut presentation: ResMut<presentation::Preferences>,
+    mut clipboard: Option<ResMut<bevy::clipboard::Clipboard>>,
 ) {
     if !guard.allows(event.entity) || !available(&owner) {
         return;
@@ -47,12 +50,47 @@ pub(super) fn activate(
             groups::activate(control.command, &owner, &mut state)
         }
         Action::Close => {}
+        Action::Grouped => presentation.grouped = !presentation.grouped,
         Action::Sort => presentation.sort = presentation.sort.next(),
         Action::HideOffline => presentation.hide_offline = !presentation.hide_offline,
         Action::Context(entry) => {
             presentation.context = Some((owner.generation(), panel.revision, entry))
         }
         Action::MenuClose => presentation.context = None,
+        Action::CopyName(entry) | Action::Invite(entry) | Action::Exclude(entry) => {
+            if presentation.context != Some((owner.generation(), panel.revision, entry)) {
+                return;
+            }
+            let Ok(snapshot) = Snapshot::read(&panel) else {
+                return;
+            };
+            let Some(contact) = snapshot
+                .entries
+                .iter()
+                .find(|contact| contact.entry == entry)
+            else {
+                return;
+            };
+            if matches!(control.command, Action::CopyName(_)) {
+                let copied = clipboard
+                    .as_mut()
+                    .is_some_and(|clipboard| clipboard.set_text(contact.name.clone()).is_ok());
+                state.clipboard_feedback = Some((
+                    panel.revision,
+                    if copied {
+                        format!("Copied {}", contact.name)
+                    } else {
+                        format!("Could not copy {} to the clipboard", contact.name)
+                    },
+                ));
+            } else {
+                play.link.vip_private_recipient(
+                    &contact.name,
+                    matches!(control.command, Action::Invite(_)),
+                );
+            }
+            presentation.context = None;
+        }
         Action::Message(entry) => {
             if let Ok(snapshot) = Snapshot::read(&panel)
                 && let Some(contact) = snapshot.entries.iter().find(|row| row.entry == entry)

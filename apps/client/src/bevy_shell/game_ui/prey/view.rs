@@ -22,21 +22,25 @@ pub(super) fn project(
     if state
         .seen
         .as_ref()
-        .is_some_and(|(old, old_panel, _, _, _)| *old != generation || old_panel != &panel)
+        .is_some_and(|(old, old_panel, ..)| *old != generation || old_panel != &panel)
     {
         state.confirmation = None;
         state.wildcard = None;
     }
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
+    let now = now_seconds();
+    let reroll_price = state.confirmation.and_then(|slot| {
+        owner
+            .play
+            .as_ref()
+            .map(|play| RerollPrice::for_slot(&panel, slot, &play.link, now))
+    });
     let seen = (
         generation,
         panel.clone(),
         state.confirmation,
         state.wildcard.clone(),
         state.candidate,
+        reroll_price,
     );
     if state.seen.as_ref() == Some(&seen) {
         return;
@@ -76,6 +80,20 @@ pub(super) fn project(
         Kind::Close,
         "Close",
     );
+    if panel.selected {
+        let toggle = button(
+            &mut commands,
+            &skin,
+            root,
+            generation,
+            &panel,
+            Kind::ToggleTracker,
+            "Toggle prey tracker",
+        );
+        commands
+            .entity(toggle)
+            .insert(Name::new("prey.tracker.toggle"));
+    }
     if let Some(confirmed) = &panel.confirmed {
         label(
             &mut commands,
@@ -215,13 +233,23 @@ pub(super) fn project(
                     }
                 }
             }
-        } else if let Some(slot) = state.confirmation {
+        } else if let (Some(slot), Some(price)) = (state.confirmation, reroll_price) {
+            let price = match price {
+                RerollPrice::Free => "Free list reroll available.".into(),
+                RerollPrice::Paid(level) => format!(
+                    "Paid reroll: {} gold at level {level}.",
+                    u64::from(level) * 200
+                ),
+                RerollPrice::Unknown => {
+                    "The server may charge gold; the gold price is not provided.".into()
+                }
+            };
             label(
                 &mut commands,
                 &skin,
                 root,
                 &format!(
-                    "Reroll the creature list in slot {slot}? The server may charge gold; the gold price is not provided. Rerolling replaces the current selection and bonus."
+                    "Reroll the creature list in slot {slot}? {price} Rerolling replaces the current selection and bonus."
                 ),
             );
             button(
@@ -292,10 +320,7 @@ pub(super) fn project(
                     );
                 }
                 if slot.state == 2 {
-                    let bonus = ["None", "Damage", "Defense", "Experience", "Loot"]
-                        .get(usize::from(slot.bonus))
-                        .copied()
-                        .unwrap_or("Unknown");
+                    let bonus = bonus_name(slot.bonus);
                     label(
                         &mut commands,
                         &skin,
@@ -313,7 +338,7 @@ pub(super) fn project(
                 if slot.state == 1 {
                     for (index, creature) in slot.creatures.iter().enumerate() {
                         if let Ok(index) = u8::try_from(index + 1) {
-                            button(
+                            let candidate = button(
                                 &mut commands,
                                 &skin,
                                 root,
@@ -322,6 +347,7 @@ pub(super) fn project(
                                 Kind::Select(id, index),
                                 &format!("Select {}", creature_label(creature)),
                             );
+                            portraits::attach(&mut commands, candidate, creature);
                         }
                     }
                 }
@@ -348,6 +374,16 @@ pub(super) fn project(
                         ))
                         .id();
                     commands.entity(root).add_child(field);
+                    let results = commands
+                        .spawn((
+                            catalogue::Results::new(field),
+                            Node {
+                                flex_direction: FlexDirection::Column,
+                                ..default()
+                            },
+                        ))
+                        .id();
+                    commands.entity(root).add_child(results);
                     let choose = button(
                         &mut commands,
                         &skin,

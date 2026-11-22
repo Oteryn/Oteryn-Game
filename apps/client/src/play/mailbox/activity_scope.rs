@@ -41,6 +41,8 @@ impl Mailbox {
         self.containers.pending = Default::default();
         self.depot.pending = Default::default();
         self.cyclopedia_character.pending = Default::default();
+        self.cyclopedia_character.own_vocation_pending = false;
+        self.cyclopedia_character.own_vocation_id = None;
         self.cyclopedia_character.augments = Default::default();
         let blessing_details = self.cyclopedia_character.blessings.details_selected;
         self.cyclopedia_character.blessings = Default::default();

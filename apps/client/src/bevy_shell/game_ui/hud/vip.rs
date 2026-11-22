@@ -36,6 +36,7 @@ mod view;
 #[derive(Resource, Default)]
 struct State {
     generation: Option<u64>,
+    clipboard_feedback: Option<(u64, String)>,
     serial: u64,
     draft: Option<Draft>,
     pending: Option<Pending>,
@@ -72,8 +73,12 @@ enum Action {
     Close,
     Sort,
     HideOffline,
+    Grouped,
     Context(u64),
     Message(u64),
+    CopyName(u64),
+    Invite(u64),
+    Exclude(u64),
     MenuClose,
     Add,
     GroupAdd,
@@ -95,6 +100,7 @@ enum Action {
 struct List;
 #[derive(Component)]
 struct Row {
+    group: Option<u8>,
     generation: u64,
     entry: u64,
 }
