@@ -240,6 +240,50 @@ async fn approach(
     })
 }
 
+async fn approach_rashid(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let today = utc_rashid_destination()?;
+    let expected = rashid_bundle_cell(today);
+    let mut npc = npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == "oteryn:npc.rashid")
+        .cloned()
+        .ok_or("step=rashid-gate need=authored-Rashid-placement")?;
+    npc.placements.retain(|p| (p.x, p.y, p.floor) == expected);
+    if npc.placements.len() != 1 {
+        return Err(format!(
+            "step=rashid-gate need=unique-{}-placement-{expected:?}",
+            today.city
+        )
+        .into());
+    }
+    let actor = approach(client, world, &npc).await?;
+    if utc_rashid_destination()? != today {
+        return Err("step=rashid-gate observed=weekday-changed-on-route".into());
+    }
+    let visible = client
+        .world_entities()
+        .ok_or("step=rashid-gate need=live-entities")?;
+    let mut rashids = visible.iter().filter(|entry| {
+        entry.kind == EntityKind::Npc
+            && entry
+                .display_name
+                .as_ref()
+                .and_then(|name| name.as_str().ok())
+                == Some("Rashid")
+    });
+    if rashids.next().map(|entry| entry.entity) != Some(actor) || rashids.next().is_some() {
+        return Err(
+            "step=rashid-gate need=exactly-one-live-visible-Rashid-at-weekday-placement".into(),
+        );
+    }
+    Ok(actor)
+}
+
 fn carried_gold(client: &DevClientSession) -> TestResult<u64> {
     let index = provisioning::item_index()?;
     let coins = [
@@ -323,27 +367,22 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_character(clients, 0xf8, 1).await?;
     let here = tile(client.world_spatial().actor_position)?;
     let expected_rashid = utc_rashid_destination()?;
+    let (x, y, floor) = rashid_bundle_cell(expected_rashid);
     let (key, keyword, display, fare, arrival, npc) = TRAVEL_NPCS
         .iter()
-        .filter(|&&(_, keyword, _, _, _)| keyword != "port hope" || expected_rashid.city == "Wednesday")
+        .filter(|&&(_, _, _, _, arrival)| {
+            tile(arrival).is_ok_and(|arrival| route(world, arrival, |at| {
+                at.floor == floor && at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 3
+            }).is_some())
+        })
         .find_map(|&(key, keyword, display, fare, arrival)| {
-            metadata
-                .npcs
-                .npcs
-                .iter()
-                .find(|npc| npc.key == key)
-                .filter(|npc| {
-                    route(world, here, |at| {
-                        npc.placements.iter().any(|p| {
-                            p.floor == at.floor
-                                && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3
-                        })
-                    })
-                    .is_some()
-                })
+            metadata.npcs.npcs.iter().find(|npc| npc.key == key)
+                .filter(|npc| route(world, here, |at| npc.placements.iter().any(|p| {
+                    p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3
+                })).is_some())
                 .map(|npc| (key, keyword, display, fare, arrival, npc))
         })
-        .ok_or("step quote: no authored S10 paid-travel NPC is reachable by legitimate walking from admission; need a compiled route to a travel service")?;
+        .ok_or_else(|| format!("step=travel-plan need=reachable-paid-departure-and-onward-route-to-{}-Rashid-{x}-{y}-{floor}", expected_rashid.city))?;
     let actor = approach(&mut client, world, npc).await?;
     let _ = talk(&mut client, actor, "hi").await?;
     let (quote, _, _) = talk(&mut client, actor, keyword).await?;
@@ -372,6 +411,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.step("refusal", &refusal);
     earn(&mut client, world, &metadata.spawns, fare).await?;
+    if utc_rashid_destination()? != expected_rashid {
+        return Err(
+            "step=travel-plan observed=weekday-changed-during-fare-hunt need=new-Rashid-itinerary"
+                .into(),
+        );
+    }
     let funded_gold = carried_gold(&client)?;
     let actor = approach(&mut client, world, npc).await?;
     let departure = client.world_spatial().actor_position;
@@ -398,30 +443,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step travel: observed reply={travelled:?} position={:?} carried_gold={}; need authored arrival {arrival:?} and atomic fare burn", client.world_spatial().actor_position, carried_gold(&client)?).into());
     }
     row.step("travel", &travelled);
-    let expected_rashid_position = rashid_bundle_cell(expected_rashid);
-    let mut rashid = metadata
-        .npcs
-        .npcs
-        .iter()
-        .find(|npc| npc.key == "oteryn:npc.rashid")
-        .cloned()
-        .ok_or_else(|| {
-            format!(
-                "step=rashid-gate need=compiled-{}-placement-{expected_rashid_position:?}",
-                expected_rashid.city
-            )
-        })?;
-    rashid.placements.retain(|placement| {
-        (placement.x, placement.y, placement.floor) == expected_rashid_position
-    });
-    if rashid.placements.is_empty() {
-        return Err(format!(
-            "step=rashid-gate need=compiled-{}-placement-{expected_rashid_position:?}",
-            expected_rashid.city
-        )
-        .into());
-    }
-    let rashid_actor = approach(&mut client, world, &rashid).await?;
+    let rashid_actor = approach_rashid(&mut client, world, &metadata.npcs).await?;
     let _ = talk(&mut client, rashid_actor, "hi").await?;
     let (trade, _, shop_opened) = talk(&mut client, rashid_actor, "trade").await?;
     if trade.is_empty() || !shop_opened {
@@ -431,7 +453,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "rashid-gate",
         (
             expected_rashid.city,
-            expected_rashid_position,
+            rashid_bundle_cell(utc_rashid_destination()?),
             client.world_spatial().actor_position,
             &trade,
         ),
@@ -449,7 +471,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step fresh-admission: durable state mismatch position={:?}/{saved_position:?} gold={}/{}", fresh.world_spatial().actor_position, carried_gold(&fresh)?, saved_gold).into());
     }
-    let fresh_rashid = approach(&mut fresh, world, &rashid).await?;
+    let fresh_rashid = approach_rashid(&mut fresh, world, &metadata.npcs).await?;
     let _ = talk(&mut fresh, fresh_rashid, "hi").await?;
     let (fresh_trade, _, fresh_shop) = talk(&mut fresh, fresh_rashid, "trade").await?;
     if fresh_trade.is_empty() || !fresh_shop {

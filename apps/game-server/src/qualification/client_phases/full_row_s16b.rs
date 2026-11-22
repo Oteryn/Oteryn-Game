@@ -73,7 +73,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct Stats {
+pub(super) struct Stats {
     xp: u64,
     level: u32,
     magic: u16,
@@ -185,7 +185,7 @@ async fn approach(
     })).map(|entry| entry.entity).ok_or_else(|| "step approach: Oressa actor not visible after walking".into())
 }
 
-async fn earn_level_eight(
+pub(super) async fn earn_level_eight(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,

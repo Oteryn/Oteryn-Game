@@ -107,6 +107,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     });
 }
 
+fn entry_number(item: &serde_json::Value) -> Option<u64> {
+    item["entry"].as_u64()
+}
+
 fn request(operation: wire::Operation, number: u64, text: &str) -> wire::Request {
     wire::Request {
         operation,
@@ -260,15 +264,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let entry = added.number;
     let after_add = ok(
         &mut watcher,
-        &request(wire::Operation::Query, added.revision, ""),
+        &request(wire::Operation::Query, 0, ""),
         "query-after-add",
     )
     .await?;
     let after_add_view = view(&after_add, "query-after-add")?;
     if !after_add_view["entries"].as_array().is_some_and(|entries| {
-        entries.iter().any(|item| {
-            item["number"].as_u64() == Some(entry) && item["name"].as_str() == Some(&name)
-        })
+        entries
+            .iter()
+            .any(|item| entry_number(item) == Some(entry) && item["name"].as_str() == Some(&name))
     }) {
         return Err(format!(
             "step=add observed=entry-absent:{after_add_view} need=added-list-delta"
@@ -315,14 +319,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     .await?;
     let retained = ok(
         &mut watcher,
-        &request(wire::Operation::Query, renamed.revision, ""),
+        &request(wire::Operation::Query, 0, ""),
         "query-after-group-edit",
     )
     .await?;
     let retained_view = view(&retained, "query-after-group-edit")?;
     let entry_ok = retained_view["entries"].as_array().is_some_and(|entries| {
         entries.iter().any(|item| {
-            item["number"].as_u64() == Some(entry)
+            entry_number(item) == Some(entry)
                 && item["description"].as_str() == Some("node-boot friend")
                 && item["icon"].as_u64() == Some(7)
                 && item["notify"].as_bool() == Some(true)
@@ -335,11 +339,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     });
     let group_ok = retained_view["groups"].as_array().is_some_and(|groups| {
         groups.iter().any(|item| {
-            item["number"].as_u64() == Some(group.number)
+            item["group"].as_u64() == Some(group.number)
                 && item["name"].as_str() == Some("Raid Team")
         })
     });
-    if !entry_ok || !group_ok || edited.revision > retained.revision {
+    if !entry_ok
+        || !group_ok
+        || edited.revision > retained.revision
+        || renamed.revision != retained.revision
+    {
         return Err(format!("step=groups-and-metadata observed=view:{retained_view} need=edited-entry-and-renamed-group").into());
     }
     row.pass("groups-and-metadata", (group.number, retained.revision));
@@ -358,7 +366,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let unchanged = ok(
         &mut watcher,
-        &request(wire::Operation::Query, retained.revision, ""),
+        &request(wire::Operation::Query, 0, ""),
         "query-after-refusal",
     )
     .await?;
@@ -410,7 +418,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let fresh = ok(
         &mut watcher,
-        &request(wire::Operation::Query, retained.revision, ""),
+        &request(wire::Operation::Query, 0, ""),
         "fresh-query",
     )
     .await?;
@@ -436,7 +444,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let final_view = ok(
         &mut watcher,
-        &request(wire::Operation::Query, fresh.revision, ""),
+        &request(wire::Operation::Query, 0, ""),
         "query-after-group-remove",
     )
     .await?;
@@ -444,12 +452,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let removed_from_catalogue = final_value["groups"].as_array().is_some_and(|groups| {
         !groups
             .iter()
-            .any(|item| item["number"].as_u64() == Some(group.number))
+            .any(|item| item["group"].as_u64() == Some(group.number))
     });
     let removed_from_entry = final_value["entries"].as_array().is_some_and(|entries| {
         entries
             .iter()
-            .find(|item| item["number"].as_u64() == Some(entry))
+            .find(|item| entry_number(item) == Some(entry))
             .is_some_and(|item| {
                 item["groups"].as_array().is_some_and(|groups| {
                     !groups
@@ -473,19 +481,19 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     .await?;
     let queried = ok(
         &mut watcher,
-        &request(wire::Operation::Query, removed.revision, ""),
+        &request(wire::Operation::Query, 0, ""),
         "query-after-entry-remove",
     )
     .await?;
-    if removed.revision <= remove.revision
+    let queried_view = view(&queried, "query-after-entry-remove")?;
+    if queried_view["next_entry"].as_u64() != Some(0)
+        || removed.revision <= remove.revision
         || queried.revision != removed.revision
-        || !view(&queried, "query-after-entry-remove")?["entries"]
-            .as_array()
-            .is_some_and(|entries| {
-                entries
-                    .iter()
-                    .all(|item| item["number"].as_u64() != Some(entry))
-            })
+        || !queried_view["entries"].as_array().is_some_and(|entries| {
+            entries
+                .iter()
+                .all(|item| entry_number(item).is_some_and(|number| number != entry))
+        })
     {
         return Err(
             "step=entry-remove observed=stale-revision-or-listed-entry need=durable-entry-removal"
@@ -524,4 +532,9 @@ mod tests {
     fn evidence_compaction_is_single_token() {
         assert_eq!(compact("step=x observed=code 5"), "step=x_observed=code_5");
     }
+}
+
+#[test]
+fn vip_entry_identity_uses_the_served_field() {
+    assert_eq!(entry_number(&serde_json::json!({"entry": 42})), Some(42));
 }

@@ -1,6 +1,6 @@
 //! S06 client replay capture: the outfit selection and the unearned-addon refusal. The native
 //! appearance catalogue is read before and after an APPEARANCE_CHANGE that selects an earned outfit
-//! with new colours; the raw `gated_snapshot` payloads (`s06-before.bin`, `s06-after.bin`) and the
+//! with new colours; the admission snapshot and the reconstructed live appearance snapshot (`s06-before.bin`, `s06-after.bin`) and the
 //! raw command results (`s06-commit.bin`, `s06-refusal.bin`) are written byte for byte, and
 //! `s06-expected.txt` holds the selection, the committed revision and the content revision.
 //! The full row drives the separate Hunter loot and War Bear taming journey.
@@ -93,16 +93,11 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         Ok(appearance::ChangeResult::Committed(value)) if status == CommandStatus::Accepted => value,
         observed => return Err(format!("step=select status={status:?} result={observed:?}").into()),
     };
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err(
-            "step=appearance-capture expected accepted logout before durable snapshot".into(),
-        );
-    }
-    drop(client);
-    let mut client = connect_world(clients, 0x6a).await?;
-    let (after_bytes, after) = raw_snapshot(&mut client)?;
+    let mut after = before.clone();
+    full_row_s06::wait_for_selection(&mut client, &mut after, committed, &selection).await?;
+    let after_bytes = after
+        .encode()
+        .map_err(|error| format!("step=encode-live-appearance {error:?}"))?;
     if after.catalogue.selected.as_ref().map(|s| &s.selection) != Some(&selection)
         || after.catalogue.root_revision != committed
     {

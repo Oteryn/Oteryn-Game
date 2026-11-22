@@ -245,15 +245,80 @@ fn invitation_retained(view: &PartyResult, handle: u64) -> bool {
     view.invitations.iter().any(|entry| entry.handle == handle)
 }
 
+struct PvpWorld {
+    address: std::net::SocketAddr,
+    url: String,
+    accounts: [String; 2],
+    characters: Vec<[u8; 16]>,
+    world: [u8; 16],
+    channel: [u8; 16],
+    scope_generation: u64,
+}
+
+async fn pvp_world() -> TestResult<PvpWorld> {
+    let url = required("NODE_BOOT_PVP_DATABASE_URL")?;
+    let accounts = [
+        required("NODE_BOOT_PVP_ACCOUNT_ID")?,
+        required("NODE_BOOT_PVP_SECOND_ACCOUNT_ID")?,
+    ];
+    let world = crate::node::uuid_bytes(&required("NODE_BOOT_PVP_WORLD_ID")?)
+        .ok_or("invalid NODE_BOOT_PVP_WORLD_ID")?;
+    let channel = crate::node::uuid_bytes(&required("NODE_BOOT_PVP_CHANNEL_ID")?)
+        .ok_or("invalid NODE_BOOT_PVP_CHANNEL_ID")?;
+    // Same bounded, read-only PgConnection pattern as the node-boot fixture read.
+    let mut database = sqlx::PgConnection::connect(&url).await?;
+    let world_type: i16 = sqlx::query_scalar("SELECT world_type FROM game_spell_field_world_policies WHERE world_id=encode($1,'hex')::uuid AND world_policy_revision='policy-s3b-1'")
+        .bind(world.as_slice()).fetch_one(&mut database).await?;
+    if world_type != 2 {
+        return Err(format!("PvP World policy world_type={world_type};expected=2 (Open PvP);source:tools/qualification/node_boot/run.sh:1531").into());
+    }
+    let mut characters = Vec::new();
+    for account in &accounts {
+        let found: Vec<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(character_id) FROM game_character_roots WHERE account_id=$1::uuid AND world_id=encode($2,'hex')::uuid LIMIT 2")
+            .bind(account).bind(world.as_slice()).fetch_all(&mut database).await?;
+        let [character] = found.as_slice() else {
+            return Err(format!(
+                "PvP World Account must own exactly one Character: account={account} count={}",
+                found.len()
+            )
+            .into());
+        };
+        characters.push(<[u8; 16]>::try_from(character.as_slice())?);
+    }
+    let scope_generation: String = sqlx::query_scalar("SELECT ownership_generation::text FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND state=1")
+        .bind(world.as_slice()).bind(channel.as_slice()).fetch_one(&mut database).await?;
+    database.close().await?;
+    Ok(PvpWorld {
+        address: required("NODE_BOOT_PVP_ADDRESS")?.parse()?,
+        url,
+        accounts,
+        characters,
+        world,
+        channel,
+        scope_generation: scope_generation.parse()?,
+    })
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let spawns = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?.spawns;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
+    let loaded = boot_world(
         bytes,
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    let world = &loaded.bundle;
+    for index in 0..2 {
+        let mut fighter = connect_character(clients, 0xb4, index).await?;
+        let earned = full_row_s16b::earn_level_eight(&mut fighter, world, &spawns).await;
+        let released = logout(&mut fighter, Duration::from_secs(70)).await;
+        earned.map_err(|error| {
+            format!("step=earned-open-pvp-level-eight player={index} observed={error}")
+        })?;
+        released?;
+    }
     let mut a = connect_character(clients, 0xb0, 0).await?;
     let mut b = connect_character(clients, 0xb1, 1).await?;
     place_pair(&mut a, &mut b, world).await?;
@@ -304,7 +369,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let attack = a.session_mut().attack_target(Some(&b_ref)).await?;
     if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!(
-            "step=aggression-white-skull observed={attack:?} need=two-player-combat-on-open-pvp-node source=tools/qualification/node_boot/run.sh:1552"
+            "step=aggression-white-skull observed={attack:?} need=level-eight-combat-eligible-open-pvp-players"
         )
         .into());
     }
@@ -408,7 +473,25 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(2_100), journey(&mut row, clients))
+    let result = verdict::indexed_timeout(Duration::from_secs(2_100), async {
+        let fixture = pvp_world()
+            .await
+            .map_err(|error| format!("step=open-pvp-fixture observed={error}"))?;
+        let pvp = SeamClients {
+            address: fixture.address,
+            accounts: &fixture.accounts,
+            characters: &fixture.characters,
+            world: fixture.world,
+            channel: fixture.channel,
+            scope_generation: fixture.scope_generation,
+            url: &fixture.url,
+            runtime: None,
+            ..*clients
+        };
+        let outcome = journey(&mut row, &pvp).await;
+        let released = release_row_characters(&pvp).await;
+        outcome.and(released)
+    })
         .await
         .unwrap_or_else(|_| Err("step lifecycle timeout observed=no-reply-or-delta".into()));
     row.finish(&result);
