@@ -718,6 +718,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/m09-treasure.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/great-dragon-hunt.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/ice-islands-seals.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -3338,6 +3341,54 @@ mod srvenc_live_requirements_tests {
             value["character_requirements"] = invalid;
             assert!(parse(&packet(&value)).is_err());
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod great_dragon_hunt_tests {
+    #[test]
+    fn explorer_use_lowers_the_donor_start_and_dragon_leather() -> Result<(), String> {
+        let callback = super::load()?
+            .into_iter()
+            .find(|callback| callback.key == "oteryn:quest-callback/great-dragon-hunt-explorer")
+            .ok_or("explorer USE callback")?;
+        assert_eq!(callback.trigger, super::Trigger::Use);
+        assert_eq!(callback.selector.action, Some(50806));
+        assert_eq!(callback.selector.appearance, Some(21412));
+        let reward = callback
+            .item_reward()
+            .as_ref()
+            .ok_or("dragon leather reward")?;
+        assert_eq!(
+            (reward.item.as_str(), reward.count),
+            ("oteryn:item.tibia.i5882", 1)
+        );
+        let loaded = super::super::loader::load_embedded_quest_state("dragon-hunt")
+            .map_err(|error| format!("{error:?}"))?;
+        let transition = loaded
+            .catalogue()
+            .transition(&callback.key)
+            .ok_or("explorer transition")?;
+        assert_eq!(transition.effects.len(), 3);
+        assert!(callback.storage.iter().any(|state| {
+            state.track.ends_with("/warrior_skeleton")
+                && state.minimum == 0
+                && state.maximum == 0
+                && state.set == 1
+        }));
+        assert!(
+            callback
+                .storage
+                .iter()
+                .any(|state| { state.track.ends_with("/dragon_counter") && state.set == 0 })
+        );
+        assert!(
+            callback
+                .storage
+                .iter()
+                .any(|state| { state.track.ends_with("/quest_line") && state.set == 1 })
+        );
         Ok(())
     }
 }

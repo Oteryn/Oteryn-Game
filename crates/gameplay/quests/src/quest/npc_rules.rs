@@ -510,6 +510,7 @@ impl NpcRuleCatalog {
                 let mut catalogue = Self::load_embedded()?;
                 let supplemental = Self::from_json_documents(&[
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/lost-brother.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/m41-kilmaresh.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gerimor.json"),
@@ -540,6 +541,7 @@ impl NpcRuleCatalog {
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"
                                 | "oteryn:quest.a_pirates_tail"
+                                | "oteryn:quest.adventurers_guild"
                                 | "oteryn:quest.blood_brothers_quest"
                                 | "oteryn:quest.dangerous_depths_quest"
                                 | "oteryn:quest.elemental_spheres_quest"
