@@ -34,6 +34,8 @@ pub(super) async fn provision_fixture(
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     original::provision_at_level(client, clients, index, expected_level).await
 }
+pub(super) use original::provision_profile;
+
 pub(super) async fn provision(
     mut client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
@@ -61,6 +63,7 @@ pub(super) async fn provision(
 }
 mod e2ef1 {
     use super::*;
+    use crate::map::door::AuthoredClosedDoor;
     use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, EntityRef};
     use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
     use std::collections::BTreeSet;
@@ -92,6 +95,7 @@ mod e2ef1 {
         ),
         ("M07", &["carried-rope", "rope-ascent", "relogin"]),
     ];
+    const FLOOR_EXHAUST_SPELL: &str = "exevo infir flam hur";
     const DIRS: [StepDirection; 4] = [
         StepDirection::North,
         StepDirection::East,
@@ -149,8 +153,15 @@ mod e2ef1 {
     struct Object {
         at: TilePos,
         ordinal: u8,
-        appearance: u16,
+        kind: ObjectKind,
     }
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum ObjectKind {
+        Door(AuthoredClosedDoor),
+        Rope,
+        Teleport(TilePos),
+    }
+
     fn position(at: TilePos, basis: spatial_basis::Basis) -> ActorPosition {
         basis.position(at)
     }
@@ -171,27 +182,58 @@ mod e2ef1 {
             expected_revision: revision,
         })
     }
-    fn objects(bytes: &[u8]) -> TestResult<Vec<Object>> {
-        let mut objects = Vec::new();
+    fn objects(world: &BundleWorld, bytes: &[u8]) -> TestResult<Vec<Object>> {
+        let doors = world.facts().doors();
+        let mut objects: Vec<_> = doors
+            .keys()
+            .filter_map(|key| {
+                let (at, ordinal) = crate::map::view::placement_of(key)?;
+                Some(Object {
+                    at,
+                    ordinal,
+                    kind: ObjectKind::Door(doors.authored_closed(key)?),
+                })
+            })
+            .collect();
         oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
             for tile in sector.tiles {
+                let at = TilePos {
+                    x: tile.x,
+                    y: tile.y,
+                    floor: sector.floor,
+                };
+                let ground = world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .and_then(|tile| tile.ground())
+                    .map(|(ordinal, _)| ordinal);
                 for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate()
                 {
-                    if let Some(appearance) =
-                        crate::map::palette_appearance(&manifest.palette[item.palette as usize].key)
+                    let ordinal = u8::try_from(ordinal).map_err(|_| {
+                        oteryn_world_bundle::Error::Limit("movement ordinal".into())
+                    })?;
+                    let kind = if let Some(to) = world
+                        .floors()
+                        .teleport(at)
+                        .filter(|_| item.attrs.teleport.is_some())
                     {
-                        objects.push(Object {
-                            at: TilePos {
-                                x: tile.x,
-                                y: tile.y,
-                                floor: sector.floor,
-                            },
-                            ordinal: u8::try_from(ordinal).map_err(|_| {
-                                oteryn_world_bundle::Error::Limit("movement ordinal".into())
-                            })?,
-                            appearance,
-                        });
-                    }
+                        ObjectKind::Teleport(to)
+                    } else if ground.is_some()
+                        && crate::map::palette_appearance(
+                            &manifest.palette[item.palette as usize].key,
+                        )
+                        .is_some_and(|id| {
+                            crate::map::floor::is_rope_spot_item(
+                                u32::from(id),
+                                ground == Some(ordinal),
+                            )
+                        })
+                    {
+                        ObjectKind::Rope
+                    } else {
+                        continue;
+                    };
+                    objects.push(Object { at, ordinal, kind });
                 }
             }
             Ok(())
@@ -280,27 +322,75 @@ mod e2ef1 {
             .copied()
             .ok_or_else(|| "own entity missing".into())
     }
+    fn approach_stands(
+        objects: &[Object],
+        wanted: impl Fn(Object) -> bool,
+        range: u16,
+        usable_from: impl Fn(TilePos, Object) -> bool,
+    ) -> BTreeMap<TilePos, Object> {
+        let mut stands = BTreeMap::new();
+        let radius = i32::from(range);
+        for &object in objects.iter().filter(|&&object| wanted(object)) {
+            for dx in -radius..=radius {
+                for dy in -radius..=radius {
+                    if dx.abs().max(dy.abs()) != radius || (range == 1 && dx != 0 && dy != 0) {
+                        continue;
+                    }
+                    let (Some(x), Some(y)) = (
+                        object.at.x.checked_add_signed(dx as i16),
+                        object.at.y.checked_add_signed(dy as i16),
+                    ) else {
+                        continue;
+                    };
+                    let stand = TilePos {
+                        x,
+                        y,
+                        floor: object.at.floor,
+                    };
+                    if usable_from(stand, object) {
+                        stands.entry(stand).or_insert(object);
+                    }
+                }
+            }
+        }
+        stands
+    }
+
     async fn approach(
         client: &mut DevClientSession,
         world: &BundleWorld,
         objects: &[Object],
         wanted: impl Fn(Object) -> bool,
         range: u16,
+        usable_from: impl Fn(TilePos, Object) -> bool,
     ) -> TestResult<Object> {
         let from = tile(client.world_spatial().actor_position)?;
-        for &object in objects
-            .iter()
-            .filter(|object| wanted(**object) && distance(from, object.at) <= 160)
-        {
-            if let Some(path) = route(world, from, |at| {
-                distance(at, object.at) == range
-                    && (range != 1 || at.x == object.at.x || at.y == object.at.y)
-            }) {
-                walk(client, world, &path).await?;
-                return Ok(object);
-            }
-        }
-        Err("no reachable exact authored target within town budget".into())
+        let stands = approach_stands(objects, wanted, range, usable_from);
+        let path = route(world, from, |at| stands.contains_key(&at)).ok_or_else(|| {
+            format!(
+                "no reachable authored target within town budget from={from:?} candidate_stands={}",
+                stands.len()
+            )
+        })?;
+        walk(client, world, &path).await?;
+        let at = tile(client.world_spatial().actor_position)?;
+        stands
+            .get(&at)
+            .copied()
+            .ok_or_else(|| format!("route missed authored approach at {at:?}").into())
+    }
+
+    fn teleport_entry(world: &BundleWorld, from: TilePos, object: Object) -> Option<StepDirection> {
+        let ObjectKind::Teleport(to) = object.kind else {
+            return None;
+        };
+        DIRS.into_iter().find(|direction| {
+            let (dx, dy) = direction.delta();
+            i32::from(from.x) + dx == i32::from(object.at.x)
+                && i32::from(from.y) + dy == i32::from(object.at.y)
+                && from.floor == object.at.floor
+                && destination(world, from, *direction) == Some(to)
+        })
     }
 
     async fn m01(
@@ -313,10 +403,29 @@ mod e2ef1 {
         if spatial_basis::current(peer)? != basis {
             return Err("peer spatial basis differs from actor".into());
         }
-        let start = tile(client.world_spatial().actor_position)?;
-        let path = route(world, start, |at| distance(at, start) == 4)
-            .ok_or("no four-tile movement lane")?;
-        let first = *path.first().ok_or("empty movement lane")?;
+        let start = TOWN;
+        if !world
+            .base()
+            .tile(start.x, start.y, start.floor)
+            .is_some_and(|tile| tile.protection_zone())
+        {
+            return Err("town entry is not a protection-zone tile".into());
+        }
+        let peer_from = tile(peer.world_spatial().actor_position)?;
+        let peer_path = route(world, peer_from, |at| at == start).ok_or("peer town entry route")?;
+        with_peer_liveness(client, walk(peer, world, &peer_path)).await?;
+        let from = tile(client.world_spatial().actor_position)?;
+        let entry_path = route(world, from, |at| at == start).ok_or("actor town entry route")?;
+        with_peer_liveness(peer, walk(client, world, &entry_path)).await?;
+        let (first, next) = DIRS
+            .into_iter()
+            .find_map(|first| {
+                let adjacent = destination(world, start, first)?;
+                DIRS.into_iter()
+                    .find(|next| destination(world, adjacent, *next) == Some(start))
+                    .map(|next| (first, next))
+            })
+            .ok_or("no reversible temple movement edge")?;
         let moved = client.step(first).await?;
         if moved.disposition != StepDisposition::Moved
             || moved.world_spatial_delta.is_none()
@@ -325,21 +434,42 @@ mod e2ef1 {
         {
             return Err("paced first step did not reach its predicted landing".into());
         }
-        let next = *path.get(1).ok_or("short movement lane")?;
         let second_from = tile(client.world_spatial().actor_position)?;
+        let before_motion = own(client)?.motion.ok_or("actor motion forecast missing")?;
+        let forecast = before_motion.prewalk_ms[usize::from(next as u8 - 1)];
+        if forecast == 0 {
+            return Err("occupied temple tile has zero prewalk forecast".into());
+        }
         let paced_at = std::time::Instant::now();
         let moved = client.step(next).await?;
+        let after_motion = own(client)?.motion.ok_or("actor step motion missing")?;
+        let observed = after_motion.step_duration_ms;
         if moved.disposition != StepDisposition::Moved
             || moved.world_spatial_delta.is_none()
-            || Some(tile(client.world_spatial().actor_position)?)
-                != destination(world, second_from, next)
+            || destination(world, second_from, next) != Some(start)
+            || client.world_spatial().actor_position != peer.world_spatial().actor_position
+            || client.world_spatial().actor_position != position(start, basis)
+            || after_motion.translation_revision <= before_motion.translation_revision
+            || moved.step_wait_ms != forecast
+            || observed != forecast
         {
-            return Err("paced second step did not reach its predicted landing".into());
+            return Err(format!(
+                "paced step onto peer: forecast={forecast} observed={observed} step={moved:?}"
+            )
+            .into());
         }
         if paced_at.elapsed() < Duration::from_millis(40) {
             return Err("second immediate STEP bypassed the minimum server pacing beat".into());
         }
-        checks.pass("paced-step", (paced_at.elapsed(), client.world_spatial()));
+        checks.pass(
+            "paced-step",
+            (
+                forecast,
+                observed,
+                paced_at.elapsed(),
+                client.world_spatial(),
+            ),
+        );
         let here = tile(client.world_spatial().actor_position)?;
         let goal_path =
             route(world, here, |at| distance(at, here) == 4).ok_or("autowalk lane absent")?;
@@ -450,13 +580,13 @@ mod e2ef1 {
         checks: &mut Checks,
         revisions: &mut BTreeMap<(TilePos, u8), u64>,
     ) -> TestResult {
-        // 1638/1639 is a plain door family (not a key, level or quest door).
         let object = approach(
             client,
             world,
             objects,
-            |o| o.appearance == 1638 && world.facts().doors().at(o.at),
+            |o| o.kind == ObjectKind::Door(AuthoredClosedDoor::Plain),
             3,
+            |_, _| true,
         )
         .await?;
         let before = tile(client.world_spatial().actor_position)?;
@@ -487,7 +617,8 @@ mod e2ef1 {
         world: &BundleWorld,
         checks: &mut Checks,
     ) -> TestResult {
-        use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
+        use oteryn_dev_client::client_runtime::inventory::MoveRequest;
+        use oteryn_dev_client::{ItemMoveDestination, ItemMoveOutcome};
         use oteryn_protocol_oteryn::item_view::WorldTilePosition;
         let item = client
             .inventory()
@@ -498,13 +629,15 @@ mod e2ef1 {
             )?;
         let ground = client.world_spatial().actor_position;
         let dropped = client
-            .move_item(&ItemMoveIntent {
+            .session_mut()
+            .move_item_counted(MoveRequest {
                 source: item.handle,
                 destination: ItemMoveDestination::Ground(WorldTilePosition {
                     x: ground.x,
                     y: ground.y,
                     floor: ground.floor,
                 }),
+                count: None,
             })
             .await?;
         if dropped.outcome != ItemMoveOutcome::Moved {
@@ -550,9 +683,11 @@ mod e2ef1 {
         walk(client, world, &path).await?;
         let before = client.world_spatial().actor_position;
         let moved = client
-            .move_item(&ItemMoveIntent {
+            .session_mut()
+            .move_item_counted(MoveRequest {
                 source: handle,
                 destination: ItemMoveDestination::MainBackpack,
+                count: None,
             })
             .await?;
         if moved.outcome != ItemMoveOutcome::Moved
@@ -582,16 +717,16 @@ mod e2ef1 {
         use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
         let book = native_spell_book()?;
         let spell = book
-            .spoken("exevo flam hur")
-            .ok_or("aggressive spell content absent: flame wave")?
+            .spoken(FLOOR_EXHAUST_SPELL)
+            .ok_or("aggressive starter spell content absent: Scorch")?
             .spell;
         if !spell.aggressive {
-            return Err("flame wave is not aggressive".into());
+            return Err("Scorch is not aggressive".into());
         }
         let index = (1..=book.source_len())
             .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
             .find(|i| book.indexed(*i).is_some_and(|s| s.key == spell.key))
-            .ok_or("flame wave source index")?;
+            .ok_or("Scorch source index")?;
         let cooldown = Duration::from_micros(
             spell
                 .groups
@@ -612,10 +747,14 @@ mod e2ef1 {
                 let from = tile(client.world_spatial().actor_position)?;
                 let outside = |at: TilePos| world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone());
                 if teleport {
-                    let object = approach(client, world, objects, |o| world.floors().teleport(o.at).is_some_and(|to| to.floor != o.at.floor && outside(to)), 1).await?;
+                    let object = approach(
+                        client, world, objects,
+                        |o| matches!(o.kind, ObjectKind::Teleport(to) if to.floor != o.at.floor && outside(to)),
+                        1, |stand, o| teleport_entry(world, stand, o).is_some(),
+                    ).await?;
                     let at = tile(client.world_spatial().actor_position)?;
-                    let expected = world.floors().teleport(object.at).ok_or("teleport destination")?;
-                    let direction = DIRS.into_iter().find(|d| destination(world, at, *d) == Some(expected)).ok_or("no automatic teleport entry edge")?;
+                    let ObjectKind::Teleport(expected) = object.kind else { return Err("missing authored teleport".into()) };
+                    let direction = teleport_entry(world, at, object).ok_or("no automatic teleport entry edge")?;
                     walk(client, world, &[direction]).await?;
                     checks.pass("teleport", (object.at, expected));
                 } else {
@@ -932,17 +1071,19 @@ mod e2ef1 {
         checks: &mut Checks,
         revisions: &mut BTreeMap<(TilePos, u8), u64>,
     ) -> TestResult {
-        // Exact production registry families: plain 1638/1639 and key triple
-        // locked 1628, unlocked 1629, open 1630. No name/keyword classification.
         let mut families_ok = true;
-        for (appearance, case) in [(1638, "basic-door"), (1629, "unlocked-key-door")] {
+        for (kind, case) in [
+            (AuthoredClosedDoor::Plain, "basic-door"),
+            (AuthoredClosedDoor::KeyUnlocked, "unlocked-key-door"),
+        ] {
             let result: TestResult = async {
                 let object = approach(
                     client,
                     world,
                     objects,
-                    |o| o.appearance == appearance && world.facts().doors().at(o.at),
+                    |o| o.kind == ObjectKind::Door(kind),
                     1,
+                    |_, _| true,
                 )
                 .await?;
                 let revision = *revisions.get(&(object.at, object.ordinal)).unwrap_or(&0);
@@ -961,8 +1102,9 @@ mod e2ef1 {
             client,
             world,
             objects,
-            |o| o.appearance == 1628 && world.facts().doors().at(o.at),
+            |o| o.kind == ObjectKind::Door(AuthoredClosedDoor::KeyLocked),
             1,
+            |_, _| true,
         )
         .await?;
         let before = client.world_spatial().actor_position;
@@ -987,19 +1129,29 @@ mod e2ef1 {
         let reference = provisioning::item_reference(&index, 3003)?;
         let rope = client.inventory().and_then(|i| i.entries.iter().find(|entry| entry.item_definition_ref == reference)).copied().ok_or("FAIL: ordinarily acquired rope content:oteryn:item.tibia.i3003 absent; starter_grant.rs grants only a backpack; fixture provisioning forbidden for full evidence")?;
         checks.pass("carried-rope", rope);
-        // Production rope resolver's exact ground and top item source ids.
         let object = approach(
             client,
             world,
             objects,
-            |o| {
-                [
-                    386, 421, 7762, 12202, 12936, 14238, 17238, 21965, 21966, 21967, 21968, 23363,
-                    12935,
-                ]
-                .contains(&o.appearance)
-            },
+            |o| o.kind == ObjectKind::Rope,
             1,
+            |_, o| {
+                DIRS.into_iter().any(|direction| {
+                    let (dx, dy) = direction.delta();
+                    let (Some(x), Some(y)) = (
+                        o.at.x.checked_add_signed(dx as i16),
+                        o.at.y.checked_add_signed(dy as i16),
+                    ) else {
+                        return false;
+                    };
+                    let floor = o.at.floor + 1;
+                    world
+                        .base()
+                        .tile(x, y, floor)
+                        .is_some_and(|tile| tile.walkable())
+                        && world.enterable(TilePos { x, y, floor })
+                })
+            },
         )
         .await?;
         let intent = UseIntent {
@@ -1154,7 +1306,7 @@ mod e2ef1 {
         verdicts: &mut Verdicts,
     ) -> TestResult<DevClientSession> {
         let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-        let objects = objects(&bytes)?;
+        let objects = objects(world, &bytes)?;
         let origin = tile(client.world_spatial().actor_position)?;
         let mut failed = false;
         let mut revisions = BTreeMap::new();
@@ -1294,6 +1446,47 @@ mod e2ef1 {
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[test]
+        fn qualification_e2ef1_floor_exhaust_uses_a_served_starter_spell() -> TestResult {
+            let spell = native_spell_book()?
+                .spoken(FLOOR_EXHAUST_SPELL)
+                .ok_or("missing floor exhaust spell")?
+                .spell;
+            assert!(spell.aggressive);
+            assert_eq!(spell.level, 1);
+            assert!(spell.vocations.contains(&crate::spell::Vocation::Sorcerer));
+            assert!(!spell.learning_required && !spell.premium && !spell.needs_target);
+            Ok(())
+        }
+
+        #[test]
+        fn qualification_e2ef1_approach_can_select_authored_targets_on_another_floor() -> TestResult
+        {
+            let stand = TilePos {
+                floor: TOWN.floor - 1,
+                ..TOWN
+            };
+            let door = Object {
+                at: TilePos {
+                    x: stand.x + 1,
+                    ..stand
+                },
+                ordinal: 2,
+                kind: ObjectKind::Door(AuthoredClosedDoor::KeyLocked),
+            };
+            assert_eq!(distance(TOWN, door.at), u16::MAX);
+            let stands = approach_stands(&[door], |o| o.kind == door.kind, 1, |_, _| true);
+            let path = find_route(
+                TOWN,
+                |at| stands.contains_key(&at),
+                |at, direction| (at == TOWN && direction == StepDirection::North).then_some(stand),
+            )
+            .map_err(|visited| format!("visited {visited} tiles without finding authored stand"))?;
+            assert_eq!(path, [StepDirection::North]);
+            assert_eq!(stands[&stand].ordinal, door.ordinal);
+            Ok(())
+        }
+
         #[test]
         fn full_rows_require_every_named_action() {
             for (_, required) in ROWS {

@@ -137,61 +137,153 @@ fn store_launcher_opens_coin_history_and_transfer_pages_until_the_session_ends()
 }
 
 #[test]
-fn store_launcher_fresh_oauth_discards_pending_request() -> TestResult {
-    use crate::account_services::test_server::coins::PACKAGE;
-    use std::time::Instant;
-    test_thread(|| {
-        let stack = test_support::Stack::start(Vec::new())?;
-        let mock = MockPlatform::start()?;
-        mock.authority.lock().map_err(|_| "lock")?.coin_post_failure = Some(0);
-        let mut config = stack.config();
-        config.platform_url = mock.base.clone();
-        let (shown_tx, shown_rx) = mpsc::channel();
-        let steps = AtomicUsize::new(0);
-        config.coin_shop = Arc::new(move |view, _| {
-            let _ = shown_tx.send((view.pending(), format!("{view:?}")));
-            if steps.fetch_add(1, Ordering::SeqCst) == 0 {
-                Action::Purchase {
-                    package_id: PACKAGE.into(),
-                    confirmed: true,
-                }
-            } else {
-                Action::Back
+fn store_launcher_fresh_oauth_keeps_request_until_sign_out() -> TestResult {
+    test_thread(|| fresh_oauth(false))
+}
+
+#[test]
+fn store_launcher_fresh_oauth_releases_definitively_refused_request() -> TestResult {
+    test_thread(|| fresh_oauth(true))
+}
+
+fn fresh_oauth(refused: bool) -> TestResult {
+    use crate::account_services::test_server::coins::{CoinAuthority, EventKind, PACKAGE};
+    use std::sync::Mutex;
+    let stack = test_support::Stack::start(Vec::new())?;
+    let mock = MockPlatform::start()?;
+    let mut config = stack.config();
+    config.platform_url = mock.base.clone();
+    let device = config.device_sessions.clone();
+    let actions = Arc::new(Mutex::new(std::collections::VecDeque::new()));
+    let script = actions.clone();
+    let (tx, rx) = mpsc::channel();
+    config.coin_shop = Arc::new(move |view, _| {
+        assert!(tx.send(view.clone()).is_ok());
+        script
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .pop_front()
+            .unwrap_or(Action::Back)
+    });
+    let (done, finished) = mpsc::channel();
+    let launcher = Launcher::new(
+        config,
+        CHARACTER.into(),
+        Arc::new(move |_| {
+            let _ = done.send(());
+        }),
+        None,
+    );
+    let open =
+        |steps: Vec<Action>| -> Result<Vec<crate::coin_shop::View>, Box<dyn std::error::Error>> {
+            actions.lock().map_err(|_| "script")?.extend(steps);
+            let deadline = std::time::Instant::now() + Duration::from_secs(5);
+            while !launcher.can_start() && std::time::Instant::now() < deadline {
+                std::thread::yield_now();
             }
-        });
-        let (done_tx, done_rx) = mpsc::channel();
-        let launcher = Launcher::new(
-            config,
-            CHARACTER.into(),
-            Arc::new(move |_| {
-                let _ = done_tx.send(());
-            }),
-            None,
-        );
-        assert!(launcher.start());
-        for expected in [false, true] {
-            let (pending, debug) = shown_rx.recv_timeout(Duration::from_secs(5))?;
-            assert_eq!(pending, expected);
-            assert!(!debug.contains("services-test-token-"));
+            assert!(launcher.start());
+            finished.recv_timeout(Duration::from_secs(5))?;
+            Ok(rx.try_iter().collect())
+        };
+    let purchase = || Action::Purchase {
+        package_id: PACKAGE.into(),
+        confirmed: true,
+    };
+    let posts = || -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        let state = mock.authority.lock().map_err(|_| "lock")?;
+        state
+            .requests
+            .iter()
+            .filter(|r| r.starts_with("POST /api/v1/native-account/coin-purchases/orders "))
+            .map(|r| {
+                let (_, body) = r.split_once("\r\n\r\n").ok_or("missing body")?;
+                let value: serde_json::Value = serde_json::from_str(body)?;
+                Ok(value["request_id"].as_str().ok_or("missing id")?.to_owned())
+            })
+            .collect()
+    };
+    if refused {
+        mock.authority.lock().map_err(|_| "lock")?.coin_post_failure = Some(409);
+    } else {
+        mock.with_coins(|coins| {
+            coins.drop_after_create = true;
+            coins.hide_recent_orders = true;
+        })?;
+    }
+    let first = open(vec![purchase()])?;
+    let original = posts()?.pop().ok_or("original POST")?;
+    assert!(
+        first
+            .last()
+            .ok_or("pending")?
+            .status_text()
+            .contains(&original)
+    );
+    if refused {
+        let fresh = open(vec![Action::Retry, purchase()])?;
+        assert!(!format!("{fresh:?}").contains(&original));
+        let requests = posts()?;
+        assert_eq!(requests.len(), 2);
+        assert_ne!(requests[1], original);
+        let status = format!("GET /api/v1/native-account/coin-purchases/requests/{original} ");
+        {
+            let state = mock.authority.lock().map_err(|_| "lock")?;
+            let lookup = state
+                .requests
+                .iter()
+                .position(|r| r.starts_with(&status))
+                .ok_or("original grant status lookup")?;
+            let reauth = state
+                .requests
+                .iter()
+                .rposition(|r| r.starts_with("POST /oauth/token "))
+                .ok_or("fresh authorization")?;
+            assert!(lookup < reauth);
         }
-        done_rx.recv_timeout(Duration::from_secs(5))?;
-        let deadline = Instant::now() + Duration::from_secs(5);
-        while !launcher.can_start() && Instant::now() < deadline {
-            std::thread::yield_now();
+        assert_eq!(mock.with_coins(|c| c.creations)?, 1);
+        return Ok(());
+    }
+
+    // Give the second sign-in an independent wallet and order listing.
+    let mut other = CoinAuthority::new(mock.base.clone())?;
+    other.balance.total_coins = 2000;
+    mock.authority
+        .lock()
+        .map_err(|_| "lock")?
+        .coin_wallets_by_grant
+        .insert(2, other);
+    for total in [2000, 1000] {
+        let fresh = open(vec![Action::Retry, purchase()])?;
+        assert_eq!(fresh.len(), 3);
+        for view in fresh {
+            assert_eq!(view.balance.as_ref().map(|b| b.total_coins), Some(total));
+            assert!(!view.status_text().contains(&original));
+            assert!(!format!("{view:?}").contains(&original));
+            assert!(!view.can_retry());
+            assert!(!view.can_purchase(PACKAGE));
         }
-        assert!(launcher.start());
-        let (pending, debug) = shown_rx.recv_timeout(Duration::from_secs(5))?;
-        assert!(
-            !pending,
-            "Store reopened with state from the previous OAuth"
-        );
-        assert!(!debug.contains("services-test-token-"));
-        assert!(!format!("{launcher:?}").contains("services-test-token-"));
-        done_rx.recv_timeout(Duration::from_secs(5))?;
-        assert_eq!(
-            mock.authority.lock().map_err(|_| "lock")?.oauth_exchanges,
-            2
-        );
-        Ok(())
-    })
+        assert_eq!(posts()?, vec![original.clone()]);
+    }
+    let order = mock
+        .with_coins(|coins| coins.orders.get(&original).map(|(_, order)| order.clone()))?
+        .ok_or("unlisted order")?;
+    let (body, signature) = mock.signed_event(&order, EventKind::Paid)?;
+    assert_eq!(mock.webhook(&body, &signature)?, 200);
+    mock.with_coins(|coins| coins.hide_recent_orders = false)?;
+    let reconciled = open(Vec::new())?;
+    let view = reconciled.first().ok_or("reconciled")?;
+    assert_eq!(view.order.as_ref().map(|o| &o.request_id), Some(&original));
+    assert!(view.order.as_ref().is_some_and(|o| o.state.completed()));
+    assert!(view.can_purchase(PACKAGE));
+    assert!(!view.pending());
+    assert_eq!(posts()?, vec![original.clone()]);
+    assert!(!format!("{view:?}{launcher:?}").contains("services-test-token-"));
+    mock.runtime.block_on(device.sign_out(&mock.client()?))?;
+    mock.with_coins(|coins| coins.hide_recent_orders = true)?;
+    assert!(!format!("{:?}", open(Vec::new())?).contains(&original));
+    assert_eq!(
+        mock.authority.lock().map_err(|_| "lock")?.oauth_exchanges,
+        5
+    );
+    Ok(())
 }

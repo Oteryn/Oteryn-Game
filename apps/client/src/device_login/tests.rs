@@ -31,6 +31,7 @@ fn manager(vault: Arc<MemoryVault>, folder: PathBuf) -> DeviceLogin {
         forget_requested: Default::default(),
         journal: super::test_server::journal(Some(folder.clone())),
         vault,
+        commerce: Default::default(),
         state: Default::default(),
         folder: Some(folder),
     }
@@ -415,65 +416,7 @@ fn sign_out_stays_failed_until_it_can_lock_and_clear_the_vault() -> TestResult {
     })
 }
 
-#[test]
-fn review_3376_second_client_cannot_consume_a_process_session_revocation() -> TestResult {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-            let mut enrollment: serde_json::Value =
-                serde_json::from_slice(&enrollment_response()?)?;
-            let deadline = now()? + 3600;
-            enrollment["absolute_expires_at"] = deadline.into();
-            enrollment["idle_expires_at"] = deadline.into();
-            let server = Server::start(vec![
-                (
-                    200,
-                    br#"{"token_type":"Bearer","access_token":"synthetic-access"}"#.to_vec(),
-                ),
-                (200, serde_json::to_vec(&enrollment)?),
-                (200, fixture("revoke-response.json")?),
-            ])
-            .await?;
-            let root = tempfile::tempdir()?;
-            let a = manager(Arc::new(MemoryVault::default()), root.path().into());
-            let b = manager(Arc::new(MemoryVault::default()), root.path().into());
-            let mode = MiscellaneousPreferences {
-                remember_device: false,
-                ..options()
-            };
-            let token = server
-                .client
-                .exchange_code(
-                    "code",
-                    "verifier",
-                    "http://127.0.0.1/callback",
-                    CancellationToken::new(),
-                )
-                .await?;
-            {
-                let mut attempt = a
-                    .begin(&server.client, mode, CancellationToken::new())
-                    .await?
-                    .ok_or("attempt")?;
-                attempt
-                    .enroll(&server.client, &token, CancellationToken::new())
-                    .await?;
-            }
-            a.block_remembered()?;
-            drop(
-                b.begin(&server.client, mode, CancellationToken::new())
-                    .await?,
-            );
-            a.finish_sign_out(&server.client).await?;
-            assert_eq!(
-                server.requests.lock().map_err(|_| "requests")?.len(),
-                3,
-                "the initiating credential must be sent"
-            );
-            server.finish().await
-        })
-}
+mod cancellation;
 
 #[test]
 fn refused_device_ticket_authorizes_same_character_and_channel_in_browser() -> TestResult {
@@ -593,3 +536,54 @@ fn device_ticket_falls_back(case: TicketFailure) -> TestResult {
     })
 }
 mod expiry;
+
+#[test]
+fn cancel_during_rotation_replays_family_after_exit() -> TestResult {
+    on_large_stack(|| tokio::runtime::Runtime::new()?.block_on(cancel_blocked_rotation()))
+}
+
+async fn cancel_blocked_rotation() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let vault = Arc::new(MemoryVault::default());
+    let bytes = enrollment_response()?;
+    let family = DeviceSession::from_vault(&bytes, now()?)?.device_credential;
+    vault::Vault::write(vault.as_ref(), &bytes).map_err(std::io::Error::other)?;
+    let login = || manager(vault.clone(), folder.path().to_owned());
+    let (_release, blocked) = tokio::sync::oneshot::channel();
+    let server =
+        Server::start_with_blocked_ack(changed_response(&credential('A'), false)?, blocked).await?;
+    {
+        let first = login();
+        let mut attempt = first
+            .begin(&server.client, options(), CancellationToken::new())
+            .await?
+            .ok_or("attempt")?;
+        let rotation = attempt.characters(&server.client, CancellationToken::new());
+        tokio::pin!(rotation);
+        tokio::select! {
+            _ = &mut rotation => return Err("rotation finished before acknowledgement".into()),
+            result = tokio::time::timeout(Duration::from_secs(2), async {
+                while server.requests.lock().map_err(|_| "requests")?.is_empty() {
+                    tokio::task::yield_now().await;
+                }
+                Ok::<_, &str>(())
+            }) => result??,
+        }
+        first.block_remembered()?;
+    }
+    let restored = Server::start(vec![(200, fixture("revoke-response.json")?)]).await?;
+    let restarted = login();
+    let attempt = restarted
+        .begin(&restored.client, options(), CancellationToken::new())
+        .await?;
+    assert!(!attempt.is_some_and(|attempt| attempt.has_session()));
+    assert!(
+        restored
+            .requests
+            .lock()
+            .map_err(|_| "requests")?
+            .iter()
+            .any(|request| request.contains(family.expose()))
+    );
+    restored.finish().await
+}

@@ -11,12 +11,13 @@ impl DeviceLogin {
     pub(crate) fn block_remembered(&self) -> Result<(), NativeLoginError> {
         let process = self.journal.record_process_intent()?;
         if !process && let Some(path) = self.intent_path() {
-            crate::atomic_file::replace(
-                &path, b"revoke
-", true,
-            )
-            .map_err(|_| storage_error())?;
-            self.sync_intent_directory()?;
+            if let Some(bytes) = self.vault.read().map_err(|_| storage_error())?
+                && bytes.len() <= 1024
+                && let Ok(session) = serde_json::from_slice::<DeviceSession>(&bytes)
+            {
+                self.journal.stage(&session.device_credential)?;
+            }
+            crate::atomic_file::publish_durable(&path, b"revoke\n").map_err(|_| storage_error())?;
         }
         self.forget_requested.store(true, Ordering::Release);
         Ok(())
