@@ -1,4 +1,5 @@
 //! Capability-57 exploration: confirmed area/subarea footprints and visible POIs.
+mod terrain;
 use super::{GameModal, modal::ModalGuard};
 use crate::bevy_shell::{
     owner::{HostOwner, Phase},
@@ -14,6 +15,8 @@ use oteryn_client_ui_bevy as source;
 
 #[derive(Resource, Default)]
 struct State {
+    surface: bool,
+    faded: u8,
     generation: u64,
     root: Option<Entity>,
     snapshot: Option<Panel>,
@@ -32,6 +35,8 @@ struct Action {
 struct Donation;
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
+    Surface,
+    Opacity,
     Atlas(usize),
     Explore(Intent),
     /// Cycles the floors present in the confirmed exploration result and region atlas.
@@ -43,7 +48,8 @@ enum Kind {
 
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
-        .add_systems(Update, project)
+        .init_resource::<terrain::Cache>()
+        .add_systems(Update, (project, terrain::project).chain())
         .add_systems(PostUpdate, donate.after(bevy::text::EditableTextSystems));
 }
 fn activate(
@@ -71,6 +77,14 @@ fn activate(
         return;
     }
     match action.kind {
+        Kind::Surface => {
+            state.surface = !state.surface;
+            state.snapshot = None;
+        }
+        Kind::Opacity => {
+            state.faded = (state.faded + 25) % 125;
+            state.snapshot = None;
+        }
         Kind::Close => play.link.cyclopedia_atlas_close(),
         Kind::Atlas(index) => play.link.cyclopedia_atlas_action(index),
         Kind::Floor { previous } => play.link.cyclopedia_map_floor(previous),
@@ -175,6 +189,8 @@ fn project(
         remove_root(&mut state, &mut commands, &mut focus, &parents);
         state.snapshot = None;
         state.donate = None;
+        state.surface = false;
+        state.faded = 0;
         state.generation = owner.generation();
     }
     let Some(panel) = panel else {
@@ -220,6 +236,14 @@ fn project(
         ))
         .id();
     label(&mut commands, &skins, root, "Cyclopedia Map");
+    use crate::bevy_shell::game_ui::cyclopedia_navigation::{Subject, bar};
+    bar(
+        &mut commands,
+        &skins,
+        root,
+        owner.generation(),
+        Subject::Map,
+    );
     let bar = commands
         .spawn(Node {
             flex_wrap: FlexWrap::Wrap,
@@ -228,6 +252,24 @@ fn project(
         .id();
     commands.entity(root).add_child(bar);
     for (caption, kind) in [
+        (
+            if state.surface {
+                "Surface view"
+            } else {
+                "Map view"
+            },
+            Kind::Surface,
+        ),
+        (
+            [
+                "Background floors: 100%",
+                "Background floors: 75%",
+                "Background floors: 50%",
+                "Background floors: 25%",
+                "Background floors: 0%",
+            ][usize::from(state.faded / 25)],
+            Kind::Opacity,
+        ),
         ("Regions", Kind::Atlas(0)),
         ("Previous area", Kind::Atlas(1)),
         ("Next area", Kind::Atlas(2)),
@@ -321,6 +363,23 @@ fn project(
         ))
         .id();
     commands.entity(root).add_child(canvas);
+    if let Some(bounds) = panel.geometry.bounds {
+        commands.spawn((
+            ChildOf(canvas),
+            terrain::Terrain {
+                bounds,
+                floor: panel.geometry.floor,
+                surface: state.surface,
+                opacity: 100 - state.faded,
+            },
+            Node {
+                position_type: PositionType::Absolute,
+                width: px(640.),
+                height: px(480.),
+                ..default()
+            },
+        ));
+    }
     let colors = [
         Color::srgb(0.25, 0.45, 0.3),
         Color::srgb(0.4, 0.4, 0.6),
@@ -341,7 +400,7 @@ fn project(
                     height: px(h as f32),
                     ..default()
                 },
-                BackgroundColor(colors[usize::from(rect.color)]),
+                BackgroundColor(colors[usize::from(rect.color)].with_alpha(0.32)),
             ))
             .id();
         commands.entity(canvas).add_child(cell);

@@ -167,6 +167,12 @@ fn cyclopedia_map_bevy_browses_subareas_and_submits_poi_exploration()
         .map_err(|e| format!("{e:?}"))?,
     );
     app.update();
+    click(&mut app, Kind::Surface)?;
+    assert!(has_text(&mut app, "Surface view"));
+    click(&mut app, Kind::Opacity)?;
+    assert!(has_text(&mut app, "Background floors: 75%"));
+    click(&mut app, Kind::Surface)?;
+    assert!(has_text(&mut app, "Map view"));
     click(&mut app, Kind::Explore(Intent::Start))?;
     let start = receive(&mut rx)?;
     assert_eq!(

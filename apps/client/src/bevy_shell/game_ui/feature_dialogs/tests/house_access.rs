@@ -157,7 +157,9 @@ fn house_window_action_with_map(
     } else {
         None
     };
-    if map_during_read {
+    if caption == "Catalogue filters" {
+        link.bevy_house_browser_fixture();
+    } else if map_during_read {
         link.bevy_house_map_fixture();
     } else {
         link.bevy_house_list_fixture();
@@ -249,7 +251,7 @@ fn house_window_action_with_map(
         .release(KeyCode::AltLeft);
     press_h(&mut app);
     for expected in [
-        if map_during_read {
+        if map_during_read || caption == "Catalogue filters" {
             "Edit House List — Home"
         } else {
             "Edit House List — oteryn:house.test"
@@ -271,6 +273,49 @@ fn house_window_action_with_map(
             .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
             .ok_or("house button")
     };
+    if caption == "Catalogue filters" {
+        let projection = |app: &mut App| {
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .find(|t| t.0.contains("End of catalogue"))
+                .map(|t| t.0.clone())
+                .ok_or("catalogue")
+        };
+        for (caption, present, absent) in [
+            ("Guildhalls", "Harbour Home", "Cellar Flat"),
+            ("Houses and flats", "Cellar Flat", "Harbour Home"),
+            ("Rented", "Cellar Flat", "Harbour Home"),
+            ("Auctioned", "Home —", "Cellar Flat"),
+        ] {
+            let entity = button(&mut app, caption)?;
+            app.world_mut()
+                .trigger(bevy::ui_widgets::Activate { entity });
+            app.update();
+            app.update();
+            let text = projection(&mut app)?;
+            assert!(
+                text.contains(present) && !text.contains(absent),
+                "{caption}: {text}"
+            );
+        }
+        for (caption, first, last) in [
+            ("All statuses", "", ""),
+            ("Sort by name", "Cellar Flat", "Home —"),
+            ("Sort by area", "Home —", "Cellar Flat"),
+        ] {
+            let entity = button(&mut app, caption)?;
+            app.world_mut()
+                .trigger(bevy::ui_widgets::Activate { entity });
+            app.update();
+            app.update();
+            if !first.is_empty() {
+                let text = projection(&mut app)?;
+                assert!(text.find(first).ok_or("first")? < text.find(last).ok_or("last")?);
+            }
+        }
+        return Ok(());
+    }
     let save = button(
         &mut app,
         if caption == "Handoff" {
@@ -748,4 +793,9 @@ fn entrance_map_keeps_the_edit_row_bound_while_a_bid_is_pending() -> TestResult 
     );
     assert_eq!(selected.model.index, 0);
     Ok(())
+}
+
+#[test]
+fn house_type_status_name_and_area_controls_preserve_original_row_numbers() -> TestResult {
+    house_window_action("Catalogue filters", 2, "")
 }

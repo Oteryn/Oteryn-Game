@@ -7,6 +7,7 @@ use oteryn_client_runtime::{
 pub enum Intent {
     Catalogue,
     CatalogueNext,
+    CataloguePrevious,
     CatalogueRefresh,
     Refresh,
     Next,
@@ -58,20 +59,27 @@ pub fn request(panel: &mut BossEncounterPanel, intent: Intent) -> Option<Feature
     }
     if matches!(
         intent,
-        Intent::Catalogue | Intent::CatalogueNext | Intent::CatalogueRefresh
+        Intent::Catalogue
+            | Intent::CatalogueNext
+            | Intent::CataloguePrevious
+            | Intent::CatalogueRefresh
     ) {
         let mut query = boss_encounter::catalogue::Query {
             after: 0,
             category: panel.browser_category.server_filter(),
             search: panel.browser_search.trim().into(),
         };
-        if matches!(intent, Intent::CatalogueNext | Intent::CatalogueRefresh)
-            && let Some(previous) = panel.catalogue_query.as_ref()
+        if matches!(
+            intent,
+            Intent::CatalogueNext | Intent::CataloguePrevious | Intent::CatalogueRefresh
+        ) && let Some(previous) = panel.catalogue_query.as_ref()
             && previous.category == query.category
             && previous.search == query.search
         {
             query.after = if intent == Intent::CatalogueNext {
                 panel.catalogue.as_ref()?.next?
+            } else if intent == Intent::CataloguePrevious {
+                *panel.catalogue_history.last()?
             } else {
                 previous.after
             };
@@ -176,8 +184,28 @@ pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult)
                 .boss_names
                 .insert(entry.key.clone(), entry.name.clone());
         }
+        if query.after == 0 {
+            panel.catalogue_history.clear();
+        } else if panel.catalogue_history.last() == Some(&query.after) {
+            panel.catalogue_history.pop();
+        } else if let Some(previous) = &panel.catalogue_query
+            && previous.category == query.category
+            && previous.search == query.search
+            && previous.after < query.after
+        {
+            panel.catalogue_history.push(previous.after);
+        }
         panel.catalogue = Some(page);
         panel.catalogue_query = Some(query);
+        if !super::catalogue_cards(panel)
+            .iter()
+            .any(|e| e.key == panel.fields[0])
+        {
+            panel.fields[0] = super::catalogue_cards(panel)
+                .first()
+                .map(|e| e.key.clone())
+                .unwrap_or_default();
+        }
         panel.feedback = None;
         return true;
     }

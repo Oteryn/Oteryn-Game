@@ -238,6 +238,21 @@ fn cyclopedia_renders_item_and_appearance_names_from_replies() -> TestResult {
                 && row.contains("Inventory: 1")
                 && row.contains("Inbox: 4"))
     );
+    click(&mut app, Kind::HoldingsLayout)?;
+    assert!(
+        app.world_mut()
+            .query::<(&Name, &Node)>()
+            .iter(app.world())
+            .any(|(name, node)| name.as_str() == "cyclopedia.holdings"
+                && node.display == Display::Grid)
+    );
+    assert!(
+        texts(&mut app)
+            .iter()
+            .any(|row| row.contains("oteryn:item/sword"))
+    );
+    click(&mut app, Kind::HoldingsLayout)?;
+    assert!(commands.try_recv().is_err());
     click(
         &mut app,
         Kind::Tab(Tab::Character(CharacterTab::Appearances)),
@@ -458,3 +473,83 @@ fn cyclopedia_familiar_page_is_reachable_and_distinguishes_catalogue_from_unlock
 }
 
 include!("holdings_cases.rs");
+
+#[test]
+fn character_stat_shortcuts_open_wheel_and_blessings() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    click(&mut app, Kind::Wheel)?;
+    let owner = app.world().non_send::<HostOwner>();
+    assert!(owner.play.as_ref().ok_or("play")?.link.wheel_panel().open);
+    let (mut app, mut commands, outbox) = fixture()?;
+    app.init_resource::<super::hud::EquipmentWidget>();
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    click(&mut app, Kind::Tab(Tab::Character(CharacterTab::Defence)))?;
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    click(&mut app, Kind::Blessings)?;
+    assert!(
+        app.world()
+            .resource::<super::hud::EquipmentWidget>()
+            .blessings
+    );
+    Ok(())
+}
+
+#[test]
+fn general_stats_opens_store_filtered_to_xp_boosts() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    outbox.bevy_store_initialize();
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    click(&mut app, Kind::XpBoost)?;
+    let owner = app.world().non_send::<HostOwner>();
+    let panel = owner.play.as_ref().ok_or("play")?.link.store_panel();
+    assert!(panel.open);
+    assert_eq!(panel.browser.search, "XP Boost");
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::ServerMechanic(_)
+    ));
+    Ok(())
+}
+
+#[test]
+fn subject_navigation_opens_items_and_returns_to_character() -> TestResult {
+    use super::cyclopedia_navigation::{Destination, Subject, SubjectButton};
+    let (mut app, mut commands, outbox) = fixture()?;
+    super::cyclopedia_items::install(&mut app);
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    for (from, to) in [
+        (Subject::Character, Destination::Open(Subject::Items)),
+        (Subject::Items, Destination::Back),
+    ] {
+        let entity = app
+            .world_mut()
+            .query::<(Entity, &SubjectButton)>()
+            .iter(app.world())
+            .find_map(|(entity, b)| (b.from == from && b.to == to).then_some(entity))
+            .ok_or("subject link")?;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        assert_eq!(
+            link.inspection_panel().catalogue_open,
+            from == Subject::Character
+        );
+        assert_eq!(
+            link.cyclopedia_character_panel().open,
+            from == Subject::Items
+        );
+    }
+    Ok(())
+}

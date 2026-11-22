@@ -356,6 +356,7 @@ mod activity;
 
 #[cfg(bevy_shell)]
 impl crate::play::Outbox {
+    pub(crate) fn bevy_analyser_initialize(&self) {self.analyser_initialize(true);}
     pub(crate) fn bevy_analyser_catalogue_result(
         &self,
         result: &oteryn_session::GatedCommandResult,

@@ -349,9 +349,11 @@ fn project(
             Kind::Look => panel.selected && state.selection.is_some(),
             Kind::SellAll => {
                 panel.selected
-                    && state
-                        .selection
-                        .is_some_and(|quote| quote.side == NpcTradeSide::Sell && quote.count == 1)
+                    && state.selection.is_some_and(|quote| {
+                        quote.side == NpcTradeSide::Sell
+                            && quote.count == 1
+                            && !panel.sale_exclusions.contains(&quote.item)
+                    })
             }
             Kind::Trade => {
                 panel.live.selected

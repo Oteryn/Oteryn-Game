@@ -16,6 +16,14 @@ impl PlayLink {
         );
     }
 
+    pub fn boss_visibility_toggle(&self, rarity: bool, bit: u8) {
+        let panel = &mut lock(&self.mailbox).boss_encounter;
+        if panel.pending || !panel.selected || bit > 4 { return; }
+        if rarity { panel.hidden_rarities ^= 1 << bit; } else { panel.hidden_stages ^= 1 << bit; }
+        if !oteryn_client_ui::boss_encounter::catalogue_cards(panel).iter().any(|e| e.key == panel.fields[0]) {
+            panel.select_boss(false);
+        }
+    }
     pub fn boss_slot_select_boss(&self, previous: bool) {
         lock(&self.mailbox)
             .boss_encounter

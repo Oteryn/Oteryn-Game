@@ -73,6 +73,10 @@ fn catalogue_window() -> Result<CatalogueWindow, Box<dyn std::error::Error>> {
                     name: "Confirmed sword".into(),
                     attributes: vec![
                         ("Attack".into(), "30".into()),
+                        ("Classification".into(), "2".into()),
+                        ("Body Position".into(), "both hands".into()),
+                        ("Professions".into(), "druid".into()),
+                        ("Required Level".into(), "50".into()),
                         ("Catalogue next".into(), "42".into()),
                         ("Catalogue categories".into(), "Weapons".into()),
                         ("Category".into(), "Weapons".into()),
@@ -481,5 +485,88 @@ fn catalogue_search_can_acquire_focus() -> TestResult {
         .query_filtered::<Entity, With<Search>>()
         .single(world)?;
     crate::bevy_shell::ui::assert_editor_acquires_focus(world, field);
+    Ok(())
+}
+
+#[test]
+fn selected_item_reaches_quick_loot_lists_and_container_manager() -> TestResult {
+    use oteryn_client_ui::quick_loot::{Action as LootAction, QuickLootFilterMode};
+    let (mut app, link, mut receiver, outbox) = catalogue_window()?;
+    outbox.bevy_quick_loot_selected(true);
+    click(&mut app, Action::Select(42))?;
+    click(&mut app, Action::LootFilter(QuickLootFilterMode::Skip))?;
+    assert!(matches!(
+        receiver.try_recv()?,
+        PlayCommand::ServerMechanic(_)
+    ));
+    assert_eq!(
+        link.quick_loot_panel().pending,
+        Some(LootAction::Add {
+            mode: QuickLootFilterMode::Skip,
+            definition: 42,
+        })
+    );
+    click(&mut app, Action::ManageLoot)?;
+    assert!(link.quick_loot_panel().open);
+    assert!(!link.inspection_panel().catalogue_open);
+    Ok(())
+}
+
+#[test]
+fn item_equipment_filters_match_confirmed_attributes_and_player_stats() -> TestResult {
+    use oteryn_client_runtime::cyclopedia_character::{GeneralStats, TabExtension, TabView};
+    let (mut app, _, mut receiver, outbox) = catalogue_window()?;
+    outbox.bevy_cyclopedia_initialize(true, true, true);
+    let selectable = |app: &mut App| {
+        app.world_mut()
+            .query::<&Control>()
+            .iter(app.world())
+            .any(|c| c.action == Action::Select(42))
+    };
+    click(&mut app, Action::Hands)?;
+    assert!(!selectable(&mut app));
+    click(&mut app, Action::Hands)?;
+    assert!(selectable(&mut app));
+    click(&mut app, Action::Class)?;
+    assert!(!selectable(&mut app));
+    click(&mut app, Action::Class)?;
+    click(&mut app, Action::Class)?;
+    assert!(selectable(&mut app));
+    click(&mut app, Action::Level)?;
+    assert!(matches!(receiver.try_recv()?, PlayCommand::Feature(c) if c.capability == 199));
+    outbox.bevy_cyclopedia_result(&oteryn_client_runtime::raw_feature::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_client_runtime::raw_feature::CommandStatus::Accepted,
+        payload: TabView::GeneralStats(GeneralStats {
+            level: 40,
+            ..Default::default()
+        })
+        .encode_extended(&TabExtension {
+            vocation_id: Some(6),
+            deaths: None,
+        })
+        .map_err(|_| "stats")?,
+    });
+    app.update();
+    assert!(!selectable(&mut app));
+    click(&mut app, Action::Level)?;
+    assert!(selectable(&mut app));
+    click(&mut app, Action::Vocation)?;
+    assert!(!selectable(&mut app));
+    Ok(())
+}
+
+#[test]
+fn selected_item_tracks_drops_and_excludes_quick_sales() -> TestResult {
+    let (mut app, link, _, outbox) = catalogue_window()?;
+    outbox.bevy_analyser_initialize();
+    click(&mut app, Action::Select(42))?;
+    click(&mut app, Action::Track)?;
+    assert!(link.analyser_panel().loot_tracked.contains(&42));
+    click(&mut app, Action::ExcludeSale)?;
+    assert!(link.npc_shop_panel().sale_exclusions.contains(&42));
+    click(&mut app, Action::Track)?;
+    assert!(!link.analyser_panel().loot_tracked.contains(&42));
     Ok(())
 }

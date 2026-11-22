@@ -11,6 +11,24 @@ impl PlayLink {
     pub fn item_catalogue_set_open(&self, open: bool) {
         lock(&self.mailbox).discovery.inspection.catalogue_open = open;
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn catalogue_loot_options(&self, id: Option<u32>) -> (bool,bool,bool) {
+        let mailbox=lock(&self.mailbox);
+        (mailbox.analyser.selected,id.is_some_and(|id|mailbox.analyser.loot_tracked.contains(&id)),id.is_some_and(|id|mailbox.npc_shop.sale_exclusions.contains(&id)))
+    }
+    #[cfg(bevy_shell)]
+    pub(crate) fn catalogue_loot_preference(&self, id:u32, tracking:bool, enabled:bool) {
+        let mut mailbox=lock(&self.mailbox);
+        let panel=&mailbox.discovery.inspection;
+        if !panel.catalogue_open || !panel.selected || panel.pending || panel.catalogue_definition.parse()!=Ok(id) || !panel.catalogue.contains_key(&id) {return}
+        if tracking {
+            if mailbox.analyser.selected {oteryn_client_ui::analyser::tracking::select_confirmed(&mut mailbox.analyser,id,enabled);}
+        } else if enabled {
+            mailbox.npc_shop.sale_exclusions.insert(id);
+        } else {
+            mailbox.npc_shop.sale_exclusions.remove(&id);
+        }
+    }
     pub fn item_catalogue_select(&self, definition: u32) {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.discovery.inspection;

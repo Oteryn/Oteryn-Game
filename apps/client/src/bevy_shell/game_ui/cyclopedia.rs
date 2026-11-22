@@ -128,6 +128,10 @@ pub(super) enum Kind {
     /// Toggles the public visibility of one of the player's own earned badges.
     BadgeVisibility(u8),
     Encyclopedia,
+    Wheel,
+    XpBoost,
+    Blessings,
+    HoldingsLayout,
     HoldingsFilter,
     HoldingsLocation(Option<oteryn_client_runtime::cyclopedia_character::items::Location>),
     Tab(Tab),
@@ -143,6 +147,7 @@ struct State {
     generation: u64,
     serial: u64,
     tab: Tab,
+    grid: bool,
     snapshot: Option<CyclopediaCharacterPanel>,
     /// Shown tab's request that the retained builder refused; resent once it accepts.
     unsent: Option<Intent>,
@@ -151,7 +156,8 @@ struct State {
 }
 pub(super) fn install(app: &mut App) {
     artwork::install(app);
-    app.init_resource::<State>()
+    app.init_resource::<super::cyclopedia_navigation::History>()
+        .init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(Update, (keyboard, project).chain())
         .add_systems(
@@ -194,6 +200,7 @@ fn project(
         state.unsent = None;
         state.generation = owner.generation();
         state.tab = Tab::default();
+        state.grid = false;
     }
     let Some(mut panel) = panel else {
         return;
@@ -237,6 +244,7 @@ fn project(
     };
     state.serial = serial;
     let tab = state.tab;
+    let grid = state.grid;
     let control = Control {
         generation: state.generation,
         serial,
@@ -257,11 +265,17 @@ fn project(
         widgets.panel,
         control,
         tab,
+        grid,
         &panel,
     ));
     state.snapshot = Some(panel);
 }
-fn perform(owner: &HostOwner, state: &mut State, control: Control) {
+fn perform(
+    owner: &HostOwner,
+    state: &mut State,
+    control: Control,
+    widget: Option<&mut super::hud::EquipmentWidget>,
+) {
     if control.generation != owner.generation()
         || control.serial != state.serial
         || owner.modal_active()
@@ -301,6 +315,37 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
             state.tab = tab;
             tab.intent()
         }
+        Kind::HoldingsLayout if state.tab == Tab::Items => {
+            state.grid = !state.grid;
+            state.snapshot = None;
+            return;
+        }
+        Kind::XpBoost if state.tab == Tab::General => {
+            let store = play.link.store_panel();
+            if store.selected && !store.pending && store.confirmed_purchase.is_none() {
+                play.link.store_browse("featured", "XP Boost", 0, 0);
+                play.link.store_set_open(true);
+                play.link.window_toggle(WINDOW, &[]);
+            }
+            return;
+        }
+        Kind::Wheel if state.tab == Tab::General => {
+            play.link.window_toggle(WINDOW, &[]);
+            play.link.open_wheel();
+            return;
+        }
+        Kind::Blessings
+            if matches!(
+                state.tab,
+                Tab::Character(CharacterTab::Defence | CharacterTab::Offence)
+            ) =>
+        {
+            if let Some(widget) = widget {
+                widget.blessings = true;
+                play.link.window_toggle(WINDOW, &[]);
+            }
+            return;
+        }
         Kind::Refresh => state.tab.intent(),
         Kind::Previous => {
             let Some(intent) = state.tab.page(false) else {
@@ -316,6 +361,10 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
         }
         Kind::BadgeVisibility(_)
         | Kind::Close
+        | Kind::XpBoost
+        | Kind::Wheel
+        | Kind::Blessings
+        | Kind::HoldingsLayout
         | Kind::Encyclopedia
         | Kind::HoldingsFilter
         | Kind::HoldingsLocation(_) => {
@@ -330,6 +379,7 @@ fn activate(
     controls: Query<&Control>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
+    mut widget: Option<ResMut<super::hud::EquipmentWidget>>,
     mut state: ResMut<State>,
 ) {
     if guard.allows(event.entity)
@@ -341,7 +391,7 @@ fn activate(
         ) {
             state.pending_filter = Some((*control, event.entity));
         } else {
-            perform(&owner, &mut state, *control);
+            perform(&owner, &mut state, *control, widget.as_deref_mut());
         }
     }
 }
@@ -422,7 +472,7 @@ fn keyboard(
                 serial: state.serial,
                 kind: Kind::Close,
             };
-            perform(&owner, &mut state, control);
+            perform(&owner, &mut state, control, None);
         } else if matches!(event.key_code, KeyCode::Enter | KeyCode::NumpadEnter)
             && state.tab == Tab::Items
             && focus.get().is_some_and(|field| search.contains(field))

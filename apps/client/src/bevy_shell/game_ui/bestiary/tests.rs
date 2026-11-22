@@ -186,6 +186,39 @@ fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result
     assert!(receiver.try_recv().is_err(), "every charm page is loaded");
     assert!(labels(&mut app).contains("Toad [Amphibic]"));
     assert!(labels(&mut app).contains("Progress not reported"));
+    let mut editor = app
+        .world_mut()
+        .query_filtered::<&mut bevy::text::EditableText, With<CreatureSearch>>();
+    *editor.single_mut(app.world_mut())? = bevy::text::EditableText::new("FRO");
+    click(&mut app, Kind::Search(false))?;
+    let scan = command(&mut receiver)?;
+    let mut search_page = page.clone();
+    search_page.next = None;
+    publish(&scan, &search_page)?;
+    app.update();
+    assert!(enabled(&mut app, Kind::Select(9))?);
+    assert!(enabled(&mut app, Kind::Select(7)).is_err());
+    click(&mut app, Kind::EndSearch)?;
+    app.update();
+    assert!(enabled(&mut app, Kind::Select(7))?);
+    click(&mut app, Kind::Catalogue(1))?;
+    let next = command(&mut receiver)?;
+    let mut last = page.clone();
+    last.next = None;
+    last.cards.truncate(1);
+    last.cards[0].race = 10;
+    publish(&next, &last)?;
+    app.update();
+    click(&mut app, Kind::Catalogue(8))?;
+    let previous = command(&mut receiver)?;
+    assert_eq!(
+        wire::decode_request(&previous.payload)
+            .map_err(|e| format!("{e:?}"))?
+            .after,
+        0
+    );
+    publish(&previous, &page)?;
+    app.update();
     click(&mut app, Kind::Select(9))?;
     let detail = command(&mut receiver).map_err(|error| format!("detail: {error}"))?;
     assert_eq!(
@@ -239,6 +272,10 @@ fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result
     page.next = None;
     publish(&loot, &page)?;
     app.update();
+    click(&mut app, Kind::Catalogue(9))?;
+    app.update();
+    assert!(labels(&mut app).contains("Toad [Amphibic]"));
+    assert!(!labels(&mut app).contains("Gold coin"));
     click(&mut app, Kind::Catalogue(5))?;
     let category = command(&mut receiver).map_err(|error| format!("category: {error}"))?;
     assert_eq!(
@@ -418,6 +455,10 @@ fn bestiary_charms_unlock_assign_remove_and_reset_through_the_progression_owner(
     assert!(labels(&mut app).contains("Dodge — Major"));
     assert!(labels(&mut app).contains("Avoid a qualifying creature attack."));
     click(&mut app, Kind::CharmAction(Intent::Unlock))?;
+    assert!(receiver.try_recv().is_err());
+    app.update();
+    assert!(labels(&mut app).contains("Unlock Dodge for 100 charm points?"));
+    click(&mut app, Kind::Confirm(Intent::Unlock))?;
     let unlock = command(&mut receiver).map_err(|error| format!("unlock: {error}"))?;
     assert_eq!((unlock.capability, unlock.kind), (67, 84));
     assert_eq!(
@@ -447,7 +488,30 @@ fn bestiary_charms_unlock_assign_remove_and_reset_through_the_progression_owner(
         wire::encode_page(&page).map_err(|e| format!("{e:?}"))?,
     );
     app.update();
+    let mut editor = app
+        .world_mut()
+        .query_filtered::<&mut bevy::text::EditableText, With<CreatureSearch>>();
+    *editor.single_mut(app.world_mut())? = bevy::text::EditableText::new("fro");
+    click(&mut app, Kind::Search(true))?;
+    let scan = command(&mut receiver)?;
+    publish(
+        &scan,
+        wire::encode_page(&page).map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    assert!(enabled(&mut app, Kind::Select(9))?);
+    click(&mut app, Kind::Select(9))?;
+    let target = command(&mut receiver)?;
+    publish(
+        &target,
+        wire::encode_page(&page).map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
     click(&mut app, Kind::CharmAction(Intent::Assign))?;
+    assert!(receiver.try_recv().is_err());
+    app.update();
+    assert!(labels(&mut app).contains("Assign Dodge to Frog?"));
+    click(&mut app, Kind::Confirm(Intent::Assign))?;
     let assign = command(&mut receiver).map_err(|error| format!("assign: {error}"))?;
     assert_eq!(
         progression::decode_charm_progression_request(&assign.payload)

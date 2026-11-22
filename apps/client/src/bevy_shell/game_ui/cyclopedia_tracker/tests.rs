@@ -546,3 +546,27 @@ fn acquired_bestiary_field_accepts_typed_creature_key_and_tracks_it() -> TestRes
     assert_eq!(add.payload, change(TrackerAction::Add, creature)?);
     Ok(())
 }
+
+#[test]
+fn percentage_control_orders_by_fraction_and_reverses() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    toolbar(&mut app, "bestiary_tracker")?;
+    command(&mut commands)?;
+    let mut snapshot = tracker(
+        false,
+        &[("oteryn:creature.rat", 10), ("oteryn:creature.bear", 20)],
+    );
+    snapshot.entries[0].thresholds = [1, 5, 10];
+    reply(&mut app, &outbox, &snapshot)?;
+    click(&mut app, false, &Action::Sort(TrackerSort::Completion))?;
+    let rows = |app: &mut App| {
+        window_texts(app, false)
+            .into_iter()
+            .filter(|text| text.contains(" kills"))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(rows(&mut app), ["bear: 20/250 kills", "rat: 10/10 kills"]);
+    click(&mut app, false, &Action::Reverse)?;
+    assert_eq!(rows(&mut app), ["rat: 10/10 kills", "bear: 20/250 kills"]);
+    Ok(())
+}

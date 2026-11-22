@@ -29,6 +29,7 @@ enum Action {
     Stop(String),
     Refresh,
     Sort(TrackerSort),
+    Reverse,
     HideCompleted(bool),
     Close,
 }
@@ -47,6 +48,7 @@ struct View {
     status: Option<&'static str>,
     busy: bool,
     sort: TrackerSort,
+    reversed: bool,
     hide_completed: bool,
 }
 /// One open window: the persistent root, and the containers rebuilt when its view changes.
@@ -134,6 +136,7 @@ fn view(panel: &CyclopediaTrackerPanel, boss: bool) -> View {
             panel.widget_feedback[usize::from(boss)]
         },
         busy: busy || !panel.selected,
+        reversed: panel.reversed[usize::from(boss)],
         sort: if boss { panel.boss_sort } else { panel.sort },
         hide_completed: if boss {
             panel.boss_hide_completed
@@ -366,9 +369,10 @@ fn fill(
     let next_sort = match view.sort {
         TrackerSort::Name => TrackerSort::Kills,
         TrackerSort::Kills => TrackerSort::Remaining,
-        TrackerSort::Remaining => TrackerSort::Name,
+        TrackerSort::Remaining | TrackerSort::Completion => TrackerSort::Name,
     };
     let sort_label = match view.sort {
+        TrackerSort::Completion => tr!("Sort: completion"),
         TrackerSort::Name => tr!("Sort: name"),
         TrackerSort::Kills => tr!("Sort: kills"),
         TrackerSort::Remaining => tr!("Sort: remaining"),
@@ -386,6 +390,20 @@ fn fill(
                 tr!("Show completed")
             } else {
                 tr!("Hide completed")
+            },
+            false,
+        ),
+        (
+            Action::Sort(TrackerSort::Completion),
+            tr!("Sort by completion"),
+            false,
+        ),
+        (
+            Action::Reverse,
+            if view.reversed {
+                tr!("Restore sort direction")
+            } else {
+                tr!("Reverse sort direction")
             },
             false,
         ),
@@ -499,6 +517,7 @@ fn finish(
     let panel = || play.link.cyclopedia_tracker_panel();
     match action {
         Action::Close => {}
+        Action::Reverse => play.link.cyclopedia_tracker_reverse(boss),
         Action::Sort(sort) => {
             let hide = if boss {
                 panel().boss_hide_completed
