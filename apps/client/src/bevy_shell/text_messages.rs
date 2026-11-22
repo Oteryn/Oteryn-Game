@@ -30,6 +30,7 @@ struct ScreenMessage {
     text: String,
     colour: [u8; 3],
     expires: Duration,
+    kind: Option<crate::play::feature_local_text_messages::view::NoticeKind>,
 }
 #[derive(Resource, Default)]
 struct ScreenMessages {
@@ -55,6 +56,7 @@ impl ScreenMessages {
     fn show(&mut self, area: Area, text: &str, colour: [u8; 3], now: Duration) {
         self.slots[area as usize] = Some(ScreenMessage {
             text: text.into(),
+            kind: None,
             colour,
             expires: now.saturating_add(visible_time(text)),
         });
@@ -151,6 +153,21 @@ fn project(
             };
         }
         state.observe(&play.view, now);
+        for notice in play.link.take_window_notices() {
+            if !notice.kind.visible(&owner.settings.preferences) {
+                continue;
+            }
+            let (area, colour) = match notice.kind {
+                crate::play::feature_local_text_messages::view::NoticeKind::Private => {
+                    (Area::Top, [96, 250, 250])
+                }
+                _ => (Area::Bottom, [255; 3]),
+            };
+            state.show(area, &notice.text, colour, now);
+            if let Some(slot) = &mut state.slots[area as usize] {
+                slot.kind = Some(notice.kind);
+            }
+        }
         let (reset, private) = play.link.private_screen_message(&mut state.chat_cursor);
         if reset {
             state.slots[Area::Private as usize] = None;
@@ -182,7 +199,13 @@ fn project(
             Area::Center => popups,
             Area::Look | Area::Private => true,
         };
-        let message = state.visible(area.0, now).filter(|_| enabled);
+        let message = state.visible(area.0, now).filter(|message| {
+            enabled
+                && owner.settings.preferences.game_window.messages
+                && message
+                    .kind
+                    .is_none_or(|kind| kind.visible(&owner.settings.preferences))
+        });
         let value = message.map_or("", |message| message.text.as_str());
         if text.0 != value {
             text.0 = value.into();

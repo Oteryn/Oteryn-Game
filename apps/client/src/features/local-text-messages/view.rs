@@ -6,7 +6,46 @@ pub(crate) struct LookMessage {
 }
 
 #[cfg(bevy_shell)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum NoticeKind {
+    Boosted,
+    Hotkey,
+    OfflineTraining,
+    Private,
+    Store,
+}
+#[cfg(bevy_shell)]
+impl NoticeKind {
+    pub(crate) fn visible(self, preferences: &crate::play::ReferencePreferences) -> bool {
+        let p = preferences.game_window;
+        match self {
+            Self::Boosted => p.boosted_messages,
+            Self::Hotkey => p.hotkey_messages,
+            Self::OfflineTraining => p.offline_training_messages,
+            Self::Private => p.private_messages,
+            Self::Store => p.store_messages,
+        }
+    }
+}
+#[cfg(bevy_shell)]
+#[derive(Debug)]
+pub(crate) struct WindowNotice {
+    pub kind: NoticeKind,
+    pub text: String,
+}
+#[cfg(bevy_shell)]
+impl crate::play::mailbox::Mailbox {
+    pub(in crate::play) fn window_notice(&mut self, kind: NoticeKind, text: String) {
+        // Each category contributes at most its newest notice between frames.
+        self.window_notices.retain(|notice| notice.kind != kind);
+        self.window_notices.push_back(WindowNotice { kind, text });
+    }
+}
+#[cfg(bevy_shell)]
 impl crate::play::PlayLink {
+    pub(crate) fn take_window_notices(&self) -> std::collections::VecDeque<WindowNotice> {
+        std::mem::take(&mut crate::play::mailbox::lock(&self.mailbox).window_notices)
+    }
     pub(crate) fn private_screen_message(
         &self,
         cursor: &mut Option<(u64, u64)>,
