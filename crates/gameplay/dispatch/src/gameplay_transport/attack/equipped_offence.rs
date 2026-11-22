@@ -63,7 +63,7 @@ pub(in crate::gameplay_transport) fn critical_swing(
 }
 
 /// Crystal game.cpp:7226-7234 checks one Ruse draw before ordinary mitigation.
-pub(super) fn ruse(
+pub(in crate::gameplay_transport) fn ruse(
     state: &crate::spell::cast::PlayerSpellState,
     root: &GameplayDecisionRoot,
     occurrence: DecisionOccurrenceId,
@@ -107,10 +107,12 @@ impl ChannelAttackStates {
         else {
             return;
         };
+        let recent_attack = self
+            .party_attack_state(actor, session)
+            .is_some_and(|attack| attack.swung_within_interval(now, CADENCE_MICROS))
+            || state.forge_spell_attack_within(now.get(), CADENCE_MICROS);
         if (now.get() % CADENCE_MICROS) >= 1_000_000
-            || !self
-                .party_attack_state(actor, session)
-                .is_some_and(|attack| attack.swung_within_interval(now, CADENCE_MICROS))
+            || !recent_attack
             || state
                 .owned_conditions()
                 .active_at(ConflictKey::Attributes, now.get())

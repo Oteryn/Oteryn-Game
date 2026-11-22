@@ -257,3 +257,76 @@ fn exaltation_overload_october_profile_dodges_a_native_attack_without_armor_tier
     }
     Ok(())
 }
+
+#[test]
+fn exaltation_overload_october_transcendence_uses_the_avatar_owner_and_expires() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    use crate::gameplay_transport::attack::ChannelAttackStates;
+    use oteryn_gameplay_domain::domain::condition::ConditionValues;
+    use oteryn_gameplay_foundation::scheduled_events::test_clock;
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros, deterministic_decision_u64,
+    };
+    use sha2::{Digest, Sha256};
+
+    let mut f = super::all_charms_contracts_fixtures::fixture()?;
+    let digest = f.runtime.content_pin().server_artifact_digest();
+    let root = GameplayDecisionRoot::from_bytes(digest);
+    let slot = (1_u64..10_000)
+        .find(|slot| {
+            let hash = Sha256::new()
+                .chain_update(b"oteryn:forge-avatar:v1")
+                .chain_update(f.session.as_bytes())
+                .chain_update(f.actor.placement_identity())
+                .chain_update(slot.to_be_bytes())
+                .finalize();
+            let mut occurrence = [0; 16];
+            occurrence.copy_from_slice(&hash[..16]);
+            deterministic_decision_u64(
+                &root,
+                DecisionOccurrenceId::from_bytes(occurrence),
+                "attack.transcendence",
+                0,
+            )
+            .is_ok_and(|draw| (100..150).contains(&(draw % 10_001)))
+        })
+        .ok_or("October-only Transcendence roll")?;
+    let now = slot * 2_000_000;
+    let timing = SemanticTimeMicros::from_micros(now);
+    let state = f
+        .states
+        .get_mut(&f.runtime, f.actor, f.session)
+        .ok_or("player")?;
+    let attack = ChannelAttackStates::default();
+    let _clock = test_clock::set(schedule()?, START);
+    attack.trigger_forge_avatar(state, f.actor, f.session, timing, &digest);
+    assert_eq!(
+        state.owned_conditions().outfit_at(now),
+        None,
+        "no aggression"
+    );
+    state.record_forge_spell_attack(now);
+    attack.trigger_forge_avatar(state, f.actor, f.session, timing, &digest);
+    assert!(state.owned_conditions().outfit_at(now).is_some());
+    assert!(matches!(
+        state.owned_conditions().attributes_at(now),
+        Some(ConditionValues::Attributes {
+            critical_chance_percent: 100,
+            critical_extra_percentage_points: 15,
+            incoming_reduction_percent: 15,
+            ..
+        })
+    ));
+    let repeat = SemanticTimeMicros::from_micros(now + 1_000);
+    attack.trigger_forge_avatar(state, f.actor, f.session, repeat, &digest);
+    assert!(
+        state
+            .owned_conditions()
+            .outfit_at(now + 6_999_999)
+            .is_some()
+    );
+    assert_eq!(state.owned_conditions().outfit_at(now + 7_000_000), None);
+    Ok(())
+}
