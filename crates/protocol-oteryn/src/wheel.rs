@@ -491,3 +491,47 @@ mod tests {
         Ok(())
     }
 }
+
+pub const COMMAND_TYPE_WHEEL_GIFT_ACTIVATION: u32 = 6355;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GiftActivationReply(pub Option<[u8; 16]>);
+
+impl GiftActivationReply {
+    pub fn encode(self) -> Option<Vec<u8>> {
+        match self.0 {
+            None => Some(vec![0]),
+            Some(occurrence) if occurrence == [0; 16] => None,
+            Some(occurrence) => {
+                let mut payload = Vec::with_capacity(17);
+                payload.push(1);
+                payload.extend_from_slice(&occurrence);
+                Some(payload)
+            }
+        }
+    }
+
+    pub fn decode(payload: &[u8]) -> Option<Self> {
+        match payload {
+            [0] => Some(Self(None)),
+            [1, occurrence @ ..] => {
+                let occurrence = <[u8; 16]>::try_from(occurrence).ok()?;
+                (occurrence != [0; 16]).then_some(Self(Some(occurrence)))
+            }
+            _ => None,
+        }
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn occurrence_gift_requires_a_nonzero_identity() -> Result<(), &'static str> {
+    let activation = GiftActivationReply(Some([7; 16]));
+    let mut wire = activation.encode().ok_or("encode")?;
+    assert_eq!(GiftActivationReply::decode(&wire), Some(activation));
+    wire.push(0);
+    assert_eq!(GiftActivationReply::decode(&wire), None);
+    assert_eq!(GiftActivationReply::decode(&[0]), Some(GiftActivationReply(None)));
+    assert!(GiftActivationReply(Some([0; 16])).encode().is_none());
+    Ok(())
+}

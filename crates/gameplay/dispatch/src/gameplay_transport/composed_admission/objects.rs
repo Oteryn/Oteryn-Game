@@ -200,6 +200,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Exhausted,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                reward_granted: None,
                 gate_message_id: None,
                 refusal_detail: None,
             };
@@ -299,6 +300,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     disposition: oteryn_protocol_oteryn::world_object::UseDisposition::TooFar,
                     committed: None,
                     earned: connection::EarnedNotice::NoneEarned,
+                    reward_granted: None,
                     gate_message_id: None,
                     refusal_detail:
                         oteryn_protocol_oteryn::refusal_detail::RefusalDetail::of_floors(
@@ -352,6 +354,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             committed: None,
             earned: earned_notice(self.achievements, notice, &mut operator_event),
+            reward_granted: None,
             gate_message_id: None,
             refusal_detail: None,
         }
@@ -458,6 +461,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                reward_granted: None,
                 gate_message_id: None,
                 refusal_detail: None,
             };
@@ -469,6 +473,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::TooFar,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                reward_granted: None,
                 gate_message_id: None,
                 refusal_detail: None,
             };
@@ -502,6 +507,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         },
                     ),
                     earned: connection::EarnedNotice::NoneEarned,
+                    reward_granted: None,
                     gate_message_id: None,
                     refusal_detail: None,
                 }
@@ -510,6 +516,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                reward_granted: None,
                 gate_message_id: None,
                 refusal_detail: None,
             },
@@ -517,6 +524,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Occupied,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                reward_granted: None,
                 gate_message_id: None,
                 refusal_detail: None,
             },
@@ -524,6 +532,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::StaleState,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                reward_granted: None,
                 gate_message_id: None,
                 refusal_detail: None,
             },

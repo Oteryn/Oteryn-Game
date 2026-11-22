@@ -101,6 +101,21 @@ pub(super) fn encode(
                 outcome.disposition,
                 outcome.gate_message_id,
             );
+            use oteryn_protocol_oteryn::world_object::{
+                CAPABILITY_GAMEPLAY_OCCURRENCES_V1, COMMAND_TYPE_USE_INTENT,
+                encode_use_reward_result,
+            };
+            let payload = if command.command_type == COMMAND_TYPE_USE_INTENT
+                && session
+                    .selected_capabilities
+                    .contains(CAPABILITY_GAMEPLAY_OCCURRENCES_V1)
+                && disposition == UseDisposition::Committed
+                && let Some(occurrence) = outcome.reward_granted
+            {
+                encode_use_reward_result(occurrence)
+            } else {
+                encode_use_result_with_gate(disposition, gate_message_id)
+            };
             (
                 if disposition == UseDisposition::Rejected {
                     CommandStatus::Rejected
@@ -109,9 +124,9 @@ pub(super) fn encode(
                 },
                 detailed(
                     session,
-                    encode_use_result_with_gate(disposition, gate_message_id).unwrap_or_else(
-                        |_| encode_use_result(UseDisposition::Rejected).unwrap_or_default(),
-                    ),
+                    payload.unwrap_or_else(|_| {
+                        encode_use_result(UseDisposition::Rejected).unwrap_or_default()
+                    }),
                     outcome
                         .refusal_detail
                         .or(RefusalDetail::of_use(outcome.disposition)),

@@ -23,3 +23,14 @@ The result is at most 4146 bytes. Consumed means exactly `blessings_before` minu
 `blessings_after` from that death's immutable receipt. A death with an empty
 consumed set is distinct from no death. Twist of Fate is a normal named consumed
 key; the client never infers its consumption from current holdings.
+
+## Final-blow kind
+
+Bundle-world capability 595 (requires 382) gates command 6352. This empty,
+self-only request uses the same current session fence as command 664.
+`00` means no committed death. Otherwise the reply is `01`, the same 16-byte
+death occurrence as command 664, and one kind byte. Values are 0 for a receipt
+without a recorded kind, 1 for environment (no attributed combatant at the
+native lethal transition), 2 for creature and 3 for player. A player-owned
+summon follows the native owner attribution. Recent damage and assists do not
+classify the final blow. Command 664's wire format is unchanged.

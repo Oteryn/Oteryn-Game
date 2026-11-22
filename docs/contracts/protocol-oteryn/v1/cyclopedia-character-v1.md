@@ -352,3 +352,19 @@ With capability 506 selected, command 388 also accepts selector 135 from
 legacy selectors keep their existing grammars and bounds. The reply adds the
 active content names for exactly the server-filtered custody page. Selector 135
 is rejected without 506; legacy selector 130 and its reply remain unchanged.
+
+## Player kill credit occurrences
+
+Capability 595 gates command 6354 for the session's own Character. The request
+is `offset:u16, limit:u8` (little-endian, limit 1–50). It uses the current
+session-generation fence and pages the last 30 days by descending death commit
+time, breaking ties by descending occurrence ID. The reply is `count:u8` then
+`occurrence:[u8;16], victim_character_id:[u8;16], at_unix_ms:i64, final_blow:u8`
+per row. Maximum reply size is 2051 bytes.
+
+The native death transaction freezes the victim Character and final killer
+when a player's final blow causes the death. It records the other native PvP
+damage and assist contributors with `final_blow=0`. The final killer gets one
+row with `final_blow=1`, including for justified kills. History starts at
+capture deployment. Command 388's legacy tabs and status values keep their
+previous behavior.

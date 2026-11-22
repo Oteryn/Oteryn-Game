@@ -15,6 +15,7 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
         disposition,
         committed: None,
         earned: EarnedNotice::NoneEarned,
+        reward_granted: None,
         gate_message_id: None,
         refusal_detail: None,
     }
@@ -197,7 +198,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                 {
-                    Ok(_) => outcome(UseDisposition::Committed),
+                    Ok(mint) => UseOutcome {
+                        reward_granted: Some(super::bundle_chest::reward_occurrence(mint)),
+                        ..outcome(UseDisposition::Committed)
+                    },
                     Err(error) => falcon_refusal(error),
                 }
             })

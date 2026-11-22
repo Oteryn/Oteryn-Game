@@ -8,7 +8,8 @@ use super::world_map::{MapViewSource, resolve_map_target};
 use crate::content::world_reward_claims::{bind_embedded_reward_claims, bind_reward_claims};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::reward_claim_mint::{
-    RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintRequest,
+    RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintOutcome,
+    RewardClaimMintRequest,
 };
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::interaction_chest_use::{ChestUseError, chest_use_disposition, entry_chest};
@@ -19,6 +20,7 @@ pub(super) fn outcome(disposition: UseDisposition) -> UseOutcome {
         disposition,
         committed: None,
         earned: EarnedNotice::NoneEarned,
+        reward_granted: None,
         gate_message_id: None,
         refusal_detail: None,
     }
@@ -375,7 +377,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .await;
                 }
                 match result {
-                    Ok((_, notice)) => {
+                    Ok((mint, notice)) => {
                         super::quest_collections::after_reward(self, actor, command).await;
                         UseOutcome {
                             earned: super::earned_notice(
@@ -383,6 +385,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 notice,
                                 &mut super::operator_event,
                             ),
+                            reward_granted: Some(reward_occurrence(mint)),
                             ..outcome(UseDisposition::Committed)
                         }
                     }
@@ -392,6 +395,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .unwrap_or_else(|_| outcome(UseDisposition::Rejected)),
         )
+    }
+}
+
+pub(super) fn reward_occurrence(mint: RewardClaimMintOutcome) -> [u8; 16] {
+    match mint {
+        RewardClaimMintOutcome::Committed(receipt)
+        | RewardClaimMintOutcome::AlreadyCommitted(receipt) => receipt.event_id,
     }
 }
 

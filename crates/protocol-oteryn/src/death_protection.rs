@@ -96,3 +96,85 @@ mod tests {
         Ok(())
     }
 }
+
+pub const CAPABILITY_COMBAT_OCCURRENCES_V1: u32 = 595;
+pub const COMMAND_TYPE_DEATH_OCCURRENCE: u32 = 6352;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum FinalBlowKind {
+    Unattributed = 0,
+    Environment = 1,
+    Creature = 2,
+    Player = 3,
+}
+
+impl FinalBlowKind {
+    pub fn decode(value: u8) -> Option<Self> {
+        Some(match value {
+            0 => Self::Unattributed,
+            1 => Self::Environment,
+            2 => Self::Creature,
+            3 => Self::Player,
+            _ => return None,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DeathOccurrence {
+    pub occurrence: [u8; 16],
+    pub final_blow: FinalBlowKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DeathOccurrenceReply(pub Option<DeathOccurrence>);
+
+impl DeathOccurrenceReply {
+    pub fn encode(self) -> Option<Vec<u8>> {
+        let Some(death) = self.0 else {
+            return Some(vec![0]);
+        };
+        if death.occurrence == [0; 16] {
+            return None;
+        }
+        let mut bytes = Vec::with_capacity(18);
+        bytes.push(1);
+        bytes.extend_from_slice(&death.occurrence);
+        bytes.push(death.final_blow as u8);
+        Some(bytes)
+    }
+
+    pub fn decode(bytes: &[u8]) -> Option<Self> {
+        match bytes {
+            [0] => Some(Self(None)),
+            [1, occurrence @ .., kind] => {
+                let occurrence = <[u8; 16]>::try_from(occurrence).ok()?;
+                (occurrence != [0; 16]).then_some(Self(Some(DeathOccurrence {
+                    occurrence,
+                    final_blow: FinalBlowKind::decode(*kind)?,
+                })))
+            }
+            _ => None,
+        }
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn occurrence_death_kind_is_bound_to_one_occurrence() -> Result<(), &'static str> {
+    for final_blow in [
+        FinalBlowKind::Unattributed,
+        FinalBlowKind::Environment,
+        FinalBlowKind::Creature,
+        FinalBlowKind::Player,
+    ] {
+        let reply = DeathOccurrenceReply(Some(DeathOccurrence { occurrence: [7; 16], final_blow }));
+        let mut wire = reply.encode().ok_or("encode")?;
+        assert_eq!(DeathOccurrenceReply::decode(&wire), Some(reply));
+        assert!(DeathProtectionReply::decode(&wire).is_none());
+        wire[17] = 4;
+        assert!(DeathOccurrenceReply::decode(&wire).is_none());
+    }
+    Ok(())
+}

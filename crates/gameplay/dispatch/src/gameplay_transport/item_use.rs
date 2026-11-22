@@ -421,6 +421,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             committed: None,
             earned: EarnedNotice::NoneEarned,
+            reward_granted: None,
             gate_message_id: None,
             refusal_detail: None,
         }
@@ -829,6 +830,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             committed: None,
             earned: EarnedNotice::NoneEarned,
+            reward_granted: None,
             gate_message_id: None,
             refusal_detail: None,
         })
