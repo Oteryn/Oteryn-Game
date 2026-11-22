@@ -37,7 +37,7 @@ const CELLAR: Position = Position {
     y: 31252,
     floor: -8,
 };
-const TOP_OF_THE_CITY_CRATE: TilePos = TilePos {
+pub(super) const TOP_OF_THE_CITY_CRATE: Position = Position {
     x: 32807,
     y: 31252,
     floor: -8,
@@ -59,7 +59,9 @@ const BEFORE_DIG: Position = Position {
 };
 const TUNNEL: Position = Position { floor: -9, ..DIRT };
 const DIG_CALLBACK: &str = "oteryn:quest-callback/authored-top-of-the-city-dig";
-const CITY_STAGE: &str = "oteryn:quest-progress/authored/top-of-the-city/stage";
+use oteryn_gameplay_quests::quest::top_of_the_city::{
+    PURSUIT, PURSUIT_COMPLETE, STAGE as CITY_STAGE,
+};
 const PICK: &str = "oteryn:item.tibia.i3456";
 const OBSIDIAN_KNIFE: &str = "oteryn:item.tibia.i5908";
 
@@ -253,7 +255,8 @@ async fn dig(
             use_with_position: None,
         })
         .map_err(debug)?;
-        let response = quest_world_callbacks_fixtures::wire(owner, admitted, command, 2, payload).await?;
+        let response =
+            quest_world_callbacks_fixtures::wire(owner, admitted, command, 2, payload).await?;
         decode_use_result(&response).map_err(debug)?
     };
     let expected = match name {
@@ -417,11 +420,26 @@ async fn start_city(
 ) -> TestResult {
     for (npc, word, stage) in [(iriana, "quest", 1), (jimmy, "iriana", 2)] {
         assert_eq!(
-            super::questpc7_outfit_items_fixtures::talk(owner, admitted, npc, sequence, word).await?,
+            super::questpc7_outfit_items_fixtures::talk(owner, admitted, npc, sequence, word)
+                .await?,
             NpcIntentDisposition::Ok,
             "{word}"
         );
         assert_eq!(track(h, CITY_STAGE).await?, stage, "{word}");
+        if stage == 1 {
+            // These cases qualify the cellar's tool rule. The roof route has its own framed case.
+            super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+                h,
+                owner,
+                admitted,
+                &[(PURSUIT.into(), PURSUIT_COMPLETE)],
+                120,
+            )
+            .await?;
+            owner
+                .refresh_quest_session(admitted.game_session_id, false)
+                .await;
+        }
     }
     Ok(())
 }
@@ -431,15 +449,19 @@ async fn framed_talk(
     admitted: &mut AdmittedSession,
     npc_actor: EntityRef,
     text: &str,
+    expected_disposition: NpcIntentDisposition,
+    expected_line: Option<&str>,
 ) -> TestResult {
     use crate::foundation::{MessageType, decode_wire_envelope};
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
     use oteryn_protocol_oteryn::npc_service::{
-        COMMAND_TYPE_NPC_TALK_INTENT, NpcTalkIntent, decode_npc_intent_result, encode_npc_talk_intent,
+        COMMAND_TYPE_NPC_TALK_INTENT, NpcTalkIntent, STATE_DOMAIN_NPC_CONVERSATION,
+        decode_npc_conversation, decode_npc_intent_result, encode_npc_talk_intent,
     };
     use oteryn_protocol_oteryn::{
-        ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
+        ClientCommandValue, CommandStatus, decode_command_result, decode_state_delta,
+        encode_client_command,
     };
     use tokio::io::AsyncWriteExt;
 
@@ -478,19 +500,41 @@ async fn framed_talk(
             )
             .map_err(debug)?;
             write_frame(&mut client, &frame).await?;
-            loop {
+            let mut acknowledged = false;
+            let mut found_line = false;
+            let is_subject = command_id == first + 1;
+            let expected = expected_line.filter(|_| is_subject);
+            let disposition = if is_subject {
+                expected_disposition
+            } else {
+                NpcIntentDisposition::Ok
+            };
+            let status = if disposition == NpcIntentDisposition::Rejected {
+                CommandStatus::Rejected
+            } else {
+                CommandStatus::Accepted
+            };
+            while !acknowledged || expected.is_some() && !found_line {
                 let frame = read_frame(&mut client).await?;
                 let envelope = decode_wire_envelope(&frame).map_err(debug)?;
                 if envelope.message_type() == MessageType::CommandResult {
                     let result = decode_command_result(envelope.payload()).map_err(debug)?;
                     assert_eq!(result.command_id, command_id);
-                    assert_eq!(result.status, CommandStatus::Accepted, "{words}");
+                    assert_eq!(result.status, status, "{words}");
                     assert_eq!(
                         decode_npc_intent_result(result.payload).map_err(debug)?,
-                        NpcIntentDisposition::Ok,
+                        disposition,
                         "{words}"
                     );
-                    break;
+                    acknowledged = true;
+                } else if envelope.message_type() == MessageType::StateDelta {
+                    let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
+                    if delta.domain_id == STATE_DOMAIN_NPC_CONVERSATION
+                        && let Some(line) = expected
+                    {
+                        let dialogue = decode_npc_conversation(delta.payload).map_err(debug)?;
+                        found_line |= dialogue.lines.iter().any(|actual| actual == line);
+                    }
                 }
             }
         }
@@ -501,13 +545,79 @@ async fn framed_talk(
         std::time::Duration::from_secs(30),
         super::fixture::join_two(serving, driving),
     )
-    .await?;
-    if let ConnectionEnd::AdmittedThenDisconnected(current)
-    | ConnectionEnd::AdmittedThenClosed(current, _) = ended
-    {
-        *admitted = current;
-    }
-    result
+    .await
+    .map_err(|_| {
+        format!("NPC_TALK {text:?} timed out waiting for acknowledgement or {expected_line:?}")
+    })?;
+    result?;
+    let ConnectionEnd::AdmittedThenDisconnected(current) = ended else {
+        return Err(format!("NPC_TALK {text:?} did not disconnect normally: {ended:?}").into());
+    };
+    *admitted = current;
+    Ok(())
+}
+
+async fn while_spell_state_is_busy<T>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    work: impl std::future::Future<Output = T>,
+) -> TestResult<T> {
+    use std::future::poll_fn;
+    use std::task::Poll;
+    let held = owner.states.spell_states.lock().await;
+    let mut work = std::pin::pin!(work);
+    poll_fn(|cx| {
+        assert!(
+            work.as_mut().poll(cx).is_pending(),
+            "command waits for spell state"
+        );
+        assert!(
+            owner.runtime.try_lock().is_ok(),
+            "unrelated Channel work can still lock Runtime"
+        );
+        Poll::Ready(())
+    })
+    .await;
+    drop(held);
+    Ok(tokio::time::timeout(std::time::Duration::from_secs(5), work).await?)
+}
+
+async fn assert_completion_reply_does_not_hold_runtime(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    iriana: EntityRef,
+) -> TestResult {
+    use crate::gameplay_transport::connection::UseCommand;
+    use oteryn_protocol_oteryn::npc_service::NpcTalkIntent;
+
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("NPC command window")?;
+    let actor = admitted.runtime_actor.ok_or("city actor")?;
+    let command = UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: admitted.continuity.next_command_id,
+        item_fence: None, // The stage-five reply needs no durable mutation.
+    };
+    let intent = |text: &str| NpcTalkIntent {
+        npc_actor: iriana,
+        text: text.into(),
+    };
+    assert_eq!(
+        owner
+            .npc_talk(actor, command, intent("hi"))
+            .await
+            .disposition,
+        NpcIntentDisposition::Ok
+    );
+    let reply =
+        while_spell_state_is_busy(owner, owner.npc_talk(actor, command, intent("quest"))).await?;
+    assert_eq!(reply.disposition, NpcIntentDisposition::Ok);
+    assert_eq!(
+        reply.conversation.ok_or("Iriana's completion reply")?.lines,
+        ["Thank you for getting my chest back."]
+    );
+    Ok(())
 }
 
 async fn relocate_city(
@@ -565,7 +675,7 @@ async fn top_of_the_city(
 
     // Qualify the crate gate at its endpoint, then walk the shipped route between the NPCs.
     relocate_city(owner, admitted, CELLAR).await?;
-    let crate_target = target(owner, TOP_OF_THE_CITY_CRATE)?;
+    let crate_target = target(owner, tile(TOP_OF_THE_CITY_CRATE))?;
     let command = admitted.continuity.next_command_id;
     assert_eq!(
         use_target(owner, admitted, command, &crate_target).await?,
@@ -574,42 +684,157 @@ async fn top_of_the_city(
     );
     assert_eq!(live(h, 8772).await?, 0);
     relocate_city(owner, admitted, city_start()).await?;
-    framed_talk(owner, admitted, iriana, "quest").await?;
+    framed_talk(
+        owner,
+        admitted,
+        iriana,
+        "quest",
+        NpcIntentDisposition::Ok,
+        None,
+    )
+    .await?;
     assert_eq!(track(h, CITY_STAGE).await?, 1);
-    let jimmy_stop = city_route::walk_to_jimmy(owner, admitted).await?;
-    framed_talk(owner, admitted, jimmy, "iriana").await?;
+    city_route::assert_door_watchdog(owner, admitted).await?;
+    // The route rebuilds framed snapshots throughout hundreds of movement commands.
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(300);
+    city_route::lose_trail(owner, admitted, deadline).await?;
+    assert_eq!(
+        track(h, PURSUIT).await?,
+        PURSUIT_COMPLETE + 1,
+        "wrong lane persisted as lost"
+    );
+    assert_eq!(
+        city_route::use_jimmy_door(owner, admitted, deadline).await?,
+        UseDisposition::Locked,
+        "the wrong bridge lane loses the trail",
+    );
+    relocate_city(owner, admitted, city_route::JIMMY_STOP).await?;
+    framed_talk(
+        owner,
+        admitted,
+        jimmy,
+        "iriana",
+        NpcIntentDisposition::Rejected,
+        None,
+    )
+    .await?;
+    assert_eq!(
+        track(h, CITY_STAGE).await?,
+        1,
+        "Jimmy's dialogue also requires the pursuit"
+    );
+
+    relocate_city(owner, admitted, city_start()).await?;
+    framed_talk(
+        owner,
+        admitted,
+        iriana,
+        "quest",
+        NpcIntentDisposition::Ok,
+        Some("You lost the thief? Start again from my roof and follow his trail."),
+    )
+    .await?;
+    city_route::roof_to_door(owner, admitted, deadline).await?;
+    assert_eq!(
+        track(h, PURSUIT).await?,
+        PURSUIT_COMPLETE,
+        "correct lanes completed the pursuit"
+    );
+    assert_eq!(
+        city_route::use_jimmy_door(owner, admitted, deadline).await?,
+        UseDisposition::Committed,
+        "Iriana restarts the pursuit after a wrong lane",
+    );
+    city_route::assert_door_does_not_hold_runtime(owner, admitted).await?;
+    let jimmy_stop = city_route::enter_jimmy(owner, admitted, deadline).await?;
+    city_route::assert_guest_blocked(owner, admitted, h, deadline).await?;
+    framed_talk(
+        owner,
+        admitted,
+        jimmy,
+        "iriana",
+        NpcIntentDisposition::Ok,
+        None,
+    )
+    .await?;
     assert_eq!(track(h, CITY_STAGE).await?, 2);
     relocate_city(owner, admitted, CELLAR).await?;
     let command = admitted.continuity.next_command_id;
     assert_eq!(
-        use_target(owner, admitted, command, &target(owner, TOP_OF_THE_CITY_CRATE)?).await?,
+        use_target(
+            owner,
+            admitted,
+            command,
+            &target(owner, tile(TOP_OF_THE_CITY_CRATE))?
+        )
+        .await?,
         UseDisposition::Committed
     );
     assert_eq!(track(h, CITY_STAGE).await?, 3);
     assert_eq!(live(h, 8772).await?, 1, "one food crate");
     let command = admitted.continuity.next_command_id;
     assert_eq!(
-        use_target(owner, admitted, command, &target(owner, TOP_OF_THE_CITY_CRATE)?).await?,
+        use_target(
+            owner,
+            admitted,
+            command,
+            &target(owner, tile(TOP_OF_THE_CITY_CRATE))?
+        )
+        .await?,
         UseDisposition::Rejected,
         "the crate is taken once"
     );
     assert_eq!(live(h, 8772).await?, 1);
     relocate_city(owner, admitted, jimmy_stop).await?;
-    framed_talk(owner, admitted, jimmy, "quest").await?;
+    framed_talk(
+        owner,
+        admitted,
+        jimmy,
+        "quest",
+        NpcIntentDisposition::Ok,
+        None,
+    )
+    .await?;
     assert_eq!(track(h, CITY_STAGE).await?, 4);
     assert_eq!((live(h, 8772).await?, live(h, 8773).await?), (0, 1));
     relocate_city(owner, admitted, city_start()).await?;
-    framed_talk(owner, admitted, iriana, "quest").await?;
+    framed_talk(
+        owner,
+        admitted,
+        iriana,
+        "quest",
+        NpcIntentDisposition::Ok,
+        None,
+    )
+    .await?;
     assert_eq!(track(h, CITY_STAGE).await?, 5);
     assert_eq!((live(h, 8773).await?, live(h, 5921).await?), (0, 10));
-    let completed: i64 = sqlx::query_scalar(
+    let completed = completion_receipts(h).await?;
+    assert_eq!(completed, 1, "the quest completes once");
+    assert_completion_reply_does_not_hold_runtime(owner, admitted, iriana).await?;
+    framed_talk(
+        owner,
+        admitted,
+        iriana,
+        "quest",
+        NpcIntentDisposition::Ok,
+        Some("Thank you for getting my chest back."),
+    )
+    .await?;
+    assert_eq!(
+        completion_receipts(h).await?,
+        completed,
+        "no second completion receipt"
+    );
+    assert_eq!(live(h, 5921).await?, 10, "no second reward");
+    Ok(())
+}
+
+async fn completion_receipts(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes",
     )
     .bind("oteryn:quest.authored.top_of_the_city_quest")
     .fetch_one(&h.pool)
-    .await?;
-    assert_eq!(completed, 1, "the quest completes once");
-    framed_talk(owner, admitted, iriana, "quest").await?;
-    assert_eq!(live(h, 5921).await?, 10, "no second reward");
-    Ok(())
+    .await?)
 }

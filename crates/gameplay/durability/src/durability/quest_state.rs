@@ -402,6 +402,15 @@ impl QuestStateCopy {
                 .durable_track(oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_TRACK)
                 == Some(&1);
         }
+        use oteryn_gameplay_quests::quest::top_of_the_city as city;
+        if action == city::JIMMY_DOOR_ACTION {
+            // Characters already sent to the cellar can still return to Jimmy.
+            return match self.durable_track(city::STAGE) {
+                Some(1) => self.durable_track(city::PURSUIT) == Some(&city::PURSUIT_COMPLETE),
+                Some(stage) => *stage >= 2,
+                None => false,
+            };
+        }
         // The donor's numeric action names the same storage that quest authoring
         // normalizes to a named track. Resolve that identity before reading the copy.
         #[derive(serde::Deserialize)]

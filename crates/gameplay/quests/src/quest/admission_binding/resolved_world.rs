@@ -87,8 +87,8 @@ mod tests {
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
         assert_eq!(base.len(), 1002);
-        assert_eq!(bindings.world_callbacks().count(), 31);
-        assert_eq!(callbacks.len(), 1033);
+        assert_eq!(bindings.world_callbacks().count(), 50);
+        assert_eq!(callbacks.len(), 1052);
         let expected: BTreeSet<_> = base
             .iter()
             .chain(bindings.world_callbacks())
