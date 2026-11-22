@@ -79,6 +79,12 @@ def capture(canary, crystal, root=ROOT):
     crystal_xml = (crystal / 'data/items/items.xml').read_bytes()
     if hashlib.sha256(crystal_xml).hexdigest() != base.SOURCE_HASHES['data/items/items.xml']:
         raise ValueError('M25_LOOT_CRYSTAL_SOURCE_HASH')
+    from crystal_equipment_slice_4 import equipment_pattern
+
+    # Crystal's XML carries the robe's Monk equip requirements. Extend this
+    # exact co-owner record so every consumer can still compare it in full.
+    robe = source.engine_items.load_items_xml(crystal_xml)[50255]['attrs']
+    robe_patterns = source.K({'patterns': source.K([equipment_pattern(robe)])})
     slots = imbue.slots(blobs['data/items/items.xml'], set(IDS))
     crystal_slots = imbue.slots(crystal_xml, set(IDS))
     if ({item: row['slot_count'] for item, row in slots.items()}
@@ -107,6 +113,8 @@ def capture(canary, crystal, root=ROOT):
         row = source.profile(item, xml.get(item), objects[item], physics[item], bindings, None)
         base.complete_source_top_order(row, objects[item])
         complete_source_abilities(row, source.attrs(xml[item]) if item in xml else {})
+        if item == 50255:
+            row['semantics']['equipment'] = robe_patterns
         if item in slots:
             fact = slots[item]
             row['semantics']['imbuement'] = source.K({

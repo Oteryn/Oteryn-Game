@@ -736,6 +736,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     crystal_equipment_slice.admit(root, items, provider_order)
     import crystal_equipment_profiles
     crystal_equipment_profiles.apply_native(root, items, provider_order)
+    import crystal_equipment_slice_4
+    crystal_equipment_slice_4.apply(root, items, provider_order)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
