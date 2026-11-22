@@ -1,4 +1,4 @@
-//! Definition pins captured from the published 871c1dec7 catalogue and the reviewed 0f605da3 catalogue.
+//! Exact definition pins captured from published and reviewed quest catalogues.
 use super::{NpcDefinitionPredecessor, QuestStateCatalogue};
 
 type DefinitionHash = [u8; 32];
@@ -95,6 +95,21 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
             hash(b"8a188b5b0b564e34830783f89b5b1a24cc00eb29a1639495bdfb8a7124b584af"),
         ],
     ),
+    // The native crypt and parcel extensions preserve saves from 3e0991642.
+    (
+        "oteryn:quest.too_hot_to_handle_quest",
+        hash(b"f61af94ff30ae403c700fe861ecc1282bd6eaeb5dd7e0bf9af0e596a0edd295d"),
+        &[hash(
+            b"c37288dbe48d92cf0b1ba0bb0a108d5690393d564beed3775be9b55583e0f2ae",
+        )],
+    ),
+    (
+        "oteryn:quest.tower_defence_quest",
+        hash(b"fd8a39997df088fbcbe3dd14aafb92bbd84280756eb3b1cee95c4c9bd04950f8"),
+        &[hash(
+            b"e83857acbdc70f0e3398417dd50fb1a0cae5d864dd580a6653dea645cd2f2a32",
+        )],
+    ),
 ];
 
 pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> DefinitionHash {
@@ -175,6 +190,33 @@ mod tests {
                 foreign[0] ^= 1;
                 assert!(npc_rules::legacy_defaults(catalogue, quest, &foreign).is_none());
             }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn native_quest_journeys_can_continue_saves_from_main() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        for (quest, saved) in [
+            (
+                "oteryn:quest.too_hot_to_handle_quest",
+                hash(b"c37288dbe48d92cf0b1ba0bb0a108d5690393d564beed3775be9b55583e0f2ae"),
+            ),
+            (
+                "oteryn:quest.tower_defence_quest",
+                hash(b"e83857acbdc70f0e3398417dd50fb1a0cae5d864dd580a6653dea645cd2f2a32"),
+            ),
+            (
+                "oteryn:quest.troll_sabotage_quest",
+                hash(b"f20fac3b939f0dbc0553079fd2894eb82c2e098e82944370cfecf0c150c49d96"),
+            ),
+        ] {
+            assert_ne!(loaded.catalogue().definition_hash(quest), Some(saved));
+            assert!(
+                npc_rules::legacy_defaults(loaded.catalogue(), quest, &saved).is_some(),
+                "{quest}"
+            );
         }
         Ok(())
     }
