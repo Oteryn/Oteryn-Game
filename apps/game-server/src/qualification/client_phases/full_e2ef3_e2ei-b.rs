@@ -583,47 +583,174 @@ async fn documents(
         rewrite_parchment(client, world, &definitions, rewritable).await
     }
     .await;
-    if let (Err(once), Err(rewrite)) = (&write_once, &rewrite) {
-        *action = once_step;
-        return Err(format!("write-once: {once}; rewritable: {rewrite}").into());
+    let writes = [(once_step, write_once), ("write-read-rewritable", rewrite)];
+    if writes.iter().all(|(_, result)| result.is_err()) {
+        return document_outcome(action, writes);
     }
 
-    *action = "relogin-text-transform";
-    approach(client, world, TOWN, |at| at == TOWN).await?;
-    let session = client.join_snapshot().game_session_id;
-    let (outcome, detail, attempts, busy) = super::logout_retrying_busy(client).await?;
-    if outcome != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!(
-            "logout observed {outcome:?} {detail}; attempts={attempts}, busy={busy}"
-        )
-        .into());
-    }
-    *logged_out = true;
-    *client = connect_world(clients, 0xb5).await?;
-    *logged_out = false;
-    if client.join_snapshot().game_session_id == session {
-        return Err(format!("fresh admission reused session {session:?}").into());
-    }
-    if write_once.is_ok() {
-        let entries = &client.inventory().ok_or("fresh inventory absent")?.entries;
-        if entries.iter().any(|item| item.item_definition_ref == once) {
-            return Err(
-                format!("source definition {once} returned after login: {entries:?}").into(),
-            );
+    let admission = async {
+        approach(client, world, TOWN, |at| at == TOWN).await?;
+        let session = client.join_snapshot().game_session_id;
+        let (outcome, detail, attempts, busy) = super::logout_retrying_busy(client).await?;
+        if outcome != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!(
+                "logout observed {outcome:?} {detail}; attempts={attempts}, busy={busy}"
+            )
+            .into());
         }
-        read(client, carried(client, sealed)?, SEALED, false).await?;
+        *logged_out = true;
+        *client = connect_world(clients, 0xb5).await?;
+        *logged_out = false;
+        if client.join_snapshot().game_session_id == session {
+            return Err(format!("fresh admission reused session {session:?}").into());
+        }
+        Ok(())
     }
-    if rewrite.is_ok() {
-        read(client, carried(client, rewritable)?, REVISED, true).await?;
+    .await;
+    if admission.is_err() {
+        return document_outcome(
+            action,
+            writes
+                .into_iter()
+                .chain([("relogin-text-transform", admission)]),
+        );
     }
-    if let Err(error) = write_once {
-        *action = once_step;
-        return Err(error);
-    }
-    if let Err(error) = rewrite {
-        *action = "write-read-rewritable";
-        return Err(error);
-    }
+    check_document_durability(
+        client,
+        action,
+        writes,
+        async |client| {
+            let entries = &client.inventory().ok_or("fresh inventory absent")?.entries;
+            if entries.iter().any(|item| item.item_definition_ref == once) {
+                return Err(
+                    format!("source definition {once} returned after login: {entries:?}").into(),
+                );
+            }
+            read(client, carried(client, sealed)?, SEALED, false).await
+        },
+        async |client| read(client, carried(client, rewritable)?, REVISED, true).await,
+    )
+    .await?;
     *action = "rewrite-limit-transform-refusal-fresh-admission";
     Ok(())
+}
+
+fn document_outcome(
+    action: &mut &'static str,
+    checks: impl IntoIterator<Item = (&'static str, TestResult)>,
+) -> TestResult {
+    let mut failures = checks
+        .into_iter()
+        .filter_map(|(phase, result)| result.err().map(|error| (phase, error)))
+        .peekable();
+    let Some((phase, first)) = failures.next() else {
+        return Ok(());
+    };
+    *action = phase;
+    if failures.peek().is_none() {
+        return Err(first);
+    }
+    let mut additional = String::new();
+    for (phase, error) in failures {
+        additional.push_str(&format!("; {phase}: {error}"));
+    }
+    Err(Box::new(DocumentFailures { first, additional }))
+}
+
+#[derive(Debug)]
+struct DocumentFailures {
+    first: Box<dyn std::error::Error>,
+    additional: String,
+}
+
+impl std::fmt::Display for DocumentFailures {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{}{}", self.first, self.additional)
+    }
+}
+
+impl std::error::Error for DocumentFailures {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(self.first.as_ref())
+    }
+}
+
+async fn check_document_durability<C>(
+    client: &mut C,
+    action: &mut &'static str,
+    writes: [(&'static str, TestResult); 2],
+    read_sealed: impl AsyncFnOnce(&mut C) -> TestResult,
+    read_parchment: impl AsyncFnOnce(&mut C) -> TestResult,
+) -> TestResult {
+    let sealed = if writes[0].1.is_ok() {
+        read_sealed(client).await
+    } else {
+        Ok(())
+    };
+    let parchment = if writes[1].1.is_ok() {
+        read_parchment(client).await
+    } else {
+        Ok(())
+    };
+    document_outcome(
+        action,
+        writes.into_iter().chain([
+            ("relogin-write-once-text-transform", sealed),
+            ("relogin-rewritable-text", parchment),
+        ]),
+    )
+}
+
+#[tokio::test]
+async fn durability_checks_both_documents_on_sealed_mismatch() {
+    let mut reads = Vec::new();
+    let mut action = "";
+    let result = check_document_durability(
+        &mut reads,
+        &mut action,
+        [("write-once", Ok(())), ("rewrite", Ok(()))],
+        async |reads| {
+            reads.push("sealed");
+            Err("sealed text mismatch".into())
+        },
+        async |reads| {
+            reads.push("parchment");
+            Err("parchment text mismatch".into())
+        },
+    )
+    .await;
+    assert_eq!(reads, ["sealed", "parchment"]);
+    assert_eq!(action, "relogin-write-once-text-transform");
+    assert!(result.is_err_and(|error| {
+        let error = error.to_string();
+        error.contains("sealed text mismatch") && error.contains("parchment text mismatch")
+    }));
+}
+
+#[tokio::test]
+async fn durability_keeps_an_earlier_write_failure_primary() {
+    let mut reads = Vec::new();
+    let mut action = "";
+    let result = check_document_durability(
+        &mut reads,
+        &mut action,
+        [
+            ("write-once", Err("transform failed".into())),
+            ("rewrite", Ok(())),
+        ],
+        async |reads| {
+            reads.push("sealed");
+            Ok(())
+        },
+        async |reads| {
+            reads.push("parchment");
+            Err("parchment text mismatch".into())
+        },
+    )
+    .await;
+    assert_eq!(reads, ["parchment"]);
+    assert_eq!(action, "write-once");
+    assert!(result.is_err_and(|error| {
+        error.to_string() == "transform failed; relogin-rewritable-text: parchment text mismatch"
+    }));
 }

@@ -621,7 +621,6 @@ async fn energy_ring(
         equipped(client, active)
     })
     .await?;
-    let active_observed_at = tokio::time::Instant::now();
     let remaining = paused
         .remaining_ms
         .ok_or("paused timer missing remaining budget")?;
@@ -644,28 +643,21 @@ async fn energy_ring(
         retired,
     )
     .await?;
-    check_ring_age(active_observed_at, tokio::time::Instant::now(), remaining)?;
     check.action = "relogin-timer";
     rejoin(client, clients).await?;
-    retired(client).ok_or_else(|| {
-        format!(
+    if retired(client).is_none() {
+        return Err(format!(
             "expired ring reappeared on fresh admission; inventory={:?}",
             client.inventory()
         )
-        .into()
-    })
+        .into());
+    }
+    verify_ring_expiry_timing(&mut check.action, remaining)
 }
 
-fn check_ring_age(
-    active_observed_at: tokio::time::Instant,
-    retirement_observed_at: tokio::time::Instant,
-    remaining_ms: u64,
-) -> TestResult {
-    let elapsed = retirement_observed_at.duration_since(active_observed_at);
-    if elapsed < Duration::from_millis(remaining_ms) {
-        return Err(format!("Energy Ring retired early; observed active interval {elapsed:?}, restored budget {remaining_ms}ms (timed_item_clock.rs:375)").into());
-    }
-    Ok(())
+fn verify_ring_expiry_timing(action: &mut &'static str, remaining_ms: u64) -> TestResult {
+    *action = "verify-server-ring-expiry-timing";
+    Err(format!("SERVER-GAP missing server timestamps for Energy Ring resumed activation and retirement; restored budget={remaining_ms}ms; owner clock at timed_item_clock.rs:375; timer reply at timed_item.rs:42").into())
 }
 
 async fn observe_shield(
@@ -737,14 +729,14 @@ async fn observe_shield(
 }
 
 #[test]
-fn ring_cannot_retire_before_restored_budget() {
-    let command_sent = tokio::time::Instant::now();
-    let active = command_sent + Duration::from_millis(100);
-    assert!(
-        check_ring_age(active, command_sent + Duration::from_millis(650), 600)
-            .is_err_and(|error| error.to_string().contains("Energy Ring retired early"))
-    );
-    assert!(check_ring_age(active, active + Duration::from_millis(600), 600).is_ok());
+fn ring_expiry_requires_server_timestamps() {
+    let mut action = "relogin-timer";
+    let result = verify_ring_expiry_timing(&mut action, 600);
+    assert_eq!(action, "verify-server-ring-expiry-timing");
+    assert!(result.is_err_and(|error| {
+        let error = error.to_string();
+        error.contains("missing server timestamps") && error.contains("restored budget=600ms")
+    }));
 }
 
 #[test]
