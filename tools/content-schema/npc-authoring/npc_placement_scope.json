@@ -14,6 +14,7 @@
     "oteryn:npc.amanda",
     "oteryn:npc.ambassador_manop",
     "oteryn:npc.amber",
+    "oteryn:npc.anderson",
     "oteryn:npc.angelina",
     "oteryn:npc.anna",
     "oteryn:npc.ariella",
@@ -25,10 +26,23 @@
     "oteryn:npc.blind_orc",
     "oteryn:npc.brewster",
     "oteryn:npc.briasol",
+    "oteryn:npc.brodrosch",
     "oteryn:npc.broken_servant_sentry",
     "oteryn:npc.bron",
     "oteryn:npc.buddel",
     "oteryn:npc.cael",
+    "oteryn:npc.captain_bluebear",
+    "oteryn:npc.captain_breezelda",
+    "oteryn:npc.captain_chelop",
+    "oteryn:npc.captain_cookie",
+    "oteryn:npc.captain_corsarah",
+    "oteryn:npc.captain_fearless",
+    "oteryn:npc.captain_greyhound",
+    "oteryn:npc.captain_gulliver",
+    "oteryn:npc.captain_harava",
+    "oteryn:npc.captain_max_calassa",
+    "oteryn:npc.captain_pelagia",
+    "oteryn:npc.captain_seagull",
     "oteryn:npc.captain_waverider",
     "oteryn:npc.captain_waverider_island",
     "oteryn:npc.carlos",
@@ -209,6 +223,32 @@
     "oteryn:npc.minzy"
   ],
   "placement_adjustments": {
+    "oteryn:npc.brodrosch": {
+      "source": {
+        "x": 32659,
+        "y": 31957,
+        "z": 15
+      },
+      "target": {
+        "x": 32659,
+        "y": 31958,
+        "z": 15
+      },
+      "reason": "Crystal 201189f8 thorgrin.lua:61 lands on this XML anchor at Kazordoon. The next cell south uses the same clear ground and is within the donor walk radius of 2 (brodrosch.lua:11)."
+    },
+    "oteryn:npc.captain_harava": {
+      "source": {
+        "x": 33902,
+        "y": 31462,
+        "z": 6
+      },
+      "target": {
+        "x": 33902,
+        "y": 31463,
+        "z": 6
+      },
+      "reason": "Crystal 201189f8 captain_gulliver.lua:68 lands on this XML anchor at Issavi. The next cell south uses the same clear ground and is within the donor walk radius of 2 (captain_harava.lua:11)."
+    },
     "oteryn:npc.edala": {
       "source": {
         "x": 32697,
@@ -303,6 +343,44 @@
     }
   },
   "placement_overrides": {
+    "oteryn:npc.anderson": {
+      "basis": "Crystal world-npc.xml:1471-1472 anchors Anderson. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32127,
+            "y": 31660,
+            "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.brodrosch": {
+      "basis": "Crystal world-npc.xml:3287-3288 anchors Brodrosch. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32659,
+            "y": 31957,
+            "z": 15
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
     "oteryn:npc.buddel": {
       "basis": "Crystal world-npc.xml:1219-1221 anchors Buddel in Svargrond. The source leaves direction unspecified, so the native placement uses north.",
       "placements": [
@@ -312,6 +390,234 @@
             "x": 32255,
             "y": 31195,
             "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_bluebear": {
+      "basis": "Crystal world-npc.xml:886-887 anchors Captain Bluebear. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32310,
+            "y": 32209,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_breezelda": {
+      "basis": "Crystal world-npc.xml:507-508 anchors Captain Breezelda. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32341,
+            "y": 31109,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_chelop": {
+      "basis": "Crystal world-npc.xml:2208-2209 anchors Captain Chelop. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33494,
+            "y": 32568,
+            "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_cookie": {
+      "basis": "Crystal world-npc.xml:522-523 anchors Captain Cookie. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32804,
+            "y": 31277,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_corsarah": {
+      "basis": "Crystal world-npc.xml:955-956 anchors Captain Corsarah. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 34010,
+            "y": 32475,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_fearless": {
+      "basis": "Crystal world-npc.xml:705-706 anchors Captain Fearless. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32957,
+            "y": 32021,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_greyhound": {
+      "basis": "Crystal world-npc.xml:636-637 anchors Captain Greyhound. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32387,
+            "y": 31822,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_gulliver": {
+      "basis": "Crystal world-npc.xml:1759-1760 anchors Captain Gulliver. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33479,
+            "y": 31986,
+            "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_harava": {
+      "basis": "Crystal world-npc.xml:561-562 anchors Captain Harava. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33902,
+            "y": 31462,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_max_calassa": {
+      "basis": "Crystal world-npc.xml:991-992 anchors Captain Max (Calassa). The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 31915,
+            "y": 32710,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_pelagia": {
+      "basis": "Crystal world-npc.xml:594-595 anchors Captain Pelagia. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33491,
+            "y": 31710,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_seagull": {
+      "basis": "Crystal world-npc.xml:579-580 anchors Captain Seagull. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32735,
+            "y": 31670,
+            "z": 6
           }
         }
       ],
