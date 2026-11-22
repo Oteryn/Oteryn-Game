@@ -42,7 +42,7 @@ fn overlay(
             for (key, value) in after {
                 let fixed_array = matches!(
                     key.as_str(),
-                    "effect_opacity" | "hud_names" | "hud_bounds" | "origin" | "size" | "visible"
+                    "effect_opacity" | "hud_names" | "hud_bounds" | "origin" | "size" | "visible" | "rows" | "bindings"
                 );
                 match (target.get_mut(&key), before.get(&key)) {
                     (Some(target), Some(before)) => overlay(fixed_array, target, before, value),
@@ -83,5 +83,42 @@ fn review_3376_effect_opacity_merges_per_index() -> io::Result<()> {
         PreferenceStore::read_transfer(&path)?.effect_opacity[..2],
         [21, 38]
     );
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn c2c_stale_bar_row_edits_merge() -> io::Result<()> {
+    let root = tempfile::tempdir()?;
+    let path = root.path().join("preferences.json");
+    let mut first = PreferenceStore::load(path.clone())?;
+    let mut second = PreferenceStore::load(path.clone())?;
+    let mut own = first.preferences().clone();
+    own.bar_layout.rows[1].enabled = true;
+    first.apply(own)?;
+    let mut other = second.preferences().clone();
+    other.bar_layout.rows[2].enabled = true;
+    second.apply(other)?;
+    let rows = PreferenceStore::read_transfer(&path)?.bar_layout.rows;
+    assert!(rows[1].enabled && rows[2].enabled);
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn c2c_stale_item_bindings_merge() -> io::Result<()> {
+    use std::num::NonZeroU32;
+    let root = tempfile::tempdir()?;
+    let path = root.path().join("preferences.json");
+    let mut first = PreferenceStore::load(path.clone())?;
+    let mut second = PreferenceStore::load(path.clone())?;
+    let mut own = first.preferences().clone();
+    own.item_hotkeys.bindings[0] = NonZeroU32::new(123);
+    first.apply(own)?;
+    let mut other = second.preferences().clone();
+    other.item_hotkeys.bindings[1] = NonZeroU32::new(456);
+    second.apply(other)?;
+    let bindings = PreferenceStore::read_transfer(&path)?.item_hotkeys.bindings;
+    assert_eq!(bindings[..2], [NonZeroU32::new(123), NonZeroU32::new(456)]);
     Ok(())
 }

@@ -128,6 +128,8 @@ pub(in crate::bevy_shell) struct SidebarWidgets {
     pub(super) extra: bool,
     /// The regions (minimap, chat) floating in their own window.
     pub(super) floating: Vec<&'static str>,
+    placements: Vec<(Widget, Dock, Option<Widget>)>,
+    reset_pending: bool,
     saved_revision: Option<std::sync::Arc<[u8]>>,
 }
 impl SidebarWidgets {
@@ -157,9 +159,17 @@ impl SidebarWidgets {
         let Some(index) = self.entries.iter().position(|entry| entry.widget == widget) else {
             return;
         };
-        let mut entry = self.entries.remove(index);
-        entry.dock = dock;
-        entry.floating = false;
+        let prev_dock = self.entries[index].dock;
+        self.entries[index].dock = dock;
+        self.entries[index].floating = false;
+        let at = self.reorder(index, dock, before);
+        if index != at || dock != prev_dock {
+            self.placements.push((widget, dock, before));
+        }
+    }
+
+    fn reorder(&mut self, index: usize, dock: Dock, before: Option<Widget>) -> usize {
+        let entry = self.entries.remove(index);
         let at = before
             .and_then(|before| self.entries.iter().position(|entry| entry.widget == before))
             .or_else(|| {
@@ -170,6 +180,7 @@ impl SidebarWidgets {
             })
             .unwrap_or(self.entries.len());
         self.entries.insert(at, entry);
+        at
     }
     /// Shows or hides an optional sidebar; the widgets of a removed sidebar go back to the
     /// right sidebar.
