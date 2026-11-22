@@ -64,6 +64,9 @@ IDS |= {21466, 21389}
 IDS |= {14682, 7785}
 # M07 deterministic siege burning uses the existing Fire Bug as a retained tool.
 IDS |= {5467}
+# Tower Defence delivers the Watchtower parcel; Troll Sabotage exchanges Jerom's
+# family necklace for the Elvenhair Rope through the existing NPC custody owner.
+IDS |= {140, 646, 7754}
 # M07 Too Hot cleaning, column and floor-repair tools from the same pinned source.
 IDS |= {36543, 36544, 36545}
 # ENGNPC2: the registered Goblin Merchant Slug and Rotworm exchanges consume

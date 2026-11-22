@@ -291,6 +291,19 @@ class MainNativeFactJoin(unittest.TestCase):
             self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
             self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 850)
 
+    def test_tower_and_troll_npc_items_have_exact_portable_source_facts(self):
+        records = {r['production_definition']['production_key']: r for r in q.capture()['records']}
+        for item, weight in ((140, 1800), (646, 600), (7754, 630)):
+            key = f'oteryn:item.tibia.i{item}'
+            self.assertIn(key, records)
+            record = records[key]
+            self.assertEqual(record['production_binding']['external_id'], str(item))
+            self.assertEqual(record['admission'], dict(materializable=True,
+                stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground']))
+            self.assertEqual(record['semantics']['physical']['value']['weight']['value'], weight)
+        parcel = records['oteryn:item.tibia.i140']['semantics']['container']['value']
+        self.assertEqual(parcel['capacity'], {'state': 'KNOWN', 'value': 10})
+
     def test_fanfare_copper_key_has_native_portable_nonstackable_facts(self):
         records = q.capture()['records']
         record = next((r for r in records if r['production_definition']['production_key'] == 'oteryn:item.tibia.i2973'), None)

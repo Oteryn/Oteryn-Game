@@ -29,7 +29,9 @@ fn scenario_case(
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
         name == "m07-ring-offering" || name == super::super::m07_dreamer_ring_lost_ack_fixtures::NAME;
-    let m07_too_hot = name.starts_with("m07/too-hot-column-");
+    let tower_defence = name == super::super::tower_defence_journey_fixtures::NAME;
+    let too_hot_research = name == super::super::too_hot_research_fixtures::NAME;
+    let m07_too_hot = name.starts_with("m07/too-hot-column-") || too_hot_research;
     let m07_repair = name.starts_with("m07/machinery-repair-");
     let m07_machinery = name.starts_with("m07/machinery-");
     let m07_machinery_level49 = m07_machinery && name.ends_with("-level49");
@@ -139,6 +141,8 @@ fn scenario_case(
         super::super::qd_world_fixtures::start(name)?
     } else if engenc_asura {
         super::super::engenc_asura_dispatch_fixtures::start(name)?
+    } else if too_hot_research || tower_defence {
+        trigger
     } else if m07_too_hot {
         super::super::m07_too_hot_columns_fixtures::start()
     } else if m07_repair {
@@ -1002,7 +1006,7 @@ fn scenario_case(
         if name.starts_with("authored-") {
             eprintln!("POSTGRES_CASE_STARTED {name} after PostgreSQL fixture initialization");
         }
-        if m07_machinery_level49 || m07_too_hot {
+        if m07_machinery_level49 || (m07_too_hot && !too_hot_research) {
             // Seed a separate historical character, as the shared harness does;
             // never bypass the progression owner's typed successor guard.
             sqlx::query(
@@ -1239,6 +1243,16 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("native Spirit policies")?,
             )?
+        } else if tower_defence {
+            super::super::tower_defence_journey_fixtures::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("Tower Defence policies")?,
+            )?
+        } else if too_hot_research {
+            super::super::too_hot_research_fixtures::world(
+                generation.native_gameplay().ok_or("Too Hot policies")?,
+            )?
         } else if m07_too_hot {
             super::super::m07_too_hot_columns_fixtures::world(
                 generation.native_gameplay().ok_or("Too Hot policies")?,
@@ -1422,6 +1436,7 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
+            super::super::too_hot_research_fixtures::NAME => Some(80),
             _ => None,
         };
         if let Some(initial_level) = initial_level {
@@ -1582,8 +1597,6 @@ fn scenario_case(
             } else if name == "authored-torch" {
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
-                // Fourteen contacts and the player share this fixture world.
-                15
             } else if classic_npc || qd_world {
                 5
             } else if monk {
@@ -2031,6 +2044,23 @@ fn scenario_case(
                 &mut owner,
                 &mut admitted,
                 &h,
+                &callback,
+            ))
+            .await?;
+        } else if tower_defence {
+            Box::pin(super::super::tower_defence_journey_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            ))
+            .await?;
+        } else if too_hot_research {
+            Box::pin(super::super::too_hot_research_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
                 &callback,
             ))
             .await?;

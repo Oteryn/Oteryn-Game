@@ -573,6 +573,8 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../../content/quests/npc-callbacks/vampire-hunter.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/too-hot-to-handle.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/tower-defence.json"),
     include_str!("../../../../../content/quests/npc-callbacks/tibia-tales.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
@@ -3515,4 +3517,70 @@ mod outfit_reward_predecessor_tests {
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn too_hot_intake_and_white_gem_require_earned_crypt_progress() -> Result<(), String> {
+    let loaded = super::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = load_for(catalogue)?;
+    let find = |suffix| {
+        callbacks
+            .iter()
+            .find(|row| row.key.strip_prefix("oteryn:quest-reward/too-hot-") == Some(suffix))
+            .ok_or_else(|| format!("missing Too Hot callback {suffix}"))
+    };
+    let request = find("investigation")?;
+    let mut tracks = BTreeMap::new();
+    assert_eq!(request.npc, "oteryn:npc.gnomystery");
+    assert_eq!(request.keywords, ["yes"]);
+    assert!(
+        request
+            .requires
+            .iter()
+            .any(|guard| !guard.holds(catalogue, &tracks))
+    );
+    tracks.insert(
+        "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line_complete".into(),
+        2,
+    );
+    assert!(
+        request
+            .requires
+            .iter()
+            .all(|guard| guard.holds(catalogue, &tracks))
+    );
+
+    let commission = find("repair-commission")?;
+    assert_eq!(commission.npc, "oteryn:npc.brodraem_orcbeard");
+    assert_eq!(commission.storage[0].minimum, 1);
+    let report = find("repair-report")?;
+    assert_eq!(report.npc, commission.npc);
+    assert_eq!(report.storage[0].minimum, 2);
+    for (track, count) in [
+        ("oteryn:quest-progress/too-hot/sarcophagus-total", 5),
+        ("oteryn:quest-progress/m07/too_hot/columns_repaired", 3),
+        ("oteryn:quest-progress/too-hot/marble-total", 4),
+    ] {
+        let guard = report
+            .requires
+            .iter()
+            .find(|guard| guard.track == track)
+            .ok_or(track)?;
+        tracks.insert(track.into(), count - 1);
+        assert!(!guard.holds(catalogue, &tracks));
+        tracks.insert(track.into(), count);
+        assert!(guard.holds(catalogue, &tracks));
+    }
+    assert_eq!(
+        report
+            .give
+            .as_ref()
+            .map(|reward| (reward.item.as_str(), reward.count)),
+        Some(("oteryn:item.tibia.i32769", 1))
+    );
+    assert!(!report.completes);
+    Ok(())
 }

@@ -36,7 +36,9 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
         super::quest_world_callbacks_fixtures::scenario(
             name,
-            if name.starts_with("qengine-rewards-qworld-phase-") {
+            if name == super::tower_defence_journey_fixtures::NAME {
+                super::tower_defence_journey_fixtures::START
+            } else if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps_fixtures::SOURCE
             } else if name == cq29_quest_contacts::THIEVES {
                 cq29_quest_contacts::VASE
