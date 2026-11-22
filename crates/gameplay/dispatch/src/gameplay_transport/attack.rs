@@ -1523,9 +1523,8 @@ mod weapon_tests {
         let weapon_of = |items: &[(u8, u32)]| weapon_of(&production, items);
         // Sword (3264, attack 14), mace (3286, club, attack 16), wooden shield (3412),
         // spear (3277, distance), arrow (3447, ammunition), wand of darkness (25760).
-        // The staff (3289) is a Monk fist weapon with attack 22 since the Monk Vocation
-        // Update (MONKFIX-1); before that it was a club weapon with attack 10, which is why
-        // the club cases below use the mace.
+        // The Staff (3289) uses the Monk fist skill from MONKFIX-1 and the
+        // attack value of 10 from Crystal 201189f8.
         assert_eq!(weapon_of(&[]), Some(SwingWeapon::Fists));
         assert_eq!(
             weapon_of(&[(5, 3264)]),
@@ -1544,7 +1543,7 @@ mod weapon_tests {
         assert_eq!(
             weapon_of(&[(6, 3289)]),
             Some(SwingWeapon::Melee {
-                attack: 22,
+                attack: 10,
                 skill: MeleeSkill::Fist
             })
         );

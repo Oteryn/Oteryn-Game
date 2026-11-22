@@ -29,11 +29,11 @@ fn the_shield_defends_over_the_weapon_and_bare_hands_with_the_fist() -> TestResu
     let content = native(&super::input()?)?;
     let read = |items: &[(&str, u8)]| equipped_defence(&held(&content, items), &content);
     assert_eq!(read(&[(FEET, 4)]), defence(DefenceSource::Fist, 7, 0));
-    assert_eq!(read(&[(SHIELD, 6)]), defence(DefenceSource::Shield, 19, 5));
+    assert_eq!(read(&[(SHIELD, 6)]), defence(DefenceSource::Shield, 14, 5));
     assert_eq!(read(&[(SWORD, 5)]), defence(DefenceSource::Weapon, 13, 2));
     assert_eq!(
         read(&[(SWORD, 5), (SHIELD, 6)]),
-        defence(DefenceSource::Shield, 20, 5),
+        defence(DefenceSource::Shield, 15, 5),
         "the shield adds the weapon's extra defence"
     );
     Ok(())

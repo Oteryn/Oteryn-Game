@@ -4198,7 +4198,7 @@
             },
             "defense": {
               "state": "KNOWN",
-              "value": 36
+              "value": 27
             },
             "extra_defense": {
               "state": "KNOWN",

@@ -6,7 +6,7 @@ import forge_sql_admission as forge
 
 class ForgeSqlAdmissionTests(unittest.TestCase):
     def test_committed_projection_matches_all_admitted_profiles_and_prices(self):
-        actual = forge.MIGRATION.read_text()
+        actual = forge.current_migration().read_text()
         start = actual.index(forge.BEGIN)
         end = actual.index(forge.END, start) + len(forge.END)
         self.assertEqual(actual[start:end], forge.generated())
@@ -16,6 +16,8 @@ class ForgeSqlAdmissionTests(unittest.TestCase):
         by_key = {row[0]: row[1:] for row in profiles}
         self.assertEqual(by_key['oteryn:item.tibia.i3264'], ('definition-r1', 1, 1, 'hand'))
         self.assertEqual(by_key['oteryn:item.tibia.i34082'], ('definition-r1', 4, 10, 'hand'))
+        self.assertEqual(by_key['oteryn:item.tibia.i7774'], ('definition-r1', 1, 1, 'hand'))
+        self.assertEqual(by_key['oteryn:item.tibia.i25973'], ('definition-r1', 1, 1, 'hand'))
         self.assertNotIn('oteryn:item.tibia.i37110', by_key)
         self.assertNotIn('oteryn:item.tibia.i51475', by_key)
         self.assertEqual(materials, [('oteryn:item.tibia.i37109', 'definition-r1'),

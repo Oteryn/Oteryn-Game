@@ -718,6 +718,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import protected_loot_yields
     protected_loot_yields.admit(root, items, provider_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
+    import equipped_combat_forge_profiles
+    equipped_combat_forge_profiles.apply(root, items, generated, NATIVE_MANIFEST,
+                                        provider_order, spell_import.canonical_bytes)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
