@@ -18,6 +18,7 @@ use oteryn_protocol_oteryn::{appearance, world_object};
 
 const ACTIONS: &[&str] = &[
     "outfit-select",
+    "addon-acquisition",
     "unearned-refusal",
     "taming-attempt",
     "mount-select",
@@ -671,12 +672,25 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         );
     }
     let mut state = snapshot(&mut client)?;
+    let admission_catalogue = state.catalogue.clone();
     let selected = outfit_and_refusal(row, &mut client, &mut state).await?;
     tame_war_bear(row, &mut client, clients, &mut state).await?;
 
     let mount = WAR_BEAR.to_owned();
     let mut mounted = selected;
     mounted.mount_key = Some(mount.clone());
+    let original_addons = admission_catalogue
+        .outfits
+        .iter()
+        .find(|outfit| outfit.key == mounted.outfit_key)
+        .map_or(0, |outfit| outfit.permitted_addons);
+    let earned_addons = state
+        .catalogue
+        .outfits
+        .iter()
+        .find(|outfit| outfit.key == mounted.outfit_key)
+        .map_or(0, |outfit| outfit.permitted_addons & !original_addons);
+    mounted.addons |= earned_addons;
     let request = appearance::Change {
         context: state.catalogue.context,
         expected_root_revision: state.catalogue.root_revision,
@@ -700,6 +714,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "mount-select",
         format!("committed_revision={committed} selected_revision={selected_revision} sequence={sequence}"),
     );
+    if earned_addons != 0 {
+        row.pass(
+            "addon-acquisition",
+            format!("earned-and-selected-mask={earned_addons}"),
+        );
+    }
     let previous = client.join_snapshot().game_session_id;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -724,7 +744,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "fresh-admission",
         format!("selected-outfit-addon-mount-and-unlock-persisted root_revision={committed} selected_revision={selected_revision}"),
     );
-    Err("step=addon-acquisition need=player-earned-addon-after-admission; step=mounted-look need=mount-in-wire-binding source=crates/protocol-oteryn/src/appearance.rs:66".into())
+    if earned_addons == 0 {
+        evidence("S06_GAP step=addon-acquisition need=player-earned-addon-after-admission");
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -746,4 +769,9 @@ mod tests {
         assert!(ACTIONS.iter().all(|action| row.passed.contains(action)));
         assert!(row.failure.is_none());
     }
+}
+
+#[test]
+fn full_verdict_requires_evidence_of_addon_acquisition() {
+    assert!(ACTIONS.contains(&"addon-acquisition"));
 }

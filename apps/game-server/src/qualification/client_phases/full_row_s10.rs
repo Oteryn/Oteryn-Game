@@ -261,27 +261,69 @@ async fn approach_rashid(
         )
         .into());
     }
-    let actor = approach(client, world, &npc).await?;
-    if utc_rashid_destination()? != today {
-        return Err("step=rashid-gate observed=weekday-changed-on-route".into());
+    let (x, y, floor) = expected;
+    let from = tile(client.world_spatial().actor_position)?;
+    // Search the connected tiles of the bounded compiled bundle for inter-town travel.
+    let path = find_route(
+        from,
+        |at| at.floor == floor && at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 3,
+        |at, direction| destination(world, at, direction),
+    )
+    .map_err(|_| {
+        format!(
+            "step=rashid-gate need=connected-walking-route-to-{}-Rashid-{expected:?}",
+            today.city
+        )
+    })?;
+    // Keep a blocked step's detour goal inside the local route window.
+    for segment in path.chunks(64) {
+        walk(client, world, segment).await?;
     }
-    let visible = client
-        .world_entities()
-        .ok_or("step=rashid-gate need=live-entities")?;
-    let mut rashids = visible.iter().filter(|entry| {
-        entry.kind == EntityKind::Npc
-            && entry
-                .display_name
-                .as_ref()
-                .and_then(|name| name.as_str().ok())
-                == Some("Rashid")
-    });
-    if rashids.next().map(|entry| entry.entity) != Some(actor) || rashids.next().is_some() {
-        return Err(
-            "step=rashid-gate need=exactly-one-live-visible-Rashid-at-weekday-placement".into(),
-        );
+    for _ in 0..8 {
+        if utc_rashid_destination()? != today {
+            return Err("step=rashid-gate observed=weekday-changed-on-route".into());
+        }
+        let actor = actor_at(client, &npc)
+            .ok_or("step=rashid-gate need=live-Rashid-at-weekday-placement")?;
+        let visible = client
+            .world_entities()
+            .ok_or("step=rashid-gate need=live-entities")?;
+        if visible
+            .iter()
+            .filter(|entry| {
+                entry.kind == EntityKind::Npc
+                    && entry
+                        .display_name
+                        .as_ref()
+                        .and_then(|name| name.as_str().ok())
+                        == Some("Rashid")
+            })
+            .count()
+            != 1
+        {
+            return Err("step=rashid-gate need=exactly-one-live-visible-Rashid".into());
+        }
+        let live = tile(
+            visible
+                .get(&actor)
+                .ok_or("step=rashid-gate need=live-Rashid-position")?
+                .position,
+        )?;
+        let here = tile(client.world_spatial().actor_position)?;
+        if in_talk_range(here, live) {
+            return Ok(actor);
+        }
+        let path = route(world, here, |at| in_talk_range(at, live))
+            .ok_or("step=rashid-gate need=route-to-live-Rashid-talk-range")?;
+        walk(client, world, &path).await?;
     }
-    Ok(actor)
+    Err("step=rashid-gate need=Rashid-to-remain-in-talk-range".into())
+}
+
+fn in_talk_range(player: TilePos, npc: TilePos) -> bool {
+    player.floor == npc.floor
+        && u32::from(player.x.abs_diff(npc.x).max(player.y.abs_diff(npc.y)))
+            <= oteryn_protocol_oteryn::npc_service::TALK_RANGE_TILES
 }
 
 fn carried_gold(client: &DevClientSession) -> TestResult<u64> {
@@ -367,13 +409,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_character(clients, 0xf8, 1).await?;
     let here = tile(client.world_spatial().actor_position)?;
     let expected_rashid = utc_rashid_destination()?;
-    let (x, y, floor) = rashid_bundle_cell(expected_rashid);
     let (key, keyword, display, fare, arrival, npc) = TRAVEL_NPCS
         .iter()
-        .filter(|&&(_, _, _, _, arrival)| {
-            tile(arrival).is_ok_and(|arrival| route(world, arrival, |at| {
-                at.floor == floor && at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 3
-            }).is_some())
+        .filter(|&&(_, keyword, _, _, _)| {
+            keyword != "port hope" || expected_rashid.city == "Wednesday"
         })
         .find_map(|&(key, keyword, display, fare, arrival)| {
             metadata.npcs.npcs.iter().find(|npc| npc.key == key)
@@ -382,7 +421,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 })).is_some())
                 .map(|npc| (key, keyword, display, fare, arrival, npc))
         })
-        .ok_or_else(|| format!("step=travel-plan need=reachable-paid-departure-and-onward-route-to-{}-Rashid-{x}-{y}-{floor}", expected_rashid.city))?;
+        .ok_or_else(|| {
+            format!(
+                "step=travel-plan need=reachable-paid-departure for {} Rashid",
+                expected_rashid.city
+            )
+        })?;
     let actor = approach(&mut client, world, npc).await?;
     let _ = talk(&mut client, actor, "hi").await?;
     let (quote, _, _) = talk(&mut client, actor, keyword).await?;
@@ -501,4 +545,25 @@ mod tests {
         assert_eq!(gap(&["quote", "refusal"]), Some("return-to-captain"));
         assert_eq!(gap(ACTIONS), None);
     }
+}
+
+#[test]
+fn npc_wander_requires_range_to_the_live_actor() {
+    let player = TilePos {
+        x: 100,
+        y: 100,
+        floor: -7,
+    };
+    let authored = TilePos { x: 103, ..player };
+    let wandered = TilePos { x: 106, ..player };
+    assert!(in_talk_range(player, authored));
+    assert!(!in_talk_range(player, wandered));
+    assert!(in_talk_range(TilePos { x: 102, ..player }, wandered));
+    assert!(!in_talk_range(
+        TilePos {
+            floor: -6,
+            ..wandered
+        },
+        wandered
+    ));
 }

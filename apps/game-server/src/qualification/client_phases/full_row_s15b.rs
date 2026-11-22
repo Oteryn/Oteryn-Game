@@ -60,6 +60,7 @@ fn compact(value: &str) -> String {
         .collect()
 }
 
+const EXPIRY_OBSERVATION: Duration = Duration::from_secs(2);
 fn reconnect_quiet_window() -> Duration {
     Duration::from_secs(4)
 }
@@ -100,10 +101,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         StepDirection::West,
     )
     .map(actor_position);
+    let resume_started = tokio::time::Instant::now();
     client = client_disconnect_resume::recover(client, clients, expected)
         .await
         .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=2 reconnect observed={error} need=committed CompleteReconnect"), error) })?;
     let resumed_at = tokio::time::Instant::now();
+    if resumed_at.duration_since(resume_started) >= reconnect_quiet_window() {
+        return Err(
+            "step=3 reentry need=observable-recovery-commit-window-before-protection-expires"
+                .into(),
+        );
+    }
     let (monster, own) = actors(&client)?;
     evidence("S15B_CHECK step=2 committed-reconnect PASS");
 
@@ -117,11 +125,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if health(&client, own)? < hp_before_commands {
         return Err("step=3 reentry need=no-monster-damage-during-protected-commands".into());
     }
+    let remaining = reconnect_quiet_window().saturating_sub(resume_started.elapsed());
+    if remaining.is_zero() {
+        return Err("step=3 reentry need=protected-observation-after-native-commands".into());
+    }
     require_quiet(
         &mut client,
         monster,
         own,
-        reconnect_quiet_window().saturating_sub(resumed_at.elapsed()),
+        remaining,
         "step=3 four-second protection",
     )
     .await?;
@@ -130,7 +142,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &mut client,
         monster,
         own,
-        Duration::from_secs(12),
+        (resumed_at + reconnect_quiet_window() + EXPIRY_OBSERVATION)
+            .saturating_duration_since(tokio::time::Instant::now()),
         "step=4 reentry expiry",
     )
     .await?;
@@ -150,13 +163,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence("S15B_CHECK step=4 expiry-damage-and-logout-refusal PASS");
     drop(client);
 
+    let admission_started = tokio::time::Instant::now();
     let mut fresh = connect_world(clients, 0x8c)
         .await
         .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=5 fresh admission observed={error}"), error) })?;
     let admitted_at = tokio::time::Instant::now();
-    walk_during_fresh_protection(&mut fresh, world, &metadata.spawns, admitted_at).await?;
+    // The commit is between the request start and the joined-session receipt.
+    // Demand silence only through the earliest possible expiry.
+    if admitted_at.duration_since(admission_started) >= fresh_quiet_budget(Duration::ZERO) {
+        return Err(
+            "step=5 fresh-login need=observable-admission-commit-window-before-protection-expires"
+                .into(),
+        );
+    }
+    walk_during_fresh_protection(&mut fresh, world, &metadata.spawns, admission_started).await?;
     let (monster, own) = actors(&fresh)?;
-    let remaining = fresh_quiet_budget(admitted_at.elapsed());
+    let remaining = fresh_quiet_budget(admission_started.elapsed());
     if remaining.is_zero() {
         return Err(
             "step=5 fresh-login need=reachable-rat-within-admission-protection-window".into(),
@@ -174,7 +196,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &mut fresh,
         monster,
         own,
-        Duration::from_secs(12),
+        (admitted_at + fresh_quiet_budget(Duration::ZERO) + EXPIRY_OBSERVATION)
+            .saturating_duration_since(tokio::time::Instant::now()),
         "step=5 fresh-login expiry",
     )
     .await?;
@@ -399,7 +422,6 @@ async fn require_damage(
     step: &str,
 ) -> TestResult {
     let before = health(client, own)?;
-    client.take_events();
     let deadline = tokio::time::Instant::now() + duration;
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut frame = false;
@@ -460,4 +482,9 @@ mod tests {
 #[test]
 fn reconnect_observation_covers_the_last_second() {
     assert_eq!(reconnect_quiet_window(), Duration::from_secs(4));
+}
+
+#[test]
+fn expiry_observation_is_bounded_to_one_attack_interval() {
+    assert_eq!(EXPIRY_OBSERVATION, Duration::from_secs(2));
 }

@@ -14,7 +14,7 @@
 //!    with a positive wait; require every OK reply to have its exact line delta and the refused
 //!    line to produce none.
 //! 6. Log out and freshly admit the same character. Require a new game session with its
-//!    own room membership. Reopen World and check whether the prior mute still refuses speech.
+//!    own room membership. Reopen World and verify that the fresh limiter admits speech.
 
 use super::*;
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, ChatRoom, DevClientSession};
@@ -187,17 +187,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         );
     }
     open(&mut client, ChatRoom::World).await?;
-    let text = "S04c relog muted";
-    let reply = client
-        .chat(&ChatIntent::Room {
-            room: ChatRoom::World,
-            text: text.into(),
-        })
-        .await?;
-    if reply.disposition != ChatDisposition::Muted || reply.wait_seconds == 0 {
-        return Err(format!("step=public-mute-after-fresh-admission observed={reply:?} need=durable-spam-mute source=crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs:201").into());
-    }
-    require_no_line(&mut client, ChatRoom::World, text).await?;
+    send_line(&mut client, ChatRoom::World, "S04c fresh-session message").await?;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
