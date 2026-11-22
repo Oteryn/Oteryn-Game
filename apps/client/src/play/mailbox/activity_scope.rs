@@ -86,6 +86,8 @@ impl Mailbox {
         self.task_board.soulseals_open = false;
         self.npc_shop.pending = Default::default();
         self.npc_shop.live.pending = false;
+        self.npc_shop.live.weight_pending = None;
+        self.npc_shop.live.weights.clear();
         self.dialogue.pending = false;
         self.prey.pending = Default::default();
         self.imbue.invalidate_item_scope();
@@ -97,6 +99,10 @@ impl Mailbox {
         self.hireling_management.pending = Default::default();
         self.market.pending = Default::default();
         self.market.details = Default::default();
+        self.market.hand_pending = None;
+        self.market.hand_positions.clear();
+        self.market.funds_pending = false;
+        self.market.funds = None;
         self.chat_private.pending = Default::default();
         self.boss_rewards.pending = Default::default();
         self.discovery.loot.pending = Default::default();
@@ -210,6 +216,23 @@ mod tests {
         mailbox.battle.pending_command = Some(crate::combat_input::CombatCommand::Stop);
         mailbox.spellbook_details.pending = Some(Default::default());
         mailbox.chat.pending = true;
+        mailbox.market.hand_pending = Some(42);
+        mailbox.market.funds_pending = true;
+        mailbox.market.funds = Some((10, 20));
+        mailbox.market.hand_positions.insert(42, Some(2));
+        mailbox.npc_shop.live.weight_pending = Some(oteryn_client_ui::npc_shop::Quote {
+            npc: oteryn_session::EntityRef {
+                identity: [9; 16],
+                generation: 2,
+            },
+            revision: 7,
+            offer_index: 0,
+            item: 42,
+            side: oteryn_client_ui::npc_shop::NpcTradeSide::Buy,
+            count: 1,
+            price: 12,
+        });
+        mailbox.npc_shop.live.weights.insert(42, Some(100));
         let read = || ItemCooldownRead {
             slot: std::num::NonZeroU32::MIN,
             action: BarAction::Passive {
@@ -228,6 +251,12 @@ mod tests {
         assert!(mailbox.battle.pending_command.is_none());
         assert!(mailbox.spellbook_details.pending.is_none());
         assert!(!mailbox.chat.pending);
+        assert!(mailbox.market.hand_pending.is_none());
+        assert!(!mailbox.market.funds_pending);
+        assert!(mailbox.market.funds.is_none());
+        assert!(mailbox.market.hand_positions.is_empty());
+        assert!(mailbox.npc_shop.live.weight_pending.is_none());
+        assert!(mailbox.npc_shop.live.weights.is_empty());
         drop(mailbox);
         assert!(!link.bar_activation_pending());
     }
