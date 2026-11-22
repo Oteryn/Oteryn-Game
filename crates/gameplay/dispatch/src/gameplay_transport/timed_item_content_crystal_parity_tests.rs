@@ -73,10 +73,9 @@ fn i05_crystal_charged_amulet_matches() {
 /// `items.xml:7458-7489`, decayTo 0) are admitted with their active-time budgets and no decay
 /// item. The power, sword, axe and club rings 3050/3091/3092/3093 -> 3087/3094/3095/3096
 /// (1,800 s, Crystal `items.xml:6927-6936`, `:7339-7350`, `:7392-7457`) are admitted too.
-/// Stealth, life and healing rings are pinned below until their invisibility and
-/// regeneration effects are production-ready.
+/// Crystal also gives the stealth, life and healing rings 600, 1,200 and 450 seconds.
 #[test]
-fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
+fn i05_rings_are_admitted_with_crystal_forms_and_budgets() {
     let controller = native();
     let native = native_state(&controller);
     for (base, active, seconds) in [
@@ -86,6 +85,9 @@ fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
         (3091, 3094, 1_800),
         (3092, 3095, 1_800),
         (3093, 3096, 1_800),
+        (3049, 3086, 600),
+        (3052, 3089, 1_200),
+        (3098, 3100, 450),
     ] {
         let definition = typed_of(native, base).expect("ring admitted");
         assert_eq!(
@@ -104,46 +106,18 @@ fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
         assert_eq!(ring_facts.full.charges(), None, "{base}");
         assert!(target.is_none(), "{base}");
     }
-
-    // I05 (2026-10-31): the skill rings left this pin when they were admitted above. These three
-    // active forms stay out: stealth 3049 -> 3086 needs invisibility, life 3052 -> 3089
-    // and healing 3098 -> 3100 need regeneration; neither effect is production-ready.
-    for base in [3049, 3052, 3098] {
-        let definition = typed_of(native, base);
-        // W15b admits the base stealth/life rings as chest rewards and E12 (915cc3787) admits
-        // the base healing ring as Trader stock. E12 also closes their equipment path until
-        // invisibility/regeneration are hosted (`unhosted_equipment_effect`, pinned by
-        // `i05_trader_custody_keeps_unhosted_ring_equipment_closed`), so no worn form exists.
-        let equipped = definition
-            .as_ref()
-            .and_then(|definition| equipped_definition(native, definition));
-        assert!(equipped.is_none(), "{base}");
-        assert!(
-            definition
-                .as_ref()
-                .and_then(|definition| facts(native, definition))
-                .is_none(),
-            "{base}"
-        );
-    }
-    for active in [3086, 3089, 3100] {
-        assert!(
-            native.item_policy(&key(active), "definition-r1").is_none(),
-            "{active}"
-        );
-    }
 }
 
-/// E12 adds genuine physical Trader stock. That must not grant an equipment
-/// writer or a timed-effect owner the previously withheld I05 mechanics.
+/// Chest and Trader custody retain the base definitions and use the same
+/// admitted budget as the equipment writer.
 #[test]
-fn i05_trader_custody_keeps_unhosted_ring_equipment_closed() {
+fn i05_trader_rings_keep_base_custody_and_use_timed_equipment() {
     use crate::durability::character_equipment::EquipmentMoveContent as _;
     use oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup as _;
     let controller = native();
     let native = native_state(&controller);
     let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native);
-    for base in [3049, 3052, 3098] {
+    for (base, active, seconds) in [(3049, 3086, 600), (3052, 3089, 1_200), (3098, 3100, 450)] {
         let definition = typed_of(native, base).expect("source Trader identity");
         let physical = crate::gameplay_transport::item_ref_admission::generation_item_facts(
             native,
@@ -155,19 +129,26 @@ fn i05_trader_custody_keeps_unhosted_ring_equipment_closed() {
             crate::durability::item_transfer::ItemStackClass::NonStackable
         );
         assert!(physical.weight.is_some(), "{base}");
-        assert!(equipped_definition(native, &definition).is_none(), "{base}");
-        assert!(facts(native, &definition).is_none(), "{base}");
+        let worn = equipped_definition(native, &definition).expect("active form");
+        assert_eq!(worn.production_key, key(active));
+        assert_eq!(
+            transform(native, &worn, ReferenceTransformKind::Deequip),
+            Some(definition.clone())
+        );
         assert!(
             weights
                 .equipment_policy(&definition.production_key, &definition.revision_ref)
-                .is_none(),
-            "{base}: no equipment writer grant"
+                .is_some(),
+            "{base}: equipment writer grant"
         );
-        assert!(
-            weights.is_timed_item(&definition.production_key, &definition.revision_ref),
-            "{base}: no ordinary untimed fallback"
+        assert!(!weights.is_timed_item(&definition.production_key, &definition.revision_ref));
+        assert_eq!(
+            weights
+                .full_timed_values(&definition)
+                .and_then(|v| v.remaining_ms()),
+            Some(seconds * 1_000),
+            "{base}"
         );
-        assert!(weights.full_timed_values(&definition).is_none(), "{base}");
     }
     for admitted in [3053, 3097] {
         let definition = typed_of(native, admitted).expect("existing hosted ring");

@@ -45,9 +45,6 @@ impl oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup
         revision: &str,
     ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
     {
-        if super::timed_item_content::unhosted_equipment_effect(key) {
-            return None;
-        }
         self.0.equipment_policy(key, revision)
     }
 }
@@ -124,9 +121,6 @@ impl EquipmentMoveContent for NativeItemWeights<'_> {
     }
 
     fn is_timed_item(&self, production_key: &str, revision_ref: &str) -> bool {
-        if super::timed_item_content::unhosted_equipment_effect(production_key) {
-            return true;
-        }
         let Some(policy) = self.0.item_policy(production_key, revision_ref) else {
             return true;
         };
