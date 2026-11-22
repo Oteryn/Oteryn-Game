@@ -163,7 +163,8 @@ impl CallbackStageReaders for Readers<'_, '_, '_, '_> {
 fn callback(proposal: &ProfileAbilityProposal) -> bool {
     matches!(
         proposal.ability.key.as_str(),
-        "oteryn:ability.spell.outburst_explode"
+        crate::content::native_monster_callbacks::CANDY_HORROR_WAVE
+            | "oteryn:ability.spell.outburst_explode"
             | "oteryn:ability.spell.energy_pulse_explosion"
             | "oteryn:ability.spell.eruption_of_destruction_explosion"
             | "oteryn:ability.creature.foam_stalker.field-fill-foamsplash"
@@ -504,6 +505,8 @@ impl NativeCasts {
                     let mut cues = Vec::new();
                     if facts.is_some() {
                         let effect = match plan.source_impact_binding() {
+                            Some("canary.appearance:effect/drawblood") => Some(1),
+                            Some("canary.appearance:effect/green_rings") => Some(9),
                             Some("canary.appearance:effect/energyarea") => Some(38),
                             Some("canary.appearance:effect/watersplash") => Some(54),
                             Some("canary.appearance:effect/purpleenergy") => Some(48),
@@ -518,6 +521,12 @@ impl NativeCasts {
                             _ => None,
                         };
                         if let Some(effect) = effect {
+                            use crate::map::facts::CreatureVisualCue;
+                            let capture = if plan.source().uses_captured_directional_position() {
+                                CreatureVisualCue::effect_from_registered_source
+                            } else {
+                                CreatureVisualCue::effect
+                            };
                             // Source Lua sends the tile effect after its
                             // creature loop, even when no player takes damage.
                             let targets = reader
@@ -527,7 +536,7 @@ impl NativeCasts {
                                 .map(|at| (None, at));
                             for (target, at) in targets {
                                 if let Some(cue) = super::visual_position(at).and_then(|position| {
-                                    crate::map::facts::CreatureVisualCue::effect(
+                                    capture(
                                         runtime,
                                         stamp,
                                         plan.proposal().issuer,

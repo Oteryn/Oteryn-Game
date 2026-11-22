@@ -49,7 +49,7 @@ pub(in crate::gameplay_transport) struct NativeCallbackState {
     outburst_entry: Option<outburst_entry::Entry>,
     omrafir: omrafir::NativeOmrafir,
     gaz: gaz::NativeGaz,
-    malice_heal: malice_heal::NativeMaliceHeal,
+    area_defences: malice_heal::NativeAreaDefences,
     smelly: smelly::NativeSmelly,
     binding: Option<(
         crate::foundation::RuntimeScopeRefV1,
@@ -198,7 +198,7 @@ impl NativeCallbackState {
 
         // Player condition clocks may advance while this same native proposal
         // is retained. Keep its identity, but commit the cure at execution time.
-        self.malice_heal
+        self.area_defences
             .execute(runtime, states, room, native, map, proposals, execution_now)
             .await?;
 

@@ -65,6 +65,8 @@ impl ComposedSource {
             false,
         )
         .map_err(|_| AttackError::InvalidSource)?;
+        let needs_target =
+            entry.ability.key == crate::content::native_monster_callbacks::CANDY_HORROR_WAVE;
         let primary = SpellSource {
             list: ScheduleList::Attack,
             creature_key: entry.creature.key.clone(),
@@ -98,13 +100,13 @@ impl ComposedSource {
             variants: Vec::new(),
             variant_child: None,
             windup: None,
-            needs_target: false,
+            needs_target,
             needs_direction: stage.needs_direction(),
         };
         let details = crate::content::ProjectV2AbilityDetails {
             kind: crate::content::ProjectV2AbilityKind::Spell,
             range_tiles: 0,
-            needs_target: false,
+            needs_target,
             needs_direction: stage.needs_direction(),
             area: stage.area().cloned(),
             effects: Vec::new(),
@@ -1297,7 +1299,15 @@ impl ComposedSource {
             (Some(anchor), Some(primary)) => Some(anchor.current_position(r, primary, p)?),
             _ => None,
         };
-        let fp = captured.unwrap_or(from.position());
+        let fp = if self
+            .primary
+            .as_ref()
+            .is_some_and(SpellSource::uses_captured_directional_position)
+        {
+            from.position()
+        } else {
+            captured.unwrap_or(from.position())
+        };
         let tp = captured.unwrap_or(to.position());
         if from.context() != to.context() || fp.floor != tp.floor {
             return Err(AttackError::OutOfRange);

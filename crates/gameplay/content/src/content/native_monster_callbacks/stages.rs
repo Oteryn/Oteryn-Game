@@ -1,13 +1,81 @@
 //! Exact immutable child-stage descriptions; runtime authority stays with owners.
-use super::{NativeCallbackError, QualifiedNativeCallback};
+use super::{NativeCallbackEntry, NativeCallbackError, QualifiedNativeCallback};
 use crate::content::{
     EffectFamilyDocument, ProjectReferenceRecord, ProjectV2AbilityArea, ProjectV2AbilityDetails,
     ProjectV2AbilityEffect, ProjectV2AbilityKind, ProjectV2AbilitySchedule,
-    ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref,
+    ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref, ProjectV2Family,
     ProjectV2FormulaAuthoring, ProjectV2Magnitude,
 };
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, sync::OnceLock};
+
+pub const CANDY_HORROR_WAVE: &str = "oteryn:ability.spell.candy_horror_wave";
+
+pub(super) fn qualify_candy_wave(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    creature: &Ref,
+    index: usize,
+) -> Result<Option<QualifiedNativeCallback>, NativeCallbackError> {
+    use NativeCallbackError::InvalidSource;
+    let Some(record) = native
+        .creature_profiles()
+        .records
+        .iter()
+        .find(|record| record.profile.target == *creature)
+    else {
+        return Ok(None);
+    };
+    let Data::Behavior(behavior) = &record.behavior.as_ref().ok_or(InvalidSource)?.data else {
+        return Err(InvalidSource);
+    };
+    let Some(schedule) = behavior
+        .attacks
+        .get(index)
+        .filter(|s| s.ability.key == CANDY_HORROR_WAVE)
+    else {
+        return Ok(None);
+    };
+    let Data::Creature(caster) = &record.profile.data else {
+        return Err(InvalidSource);
+    };
+    if !caster.abilities.contains(&schedule.ability) || schedule.range_tiles.unwrap_or(0) != 0 {
+        return Err(InvalidSource);
+    }
+    let definitions = record.attack_definitions.as_ref().ok_or(InvalidSource)?;
+    let details = definitions
+        .profiles
+        .iter()
+        .find_map(|profile| match &profile.data {
+            Data::Ability(ability) if profile.target == schedule.ability => {
+                ability.details.as_deref()
+            }
+            _ => None,
+        })
+        .ok_or(InvalidSource)?;
+    let encounter = details
+        .encounter
+        .as_ref()
+        .filter(|encounter| encounter.family == ProjectV2Family::Encounter)
+        .ok_or(InvalidSource)?;
+    if details.kind != ProjectV2AbilityKind::Spell
+        || details.needs_target
+        || !details.needs_direction
+        || details.range_tiles != 0
+    {
+        return Err(InvalidSource);
+    }
+    Ok(Some(QualifiedNativeCallback {
+        entry: NativeCallbackEntry {
+            creature: creature.clone(),
+            ability: schedule.ability.clone(),
+            encounter: encounter.clone(),
+            index,
+            phase: "attacks".into(),
+        },
+        content: native.source_digest(),
+        candy_wave_schedule: Some(schedule.clone()),
+    }))
+}
 const SOURCE: &str =
     include_str!("../../../../../../apps/game-server/src/source_callback_cast_fixture.json");
 const SOURCE_HASH: &str = "d92247a424de7d3c97566a789ec211f326d49e4cfeccaa87ff246e7882cb6c9b";
@@ -247,6 +315,9 @@ impl QualifiedNativeCallback {
         &self,
         index: usize,
     ) -> Result<Option<QualifiedNativeCallbackStage>, NativeCallbackError> {
+        if let Some(schedule) = &self.candy_wave_schedule {
+            return self.candy_wave_stage(schedule, index);
+        }
         let w = source()?;
         let Some(c) = w.cases.get(&self.entry().ability.key) else {
             return Ok(None);
@@ -287,6 +358,56 @@ impl QualifiedNativeCallback {
             delay_ms: stage.delay_ms.min,
             schedule,
             parsed,
+            fingerprint,
+        }))
+    }
+
+    fn candy_wave_stage(
+        &self,
+        schedule: &ProjectV2AbilitySchedule,
+        index: usize,
+    ) -> Result<Option<QualifiedNativeCallbackStage>, NativeCallbackError> {
+        // Crystal 201189f data/scripts/spells/attack/candy_horror_wave.lua.
+        // The first center (3) is affected. The second center (2) only anchors the mask.
+        let rows: &[&str] = match index {
+            0 => &["..x..", ".xCx.", ".x.x.", "..x.."],
+            1 => &["xxxxx", ".x.x.", "..c.."],
+            _ => return Ok(None),
+        };
+        // Crystal's Candy Horror attack row supplies 0..352 to both Combat objects.
+        let magnitude = schedule.magnitude.unwrap_or(ProjectV2Magnitude {
+            minimum: 0,
+            maximum: 352,
+        });
+        let minimum =
+            u32::try_from(magnitude.minimum).map_err(|_| NativeCallbackError::InvalidSource)?;
+        let maximum =
+            u32::try_from(magnitude.maximum).map_err(|_| NativeCallbackError::InvalidSource)?;
+        if minimum > maximum {
+            return Err(NativeCallbackError::InvalidSource);
+        }
+        let fingerprint = Sha256::digest(
+            serde_json::to_vec(&(self.content(), self.entry(), schedule, index, rows))
+                .map_err(|_| NativeCallbackError::InvalidSource)?,
+        )
+        .into();
+        Ok(Some(QualifiedNativeCallbackStage {
+            parent: self.clone(),
+            index,
+            delay_ms: 1,
+            schedule: schedule.clone(),
+            parsed: ParsedStage {
+                minimum,
+                maximum,
+                element: "earth".into(),
+                area: Some(ProjectV2AbilityArea::Matrix {
+                    north: rows.iter().map(|row| (*row).to_owned()).collect(),
+                    diagonal: Vec::new(),
+                }),
+                direction: false,
+                presentation: None,
+                armor: false,
+            },
             fingerprint,
         }))
     }

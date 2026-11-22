@@ -1,4 +1,4 @@
-//! Sealed, nine-source callback child casts; reuses the existing native damage consumer.
+//! Sealed source callback child casts; reuses the existing native damage consumer.
 //! Source Encounter bytes qualify actions; there is no general Encounter interpreter.
 #[cfg(test)]
 #[path = "source_callback_cast_cutoff_tests.rs"]
@@ -79,6 +79,39 @@ impl SourceCallbackCast {
         let Some(proof) = super::native_witness::qualify(native, creature, index, list)? else {
             return Ok(None);
         };
+        if proof.entry().ability.key == crate::content::native_monster_callbacks::CANDY_HORROR_WAVE
+        {
+            let parent = proof.as_content_source();
+            let mut stages = Vec::with_capacity(2);
+            for stage_index in 0..2 {
+                let stage = parent
+                    .stage(stage_index)
+                    .map_err(|_| AttackError::InvalidSource)?
+                    .ok_or(AttackError::InvalidSource)?;
+                let source = composed::ComposedSource::from_callback_stage(native, &stage, None)?;
+                stages.push((
+                    stage.delay_ms(),
+                    source
+                        .primary_source()
+                        .ok_or(AttackError::InvalidSource)?
+                        .clone(),
+                ));
+            }
+            let first = parent
+                .stage(0)
+                .map_err(|_| AttackError::InvalidSource)?
+                .ok_or(AttackError::InvalidSource)?;
+            return Ok(Some(Self {
+                creature: creature.key.clone(),
+                parent: proof.entry().ability.clone(),
+                index,
+                range: first.range_tiles(),
+                magnitude: first.magnitude(),
+                content: proof.content(),
+                stages,
+                native_parent: Some(parent.clone()),
+            }));
+        }
         static FIXTURE: std::sync::OnceLock<Option<Witness>> = std::sync::OnceLock::new();
         let w = FIXTURE
             .get_or_init(|| {
@@ -576,6 +609,8 @@ impl CallbackStagePlan {
             ("oteryn:creature.charging_outburst" | "oteryn:creature.gaz_haragoth", _) => {
                 "canary.appearance:effect/purpleenergy"
             }
+            ("oteryn:creature.candy_horror", 0) => "canary.appearance:effect/drawblood",
+            ("oteryn:creature.candy_horror", 1) => "canary.appearance:effect/green_rings",
             ("oteryn:creature.eruption_of_destruction", _) => "canary.appearance:effect/firearea",
             ("oteryn:creature.lady_tenebris", _) => "canary.appearance:effect/mortarea",
             ("oteryn:creature.plagirath", _) => "canary.appearance:effect/poison",
@@ -1014,6 +1049,10 @@ impl CallbackCastOwner {
         for (_, stage) in &s.stages {
             anchors.push(if s.creature == "oteryn:creature.foam_stalker" {
                 Some(crate::creature_damage_spell::SourcePositionAnchor::capture(
+                    r, stage, p,
+                )?)
+            } else if stage.uses_captured_directional_position() {
+                Some(SourcePositionAnchor::capture_directional_variant(
                     r, stage, p,
                 )?)
             } else if s.creature == "oteryn:creature.plagirath" {

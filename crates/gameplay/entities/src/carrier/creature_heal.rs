@@ -232,6 +232,8 @@ impl ChannelRuntimeV1 {
             _ => Err(CarrierError::StaleActorGeneration),
         }
     }
+    pub const SOURCE_CREATURE_HEAL_BATCH_MAX: usize = 64;
+
     /// Source-qualified bounded draws from this physical Channel owner; exact current pin,
     /// all actor generations/identity/HP and output storage preflight before publication.
     /// Existing CreatureCommitState including its canonical conditions is preserved intact.
@@ -243,7 +245,7 @@ impl ChannelRuntimeV1 {
         if content != self.content.server_artifact_digest() {
             return Err(CarrierError::PositionContextMismatch);
         }
-        if requests.len() > 64 {
+        if requests.len() > Self::SOURCE_CREATURE_HEAL_BATCH_MAX {
             return Err(CarrierError::AllocationFailed);
         }
         let original_len = requests.len();
