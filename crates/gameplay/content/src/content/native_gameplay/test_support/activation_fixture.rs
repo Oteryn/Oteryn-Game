@@ -324,7 +324,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     | "oteryn:creature.the_old_widow"
             )
         }) {
-            // Retained native-goal, Hireling and BossYield owners qualify these Items.
+            // Native-goal, Hireling, BossYield and Forge owners qualify these Items.
             // Every remaining unavailable yield still refuses the complete table.
             for key in [
                 "oteryn:item.tibia.i3061",
@@ -333,6 +333,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 "oteryn:item.tibia.i3002",
                 "oteryn:item.tibia.i3069",
                 "oteryn:item.tibia.i3070",
+                "oteryn:item.tibia.i3309",
                 "oteryn:item.tibia.i7416",
             ] {
                 let facts = loot
@@ -348,10 +349,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 "oteryn:creature.the_old_widow" => {
                     ("oteryn:item.tibia.i5977", &["oteryn:item.tibia.i12320"])
                 }
-                _ => (
-                    "oteryn:item.tibia.i4097",
-                    &["oteryn:item.tibia.i3116", "oteryn:item.tibia.i3309"],
-                ),
+                _ => ("oteryn:item.tibia.i4097", &["oteryn:item.tibia.i3116"]),
             };
             assert_eq!(corpse.key, body);
             let binding = loot
@@ -593,7 +591,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 261, 38, 38)
+        (52, 258, 37, 49)
     );
     assert_eq!(
         admitted,
@@ -607,12 +605,18 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.bakragore",
             "oteryn:creature.chagorz",
             "oteryn:creature.chayenne",
+            "oteryn:creature.clubarc_the_plunderer",
+            "oteryn:creature.cublarc_the_plunderer",
+            "oteryn:creature.deep_terror",
             "oteryn:creature.demodras",
             "oteryn:creature.dragonking_zyrtarch",
             "oteryn:creature.dreadful_disruptor",
             "oteryn:creature.enraged_arbaziloth",
             "oteryn:creature.eradicator",
             "oteryn:creature.eradicator2",
+            "oteryn:creature.glooth_fairy",
+            "oteryn:creature.gorga",
+            "oteryn:creature.gorgo",
             "oteryn:creature.goshnar_s_cruelty",
             "oteryn:creature.goshnar_s_greed",
             "oteryn:creature.goshnar_s_hatred",
@@ -621,12 +625,16 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.goshnar_s_megalomania_green",
             "oteryn:creature.goshnar_s_megalomania_purple",
             "oteryn:creature.goshnar_s_spite",
+            "oteryn:creature.gralvalon",
             "oteryn:creature.grand_mother_foulscale",
             "oteryn:creature.ice_overlord",
             "oteryn:creature.ichgahal",
+            "oteryn:creature.malvaroth",
             "oteryn:creature.mitmah_vanguard",
+            "oteryn:creature.morbol",
             "oteryn:creature.murcion",
             "oteryn:creature.outburst",
+            "oteryn:creature.professor_maxxen",
             "oteryn:creature.rupture",
             "oteryn:creature.sugar_daddy",
             "oteryn:creature.tazhadur",
@@ -635,6 +643,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.the_percht_queen",
             "oteryn:creature.the_primal_menace",
             "oteryn:creature.the_scion_of_havoc",
+            "oteryn:creature.twisterror",
             "oteryn:creature.vemiath",
         ]
     );
@@ -650,17 +659,16 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.earl_osam",
             "oteryn:creature.ferumbras",
             "oteryn:creature.ferumbras_mortal_shell",
-            "oteryn:creature.glooth_fairy",
             "oteryn:creature.king_zelos",
             "oteryn:creature.lord_azaram",
             "oteryn:creature.lord_retro",
-            "oteryn:creature.professor_maxxen",
             "oteryn:creature.scarlett_etzel",
             "oteryn:creature.sharpclaw",
             "oteryn:creature.sir_baeloc",
             "oteryn:creature.the_blazing_time_guardian",
             "oteryn:creature.the_freezing_time_guardian",
             "oteryn:creature.the_time_guardian",
+            "oteryn:creature.weakened_arbaziloth",
         ]
     );
     shared_body.sort_unstable();
@@ -686,7 +694,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.the_weakened_count",
         ]
     );
-    assert_eq!(bosses.len(), 389);
+    assert_eq!(bosses.len(), 396);
     let before = source.reward_table().row("oteryn:creature.rat").unwrap();
     let before_policy = source
         .policies()
