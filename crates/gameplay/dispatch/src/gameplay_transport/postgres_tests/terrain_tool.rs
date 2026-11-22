@@ -21,6 +21,21 @@ fn m08_machete_cuts_jungle_grass_through_wire_and_recovers_regrowth() -> TestRes
 }
 
 #[test]
+fn review_machete_counts_the_third_jungle_grass() -> TestResult {
+    use oteryn_gameplay_world::terrain_tools::{TerrainTool, crystal_core_bindings};
+    let grass = crystal_core_bindings()
+        .into_iter()
+        .find(|row| row.tool == TerrainTool::Machete && row.target == 17153)
+        .ok_or("third jungle grass binding")?;
+    run_case_with_decay(
+        "oteryn:item.tibia.i3308",
+        u16::try_from(grass.target)?,
+        u16::try_from(grass.transformed)?,
+        grass.decay.into_iter().map(|step| u16::try_from(step.state)).collect::<Result<Vec<_>, _>>()?,
+    )
+}
+
+#[test]
 fn m08_machete_cuts_grass_through_wire_and_recovers_regrowth() -> TestResult {
     run_case("oteryn:item.tibia.i3308", 3702, 3701)
 }
@@ -368,7 +383,7 @@ fn scenario_with_voice(
         )
         .await?;
         let award = match before {
-            3696 | 3702 => Some(("oteryn:achievement/nothing_can_stop_me", 100, "oteryn:terrain-tool")),
+            3696 | 3702 | 17153 => Some(("oteryn:achievement/nothing_can_stop_me", 100, "oteryn:terrain-tool")),
             3653 => Some(("oteryn:achievement/happy_farmer", 200, "oteryn:item-craft")),
             5463 | 5464 => Some((
                 "oteryn:achievement/natural_sweetener",

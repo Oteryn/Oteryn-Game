@@ -96,6 +96,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     a: &mut AdmittedSession,
     h: &Harness,
+    past_scarlett_objective: bool,
 ) -> TestResult {
     use crate::gameplay_transport::connection::FreshAdmissionAuthority;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -248,6 +249,16 @@ pub(super) async fn exercise(
             .ok_or("native objective")?;
         let at = objective.guardian.as_ref().ok_or("guardian")?.position;
         let target = guardian(owner, at).await?.ok_or("earned native boss")?;
+        if past_scarlett_objective && *name == "scarlett_etzel" {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,quest_key,track_key,value,committed_character_revision)
+                SELECT character_id,$1,$2,1,character_revision FROM game_character_roots WHERE character_id=encode($3,'hex')::uuid
+                ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
+                .bind(QUEST).bind(format!("oteryn:quest-progress/questpc7/grave/boss_{i}"))
+                .bind(super::fixture::id(41).as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+        }
         super::questpc7_native_deaths_fixtures::lethal_creature(
             owner,
             a,

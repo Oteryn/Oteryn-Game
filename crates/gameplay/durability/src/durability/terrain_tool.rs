@@ -222,8 +222,8 @@ impl DurabilityRoot {
             let applied = apply_in_transaction(&mut tx, fence, command, &intent, &scope, &mutation).await?;
             if applied {
                 // Crystal data-crystal/scripts/lib/register_actions.lua:233-252
-                // counts the two transformed grasses. The separate Wild Growth removal returns earlier.
-                if matches!((mutation.before, mutation.after), (3696, 3695) | (3702, 3701)) {
+                // counts all three transformed grasses. The separate Wild Growth removal returns earlier.
+                if matches!((mutation.before, mutation.after), (3696, 3695) | (3702, 3701) | (17153, 17151)) {
                     let rule = oteryn_gameplay_progression::achievement_granters::NOTHING_CAN_STOP_ME;
                     let event = [fence.game_session_id.as_bytes().as_slice(), &command.command_id().get().to_be_bytes()].concat();
                     super::account_achievement::add_progress(

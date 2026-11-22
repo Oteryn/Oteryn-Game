@@ -31,6 +31,7 @@ use crate::combat::{
 };
 use crate::content::character_progression_content::CHARACTER_EXPERIENCE_TABLE_LEVELS;
 use crate::content::creature_reward::{CreatureRewardRow, CreatureRewardTable};
+use crate::durability::account_achievement::BossDeathAchievements;
 use crate::durability::bestiary_progress::{BestiaryKillOutcome, BestiaryProgressError};
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::cyclopedia_tracker::TrackerKind;
@@ -136,7 +137,7 @@ pub struct PendingKillSettlement {
     pub activity_at_death:
         Option<Vec<oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity>>,
     pub damage_shares: Vec<crate::foundation::RewardDamageShare>,
-    oberon_recipients: Vec<CapturedRewardPrincipal>,
+    achievement_recipients: Vec<CapturedRewardPrincipal>,
     /// PREY-DIFF: freeze selection and access on the lethal turn; retries must not
     /// re-evaluate a later Premium state or attribute this kill to a successor.
     pub(super) prey_checkpoint: Option<crate::durability::prey::PreyCheckpoint>,
@@ -264,7 +265,7 @@ impl PendingKillSettlement {
             activity_observed_at: observed_at,
             activity_at_death: None,
             damage_shares: Vec::new(),
-            oberon_recipients: Vec::new(),
+            achievement_recipients: Vec::new(),
             world_change: None,
             prey_checkpoint: None,
             forge: None,
@@ -2058,8 +2059,9 @@ pub fn record_creature_kill(
         refuse("damage_shares_unavailable", &creature);
         return;
     };
-    let oberon_recipients = if wild && creature == "oteryn:creature.grand_master_oberon" {
-        capture_oberon_recipients(runtime, target)
+    let achievement_recipients = if wild && BossDeathAchievements::for_creature(&creature).is_some()
+    {
+        capture_boss_damage_recipients(runtime, target)
     } else {
         Vec::new()
     };
@@ -2183,7 +2185,7 @@ pub fn record_creature_kill(
             // no fallback invents XP, a loot table, corpse Item or Bestiary race.
             let boss = sink.rewards.boss(&creature);
             if !overlord
-                && oberon_recipients.is_empty()
+                && achievement_recipients.is_empty()
                 && boss.is_none()
                 && (top.present().is_none()
                     || !super::grizzly_kills::tracks_creature(&creature)
@@ -2221,7 +2223,7 @@ pub fn record_creature_kill(
                             activity_observed_at: observed_at,
                             activity_at_death: None,
                             damage_shares,
-                            oberon_recipients: Vec::new(),
+                            achievement_recipients: Vec::new(),
                             world_change,
                             prey_checkpoint,
                             forge: None,
@@ -2322,7 +2324,7 @@ pub fn record_creature_kill(
             // steps use actual damaging players independently of corpse MINT
             // qualification. Preserve the native lethal ledger on the rowless path.
             entry.damage_shares = damage_shares;
-            entry.oberon_recipients = oberon_recipients;
+            entry.achievement_recipients = achievement_recipients;
             // Only the actual lethal producer supplies the retained Instance clock.
             entry.activity_death = activity_death;
             entry.world_change = world_change;
@@ -2626,7 +2628,7 @@ pub fn record_creature_kill(
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
         damage_shares,
-        oberon_recipients,
+        achievement_recipients,
         prey_checkpoint,
         facts,
         creature,
@@ -3389,7 +3391,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 /// Crystal's killingLibrary event reads Player IDs from the physical damage map.
-fn capture_oberon_recipients(
+fn capture_boss_damage_recipients(
     runtime: &ChannelRuntimeV1,
     target: ExactActorRef,
 ) -> Vec<CapturedRewardPrincipal> {
@@ -3419,33 +3421,35 @@ fn capture_oberon_recipients(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    async fn credit_oberon_achievements(&self, entry: &PendingKillSettlement) -> bool {
-        for recipient in &entry.oberon_recipients {
-            let fence = match self.current_quest_fence(recipient.session).await {
-                Ok(Some(fence)) => fence,
-                Ok(None) => continue,
-                Err(()) => return false,
+    async fn credit_boss_death_achievements(&self, entry: &PendingKillSettlement) -> bool {
+        if entry.achievement_recipients.is_empty() {
+            return true;
+        }
+        let Some(boss) = BossDeathAchievements::for_creature(&entry.creature) else {
+            return false;
+        };
+        let mut fences = Vec::with_capacity(entry.achievement_recipients.len());
+        for recipient in &entry.achievement_recipients {
+            let Ok(Some(fence)) = self.current_quest_fence(recipient.session).await else {
+                return false;
             };
             if fence.character_id.as_bytes() != recipient.character.as_bytes()
                 || fence.character_lease_generation != recipient.lease_generation
             {
-                continue;
-            }
-            if self
-                .root
-                .grant_oberon_death_achievements(
-                    self.character,
-                    self.holder,
-                    fence.item_fence(),
-                    entry.facts.death,
-                )
-                .await
-                .is_err()
-            {
                 return false;
             }
+            fences.push(fence.item_fence());
         }
-        true
+        self.root
+            .grant_boss_death_achievements(
+                self.character,
+                self.holder,
+                fences,
+                entry.facts.death,
+                boss,
+            )
+            .await
+            .is_ok()
     }
 }
 
@@ -3475,7 +3479,7 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
         if entry.soulpit_experience.is_some() {
             return self.settle_soulpit(entry).await;
         }
-        if !self.admission.credit_oberon_achievements(entry).await
+        if !self.admission.credit_boss_death_achievements(entry).await
             || !super::hive_shared_kills::settle(self.admission, entry, self.fence).await
         {
             return SettleReport {

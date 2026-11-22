@@ -296,50 +296,75 @@ pub(super) async fn grant_missing(
     Ok(())
 }
 
+/// The achievement producer selected by the native wild creature death.
+#[derive(Clone, Copy)]
+pub enum BossDeathAchievements {
+    Oberon,
+    Scarlett,
+    MitmahVanguard,
+}
+
+impl BossDeathAchievements {
+    pub fn for_creature(creature: &str) -> Option<Self> {
+        match creature {
+            "oteryn:creature.grand_master_oberon" => Some(Self::Oberon),
+            "oteryn:creature.scarlett_etzel" => Some(Self::Scarlett),
+            "oteryn:creature.mitmah_vanguard" => Some(Self::MitmahVanguard),
+            _ => None,
+        }
+    }
+
+    fn awards(self) -> (&'static str, &'static [&'static str]) {
+        match self {
+            Self::Oberon => ("oteryn:oberon-death", &[
+                "oteryn:achievement/master_debater",
+                "oteryn:achievement/millennial_falcon",
+            ]),
+            Self::Scarlett => ("oteryn:boss-death", &["oteryn:achievement/a_study_in_scarlett"]),
+            Self::MitmahVanguard => ("oteryn:boss-death", &["oteryn:achievement/museum_goer"]),
+        }
+    }
+}
+
 impl DurabilityRoot {
-    /// Settle the source-qualified Oberon death for one captured damage contributor.
-    /// The native death and current session must belong to the same owner generation.
-    pub async fn grant_oberon_death_achievements(
+    /// Settle the captured death roster together. A stale fence or failed write
+    /// aborts every recipient, leaving the lethal queue entry retryable.
+    pub async fn grant_boss_death_achievements(
         &self,
         authority: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
         node: &super::runtime_scope_assignment::NodeIncarnationProof,
-        fence: super::item_transfer::CurrentCharacterItemFence,
+        mut fences: Vec<super::item_transfer::CurrentCharacterItemFence>,
         death: crate::foundation::CreatureDeathOccurrenceKey,
+        boss: BossDeathAchievements,
     ) -> std::result::Result<(), DurabilityError> {
-        if death.runtime_scope() != fence.runtime_scope
-            || death.scope_ownership_generation() != fence.scope_ownership_generation
+        if fences.iter().any(|fence| death.runtime_scope() != fence.runtime_scope
+            || death.scope_ownership_generation() != fence.scope_ownership_generation)
         {
-            return Ok(());
+            return Err(DurabilityError::CommitRejected);
         }
+        fences.sort_unstable_by_key(|fence| *fence.character_id.as_bytes());
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
+        let (source, awards) = boss.awards();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     super::character_authority::assert_recovery_fence(&mut tx, &recovery).await?;
                     super::db::lock_admission_relations(&mut tx).await?;
-                    if super::character_progression::assert_item_only_fence(&mut tx, &fence, &node)
-                        .await?
-                        .is_ok()
-                    {
+                    for fence in &fences {
+                        super::character_progression::assert_item_only_fence(&mut tx, fence, &node)
+                            .await?
+                            .map_err(|_| DurabilityError::CommitRejected)?;
+                    }
+                    for fence in &fences {
                         let occurrence = Sha256::new()
                             .chain_update(fence.character_id.as_bytes())
                             .chain_update(death.native_bytes())
                             .finalize();
-                        grant_missing(
-                            &mut tx,
-                            fence.character_id,
-                            &[
-                                "oteryn:achievement/master_debater",
-                                "oteryn:achievement/millennial_falcon",
-                            ],
-                            "oteryn:oberon-death",
-                            &occurrence,
-                        )
-                        .await?;
+                        grant_missing(&mut tx, fence.character_id, awards, source, &occurrence).await?;
                     }
                     super::db::commit_semantic_transaction(tx, deadline).await
                 })

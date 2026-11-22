@@ -400,6 +400,26 @@ pub(in super::super) async fn lethal(
     command: u64,
     swing: u16,
 ) -> TestResult {
+    queue_lethal(owner, admitted, target, creature, command, swing).await?;
+    assert_eq!(
+        owner.drain_kill_rewards(admitted.game_session_id).await,
+        DrainOutcome::Drained
+    );
+    assert_eq!(
+        owner.drain_kill_rewards(admitted.game_session_id).await,
+        DrainOutcome::Drained
+    );
+    Ok(())
+}
+
+pub(in super::super) async fn queue_lethal(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    target: ExactActorRef,
+    creature: &str,
+    command: u64,
+    swing: u16,
+) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("hunter")?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -464,14 +484,6 @@ pub(in super::super) async fn lethal(
         }
     }
     assert!(queue.has_session(admitted.game_session_id));
-    assert_eq!(
-        owner.drain_kill_rewards(admitted.game_session_id).await,
-        DrainOutcome::Drained
-    );
-    assert_eq!(
-        owner.drain_kill_rewards(admitted.game_session_id).await,
-        DrainOutcome::Drained
-    );
     Ok(())
 }
 

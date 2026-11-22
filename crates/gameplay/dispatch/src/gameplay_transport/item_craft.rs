@@ -3,7 +3,7 @@ use super::ComposedFreshAdmission;
 use super::connection::{FreshAdmissionAuthority, UseCommand, UseOutcome};
 use super::item_ref_admission::{NativeItemWeights, pinned_index};
 use super::item_view::{ItemKey, SessionItemView};
-use crate::durability::item_craft::ItemCraftRequest;
+use crate::durability::item_craft::{GroundSculpture, ItemCraftRequest, SculptureGroundTarget};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::map::view::{self, MapEntryKey, MapFacts};
@@ -177,12 +177,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .ok()?
         {
+            if result == UseDisposition::Committed {
+                self.states.loop_ground.invalidate();
+            }
             return disposition(result);
         }
         let Some(ItemKey::Instance(source)) = source else {
             return disposition(UseDisposition::StaleState);
         };
         request.source = source;
+        let mut sculpture_ground = None;
         // Crystal 201189f8 data-global/scripts/actions/other/baking.lua:8-37,49-51 uses a
         // second carried ingredient for dough, chocolate/garlic dough, trays and sugar oat.
         // Resolve its exact current definition here; the durable owner locks and consumes it.
@@ -209,9 +213,69 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .flat_map(|bag| &bag.entries)
                 .chain(inventory.nested.iter().map(|(_, entry)| entry))
-                .find(|entry| entry.item.item_instance_id == ingredient)?;
-            request.ingredient = Some(ingredient);
-            request.station = Some(entry.item.definition.clone());
+                .find(|entry| entry.item.item_instance_id == ingredient);
+            if let Some(entry) = entry {
+                request.ingredient = Some(ingredient);
+                request.station = Some(entry.item.definition.clone());
+            } else {
+                let placement = sculpture_tile(self, actor).await?;
+                let index = self.active_generation?.native_gameplay()?.item_index()?;
+                let map = self.bundle_map()?;
+                let ground =
+                    super::loop_move::loop_ground(self, map.overlay.base(), Some(index)).await?;
+                let (pos, _) = ground.ground_entry(&ingredient)?;
+                let facts = map.facts.pinned();
+                let facts = ground.facts(&facts);
+                let tile = view::compose_tile(ground.overlay(), &facts, pos).ok()??;
+                let entry = tile
+                    .entries
+                    .iter()
+                    .find(|entry| entry.source.key() == MapEntryKey::Ground(ingredient))?;
+                let MapDefinition::Item(reference) = entry.facts.definition else {
+                    return None;
+                };
+                let definition = super::item_look::typed_definition(index, reference)?;
+                let tool = inventory
+                    .backpack
+                    .iter()
+                    .flat_map(|b| &b.entries)
+                    .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                    .find(|entry| entry.item.item_instance_id == source)?;
+                if !item_id(&tool.item.definition.production_key)
+                    .zip(item_id(&definition.production_key))
+                    .is_some_and(|(tool, target)| {
+                        oteryn_gameplay_items::fishing::is_sculpture(tool, target)
+                    })
+                {
+                    return None;
+                }
+                let actor_cell = crate::durability::spell_items_abi::decode_ground_cell(
+                    &placement.spatial_position,
+                )
+                .ok()?;
+                if actor_cell.z != i32::from(pos.floor)
+                    || actor_cell.x.abs_diff(i32::from(pos.x)) > 1
+                    || actor_cell.y.abs_diff(i32::from(pos.y)) > 1
+                {
+                    return disposition(UseDisposition::TooFar);
+                }
+                if entry.facts.bound
+                    || facts.house_tile(pos)
+                    || entry.facts.count != 1
+                    || entry.facts.sub_type != 0
+                {
+                    return disposition(UseDisposition::NothingToUse);
+                }
+                sculpture_ground = Some(GroundSculpture {
+                    actor: placement,
+                    target: Some(SculptureGroundTarget {
+                        position: ground.pickup_cell(&ingredient)?,
+                        ordinal: ground.ground_ordinal(&ingredient)?,
+                    }),
+                });
+                request.ingredient = Some(ingredient);
+                request.station = Some(definition);
+            }
         }
         let (station, map_target) = {
             if let Some(station) = request.station.clone() {
@@ -479,33 +543,95 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 attempt,
             });
         }
-        if !self
-            .states
-            .player_trades
-            .physical(command.game_session_id, Some(source))
+        if request
+            .gathering
+            .as_ref()
+            .is_some_and(|g| g.mutation.before == 10426 && g.attempt.yield_item.is_some())
         {
+            let placement = sculpture_tile(self, actor).await?;
+            sculpture_ground = Some(GroundSculpture {
+                actor: placement,
+                target: None,
+            });
+        }
+        if !self.states.player_trades.physical_items(
+            command.game_session_id,
+            [
+                Some(source),
+                request.ingredient,
+                request.tool,
+                Some(request.source),
+            ],
+        ) {
             return disposition(UseDisposition::Rejected);
         }
-        let result = self
-            .root
-            .craft_item(
-                &_permit,
-                self.character,
-                self.holder,
-                fence,
-                request,
-                native,
-                &NativeItemWeights(native).with_wheel(self.premium_coordinator),
-                false,
-            )
-            .await;
-        let result = result.ok()??;
+        let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
+        let affects_ground = sculpture_ground.is_some();
+        let result = if let Some(ground) = sculpture_ground {
+            self.root
+                .craft_item_on_ground(
+                    &_permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    native,
+                    &weights,
+                    ground,
+                )
+                .await
+        } else {
+            self.root
+                .craft_item(
+                    &_permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    native,
+                    &weights,
+                    false,
+                )
+                .await
+        }
+        .ok()??;
+        if result == UseDisposition::Committed && affects_ground {
+            self.states.loop_ground.invalidate();
+        }
         drop(_permit);
         if result == UseDisposition::Committed {
             self.refresh_terrain_tools().await;
         }
         disposition(result)
     }
+}
+
+async fn sculpture_tile(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+) -> Option<crate::durability::item_mint::GroundPlacement> {
+    let mut runtime = admission.runtime.lock().await;
+    let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)?;
+    pinned_index(&runtime, admission.active_generation)?;
+    let pin = runtime.content_pin();
+    let position = crate::durability::map_item_mint_audit::map_item_spatial_position(
+        u16::try_from(at.at.x).ok()?,
+        u16::try_from(at.at.y).ok()?,
+        i8::try_from(at.at.floor).ok()?,
+    );
+    Some(crate::durability::item_mint::GroundPlacement {
+        spatial_position: position,
+        corpse_ref: b"sculpture-craft-v1".to_vec(),
+        map_revision: crate::map::overlay::map_revision(at.map.overlay.base()),
+        content_revision: format!(
+            "sha256:{}",
+            pin.server_artifact_digest()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        ),
+        native_room_placement_context: pin.frame_binding_digest().to_vec(),
+    })
 }
 
 /// Decision used by the real I11 two-carried-item baking handler.

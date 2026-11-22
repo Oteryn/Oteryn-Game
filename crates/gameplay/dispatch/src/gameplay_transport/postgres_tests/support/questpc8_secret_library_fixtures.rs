@@ -229,11 +229,38 @@ pub(super) async fn exercise(
             .bind(id(41).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
         oberon_peer_damage(owner, admitted, h, target, command, creature).await?;
+        // Fail the first write for a different recipient. The first recipient's
+        // two requests must be invisible until the entire roster commits.
+        sqlx::raw_sql(
+            "CREATE FUNCTION reject_second_oberon_recipient() RETURNS trigger LANGUAGE plpgsql AS $$
+             BEGIN
+                 IF NEW.source_kind = 'oteryn:oberon-death' AND EXISTS (
+                     SELECT 1 FROM game_account_achievement_grant_requests
+                     WHERE source_kind = NEW.source_kind AND character_id <> NEW.character_id
+                 ) THEN RAISE EXCEPTION 'injected second Oberon recipient failure'; END IF;
+                 RETURN NEW;
+             END $$;
+             CREATE TRIGGER reject_second_oberon_recipient BEFORE INSERT ON
+                 game_account_achievement_grant_requests FOR EACH ROW
+                 EXECUTE FUNCTION reject_second_oberon_recipient()",
+        )
+        .execute(&h.pool)
+        .await?;
+        super::grizzly_npc_fixtures::questpc8_campaign::queue_lethal(
+            owner, admitted, target, creature, command, 1,
+        ).await?;
+        use crate::gameplay_transport::kill_reward::DrainOutcome;
+        assert_eq!(owner.drain_kill_rewards(admitted.game_session_id).await, DrainOutcome::Deferred);
+        assert!(oberon_achievements(h, 41).await?.is_empty());
+        assert!(oberon_achievements(h, 101).await?.is_empty());
+        sqlx::query("DROP TRIGGER reject_second_oberon_recipient ON game_account_achievement_grant_requests")
+            .execute(&h.pool).await?;
+        assert_eq!(owner.drain_kill_rewards(admitted.game_session_id).await, DrainOutcome::Drained);
+    } else {
+        super::grizzly_npc_fixtures::questpc8_campaign::lethal(
+            owner, admitted, target, creature, command, 1,
+        ).await?;
     }
-    super::grizzly_npc_fixtures::questpc8_campaign::lethal(
-        owner, admitted, target, creature, command, 1,
-    )
-    .await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;

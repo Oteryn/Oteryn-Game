@@ -34,10 +34,12 @@ mod enchanting;
 mod event_containers;
 mod harvest;
 pub(crate) mod marriage;
+mod sculpture;
 mod skinning;
 pub mod soulpit;
 pub use enchanting::EnchantingCraft;
 pub use harvest::{MapHarvestOperand, MapHarvestRequest, MapHarvestResult};
+pub use sculpture::{GroundSculpture, SculptureGroundTarget};
 pub use skinning::{SkinningOutcome, SkinningRequest};
 
 #[derive(Debug, Clone)]
@@ -90,8 +92,27 @@ impl DurabilityRoot {
             probe,
             None,
             Some(permit),
+            None,
         )
         .await
+    }
+
+    /// Sculpt at a current Ground target or use the actor's tile for a marble yield.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn craft_item_on_ground<C: ItemLoopContent>(
+        &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: ItemCraftRequest,
+        native: &NativeGameplayState,
+        content: &C,
+        ground: GroundSculpture,
+    ) -> Result<Option<UseDisposition>, DurabilityError> {
+        self.craft_item_with_lane::<C, ()>(
+            recovery, node, fence, request, native, content, false, None, Some(permit), Some(ground),
+        ).await
     }
 
     /// The same craft owner, with a retained live-state successor around COMMIT.
@@ -108,7 +129,7 @@ impl DurabilityRoot {
         window: Option<&mut super::spell_owner_commit::SpellCommitWindow<'_, T>>,
     ) -> Result<Option<UseDisposition>, DurabilityError> {
         self.craft_item_with_lane(
-            recovery, node, fence, request, native, content, probe, window, None,
+            recovery, node, fence, request, native, content, probe, window, None, None,
         )
         .await
     }
@@ -128,6 +149,7 @@ impl DurabilityRoot {
         probe: bool,
         window: Option<&mut super::spell_owner_commit::SpellCommitWindow<'_, T>>,
         permit: Option<&super::spell_owner_commit::SpellLanePermit>,
+        ground: Option<GroundSculpture>,
     ) -> Result<Option<UseDisposition>, DurabilityError> {
         // An enchanting write may not bypass the live resource owner's retained successor.
         // Probes remain available to the common replay path before resolving current handles.
@@ -176,7 +198,10 @@ impl DurabilityRoot {
             let Some(permit) = context.2.as_ref().map(|window| window.permit()).or(context.3) else {
                 return Ok(Some(UseDisposition::Rejected));
             };
-            let result = write(&mut tx, permit, fence, &request, context.0, context.1).await?;
+            let ground = ground.as_ref().map(|operand| sculpture::GroundContext {
+                operand, recovery: &record, node: &node,
+            });
+            let result = write_with_skinning(&mut tx, permit, fence, &request, context.0, context.1, None, ground).await?;
             if result == UseDisposition::Committed {
                 if let Some(window) = context.2.as_mut() {
                     super::pvp_live::commit_live_pvp_transaction(tx.into_inner(), deadline, window).await?;
@@ -185,17 +210,6 @@ impl DurabilityRoot {
             Ok(Some(result))
         })).await
     }
-}
-
-async fn write<C: ItemLoopContent>(
-    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
-    permit: &super::spell_owner_commit::SpellLanePermit,
-    fence: CurrentCharacterItemFence,
-    request: &ItemCraftRequest,
-    native: &NativeGameplayState,
-    content: &C,
-) -> Result<UseDisposition, DurabilityError> {
-    write_with_skinning(tx, permit, fence, request, native, content, None).await
 }
 
 // Crystal lucky_charm.lua:8-16 and actions_corpse.lua share the active hunt gate.
@@ -218,7 +232,7 @@ async fn rottin_charm_hunt_active(
 }
 
 #[allow(
-    clippy::too_many_lines,
+    clippy::too_many_lines, clippy::too_many_arguments,
     reason = "existing craft writer retains its single atomic inventory and audit owner"
 )]
 async fn write_with_skinning<C: ItemLoopContent>(
@@ -229,6 +243,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
     native: &NativeGameplayState,
     content: &C,
     skinning: Option<&mut skinning::Attempt<'_>>,
+    ground: Option<sculpture::GroundContext<'_>>,
 ) -> Result<UseDisposition, DurabilityError> {
     if request.enchanting.is_some() {
         return enchanting::write(tx, fence, request, native, content).await;
@@ -237,11 +252,13 @@ async fn write_with_skinning<C: ItemLoopContent>(
     // Root serialization precedes all item locks. Only opted-in actions accept nested leaves.
     let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(e.parent_item_instance_id) AS parent,e.placement_ordinal::text AS ordinal,NULL::jsonb AS nested_source FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND e.world_id=i.world_id AND b.world_id=i.world_id FOR UPDATE OF i")
         .bind(request.source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+    let sculpture_target = request.station.as_ref().and_then(source_item_id);
     let source = match source {
         Some(source) => Some(source),
-        None if request.station.is_none()
-            && request.tool.is_none()
-            && request.gathering.is_none() =>
+        None if request.tool.is_none()
+            && ((request.station.is_none() && request.gathering.is_none())
+                || ((request.ingredient.is_some() || request.gathering.is_some())
+                    && sculpture_target.is_some_and(|target| fishing::is_sculpture(5908, target)))) =>
         {
             event_containers::nested_source(tx, fence, request.source, *world.as_bytes()).await?
         }
@@ -256,7 +273,14 @@ async fn write_with_skinning<C: ItemLoopContent>(
         production_key: source.try_get("definition_production_key")?,
         revision_ref: source.try_get("definition_revision_ref")?,
     };
+    let sculpture_station = source_item_id(&definition)
+        .zip(sculpture_target)
+        .is_some_and(|(tool, target)| fishing::is_sculpture(tool, target));
+    if nested_source.is_some() && !sculpture_station && request.station.is_some() {
+        return Ok(UseDisposition::StaleState);
+    }
     if nested_source.is_some()
+        && !sculpture_station
         && skinning.is_none()
         && oteryn_gameplay_items::reward_bag::event_containers::legacy_conversion_rule(
             &definition.production_key,
@@ -289,9 +313,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
     let carried_sculpture = request.ingredient.is_some()
         && request.gathering.is_none()
         && request.tool.is_none()
-        && source_item_id(&definition)
-            .zip(request.station.as_ref().and_then(source_item_id))
-            .is_some_and(|(tool, target)| fishing::is_sculpture(tool, target));
+        && sculpture_station;
     let consumes_source = !carried_sculpture
         && skinning.is_none()
         && request
@@ -302,6 +324,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
     let mut ingredient_debit = 1_u32;
     let mut ingredient_consumed = None;
     let mut carried_attempt = None;
+    let mut ingredient_location: Option<Value> = None;
     let conversion = if let Some(prepared) = &skinning {
         Some(oteryn_gameplay_items::item_craft::CookingConversion {
             recipe: prepared.conversion.recipe.clone(),
@@ -317,8 +340,10 @@ async fn write_with_skinning<C: ItemLoopContent>(
             oteryn_gameplay_items::fishing::WORM
         };
         let tool_id = request.tool.unwrap_or(request.source);
-        let tool: Option<(String, String)> = sqlx::query_as("SELECT i.definition_production_key,i.definition_revision_ref FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND e.world_id=i.world_id AND b.world_id=i.world_id AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
-            .bind(tool_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+        let tool: Option<(String, String)> = if tool_id == request.source && sculpture_station {
+            Some((definition.production_key.clone(), definition.revision_ref.clone()))
+        } else { sqlx::query_as("SELECT i.definition_production_key,i.definition_revision_ref FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND e.world_id=i.world_id AND b.world_id=i.world_id AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
+            .bind(tool_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await? };
         let planting = definition
             .production_key
             .strip_prefix("oteryn:item.tibia.i")
@@ -413,11 +438,28 @@ async fn write_with_skinning<C: ItemLoopContent>(
                     if ingredient_id == request.source {
                         return Ok(UseDisposition::Rejected);
                     }
-                    let ingredient = sqlx::query("SELECT uuid_send(e.parent_item_instance_id) AS parent,i.quantity,i.definition_family,i.definition_production_key,i.definition_revision_ref,(SELECT f.fluid_subtype FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id FOR UPDATE) AS fluid_subtype FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
+                    let direct = sqlx::query("SELECT uuid_send(e.parent_item_instance_id) AS parent,i.quantity,i.definition_family,i.definition_production_key,i.definition_revision_ref,(SELECT f.fluid_subtype FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id FOR UPDATE) AS fluid_subtype FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
                         .bind(ingredient_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+                    let expected_ground = ground.as_ref().and_then(|ctx| ctx.operand.target.as_ref());
+                    let ingredient = match (direct, carried_sculpture, expected_ground) {
+                        (None, true, Some(target)) => sculpture::lock_ground_material(tx, fence, ingredient_id, target, ground.as_ref().ok_or(DurabilityError::InvalidStoredState)?.operand).await?,
+                        (None, true, None) => {
+                            let nested = event_containers::nested_source(tx, fence, ingredient_id, *world.as_bytes()).await?;
+                            if let Some(row) = &nested {
+                                ingredient_location = row.try_get("nested_source")?;
+                            }
+                            nested
+                        }
+                        (direct, _, None) => direct,
+                        _ => None,
+                    };
+                    if expected_ground.is_some() {
+                        ingredient_location = ingredient.as_ref().map(|row| row.try_get("ground_source")).transpose()?;
+                    }
                     ingredient.and_then(|row| {
-                        if row.try_get::<Vec<u8>, _>("parent").ok()?
-                            != source.try_get::<Vec<u8>, _>("parent").ok()?
+                        if expected_ground.is_none()
+                            && row.try_get::<Vec<u8>, _>("parent").ok()?
+                                != source.try_get::<Vec<u8>, _>("parent").ok()?
                         {
                             return None;
                         }
@@ -429,7 +471,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
                         let quantity =
                             u32::try_from(row.try_get::<i64, _>("quantity").ok()?).ok()?;
                         if carried_sculpture {
-                            if &target != station {
+                            if &target != station || (expected_ground.is_some() && quantity != 1) {
                                 return None;
                             }
                             let input = source_item_id(&target)?;
@@ -529,15 +571,12 @@ async fn write_with_skinning<C: ItemLoopContent>(
              ON e.parent_item_instance_id=t.item_instance_id WHERE t.depth<8 \
          ) SELECT count(*) FROM (SELECT item_instance_id FROM tree LIMIT 501) bounded",
     ).bind(&parent).fetch_one(&mut ***tx).await?;
-    if tree_count
-        + i64::try_from(conversion.outputs.len())
-            .map_err(|_| DurabilityError::InvalidStoredState)?
-        - i64::from(retires_source)
-        - i64::from(retires_ingredient)
-        > 500
-    {
-        return Ok(UseDisposition::NoRoom);
-    }
+    let retired_carried_ingredient = retires_ingredient
+        && ground.as_ref().is_none_or(|ctx| ctx.operand.target.is_none());
+    let output_count = i64::try_from(conversion.outputs.len())
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let tree_full = tree_count + output_count - i64::from(retires_source)
+        - i64::from(retired_carried_ingredient) > 500;
     let bag = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
         .bind(&parent).fetch_one(&mut ***tx).await?;
     let bag_definition = TypedDefinitionRef {
@@ -550,13 +589,9 @@ async fn write_with_skinning<C: ItemLoopContent>(
         .and_then(|f| f.container_capacity)
         .unwrap_or(0)
         .min(20);
-    if occupied
-        + i64::try_from(conversion.outputs.len())
-            .map_err(|_| DurabilityError::InvalidStoredState)?
-        - i64::from(frees_output_slot)
-        - i64::from(retires_ingredient)
-        > i64::from(capacity)
-    {
+    let bag_full = occupied + output_count - i64::from(frees_output_slot)
+        - i64::from(retires_ingredient && ingredient_location.is_none()) > i64::from(capacity);
+    if (tree_full || bag_full) && ground.is_none() {
         return Ok(UseDisposition::NoRoom);
     }
     // Whole carried weight and capacity use the same locked projection as the item loop.
@@ -596,16 +631,16 @@ async fn write_with_skinning<C: ItemLoopContent>(
         output_weight += u64::from(weight) * u64::from(*count);
     }
     let ingredient_weight = match &ingredient_consumed {
-        Some((target, _)) => {
+        Some((target, _)) if ground.as_ref().is_none_or(|ctx| ctx.operand.target.is_none()) => {
             let Some(weight) = content.loop_facts(target).and_then(|facts| facts.weight) else {
                 return Ok(UseDisposition::NotPossible);
             };
             u64::from(weight) * u64::from(ingredient_debit)
         }
-        None => 0,
+        _ => 0,
     };
     let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
-    if carried
+    let overweight = carried
         .checked_sub(if consumes_source {
             u64::from(used_weight)
                 * u64::try_from(consumed_quantity)
@@ -615,8 +650,16 @@ async fn write_with_skinning<C: ItemLoopContent>(
         })
         .and_then(|w| w.checked_sub(ingredient_weight))
         .and_then(|w| w.checked_add(output_weight))
-        .is_none_or(|w| w > capacity)
-    {
+        .is_none_or(|w| w > capacity);
+    let ground_output = ground.as_ref().and_then(|ctx| {
+        let ground_ice = ctx.operand.target.is_some() && carried_attempt.is_some_and(|(id, _)| id != 10426);
+        if ground_ice || tree_full || bag_full || overweight {
+            Some(ctx.placement(ground_ice))
+        } else {
+            None
+        }
+    });
+    if overweight && ground_output.is_none() {
         return Ok(UseDisposition::NotPossible);
     }
     let highest: String = sqlx::query_scalar("SELECT coalesce(max(placement_ordinal),0)::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid").bind(&parent).fetch_one(&mut ***tx).await?;
@@ -636,7 +679,11 @@ async fn write_with_skinning<C: ItemLoopContent>(
         let item: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
             .fetch_one(&mut ***tx)
             .await?;
-        outputs.push(json!({"item": item, "key": definition.production_key, "revision": definition.revision_ref, "count": count, "ordinal": output_ordinal}));
+        let mut output = json!({"item": item, "key": definition.production_key, "revision": definition.revision_ref, "count": count, "ordinal": output_ordinal});
+        if let Some(placement) = &ground_output {
+            output["ground"] = sculpture::ground_proof(fence, placement)?;
+        }
+        outputs.push(output);
     }
     let (transaction, event, occurred): (String, String, i64) = sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut ***tx).await?;
     let ingredient_before: Option<Value> = match request.ingredient {
@@ -671,7 +718,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
             &outputs,
             ingredient_before
                 .as_ref()
-                .map(|before| (before, ingredient_count)),
+                .map(|before| (before, ingredient_count, ingredient_location.as_ref())),
             &transaction,
             &event,
             occurred,
@@ -694,8 +741,8 @@ async fn write_with_skinning<C: ItemLoopContent>(
     if let Some(prepared) = &skinning {
         skinning::record(tx, fence, prepared, &transaction).await?;
     }
-    sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,consume_source,ingredient_item_instance_id,ingredient_before_item,event_source_location,ingredient_count,ingredient_consumed_quantity) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15),$16,encode($17,'hex')::uuid,$18,$19,$20,$21)")
-        .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).bind(consumes_source).bind(request.ingredient.map(|id| id.to_vec())).bind(ingredient_before).bind(&nested_source).bind(i32::try_from(ingredient_count).map_err(|_| DurabilityError::InvalidStoredState)?).bind(i64::from(ingredient_debit)).execute(&mut ***tx).await?;
+    sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,consume_source,ingredient_item_instance_id,ingredient_before_item,event_source_location,ingredient_count,ingredient_consumed_quantity,ingredient_location) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15),$16,encode($17,'hex')::uuid,$18,$19,$20,$21,$22)")
+        .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).bind(consumes_source).bind(request.ingredient.map(|id| id.to_vec())).bind(ingredient_before).bind(&nested_source).bind(i32::try_from(ingredient_count).map_err(|_| DurabilityError::InvalidStoredState)?).bind(i64::from(ingredient_debit)).bind(&ingredient_location).execute(&mut ***tx).await?;
     if let Some(prepared) = &skinning {
         skinning::transform(tx, prepared, &transaction).await?;
     }
@@ -706,8 +753,15 @@ async fn write_with_skinning<C: ItemLoopContent>(
     if let Some(ingredient) = request.ingredient {
         sqlx::query("UPDATE game_item_instances SET quantity=quantity-$3,lifecycle=CASE WHEN quantity=$3 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(ingredient.as_slice()).bind(&transaction).bind(ingredient_count).execute(&mut ***tx).await?;
-        sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND (SELECT lifecycle=2 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid)")
-            .bind(ingredient.as_slice()).execute(&mut ***tx).await?;
+        if retires_ingredient {
+            let removal = match &ingredient_location {
+                Some(location) if location.get("spatial_position").is_some() =>
+                    "DELETE FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid",
+                Some(_) => "DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid",
+                None => "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid",
+            };
+            sqlx::query(removal).bind(ingredient.as_slice()).execute(&mut ***tx).await?;
+        }
     }
     if retires_source {
         let deletion = if nested_source.is_some() {
@@ -748,10 +802,19 @@ async fn write_with_skinning<C: ItemLoopContent>(
         None
     };
     for output in outputs {
+        if let (Some(ctx), Some(placement)) = (&ground, &ground_output)
+            && let Err(disposition) = ctx.check_room(tx, permit, fence, placement, &output).await?
+        {
+            return Ok(disposition);
+        }
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,$3::uuid)")
             .bind(&output).bind(world.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
+        if let Some(placement) = &ground_output {
+            sculpture::place_ground(tx, fence, &output, placement).await?;
+        } else {
         sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,($1->>'ordinal')::numeric,$5::uuid)")
             .bind(&output).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(&parent).bind(&transaction).execute(&mut ***tx).await?;
+        }
         if let Some(inscription) = &inscription {
             let item = output["item"]
                 .as_str()
@@ -903,11 +966,7 @@ pub fn gathering_roll(
 }
 
 fn source_item_id(definition: &TypedDefinitionRef) -> Option<u16> {
-    definition
-        .production_key
-        .strip_prefix("oteryn:item.tibia.i")?
-        .parse()
-        .ok()
+    definition.production_key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()
 }
 
 fn ingredient_fluid_subtype(stored: Option<i16>) -> Option<u32> {

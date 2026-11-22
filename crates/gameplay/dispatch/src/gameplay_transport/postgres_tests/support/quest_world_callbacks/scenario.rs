@@ -24,10 +24,11 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let past_oberon_objective = name == "authored-secret-library-completed-oberon";
-    let name = if past_oberon_objective {
-        "authored-secret-library"
-    } else {
-        name
+    let past_scarlett_objective = name == "questpc7-grave-completed-scarlett";
+    let name = match name {
+        "authored-secret-library-completed-oberon" => "authored-secret-library",
+        "questpc7-grave-completed-scarlett" => "questpc7-grave",
+        other => other,
     };
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
@@ -2653,7 +2654,7 @@ fn scenario_case(
         } else if name == "qengine-rewards-grimvale-contacts" {
             super::super::questpc7_grimvale_fixtures::contacts(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-grave" {
-            super::super::questpc7_grave_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
+            super::super::questpc7_grave_fixtures::exercise(&mut owner, &mut admitted, &h, past_scarlett_objective).await?;
         } else if name == "questpc7-ferumbras" {
             super::super::questpc7_ferumbras_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hero" {

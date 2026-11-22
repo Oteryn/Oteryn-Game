@@ -26,3 +26,17 @@ fn questpc7_grave_whole_native_journey_and_reward() -> TestResult {
     );
     result
 }
+
+#[test]
+fn review_scarlett_awards_a_returning_player() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("questpc7-grave-completed-scarlett", || {
+        super::quest_world_callbacks_fixtures::scenario(
+            "questpc7-grave-completed-scarlett",
+            Position { x: 33221, y: 31670, floor: -7 },
+            false,
+        )
+    })
+}

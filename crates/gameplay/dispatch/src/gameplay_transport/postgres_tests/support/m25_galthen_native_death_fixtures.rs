@@ -190,6 +190,20 @@ pub(super) async fn exercise(
             1,
             "real native death progresses its selected authored stage once"
         );
+        if stage == "s8" {
+            // Emulate a pre-achievement character with the completed, retained s8 receipt.
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+            for delete in [
+                "DELETE FROM game_account_achievements WHERE achievement_key='oteryn:achievement/museum_goer'",
+                "DELETE FROM game_account_achievement_grant_requests WHERE achievement_key='oteryn:achievement/museum_goer'",
+            ] {
+                let removed = sqlx::query(delete)
+                    .execute(&mut *tx).await?;
+                assert_eq!(removed.rows_affected(), 1);
+            }
+            tx.commit().await?;
+        }
         death(owner, admitted, creature, command + 3).await?;
         assert_eq!(
             value(h, stage).await?,
