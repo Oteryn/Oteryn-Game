@@ -68,6 +68,10 @@ def validate_inventory(root, rows, native, schedules):
     elemental_native, elemental_schedules = elemental_inventory(native)
     extra_native += elemental_native
     extra_schedules += elemental_schedules
+    from nrwicked_profiles import inventory_extension as nrwicked_inventory
+    nrwicked_native, nrwicked_schedules = nrwicked_inventory(root, native)
+    extra_native += nrwicked_native
+    extra_schedules += nrwicked_schedules
     spawn_bodies = [row for row in native if row['profile']['target']['key'] in CRYSTAL_SPAWN_KEYS]
     spawn_schedules = sum(len(row['behavior']['data']['profile'].get(field, []))
                           for row in spawn_bodies for field in ('attacks', 'defenses'))
