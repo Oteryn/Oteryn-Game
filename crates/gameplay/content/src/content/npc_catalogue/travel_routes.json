@@ -1594,6 +1594,19 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.jack_fate/thais",
+    "keyword": "thais",
+    "price": 180,
+    "premium": false,
+    "x": 32310,
+    "y": 32210,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.jack_fate/venore",
     "keyword": "venore",
     "price": 180,
@@ -1618,6 +1631,20 @@
     "carpet": false,
     "native_addition": true,
     "yalahar_town_gate": "liberty_bay"
+  },
+  {
+    "key": "oteryn:service.travel.jack_fate_goroma/liberty_bay",
+    "keyword": "liberty bay",
+    "price": 0,
+    "premium": false,
+    "x": 32285,
+    "y": 32892,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "quest_gate": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_goroma"
   },
   {
     "key": "oteryn:service.travel.junkar_mines/kazordoon",
@@ -2392,9 +2419,11 @@
     "x": 32024,
     "y": 32813,
     "floor": 7,
-    "postman": true,
-    "held": true,
-    "carpet": false
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "quest_gate": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor"
   },
   {
     "key": "oteryn:service.travel.sebastian_nargor/liberty_bay",
