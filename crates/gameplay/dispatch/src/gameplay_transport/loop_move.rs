@@ -334,7 +334,9 @@ impl LoopGroundOverlay {
                 blocks_projectile: entry
                     .field_collision
                     .map_or(native_projectile, |(_, projectile)| projectile),
-                pickupable,
+                pickupable: pickupable
+                    && item.definition.production_key
+                        != crate::durability::map_item_mint::MAP_DISPENSER_KEY,
                 bound: false,
                 count: item.quantity.clamp(1, 100),
                 sub_type: 0,
@@ -695,12 +697,33 @@ pub async fn loop_ground(
                 .bundle_map()
                 .is_some_and(|map| map.facts.captured_map_item(key).is_some())
     };
-    if taken.iter().any(|key| !valid_source(*key)) {
+    if taken.iter().any(|(key, _)| !valid_source(*key)) {
         return None;
     }
-    built.taken_sources.extend(taken.iter().copied());
+    if taken.iter().any(|(_, retired_cask)| *retired_cask) {
+        let runtime = admission.runtime.lock().await;
+        if runtime.owner_fence().is_err()
+            || runtime.binding().runtime_scope() != scope
+            || runtime.binding().scope_generation().get() != field_pin.2
+        {
+            return None;
+        }
+        let map = admission.bundle_map()?;
+        if map.overlay.base().digest() != base.digest() {
+            return None;
+        }
+        for &(key, retired_cask) in &taken {
+            if retired_cask {
+                map_sources::hide_retired_cask(map, key)?;
+            }
+        }
+    }
+    built
+        .taken_sources
+        .extend(taken.iter().map(|(key, _)| *key));
     let roots: Vec<_> = taken
         .into_iter()
+        .map(|(key, _)| key)
         .filter(|key| map_sources::is_top_level(base, *key))
         .collect();
     crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots).ok()?;

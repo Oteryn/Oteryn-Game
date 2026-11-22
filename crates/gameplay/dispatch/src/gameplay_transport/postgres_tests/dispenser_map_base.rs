@@ -154,6 +154,7 @@ async fn scenario(admin: String) -> TestResult {
     super::item_look_fixtures::seed_main_backpack(&harness, &[(FLASK, 2), (FLASK, 3)]).await?;
 
     let pos = TilePos { x: 7, ..start };
+    assert!(!map.enterable(pos), "the authored cask blocks the tile");
     let placement_key = crate::map::view::placement_key(pos, 1).ok_or("cask placement")?;
     let placement = [base.digest().as_slice(), &placement_key.to_be_bytes()].concat();
     let map_intent = UseIntent {
@@ -203,6 +204,8 @@ async fn scenario(admin: String) -> TestResult {
             .tile(pos)
             .is_some_and(|tile| tile.is_hidden(1))
     );
+
+    assert!(!map.enterable(pos), "the live cask still blocks the tile");
 
     // Seed the state of a cask with one charge left after previous fills.
     let mut tx = harness.pool.begin().await?;
@@ -272,6 +275,10 @@ async fn scenario(admin: String) -> TestResult {
             .overlay()
             .tile(pos)
             .is_some_and(|tile| tile.is_hidden(1))
+    );
+    assert!(
+        map.enterable(pos),
+        "depletion clears the authored collision"
     );
     Ok(())
 }
