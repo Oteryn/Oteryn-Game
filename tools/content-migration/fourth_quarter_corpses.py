@@ -57,6 +57,7 @@ def extend_item_references(root, items):
 
 
 def apply_items(root, items, provider_order, shared_ids):
+    from ordinary_corpse_profiles import movable_stage_profiles
     from ordinary_corpse_slice2 import merge_shared_item
 
     # Crystal items.cpp loads the appearance flags before the items.xml
@@ -152,6 +153,15 @@ def apply_items(root, items, provider_order, shared_ids):
             merge_shared_item(existing[key], record)
         else:
             items["records"].append(record)
+    present = {
+        row["production_definition"]["production_key"] for row in items["records"]
+    }
+    for record in movable_stage_profiles(root):
+        key = record["production_definition"]["production_key"]
+        if key in present:
+            raise ValueError(f"Movable corpse stage already has an Item owner: {key}")
+        items["records"].append(record)
+        present.add(key)
     items["records"].sort(key=provider_order)
 
 

@@ -10,17 +10,54 @@ struct SourceChain {
     durations_ms: Vec<i64>,
 }
 
+#[derive(serde::Deserialize)]
+struct StagePhysicalFacts {
+    pickupable: bool,
+}
+
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
 ) -> TestResult {
-    owner
+    let native = owner
         .active_generation
         .and_then(|generation| generation.native_gameplay())
-        .ok_or("active native policies")?
+        .ok_or("active native policies")?;
+    native
         .install_companion_policies(&mut *owner.runtime.lock().await)
         .map_err(debug)?;
+    use crate::durability::item_mint::TypedDefinitionRef;
+    use crate::durability::item_transfer::ItemStackClass;
+    use oteryn_gameplay_items::item_ref_admission::{
+        generation_ground_item_facts, generation_item_facts,
+    };
+
+    let stages: Vec<(u32, StagePhysicalFacts)> = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../imports/crystalserver/ordinary-corpses/movable-stages.json"
+    )))?;
+    for (id, captured) in stages {
+        let definition = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: format!("oteryn:item.tibia.i{id}"),
+            revision_ref: "definition-r1".into(),
+        };
+        let facts = generation_ground_item_facts(native, &definition).map_err(debug)?;
+        assert_eq!(
+            facts.stack,
+            ItemStackClass::NonStackable,
+            "corpse stage {id}"
+        );
+        if captured.pickupable {
+            let facts = generation_item_facts(native, &definition).map_err(debug)?;
+            assert_eq!(
+                facts.stack,
+                ItemStackClass::NonStackable,
+                "corpse stage {id}"
+            );
+        }
+    }
     super::qengine_kill_stories_fixtures::death_actor(
         owner,
         admitted,

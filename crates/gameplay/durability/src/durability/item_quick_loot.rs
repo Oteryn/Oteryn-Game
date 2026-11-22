@@ -116,6 +116,7 @@ impl DurabilityRoot {
         command: CommandRef,
         content: &C,
         cell: [u8; 10],
+        loop_map_revision: Option<String>,
         premium: bool,
         request: QuickLootRequest,
     ) -> std::result::Result<std::result::Result<QuickLootResult, LoopMoveRefusal>, DurabilityError>
@@ -189,14 +190,19 @@ impl DurabilityRoot {
                 let x=i32::from_be_bytes(cell[0..4].try_into().map_err(|_| DurabilityError::InvalidStoredState)?);
                 let y=i32::from_be_bytes(cell[4..8].try_into().map_err(|_| DurabilityError::InvalidStoredState)?);
                 let mut cells=Vec::new();
+                let mut loop_cells=Vec::new();
+                let loop_floor=i16::from_be_bytes([cell[8],cell[9]]).checked_neg();
                 for dx in -1_i32..=1 { for dy in -1_i32..=1 {
                     if let (Some(x),Some(y))=(x.checked_add(dx),y.checked_add(dy)) {
                         cells.push([x.to_be_bytes().as_slice(),y.to_be_bytes().as_slice(),&cell[8..10]].concat());
+                        if let Some(floor)=loop_floor {
+                            loop_cells.push([x.to_be_bytes().as_slice(),y.to_be_bytes().as_slice(),floor.to_be_bytes().as_slice()].concat());
+                        }
                     }
                 }}
-                let corpses=sqlx::query("SELECT i.item_instance_id::text,g.spatial_position,(floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000 OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid OR EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)) AS loot_allowed FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_item_mint_receipts r USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=ANY($3) AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY i.item_instance_id LIMIT $6 FOR UPDATE OF i")
+                let corpses=sqlx::query("SELECT i.item_instance_id::text,g.spatial_position,(floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000 OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid OR EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)) AS loot_allowed FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_item_mint_receipts r USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND (g.spatial_position=ANY($3) OR g.spatial_position=ANY($8)) AND CASE WHEN g.map_revision=$9 AND game_ordinary_corpse_loop_ground(g.item_instance_id) THEN g.spatial_position=ANY($8) ELSE g.spatial_position=ANY($3) END AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY i.item_instance_id LIMIT $6 FOR UPDATE OF i")
                     .bind(world.as_slice()).bind(channel.as_bytes().as_slice()).bind(cells).bind(fence.scope_ownership_generation.get().to_string())
-                    .bind(request.corpse.as_ref().map(<[u8;16]>::as_slice)).bind(MAX_NEARBY_CORPSES as i64).bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
+                    .bind(request.corpse.as_ref().map(<[u8;16]>::as_slice)).bind(MAX_NEARBY_CORPSES as i64).bind(fence.character_id.as_bytes().as_slice()).bind(loop_cells).bind(loop_map_revision).fetch_all(&mut *tx).await?;
                 let mut result=QuickLootResult { items: Vec::new() };
                 for corpse in corpses {
                     let corpse_id=uuid_text(corpse.try_get("item_instance_id")?)?;

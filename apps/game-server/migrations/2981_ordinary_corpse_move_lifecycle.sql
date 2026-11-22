@@ -8,12 +8,28 @@ $$;
 REVOKE ALL ON FUNCTION game_corpse_counts_toward_mint_cap(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_corpse_counts_toward_mint_cap(UUID) TO oteryn_game_runtime;
 
+-- MINT and carried drops use the same scope census while holding the corpse
+-- cap lock. Ground-to-Ground relocation does not add another corpse to it.
+CREATE FUNCTION game_corpse_ground_cap_recount(p_world UUID,p_channel UUID,p_instance UUID)
+RETURNS BIGINT LANGUAGE sql VOLATILE AS $$
+    SELECT count(*) FROM game_item_ground_locations g
+    JOIN game_item_mint_receipts m USING(item_instance_id)
+    JOIN game_item_instances i USING(item_instance_id)
+    WHERE g.world_id=p_world AND g.channel_id IS NOT DISTINCT FROM p_channel
+      AND g.instance_id IS NOT DISTINCT FROM p_instance
+      AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
+      AND i.lifecycle=1 AND game_corpse_counts_toward_mint_cap(i.item_instance_id)
+$$;
+
 -- Registered corpse stages whose active native profiles admit inventory and
 -- have both movable and pickupable source facts, plus the preceding plain set.
 CREATE OR REPLACE FUNCTION game_ordinary_corpse_portable_key(p_key TEXT) RETURNS BOOLEAN
 LANGUAGE sql IMMUTABLE STRICT AS $$
     SELECT p_key = ANY(ARRAY(
         SELECT 'oteryn:item.tibia.i'||id FROM unnest(ARRAY[
+        -- Begin generated portable stages
+        866,4034,4035,4036,4086,4087,4105,4106,4107,4166,4167,4176,4177,4178,4200,4201,4202,4230,4231,4232,5013,5629,5727,5728,5729,6348,6349,6350,21100,21101,21102,
+        -- End generated portable stages
         287,288,289,862,863,864,2983,3987,3990,3991,3992,3994,3995,3996,
         3998,3999,4000,4001,4002,4003,4004,4007,4008,4009,4011,4012,4016,4017,
         4018,4021,4022,4024,4029,4043,4044,4045,4046,4052,4053,4057,4058,4066,
@@ -69,10 +85,10 @@ LANGUAGE sql STABLE STRICT AS $$
           AND i.definition_production_key IN (
             SELECT 'oteryn:item.tibia.i'||id FROM unnest(game_summer_corpse_chain(m.loot_table_production_key)) id
           )
-          AND (g.world_id,g.scope_kind,g.channel_id,g.instance_id)
-              IS NOT DISTINCT FROM (m.death_world_id,m.death_scope_kind,m.death_channel_id,m.death_instance_id)
-          AND (g.runtime_scope_ownership_generation=m.death_scope_ownership_generation
-               OR game_ordinary_corpse_loop_ground(p_item))
+          AND g.world_id=m.death_world_id
+          AND (((g.scope_kind,g.channel_id,g.instance_id,g.runtime_scope_ownership_generation)
+                 IS NOT DISTINCT FROM (m.death_scope_kind,m.death_channel_id,m.death_instance_id,m.death_scope_ownership_generation))
+                OR game_ordinary_corpse_loop_ground(p_item))
     )
 $$;
 
@@ -82,28 +98,80 @@ DECLARE
     source CONSTANT TEXT := 'OR game_item_plain_corpse_source(NEW.item_instance_id)';
     timed CONSTANT TEXT := 'NEW.from_kind=3 AND NEW.to_kind=3 AND game_item_loop_native_corpse_source(NEW.item_instance_id)';
     f TEXT;
-    original CONSTANT TEXT := 'm.death_scope_ownership_generation=g.runtime_scope_ownership_generation';
+    original TEXT;
+    house CONSTANT TEXT := 'IF game_house_container_line_admit(NEW) THEN';
 BEGIN
     IF (length(body)-length(replace(body,source,'')))/length(source) <> 1
         OR (length(body)-length(replace(body,timed,'')))/length(timed) <> 1 THEN
         RAISE EXCEPTION 'Ordinary corpse move predecessor changed';
     END IF;
     body := replace(body, source, source||' OR (NEW.to_kind=3 AND NEW.quantity_before=1 AND NEW.quantity_after=1 AND game_ordinary_corpse_drag_source(NEW.item_instance_id))');
-    EXECUTE replace(body, timed, 'NEW.from_kind=3 AND NEW.to_kind=3 AND
+    body := replace(body, timed, 'NEW.from_kind=3 AND NEW.to_kind=3 AND
         (game_item_loop_native_corpse_source(NEW.item_instance_id) OR game_ordinary_corpse_drag_source(NEW.item_instance_id))');
-
-    FOREACH f IN ARRAY ARRAY['game_corpse_stage_ground_current(uuid,uuid,uuid,numeric,bigint)',
-                             'game_instance_corpse_stage_current(uuid,uuid,uuid,numeric,bigint)'] LOOP
-        body := pg_get_functiondef(f::regprocedure);
-        IF (length(body)-length(replace(body,original,'')))/length(original) <> 1 THEN
-            RAISE EXCEPTION 'Corpse timer scope predecessor changed in %', f;
+    original := 'IF NEW.from_kind=3 AND NEW.to_kind<>3 AND EXISTS';
+    IF (length(body)-length(replace(body,original,'')))/length(original) <> 1
+        OR (length(body)-length(replace(body,house,'')))/length(house) <> 1 THEN
+        RAISE EXCEPTION 'Ordinary corpse custody predecessor changed';
+    END IF;
+    body := replace(body, original, $guard$
+    IF NEW.from_kind=3 AND NEW.to_kind<>3 AND EXISTS (
+        SELECT 1 FROM game_item_corpse_container_entries e
+        WHERE e.parent_item_instance_id=NEW.item_instance_id
+    ) THEN
+        RAISE EXCEPTION 'Empty the corpse before picking it up' USING ERRCODE='23514';
+    END IF;
+    IF NEW.to_kind=2 AND game_corpse_retirement_deadline(NEW.to_parent_item_instance_id) IS NOT NULL THEN
+        RAISE EXCEPTION 'A decaying corpse cannot receive inventory items' USING ERRCODE='23514';
+    END IF;
+    $guard$ || original);
+    body := replace(body, house, $cap$
+    IF NEW.from_kind IN (1,2) AND NEW.to_kind=3 AND EXISTS (
+        SELECT 1 FROM game_item_mint_receipts m
+        WHERE m.item_instance_id=NEW.item_instance_id AND m.loot_purpose_key='CORPSE_MATERIALIZATION'
+          AND m.draw_ordinal=0 AND game_corpse_counts_toward_mint_cap(m.item_instance_id)
+    ) THEN
+        SELECT * INTO r FROM game_item_loop_move_receipts
+        WHERE transaction_id=NEW.transaction_id AND created_xact_id=pg_current_xact_id();
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'Corpse drop requires its receipt of this transaction' USING ERRCODE='23514';
         END IF;
-        EXECUTE replace(body,original,'('||original||' OR
-            (g.runtime_scope_ownership_generation<=p_generation AND game_ordinary_corpse_loop_ground(p_item)))');
-    END LOOP;
+        PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:corpse-cap:' ||
+            encode(CASE WHEN r.scope_kind=1 THEN decode('01','hex')||uuid_send(r.world_id)||uuid_send(r.channel_id)
+                        ELSE game_activity_scope_key(r.world_id,r.instance_id) END,'hex'),0));
+        IF game_corpse_ground_cap_recount(r.world_id,r.channel_id,r.instance_id)>=64 THEN
+            RAISE EXCEPTION 'The destination scope has too many active corpses'
+                USING ERRCODE='23514', CONSTRAINT='game_corpse_ground_cap';
+        END IF;
+    END IF;
+    $cap$ || house);
+    EXECUTE body;
+
+    -- Try the exact relocated receipt independently of the original death scope.
+    -- Each recovery predicate retains its current assignment and stack checks.
+    f := 'game_corpse_stage_ground_current(uuid,uuid,uuid,numeric,bigint)';
+    body := pg_get_functiondef(f::regprocedure);
+    original := 'm.death_channel_id=g.channel_id
+   AND m.death_scope_ownership_generation=g.runtime_scope_ownership_generation';
+    IF (length(body)-length(replace(body,original,'')))/length(original) <> 1 THEN
+        RAISE EXCEPTION 'Corpse timer scope predecessor changed in %', f;
+    END IF;
+    EXECUTE replace(body,original,'(('||original||') OR
+        (g.runtime_scope_ownership_generation<=p_generation AND game_ordinary_corpse_loop_ground(p_item)))');
+
+    f := 'game_instance_corpse_stage_current(uuid,uuid,uuid,numeric,bigint)';
+    body := pg_get_functiondef(f::regprocedure);
+    original := 'm.death_scope_kind=2 AND m.death_world_id=p_world AND m.death_instance_id=p_instance
+   AND m.death_scope_ownership_generation=g.runtime_scope_ownership_generation';
+    IF (length(body)-length(replace(body,original,'')))/length(original) <> 1
+        OR position('a.scope_key=m.death_scope_key' IN body)=0 THEN
+        RAISE EXCEPTION 'Corpse timer scope predecessor changed in %', f;
+    END IF;
+    body := replace(body,'a.scope_key=m.death_scope_key','a.scope_key=game_activity_scope_key(g.world_id,g.instance_id)');
+    EXECUTE replace(body,original,'(m.death_world_id=g.world_id AND (('||original||') OR
+        (g.runtime_scope_ownership_generation<=p_generation AND game_ordinary_corpse_loop_ground(p_item))))');
 
     FOREACH f IN ARRAY ARRAY['game_ordinary_corpse_loop_ground(uuid)','game_ordinary_corpse_drag_source(uuid)',
-                             'game_corpse_counts_toward_mint_cap(uuid)'] LOOP
+                             'game_corpse_counts_toward_mint_cap(uuid)','game_corpse_ground_cap_recount(uuid,uuid,uuid)'] LOOP
         EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
         EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
         EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO oteryn_game_runtime,oteryn_game_control',f);

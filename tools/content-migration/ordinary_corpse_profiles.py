@@ -3,6 +3,7 @@
 import copy
 import hashlib
 import json
+import re
 
 import qengine_reward_item_profiles as items
 from boss_conditional_item_reference import definition
@@ -159,6 +160,62 @@ def admit(root, generated, path, manifest_path, order, canonical):
     items.admit_records(root, generated, path, manifest_path, order, canonical, records)
 
 
+def movable_stage_profiles(root):
+    from ordinary_corpse_cohort import item_profile
+
+    bindings = items.source.binding_index(
+        (root / "imports/crystalserver/bindings/items.json").read_bytes()
+    )
+    for item, facts in read(root, "movable-stages"):
+        binding = bindings[str(item)]
+        if binding["target"] != item_ref(item) or binding["disposition"] != "EXACT":
+            raise ValueError(f"Unqualified movable corpse stage: {item}")
+        record = item_profile(item, {**facts, "movable": True}, bindings)
+        # The corpse's MINT registry owns its stage schedule.
+        record["semantics"].pop("temporal", None)
+        top = facts["always_on_top_order"]
+        record["attributes"].update(always_on_top=top != 0, always_on_top_order=top)
+        yield record
+
+
+def check_movable_stages(root):
+    profile_path = root / "content/items/definitions/spell-native-profiles.json"
+    active = {
+        record["production_definition"]["production_key"]: record
+        for record in json.loads(profile_path.read_bytes())["records"]
+    }
+    for record in movable_stage_profiles(root):
+        key = record["production_definition"]["production_key"]
+        actual = active.get(key)
+        if (
+            actual is None
+            or any(
+                actual[field] != record[field]
+                for field in ("admission", "production_binding")
+            )
+            or actual["semantics"].get("physical") != record["semantics"]["physical"]
+        ):
+            raise ValueError(f"Missing or inconsistent movable corpse admission: {key}")
+
+
+def stage_portability_sql(root, path):
+    portable = [
+        str(item) for item, facts in read(root, "movable-stages") if facts["pickupable"]
+    ]
+    start = "        -- Begin generated portable stages\n"
+    end = "        -- End generated portable stages"
+    sql = path.read_text()
+    body = "        " + ",".join(portable) + ",\n"
+    result, count = re.subn(
+        re.escape(start) + r"(?s:.*?)" + re.escape(end),
+        start + body + end,
+        sql,
+    )
+    if count != 1:
+        raise ValueError("Movable corpse SQL marker changed")
+    return result
+
+
 MIGRATION = "apps/game-server/migrations/2977_crystal_ordinary_corpse_registry.sql"
 
 
@@ -273,10 +330,18 @@ if __name__ == "__main__":
     root = Path(__file__).resolve().parents[2]
     path = root / MIGRATION
     expected = migration(root)
+    portable_sql = (
+        root / "apps/game-server/migrations/2981_ordinary_corpse_move_lifecycle.sql"
+    )
+    portable_expected = stage_portability_sql(root, portable_sql)
     if args.check:
+        check_movable_stages(root)
+        if portable_sql.read_text() != portable_expected:
+            raise SystemExit("Portable corpse stages differ from their source capture")
         if path.read_text() != expected:
             raise SystemExit(
                 "Crystal ordinary corpse migration differs from its source capture"
             )
     else:
         path.write_text(expected)
+        portable_sql.write_text(portable_expected)

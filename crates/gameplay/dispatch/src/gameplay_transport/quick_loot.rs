@@ -64,6 +64,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             pending,
         )?;
         let position = runtime.read_actor_position(actor).ok()?.position();
+        drop(runtime);
+        let loop_map_revision = self
+            .bundle_map()
+            .map(|map| crate::map::overlay::map_revision(map.overlay.base()));
         let floor = position.floor;
         let cell = [
             position.x.to_be_bytes().as_slice(),
@@ -91,6 +95,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ),
                 &super::item_ref_admission::NativeItemWeights(content).with_wheel(self.premium_coordinator),
                 cell,
+                loop_map_revision,
                 premium,
                 request,
             )

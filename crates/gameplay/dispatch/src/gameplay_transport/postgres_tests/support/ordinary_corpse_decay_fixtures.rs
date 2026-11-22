@@ -33,7 +33,15 @@ pub(super) async fn exercise_mint(
     .fetch_all(&h.pool)
     .await?;
     assert_eq!(mints.len(), 1);
-    assert_eq!(mints[0].1, 670_000);
+    let source: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/ordinary-corpse-cohort.json"
+    )))?;
+    let chain: Vec<(u32, i64)> = serde_json::from_value(source["chains"]["5966"].clone())?;
+    assert_eq!(
+        mints[0].1,
+        chain.iter().map(|(_, duration)| duration).sum::<i64>()
+    );
     let stages: Vec<(String, Option<String>, i64)> = sqlx::query_as(
         "SELECT stage.definition_production_key, stage.target_production_key,
                 stage.expires_at_unix_ms-mint.materialized_at
@@ -45,26 +53,22 @@ pub(super) async fn exercise_mint(
     .bind(&mints[0].0)
     .fetch_all(&h.pool)
     .await?;
-    assert_eq!(
-        stages
-            .iter()
-            .map(|(stage, target, time)| (stage.as_str(), target.as_deref(), *time))
-            .collect::<Vec<_>>(),
-        [
-            ("oteryn:item.tibia.i5966", Some("oteryn:item.tibia.i4001"), 10_000),
+    let mut elapsed = 0;
+    let expected: Vec<_> = chain
+        .iter()
+        .enumerate()
+        .map(|(index, (stage, duration))| {
+            elapsed += duration;
             (
-                Some("oteryn:item.tibia.i4001"),
-                Some("oteryn:item.tibia.i4002"),
-                310_000
-            ),
-            (
-                Some("oteryn:item.tibia.i4002"),
-                Some("oteryn:item.tibia.i4317"),
-                610_000
-            ),
-            ("oteryn:item.tibia.i4317", None, mints[0].1),
-        ],
-    );
+                format!("oteryn:item.tibia.i{stage}"),
+                chain
+                    .get(index + 1)
+                    .map(|(target, _)| format!("oteryn:item.tibia.i{target}")),
+                elapsed,
+            )
+        })
+        .collect();
+    assert_eq!(stages, expected);
     Ok(())
 }
 
@@ -93,8 +97,13 @@ pub(super) async fn exercise_drag(
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let (at, before) = {
         let runtime = owner.runtime.lock().await;
-        let at = runtime.read_actor_position(actor).map_err(debug)?.position();
-        let corpse = runtime.bound_corpse(death.corpse_identity()).ok_or("bound corpse")?;
+        let at = runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position();
+        let corpse = runtime
+            .bound_corpse(death.corpse_identity())
+            .ok_or("bound corpse")?;
         (at, corpse)
     };
     assert_ne!(before.position, at);
@@ -147,6 +156,9 @@ pub(super) async fn exercise_drag(
         .and_then(|corpse| corpse.loop_ground_spatial_position.as_deref())
         .ok_or("durable corpse position")?;
     let persisted = crate::durability::spell_items_abi::decode_ground_cell(persisted)?;
-    assert_eq!((persisted.x, persisted.y, persisted.z), (at.x, at.y, -i32::from(at.floor)));
+    assert_eq!(
+        (persisted.x, persisted.y, persisted.z),
+        (at.x, at.y, -i32::from(at.floor))
+    );
     Ok(())
 }

@@ -95,8 +95,8 @@ const MAX_ITEM_PROFILES: usize = 16 * 1024 * 1024;
 // serving Creature provider. Keep this bound separate from all other profiles.
 const MAX_CREATURE_PROFILES: usize = 32 * 1024 * 1024;
 const MAX_RECORDS: usize = 4096;
-/// The combined Crystal corpse source cohorts exceed 8,192 Item records.
-const MAX_ITEM_RECORDS: usize = 8_448;
+/// The combined Item providers include the registered movable Crystal corpse stages.
+const MAX_ITEM_RECORDS: usize = 9_216;
 const LIMITS: [usize; 5] = [
     super::production::FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES,
     MAX_CATALOG,
@@ -467,6 +467,11 @@ fn encode_composed_item_profiles(
                             semantics.remove(group);
                         }
                     }
+                }
+                if record.production_binding_qualification.is_none()
+                    && let Some(object) = value.as_object_mut()
+                {
+                    object.remove("production_binding_qualification");
                 }
                 sequence.serialize_element(&value)?;
             }

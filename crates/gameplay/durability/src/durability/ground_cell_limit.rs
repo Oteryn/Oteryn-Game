@@ -9,7 +9,7 @@ use super::item_mint::GroundItemInstance;
 use super::item_mint::{GroundPlacement, TypedDefinitionRef};
 use super::spell_item_transaction::{
     SpellItemError, SpellItemScopeAuthority, assert_spell_item_scope_with_recovery,
-    locked_tile_rows_for_scope,
+    locked_physical_tile_rows_for_scope, locked_tile_rows_for_scope,
 };
 use super::spell_items_abi::{SpellGroundTarget, decode_ground_cell};
 use super::spell_owner_commit::SpellLanePermit;
@@ -135,6 +135,68 @@ pub async fn check_ground_cell_root_insert_with_recovery(
     )
     .await?;
     check_ground_cell_root_insert_in_transaction(tx, &authority, ground, item_instance_id).await
+}
+
+/// Command 9 uses the bundle's map axes. Native Ground writers use the
+/// runtime axes and hash the bundle revision string. Count the physical tile
+/// under the same scope lock even when both representations are occupied.
+pub(super) async fn check_loop_ground_root_insert_with_recovery(
+    tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
+    recovery: &CharacterRecoveryFenceV1,
+    node: &super::runtime_scope_assignment::NodeIncarnationProof,
+    expected_scope: (RuntimeScopeRefV1, u64),
+    ground: &GroundPlacement,
+    item_instance_id: &[u8; 16],
+) -> Result<(), GroundCellAdmissionError> {
+    use sha2::{Digest, Sha256};
+    let authority = assert_spell_item_scope_with_recovery(
+        tx,
+        permit,
+        recovery,
+        node,
+        expected_scope.0,
+        expected_scope.1,
+    )
+    .await?;
+    let target = SpellGroundTarget {
+        item_profile_source: None,
+        spatial_position: ground.spatial_position.clone(),
+        map_revision: ground.map_revision.clone(),
+        content_revision: ground.content_revision.clone(),
+        placement_context: ground.native_room_placement_context.clone(),
+    };
+    let cell = decode_ground_cell(&ground.spatial_position)
+        .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
+    let floor = i16::try_from(-cell.z)
+        .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
+    let native_cell = [
+        cell.x.to_be_bytes().as_slice(),
+        cell.y.to_be_bytes().as_slice(),
+        floor.to_be_bytes().as_slice(),
+    ]
+    .concat();
+    let native_map = super::map_item_mint_audit::map_revision_of(
+        Sha256::digest(ground.map_revision.as_bytes()).as_slice(),
+    );
+    let rows = locked_physical_tile_rows_for_scope(
+        tx,
+        &authority,
+        &target,
+        Some((&native_cell, &native_map)),
+    )
+    .await?;
+    if rows.len() >= GROUND_CELL_ROOT_LIMIT {
+        return Err(GroundCellAdmissionError::Limit(GroundCellLimitError::NotEnoughRoom));
+    }
+    for row in rows {
+        let id = uuid_text(row.try_get("item_instance_id").map_err(SpellItemError::from)?)
+            .map_err(SpellItemError::from)?;
+        if &id == item_instance_id {
+            return Err(GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput));
+        }
+    }
+    Ok(())
 }
 
 /// A genuine Player/Creature physical writer already holds its sealed scope
