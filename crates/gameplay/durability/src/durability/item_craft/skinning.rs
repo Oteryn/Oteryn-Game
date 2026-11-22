@@ -14,12 +14,34 @@ pub struct SkinningRequest {
     pub actor_position: [i32; 3],
 }
 
+pub struct SkinningOutcome {
+    pub disposition: UseDisposition,
+    /// Present for a newly committed rabbit attempt, including zero feet on failure.
+    pub rabbit_feet: Option<u32>,
+}
+
+impl From<UseDisposition> for SkinningOutcome {
+    fn from(disposition: UseDisposition) -> Self {
+        Self {
+            disposition,
+            rabbit_feet: None,
+        }
+    }
+}
+
+pub(super) struct Attempt<'a> {
+    pub request: &'a SkinningRequest,
+    pub catalogue: &'a oteryn_gameplay_content::content::charm_source::CanonicalCharmCatalogue,
+    pub rabbit_feet: Option<u32>,
+}
+
 pub(super) struct Prepared {
     pub corpse: [u8; 16],
     pub before: Value,
     pub proof: Value,
     pub spent: TypedDefinitionRef,
     pub conversion: oteryn_gameplay_items::item_craft::CookingConversion,
+    pub rabbit_feet: Option<u32>,
 }
 
 /// Positive relative chance, capped at certainty. The donor's declining-roll bug is rejected.
@@ -43,7 +65,7 @@ impl DurabilityRoot {
         content: &C,
         catalogue: &oteryn_gameplay_content::content::charm_source::CanonicalCharmCatalogue,
         probe: bool,
-    ) -> Result<Option<UseDisposition>, DurabilityError> {
+    ) -> Result<Option<SkinningOutcome>, DurabilityError> {
         permit.check_scope(fence.runtime_scope)?;
         if request.craft.command.game_session_id() != fence.game_session_id
             || request.craft.intent.is_empty()
@@ -56,7 +78,7 @@ impl DurabilityRoot {
             || request.craft.gathering.is_some()
             || request.craft.enchanting.is_some()
         {
-            return Ok(Some(UseDisposition::Rejected));
+            return Ok(Some(UseDisposition::Rejected.into()));
         }
         let record = recovery
             .record_for(self)
@@ -72,15 +94,19 @@ impl DurabilityRoot {
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.craft.command.command_id().get().to_string()).fetch_optional(&mut **tx).await?;
             if let Some((intent,character))=previous {
                 let result=if intent==request.craft.intent && character==fence.character_id.as_bytes() { UseDisposition::Committed } else { UseDisposition::Rejected };
-                tx.commit(deadline).await?; return Ok(Some(result));
+                tx.commit(deadline).await?; return Ok(Some(result.into()));
             }
             if probe { tx.commit(deadline).await?; return Ok(None); }
             if assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(request.craft.command),context.1.loop_content_digest()).await.is_err() {
-                return Ok(Some(UseDisposition::Rejected));
+                return Ok(Some(UseDisposition::Rejected.into()));
             }
-            let result=super::write_with_skinning(&mut tx,context.3,fence,&request.craft,context.0,context.1,Some((&request,context.2))).await?;
-            if result==UseDisposition::Committed { tx.commit(deadline).await?; }
-            Ok(Some(result))
+            let mut attempt = Attempt { request: &request, catalogue: context.2, rabbit_feet: None };
+            let disposition = super::write_with_skinning(&mut tx,context.3,fence,&request.craft,context.0,context.1,Some(&mut attempt)).await?;
+            if disposition == UseDisposition::Committed {
+                tx.commit(deadline).await?;
+                return Ok(Some(SkinningOutcome { disposition, rabbit_feet: attempt.rabbit_feet }));
+            }
+            Ok(Some(disposition.into()))
         })).await
     }
 }
@@ -138,7 +164,9 @@ pub(super) async fn prepare(
     }
     let Some((target, yield_rule)) = source_id(&tool.production_key)
         .zip(source_id(&corpse_key))
-        .and_then(|(tool, corpse)| oteryn_gameplay_items::fishing::gathering_rule(tool, corpse))
+        .and_then(|(tool, corpse)| {
+            oteryn_gameplay_items::fishing::corpse_skinning_rule(tool, corpse)
+        })
     else {
         return Ok(None);
     };
@@ -180,8 +208,21 @@ pub(super) async fn prepare(
         revision_ref: spent_revision.to_owned(),
     };
     let race: String = row.try_get("race_key")?;
-    let stage:Option<i16>=sqlx::query_scalar("SELECT u.unlocked_stage FROM game_character_charm_assignments a JOIN game_character_charm_unlocks u USING(character_id,charm_key) WHERE a.character_id=encode($1,'hex')::uuid AND a.race_key=$2 AND a.charm_key='oteryn:charm.scavenge'")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(&race).fetch_optional(&mut ***tx).await?;
+    let rabbit = corpse_key == "oteryn:item.tibia.i4301";
+    if rabbit
+        && (!matches!(
+            race.as_str(),
+            "oteryn:creature.rabbit" | "oteryn:creature.killer_rabbit"
+        ) || !super::rottin_charm_hunt_active(tx, fence).await?)
+    {
+        return Ok(None);
+    }
+    let stage: Option<i16> = if rabbit {
+        None
+    } else {
+        sqlx::query_scalar("SELECT u.unlocked_stage FROM game_character_charm_assignments a JOIN game_character_charm_unlocks u USING(character_id,charm_key) WHERE a.character_id=encode($1,'hex')::uuid AND a.race_key=$2 AND a.charm_key='oteryn:charm.scavenge'")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(&race).fetch_optional(&mut ***tx).await?
+    };
     let bonus = stage
         .and_then(|s| u8::try_from(s).ok())
         .and_then(|s| {
@@ -207,8 +248,16 @@ pub(super) async fn prepare(
     .map_err(|_| DurabilityError::InvalidStoredState)?;
     let success = u128::from(draw) * 1_000_000_000
         < (u128::from(chance_numerator(yield_rule.threshold, bonus)) << 64);
+    // Crystal draws once: 25% for one foot, 10% for two, otherwise none.
+    let count = if success {
+        1
+    } else if rabbit && u128::from(draw) * 100 < (35_u128 << 64) {
+        2
+    } else {
+        0
+    };
     let mut outputs = Vec::new();
-    if success {
+    if count != 0 {
         let key = format!("oteryn:item.tibia.i{}", yield_rule.item);
         let Some(revision) = native.item_index().and_then(|index| index.revision(&key)) else {
             return Ok(None);
@@ -223,7 +272,7 @@ pub(super) async fn prepare(
         ) else {
             return Ok(None);
         };
-        outputs.push((output, 1));
+        outputs.push((output, count));
     }
     Ok(Some(Prepared {
         corpse: request.corpse,
@@ -235,6 +284,7 @@ pub(super) async fn prepare(
             production_key: spent.production_key,
             revision_ref: spent.revision_ref,
         },
+        rabbit_feet: rabbit.then_some(count),
         conversion: oteryn_gameplay_items::item_craft::CookingConversion {
             recipe: "oteryn:skinning.crystal".into(),
             outputs,
