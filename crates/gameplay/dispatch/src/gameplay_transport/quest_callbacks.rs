@@ -921,6 +921,71 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    /// Lower a bare carried USE at a zero-reach anchor through the same selected-tool fence.
+    pub(super) async fn use_quest_anchor_tool(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &oteryn_protocol_oteryn::world_object::UseIntent,
+        source: super::item_view::ItemKey,
+    ) -> Option<UseOutcome> {
+        use crate::map::view::MapFacts;
+        let super::item_view::ItemKey::Instance(source) = source else {
+            return None;
+        };
+        if intent.use_with.is_some()
+            || intent.use_with_map_item.is_some()
+            || intent.use_with_position.is_some()
+        {
+            return None;
+        }
+        let at = native(
+            self.runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .ok()?
+                .position(),
+        )?;
+        let mut anchors = self.callback_content().iter().filter_map(|callback| {
+            let anchor = callback.selector.native.as_ref()?;
+            (callback.use_range == 0
+                && anchor.position.x == at.x
+                && anchor.position.y == at.y
+                && anchor.position.floor == at.floor)
+                .then_some((anchor, callback.item_on_target.as_ref()?))
+        });
+        let (anchor, tool) = anchors.next()?;
+        if anchors.next().is_some() {
+            return Some(UseOutcome::rejected());
+        }
+        let inventory = self
+            .root
+            .read_item_use_inventory(self.character, self.holder, command.item_fence?)
+            .await
+            .ok()?;
+        inventory
+            .backpack
+            .iter()
+            .flat_map(|bag| bag.entries.iter())
+            .chain(inventory.nested.iter().map(|(_, entry)| entry))
+            .find(|entry| {
+                entry.item.item_instance_id == source
+                    && entry.item.definition.production_key == tool.item
+            })?;
+        let map = self.bundle_map()?;
+        let key = oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, anchor.ordinal)?;
+        let mut placement = map.overlay.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let target = WorldObjectTarget {
+            placement,
+            expected_revision: map.facts.object_revision(key),
+        };
+        let encoded = oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).ok()?;
+        self.use_quest_callback_with_tool(actor, command, map, &target, Some((source, encoded)))
+            .await
+    }
+
     pub(super) async fn use_quest_callback_with_tool(
         &self,
         actor: ExactActorRef,

@@ -1314,6 +1314,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome));
         }
+        if let Some(source) = source
+            && let Some(outcome) = self
+                .use_quest_anchor_tool(actor, command, &intent, source)
+                .await
+        {
+            return Ok(Some(outcome));
+        }
         if let Some(outcome) = self
             .use_carried_item_disguise(actor, command, &intent, source)
             .await?

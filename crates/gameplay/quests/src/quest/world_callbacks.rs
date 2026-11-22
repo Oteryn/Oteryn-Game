@@ -943,7 +943,14 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || !super::valid_quest_key(&callback.key)
             || !super::valid_quest_key(&callback.quest)
             || !keys.insert(&callback.key)
-            || !(1..=2).contains(&callback.use_range)
+            || callback.use_range > 2
+            || (callback.use_range == 0
+                && (callback.trigger != Trigger::Use
+                    || callback.teleport.is_none()
+                    || selector.native.is_none()
+                    || !callback.item_on_target.as_ref().is_some_and(|tool| {
+                        tool.selected_instance && tool.reusable
+                    })))
             || (callback.use_range > 1
                 && (callback.trigger != Trigger::Use
                     || selector.position.is_none()

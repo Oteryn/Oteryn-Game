@@ -54,7 +54,7 @@ fn comparison(op: NpcComparison, value: i64, maximum: Option<i64>) -> bool {
 }
 
 fn program_sources(sources_list: &[String], schema: u32, quest: &str) -> bool {
-    if schema == 1 {
+    if schema == 1 || quest == "oteryn:quest.what_a_foolish_quest" {
         return sources(sources_list, quest);
     }
     let Some(name) = quest.strip_prefix("oteryn:quest.authored.") else {
@@ -106,7 +106,9 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
             return Err(invalid("Oldrak source custody"));
         }
         if !matches!(document.schema, 1 | 2)
-            || (document.schema == 2 && !document.quest.starts_with("oteryn:quest.authored."))
+            || (document.schema == 2
+                && !document.quest.starts_with("oteryn:quest.authored.")
+                && document.quest != "oteryn:quest.what_a_foolish_quest")
             || !valid_quest_key(&document.quest)
             || !quests.insert(document.program_key.as_ref().unwrap_or(&document.quest))
             || document

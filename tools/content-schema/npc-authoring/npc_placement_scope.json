@@ -23,6 +23,7 @@
     "oteryn:npc.avar_tar",
     "oteryn:npc.billy",
     "oteryn:npc.blind_orc",
+    "oteryn:npc.bozo",
     "oteryn:npc.brewster",
     "oteryn:npc.briasol",
     "oteryn:npc.broken_servant_sentry",
@@ -92,6 +93,7 @@
     "oteryn:npc.mayor_pocaro",
     "oteryn:npc.miles_the_guard",
     "oteryn:npc.minzy",
+    "oteryn:npc.mirabell",
     "oteryn:npc.miraia",
     "oteryn:npc.mordecai",
     "oteryn:npc.morgan",
@@ -303,6 +305,25 @@
     }
   },
   "placement_overrides": {
+    "oteryn:npc.bozo": {
+      "basis": "Crystal world-npc.xml:1879-1881 anchors Bozo. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32313,
+            "y": 32183,
+            "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
     "oteryn:npc.buddel": {
       "basis": "Crystal world-npc.xml:1219-1221 anchors Buddel in Svargrond. The source leaves direction unspecified, so the native placement uses north.",
       "placements": [
@@ -331,6 +352,25 @@
             "x": 32326,
             "y": 32261,
             "z": 9
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.mirabell": {
+      "basis": "Crystal world-npc.xml:621-623 anchors Mirabell. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33172,
+            "y": 31801,
+            "z": 6
           }
         }
       ],

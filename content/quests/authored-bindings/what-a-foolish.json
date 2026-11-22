@@ -1,0 +1,1302 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.what_a_foolish_quest",
+      "recipe_sha256": "ad754e70576a002ff247c01a088e5cf19a65e4bbb8982a933d6888a4117ccae2",
+      "admission": {
+        "minimum_level": 0,
+        "premium": true,
+        "prerequisites": []
+      },
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 21
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 13
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission2",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission3",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission4",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission5",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/what-a-foolish/paid-pies-at",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        }
+      ],
+      "stages": [
+        {
+          "key": "join",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/join",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.bozo",
+              "keywords": [
+                "join"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Take a kitchen knife to the Whiteflower Temple and bring me its best flower."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:669-687"
+              ]
+            }
+          }
+        },
+        {
+          "key": "cut-flower",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/what-a-foolish/cut-flower",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "trigger": "use",
+              "selector": {
+                "position": null,
+                "appearance": null,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 32349,
+                    "y": 32361,
+                    "floor": -7
+                  },
+                  "ordinal": 2,
+                  "appearance": 3656
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "requires_premium": true,
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:1148-1156"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i3469",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "selected_instance": true
+              },
+              "item_reward": {
+                "item": "oteryn:item.tibia.i102",
+                "count": 1
+              }
+            }
+          }
+        },
+        {
+          "key": "report-flower",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/report-flower",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.bozo",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission1",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "requires_premium": true,
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i102",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "This flower will do the trick. Ask me for another mission."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:63-74"
+              ]
+            }
+          }
+        },
+        {
+          "key": "issue-flask",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/issue-flask",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.bozo",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission2",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i135",
+                "count": 1
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Fill this flask with fumes from a freshly slain slime."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:76-89"
+              ]
+            }
+          }
+        },
+        {
+          "key": "sample-slime",
+          "completes": false,
+          "trigger": {
+            "kind": "carried_use",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/sample-slime",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.bozo",
+              "keywords": [
+                "slime sample"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                }
+              ],
+              "requires_premium": true,
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i135",
+                  "count": 1
+                }
+              ],
+              "give": {
+                "item": "oteryn:item.tibia.i107",
+                "count": 1
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You collect the fumes of a freshly slain slime."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:76-103"
+              ],
+              "carried_item": "oteryn:item.tibia.i135",
+              "creature_target": "oteryn:creature.slime",
+              "fresh_corpse": true
+            }
+          }
+        },
+        {
+          "key": "report-fumes",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/report-fumes",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.bozo",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 6
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission2",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "requires_premium": true,
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i107",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You have a talent for distasteful matters."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:91-103"
+              ]
+            }
+          }
+        },
+        {
+          "key": "order-pies",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/order-pies",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.bozo",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 6,
+                  "maximum": 6,
+                  "set": 7
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission3",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Get me twelve pies from Mirabell in Edron."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:104-117"
+              ]
+            }
+          }
+        },
+        {
+          "key": "supply-flour",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/supply-flour",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.mirabell",
+              "keywords": [
+                "flour"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 7,
+                  "maximum": 7,
+                  "set": 8
+                }
+              ],
+              "requires_premium": true,
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i3603",
+                  "count": 24
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Now I can start baking the pies."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:68-88"
+              ]
+            }
+          }
+        },
+        {
+          "key": "buy-pies",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/buy-pies",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.mirabell",
+              "keywords": [
+                "12 pies"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 8,
+                  "maximum": 8,
+                  "set": 9
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i119",
+                "count": 1
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Here are your twelve pies. Take them to Bozo."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:73-102"
+              ],
+              "fee": {
+                "gold": 240,
+                "include_bank": true
+              },
+              "state_ops": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/paid-pies-at",
+                  "from": {
+                    "kind": "any"
+                  },
+                  "effect": {
+                    "kind": "set_now"
+                  }
+                }
+              ],
+              "per_occurrence_mint": true
+            }
+          }
+        },
+        {
+          "key": "confiscate-pies-33190",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/what-a-foolish/confiscate-pies-33190",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": null,
+                "appearance": null,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 33190,
+                    "y": 31787,
+                    "floor": -7
+                  },
+                  "ordinal": 0,
+                  "appearance": 103
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 9,
+                  "maximum": 9,
+                  "set": 7
+                }
+              ],
+              "requires_premium": true,
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/what_a_foolish_quest/movements_destroy_pies.lua:3-27",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:244-252"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i119",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "on_step": true
+              },
+              "item_reward": {
+                "item": "oteryn:item.tibia.i3135",
+                "count": 1
+              },
+              "success_message": "Stand still! These pies are confiscated!"
+            }
+          }
+        },
+        {
+          "key": "confiscate-pies-33191",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/what-a-foolish/confiscate-pies-33191",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": null,
+                "appearance": null,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 33191,
+                    "y": 31787,
+                    "floor": -7
+                  },
+                  "ordinal": 0,
+                  "appearance": 103
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 9,
+                  "maximum": 9,
+                  "set": 7
+                }
+              ],
+              "requires_premium": true,
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/what_a_foolish_quest/movements_destroy_pies.lua:3-27",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:244-252"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i119",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "on_step": true
+              },
+              "item_reward": {
+                "item": "oteryn:item.tibia.i3135",
+                "count": 1
+              },
+              "success_message": "Stand still! These pies are confiscated!"
+            }
+          }
+        },
+        {
+          "key": "confiscate-pies-33192",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/what-a-foolish/confiscate-pies-33192",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": null,
+                "appearance": null,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 33192,
+                    "y": 31787,
+                    "floor": -7
+                  },
+                  "ordinal": 0,
+                  "appearance": 103
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 9,
+                  "maximum": 9,
+                  "set": 7
+                }
+              ],
+              "requires_premium": true,
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/what_a_foolish_quest/movements_destroy_pies.lua:3-27",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:244-252"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i119",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "on_step": true
+              },
+              "item_reward": {
+                "item": "oteryn:item.tibia.i3135",
+                "count": 1
+              },
+              "success_message": "Stand still! These pies are confiscated!"
+            }
+          }
+        },
+        {
+          "key": "report-pies",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/report-pies",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.bozo",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 9,
+                  "maximum": 9,
+                  "set": 10
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 6
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission3",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "requires_premium": true,
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i119",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Excellent. You are now a Fool in Training."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:118-135"
+              ],
+              "state_ops": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/paid-pies-at",
+                  "from": {
+                    "kind": "elapsed_less_than",
+                    "seconds": 1200
+                  },
+                  "effect": {
+                    "kind": "add",
+                    "value": 0
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "order-wine",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/order-wine",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.bozo",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 10,
+                  "maximum": 10,
+                  "set": 11
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+                  "minimum": 6,
+                  "maximum": 6,
+                  "set": 7
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission4",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Bring me eighteen vials filled with wine."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:136-146"
+              ]
+            }
+          }
+        },
+        {
+          "key": "swap-crate",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/what-a-foolish/swap-crate",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "trigger": "use",
+              "selector": {
+                "position": null,
+                "appearance": null,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 32397,
+                    "y": 32216,
+                    "floor": -7
+                  },
+                  "ordinal": 2,
+                  "appearance": 116
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 12,
+                  "maximum": 12,
+                  "set": 13
+                }
+              ],
+              "requires_premium": true,
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/what_a_foolish_quest/action_crate.lua:1-19"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i117",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "selected_instance": true
+              },
+              "item_reward": {
+                "item": "oteryn:item.tibia.i118",
+                "count": 1
+              },
+              "success_message": "Your innocent whistle will fool them all..."
+            }
+          }
+        },
+        {
+          "key": "report-crate",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/report-crate",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.bozo",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 13,
+                  "maximum": 13,
+                  "set": 14
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+                  "minimum": 8,
+                  "maximum": 8,
+                  "set": 9
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission4",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "requires_premium": true,
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i118",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "I expect a few drunken mages soon."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:166-179"
+              ]
+            }
+          }
+        },
+        {
+          "key": "order-watch",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/order-watch",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.bozo",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 14,
+                  "maximum": 14,
+                  "set": 15
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+                  "minimum": 9,
+                  "maximum": 9,
+                  "set": 10
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission5",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Recover the magical watch from the Triangle Tower."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:180-193"
+              ]
+            }
+          }
+        },
+        {
+          "key": "recover-watch",
+          "completes": false,
+          "trigger": {
+            "kind": "collect",
+            "collection": {
+              "key": "oteryn:quest-collection/what-a-foolish/watch",
+              "items": [
+                {
+                  "item": "oteryn:item.tibia.i112",
+                  "count": 1
+                }
+              ],
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 15,
+                  "maximum": 15,
+                  "set": 16
+                }
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2600-2607"
+              ]
+            }
+          }
+        },
+        {
+          "key": "brief-beard-prank",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/brief-beard-prank",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.bozo",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 16,
+                  "maximum": 16,
+                  "set": 17
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+                  "minimum": 10,
+                  "maximum": 10,
+                  "set": 11
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission5",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Use the watch beside the emperor's pillow, shave his beard, then use it to return."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:194-211"
+              ],
+              "present": [
+                {
+                  "item": "oteryn:item.tibia.i112",
+                  "count": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "travel-to-past",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/what-a-foolish/travel-to-past",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "trigger": "use",
+              "selector": {
+                "position": null,
+                "appearance": null,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 32646,
+                    "y": 31903,
+                    "floor": -3
+                  },
+                  "ordinal": 1,
+                  "appearance": 2573
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32659,
+                "y": 31853,
+                "floor": -13
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 17,
+                  "maximum": 17,
+                  "set": 18
+                }
+              ],
+              "requires_premium": true,
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/what_a_foolish_quest/action_watch.lua:1-29"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i112",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "selected_instance": true,
+                "reusable": true
+              },
+              "success_message": "You are travelling in time",
+              "use_range": 0
+            }
+          }
+        },
+        {
+          "key": "shave-beard",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/what-a-foolish/shave-beard",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "trigger": "use",
+              "selector": {
+                "position": null,
+                "appearance": null,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 32659,
+                    "y": 31852,
+                    "floor": -13
+                  },
+                  "ordinal": 1,
+                  "appearance": 114
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 18,
+                  "maximum": 18,
+                  "set": 19
+                }
+              ],
+              "requires_premium": true,
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:1157-1167"
+              ],
+              "item_reward": {
+                "item": "oteryn:item.tibia.i113",
+                "count": 1
+              },
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i3469",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "selected_instance": true,
+                "reusable": true
+              },
+              "success_message": "This is probably the most foolish thing you have ever done!"
+            }
+          }
+        },
+        {
+          "key": "return-from-past",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/what-a-foolish/return-from-past",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "trigger": "use",
+              "selector": {
+                "position": null,
+                "appearance": null,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 32659,
+                    "y": 31853,
+                    "floor": -13
+                  },
+                  "ordinal": 1,
+                  "appearance": 2573
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32646,
+                "y": 31903,
+                "floor": -3
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 19,
+                  "maximum": 19,
+                  "set": 20
+                }
+              ],
+              "requires_premium": true,
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/what_a_foolish_quest/action_watch.lua:1-29"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i112",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "selected_instance": true,
+                "reusable": true
+              },
+              "success_message": "You are travelling in time",
+              "use_range": 0
+            }
+          }
+        },
+        {
+          "key": "report-beard",
+          "completes": true,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish/report-beard",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.bozo",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+                  "minimum": 20,
+                  "maximum": 20,
+                  "set": 21
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+                  "minimum": 11,
+                  "maximum": 11,
+                  "set": 13
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission5",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "requires_premium": true,
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i113",
+                  "count": 1
+                }
+              ],
+              "give": {
+                "item": "oteryn:item.tibia.i895",
+                "count": 1
+              },
+              "outfit": {
+                "outfit": "oteryn:outfit.jester",
+                "addons": 0
+              },
+              "achievement": null,
+              "reply": [
+                "You got the beard and survived. You earned the Jester outfit and staff."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:213-227"
+              ]
+            }
+          }
+        }
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=19801&oldid=1056289",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:62-227",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:68-102",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emperor_rehal.lua:68-112"
+      ]
+    }
+  ]
+}

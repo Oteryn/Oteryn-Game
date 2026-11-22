@@ -338,6 +338,34 @@ def tree_validator():
     return jsonschema.Draft202012Validator(schema, registry=registry)
 
 
+def reconcile_foolish_container(root, records, claims):
+    """Close only the native claim hold proved by Crystal UID 6269."""
+    owner = 'oteryn:quest.what_a_foolish_quest'
+    pilot = 'canary:reward-claim/quest/u8_1/what_afoolish_quest/bag_book_knife'
+    definition = next(row['definition'] for row in records if row['definition']['identity']['key'] == owner)
+    claim = next(claim for claim in claims if claim['provenance']['pilot_key'] == pilot)
+    native = claim['native_contents']
+    source_path = root / 'tools/content-schema/reward-claim-authoring/container_native_source.json'
+    source = json.loads(source_path.read_bytes())
+    placement, = claim['placements']
+    projected, = native['placements']
+    if (claim['quest'] != definition['source_refs']['quest']
+            or claim['data_holds']
+            or native['schema'] != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'
+            or native['source_sha256'] != hashlib.sha256(source_path.read_bytes()).hexdigest()
+            or native['revision'] != source['revision']
+            or projected['unique_id'] != 6269
+            or {'server': 'crystalserver', 'unique_id': 6269} not in placement['source_binding']['legacy_unique_ids']
+            or placement['source_binding']['project_position'] != {'x': 32661, 'y': 31855, 'z': 13}
+            or projected['root'] != placement['reward']['container']
+            or projected['contents'] != placement['reward']['items']
+            or projected['root']['key'] != 'oteryn:item.tibia.i2853'
+            or [(child['item']['key'], child['count']) for child in projected['contents']]
+            != [('oteryn:item.tibia.i3469', 1), ('oteryn:item.tibia.i2821', 1)]):
+        raise ValueError('What a Foolish Quest: native bag claim evidence differs')
+    definition['missing_data'].remove({'code': 'claim_native_lowering_missing', 'source_key': pilot})
+
+
 def expected_files(root, include_registration=False):
     quests = read(root, SOURCE)['quests']
     claims = claim_catalogue(root)
@@ -350,6 +378,7 @@ def expected_files(root, include_registration=False):
         if row['definition']['identity']['key'] == 'oteryn:quest.the_way_of_the_monk_quest':
             row['definition']['native_lowering'] = monk_native_lowering(root)
     records = attach(root, records)
+    reconcile_foolish_container(root, records, claims)
     # Keep the digest-bound SOURCE compiler and original recipe witnesses intact.
     # This finite correction belongs to the chosen recipe projection only.
     from quest_recipe_followup import apply as apply_followup

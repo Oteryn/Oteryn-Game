@@ -1,0 +1,109 @@
+{
+  "schema": 2,
+  "quest": "oteryn:quest.what_a_foolish_quest",
+  "premium_required": true,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+      "quest": "oteryn:quest.what_a_foolish_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 21,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:148-165"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+      "quest": "oteryn:quest.what_a_foolish_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 13,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:148-165"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission4",
+      "quest": "oteryn:quest.what_a_foolish_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:148-165"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/what-a-foolish/wine",
+      "quest": "oteryn:quest.what_a_foolish_quest",
+      "npc": "oteryn:npc.bozo",
+      "trigger": "say",
+      "keywords": [
+        "wine"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+          "op": "eq",
+          "value": 11
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i2874",
+          "count": 18,
+          "subtype": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+          "op": "eq",
+          "value": 7
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission4",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Use this crate to swap Xodet's delivery."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i2874",
+          "count": 18,
+          "subtype": 2
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i117",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/chosen/what-a-foolish/stage",
+          "value": 12
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+          "value": 8
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission4",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:148-165"
+      ]
+    }
+  ]
+}
