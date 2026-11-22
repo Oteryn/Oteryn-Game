@@ -20,9 +20,10 @@ const CAT: &str = "oteryn:creature.cat";
 
 #[test]
 fn carried_use_receipt_spawns_one_temporary_creature_and_expires_only_that_actor() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run("carried-temporary-creature", || {
         npc_scenario(ORIGIN, |owner, admitted, harness| {
             Box::pin(exercise(owner, admitted, harness))
@@ -127,6 +128,30 @@ async fn exercise(
         command_id: 6301,
         item_fence: Some(fence.item_fence()),
     };
+    owner
+        .states
+        .quest_callbacks
+        .interrupt_after_commit
+        .store(true, std::sync::atomic::Ordering::Release);
+    let lost = owner
+        .use_event_item(
+            actor,
+            command,
+            intent.clone(),
+            Some(ItemKey::Instance(carried_item)),
+            false,
+        )
+        .await;
+    assert!(lost.is_err());
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .current_live_creature_census()
+            .map_err(debug)?,
+        before
+    );
     for _ in 0..2 {
         let result = owner
             .use_event_item(

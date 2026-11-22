@@ -1,7 +1,9 @@
 //! Realize source creature effects with the current Channel's native policies.
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
+use crate::durability::item_transfer::CurrentCharacterItemFence;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_gameplay_quests::quest::reward_callbacks::TemporaryCreature;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) fn spawn_quest_creatures(
@@ -77,59 +79,147 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+// A pending presentation is local to its original Channel and expires even
+// when the client never retries the committed command.
+const TEMPORARY_CREATURE_RECOVERY_US: u64 = 60_000_000;
+
 pub(super) struct TemporaryActor {
     scope: (
         crate::foundation::RuntimeScopeRefV1,
         crate::foundation::ScopeOwnershipGeneration,
     ),
-    actor: ExactActorRef,
+    state: TemporaryActorState,
     pub(super) expires_at: u64,
 }
 
+enum TemporaryActorState {
+    Pending {
+        actor: ExactActorRef,
+        command: CommandRef,
+        fence: CurrentCharacterItemFence,
+        effect: TemporaryCreature,
+    },
+    Spawned(ExactActorRef),
+}
+
+impl TemporaryActor {
+    fn matches_command(&self, command: CommandRef) -> bool {
+        matches!(self.state, TemporaryActorState::Pending { command: pending, .. } if pending == command)
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(in crate::gameplay_transport) async fn publish_carried_quest_creature(
+    /// Share the same capacity bound between retained commands and live creatures.
+    /// Return whether this call reserved a new command.
+    pub(in crate::gameplay_transport) fn reserve_carried_quest_creature(
         &self,
         actor: ExactActorRef,
-        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
-        effect: &oteryn_gameplay_quests::quest::reward_callbacks::TemporaryCreature,
-    ) {
-        let mut runtime = self.runtime.lock().await;
-        if runtime.encounter_owner_scope()
-            != (fence.runtime_scope, fence.scope_ownership_generation)
-            || !runtime
-                .bound_attacker_lease(actor, fence.game_session_id)
-                .is_ok_and(|lease| {
-                    lease.character_id().as_bytes() == fence.character_id.as_bytes()
-                        && lease.generation() == fence.character_lease_generation
-                })
-        {
-            return;
-        }
-        let Ok(position) = runtime.read_actor_position(actor) else {
-            return;
-        };
-        let origin = position.position();
-        let Some(expires_at) = self
+        command: CommandRef,
+        fence: CurrentCharacterItemFence,
+        effect: TemporaryCreature,
+    ) -> Option<bool> {
+        let expires_at = self
             .owner_now()
             .get()
-            .checked_add(u64::from(effect.lifetime_ms) * 1000)
-        else {
-            return;
-        };
+            .checked_add(TEMPORARY_CREATURE_RECOVERY_US)?;
+        let mut owned = self.states.quest_callbacks.temporary.lock().ok()?;
+        if let Some(entry) = owned.iter().find(|entry| entry.matches_command(command)) {
+            return matches!(&entry.state, TemporaryActorState::Pending {
+                actor: pending_actor, fence: pending_fence, effect: pending_effect, ..
+            } if *pending_actor == actor && *pending_fence == fence && *pending_effect == effect)
+            .then_some(false);
+        }
+        if owned.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS {
+            return None;
+        }
+        owned.push(TemporaryActor {
+            scope: (fence.runtime_scope, fence.scope_ownership_generation),
+            state: TemporaryActorState::Pending {
+                actor,
+                command,
+                fence,
+                effect,
+            },
+            expires_at,
+        });
+        Some(true)
+    }
+
+    pub(in crate::gameplay_transport) async fn resume_carried_quest_creature(
+        &self,
+        command: CommandRef,
+        actor: ExactActorRef,
+    ) -> Result<(), ()> {
+        let pending = self
+            .states
+            .quest_callbacks
+            .temporary
+            .lock()
+            .map_err(|_| ())?
+            .iter()
+            .any(|entry| entry.matches_command(command));
+        if pending {
+            let _permit = self.spell_lane_permit().await.ok_or(())?;
+            self.settle_carried_quest_creature(command, actor, true)
+                .await;
+        }
+        Ok(())
+    }
+
+    /// The caller holds the Channel lane and has qualified the exact command's receipt.
+    pub(in crate::gameplay_transport) async fn settle_carried_quest_creature(
+        &self,
+        command: CommandRef,
+        actor: ExactActorRef,
+        committed: bool,
+    ) {
+        let mut runtime = self.runtime.lock().await;
         {
             let Ok(mut owned) = self.states.quest_callbacks.temporary.lock() else {
                 return;
             };
-            if owned.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS {
+            let Some(index) = owned
+                .iter()
+                .position(|entry| entry.matches_command(command))
+            else {
+                return;
+            };
+            let pending = owned.swap_remove(index);
+            let TemporaryActorState::Pending {
+                actor: pending_actor,
+                fence,
+                effect,
+                ..
+            } = pending.state
+            else {
+                return;
+            };
+            let now = self.owner_now().get();
+            if !committed
+                || now >= pending.expires_at
+                || pending_actor != actor
+                || runtime.encounter_owner_scope() != pending.scope
+                || !runtime
+                    .bound_attacker_lease(actor, fence.game_session_id)
+                    .is_ok_and(|lease| {
+                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                            && lease.generation() == fence.character_lease_generation
+                    })
+            {
                 return;
             }
-            let scope = runtime.encounter_owner_scope();
+            let Ok(position) = runtime.read_actor_position(actor) else {
+                return;
+            };
+            let Some(expires_at) = now.checked_add(u64::from(effect.lifetime_ms) * 1000) else {
+                return;
+            };
             owned.extend(
-                self.spawn_quest_creatures(&mut runtime, origin, &[&effect.creature])
+                self.spawn_quest_creatures(&mut runtime, position.position(), &[&effect.creature])
                     .into_iter()
                     .map(|actor| TemporaryActor {
-                        scope,
-                        actor,
+                        scope: pending.scope,
+                        state: TemporaryActorState::Spawned(actor),
                         expires_at,
                     }),
             );
@@ -156,7 +246,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if now < entry.expires_at {
                     return true;
                 }
-                let _ = runtime.remove_encounter_actor(entry.actor);
+                if let TemporaryActorState::Spawned(actor) = entry.state {
+                    let _ = runtime.remove_encounter_actor(actor);
+                }
                 false
             });
         }
