@@ -16,6 +16,7 @@ fn action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch()
             &format!("{modifier}+F{}", slot % 12 + 1),
         )?;
     }
+    preferences.rebind_secondary("local-spell-action-bar-spell-36", "CTRL+ALT+SUPER+F12")?;
     settings.apply(preferences);
     assert_eq!(
         PreferenceStore::load(path.clone())?.preferences(),
@@ -97,6 +98,24 @@ fn action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch()
         );
         assert!(commands.try_recv().is_err());
     }
+    let f12 = KeyCode::new(69)?;
+    let secondary =
+        [ButtonState::Pressed, ButtonState::Released].map(|state| NormalizedInputEvent::Key {
+            code: f12,
+            modifiers: Modifiers::one(Modifier::Super)
+                .with(Modifier::Control)
+                .with(Modifier::Alt),
+            state,
+            repeat: false,
+        });
+    settings.input(&secondary);
+    for action in settings.take_custom_actions() {
+        assert!(link.custom_hotkey_action(&play, &action));
+    }
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 106)
+    );
+    assert!(commands.try_recv().is_err());
     let before = settings.preferences.clone();
     assert!(
         settings

@@ -93,7 +93,7 @@ impl Pixels {
     }
 }
 
-pub(super) fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
+pub(crate) fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
     if !folder.as_os_str().is_empty() {
         if !folder.is_absolute() {
             return Err(io::Error::new(
@@ -138,29 +138,37 @@ pub(crate) fn retry_capture_name<T>(mut attempt: impl FnMut() -> io::Result<T>) 
 
 /// Open a new screenshot with private permissions before writing any pixels.
 pub(crate) fn create_capture_file(path: &Path) -> io::Result<File> {
-    let mut directory = DirBuilder::new();
-    directory.recursive(true);
     let mut options = File::options();
     options.write(true).create_new(true);
     #[cfg(unix)]
     {
-        use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
-        directory.mode(0o700);
+        use std::os::unix::fs::OpenOptionsExt;
         options.mode(0o600);
     }
-    let parent = path
+    if let Some(parent) = path
         .parent()
-        .filter(|parent| !parent.as_os_str().is_empty());
-    if let Some(parent) = parent {
-        directory.create(parent).map_err(|error| {
-            if error.kind() == io::ErrorKind::AlreadyExists {
-                io::Error::new(io::ErrorKind::NotADirectory, error)
-            } else {
-                error
-            }
-        })?;
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
+        create_capture_directory(parent)?;
     }
     options.open(path)
+}
+
+pub(crate) fn create_capture_directory(folder: &Path) -> io::Result<()> {
+    let mut directory = DirBuilder::new();
+    directory.recursive(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        directory.mode(0o700);
+    }
+    directory.create(folder).map_err(|error| {
+        if error.kind() == io::ErrorKind::AlreadyExists {
+            io::Error::new(io::ErrorKind::NotADirectory, error)
+        } else {
+            error
+        }
+    })
 }
 
 /// Keep the fallback private and reuse it for all captures in this process.

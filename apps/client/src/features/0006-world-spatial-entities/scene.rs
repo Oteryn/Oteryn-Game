@@ -3,6 +3,13 @@ use super::*;
 use oteryn_session::{EntityDetail, VisibleAppearance};
 
 impl Scene {
+    #[cfg(bevy_shell)]
+    pub(crate) fn smart_item_action(
+        &self,
+        id: u16,
+    ) -> Option<oteryn_client_ui::world_interaction::menu::Action> {
+        self.cache.smart_item_action(id)
+    }
     pub(crate) fn item_multi_use(&mut self, id: u16) -> bool {
         self.cache.begin(
             self.world.atlas(),

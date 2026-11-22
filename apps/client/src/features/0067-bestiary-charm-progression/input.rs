@@ -49,6 +49,26 @@ impl PlayLink {
     pub fn charm_progression_request(&self, intent: Intent) {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
+    pub(crate) fn capture_bestiary_stages(
+        &self,
+    ) -> Option<oteryn_client_ui::charm_progression::BestiaryStages> {
+        lock(&self.mailbox)
+            .properties
+            .charm_progression
+            .capture_stages
+            .clone()
+    }
+    pub(crate) fn refresh_capture_bestiary(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.properties.charm_progression;
+        if panel.selected
+            && !panel.pending
+            && !panel.capture_pending
+            && let Ok(query) = super::protocol::command(panel, Intent::Query)
+        {
+            panel.capture_pending = self.commands.send(PlayCommand::Feature(query)).is_ok();
+        }
+    }
     pub fn bestiary_close(&self) {
         lock(&self.mailbox).properties.charm_progression.open = false;
     }

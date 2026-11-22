@@ -513,3 +513,79 @@ fn action_bar_options_show_one_bar_at_a_time() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn side_lock_switches_update_the_live_rows_at_each_dock() -> TestResult {
+    use crate::play::BarDock;
+    for (id, dock) in [
+        ("action_bars.bottom_lock", BarDock::Bottom),
+        ("action_bars.left_lock", BarDock::Left),
+        ("action_bars.right_lock", BarDock::Right),
+    ] {
+        let mut app = app(Page::ActionBars, None)?;
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .edit_preferences(|p| p.bar_layout.rows[0].dock = BarDock::Left);
+        let checkbox = app
+            .world_mut()
+            .spawn(Control::Check(id))
+            .observe(toggle)
+            .id();
+        app.world_mut().trigger(ValueChange {
+            source: checkbox,
+            value: false,
+            is_final: true,
+        });
+        let ok = app.world_mut().spawn(Control::Ok).observe(activate).id();
+        app.world_mut().trigger(Activate { entity: ok });
+        let (link, _, _) = crate::play::play_channel();
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .sync_bar_actions(&link);
+        for row in link.bar_layout().rows {
+            assert_eq!(row.locked, row.dock != dock, "{id}");
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn default_delay_uses_os_repeat_without_erasing_custom_delay() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let mut app = app(Page::Controls, None)?;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .edit_preferences(|p| {
+            p.controls.keyboard_delay_ms = 500;
+            p.keyboard_delay_ms = 500;
+        });
+    let checkbox = app
+        .world_mut()
+        .spawn(Control::Check("controls.default_delay"))
+        .observe(toggle)
+        .id();
+    app.world_mut().trigger(ValueChange {
+        source: checkbox,
+        value: true,
+        is_final: true,
+    });
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    owner.apply(true);
+    for repeat in [false, true] {
+        let key = NormalizedInputEvent::Key {
+            code: KeyCode::new(82)?,
+            modifiers: Modifiers::NONE,
+            state: ButtonState::Pressed,
+            repeat,
+        };
+        let routed = owner.settings.control_events_at(
+            &[key],
+            false,
+            std::time::Duration::from_millis(if repeat { 50 } else { 0 }),
+        );
+        assert_eq!(routed.len(), 1);
+    }
+    assert_eq!(owner.settings.preferences.controls.keyboard_delay_ms, 500);
+    Ok(())
+}

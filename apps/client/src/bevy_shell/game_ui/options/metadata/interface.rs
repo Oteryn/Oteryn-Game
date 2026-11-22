@@ -189,7 +189,54 @@ macro_rules! side_bars {
         }
     };
 }
-pub(super) const ACTION_BARS: [Row; 20] = [
+macro_rules! lock_side {
+    ($id:literal, $label:literal, $dock:ident) => {
+        Row {
+            id: $id,
+            label: $label,
+            editor: Editor::Check {
+                read: |p| {
+                    p.bar_layout
+                        .rows
+                        .iter()
+                        .filter(|row| row.dock == crate::play::BarDock::$dock)
+                        .all(|row| row.locked)
+                },
+                write: |p, locked| {
+                    for row in &mut p.bar_layout.rows {
+                        if row.dock == crate::play::BarDock::$dock {
+                            row.locked = locked;
+                        }
+                    }
+                },
+            },
+        }
+    };
+}
+pub(super) const ACTION_BARS: [Row; 27] = [
+    lock_side!("action_bars.bottom_lock", "Lock all bottom bars", Bottom),
+    check!(
+        "action_bars.cooldown_numbers",
+        "Show numeric cooldowns",
+        action_bar.cooldown_numbers
+    ),
+    check!(
+        "action_bars.graphical_cooldown",
+        "Show graphical cooldowns",
+        action_bar.graphical_cooldown
+    ),
+    lock_side!("action_bars.left_lock", "Lock all left bars", Left),
+    lock_side!("action_bars.right_lock", "Lock all right bars", Right),
+    check!(
+        "action_bars.show_hotkey",
+        "Show assigned hotkeys",
+        action_bar.show_hotkey
+    ),
+    check!(
+        "action_bars.show_spell_parameters",
+        "Show assigned spell parameters",
+        action_bar.show_spell_parameters
+    ),
     check!(
         "action_bars.visible",
         "Show Action Bars",

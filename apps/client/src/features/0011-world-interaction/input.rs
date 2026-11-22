@@ -226,6 +226,69 @@ impl PlayLink {
 }
 
 impl PlayView {
+    #[cfg(bevy_shell)]
+    pub(crate) fn direct_click(
+        &mut self,
+        tile: TileCoord,
+        link: &PlayLink,
+        scheme: crate::play::MouseScheme,
+    ) -> bool {
+        if self.gameplay_input_blocked(link) {
+            return true;
+        }
+        if scheme == crate::play::MouseScheme::LeftSmart
+            && (self.hireling_pick(tile, link)
+                || self.use_with_click(tile, link)
+                || self.cast_at_cursor(tile))
+        {
+            return true;
+        }
+        if let Some(npc) = self.npc_at(tile) {
+            return self
+                .own()
+                .x
+                .abs_diff(tile.x)
+                .max(self.own().y.abs_diff(tile.y))
+                <= 3
+                && link.npc_dialogue_submit(npc, "hi");
+        }
+        if self.attack_toggle_click(tile, link) {
+            return true;
+        }
+        let Some(item) = self.scene.item_target_at(tile) else {
+            return false;
+        };
+        let id = match item {
+            crate::play::GroundItem::Map { item, .. } => item.appearance_id,
+            crate::play::GroundItem::Entity { reference, .. } => self
+                .entities
+                .iter()
+                .find(|entity| entity.entity == reference)
+                .and_then(|entity| {
+                    if let oteryn_session::EntityDetail::ObjectWithAppearance {
+                        appearance_id,
+                        ..
+                    } = entity.detail
+                    {
+                        Some(appearance_id.get())
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_default(),
+        };
+        let action = match (scheme, self.scene.smart_item_action(id)) {
+            (crate::play::MouseScheme::Classic, Some(Action::Look) | None) => Action::Use,
+            (_, Some(action)) => action,
+            (_, None) => {
+                self.walk_to(tile);
+                return true;
+            }
+        };
+        self.world_context_for(tile, link, true)
+            .is_some_and(|menu| self.world_context_choose(link, &menu, action))
+    }
+
     /// Ordinary modifier clicks use the same observed target and negotiated command as menus.
     pub fn modifier_click(
         &mut self,

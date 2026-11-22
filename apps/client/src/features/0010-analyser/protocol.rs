@@ -47,9 +47,25 @@ pub(in crate::play) fn reduce(
     for event in events {
         match event {
             SessionEvent::AnalyserFacts(delta) => {
+                for fact in &delta.value {
+                    mailbox.combat_capture.observe(
+                        fact,
+                        &mailbox.analyser.loot_tracked,
+                        &mut mailbox.capture_attackers,
+                        None,
+                    );
+                }
                 oteryn_client_ui::analyser::protocol::apply(&mut mailbox.analyser, &delta.value)
             }
             SessionEvent::AnalyserAttributedFacts(delta) => {
+                for fact in &delta.value {
+                    mailbox.combat_capture.observe(
+                        &fact.fact,
+                        &mailbox.analyser.loot_tracked,
+                        &mut mailbox.capture_attackers,
+                        fact.attacker,
+                    );
+                }
                 oteryn_client_ui::analyser::protocol::apply(
                     &mut mailbox.analyser,
                     &oteryn_client_ui::analyser_hit_attribution::plain_facts(&delta.value),
