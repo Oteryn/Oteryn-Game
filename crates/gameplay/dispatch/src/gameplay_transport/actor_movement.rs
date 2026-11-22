@@ -240,6 +240,7 @@ pub(in crate::gameplay_transport) fn prewalk_forecast(
     {
         return [0; 8];
     }
+    let bundle = crate::map::floor::table_of(cells).is_some();
     [
         North, East, South, West, NorthEast, SouthEast, SouthWest, NorthWest,
     ]
@@ -259,11 +260,11 @@ pub(in crate::gameplay_transport) fn prewalk_forecast(
         };
         if blocking.blocks(cell(onto))
             || crate::map::floor::is_teleport(cells, cell(onto))
-            || runtime.position_occupied_by_other(actor, onto) != Ok(false)
+            || (!bundle && runtime.position_occupied_by_other(actor, onto) != Ok(false))
         {
             return 0;
         }
-        let duration = if crate::map::floor::table_of(cells).is_some() {
+        let duration = if bundle {
             let Ok(proof) = crate::map::floor::prepare_bundle_step(
                 runtime, cells, actor, session, expected, direction, false, blocking,
             ) else {
@@ -1203,6 +1204,7 @@ mod tests {
                 },
             )
             .unwrap();
+        assert!(!runtime.player_step_allowed(actor, session, (0, 1)));
         assert!(matches!(
             step_in_channel(
                 &mut runtime,
@@ -1492,6 +1494,52 @@ mod tests {
         );
         runtime.set_riding(actor, session, 0, 0).unwrap();
         assert_eq!(runtime.actor_motion(actor).unwrap().2, 0);
+    }
+
+    #[test]
+    fn bundle_pz_prewalk_forecast_matches_step_onto_player() {
+        let (mut runtime, mut states, cells, actor, session) =
+            bundle_owner_of(crate::map::boot::tests::teleport_bundle);
+        let other_session = GameSessionId::decode(&id(5)).unwrap();
+        let reservation = runtime.reserve_fresh_session(other_session).unwrap();
+        let other = runtime.commit_fresh_session(reservation).unwrap();
+        runtime.initialize_first_entry_position(other).unwrap();
+        let empty = std::collections::BTreeSet::new();
+        let mut step = |actor, session, direction| {
+            step_in_channel(
+                &mut runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                direction,
+                &empty,
+                None,
+            )
+            .unwrap()
+        };
+        step(actor, session, CardinalStep::South);
+        step(actor, session, CardinalStep::North);
+        let (occupied, _) = step(other, other_session, CardinalStep::South);
+
+        let forecast =
+            prewalk_forecast(&runtime, &states, &cells, actor, session, 1, None, &empty)[2];
+        assert!(forecast > 0);
+        let (after, duration) = step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            1,
+            CardinalStep::South,
+            &empty,
+            None,
+        )
+        .unwrap();
+        assert_eq!(after.position(), occupied.position());
+        assert_eq!(u128::from(forecast), duration.as_millis());
     }
 
     #[test]
