@@ -2,7 +2,16 @@
 use super::*;
 use crate::durability::character_condition_snapshot::CharacterConditionSnapshot;
 use crate::durability::item_use::ItemUseError;
+use oteryn_gameplay_domain::domain::condition::ConflictKey;
 use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
+
+fn has_world_cake_regeneration(conditions: &ConditionStore<String>) -> bool {
+    conditions
+        .get(ConflictKey::Recovery)
+        .is_some_and(|condition| {
+            condition.definition().key() == super::cake_event::CAKE_REGENERATION_KEY
+        })
+}
 
 /// Validate durable data before creating any actor state: a refused retry cannot
 /// bypass restore merely because a prior attempt allocated an empty state entry.
@@ -42,7 +51,7 @@ pub(super) fn restore(
     now_us: u64,
     bed_rest: Option<[u32; 4]>,
 ) -> Option<()> {
-    use oteryn_gameplay_domain::domain::condition::{ConditionType, ConflictKey};
+    use oteryn_gameplay_domain::domain::condition::ConditionType;
     if let Some(prepared) = prepared {
         let mut next = prepared.clone();
         // These two families already have a durable native USE/checkpoint owner.
@@ -55,6 +64,11 @@ pub(super) fn restore(
             {
                 next.remove_type(kind);
             }
+        }
+        // The world clock continues during logout. Refresh this condition from
+        // its authoritative remaining interval on the next live condition turn.
+        if has_world_cake_regeneration(&next) {
+            next.dispel_key(ConflictKey::Recovery);
         }
         // A qualified bed rest may have consumed food while the actor was offline.
         if bed_rest.is_some() {
@@ -114,8 +128,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return true;
             };
-            let Ok(conditions) = state
-                .owned_conditions()
+            let live = state.owned_conditions();
+            // Only the durable world deadline controls how long Cake lasts.
+            let personal = has_world_cake_regeneration(live).then(|| {
+                let mut personal = live.clone();
+                personal.dispel_key(ConflictKey::Recovery);
+                personal
+            });
+            let Ok(conditions) = personal
+                .as_ref()
+                .unwrap_or(live)
                 .persistent_snapshot(self.owner_now().get())
             else {
                 return false;

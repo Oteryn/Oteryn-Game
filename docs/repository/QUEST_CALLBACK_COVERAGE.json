@@ -202,6 +202,118 @@
       ],
       "reason": "requires exact World binding and native Item admission",
       "status": "supported_unqualified"
+    },
+    {
+      "authored_source": {
+        "path": "docs/reference/content-prep/nrwicked/sources.md",
+        "pilot_key": "oteryn:reward-claim.nrwicked-forgemaster",
+        "pilot_revision": "nrwicked-r1",
+        "sha256": "6fe236a7d566f992bc0d6ab567c6b43a2027785652194bd5b335a6c01823f9ce"
+      },
+      "claim": "oteryn:reward-claim.nrwicked-forgemaster",
+      "placements": [
+        {
+          "native_entry_ordinal": 2,
+          "position": {
+            "x": 34087,
+            "y": 32346,
+            "z": 14
+          },
+          "sources": []
+        },
+        {
+          "native_entry_ordinal": 2,
+          "position": {
+            "x": 34089,
+            "y": 32346,
+            "z": 14
+          },
+          "sources": []
+        },
+        {
+          "native_entry_ordinal": 2,
+          "position": {
+            "x": 34091,
+            "y": 32346,
+            "z": 14
+          },
+          "sources": []
+        },
+        {
+          "native_entry_ordinal": 2,
+          "position": {
+            "x": 34093,
+            "y": 32346,
+            "z": 14
+          },
+          "sources": []
+        },
+        {
+          "native_entry_ordinal": 2,
+          "position": {
+            "x": 34095,
+            "y": 32346,
+            "z": 14
+          },
+          "sources": []
+        },
+        {
+          "native_entry_ordinal": 2,
+          "position": {
+            "x": 34097,
+            "y": 32346,
+            "z": 14
+          },
+          "sources": []
+        },
+        {
+          "native_entry_ordinal": 2,
+          "position": {
+            "x": 34099,
+            "y": 32346,
+            "z": 14
+          },
+          "sources": []
+        },
+        {
+          "native_entry_ordinal": 2,
+          "position": {
+            "x": 34101,
+            "y": 32346,
+            "z": 14
+          },
+          "sources": []
+        },
+        {
+          "native_entry_ordinal": 2,
+          "position": {
+            "x": 34103,
+            "y": 32346,
+            "z": 14
+          },
+          "sources": []
+        },
+        {
+          "native_entry_ordinal": 2,
+          "position": {
+            "x": 34105,
+            "y": 32346,
+            "z": 14
+          },
+          "sources": []
+        },
+        {
+          "native_entry_ordinal": 3,
+          "position": {
+            "x": 34107,
+            "y": 32346,
+            "z": 14
+          },
+          "sources": []
+        }
+      ],
+      "reason": "requires exact World binding and native Item admission",
+      "status": "supported_unqualified"
     }
   ],
   "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. That status certifies reward granting, not every later Item consumer. Other supported shapes need per-World binding, Item admission and qualification. No deployed World or full-quest completion is certified.",
