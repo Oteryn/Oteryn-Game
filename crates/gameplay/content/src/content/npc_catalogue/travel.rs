@@ -10,6 +10,9 @@ use std::sync::OnceLock;
 #[path = "travel_return.rs"]
 mod return_policy;
 pub use return_policy::TravelReturnRequirement;
+#[path = "travel_random.rs"]
+mod random_policy;
+pub use random_policy::RandomDestination;
 
 /// A paid ticket's purchase time is a Quest-owned Unix-second track.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]

@@ -163,10 +163,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     holds.remove(&session);
                     return Some(true);
                 }
-                Ok(Ok(Some(_))) => {
+                Ok(Ok(Some(arrival))) => {
                     held.slot
                         .fee_outcome(frozen.arrival.occurrence, FeeOutcome::Committed)
                         .ok()?;
+                    held.frozen.arrival = arrival;
                     held.committed = true;
                 }
             }
@@ -194,7 +195,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return None;
             }
-            let destination = frozen.arrival.destination;
+            let destination = held.frozen.arrival.destination;
             let destination = crate::foundation::MovementLocalPosition {
                 x: destination.x,
                 y: destination.y,
