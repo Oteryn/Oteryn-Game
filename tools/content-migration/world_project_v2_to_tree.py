@@ -263,6 +263,8 @@ def apply_encounter_corpse_admissions(definitions, root=ROOT):
     questpc2_soul_loot_items.apply_admissions(definitions, root)
     import questpc2_rotten_loot_items
     questpc2_rotten_loot_items.apply_admissions(definitions, root)
+    from outfit_reward_item_profiles import apply_admissions as apply_outfit_item_admissions
+    apply_outfit_item_admissions(definitions, root)
 
 
 def materialize_item_tree(reference, declarations, editor, sources):

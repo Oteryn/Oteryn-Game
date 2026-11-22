@@ -29,11 +29,6 @@ use crate::gameplay_transport::kill_reward::DrainOutcome;
 use crate::gameplay_transport::{ComposedFreshAdmission, character_gameplay_fence};
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 
-#[path = "task_board/elite_case.rs"]
-mod elite_case;
-#[path = "task_board/scenarios.rs"]
-mod scenarios;
-use scenarios::*;
 #[path = "task_board/capacity_case.rs"]
 mod capacity_case;
 #[path = "task_board/cosmetic_cases.rs"]
@@ -42,13 +37,20 @@ mod cosmetic_cases;
 mod currency_case;
 #[path = "task_board/depot_case.rs"]
 mod depot_case;
+#[path = "task_board/elite_case.rs"]
+mod elite_case;
+#[path = "task_board/outfit_catalogues.rs"]
+mod outfit_catalogues;
 #[path = "task_board/progression_case.rs"]
 mod progression_case;
 #[path = "task_board/rollback_cases.rs"]
 mod rollback_cases;
+#[path = "task_board/scenarios.rs"]
+mod scenarios;
 #[path = "task_board/token_case.rs"]
 mod token_case;
 use rollback_cases::{RollbackFault, assert_unavailable};
+use scenarios::*;
 
 const OPEN_PLAYER: MovementLocalPosition = MovementLocalPosition {
     x: 2,
@@ -222,6 +224,16 @@ fn task_board_control_epoch_initializer_allows_live_query_postgres() -> TestResu
 }
 
 #[test]
+fn coutfit_task_board_production_cosmetics_purchase_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-production-cosmetics", || {
+        scenario_with_bootstrap(None, false, Bootstrap::ProductionCosmetics)
+    })
+}
+
+#[test]
 fn task_board_production_mount_offers_purchase_and_unlock() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -233,8 +245,9 @@ fn task_board_production_mount_offers_purchase_and_unlock() -> TestResult {
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Bootstrap {
-    Default,
     ControlEpoch,
+    Default,
+    ProductionCosmetics,
     ProductionMounts,
 }
 
@@ -257,7 +270,7 @@ fn scenario_with_bootstrap(
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let cosmetics = if bootstrap == Bootstrap::ProductionMounts {
+        let cosmetics = if matches!(bootstrap, Bootstrap::ProductionCosmetics | Bootstrap::ProductionMounts) {
             None
         } else {
             Some(cosmetic_cases::cosmetics_packet()?)
@@ -582,6 +595,15 @@ fn scenario_with_bootstrap(
             ],
         )
         .ok_or("selection")?;
+
+        if bootstrap == Bootstrap::ProductionCosmetics {
+            let result = cosmetic_cases::production_case(&owner, &harness, &mut admitted).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return result;
+        }
 
         if bootstrap == Bootstrap::ProductionMounts {
             progression_case::fixture_admitted_level(&owner, &harness, 8).await?;

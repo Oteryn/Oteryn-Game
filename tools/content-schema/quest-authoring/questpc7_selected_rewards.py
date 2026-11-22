@@ -143,6 +143,30 @@ def append_eligibility_starts(root, callbacks, inputs, pin):
             'sources': [f'canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}',
                 f'{source_pin}:{source_path}:1-{len(inputs[source_path].splitlines())}:sha256:{hashlib.sha256(inputs[source_path]).hexdigest()}']})
 
+        if slug == 'illuminated':
+            intro = callbacks[-1]
+            outfit = 'oteryn:outfit.illuminated_warrior'
+            track = intro['storage'][0]['track']
+            for keyword, addon, count in [('basic', 0, 2500), ('insignia', 1, 1250), ('halo', 2, 1250)]:
+                reward = {'outfit': outfit, 'addons': addon}
+                exchange = {
+                    **intro, 'key': f'oteryn:quest-reward/questpc7-illuminated-{keyword}',
+                    'keywords': [keyword],
+                    'take': [{'item': 'oteryn:item.tibia.i54640', 'count': count}],
+                    'outfit': reward, 'reply': ['Your Illuminated Warrior commission is ready.'],
+                    'sources': intro['sources'] + ['wiki:111141:1196354'],
+                }
+                if addon:
+                    exchange.update(
+                        storage=[], requires_outfits=[outfit], forbids_addons=[reward],
+                    )
+                else:
+                    exchange.update(
+                        storage=[{'track': track, 'minimum': 0, 'maximum': 0, 'set': 1}],
+                        forbids_outfits=[outfit],
+                    )
+                callbacks.append(exchange)
+
 
 def append_tokens(root, callbacks, inputs, pin):
     import hashlib

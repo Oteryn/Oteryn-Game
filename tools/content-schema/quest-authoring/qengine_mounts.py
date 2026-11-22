@@ -95,8 +95,16 @@ def populate(root, inputs, looks, source, item_packet):
                          'compatible_provenance': [item_packet['provenance']]})
     # Crystal 201189f data/scripts/lib/task_board_shop.lua:95-126. The existing
     # shop owner resolves the look in the admitted catalogue before it spends points.
-    for offer, mount_id, look in ((6, 247, 1908), (7, 248, 1909), (8, 249, 1910), (9, 163, 1281)):
-        if int(by_id[mount_id]['clientid']) != look:
+    for offer, mount_id, look, slug in (
+        (6, 247, 1908, 'tidal_seawater_predator'),
+        (7, 248, 1909, 'ashen_coast_predator'),
+        (8, 249, 1910, 'crimson_bay_predator'),
+        (9, 163, 1281, 'antelope'),
+    ):
+        key = f'oteryn:content.mount.{slug}'
+        if int(by_id[mount_id]['clientid']) != look or [
+            row['key'] for row in mounts if row['look']['id'] == look
+        ] != [key] or admitted[mount_id] != key:
             raise ValueError('Task Board mount look drift')
         mappings.append({'grant_key': f'oteryn:taskboard/shop/offer-{offer}',
                          'target': {'kind': 'Mount', 'mount_key': admitted[mount_id]},
