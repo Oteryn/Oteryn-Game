@@ -1,7 +1,7 @@
 {
   "placed": 417,
-  "imported": 309,
-  "without_storage_action": 108,
+  "imported": 310,
+  "without_storage_action": 107,
   "unbound": [
     {
       "position": [
@@ -343,15 +343,6 @@
         7
       ],
       "item": 5287,
-      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
-    },
-    {
-      "position": [
-        32858,
-        31374,
-        6
-      ],
-      "item": 5289,
       "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
     },
     {

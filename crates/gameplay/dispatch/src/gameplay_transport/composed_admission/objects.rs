@@ -137,13 +137,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &crate::map::boot::BundleMap,
         target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
-        let mut runtime = self.runtime.lock().await;
-        // Read the canonical actor-local Character facts through their owner, after taking the
-        // runtime lock. `ChannelSpellStates::get` re-proves this exact actor/session against the
-        // current runtime generation; a stale slot or superseded session therefore contributes
-        // neither a level nor a door mutation. Keep the guard through the toggle so a level-up,
-        // death or actor replacement cannot race the predicate.
-        let spell_states = self.states.spell_states.lock().await;
+        let (mut runtime, spell_states) = crate::gameplay_transport::lock_runtime_and_spell_states(
+            &self.runtime,
+            &self.states.spell_states,
+        )
+        .await;
         if spell_states.is_dead(actor) {
             return UseOutcome::rejected();
         }
@@ -175,18 +173,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                     .unwrap_or_default(),
             )
-            .is_some_and(|action| {
-                self.states
-                    .quest_sessions
-                    .lock()
-                    .ok()
-                    .is_some_and(|sessions| {
-                        sessions
-                            .get(&session)
-                            .and_then(|quest| quest.copy.as_ref())
-                            .is_some_and(|copy| copy.meets_door_storage(action))
-                    })
-            });
+            .is_some_and(|action| self.states.meets_quest_door_storage(session, action));
         // Admission is taken under the owner lock that also covers the commit below, and the
         // owner pass resets the turn cap under the same lock, so an act is counted in the turn
         // that commits it and its order is the owner lock's.

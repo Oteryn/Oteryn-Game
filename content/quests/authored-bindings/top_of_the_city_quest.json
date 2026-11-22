@@ -10,8 +10,8 @@
         "https://tibia.fandom.com/index.php?curid=31073&oldid=1050120",
         "https://tibia.fandom.com/index.php?curid=30848&oldid=1114684",
         "https://tibia.fandom.com/index.php?curid=31073&oldid=1050120 Mission One: Iriana quest, yes; Jimmy Iriana, yes. Mission Two: pick on the sewer dirt, rope up, use the crate; Jimmy quest gives Iriana's Chest; Iriana quest gives 10 Heaven Blossom.",
-        "Native map: Iriana at 32849,31300,7 (Canary/Crystal agree); sealed plain door 5289 at 32858,31374,6 has no action id, so Jimmy's room is open; Jimmy at the wiki cell 32857,31383,6 on the passage stub restored by the qh_jimmy_stub world overlay (owner evidence 2026-11-17); dirt 8504 at 32803,31259,8 over tunnel 32803,31259,9; rope spot 386 at 32810,31253,9; crate 8771 at 32807,31252,8.",
-        "Recipe adaptation: forgiving roof route without wrong-bridge resets or the assassin summon (server lane); the yes confirmations are folded into the keyword step."
+        "Native map: Iriana at 32849,31300,7 (Canary/Crystal agree); sealed plain door 5289 at 32858,31374,6 has no donor action id and receives the authored quest gate; Jimmy at the wiki cell 32857,31383,6 on the passage stub restored by the qh_jimmy_stub world overlay (owner evidence 2026-11-17); dirt 8504 at 32803,31259,8 over tunnel 32803,31259,9; rope spot 386 at 32810,31253,9; crate 8771 at 32807,31252,8.",
+        "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200 Mission One: follow the bridge lanes to Jimmy; after losing the trail, speak to Iriana to restart. The yes confirmations are folded into the keyword step."
       ],
       "tracks": [
         {
@@ -19,6 +19,12 @@
           "initial": 0,
           "minimum": 0,
           "maximum": 5
+        },
+        {
+          "key": "oteryn:quest-progress/authored/top-of-the-city/pursuit",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 11
         }
       ],
       "stages": [
@@ -42,6 +48,12 @@
                   "minimum": 0,
                   "maximum": 0,
                   "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 0
                 }
               ],
               "take": [],
@@ -57,6 +69,713 @@
                 "https://tibia.fandom.com/index.php?curid=31073&oldid=1050120"
               ],
               "requires_premium": true
+            }
+          }
+        },
+        {
+          "key": "restart-pursuit",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/authored/top-of-the-city/restart-pursuit",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "npc": "oteryn:npc.iriana",
+              "keywords": [
+                "quest"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 11, "maximum": 11, "set": 0 }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You lost the thief? Start again from my roof and follow his trail."
+              ],
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ],
+              "requires_premium": true
+            }
+          }
+        },
+        {
+          "key": "westbound-south",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/westbound-south",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32832, "y": 31315, "floor": -6 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32833, "y": 31315, "floor": -6 },
+                  { "x": 32834, "y": 31315, "floor": -6 },
+                  { "x": 32835, "y": 31315, "floor": -6 },
+                  { "x": 32836, "y": 31315, "floor": -6 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 0, "maximum": 0, "set": 1 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "westbound-south-lost",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/westbound-south-lost",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32832, "y": 31314, "floor": -6 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32833, "y": 31314, "floor": -6 },
+                  { "x": 32834, "y": 31314, "floor": -6 },
+                  { "x": 32835, "y": 31314, "floor": -6 },
+                  { "x": 32836, "y": 31314, "floor": -6 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 0, "maximum": 9, "set": 11 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "lower-southbound-east",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/lower-southbound-east",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32827, "y": 31322, "floor": -6 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32827, "y": 31323, "floor": -6 },
+                  { "x": 32827, "y": 31324, "floor": -6 },
+                  { "x": 32827, "y": 31325, "floor": -6 },
+                  { "x": 32827, "y": 31326, "floor": -6 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 1, "maximum": 1, "set": 2 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "lower-southbound-east-lost",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/lower-southbound-east-lost",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32826, "y": 31322, "floor": -6 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32826, "y": 31323, "floor": -6 },
+                  { "x": 32826, "y": 31324, "floor": -6 },
+                  { "x": 32826, "y": 31325, "floor": -6 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 0, "maximum": 9, "set": 11 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "upper-southbound-west",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/upper-southbound-west",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32820, "y": 31345, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32820, "y": 31346, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 2, "maximum": 2, "set": 3 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "upper-southbound-west-lost",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/upper-southbound-west-lost",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32821, "y": 31345, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32821, "y": 31346, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 0, "maximum": 9, "set": 11 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "upper-southbound-east",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/upper-southbound-east",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32823, "y": 31351, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32823, "y": 31352, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 3, "maximum": 3, "set": 4 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "upper-southbound-east-lost",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/upper-southbound-east-lost",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32822, "y": 31351, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32822, "y": 31352, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 0, "maximum": 9, "set": 11 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "eastbound-south",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/eastbound-south",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32825, "y": 31363, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32826, "y": 31363, "floor": -5 },
+                  { "x": 32827, "y": 31363, "floor": -5 },
+                  { "x": 32828, "y": 31363, "floor": -5 },
+                  { "x": 32829, "y": 31363, "floor": -5 },
+                  { "x": 32830, "y": 31363, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 4, "maximum": 4, "set": 5 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "eastbound-south-lost",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/eastbound-south-lost",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32825, "y": 31362, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32826, "y": 31362, "floor": -5 },
+                  { "x": 32827, "y": 31362, "floor": -5 },
+                  { "x": 32828, "y": 31362, "floor": -5 },
+                  { "x": 32829, "y": 31362, "floor": -5 },
+                  { "x": 32830, "y": 31362, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 0, "maximum": 9, "set": 11 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "northbound-west",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/northbound-west",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32835, "y": 31360, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32835, "y": 31361, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 5, "maximum": 5, "set": 6 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "northbound-west-lost",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/northbound-west-lost",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32836, "y": 31360, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32836, "y": 31361, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 0, "maximum": 9, "set": 11 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "eastbound-north",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/eastbound-north",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32836, "y": 31355, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32837, "y": 31355, "floor": -5 },
+                  { "x": 32838, "y": 31355, "floor": -5 },
+                  { "x": 32839, "y": 31355, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 6, "maximum": 6, "set": 7 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "eastbound-north-lost",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/eastbound-north-lost",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32836, "y": 31356, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32837, "y": 31356, "floor": -5 },
+                  { "x": 32838, "y": 31356, "floor": -5 },
+                  { "x": 32839, "y": 31356, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 0, "maximum": 9, "set": 11 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "final-southbound-west",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/final-southbound-west",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32843, "y": 31359, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32843, "y": 31360, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 7, "maximum": 7, "set": 8 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "final-southbound-west-lost",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/final-southbound-west-lost",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32844, "y": 31359, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32844, "y": 31360, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 0, "maximum": 9, "set": 11 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "eastbound-center",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/eastbound-center",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32847, "y": 31363, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32848, "y": 31363, "floor": -5 },
+                  { "x": 32849, "y": 31363, "floor": -5 },
+                  { "x": 32850, "y": 31363, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 8, "maximum": 8, "set": 9 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "eastbound-center-lost",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/eastbound-center-lost",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32847, "y": 31362, "floor": -5 },
+                "ordinal": 0,
+                "position_aliases": [
+                  { "x": 32847, "y": 31364, "floor": -5 },
+                  { "x": 32848, "y": 31362, "floor": -5 },
+                  { "x": 32848, "y": 31364, "floor": -5 },
+                  { "x": 32849, "y": 31362, "floor": -5 },
+                  { "x": 32849, "y": 31364, "floor": -5 },
+                  { "x": 32850, "y": 31362, "floor": -5 },
+                  { "x": 32850, "y": 31364, "floor": -5 }
+                ]
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 0, "maximum": 9, "set": 11 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
+            }
+          }
+        },
+        {
+          "key": "jimmy-roof-descent",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-top-of-the-city/jimmy-roof-descent",
+              "quest": "oteryn:quest.authored.top_of_the_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": { "x": 32856, "y": 31363, "floor": -6 },
+                "ordinal": 0
+              },
+              "reversible": false,
+              "passages": [],
+              "storage": [
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 9, "maximum": 9, "set": 10 }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+              ]
             }
           }
         },
@@ -80,6 +799,13 @@
                   "minimum": 1,
                   "maximum": 1,
                   "set": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit",
+                  "minimum": 10,
+                  "maximum": 10,
+                  "set": 10,
+                  "preserve": true
                 }
               ],
               "take": [],

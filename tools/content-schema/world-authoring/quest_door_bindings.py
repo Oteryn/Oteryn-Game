@@ -1,8 +1,8 @@
-"""Restore Crystal's startup quest-door actions by position, without inventing ids.
+"""Restore donor and explicitly authored quest-door actions by position.
 
 Capture: --crystal-root <201189f checkout> --canary-root <47dfd51f checkout>. Apply/check the committed capture with
 --apply [--check]. convert_world_base calls overlay_region for from-scratch builds.
-Only normalized facts and source line witnesses are retained (OTS_HYPOTHESIS_ONLY).
+Donor facts retain their source line witnesses (OTS_HYPOTHESIS_ONLY).
 """
 
 import argparse
@@ -22,6 +22,18 @@ TABLE = "data-global/startup/tables/door_quest.lua"
 STORAGES = "data-global/lib/core/storages.lua"
 DOORS = "data/libs/tables/doors.lua"
 SCRIPT = "data/scripts/actions/doors/quest_door.lua"
+
+# Mission One places this door after Iriana accepts help and before Jimmy's
+# dialogue. Mission Two sends the player back through the same passage.
+JIMMY_DOOR = {
+    "position": [32858, 31374, 6],
+    "action": 65534,
+    "track": "oteryn:quest-progress/authored/top-of-the-city/stage",
+    "minimum": 1,
+    "item": 5289,
+    "classification": "TIBIAWIKI_STRUCTURED",
+    "source": "https://tibia.fandom.com/index.php?curid=31073&oldid=1050120",
+}
 
 
 def canonical(value):
@@ -174,6 +186,10 @@ def capture_sources(crystal, canary):
     for row in by_position.values():
         if tracks.setdefault(row["action"], row["track"]) != row["track"]:
             raise ValueError(f"ambiguous storage action {row['action']}")
+    jimmy_position = tuple(JIMMY_DOOR["position"])
+    if jimmy_position in by_position or JIMMY_DOOR["action"] in tracks:
+        raise ValueError("authored Jimmy door conflicts with a donor quest door")
+    by_position[jimmy_position] = JIMMY_DOOR
     document["bindings"] = [by_position[k] for k in sorted(by_position)]
     document["sources"].extend(other["sources"])
     return document
@@ -280,6 +296,16 @@ def census(check):
             for x, y, _, house, _, items in tiles:
                 for palette, depth, attrs in items:
                     item = index["palette"][palette]["source_item_id"]
+                    if (
+                        attrs
+                        and attrs.get("action") == JIMMY_DOOR["action"]
+                        and (
+                            [x, y, z] != JIMMY_DOOR["position"]
+                            or item != JIMMY_DOOR["item"]
+                            or depth
+                        )
+                    ):
+                        raise ValueError(f"Jimmy door action reused at {(x, y, z)}")
                     if depth or item not in quest_ids:
                         continue
                     position = (x, y, z)
@@ -304,6 +330,11 @@ def census(check):
                                 "no donor QuestDoorAction or QuestDoorUnique at this position"
                             )
                         unbound.append(row)
+    if {
+        "position": JIMMY_DOOR["position"],
+        "item": JIMMY_DOOR["item"],
+    } not in imported:
+        raise ValueError("Jimmy door is missing its authored action")
     result = {
         "placed": len(imported) + len(unbound),
         "imported": len(imported),

@@ -297,8 +297,11 @@ pub(super) async fn apply(
         return rendered;
     }
     let Some(transition) = step.transition else {
-        let runtime = admission.runtime.lock().await;
-        let states = admission.states.spell_states.lock().await;
+        let (runtime, states) = crate::gameplay_transport::lock_runtime_and_spell_states(
+            &admission.runtime,
+            &admission.states.spell_states,
+        )
+        .await;
         if states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, command.game_session_id)
             || admission.states.npc_conversations.current_npc(
@@ -345,8 +348,11 @@ pub(super) async fn apply(
         return rejected();
     }
     let actor_conditions = {
-        let runtime = admission.runtime.lock().await;
-        let states = admission.states.spell_states.lock().await;
+        let (runtime, states) = crate::gameplay_transport::lock_runtime_and_spell_states(
+            &admission.runtime,
+            &admission.states.spell_states,
+        )
+        .await;
         if states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, command.game_session_id)
             || (transition.starts_with("oteryn:quest-reward/")

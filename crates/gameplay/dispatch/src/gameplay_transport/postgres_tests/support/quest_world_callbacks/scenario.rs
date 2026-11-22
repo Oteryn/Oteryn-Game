@@ -80,6 +80,10 @@ fn scenario_case(
     let pinned_qc_world = name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
     let city_story = name == super::super::qh_authored_cases_fixtures::TOP_OF_THE_CITY;
+    if city_story {
+        let callback = super::super::qh_authored_cases_fixtures::callback(name)?;
+        assert_eq!(callback.selector.position, Some(trigger), "cellar crate scenario trigger");
+    }
     let native_crop = pinned_qc_world
         || city_story
         || m03_use
@@ -1561,8 +1565,8 @@ fn scenario_case(
             } else if matches!(name, "authored-anniversary" | "authored-venore") {
                 12
             } else if super::super::qh_authored_cases_fixtures::is_city(name) {
-                // One player plus Iriana and Jimmy for Top of the City.
-                3
+                // Two players plus Iriana and Jimmy for Top of the City.
+                4
             } else if name == "authored-torch" {
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
