@@ -270,7 +270,9 @@ async fn open_backpack(client: &mut oteryn_dev_client::DevClientSession) -> Test
 pub(super) async fn run(
     mut client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
+    world: &BundleWorld,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
+    let core_start = tile(client.world_spatial().actor_position)?;
     let started = std::time::Instant::now();
     let mut primal = false;
     let mut covet = false;
@@ -296,14 +298,31 @@ pub(super) async fn run(
         Ok::<_, Box<dyn std::error::Error>>(())
     }
     .await;
+    let starter_seconds = started.elapsed().as_secs_f64();
+    report_starter(observations, starter_seconds)?;
+
+    let client = e2ei_a::run(client, clients).await;
+    let client = full_e2ef3_e2ei_b::run(client, clients).await;
+    let client = e2ei_c::run(client, clients).await;
+    let mut client =
+        full_e2ef3_e2ei_d::run(client, clients, primal, covet, starter_seconds).await?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = core_return_path(from, core_start, |from, start| {
+        route(world, from, |at| at == start)
+    })?;
+    walk(&mut client, world, &path).await?;
+    Ok(client)
+}
+
+fn report_starter(observations: TestResult<()>, seconds: f64) -> TestResult<()> {
     let cause = match &observations {
         Ok(_) => verdict::Cause::Assertion,
         Err(error) => verdict::classify(error.as_ref()),
     };
-    for row in generic_rows() {
+    for row in starter_rows(observations.is_err()) {
         result(
             row,
-            started.elapsed().as_secs_f64(),
+            seconds,
             if observations.is_ok() {
                 "ordinary-starter-observed;full-actions-unimplemented;no-provisioning-used"
             } else {
@@ -312,20 +331,41 @@ pub(super) async fn run(
             &cause,
         );
     }
-    let starter_error = observations.as_ref().err().map(ToString::to_string);
-    let starter_seconds = started.elapsed().as_secs_f64();
-    let client = e2ei_a::run(client, clients).await;
-    let client = full_e2ef3_e2ei_b::run(observations.map(|()| client), clients).await;
-    let client = e2ei_c::run(client, clients).await;
-    full_e2ef3_e2ei_d::run(
-        client,
-        clients,
-        primal,
-        covet,
-        starter_error.as_deref(),
-        starter_seconds,
-    )
-    .await
+    observations
+}
+
+fn core_return_path(
+    from: TilePos,
+    start: TilePos,
+    find: impl FnOnce(TilePos, TilePos) -> Option<Vec<StepDirection>>,
+) -> TestResult<Vec<StepDirection>> {
+    if from == start {
+        return Ok(Vec::new());
+    }
+    find(from, start)
+        .ok_or_else(|| format!("E2EF3 has no return route from {from:?} to {start:?}").into())
+}
+
+#[test]
+fn qualification_e2ef3_starter_error_fails_phase() {
+    let result = report_starter(Err("starter inspection changed".into()), 0.0);
+    assert!(result.is_err_and(|error| error.to_string() == "starter inspection changed"));
+}
+
+#[test]
+fn qualification_e2ef3_displaced_client_requires_return_route() {
+    let start = TOWN;
+    let displaced = TilePos {
+        x: start.x + 1,
+        ..start
+    };
+    let path = core_return_path(displaced, start, |from, to| {
+        assert_eq!((from, to), (displaced, start));
+        Some(vec![StepDirection::West])
+    });
+    assert!(path.is_ok_and(|steps| steps == [StepDirection::West]));
+    assert!(core_return_path(displaced, start, |_, _| None).is_err());
+    assert!(core_return_path(start, start, |_, _| None).is_ok_and(|steps| steps.is_empty()));
 }
 
 const MODULE_ROWS: &[&[&str]] = &[
@@ -335,9 +375,9 @@ const MODULE_ROWS: &[&[&str]] = &[
     full_e2ef3_e2ei_d::COVERED_ROWS,
 ];
 
-fn generic_rows() -> impl Iterator<Item = &'static Row> {
+fn starter_rows(failed: bool) -> impl Iterator<Item = &'static Row> {
     ROWS.iter()
-        .filter(|row| !MODULE_ROWS.iter().any(|ids| ids.contains(&row.id)))
+        .filter(move |row| failed || !MODULE_ROWS.iter().any(|ids| ids.contains(&row.id)))
 }
 
 #[test]
@@ -345,7 +385,7 @@ fn full_e2ef3_reports_each_row_once() {
     let mut covered: Vec<_> = MODULE_ROWS
         .iter()
         .flat_map(|ids| ids.iter().copied())
-        .chain(generic_rows().map(|row| row.id))
+        .chain(starter_rows(false).map(|row| row.id))
         .collect();
     covered.sort_unstable();
     let mut expected: Vec<_> = ROWS.iter().map(|row| row.id).collect();

@@ -62,27 +62,10 @@ fn report(
 }
 
 pub(super) async fn run(
-    observations: TestResult<DevClientSession>,
+    mut client: DevClientSession,
     clients: &SeamClients<'_>,
 ) -> TestResult<DevClientSession> {
     let started = std::time::Instant::now();
-    let mut client = match observations {
-        Ok(client) => client,
-        // The starter observer owns its connection and drops it on any error.
-        // Re-enter through the ordinary release wait and fresh admission.
-        Err(_) => match connect_world(clients, 0xb4).await {
-            Ok(client) => client,
-            Err(error) => {
-                for (row, action) in [
-                    (I04, "write-once-transform"),
-                    (I09, "approach-unbound-nonhouse-furniture"),
-                ] {
-                    report(row, started, action, Some(error.as_ref()));
-                }
-                return Err(error);
-            }
-        },
-    };
     let world = (|| {
         load_world(
             std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
