@@ -8,6 +8,8 @@ use crate::durability::server_save_sweep::{
 };
 use crate::durability::world_reset::PlannedWorldReset;
 use crate::map::boot::BundleCollisionIndexExt;
+use crate::map::overlay::TilePos;
+use crate::map::view::MapFacts;
 use oteryn_foundation::CancellationToken;
 use oteryn_protocol_oteryn::server_save_countdown::ServerSaveCountdown;
 
@@ -235,19 +237,45 @@ impl GroundSweepFacts for PinnedSweepFacts<'_> {
         else {
             return GroundSweepTileFacts::default();
         };
+        // Loop drops encode the signed bundle floor. Native Ground encodes
+        // runtime z under the separately pinned native map revision.
+        let z = if self.alternate_map_revision() == Some(placement.map_revision.as_str()) {
+            -cell.z
+        } else {
+            cell.z
+        };
         let cell = crate::content::LogicalCell {
             x: cell.x,
             y: cell.y,
-            z: cell.z,
+            z,
         };
         let cells = self.room.movement_cells();
         let scope = cells.scope();
-        GroundSweepTileFacts {
-            house: cells
+        let house = match cells.index() {
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
+                let (Ok(x), Ok(y), Ok(floor)) = (
+                    u16::try_from(cell.x),
+                    u16::try_from(cell.y),
+                    i8::try_from(-cell.z),
+                ) else {
+                    return GroundSweepTileFacts::default();
+                };
+                let map = index.map();
+                // The native House catalogue can be unknown for a bundle that
+                // contains Houses. The checked bundle still owns the local marker.
+                map.overlay
+                    .base()
+                    .tile(x, y, floor)
+                    .map(|_| map.facts.house_tile(TilePos { x, y, floor }))
+            }
+            _ => cells
                 .house_tiles()
                 .house_at(scope, cell)
                 .ok()
                 .map(|house| house.is_some()),
+        };
+        GroundSweepTileFacts {
+            house,
             protection_zone: cells
                 .spell_tiles()
                 .lookup(scope, cell)

@@ -97,11 +97,10 @@ fn seasonal_occurrences_place_casper_once_and_leave_offseason_channels_empty() -
     let channel = ChannelId::decode(&id(43))?;
     let node = NodeId::decode(&id(1))?;
     for (day, count, authored) in [(20, 1, false), (25, 0, false), (20, 1, true), (25, 0, true)] {
-        let position = TilePos {
-            x: if authored { 33262 } else { 33261 },
-            y: 32363,
-            floor: -7,
-        };
+        // The retained Casper source gives Tibia z=7. The bundle stores -z,
+        // while runtime actors report the original z on both placement paths.
+        let (x, y, z) = (if authored { 33262 } else { 33261 }, 32363, 7);
+        let position = TilePos { x, y, floor: -z };
         let placement = NpcPlacements {
             key: "oteryn:npc.casper".to_owned(),
             placements: vec![NpcPlacement {
@@ -168,7 +167,7 @@ fn seasonal_occurrences_place_casper_once_and_leave_offseason_channels_empty() -
                 (
                     i32::from(position.x),
                     i32::from(position.y),
-                    i16::from(position.floor)
+                    i16::from(z)
                 )
             );
         }

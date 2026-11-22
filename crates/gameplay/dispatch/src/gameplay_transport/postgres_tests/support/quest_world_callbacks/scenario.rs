@@ -1580,11 +1580,13 @@ fn scenario_case(
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
                 13
+            } else if custom.is_some() {
+                16
             } else if classic_npc || qd_world {
                 5
             } else if monk {
                 4
-            } else if custom.is_some() || callback.effects.encounter.is_some() {
+            } else if callback.effects.encounter.is_some() {
                 16
             } else {
                 2
