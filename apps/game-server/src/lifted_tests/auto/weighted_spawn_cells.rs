@@ -63,7 +63,6 @@ fn authored_spawn_table() -> Result<spawn::Table, Box<dyn Error>> {
             CreatureFacts {
                 period: "All".into(),
                 boss: false,
-                encounter_bound: false,
             },
         );
     }

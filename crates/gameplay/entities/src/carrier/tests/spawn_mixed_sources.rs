@@ -195,6 +195,7 @@ fn spawn1b_mixed_point_source_keeps_the_per_source_checks() {
                 "oteryn:creature/rat".to_string(),
                 20,
                 false,
+                None,
             )],
             5_000,
         ),
