@@ -280,7 +280,11 @@ fn open_checkout(
     if cancel.is_cancelled() {
         return;
     }
-    view.feedback = if browser(url.as_str()) {
+    let opened = browser(url.as_str());
+    if cancel.is_cancelled() {
+        return;
+    }
+    view.feedback = if opened {
         tr!("Sandbox checkout opened. Return here and check purchase status after completing it.")
     } else {
         tr!(

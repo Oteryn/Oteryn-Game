@@ -7,8 +7,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
 };
 
-pub(crate) type BrowserGate =
-    Arc<dyn Fn(&super::Browser, &str, &CancellationToken) -> bool + Send + Sync>;
+pub(crate) type BrowserGate = Arc<dyn Fn(&CancellationToken) -> bool + Send + Sync>;
 
 pub(crate) struct Launcher {
     config: NativeLoginConfig,
@@ -22,7 +21,7 @@ pub(crate) struct Launcher {
 struct CheckoutCancellation {
     active: Option<Arc<CancellationToken>>,
     // URL helpers can remain alive after the checkout worker finishes.
-    browsers: CancellationToken,
+    browsers: Arc<crate::native_entry::BrowserEpoch>,
 }
 impl std::fmt::Debug for Launcher {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -62,7 +61,21 @@ impl Launcher {
     }
     /// Opens a Platform web page (coin history, coin transfer) in the system browser.
     pub(crate) fn open_web(&self, link: crate::web_links::WebLink) -> bool {
-        !self.ended.load(Ordering::Acquire) && crate::web_links::open(&self.config, link)
+        let browser = {
+            let Ok(scope) = self.cancellation.lock() else {
+                return false;
+            };
+            if self.ended.load(Ordering::Acquire) {
+                return false;
+            }
+            scope.browsers.opener(&self.config)
+        };
+        crate::web_links::open_with(
+            &self.config.platform_url,
+            &*browser,
+            link,
+            oteryn_client_ui::localization::current(),
+        )
     }
     pub(crate) fn end(&self) {
         self.ended.store(true, Ordering::Release);
@@ -70,10 +83,10 @@ impl Launcher {
     }
     pub(crate) fn cancel_active(&self) {
         if let Ok(mut scope) = self.cancellation.lock() {
-            std::mem::take(&mut scope.browsers).cancel();
             if let Some(cancel) = scope.active.take() {
                 cancel.cancel();
             }
+            std::mem::take(&mut scope.browsers).close();
         }
     }
     pub(crate) fn start(self: &Arc<Self>) -> bool {
@@ -97,10 +110,10 @@ impl Launcher {
                 let _active = Active(launcher.clone(), worker_cancel.clone());
                 let cancel = (*worker_cancel).clone();
                 let mut config = launcher.config.clone();
-                let browser = config.scoped_browser(browsers);
+                let browser = browsers.opener(&config);
                 config.open_browser = if let Some(gate) = launcher.browser_gate.clone() {
                     let browser_cancel = cancel.clone();
-                    Arc::new(move |url| gate(&browser, url, &browser_cancel))
+                    Arc::new(move |url| gate(&browser_cancel) && browser(url))
                 } else {
                     browser
                 };

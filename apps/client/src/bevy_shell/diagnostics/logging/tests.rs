@@ -317,10 +317,10 @@ fn app_shutdown_drains_the_file_layer() -> TestResult {
             .success()
     );
     let mut app = App::new();
-    let hooks = plugin(Some(fixture.path().to_owned()), "info");
-    let layer = (hooks.custom_layer)(&mut app).ok_or("missing layer")?;
+    let layer = file_layer(&mut app, Some(fixture.path().to_owned()), "info");
     let subscriber = Registry::default().with(layer);
     tracing::subscriber::with_default(subscriber, || -> TestResult {
+        assert!(tracing::enabled!(tracing::Level::INFO));
         tracing::info!("queued shutdown record");
         let released = Arc::new(AtomicBool::new(false));
         let reader_started = released.clone();

@@ -59,11 +59,8 @@ impl Reentry {
             return false;
         }
         if let Some(token) = &self.attempt_cancellation {
+            self.browser_delivery.close();
             token.cancel();
-            let _delivery = self
-                .browser_delivery
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
         }
         if let Some(config) = &self.client.native_login {
             config.training_queue.clear();
@@ -392,7 +389,7 @@ fn login_web_link_returns_before_browser_delivery() -> Result<(), Box<dyn std::e
     let folder = tempfile::tempdir()?;
     let mut config = Reentry::device_test_config(folder.path().into(), "https://localhost:1")?;
     let (release, wait) = mpsc::channel();
-    let wait = Mutex::new(wait);
+    let wait = std::sync::Mutex::new(wait);
     config.open_browser = Arc::new(move |_| {
         assert!(
             wait.lock()

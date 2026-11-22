@@ -27,6 +27,7 @@ mod tests;
 
 use crate::GameplayEntryError;
 pub use admitted::AdmittedSession;
+pub(crate) use config::BrowserEpoch;
 pub use config::{NativeLoginConfig, NativeLoginSettingError};
 use oteryn_client_runtime::connection::{AdmissionAttempt, AdmissionWait};
 use oteryn_foundation::CancellationToken;

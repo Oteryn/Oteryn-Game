@@ -73,7 +73,7 @@ fn account_services_selection_uses_separate_scope_and_returns_to_fresh_game_logi
 }
 
 #[test]
-fn entry_cancel_waits_for_account_services_browser_delivery() -> TestResult {
+fn entry_cancel_releases_blocked_account_services_browser() -> TestResult {
     use std::sync::mpsc;
     use std::time::Duration;
     test_thread(|| {
@@ -111,15 +111,13 @@ fn entry_cancel_waits_for_account_services_browser_delivery() -> TestResult {
             entry.shutdown();
         });
         starting.recv_timeout(Duration::from_secs(5))?;
-        let early = done.recv_timeout(Duration::from_millis(100));
+        let cancelled = done.recv_timeout(Duration::from_secs(2));
         release.send(())?;
         closer.join().map_err(|_| "entry cancellation thread")?;
-        assert_eq!(
-            early,
-            Err(mpsc::RecvTimeoutError::Timeout),
-            "entry cancellation passed an Account Services browser delivery still in progress"
+        assert!(
+            cancelled?,
+            "Cancel must return before the callback is released"
         );
-        assert!(done.try_recv()?);
         stack.finish();
         Ok(())
     })
