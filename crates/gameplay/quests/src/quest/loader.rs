@@ -249,6 +249,7 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
     Ok(lowered)
 }
 
@@ -557,6 +558,75 @@ mod tests {
 
     fn embedded() -> LoweredQuestState {
         load_embedded_quest_state("content-1").expect("embedded quest state loads")
+    }
+
+    #[test]
+    fn curos_uses_earned_frontier_and_rebel_progress() -> Result<(), String> {
+        use super::super::reward_callbacks;
+        let state = embedded();
+        let callbacks = reward_callbacks::load()?;
+        let find = |suffix: &str| {
+            let key = format!("oteryn:quest-reward/l2-alliance-{suffix}");
+            callbacks.iter().find(|c| c.key == key).ok_or(key)
+        };
+        let start = find("start")?;
+        assert_eq!(start.npc, "oteryn:npc.curos");
+        assert_eq!(start.keywords, ["mission"]);
+        assert_eq!(
+            start.requires[0].track,
+            "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06"
+        );
+        assert_eq!(start.requires[0].minimum, 5);
+        assert_eq!(start.storage[0].minimum, 0);
+        assert_eq!(start.storage[0].set, 1);
+        let report = find("report-rebel")?;
+        assert_eq!(
+            report.requires[0].track,
+            "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door"
+        );
+        assert_eq!(report.requires[0].minimum, 1);
+        assert_eq!(report.storage[0].set, 2);
+        let tower = find("tower")?;
+        assert_eq!(tower.storage[0].minimum, 2);
+        assert_eq!(tower.storage[0].set, 3);
+        let finish = find("finish")?;
+        assert_eq!(finish.storage[0].minimum, 4);
+        assert_eq!(
+            finish.give.as_ref().ok_or("Tome reward")?.item,
+            "oteryn:item.tibia.i10217"
+        );
+        assert!(
+            state
+                .catalogue()
+                .transition(&finish.key)
+                .ok_or("finale")?
+                .completes
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn rotem_valos_assigns_cartography_and_gives_the_adventurers_map() -> Result<(), String> {
+        use super::super::reward_callbacks;
+        let state = embedded();
+        let callbacks = reward_callbacks::load()?;
+        let assignment = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/cartography-101/assign")
+            .ok_or("Cartography assignment")?;
+        assert_eq!(assignment.npc, "oteryn:npc.rotem_valos");
+        assert_eq!(assignment.keywords, ["map"]);
+        assert_eq!(
+            assignment.give.as_ref().ok_or("map reward")?.item,
+            "oteryn:item.tibia.i22107"
+        );
+        let transition = state
+            .catalogue()
+            .transition(&assignment.key)
+            .ok_or("assignment transition")?;
+        assert_eq!(transition.effects.len(), 1);
+        assert!(!transition.completes);
+        Ok(())
     }
 
     #[test]

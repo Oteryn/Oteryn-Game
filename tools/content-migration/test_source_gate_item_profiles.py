@@ -40,7 +40,7 @@ class SourceGateItemProfiles(unittest.TestCase):
     def test_source_pair_is_exact_ground_only_door_with_level_base(self):
         packet = gate.capture()
         self.assertEqual({r['production_definition']['production_key'] for r in packet['records']},
-                         {f'oteryn:item.tibia.i{i}' for i in (1626,1627,1634,1635,1948,2572,2573,2574,2575,2576,2577,2578,2579,2580,5111,5112,21935)})
+                         {f'oteryn:item.tibia.i{i}' for i in (1626,1627,1634,1635,1948,2572,2573,2574,2575,2576,2577,2578,2579,2580,5111,5112,17396,17397,17398,17399,17401,17402,17403,17404,21935)})
         for record in packet['records']:
             self.assertEqual(record['admission']['legal_destinations'], ['Ground'])
             self.assertEqual(record['semantics']['classification']['value']['item_type'],
@@ -85,6 +85,16 @@ class SourceGateItemProfiles(unittest.TestCase):
             self.assertEqual(row['semantics']['physical']['value']['movable'], {'state':'KNOWN','value':False})
             self.assertEqual(row['semantics']['physical']['value']['pickupable'], {'state':'KNOWN','value':False})
             self.assertEqual(row['production_binding']['disposition'], 'EXACT')
+
+    def test_palace_carpet_keeps_the_orchid_source_room_walkable(self):
+        rows = {r['production_binding']['external_id']: r for r in gate.capture()['records']}
+        for item in (17396, 17397, 17398, 17399, 17401, 17402, 17403, 17404):
+            with self.subTest(item=item):
+                row = rows[str(item)]
+                self.assertEqual(row['production_definition']['production_key'], f'oteryn:item.tibia.i{item}')
+                self.assertEqual(row['admission']['legal_destinations'], ['Ground'])
+                self.assertIs(row['attributes']['blocks_movement'], False)
+                self.assertIs(row['attributes']['blocks_projectile'], False)
 
     def test_existing_profiles_preserved_and_conflicts_refuse(self):
         packet = gate.capture()

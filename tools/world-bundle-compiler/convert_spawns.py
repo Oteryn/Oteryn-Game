@@ -75,7 +75,7 @@ def encounter_bosses() -> set[str]:
     # conditions are not a world-reset scheduling policy.
     keys.update(f"oteryn:creature.{name}" for name in (
         "black_knight", "koshei_the_deathless", "energized_raging_mage",
-        "the_flaming_orchid", "bibby_bloodbath", "renegade_orc",
+        "the_flaming_orchid", "bibby_bloodbath",
         "thawing_dragon_lord", "dazed_leaf_golem",
     ))
     for path in CREATURES.glob("creatures-*.json"):
@@ -135,6 +135,7 @@ def convert(xml: bytes) -> dict[str, str]:
     chances = json.loads(chances_bytes)["bosses"]
     scheduled_bosses = []
     pharaohs = {}
+    renegade = None
     for ordinal, element in enumerate(ET.fromstring(xml)):
         cx, cy, cz = (int(element.get(k)) for k in ("centerx", "centery", "centerz"))
         base = f"oteryn:spawn.x{cx}_y{cy}_z{cz}"
@@ -172,6 +173,19 @@ def convert(xml: bytes) -> dict[str, str]:
                 pharaohs[creature] = {"declaration": {
                     "centre": {"floor": cz, "x": cx, "y": cy},
                     "identity": {"key": f"{key}.pharaoh", "revision": "definition-r1"},
+                    "points": [scheduled],
+                }}
+            elif point["creature"] == "oteryn:creature.renegade_orc":
+                # Crystal world-monster.xml retains a single 90-second public spawn
+                # behind the personal access door. Death credit has its own quest owner.
+                if (renegade is not None or point["cell"] != {"floor": 7, "x": 33059, "y": 31299}
+                        or point["respawn_ms"] != 90_000):
+                    sys.exit(f"{key}: Renegade Orc spawn differs from its source")
+                scheduled = {field: value for field, value in point.items() if field != "respawn_ms"}
+                scheduled["boss_policy"] = {"respawn": {"min_s": 90, "max_s": 90}}
+                renegade = {"declaration": {
+                    "centre": {"floor": cz, "x": cx, "y": cy},
+                    "identity": {"key": key, "revision": "definition-r1"},
                     "points": [scheduled],
                 }}
             elif point["creature"] in boss_keys:
@@ -213,6 +227,9 @@ def convert(xml: bytes) -> dict[str, str]:
         sys.exit("Ancient Tombs source spawns are incomplete")
     records.extend(scheduled_bosses)
     records.extend(pharaohs[key] for key in sorted(pharaohs))
+    if renegade is None:
+        sys.exit("Renegade Orc source spawn is missing")
+    records.append(renegade)
     files, shards = {}, []
     for start in range(0, len(records), SHARD_SIZE):
         part = records[start : start + SHARD_SIZE]

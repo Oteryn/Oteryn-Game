@@ -882,6 +882,11 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     // Keep each route's future state out of this shared dispatcher's inline state.
+    if name == "qengine-rewards-cartography-assignment" {
+        return Box::pin(super::qengine_level_stories_fixtures::assign_cartography(
+            owner, admitted, h,
+        )).await;
+    }
     if name == super::afflicted_loot_fixtures::HUNT {
         return Box::pin(super::afflicted_loot_fixtures::hunt(owner, admitted, h)).await;
     }

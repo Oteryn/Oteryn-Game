@@ -14,6 +14,8 @@ original entrance frontier; no walls or collision flags are overridden.
 XML:5314-5316 declares red carpet2572-2580. Their exact pinned client flags
 prove immovable, non-pickup, nonblocking floor decorations; the importer
 provides their missing native facts rather than changing source geometry.
+Crystal 201189f8 items.xml:35502-35504 identifies the ornate Asura Palace
+carpet. Its centre and edges retain the same walkable floor treatment.
 """
 import hashlib
 import json
@@ -29,6 +31,8 @@ from build_spell_item_identities import historical_binding_bytes
 CLASSES = {1626: None, 1627: None, 1634: None, 1635: None, 1948: "ladder",
            2572: None, 2573: None, 2574: None, 2575: None, 2576: None,
            2577: None, 2578: None, 2579: None, 2580: None,
+           17396: None, 17397: None, 17398: None, 17399: None,
+           17401: None, 17402: None, 17403: None, 17404: None,
            5111: "door", 5112: "door", 21935: None}
 IDS = set(CLASSES)
 XML = 'imports/canary/items-xml/items.xml'

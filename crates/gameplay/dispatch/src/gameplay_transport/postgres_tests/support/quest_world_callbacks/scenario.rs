@@ -47,8 +47,13 @@ fn scenario_case(
     let m44_amphora = name == "m44-lions-amphora-1";
     let m44_lions = name.starts_with("m44-lions-strength/");
     let m44_children = name == "qn1-children-lever-1/ordinary";
-    let m44 =
-        name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
+    let curos = name == "uneasy-alliance-crystal/curos";
+    let m44 = name == "uneasy-alliance-crystal"
+        || curos
+        || m44_children
+        || m44_lions
+        || m44_amphora
+        || m44_flower;
     let qm48 = name == "qm48/mammoth";
     let m03_use = name == super::super::qengine_m03_use_fixtures::NAME;
     let qd_world = name.starts_with(super::super::qd_world_fixtures::PREFIX);
@@ -426,6 +431,8 @@ fn scenario_case(
             "dreamers-challenge-death-ring-reset"
         } else if carrot {
             "dreamers-challenge-carrot-entry"
+        } else if curos {
+            "uneasy-alliance-crystal"
         } else if m44_flower {
             "m44-lions-flower-0"
         } else if m44_lions || name == "lions-rock-strength-first" {
@@ -1133,6 +1140,7 @@ fn scenario_case(
         } else if m44 {
             super::super::m44_source_lifecycle_fixtures::world(
                 generation.native_gameplay().ok_or("source policies")?,
+                curos,
             )?
         } else if qm48 {
             super::super::qm48_mammoth_fixtures::world(
@@ -1549,7 +1557,7 @@ fn scenario_case(
                 9
             } else if name == "authored-trader" {
                 7
-            } else if name == "authored-treasure-island" {
+            } else if name == "authored-treasure-island" || curos {
                 3
             } else if name == "authored-secret-library" {
                 5
@@ -1754,7 +1762,7 @@ fn scenario_case(
                     name.ends_with("/later"),
                 )?,
             ));
-        } else if m44 {
+        } else if m44 && !curos {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::m44_source_lifecycle_fixtures::catalogue(
                     owner.quest_catalogue.as_ref().ok_or("source catalogue")?,
@@ -2263,6 +2271,13 @@ fn scenario_case(
         } else if m44_children {
             Box::pin(super::super::m44_children_lifecycle_fixtures::exercise(
                 &owner,
+                &mut admitted,
+                &h,
+            ))
+            .await?;
+        } else if curos {
+            Box::pin(super::super::m44_source_lifecycle_fixtures::exercise_curos(
+                &mut owner,
                 &mut admitted,
                 &h,
             ))

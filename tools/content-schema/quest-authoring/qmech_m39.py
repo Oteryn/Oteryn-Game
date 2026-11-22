@@ -18,10 +18,28 @@ def append(add, callbacks, offers, declarations, inputs, pin):
                 'set':after,**({'preserve':True} if preserve else {})}
     def witness(path, lines):
         return f'crystal:{pin}:{path}:{lines}:sha256:{hashlib.sha256(inputs[path]).hexdigest()}'
-    curos = 'data-global/npc/curos.lua'
+    alliance = 'oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/'
+    curos_source = ('https://github.com/zimbadev/crystalserver/blob/'
+                    '201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/curos.lua')
+    add('l2-alliance-start', 'an_uneasy_alliance_quest', 'curos', ['mission'],
+        [state(alliance+'questline',0,1), state(alliance+'quest_door',0,0)],
+        requires=[{'track':frontier+'mission06','minimum':5,'maximum':5}])
+    callbacks[-1].update(sources=[curos_source+'#L70-L82'], reply=[
+        'A rebel commander is hiding in the mountains northwest of here. Kill him and return to me.'])
+    add('l2-alliance-report-rebel', 'an_uneasy_alliance_quest', 'curos', ['mission'],
+        [state(alliance+'questline',1,2)],
+        requires=[{'track':alliance+'quest_door','minimum':1,'maximum':1}])
+    callbacks[-1].update(sources=[curos_source+'#L83-L85'], reply=[
+        'The rebels are returning to camp now that their commander is dead.'])
+    add('l2-alliance-tower', 'an_uneasy_alliance_quest', 'curos', ['mission'],
+        [state(alliance+'questline',2,3)])
+    callbacks[-1].update(sources=[curos_source+'#L86-L94'], reply=[
+        'The lizards spy on us from a tower in the Dragonblaze Mountains. Enter through their '
+        'underground fortress and destroy the scrying device.'])
     add('l2-alliance-finish', 'an_uneasy_alliance_quest', 'curos', ['mission'],
-        [state('oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline',4,5)], give=(10217,1))
-    callbacks[-1].update(sources=[witness(curos,'95-101')], reply=["Here is a reward. It's a strange tome that we've found in the lizard ruins. Maybe it is of some value for you or your allies."])
+        [state(alliance+'questline',4,5)], give=(10217,1))
+    callbacks[-1].update(completes=True, sources=[witness('data-global/npc/curos.lua','95-101')],
+        reply=["Here is a reward. It's a strange tome that we've found in the lizard ruins. Maybe it is of some value for you or your allies."])
     # Cael owns New Frontier's existing counter, rather than a parallel quest flag.
     cael='data-global/npc/cael.lua'
     counter=frontier+'tomeof_knowledge'

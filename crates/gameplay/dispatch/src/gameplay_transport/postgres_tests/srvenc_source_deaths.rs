@@ -17,6 +17,7 @@ native_case!(srvenc_m24_postgres_goblin_leader_damage, "goblin_leader");
 native_case!(srvenc_m24_postgres_magma_bubble_damage, "magma_bubble");
 native_case!(srvenc_m24_postgres_cake_golem_twenty_and_cap, "cake_golem");
 native_case!(srvenc_m24_postgres_omruc_stage, "omruc");
+native_case!(srvenc_m24_postgres_renegade_orc_damage, "renegade_orc");
 native_case!(srvenc_m24_postgres_thalas_stage, "thalas");
 native_case!(srvenc_m24_postgres_dipthrah_stage, "dipthrah");
 native_case!(srvenc_m24_postgres_mahrdis_stage, "mahrdis");
