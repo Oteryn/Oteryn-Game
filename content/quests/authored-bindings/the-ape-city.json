@@ -3,7 +3,7 @@
   "quests": [
     {
       "quest": "oteryn:quest.the_ape_city_quest",
-      "recipe_sha256": "78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+      "recipe_sha256": "5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
       "admission": {
         "minimum_level": 0,
         "premium": true
@@ -86,6 +86,12 @@
           "initial": 0,
           "minimum": 0,
           "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/amphora-window",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 9223372036854775807
         }
       ],
       "stages": [
@@ -120,7 +126,7 @@
                 "Bring me a banana to show you come in friendship."
               ],
               "sources": [
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:80-89"
               ]
             }
@@ -190,7 +196,7 @@
                 "Thank you. Ask me for another mission."
               ],
               "sources": [
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:80-94"
               ]
             }
@@ -227,7 +233,7 @@
                 "Find the old parchment in Chor and bring it here."
               ],
               "sources": [
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:100-120"
               ]
             }
@@ -297,7 +303,7 @@
                 "Read the signs on the stone in the tomb east of the desert city."
               ],
               "sources": [
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:103-120"
               ]
             }
@@ -350,7 +356,7 @@
               "failure_message": "Sorry, not possible.",
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/movements_mission4_parchment_decyphering.lua:3-19"
               ],
               "premium_required": true,
@@ -398,7 +404,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4465-4469"
               ],
               "premium_required": true,
@@ -447,7 +453,7 @@
                 "You found the holy hair. One last mission awaits you."
               ],
               "sources": [
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:429-436"
               ]
             }
@@ -487,7 +493,7 @@
                 "Use this Snake Destroyer in the deepest catacombs."
               ],
               "sources": [
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:437-446"
               ]
             }
@@ -545,7 +551,7 @@
               "failure_message": "Sorry, not possible.",
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/movements_mission9_the_deepest_catacomb_teleport.lua:5-34"
               ],
               "premium_required": true
@@ -597,7 +603,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:7-41"
               ],
               "item_on_target": {
@@ -607,7 +613,18 @@
                 "reusable": true,
                 "target_replacement": 4996
               },
-              "premium_required": true
+              "premium_required": true,
+              "state_ops": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/amphora-window",
+                  "from": {
+                    "kind": "any"
+                  },
+                  "effect": {
+                    "kind": "set_now"
+                  }
+                }
+              ]
             }
           }
         },
@@ -656,7 +673,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:7-41"
               ],
               "item_on_target": {
@@ -666,7 +683,18 @@
                 "reusable": true,
                 "target_replacement": 4996
               },
-              "premium_required": true
+              "premium_required": true,
+              "state_ops": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/amphora-window",
+                  "from": {
+                    "kind": "any"
+                  },
+                  "effect": {
+                    "kind": "set_now"
+                  }
+                }
+              ]
             }
           }
         },
@@ -715,7 +743,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:7-41"
               ],
               "item_on_target": {
@@ -725,7 +753,18 @@
                 "reusable": true,
                 "target_replacement": 4996
               },
-              "premium_required": true
+              "premium_required": true,
+              "state_ops": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/amphora-window",
+                  "from": {
+                    "kind": "any"
+                  },
+                  "effect": {
+                    "kind": "set_now"
+                  }
+                }
+              ]
             }
           }
         },
@@ -774,7 +813,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:7-41"
               ],
               "item_on_target": {
@@ -784,7 +823,18 @@
                 "reusable": true,
                 "target_replacement": 4996
               },
-              "premium_required": true
+              "premium_required": true,
+              "state_ops": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/amphora-window",
+                  "from": {
+                    "kind": "any"
+                  },
+                  "effect": {
+                    "kind": "set_now"
+                  }
+                }
+              ]
             }
           }
         },
@@ -867,10 +917,23 @@
               "failure_message": "Sorry, not possible.",
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/movements_mission9_the_deepest_catacomb_teleport.lua:19-34"
               ],
-              "premium_required": true
+              "premium_required": true,
+              "state_ops": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/amphora-window",
+                  "from": {
+                    "kind": "elapsed_less_than",
+                    "seconds": 300
+                  },
+                  "effect": {
+                    "kind": "add",
+                    "value": 0
+                  }
+                }
+              ]
             }
           }
         },
@@ -922,7 +985,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34"
               ],
               "effects": {
@@ -980,7 +1043,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34"
               ],
               "effects": {
@@ -1038,7 +1101,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34"
               ],
               "effects": {
@@ -1096,7 +1159,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34"
               ],
               "effects": {
@@ -1154,7 +1217,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34"
               ],
               "effects": {
@@ -1212,7 +1275,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34"
               ],
               "effects": {
@@ -1315,7 +1378,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:36-70"
               ],
               "world_requirements": [
@@ -1436,7 +1499,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:36-70"
               ],
               "effects": {
@@ -1485,7 +1548,7 @@
               "failure_message": null,
               "sources": [
                 "oteryn-authored:chosen-recipe:the-ape-city",
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:44-65"
               ],
               "item_on_target": {
@@ -1541,7 +1604,7 @@
                 "Banuta is safe. You may return to Deeper Banuta. You have earned shaman clothing."
               ],
               "sources": [
-                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:186-195,449-456"
               ]
             }
@@ -1550,7 +1613,7 @@
       ],
       "sources": [
         "oteryn-authored:chosen-recipe:the-ape-city",
-        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
         "https://tibia.fandom.com/wiki/The_Ape_City_Quest/Spoiler",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:80-195,429-456",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-70",
