@@ -55,9 +55,9 @@ pub(super) async fn exercise(
     assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, TRACK).await?, 0);
     seed_bank(h).await?;
     for (index, (suffix, before, after, price)) in [
-        ("base", 0, 1, 500_000_000_i64),
-        ("helmet", 1, 2, 250_000_000),
-        ("gloves", 2, 3, 250_000_000),
+        ("base", 0, 1, 100_000_i64),
+        ("gloves", 1, 2, 50_000),
+        ("helmet", 2, 3, 50_000),
     ].into_iter().enumerate() {
         let callback = callbacks.iter().find(|c| c.key == format!("oteryn:quest-reward/questpc7-golden-{suffix}")).ok_or("callback")?;
         assert_eq!(money(h).await?, 0);

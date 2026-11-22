@@ -2452,9 +2452,9 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing and 31 QB routes. The final two terms are
+        // Shared covers 208 existing and 31 QB routes. The final two terms are
         // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 238 + 82 + 126 + 1 + 1 + 13 + 12);
+        assert_eq!(load()?.len(), 239 + 88 + 126 + 1 + 1 + 13 + 12);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2501,16 +2501,16 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 207);
+        assert_eq!(legacy.len(), 208);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
             .collect();
-        assert_eq!(original.len(), 195);
+        assert_eq!(original.len(), 196);
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;
-        assert_eq!(programmes.len(), 82);
+        assert_eq!(programmes.len(), 88);
         let published = published_markers::keys()?;
         for callback in &programmes {
             assert!(callback.key.starts_with("oteryn:quest-reward/questpc7-"));
@@ -2524,8 +2524,9 @@ mod tests {
                     callback.key.as_str(),
                     "oteryn:quest-reward/l3-glooth-engineer-first-high"
                         | "oteryn:quest-reward/l3-glooth-engineer-second-after-first"
-                        | "oteryn:quest-reward/l10-golden-boots"
-                        | "oteryn:quest-reward/l10-golden-legacy-helmet"
+                        | "oteryn:quest-reward/l3-glooth-engineer-complete-owned"
+                        | "oteryn:quest-reward/l10-golden-helmet"
+                        | "oteryn:quest-reward/l10-golden-complete-owned"
                 );
             assert_eq!(callback.completes, completes);
             assert_eq!(

@@ -208,6 +208,49 @@ pub(super) fn sign_native_items() -> Vec<(Position, u32)> {
     SIGN_SITES.into_iter().chain([SIGN_DECOY]).map(|p| (p, 17679)).collect()
 }
 
+async fn use_site_tool(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    site: Position,
+    appearance: u16,
+    tool: u32,
+) -> TestResult<(oteryn_protocol_oteryn::world_object::UseDisposition, Vec<u8>)> {
+    use oteryn_protocol_oteryn::world_object::{
+        MapUseTarget, UseIntent, UseTarget, decode_use_intent, encode_item_use_intent,
+    };
+    super::m44_source_lifecycle_fixtures::wait_for_world_action(owner, admitted).await?;
+    let target = decode_use_intent(
+        &super::questpc7_hoist_story_fixtures::target(owner, site, appearance)?,
+    )
+    .map_err(debug)?;
+    let reference = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| {
+            index.definition_ref("Item", &format!("oteryn:item.tibia.i{tool}"), "definition-r1")
+        })
+        .ok_or("site tool definition")?;
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(std::num::NonZeroU64::MIN),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(target)),
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    let (next, disposition, actual) = super::rust_lottery_fixtures::exchange(
+        owner,
+        *admitted,
+        admitted.continuity.next_command_id,
+        &payload,
+        Some(reference),
+        None,
+    )
+    .await?;
+    *admitted = next;
+    Ok((disposition, actual))
+}
+
 pub(super) async fn exercise_signs(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -231,8 +274,8 @@ pub(super) async fn exercise_signs(
     for (index, (site, approach)) in SIGN_SITES.into_iter().zip(approaches).enumerate() {
         walk(owner, admitted, approach).await?;
         let command = admitted.continuity.next_command_id;
-        let payload = super::questpc7_hoist_story_fixtures::target(owner, site, 17679)?;
-        assert_eq!(use_at(owner, admitted, site, 17679).await?, UseDisposition::Committed);
+        let (result, payload) = use_site_tool(owner, admitted, site, 17679, 17668).await?;
+        assert_eq!(result, UseDisposition::Committed);
         assert_eq!(quantity(h, 17668).await?, 2 - i64::try_from(index)?);
         assert_eq!(value(owner, admitted, &format!("{ROOT}signs")).await?, i64::try_from(index + 1)?);
         assert_eq!(value(owner, admitted, &format!("{ROOT}sign-site-{}", index + 1)).await?, 1);
@@ -323,9 +366,11 @@ pub(super) async fn exercise_trunks(owner:&mut ComposedFreshAdmission<'_, '_, '_
         if index==1 { walk(owner,a,Position{x:33128,y:32048,floor:-10}).await?; }
         if index==2 { walk(owner,a,Position{x:33135,y:32060,floor:-10}).await?; }
         walk(owner,a,approach).await?;
+        assert_eq!(use_at(owner,a,site,17677).await?,UseDisposition::Rejected,
+            "bare use cannot borrow any hammer from the backpack");
         let command=a.continuity.next_command_id;
-        let payload=super::questpc7_hoist_story_fixtures::target(owner,site,17677)?;
-        assert_eq!(use_at(owner,a,site,17677).await?,UseDisposition::Committed);
+        let (result, payload) = use_site_tool(owner, a, site, 17677, 17676).await?;
+        assert_eq!(result, UseDisposition::Committed);
         assert_eq!(quantity(h,17676).await?,i64::from(index < 2),"the third trunk breaks the hammer");
         assert_eq!(value(owner,a,&format!("{ROOT}trunks")).await?,i64::try_from(index+1)?);
         assert_eq!(value(owner,a,&format!("{ROOT}trunk-site-{}",index+1)).await?,1);
@@ -465,8 +510,11 @@ pub(super) async fn exercise_perfume_finish(
     use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget, decode_use_intent};
     let [rafzan] = super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.rafzan"]).await?;
     let mut sequence = admitted.continuity.next_command_id;
-    let accepted = super::questpc7_outfit_items_fixtures::talk(owner, admitted, rafzan, &mut sequence, "get perfume").await?;
-    assert_eq!(accepted, NpcIntentDisposition::Ok);
+    for word in ["hi", "perfume", "yes"] {
+        let result = super::qengine_rewards_fixtures::talk(owner, admitted, rafzan, sequence, word).await?;
+        assert_eq!(result, NpcIntentDisposition::Ok, "{word}");
+        sequence = sequence.checked_add(1).ok_or("NPC command overflow")?;
+    }
     assert_eq!(quantity(h, 17670).await?, 1, "Rafzan supplies the first gatherer");
     let actor = admitted.runtime_actor.ok_or("perfume actor")?;
     let fence = owner.current_quest_fence(admitted.game_session_id).await
@@ -490,6 +538,18 @@ pub(super) async fn exercise_perfume_finish(
         use_with: None, use_with_map_item: Some(MapUseTarget::Object(gas_target)), use_with_position: None,
     };
     let command = |id| UseCommand { game_session_id: fence.game_session_id, command_id: id, item_fence: Some(fence) };
+    let refused = owner.tame_mount_impl(actor, command(77000), gas.clone(), Some(instance(17672).await?), None, true)
+        .await.map_err(|()| "gas tool dispatch")?.ok_or("gas route")?;
+    assert_eq!(refused.disposition, UseDisposition::Rejected);
+    assert_eq!((quantity(h,17672).await?,quantity(h,17673).await?), (1,0));
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, admitted, &[(format!("{ROOT}odours"), 1)], 76,
+    ).await?;
+    owner.refresh_quest_session(admitted.game_session_id, true).await;
+    let fence = owner.current_quest_fence(admitted.game_session_id).await
+        .map_err(|()| "perfume fence")?.ok_or("perfume fence")?.item_fence();
+    let command = |id| UseCommand { game_session_id: fence.game_session_id, command_id: id, item_fence: Some(fence) };
+    super::m44_source_lifecycle_fixtures::wait_for_world_action(owner, admitted).await?;
     let outcome = owner.tame_mount_impl(actor, command(77001), gas, Some(instance(17672).await?), None, true)
         .await.map_err(|()| "gas tool dispatch")?.ok_or("gas route")?;
     assert_eq!(outcome.disposition, UseDisposition::Committed);

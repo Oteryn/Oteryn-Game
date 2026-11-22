@@ -64,6 +64,11 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
                     max: 2,
                 },
                 captures,
+                shipped
+                    .catalogue()
+                    .track("oteryn:quest-progress/questpc7/goblin/programme")
+                    .ok_or("registered programme track")?
+                    .clone(),
             ],
             [offer, grant]
                 .into_iter()

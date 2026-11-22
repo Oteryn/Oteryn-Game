@@ -309,6 +309,9 @@ pub(super) async fn exercise(
         1
     );
     no_rewards(h).await?;
+    use oteryn_gameplay_quests::quest::grave_danger::{OUTFIT, QUESTLINE};
+    assert_eq!(value(owner, a, QUESTLINE).await?, 4);
+    assert_eq!(value(owner, a, OUTFIT).await?, -1);
     let [jack] = super::classic_quests_fixtures::install(owner, a, ["oteryn:npc.jack_springer"]).await?;
     let mut npc_sequence = a.continuity.next_command_id;
     assert_eq!(
@@ -317,6 +320,8 @@ pub(super) async fn exercise(
     );
     let base: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key='oteryn:outfit.hand_of_the_inquisition/quest-grant/0'").fetch_one(&h.pool).await?;
     assert_eq!(base, 1, "the qualified Zelos report alone grants the base outfit");
+    assert_eq!(value(owner, a, QUESTLINE).await?, 5);
+    assert_eq!(value(owner, a, OUTFIT).await?, 1);
     let reward = callback(&rows, "reward")?;
     let p = reward.selector.position.ok_or("reward")?;
     let appearance = reward.selector.appearance.ok_or("armour")?;

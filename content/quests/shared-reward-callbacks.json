@@ -1125,10 +1125,11 @@
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
       ],
       "fee": {
-        "gold": 500000000,
+        "gold": 100000,
         "include_bank": true
       },
       "forbids_outfits": [
@@ -1147,16 +1148,9 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 3
-        },
-        {
-          "track": "oteryn:quest-progress/golden/source-helmet-first",
           "minimum": 1,
           "maximum": 1,
-          "set": 1,
-          "preserve": true
+          "set": 2
         }
       ],
       "take": [],
@@ -1170,10 +1164,11 @@
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
       ],
       "fee": {
-        "gold": 250000000,
+        "gold": 50000,
         "include_bank": true
       },
       "forbids_addons": [
@@ -1181,8 +1176,43 @@
           "outfit": "oteryn:outfit.golden",
           "addons": 1
         }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l10-golden-complete-owned",
+      "quest": "oteryn:quest.golden_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "yes"
       ],
-      "completes": true
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
+      ],
+      "completes": true,
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.golden",
+          "addons": 3
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l10-golden-helmet",
@@ -1196,63 +1226,9 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        },
-        {
-          "track": "oteryn:quest-progress/golden/source-helmet-first",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 1
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.golden",
-        "addons": 2
-      },
-      "achievement": null,
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
-      ],
-      "fee": {
-        "gold": 250000000,
-        "include_bank": true
-      },
-      "forbids_addons": [
-        {
-          "outfit": "oteryn:outfit.golden",
-          "addons": 2
-        }
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/l10-golden-legacy-helmet",
-      "quest": "oteryn:quest.golden_outfits_quest",
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "yes"
-      ],
-      "topic": 4,
-      "next_topic": 2,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
           "minimum": 2,
           "maximum": 2,
-          "set": 3
-        },
-        {
-          "track": "oteryn:quest-progress/golden/source-helmet-first",
-          "minimum": -1,
-          "maximum": -1,
-          "set": -1,
-          "preserve": true
+          "set": 4
         }
       ],
       "take": [],
@@ -1266,10 +1242,11 @@
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
       ],
       "fee": {
-        "gold": 250000000,
+        "gold": 50000,
         "include_bank": true
       },
       "forbids_addons": [
@@ -3330,6 +3307,53 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l3-glooth-engineer-complete-owned",
+      "quest": "oteryn:quest.glooth_engineer_outfits_quest",
+      "npc": "oteryn:npc.ezebeth",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/completed",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/glooth_engineer",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon1",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon2",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.glooth_engineer",
+          "addons": 3
+        }
+      ],
+      "completes": true
+    },
+    {
       "key": "oteryn:quest-reward/l3-glooth-engineer-first-high",
       "quest": "oteryn:quest.glooth_engineer_outfits_quest",
       "npc": "oteryn:npc.ezebeth",
@@ -3343,6 +3367,12 @@
           "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon1",
           "minimum": -1,
           "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/completed",
+          "minimum": -1,
+          "maximum": -1,
           "set": 1
         }
       ],
@@ -3498,6 +3528,12 @@
           "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon2",
           "minimum": -1,
           "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/completed",
+          "minimum": -1,
+          "maximum": -1,
           "set": 1
         }
       ],

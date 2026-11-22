@@ -22,6 +22,15 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                         | "oteryn:quest-callback/rafzan-swamp-gas-33026-32183"
                         | "oteryn:quest-callback/rafzan-swamp-gas-33067-32121"
                         | "oteryn:quest-callback/rafzan-swamp-gas-33092-32061"
+                        | "oteryn:quest-callback/questpc7-goblin-sign-1"
+                        | "oteryn:quest-callback/questpc7-goblin-sign-2"
+                        | "oteryn:quest-callback/questpc7-goblin-sign-3"
+                        | "oteryn:quest-callback/questpc7-goblin-trunk-1"
+                        | "oteryn:quest-callback/questpc7-goblin-trunk-1-last"
+                        | "oteryn:quest-callback/questpc7-goblin-trunk-2"
+                        | "oteryn:quest-callback/questpc7-goblin-trunk-2-last"
+                        | "oteryn:quest-callback/questpc7-goblin-trunk-3"
+                        | "oteryn:quest-callback/questpc7-goblin-trunk-3-last"
                 ))
             || rottin_walls::accepts(callback)
             || callback.effects.place_item == Some(12187)
@@ -78,6 +87,31 @@ mod tests {
             assert_eq!(
                 tool.replacement.as_deref(),
                 Some("oteryn:item.tibia.i17673")
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn rafzan_signs_and_trunks_reach_the_selected_tool_owner() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let sites = callbacks
+            .iter()
+            .filter(|callback| {
+                matches!(callback.selector.appearance, Some(17677 | 17679))
+                    && callback
+                        .key
+                        .starts_with("oteryn:quest-callback/questpc7-goblin-")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(sites.len(), 9);
+        for site in sites {
+            let tool = site.item_on_target.as_ref().ok_or("site tool")?;
+            assert!(tool.selected_instance, "{}", site.key);
+            assert!(accepts(site), "{}", site.key);
+            assert_eq!(
+                tool.reusable,
+                tool.item.ends_with("17676") && !site.key.ends_with("-last")
             );
         }
         Ok(())

@@ -1081,8 +1081,8 @@ pub(super) async fn exercise(
             "golden",
             &[
                 ("base", None, None, Some(0)),
-                ("helmet", None, None, Some(2)),
                 ("boots", None, None, Some(1)),
+                ("helmet", None, None, Some(2)),
             ],
             1211,
         ),

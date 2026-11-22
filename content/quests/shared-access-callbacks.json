@@ -510,7 +510,7 @@
           "floor": -13
         },
         "unique": null,
-        "action": null,
+        "action": 1000,
         "appearance": 1931
       },
       "lever": null,
@@ -3915,7 +3915,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/goblin/odours",
-          "minimum": 0,
+          "minimum": 1,
           "maximum": 1,
           "set": 2
         }
@@ -3966,7 +3966,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/goblin/odours",
-          "minimum": 0,
+          "minimum": 1,
           "maximum": 1,
           "set": 2
         }
@@ -4017,7 +4017,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/goblin/odours",
-          "minimum": 0,
+          "minimum": 1,
           "maximum": 1,
           "set": 2
         }

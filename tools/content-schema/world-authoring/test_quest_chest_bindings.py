@@ -72,7 +72,9 @@ class QuestChestBindings(unittest.TestCase):
             (placements / "region-z14-x126-y125.b3").read_bytes()
         )
         items = next(
-            tile[5] for _, tiles in sectors for tile in tiles
+            tile[5]
+            for _, tiles in sectors
+            for tile in tiles
             if tile[:2] == (32506, 32175)
         )
         self.assertEqual(

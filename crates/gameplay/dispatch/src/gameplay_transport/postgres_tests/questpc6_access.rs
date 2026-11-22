@@ -196,7 +196,7 @@ fn stateless_callback(name: &str, trigger: Position, destination: Position) -> T
     assert!(callback.offerings.is_empty());
     assert!(callback.item_on_target.is_none());
     assert_eq!(callback.teleport, Some(destination));
-    let world = world(&callback, trigger)?;
+
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "questpc6_fibula_well", false, false)
             .await?;
@@ -218,6 +218,34 @@ fn stateless_callback(name: &str, trigger: Position, destination: Position) -> T
                 "content-1",
             )?;
         let generation = controller.active().ok_or("active generation")?;
+        let world = if name == "ghoul-room-well" {
+            use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene};
+            assert_eq!(callback.selector.action, Some(1000));
+            let native = generation.native_gameplay().ok_or("native generation")?;
+            native_scene(native, vec![
+                NativeCrop {
+                    bytes: include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content/world/placements/region-z13-x126-y125.b3")),
+                    region: (13, 126, 125),
+                    bounds: (32507, 32176, 32509, 32177),
+                    start: (32507, 32176),
+                    expected: vec![ExpectedTile {
+                        position: (32508, 32176),
+                        ids: vec![409, 1931],
+                        counted_entry: None,
+                    }],
+                },
+                NativeCrop {
+                    bytes: include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content/world/placements/region-z14-x126-y125.b3")),
+                    region: (14, 126, 125),
+                    bounds: (32508, 32176, 32509, 32177),
+                    start: (32508, 32176),
+                    expected: vec![],
+                },
+            ], &[])?
+        } else {
+            world(&callback, trigger)?
+        };
+
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;

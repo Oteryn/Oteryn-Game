@@ -142,11 +142,13 @@
       "experience": null,
       "monk_reward": null,
       "offerings": [],
+      "requires_world_admission": true,
       "item_on_target": {
         "item": "oteryn:item.tibia.i17668",
         "count": 1,
         "replacement": null,
-        "target_replacement": null
+        "target_replacement": null,
+        "selected_instance": true
       },
       "effects": {
         "transform": 17680,
@@ -163,7 +165,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:f960cbe2dab68d5ea185c1864105aad50238744b063e7fe26364874460c057c1",
+        "content/world/placements/index.json:1:sha256:a75297a2fea1b94a2083e3862d2881702d1ce1da9e0b8ab244db44fb9b62deeb",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -216,11 +218,13 @@
       "experience": null,
       "monk_reward": null,
       "offerings": [],
+      "requires_world_admission": true,
       "item_on_target": {
         "item": "oteryn:item.tibia.i17668",
         "count": 1,
         "replacement": null,
-        "target_replacement": null
+        "target_replacement": null,
+        "selected_instance": true
       },
       "effects": {
         "transform": 17680,
@@ -237,7 +241,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:f960cbe2dab68d5ea185c1864105aad50238744b063e7fe26364874460c057c1",
+        "content/world/placements/index.json:1:sha256:a75297a2fea1b94a2083e3862d2881702d1ce1da9e0b8ab244db44fb9b62deeb",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -290,11 +294,13 @@
       "experience": null,
       "monk_reward": null,
       "offerings": [],
+      "requires_world_admission": true,
       "item_on_target": {
         "item": "oteryn:item.tibia.i17668",
         "count": 1,
         "replacement": null,
-        "target_replacement": null
+        "target_replacement": null,
+        "selected_instance": true
       },
       "effects": {
         "transform": 17680,
@@ -311,7 +317,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:f960cbe2dab68d5ea185c1864105aad50238744b063e7fe26364874460c057c1",
+        "content/world/placements/index.json:1:sha256:a75297a2fea1b94a2083e3862d2881702d1ce1da9e0b8ab244db44fb9b62deeb",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -416,12 +422,14 @@
       "experience": null,
       "monk_reward": null,
       "offerings": [],
+      "requires_world_admission": true,
       "item_on_target": {
         "item": "oteryn:item.tibia.i17676",
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": true
+        "reusable": true,
+        "selected_instance": true
       },
       "effects": {
         "transform": 17678,
@@ -486,12 +494,14 @@
       "experience": null,
       "monk_reward": null,
       "offerings": [],
+      "requires_world_admission": true,
       "item_on_target": {
         "item": "oteryn:item.tibia.i17676",
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": false
+        "reusable": false,
+        "selected_instance": true
       },
       "effects": {
         "transform": 17678,
@@ -556,12 +566,14 @@
       "experience": null,
       "monk_reward": null,
       "offerings": [],
+      "requires_world_admission": true,
       "item_on_target": {
         "item": "oteryn:item.tibia.i17676",
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": true
+        "reusable": true,
+        "selected_instance": true
       },
       "effects": {
         "transform": 17678,
@@ -626,12 +638,14 @@
       "experience": null,
       "monk_reward": null,
       "offerings": [],
+      "requires_world_admission": true,
       "item_on_target": {
         "item": "oteryn:item.tibia.i17676",
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": false
+        "reusable": false,
+        "selected_instance": true
       },
       "effects": {
         "transform": 17678,
@@ -696,12 +710,14 @@
       "experience": null,
       "monk_reward": null,
       "offerings": [],
+      "requires_world_admission": true,
       "item_on_target": {
         "item": "oteryn:item.tibia.i17676",
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": true
+        "reusable": true,
+        "selected_instance": true
       },
       "effects": {
         "transform": 17678,
@@ -766,12 +782,14 @@
       "experience": null,
       "monk_reward": null,
       "offerings": [],
+      "requires_world_admission": true,
       "item_on_target": {
         "item": "oteryn:item.tibia.i17676",
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": false
+        "reusable": false,
+        "selected_instance": true
       },
       "effects": {
         "transform": 17678,
@@ -3421,6 +3439,19 @@
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z13-x130-y123.b3:1:sha256:fdd5e457c35b1a3622485103aa9006e2dbb33a622cba968fe792260c1cdac26e",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_20/grave_danger/questline",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 0,
+            "minimum": 4
+          }
+        }
       ]
     },
     {

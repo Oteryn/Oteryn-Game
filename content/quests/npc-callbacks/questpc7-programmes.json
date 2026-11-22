@@ -1759,6 +1759,78 @@
       "per_occurrence_mint": true
     },
     {
+      "key": "oteryn:quest-reward/questpc7-goblin-accept-advertisement-confirmed",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 120,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/signs",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/sign-site-1",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/sign-site-2",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/sign-site-3",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17668",
+        "count": 3,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your advertisement task is ready."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/signs/last-report",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "per_occurrence_mint": true
+    },
+    {
       "key": "oteryn:quest-reward/questpc7-goblin-accept-busy",
       "quest": "oteryn:quest.goblin_merchant_quest",
       "npc": "oteryn:npc.rafzan",
@@ -1766,6 +1838,60 @@
         "get busy"
       ],
       "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/urine",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17671",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your busy task is ready."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/urine/last-report",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-accept-busy-confirmed",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 123,
       "next_topic": 0,
       "storage": [
         {
@@ -1885,6 +2011,78 @@
       "per_occurrence_mint": true
     },
     {
+      "key": "oteryn:quest-reward/questpc7-goblin-accept-destroy-confirmed",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 124,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunk-site-1",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunk-site-2",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunk-site-3",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17676",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your destroy task is ready."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks/last-report",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "per_occurrence_mint": true
+    },
+    {
       "key": "oteryn:quest-reward/questpc7-goblin-accept-guards",
       "quest": "oteryn:quest.goblin_merchant_quest",
       "npc": "oteryn:npc.rafzan",
@@ -1892,6 +2090,60 @@
         "get guards"
       ],
       "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/captures",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17669",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your guards task is ready."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/captures/last-report",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-accept-guards-confirmed",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 122,
       "next_topic": 0,
       "storage": [
         {
@@ -1988,6 +2240,55 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc7-goblin-accept-kill-confirmed",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 125,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/stalkers",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your kill task is ready."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/stalkers/last-report",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc7-goblin-accept-perfume",
       "quest": "oteryn:quest.goblin_merchant_quest",
       "npc": "oteryn:npc.rafzan",
@@ -1995,6 +2296,72 @@
         "get perfume"
       ],
       "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/odours",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/goblin_merchant/slug_sample",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/goblin_merchant/rotworm_sample",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17670",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your perfume task is ready."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/odours/last-report",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-accept-perfume-confirmed",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 121,
       "next_topic": 0,
       "storage": [
         {
@@ -3304,7 +3671,7 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ],
       "fee": {
-        "gold": 500000000,
+        "gold": 100000,
         "include_bank": true
       },
       "forbids_outfits": [
@@ -3353,16 +3720,9 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/golden/commission",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 3
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/golden/commission/helmet-first",
           "minimum": 1,
           "maximum": 1,
-          "set": 1,
-          "preserve": true
+          "set": 2
         }
       ],
       "take": [],
@@ -3380,7 +3740,7 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ],
       "fee": {
-        "gold": 250000000,
+        "gold": 50000,
         "include_bank": true
       },
       "forbids_addons": [
@@ -3402,15 +3762,9 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/golden/commission",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/golden/commission/helmet-first",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 1
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
         }
       ],
       "take": [],
@@ -3428,7 +3782,7 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ],
       "fee": {
-        "gold": 250000000,
+        "gold": 50000,
         "include_bank": true
       },
       "forbids_addons": [
@@ -3466,55 +3820,6 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-golden-legacy-helmet",
-      "quest": "oteryn:quest.golden_outfits_quest",
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "yes"
-      ],
-      "topic": 103,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/golden/commission",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 3
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/golden/commission/helmet-first",
-          "minimum": -1,
-          "maximum": -1,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.golden",
-        "addons": 2
-      },
-      "achievement": null,
-      "reply": [
-        "Your Golden helmet is ready."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
-      ],
-      "fee": {
-        "gold": 250000000,
-        "include_bank": true
-      },
-      "forbids_addons": [
-        {
-          "outfit": "oteryn:outfit.golden",
-          "addons": 2
-        }
       ]
     },
     {
@@ -3740,17 +4045,84 @@
       "achievement": "oteryn:achievement/inquisition_s_hand",
       "completes": false,
       "reply": [
-        "Your victory over King Zelos has earned the Hand of the Inquisition outfit."
+        "Incredible! You averted a crisis that would have utterly crippeled our defenses against any other threat that is arising. Let me grant you the honor to be one of the hands of the inquisition alongside with the according outfit as a reward."
       ],
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/quests/grave-danger-final-source.json:204:sha256:082e48be518d24c5942fea2dbcf8f778e61093625cd6d5e890c1b5afe645a13f"
       ],
-      "requires": [
+      "participants": [
         {
-          "track": "oteryn:quest-progress/questpc7/grave/boss_6",
-          "minimum": 1,
-          "maximum": 1
+          "quest": "oteryn:quest.grave_danger_quest",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u12_20/grave_danger/questline",
+              "minimum": 4,
+              "maximum": 4,
+              "set": 5
+            },
+            {
+              "track": "oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/inquisition_outfit_received",
+              "minimum": -1,
+              "maximum": 0,
+              "set": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-inquisition-commission-held",
+      "quest": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+      "npc": "oteryn:npc.jack_springer",
+      "keywords": [
+        "report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/inquisition/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/inquisition_s_hand",
+      "completes": false,
+      "reply": [
+        "Incredible! You averted a crisis that would have utterly crippeled our defenses against any other threat that is arising. Let me grant you the honor to be one of the hands of the inquisition alongside with the according outfit as a reward."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "content/quests/grave-danger-final-source.json:204:sha256:082e48be518d24c5942fea2dbcf8f778e61093625cd6d5e890c1b5afe645a13f"
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.grave_danger_quest",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u12_20/grave_danger/questline",
+              "minimum": 4,
+              "maximum": 4,
+              "set": 5
+            },
+            {
+              "track": "oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/inquisition_outfit_received",
+              "minimum": 1,
+              "maximum": 1,
+              "set": 1,
+              "preserve": true
+            }
+          ]
         }
       ]
     },

@@ -107,7 +107,7 @@ def captured_level_access(raw, selected, root=ROOT):
     ]["fields"]
     doors = {}
     for key, (position, appearance, action) in (
-        (key, door) for key in sorted(selected) for door in level_doors(key)
+        (claim, door) for claim in sorted(selected) for door in level_doors(claim)
     ):
         field = next(f for f in fields if f["key"] == action)
         value = lua_tables.as_python(field["value"])
@@ -296,10 +296,9 @@ def capture(source_root, selected, root=ROOT):
                 raise ValueError("QUEST_CHEST_SOURCE_SELECTOR_OR_REWARD_DRIFT")
             if source_key_claim(definition):
                 number = placement["reward"]["key_binding"].rsplit("/", 1)[1]
-                if (
-                    setting.get("isKey") is not True
-                    or setting.get("storage") != {"expr": f"Storage.Quest.Key.ID{number}"}
-                ):
+                if setting.get("isKey") is not True or setting.get("storage") != {
+                    "expr": f"Storage.Quest.Key.ID{number}"
+                }:
                     raise ValueError("QUEST_CHEST_SOURCE_KEY_DRIFT")
             rows.append(
                 {
@@ -448,7 +447,11 @@ def selections(root=ROOT):
             raise ValueError("QUEST_CHEST_KEY_DOOR_SOURCE_PIN")
         gates = json.loads(raw)["gates"]
         for claim, position, appearance, number in key_doors:
-            gate = [r for r in gates if r["identity"]["key"] == f"canary:door-gate/key/{number}"]
+            gate = [
+                r
+                for r in gates
+                if r["identity"]["key"] == f"canary:door-gate/key/{number}"
+            ]
             if (
                 len(gate) != 1
                 or gate[0]["condition"]["key_binding"] != f"canary:door-key/{number}"
@@ -465,6 +468,15 @@ def selections(root=ROOT):
                 "claims": [claim],
             }
         sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
+    # Use the draw-well handler on this retained Ghoul Room placement.
+    if any(
+        row["claim"] == "oteryn:reward-claim.quest.key.id3600"
+        for row in bindings.values()
+    ):
+        position = (32508, 32176, 13)
+        if position in doors:
+            raise ValueError("GHOUL_ROOM_WELL_ACTION_CONFLICT")
+        doors[position] = {"appearance": 1931, "action": 1000}
     return {"unique": bindings, "action": doors}, sources
 
 

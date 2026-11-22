@@ -145,7 +145,7 @@ pub(super) async fn exercise(
     } else {
         super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
             h, owner, admitted,
-            &[("oteryn:quest-progress/questpc7/grave/boss_6".into(), 1)], 233,
+            &[(oteryn_gameplay_quests::quest::grave_danger::QUESTLINE.into(), 4)], 233,
         ).await?;
         owner.refresh_quest_session(admitted.game_session_id, false).await;
         None
