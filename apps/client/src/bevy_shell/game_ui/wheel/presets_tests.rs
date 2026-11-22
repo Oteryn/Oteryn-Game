@@ -125,3 +125,26 @@ fn tibia_wheel_code_round_trips_through_preset_controls() -> TestResult {
     assert_eq!(panel(&app)?.points[14], 7);
     Ok(())
 }
+
+#[test]
+fn review_import_validates_source_budget_before_adapting_points() -> TestResult {
+    let mut initial = model();
+    initial.diagram.reply.as_mut().ok_or("metadata")?.available = 5;
+    initial.points[14] = 1;
+    let (mut app, _commands, _outbox) = fixture(initial)?;
+    // The header declares six points but the first slice spends seven.
+    preset_field(&mut app, 1, "K0BgAH");
+    preset_action(&mut app, 5)?;
+    assert_eq!(panel(&app)?.points[14], 1);
+    assert_eq!(panel(&app)?.preset_feedback, "Invalid Wheel point budget");
+    // A full 255-point slice exceeds its capacity even when the local budget is five.
+    preset_field(&mut app, 1, "K0/wD/");
+    preset_action(&mut app, 5)?;
+    assert_eq!(panel(&app)?.points[14], 1);
+    assert_eq!(panel(&app)?.preset_feedback, "Slot points exceed capacity");
+    // A valid seven-point build still adapts to the local five-point budget.
+    preset_field(&mut app, 1, "K0BwAH");
+    preset_action(&mut app, 5)?;
+    assert_eq!(panel(&app)?.points[14], 5);
+    Ok(())
+}

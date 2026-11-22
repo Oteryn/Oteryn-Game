@@ -15,7 +15,7 @@ pub(super) struct Filters {
     level: bool,
     vocation: bool,
     hands: usize,
-    attempted: std::collections::BTreeSet<u32>,
+    attempted: std::collections::BTreeMap<u32, std::time::Instant>,
     pub rows: Vec<usize>,
     character_refresh: Option<std::time::Instant>,
 }
@@ -73,18 +73,29 @@ impl Filters {
                 link.refresh_skills_character();
                 self.character_refresh = Some(now);
             }
+            self.attempted.retain(|id, last| {
+                now.duration_since(*last) < std::time::Duration::from_secs(10)
+                    && catalogue
+                        .entries
+                        .iter()
+                        .any(|entry| entry.definition == *id)
+            });
             let mut next = None;
             let rows = catalogue
                 .entries
                 .iter()
                 .enumerate()
                 .filter_map(|(index, e)| {
-                    if let Some(item) = details.catalogue.get(&e.definition) {
+                    if let Some(item) = details
+                        .inspected_items
+                        .iter()
+                        .find(|item| item.definition_ref == e.definition)
+                    {
                         return self.matches(item, level, vocation).then_some(index);
                     }
                     if e.definition != 0
                         && next.is_none()
-                        && !self.attempted.contains(&e.definition)
+                        && !self.attempted.contains_key(&e.definition)
                     {
                         next = Some(e.definition);
                     }
@@ -97,7 +108,7 @@ impl Filters {
                 && let Some(id) = next
                 && link.inspect(Request::Catalogue(id))
             {
-                self.attempted.insert(id);
+                self.attempted.insert(id, now);
             }
             rows
         };

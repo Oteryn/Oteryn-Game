@@ -242,3 +242,66 @@ fn weapon_filters_use_inspected_requirements_and_keep_catalogue_identity() -> Re
     assert_eq!(rows(&mut app), [0]);
     Ok(())
 }
+
+#[test]
+fn review_summary_row_requires_inspecting_the_weapon() -> Result {
+    use oteryn_client_ui::inspection::{InspectedItem, Reply, Request, catalogue, encode_reply};
+    let (app, _commands, _outbox) = app()?;
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    link.bevy_item_details_selected(true);
+    let page = catalogue::PageQuery::new(0, "", "").map_err(|_| "query")?;
+    assert!(link.inspect(Request::CataloguePage(page)));
+    link.bevy_item_details_response(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload: encode_reply(&Reply {
+            status: 1,
+            requests: vec![],
+            items: vec![InspectedItem {
+                slot: 0,
+                definition_ref: 258,
+                count: 1,
+                tier: 0,
+                name: "Sword".into(),
+                attributes: vec![("Category".into(), "Weapons".into())],
+            }],
+            catalogue: Some(catalogue::Page {
+                next: None,
+                categories: vec![],
+            }),
+        })
+        .map_err(|_| "reply")?,
+    });
+    let mut filter = filters::Filters::default();
+    filter.change(filters::Change::Class);
+    filter.update(link, &link.weapon_proficiency_panel());
+    assert_eq!(
+        link.inspection_panel().last_request,
+        Some(Request::Catalogue(258))
+    );
+    assert!(filter.rows.is_empty());
+    link.bevy_item_details_response(&GatedCommandResult {
+        command_id: 2,
+        server_sequence: 2,
+        status: CommandStatus::Accepted,
+        payload: encode_reply(&Reply {
+            status: 1,
+            requests: vec![],
+            catalogue: None,
+            items: vec![InspectedItem {
+                slot: 0,
+                definition_ref: 258,
+                count: 1,
+                tier: 0,
+                name: "Sword".into(),
+                attributes: vec![("Weapon Type".into(), "sword".into())],
+            }],
+        })
+        .map_err(|_| "reply")?,
+    });
+    filter.update(link, &link.weapon_proficiency_panel());
+    assert_eq!(filter.rows, [0]);
+    Ok(())
+}

@@ -96,15 +96,19 @@ pub(super) fn import(panel: &mut WheelPanel, code: &str) -> Result<(), &'static 
         return Err("This build contains Tibia gem identities unavailable on this server");
     }
     let maximum = u32::from(u16::from_le_bytes([decoded[0], decoded[1]]));
+    let allocations = &decoded[2..decoded.len().min(38)];
+    if allocations.iter().copied().map(u32::from).sum::<u32>() > maximum {
+        return Err("Invalid Wheel point budget");
+    }
     let mut points = [0; 36];
     let mut remaining = budget;
-    for (value, slot) in decoded[2..].iter().zip(ORDER) {
+    for (value, slot) in allocations.iter().zip(ORDER) {
+        if u16::from(*value) > oteryn_client_ui::wheel_allocation::SLOT_CAPACITIES[slot - 1] {
+            return Err(tr!("Slot points exceed capacity"));
+        }
         let value = u32::from(*value).min(remaining);
         remaining -= value;
         points[slot - 1] = value as u16;
-    }
-    if budget - remaining > maximum {
-        return Err("Invalid Wheel point budget");
     }
     let mut draft = panel.clone();
     draft.points = points;
