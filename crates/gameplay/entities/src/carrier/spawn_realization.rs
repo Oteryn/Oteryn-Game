@@ -1,4 +1,5 @@
 use super::*;
+use oteryn_gameplay_content::content::{ProjectV2SpawnEligibility, ProjectV2SpawnPeriod};
 
 mod world_projection;
 pub use world_projection::WorldSpawnProjection;
@@ -49,6 +50,7 @@ struct SpawnPointDefinition {
     /// point because a source may mix blockable and non-blockable creatures (Codex P2 on
     /// #2002). The uniform fixture source is not blockable; only a test definition sets it.
     blockable: bool,
+    eligibility: Option<ProjectV2SpawnEligibility>,
 }
 
 /// SPAWN-1b: one point of a source being built: its placement cell and what it spawns.
@@ -90,6 +92,7 @@ impl SpawnDefinition {
                             creature_target_identity: creature_target_identity.clone(),
                             creature_initial_health,
                             blockable: false,
+                            eligibility: None,
                         },
                     )
                 })
@@ -146,7 +149,7 @@ impl SpawnDefinition {
     /// SPAWN-1b: one activated source of mixed points as a definition, in its authored point
     /// order; nothing is defaulted here.
     pub(super) fn from_activation_source(
-        facts: ActivationSpawnSourceFacts,
+        facts: (Vec<impl Into<ActivationSpawnPoint>>, u64),
     ) -> Result<Self, CarrierError> {
         let (points, occupancy_retry_interval_ms) = facts;
         if points.len() > CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX {
@@ -154,23 +157,30 @@ impl SpawnDefinition {
         }
         let points = points
             .into_iter()
-            .map(
-                |(cell, respawn_delay_ms, creature, initial_health, blockable)| {
-                    Ok((
-                        cell,
-                        SpawnPointDefinition {
-                            base_creature: creature.clone(),
-                            enabled: true,
-                            world_change: None,
-                            cyclopedia_improved: false,
-                            respawn_delay_micros: activation_micros(respawn_delay_ms)?,
-                            creature_target_identity: creature,
-                            creature_initial_health: activation_health(initial_health)?,
-                            blockable,
-                        },
-                    ))
-                },
-            )
+            .map(|point| {
+                let ActivationSpawnPoint {
+                    position,
+                    respawn_ms,
+                    creature,
+                    initial_health,
+                    blockable,
+                    eligibility,
+                } = point.into();
+                Ok((
+                    position,
+                    SpawnPointDefinition {
+                        base_creature: creature.clone(),
+                        enabled: true,
+                        world_change: None,
+                        cyclopedia_improved: false,
+                        respawn_delay_micros: activation_micros(respawn_ms)?,
+                        creature_target_identity: creature,
+                        creature_initial_health: activation_health(initial_health)?,
+                        blockable,
+                        eligibility,
+                    },
+                ))
+            })
             .collect::<Result<Vec<_>, CarrierError>>()?;
         Self::with_points(points, activation_micros(occupancy_retry_interval_ms)?)
     }
@@ -189,6 +199,24 @@ impl SpawnDefinition {
         self.points
             .get(ordinal)
             .ok_or(CarrierError::UnknownSpawnCell)
+    }
+
+    fn period_allows(&self, ordinal: usize, is_day: Option<bool>) -> Result<bool, CarrierError> {
+        let Some(eligibility) = self.point(ordinal)?.eligibility else {
+            return Ok(true);
+        };
+        // Crystal monsters.cpp:43–52. The carrier stores Tibian z, increasing underground.
+        const SURFACE_Z: i16 = 7;
+        Ok(match eligibility.period {
+            ProjectV2SpawnPeriod::All => true,
+            _ if eligibility.ignore_period_underground
+                && self.placement_cells[ordinal].floor > SURFACE_Z =>
+            {
+                true
+            }
+            ProjectV2SpawnPeriod::Day => is_day == Some(true),
+            ProjectV2SpawnPeriod::Night => is_day == Some(false),
+        })
     }
 
     /// The respawn timing of point `ordinal`.
@@ -254,6 +282,32 @@ pub type ActivationSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
 /// its occupancy retry interval (ms). It is one runtime source, so it counts once against
 /// `CREATUREAI0-RL-02` and its point ordinals run `0..points` without a reset.
 pub type ActivationSpawnSourceFacts = (Vec<ActivationSpawnPointFacts>, u64);
+
+/// A mixed-source point, with optional source day/night eligibility.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActivationSpawnPoint {
+    pub position: (i32, i32, i16),
+    pub respawn_ms: u64,
+    pub creature: String,
+    pub initial_health: u64,
+    pub blockable: bool,
+    pub eligibility: Option<ProjectV2SpawnEligibility>,
+}
+
+impl From<ActivationSpawnPointFacts> for ActivationSpawnPoint {
+    fn from(
+        (position, respawn_ms, creature, initial_health, blockable): ActivationSpawnPointFacts,
+    ) -> Self {
+        Self {
+            position,
+            respawn_ms,
+            creature,
+            initial_health,
+            blockable,
+            eligibility: None,
+        }
+    }
+}
 
 /// SPAWN-1a: what one respawn drive did, in run order. The warning is reported, not
 /// broadcast: no client effect exists for it yet.
@@ -527,6 +581,7 @@ impl ChannelRuntimeV1 {
     pub(super) fn realize_activation_window(
         &mut self,
         activation: &mut SpawnActivation,
+        is_day: Option<bool>,
     ) -> Result<usize, CarrierError> {
         let context = self.pinned_position_context();
         self.carrier.validate_current_continuity(&self.continuity)?;
@@ -536,6 +591,7 @@ impl ChannelRuntimeV1 {
         };
         let points = std::mem::take(window);
         debug_assert!(points.len() <= spawn::REALIZATIONS_PER_WINDOW_MAX);
+        let mut realized = 0;
         for point in &points {
             let definition = if point.ordinal == 0 {
                 activation
@@ -545,11 +601,16 @@ impl ChannelRuntimeV1 {
             } else {
                 None
             };
-            self.carrier
-                .admit_spawn_point(&self.continuity, *point, definition, context)?;
+            if self
+                .carrier
+                .admit_spawn_point(&self.continuity, *point, definition, context, is_day)?
+                .is_some()
+            {
+                realized += 1;
+            }
         }
         activation.next_window += 1;
-        activation.realized_points += points.len();
+        activation.realized_points += realized;
         activation.remaining_points -= points.len();
         for point in &points {
             if let Ok(state) = self
@@ -560,7 +621,7 @@ impl ChannelRuntimeV1 {
                 self.bind_spawned_creature_policy(actor);
             }
         }
-        Ok(points.len())
+        Ok(realized)
     }
     /// Binds a realized creature to its active Creature policy when the table names its
     /// definition and agrees on its health. Content that names no policy leaves it unbound.
@@ -725,6 +786,25 @@ impl ChannelRuntimeV1 {
             .map(|index| &self.carrier.spawns[index])
             .ok_or(CarrierError::UnknownSpawnSource)
     }
+    /// Source policy from the same active artifact used for bundle health and blockability.
+    pub fn bundle_spawn_eligibility(&self, key: &str) -> Option<ProjectV2SpawnEligibility> {
+        let policies = self.companion_policies.as_ref()?;
+        if policies.source_digest() != self.content.server_artifact_digest() {
+            return None;
+        }
+        policies.spawn_eligibility(key)
+    }
+
+    pub(super) fn spawn_period_allows(
+        &self,
+        point: spawn::SpawnPoint,
+        is_day: Option<bool>,
+    ) -> Result<bool, CarrierError> {
+        self.spawn_realization(point)?
+            .definition
+            .period_allows(usize::from(point.ordinal), is_day)
+    }
+
     /// Install a bounded durable World projection before admitting its native deaths.
     /// The live runtime cannot move backwards or cross into another save epoch.
     pub fn install_world_change_cycles(
@@ -1008,7 +1088,8 @@ impl ChannelActorCarrier {
         point: spawn::SpawnPoint,
         definition: Option<SpawnDefinition>,
         position_context: PreProductionPositionContext,
-    ) -> Result<(), CarrierError> {
+        is_day: Option<bool>,
+    ) -> Result<Option<ExactActorRef>, CarrierError> {
         let source = SpawnSourceId(point.source);
         if point.ordinal == 0 {
             let definition = definition.ok_or(CarrierError::PlanConflict)?;
@@ -1052,17 +1133,24 @@ impl ChannelActorCarrier {
             .get(ordinal)
             .ok_or(CarrierError::PlanConflict)?;
         let spawned = realization.definition.point(ordinal)?;
-        let health = spawned.creature_initial_health;
-        let identity = spawned.creature_target_identity.clone();
-        let actor = self.admit_creature(continuity, ActorState(0), &identity, health)?;
+        let live = if realization.definition.period_allows(ordinal, is_day)? {
+            let health = spawned.creature_initial_health;
+            let identity = spawned.creature_target_identity.clone();
+            let actor = self.admit_creature(continuity, ActorState(0), &identity, health)?;
+            Some(ExactActorRef(actor))
+        } else {
+            None
+        };
         // Reserved exactly at point 0: the push never reallocates.
         self.spawns[index].cells.push(SpawnCellState {
-            live: Some(ExactActorRef(actor)),
+            live,
             attempt: 0,
             successor: 0,
         });
-        self.initialize_position(continuity, actor, position_context, cell)?;
-        Ok(())
+        if let Some(actor) = live {
+            self.initialize_position(continuity, actor.0, position_context, cell)?;
+        }
+        Ok(live)
     }
     /// True when some other *live* actor (player or creature, `health > 0`) currently occupies
     /// `cell` under `position_context` (§4.3: "if the cell is occupied when the timer is
