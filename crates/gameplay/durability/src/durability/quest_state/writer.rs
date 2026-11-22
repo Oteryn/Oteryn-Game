@@ -2046,6 +2046,32 @@ impl DurabilityRoot {
                         let keys: Vec<_> = world.achievements.iter().map(String::as_str).collect();
                         super::super::account_achievement::grant_missing(&mut tx, fence.character_id, &keys, "oteryn:quest-world-reward", &occurrence).await?;
                     }
+                    if let QuestCause::CreatureDeath(death) = request.cause {
+                        let awards: &[&str] = match request.transition_key.as_str() {
+                            // Crystal 201189f the_secret_library_quest/creaturescripts_kill.lua:16,31-33.
+                            "oteryn:quest-death/authored-secret-library-oberon" => &[
+                                "oteryn:achievement/master_debater",
+                                "oteryn:achievement/millennial_falcon",
+                            ],
+                            // TibiaWiki curid=88950, oldid=1064484.
+                            "oteryn:quest-death/questpc7-grave-scarlett_etzel" => &[
+                                "oteryn:achievement/a_study_in_scarlett",
+                            ],
+                            // TibiaWiki curid=104189, oldid=1048717.
+                            "oteryn:quest-transition/chosen-source/adventures_of_galthen_quest/s8" => &[
+                                "oteryn:achievement/museum_goer",
+                            ],
+                            _ => &[],
+                        };
+                        if !awards.is_empty() {
+                            let mut occurrence = [0; 32];
+                            occurrence[..16].copy_from_slice(fence.character_id.as_bytes());
+                            occurrence[16..].copy_from_slice(death.as_bytes());
+                            super::super::account_achievement::grant_missing(
+                                &mut tx, fence.character_id, awards, "oteryn:quest-death-objective", &occurrence,
+                            ).await?;
+                        }
+                    }
                     let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
                     if completes {
                         use oteryn_gameplay_quests::quest::shared_world_progress as shared;

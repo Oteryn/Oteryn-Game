@@ -1659,12 +1659,13 @@
         "outfit": "oteryn:outfit.dream_warrior",
         "addons": 2
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/dream_warrior",
       "reply": [
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/vanys.lua:sha256:fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/vanys.lua:sha256:fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a",
+        "https://tibia.fandom.com/?curid=86660&oldid=848561"
       ],
       "requires": [
         {
@@ -1803,12 +1804,13 @@
         "outfit": "oteryn:outfit.citizen_of_issavi",
         "addons": 2
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/citizen_of_issavi",
       "reply": [
         "Thank you for your help."
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eshaya.lua:sha256:0b84914661498605630d5e98bfb74579760e035d280e5395862c14b975e749db",
+        "https://tibia.fandom.com/?curid=94721&oldid=869754",
         "owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each"
       ],
       "requires": [
@@ -2559,6 +2561,62 @@
           "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
           "minimum": 7,
           "maximum": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-book-complete",
+      "quest": "oteryn:quest.battle_mage_outfits_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "book",
+        "books",
+        "sturdy books"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i28792",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.battle_mage",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/exalted_battle_mage",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dedoras.lua:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1",
+        "https://tibia.fandom.com/?curid=86073&oldid=847545"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon2",
+          "minimum": 1,
+          "maximum": 1
         }
       ]
     },
@@ -2602,6 +2660,60 @@
           "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
           "minimum": 7,
           "maximum": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-epaulettes-complete",
+      "quest": "oteryn:quest.battle_mage_outfits_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "epaulettes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i28793",
+          "count": 20
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.battle_mage",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/exalted_battle_mage",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dedoras.lua:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1",
+        "https://tibia.fandom.com/?curid=86073&oldid=847545"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon1",
+          "minimum": 1,
+          "maximum": 1
         }
       ]
     },

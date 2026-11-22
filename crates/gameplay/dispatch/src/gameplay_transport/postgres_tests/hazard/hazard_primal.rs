@@ -83,6 +83,13 @@ fn scenario() -> TestResult {
             assert_eq!(exchange(&owner, &mut admitted, select_command, &[level]).await?,
                 (CommandStatus::Accepted, vec![level, level]));
             settle(&h, &owner, &admitted, u64::from(level)+10, true).await?;
+            let grants: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements
+                 WHERE achievement_key='oteryn:achievement/royalty_of_hazard'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(grants, i64::from(level >= 11), "hazard level {level}");
             let read_command = admitted.continuity.next_command_id;
             assert_eq!(exchange(&owner, &mut admitted, read_command, &[]).await?,
                 (CommandStatus::Accepted, vec![(level+1).min(12), level]));

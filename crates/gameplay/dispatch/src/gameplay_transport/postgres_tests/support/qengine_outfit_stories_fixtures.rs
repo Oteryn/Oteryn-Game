@@ -942,7 +942,7 @@ pub(super) async fn exercise(
             &[
                 ("base", None, None, Some(0)),
                 ("book", Some((28792, 5)), None, Some(1)),
-                ("epaulettes", Some((28793, 20)), None, Some(2)),
+                ("epaulettes-complete", Some((28793, 20)), None, Some(2)),
             ],
             1070,
         ),
@@ -1472,11 +1472,22 @@ pub(super) async fn exercise(
             );
         }
         let expected = if family == "battle-mage" && *suffix != "base" {
-            vec![Requirement {
-                track: format!("{LIBRARY}library_permission"),
-                minimum: 7,
-                maximum: 7,
-            }]
+            let completes = *suffix == "epaulettes-complete";
+            vec![
+                Requirement {
+                    track: format!("{LIBRARY}library_permission"),
+                    minimum: 7,
+                    maximum: 7,
+                },
+                Requirement {
+                    track: format!(
+                        "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon{}",
+                        if completes { 1 } else { 2 }
+                    ),
+                    minimum: if completes { 1 } else { -1 },
+                    maximum: i64::from(completes),
+                },
+            ]
         } else if family == "knight"
             && matches!(
                 *suffix,
@@ -2495,6 +2506,15 @@ pub(super) async fn exercise(
                 "exact source fee, retain all change"
             );
         }
+        if family == "battle-mage" {
+            let exalted: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements
+                 WHERE achievement_key='oteryn:achievement/exalted_battle_mage'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(exalted, i64::from(step_index == 2), "award requires both addons");
+        }
         if let Some(key) = &callback.achievement {
             let earned: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
@@ -2526,6 +2546,18 @@ pub(super) async fn exercise(
             assert_eq!(row, (tracks[&state.track].quest.clone(), state.set));
         }
         for state in &required {
+            if family == "battle-mage" && state.minimum == -1 {
+                let stored: Option<i64> = sqlx::query_scalar(
+                    "SELECT value FROM game_character_quest_tracks
+                     WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+                )
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(&state.track)
+                .fetch_optional(&h.pool)
+                .await?;
+                assert_eq!(stored, None, "the first addon cannot write the other addon");
+                continue;
+            }
             let row: (String,i64) = sqlx::query_as("SELECT quest_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(fence.character_id.as_bytes().as_slice()).bind(&state.track).fetch_one(&h.pool).await?;
             assert_eq!(
                 row,
