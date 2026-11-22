@@ -134,7 +134,7 @@
     "oteryn:npc.raymond_striker",
     "oteryn:npc.razan",
     "oteryn:npc.rhargu",
-    "oteryn:npc.rock_with_a_soft_spot",
+    "oteryn:npc.rottin_wood",
     "oteryn:npc.sam",
     "oteryn:npc.santiago",
     "oteryn:npc.scott_the_scout",
@@ -226,7 +226,6 @@
     "oteryn:npc.bron",
     "oteryn:npc.ferryman_kamil_meluna",
     "oteryn:npc.gnommander",
-    "oteryn:npc.rock_with_a_soft_spot",
     "oteryn:npc.zarifan"
   ],
   "native_contacts": [

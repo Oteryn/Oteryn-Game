@@ -346,7 +346,6 @@ fn crystal_npc_services_use_their_source_placement_cells() -> TestResult {
         ("lokur", 32647, 31904, 8),
         ("markwin", 32416, 32145, 15),
         ("ninos", 33904, 31498, 7),
-        ("rock_with_a_soft_spot", 33444, 31321, 9),
         ("talphion", 32564, 31895, 12),
         ("tonar", 33181, 32883, 7),
     ] {
@@ -359,7 +358,7 @@ fn crystal_npc_services_use_their_source_placement_cells() -> TestResult {
             .ok_or_else(|| format!("missing source cell for {key}"))?;
         assert_eq!(
             families.npc_block_solid_contacts.contains(&placement.key),
-            matches!(npc, "ferryman_kamil_meluna" | "rock_with_a_soft_spot"),
+            npc == "ferryman_kamil_meluna",
             "{key}"
         );
     }

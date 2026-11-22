@@ -1464,15 +1464,6 @@ mod tests {
                 missing.push(key);
             }
         }
-        for stem in ["isimov", "rahkem", "rock_with_a_soft_spot", "tyrias"] {
-            let key = format!("oteryn:npc.{stem}");
-            if !book.get(&key).is_some_and(|entry| entry.premium_services.iter().any(|service|
-                matches!(service, crate::content::npc_catalogue::premium_services::PremiumNpcService::Blessing(blessing)
-                    if blessing.service == "oteryn:service.blessing.twist_of_fate")
-            )) {
-                missing.push(key);
-            }
-        }
         for stem in [
             "alexander",
             "asima",

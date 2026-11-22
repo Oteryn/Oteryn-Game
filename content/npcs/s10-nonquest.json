@@ -737,7 +737,6 @@
         "oteryn:npc.cedrik",
         "oteryn:npc.ferus",
         "oteryn:npc.iptar_sin",
-        "oteryn:npc.isimov",
         "oteryn:npc.kasmir",
         "oteryn:npc.kjesse",
         "oteryn:npc.lorietta",
@@ -745,9 +744,6 @@
         "oteryn:npc.ninev",
         "oteryn:npc.prezil",
         "oteryn:npc.quentin",
-        "oteryn:npc.rahkem",
-        "oteryn:npc.rock_with_a_soft_spot",
-        "oteryn:npc.tyrias",
         "oteryn:npc.yberius",
         "oteryn:npc.zedrulon_the_fallen"
       ],
@@ -793,13 +789,6 @@
           "path": "data-otservbr-global/npc/ferus.lua",
           "line": 65,
           "sha256": "b29dc8b11fc77a5f4e5a8428a3c9db5ed81b1b496bc35b210442a3e01d3e7b6e"
-        },
-        {
-          "repository": "zimbadev/crystalserver",
-          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-          "path": "data-global/npc/isimov.lua",
-          "line": 62,
-          "sha256": "83fc7dd789475bdc5cb3c49c04141c49469cb674537bac2d33343a221f8a4d10"
         },
         {
           "repository": "opentibiabr/canary",
@@ -849,27 +838,6 @@
           "path": "data-otservbr-global/npc/quentin.lua",
           "line": 96,
           "sha256": "3c9d3cd6ebd0da74f92d7bf983eca827355e31854acc54efe0bec13f15804dbf"
-        },
-        {
-          "repository": "zimbadev/crystalserver",
-          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-          "path": "data-global/npc/rahkem.lua",
-          "line": 69,
-          "sha256": "5a3cbb6ed0041da27bbfc8b15b5ef0f203a256e0cde50c584fb1d64a17956174"
-        },
-        {
-          "repository": "zimbadev/crystalserver",
-          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-          "path": "data-global/npc/rock_with_a_soft_spot.lua",
-          "line": 58,
-          "sha256": "a1311724b2bf94ea250fb3ad2a0b89257e3eea01dd6feebd4e483a9c7099e7e8"
-        },
-        {
-          "repository": "zimbadev/crystalserver",
-          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-          "path": "data-global/npc/tyrias.lua",
-          "line": 63,
-          "sha256": "d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6"
         },
         {
           "repository": "opentibiabr/canary",
