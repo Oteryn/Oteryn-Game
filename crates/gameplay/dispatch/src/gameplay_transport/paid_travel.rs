@@ -16,6 +16,7 @@ pub(super) struct Prompt {
     opened: u64,
     route: TravelRoute,
     fare: u64,
+    storm_warned: bool,
 }
 
 fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalkOutcome {
@@ -136,11 +137,73 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(_) => return ordinary,
         };
         let prompt = if text == "yes" {
-            let Some(prompt) = previous else {
+            let Some(mut prompt) = previous else {
                 return ordinary;
             };
             if !prompt.matches_confirmation(intent.npc_actor, &context, fence, now) {
                 return refusal(intent, TravelRefusal::StaleQuote);
+            }
+            if prompt.route.service == "oteryn:service.travel.jack_fate"
+                && prompt.route.route.key == "thais"
+            {
+                // Crystal 201189f8, npc/jack_fate.lua:86–99. The warning and the
+                // second confirmation are part of the same fenced conversation.
+                if !prompt.storm_warned {
+                    prompt.storm_warned = true;
+                    let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() else {
+                        return ordinary;
+                    };
+                    prompts.insert(session, prompt);
+                    return npc_command::NpcConversations::bank_reply(
+                        intent,
+                        "A tropical storm may wreck the ship. Do you still want to sail?".into(),
+                    );
+                }
+                // Use the same command-derived occurrence domain as the receipt,
+                // with an independent salt so a retry cannot reroll the landing.
+                let storm = super::super::npc_trade_command::derived(
+                    b"oteryn:npc-travel:jack-fate-storm",
+                    session,
+                    command.command_id,
+                );
+                if storm[0] & 7 == 0 && self.session_premium_gate(session).await.premium_current() {
+                    // Tibia's Goroma passage starts at level 20. Apply the
+                    // quest's Premium gate only to the shipwreck branch.
+                    let mut wreck_route = prompt.route.clone();
+                    wreck_route.route.min_level = Some(20);
+                    wreck_route.route.premium = true;
+                    let destination = &mut wreck_route.route.destination;
+                    (destination.x, destination.y, destination.floor) = (32161, 32558, 6);
+                    let Ok(Some(current)) = self.current_quest_fence(session).await else {
+                        return refusal(intent, TravelRefusal::StaleQuote);
+                    };
+                    if current.item_fence() != fence {
+                        return refusal(intent, TravelRefusal::StaleQuote);
+                    }
+                    match self
+                        .root
+                        .quote_npc_travel(
+                            self.character,
+                            self.holder,
+                            current,
+                            wreck_route.clone(),
+                            &self.premium_coordinator,
+                        )
+                        .await
+                    {
+                        Ok(Ok(_)) => prompt.route = wreck_route,
+                        Ok(Err(
+                            TravelRefusal::UnavailableRoute | TravelRefusal::PremiumRequired,
+                        )) => {}
+                        Ok(Err(cause)) => return refusal(intent, cause),
+                        Err(_) => {
+                            return npc_command::NpcTalkOutcome {
+                                unknown: true,
+                                ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+                            };
+                        }
+                    }
+                }
             }
             prompt
         } else {
@@ -191,6 +254,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         opened: now,
                         route,
                         fare,
+                        storm_warned: false,
                     },
                 );
             }

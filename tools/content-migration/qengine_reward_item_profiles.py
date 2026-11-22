@@ -80,6 +80,14 @@ IDS |= {3443}
 # M44: source flower harvest and the two remaining native pagoda offerings.
 IDS |= {21389, 21466}
 IDS |= questl2_ready.ITEMS
+# Crystal 201189f8 Explorer Society specimens, tools and terminal backpack.
+# The quest receipt mints the icicle as ordinary custody without starting its
+# donor duration. The native item's duration fact remains available to other owners.
+EXPLORER_ITEMS = {4834, 4837, 4844, 4845, 4847, 4863, 4864, 4868, 4872, 9605}
+EXPLORER_CORPSES = {4378, 4992}
+EXPLORER_PROPS = {3874, 4055, 4994}
+IDS |= EXPLORER_ITEMS | EXPLORER_CORPSES | EXPLORER_PROPS
+
 # Already present in main f5b584ef1's native provider; the existing cohort
 # cardinality includes these six shells, even when a source fact is refined.
 PREVIOUSLY_COUNTED_IDS = {3029, 3035, 3205, 3212, 3234, 3607}
@@ -199,8 +207,10 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
     records=[]
     for item_id in sorted(selected):
         node=xml[item_id]
-        flower = lion_flower.admitted(item_id, source.attrs(node))
-        if not flower and item_id not in (CORPSE_IDS | MERCHANT_SCENERY) and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
+        attrs = source.attrs(node)
+        flower = lion_flower.admitted(item_id, attrs)
+        admitted_duration = flower or item_id in (CORPSE_IDS | MERCHANT_SCENERY | EXPLORER_CORPSES | {4837})
+        if not admitted_duration and {'charges', 'duration', 'decayto', 'stopduration'} & attrs.keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):
@@ -214,15 +224,23 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
             record=lion_flower.temporal(record, definition, accepted.known_conflict)
         # These exact Ground-only props and corpse stages have canonical
         # identity-only rows; their physical facts come from the pinned sources.
-        semantics=definition.get('semantics') if item_id in (STATIC_IDS | CORPSE_IDS) else definition['semantics']
-        if item_id in (STATIC_IDS | CORPSE_IDS) and (definition.get('kind')!='Item' or definition['identity']['family']!='Item'):
+        ground_only = item_id in (STATIC_IDS | CORPSE_IDS | EXPLORER_PROPS)
+        identity_only = ground_only or item_id in EXPLORER_CORPSES
+        semantics = definition.get('semantics') if identity_only else definition['semantics']
+        if identity_only and (definition.get('kind') != 'Item' or definition['identity']['family'] != 'Item'):
             raise ValueError('QENGINE_REWARD_STATIC_IDENTITY')
+        # The explicit canonical weights take precedence where Crystal's XML
+        # differs. All remaining Item facts use the shared source reconciliation.
+        if item_id in {4864, 4868}:
+            weight = semantics['physical']['value']['weight']
+            if weight['state'] == 'KNOWN':
+                record['semantics']['physical']['value']['weight'] = weight.copy()
         for group in ('physical','stack','container','temporal'):
             if semantics is not None and accepted.known_conflict(semantics[group],record['semantics'][group]):
                 raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+group+':'+str(item_id))
         if definition['stack_class'] not in ('Unknown',record['admission']['stack_class']):
             raise ValueError('QENGINE_REWARD_ITEM_STACK_CONFLICT')
-        expected_destinations=['Ground'] if item_id in (STATIC_IDS | CORPSE_IDS) else ['CharacterInventory','Ground']
+        expected_destinations=['Ground'] if ground_only else ['CharacterInventory','Ground']
         if record['admission']['legal_destinations']!=expected_destinations:
             raise ValueError('QENGINE_REWARD_ITEM_DESTINATION_DRIFT')
         if item_id in STATIC_IDS and record['admission']['stack_class']!='NonStackable':

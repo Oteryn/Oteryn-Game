@@ -77,6 +77,8 @@ pub enum QuestCallbackProjection {
         due: u64,
         restore: EntryFacts,
     },
+    /// Hide the selected source and restore exactly its committed revision.
+    TimedRemoval { due: u64, restore: EntryFacts },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -362,7 +364,8 @@ impl CallbackStates {
                     }
                 }
             }
-            QuestCallbackProjection::TimedTransform { due, restore } => {
+            QuestCallbackProjection::TimedTransform { due, restore }
+            | QuestCallbackProjection::TimedRemoval { due, restore } => {
                 let Some(revision) = self
                     .changed
                     .get(&owner)
@@ -371,12 +374,21 @@ impl CallbackStates {
                 else {
                     return false;
                 };
+                let overlay = if matches!(projection, QuestCallbackProjection::TimedRemoval { .. })
+                {
+                    if close || restore.pickupable || !self.hidden.insert(owner) {
+                        return false;
+                    }
+                    Some((false, self.passable.remove(&owner)))
+                } else {
+                    None
+                };
                 self.movement_decays.insert(
                     (*due, owner),
                     MovementDecay {
                         revision,
                         restore: *restore,
-                        overlay: None,
+                        overlay,
                     },
                 );
             }
@@ -1860,7 +1872,8 @@ impl BundleFacts {
                         }
                     })
                 }
-                QuestCallbackProjection::TimedTransform { .. } => false,
+                QuestCallbackProjection::TimedTransform { .. }
+                | QuestCallbackProjection::TimedRemoval { .. } => false,
             })
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8

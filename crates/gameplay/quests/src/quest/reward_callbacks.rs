@@ -517,6 +517,35 @@ impl RewardCallback {
                     })
             })
     }
+
+    /// A dialogue can advance its topic under the existing quest and Premium
+    /// guards while leaving durable progress and inventory unchanged.
+    fn is_guarded_topic_change(&self) -> bool {
+        if self.topic == self.next_topic
+            || self.storage.is_empty()
+            || self.storage.iter().any(|state| {
+                state.set_if.is_some()
+                    || state.add.is_some()
+                    || state.increment
+                    || state.at_least
+                    || state.read_only
+                    || (!state.preserve
+                        && (state.minimum != state.maximum || state.set != state.minimum))
+            })
+        {
+            return false;
+        }
+        // Opt in only to conversation state and read predicates. Comparing the
+        // closed shape also excludes newly added reward effects by default.
+        let dialogue = serde_json::from_value::<Self>(serde_json::json!({
+            "key": self.key, "quest": self.quest, "npc": self.npc, "keywords": self.keywords,
+            "topic": self.topic, "next_topic": self.next_topic, "storage": self.storage,
+            "requires": self.requires, "requires_premium": self.requires_premium,
+            "take": [], "give": null, "outfit": null, "achievement": null,
+            "reply": self.reply, "failure_reply": self.failure_reply, "sources": self.sources
+        }));
+        dialogue.is_ok_and(|callback| callback == *self)
+    }
 }
 
 /// Source-bound track metadata; writable declarations name the exact existing owner.
@@ -1092,7 +1121,8 @@ fn validate_document_with_capacity(
                 && !c.is_save_restart_only()
                 && c.storage
                     .iter()
-                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                && !c.is_guarded_topic_change())
             || c.required_receipts.len() > 8
             || c.required_receipts.iter().collect::<BTreeSet<_>>().len()
                 != c.required_receipts.len()

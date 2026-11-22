@@ -23,8 +23,12 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let explorer = name == super::super::explorer_society_journey::NAME;
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
+    use super::super::new_frontier_journey;
+    let recover_bait = name == new_frontier_journey::BAIT_RECOVERY;
+    let frontier = name == new_frontier_journey::NAME || recover_bait;
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -79,7 +83,9 @@ fn scenario_case(
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let pinned_qc_world = name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
-    let native_crop = pinned_qc_world
+    let native_crop = explorer
+        || pinned_qc_world
+        || frontier
         || m03_use
         || qd_world
         || engenc_asura
@@ -116,7 +122,11 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if explorer {
+        super::super::explorer_society_journey::START
+    } else if frontier {
+        super::super::new_frontier_journey::start()
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -357,7 +367,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if explorer {
+        callback("fish-napping-key")?
+    } else if m03_use {
         super::super::qengine_m03_use_fixtures::callback()?
     } else if qd_world {
         super::super::qd_world_fixtures::callback(name)?
@@ -428,6 +440,8 @@ fn scenario_case(
             "dreamers-challenge-carrot-entry"
         } else if m44_flower {
             "m44-lions-flower-0"
+        } else if frontier {
+            "new-frontier-mountain-passage-31532"
         } else if m44_lions || name == "lions-rock-strength-first" {
             "m07/lion-strength"
         } else if name == "lions-rock-beauty" {
@@ -1036,7 +1050,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if pinned_qc_world {
+        let world = if explorer {
+            super::super::explorer_society_journey::world(
+                generation.native_gameplay().ok_or("Explorer native policies")?,
+            )?
+        } else if frontier {
+            super::super::new_frontier_journey::world(generation.native_gameplay().ok_or("Frontier native policies")?)?
+        } else if pinned_qc_world {
             super::super::qc_pinned_world::world(
                 generation
                     .native_gameplay()
@@ -1526,7 +1546,9 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
-            if m07_realm || name == "qengine-rewards-questpc4-native-tower-third" {
+            if explorer {
+                8 // Player, society contacts, captain and butterfly.
+            } else if m07_realm || name == "qengine-rewards-questpc4-native-tower-third" {
                 4_104 // Quest callbacks must tolerate >4096 unrelated live creatures.
             } else if name == "qengine-rewards-qnpcfx-m10-inquisition" {
                 7 // One player and the six source NPCs for the full interview story.
@@ -1551,6 +1573,8 @@ fn scenario_case(
                 7
             } else if name == "authored-treasure-island" {
                 3
+            } else if frontier {
+                12
             } else if name == "authored-secret-library" {
                 5
             } else if matches!(name, "authored-anniversary" | "authored-venore") {
@@ -1883,7 +1907,8 @@ fn scenario_case(
                 "source eligibility uses the actual durable starting level"
             );
         }
-        if name == "nx6-wayfarer"
+        if explorer
+            || name == "nx6-wayfarer"
             || qm03
             || m07_too_hot
             || mead
@@ -1899,7 +1924,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_use {
+        if explorer {
+            Box::pin(super::super::explorer_society_journey::exercise(&mut owner, &mut admitted, &h)).await?;
+        } else if m03_use {
             Box::pin(super::super::qengine_m03_use_fixtures::exercise(
                 &mut owner,
                 &mut admitted,
@@ -2822,6 +2849,8 @@ fn scenario_case(
                 &h,
             ))
             .await?;
+        } else if frontier {
+            Box::pin(new_frontier_journey::exercise(&mut owner, &mut admitted, &h, recover_bait)).await?;
         } else if name == "authored-secret-library" {
             Box::pin(super::super::questpc8_secret_library_fixtures::exercise(
                 &mut owner,
