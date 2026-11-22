@@ -277,6 +277,10 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
                 "G-2 visibility or secret achievement: never publish identity or references"
             } else if kind.is_some() {
                 "candidate public payload; export promotion requires contract §15"
+            } else if matches!(declaration, ProjectV2Declaration::Service { routes, .. } if !routes.is_empty()) {
+                // Premium, minimum level and required quest tracks (track, minimum, maximum)
+                // are server-side travel gates. Only shop offers have a public projection below.
+                "travel routes and eligibility gates are unsupported in the public view"
             } else {
                 "outside the closed v1 public capability vocabulary"
             },
