@@ -398,6 +398,24 @@ fn session_options(
         .unwrap_or_default()
 }
 
+#[cfg(any(bevy_shell, test))]
+impl crate::NativeLoginConfig {
+    /// Called by the explicit picker-cancel worker before it dismisses admission.
+    pub(crate) fn record_picker_opt_out(&self) -> Result<(), String> {
+        self.device_sessions
+            .block_remembered()
+            .map_err(|error| error.to_string())?;
+        if let Some(path) = &self.preference_path
+            && let Err(error) = crate::play::MiscellaneousPreferences::disable_remember_device_at(
+                &path.with_extension("session-options.json"),
+            )
+        {
+            eprintln!("Could not save the remember-device choice: {error}");
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod session_options_tests {
     use super::session_options;
@@ -448,23 +466,5 @@ mod session_options_tests {
         })();
         fixture.close()?;
         result
-    }
-}
-
-#[cfg(any(bevy_shell, test))]
-impl crate::NativeLoginConfig {
-    /// Called by the explicit picker-cancel worker before it dismisses admission.
-    pub(crate) fn record_picker_opt_out(&self) -> Result<(), String> {
-        self.device_sessions
-            .block_remembered()
-            .map_err(|error| error.to_string())?;
-        if let Some(path) = &self.preference_path
-            && let Err(error) = crate::play::MiscellaneousPreferences::disable_remember_device_at(
-                &path.with_extension("session-options.json"),
-            )
-        {
-            eprintln!("Could not save the remember-device choice: {error}");
-        }
-        Ok(())
     }
 }
