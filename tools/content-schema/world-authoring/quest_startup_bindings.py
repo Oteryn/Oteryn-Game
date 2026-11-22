@@ -33,8 +33,10 @@ SPECS = (
 ADDITIONAL_ACTIONS = (
     ("door_key.lua", "KeyDoorAction", "Storage.Quest.Key.ID3142", "action"),
     ("tile_pick.lua", "TilePickAction", 101, "action"),
-    *(("item.lua", "ItemAction", aid, "action")
-      for aid in (*range(64103, 64110), *range(64121, 64129))),
+    *(
+        ("item.lua", "ItemAction", aid, "action")
+        for aid in (*range(64103, 64110), *range(64121, 64129))
+    ),
     *(("teleport.lua", "TeleportAction", aid, "action") for aid in (64120, 64121)),
 )
 
@@ -60,12 +62,18 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
             sources.append(source_row)
         fields = lua_tables.assignments(raw.decode(), {table})[table]["fields"]
         (field,) = [
-            f for f in fields
-            if (f["key"].get("expr") if isinstance(f["key"], dict) else f["key"]) == selector
+            f
+            for f in fields
+            if (f["key"].get("expr") if isinstance(f["key"], dict) else f["key"])
+            == selector
         ]
         value = lua_tables.as_python(field["value"])
         for group in value if isinstance(value, list) else [value]:
-            if table == "ItemAction" and selector == 25018 and group["itemId"] is not False:
+            if (
+                table == "ItemAction"
+                and selector == 25018
+                and group["itemId"] is not False
+            ):
                 # The same action also names an unrelated surface object.
                 continue
             positions = group["itemPos"]
@@ -78,21 +86,31 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
                         raise ValueError("Key 3142 source selector changed")
                     storage_path = "data-global/lib/core/storages.lua"
                     storage = (source / storage_path).read_bytes()
-                    storage_row = {"path": storage_path, "sha256": hashlib.sha256(storage).hexdigest()}
+                    storage_row = {
+                        "path": storage_path,
+                        "sha256": hashlib.sha256(storage).hexdigest(),
+                    }
                     if storage_row not in sources:
                         sources.append(storage_row)
-                    node = lua_tables.assignments(storage.decode(), {"Storage"})["Storage"]
+                    node = lua_tables.assignments(storage.decode(), {"Storage"})[
+                        "Storage"
+                    ]
                     for key in ("Quest", "Key", "ID3142"):
-                        node = next(f["value"] for f in node["fields"] if f["key"] == key)
+                        node = next(
+                            f["value"] for f in node["fields"] if f["key"] == key
+                        )
                     if node != 3142:
                         raise ValueError("Key 3142 source storage changed")
                 # False selectors target the existing source ground or door.
-                item = group["itemId"] or {
-                    ("ItemAction", 25018): 104,
-                    ("KeyDoorAction", "Storage.Quest.Key.ID3142"): 6248,
-                    ("LevelDoorAction", 1070): 5102,
-                    ("TilePickAction", 101): 355,
-                }[(table, selector)]
+                item = (
+                    group["itemId"]
+                    or {
+                        ("ItemAction", 25018): 104,
+                        ("KeyDoorAction", "Storage.Quest.Key.ID3142"): 6248,
+                        ("LevelDoorAction", 1070): 5102,
+                        ("TilePickAction", 101): 355,
+                    }[(table, selector)]
+                )
                 rows.append(
                     {
                         "position": cell,
@@ -259,7 +277,10 @@ def main():
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     if args.crystal_root:
-        data = (json.dumps(capture(args.crystal_root, include_tibia_tales=True), indent=2) + "\n").encode()
+        data = (
+            json.dumps(capture(args.crystal_root, include_tibia_tales=True), indent=2)
+            + "\n"
+        ).encode()
         if args.check:
             if (ROOT / CAPTURE).read_bytes() != data:
                 raise ValueError("startup source capture changed")

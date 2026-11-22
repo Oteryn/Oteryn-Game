@@ -31,18 +31,28 @@ class QuestChestBindings(unittest.TestCase):
     def test_classic_quest_boxes_have_exact_shipped_selectors(self):
         index = json.loads((chests.ROOT / chests.INDEX).read_bytes())
         for z, rx, ry, expected in (
-            (9, 129, 125, {(33038, 32171): (2472, 6049),
-                           (33039, 32171): (2472, 6050),
-                           (33040, 32171): (2472, 6051)}),
+            (
+                9,
+                129,
+                125,
+                {
+                    (33038, 32171): (2472, 6049),
+                    (33039, 32171): (2472, 6050),
+                    (33040, 32171): (2472, 6051),
+                },
+            ),
             (5, 126, 124, {(32467, 31970): (2469, 6257)}),
         ):
-            path = chests.ROOT / "content/world/placements" / codec.region_name(z, rx, ry)
+            path = (
+                chests.ROOT / "content/world/placements" / codec.region_name(z, rx, ry)
+            )
             raw = path.read_bytes()
             _, _, _, sectors = codec.parse_region(raw)
             selectors = {}
             for local, offset, length in sectors:
                 payload = codec.zstandard.ZstdDecompressor().decompress(
-                    raw[offset : offset + length], max_output_size=codec.MAX_SECTOR_BYTES
+                    raw[offset : offset + length],
+                    max_output_size=codec.MAX_SECTOR_BYTES,
                 )
                 for x, y, _, _, _, items in codec.decode_sector(
                     payload, rx * 8 + local % 8, ry * 8 + local // 8
@@ -53,7 +63,10 @@ class QuestChestBindings(unittest.TestCase):
                         appearance = index["palette"][palette]["source_item_id"]
                         if depth == 0 and appearance == expected[(x, y)][0]:
                             self.assertNotIn((x, y), selectors)
-                            selectors[(x, y)] = (appearance, (attrs or {}).get("unique"))
+                            selectors[(x, y)] = (
+                                appearance,
+                                (attrs or {}).get("unique"),
+                            )
             self.assertEqual(selectors, expected)
 
     def test_quest_reward_selectors_are_present_in_repository_regions(self):
@@ -72,8 +85,10 @@ class QuestChestBindings(unittest.TestCase):
         )
         for x, y, z, appearance, unique in selectors:
             with self.subTest(unique=unique):
-                region = chests.ROOT / "content/world/placements" / codec.region_name(
-                    z, x // 256, y // 256
+                region = (
+                    chests.ROOT
+                    / "content/world/placements"
+                    / codec.region_name(z, x // 256, y // 256)
                 )
                 _, _, _, sectors = codec.decode_region(region.read_bytes())
                 found = [
@@ -82,7 +97,8 @@ class QuestChestBindings(unittest.TestCase):
                     for tx, ty, _, _, _, items in tiles
                     if (tx, ty) == (x, y)
                     for palette, depth, attrs in items
-                    if depth == 0 and index["palette"][palette]["source_item_id"] == appearance
+                    if depth == 0
+                    and index["palette"][palette]["source_item_id"] == appearance
                 ]
                 self.assertEqual(found, [unique])
 
@@ -108,7 +124,8 @@ class QuestChestBindings(unittest.TestCase):
                     for tx, ty, _, _, _, items in tiles
                     if (tx, ty) == (x, y)
                     for item, depth, attrs in items
-                    if not depth and index["palette"][item]["source_item_id"] == appearance
+                    if not depth
+                    and index["palette"][item]["source_item_id"] == appearance
                 ]
                 self.assertEqual(matches, [value])
 

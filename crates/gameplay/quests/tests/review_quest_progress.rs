@@ -137,3 +137,64 @@ fn white_raven_accepts_published_catacomb_access_saves() -> Result<(), String> {
     );
     Ok(())
 }
+
+#[test]
+fn vampire_coffin_can_reopen_from_its_committed_stage() -> Result<(), String> {
+    let loaded =
+        loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = world_callbacks::load_for(catalogue)?;
+    let coffins: Vec<_> = callbacks
+        .iter()
+        .filter(|callback| {
+            callback
+                .key
+                .starts_with("oteryn:quest-callback/inquisition-vampire-hunt-coffin")
+        })
+        .collect();
+    assert_eq!(coffins.len(), 2);
+    for first in &coffins {
+        let mut tracks = first
+            .storage
+            .iter()
+            .map(|guard| (guard.track.clone(), guard.minimum))
+            .collect();
+        advance(catalogue, &mut tracks, &first.key)?;
+        for retry in &coffins {
+            assert!(retry.effects.encounter.is_some());
+            let mut recovered = tracks.clone();
+            advance(catalogue, &mut recovered, &retry.key)?;
+            assert_eq!(recovered, tracks, "retry must preserve the committed stage");
+        }
+        let mut finished = tracks;
+        advance(
+            catalogue,
+            &mut finished,
+            "oteryn:quest-reward/inquisition-vampire-hunt-ring",
+        )?;
+        let transition = catalogue
+            .transition(&first.key)
+            .ok_or("coffin transition")?;
+        assert_eq!(
+            catalogue.evaluate(transition, &finished, 100),
+            Err(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch),
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn nomad_death_binding_rejects_damage_without_party_evidence() -> Result<(), String> {
+    let loaded =
+        loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+    let rule = source_deaths::rules()?
+        .iter()
+        .find(|rule| rule.creature == "oteryn:creature.nomad")
+        .ok_or("Nomad death binding")?;
+    assert!(loaded.catalogue().transition(&rule.transition).is_some());
+    assert!(
+        !rule.recipient([100, 100, -7], true),
+        "Nomad credit was granted from damage alone, with no party witness",
+    );
+    Ok(())
+}

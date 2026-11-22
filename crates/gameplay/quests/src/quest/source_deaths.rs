@@ -57,6 +57,9 @@ pub struct Rule {
     /// A qualified local source rule may require the present most-damage player.
     #[serde(default)]
     pub top_damage_only: bool,
+    /// Crystal onDeathForParty uses the present top-damage player's shared-XP roster.
+    #[serde(default)]
+    pub top_damage_party: bool,
     define_transition: bool,
     /// Only mission-start guards are revision predecessors for cumulative counters.
     /// Counter increments from earlier queued deaths must not invalidate later ones.
@@ -71,8 +74,20 @@ impl Rule {
                 .accepts(tracks.get(&e.track).copied().unwrap_or(e.default))
         })
     }
-    /// Source room bounds concern recipients, not damage ownership or social party.
+    /// Room or damage evidence without a qualified party observation.
     pub fn recipient(&self, position: [i32; 3], dealt_damage: bool) -> bool {
+        self.recipient_with_party(position, dealt_damage, false)
+    }
+
+    pub fn recipient_with_party(
+        &self,
+        position: [i32; 3],
+        dealt_damage: bool,
+        in_top_damage_party: bool,
+    ) -> bool {
+        if self.top_damage_party {
+            return in_top_damage_party;
+        }
         match self.room {
             Some([x1, y1, x2, y2, z]) => {
                 position[2] == z
@@ -190,6 +205,7 @@ fn documents() -> Result<Vec<Document>, String> {
                 }],
                 room: None,
                 top_damage_only: false,
+                top_damage_party: false,
                 define_transition: true,
                 epoch_tracks: None,
                 quest: String::new(),
@@ -246,6 +262,7 @@ fn arbaziloth_first_clear_rules() -> [Rule; 3] {
         effects,
         room: None,
         top_damage_only: false,
+        top_damage_party: false,
         define_transition: true,
         epoch_tracks: None,
         quest: ARBAZILOTH_QUEST.into(),
@@ -293,6 +310,7 @@ fn arbaziloth_hard_rules() -> Vec<Rule> {
         effects,
         room: None,
         top_damage_only: false,
+        top_damage_party: false,
         define_transition: true,
         epoch_tracks: Some(vec![DOOR.into()]),
         quest: ARBAZILOTH_QUEST.into(),
@@ -381,6 +399,7 @@ pub fn rules() -> Result<&'static [Rule], &'static str> {
                         return Err("invalid source death mission guards".into());
                     }
                     if rule.effects.is_empty()
+                        || (rule.top_damage_party && (rule.top_damage_only || rule.room.is_some()))
                         || rule.effects.iter().any(|e| e.from.comparison().is_err())
                         || rules.iter().any(|r: &Rule| r.transition == rule.transition)
                     {

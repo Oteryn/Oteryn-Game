@@ -119,7 +119,9 @@ class QuestStartupBindingsTests(unittest.TestCase):
         )
 
     def test_serpentine_lever_has_its_source_action(self):
-        self.assert_native_startup_selectors((((33152, 32866, 8), 2772, "action", 5633),))
+        self.assert_native_startup_selectors(
+            (((33152, 32866, 8), 2772, "action", 5633),)
+        )
 
     def test_native_startup_selectors_match_exact_source_items(self):
         self.assert_native_startup_selectors((*EXPECTED, *NIGHTMARE))

@@ -138,11 +138,18 @@ def charge_projection_inputs():
     import charge_native
     import reward_claim_authoring
 
-    return charge_native, reward_claim_authoring.load_items(), reward_claim_authoring.stack_problem
+    return (
+        charge_native,
+        reward_claim_authoring.load_items(),
+        reward_claim_authoring.stack_problem,
+    )
 
 
 def verified_source_charges(definition, native):
-    if native.get("source_difference") != "EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS":
+    if (
+        native.get("source_difference")
+        != "EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"
+    ):
         return False
     charge_native, items, stack_problem = charge_projection_inputs()
     return charge_native.derive(definition, items, stack_problem) == native
@@ -242,10 +249,12 @@ def capture(source_root, selected, root=ROOT):
         ]
     }
     claims, rows = claim_definitions(root), []
-    charge_cases = container_native.CHARGED_QUEST_CLAIMS.keys() | itemhold_charge_precedence.CASES.keys()
+    charge_cases = (
+        container_native.CHARGED_QUEST_CLAIMS.keys()
+        | itemhold_charge_precedence.CASES.keys()
+    )
     needs_charges = any(
-        claims[key].get("provenance", {}).get("pilot_key")
-        in charge_cases
+        claims[key].get("provenance", {}).get("pilot_key") in charge_cases
         for key in selected
     )
     items = reward_claim_authoring.load_items() if needs_charges else {}
@@ -286,7 +295,7 @@ def capture(source_root, selected, root=ROOT):
                 )
 
             if pilot in itemhold_charge_precedence.CASES and len(source_reward) == 1:
-                (number, amount), = source_reward
+                ((number, amount),) = source_reward
                 item_key = f"oteryn:item.tibia.i{number}"
                 if itemhold_charge_precedence.qualifies(
                     items.get(item_key), pilot, position, item_key, amount
@@ -474,10 +483,15 @@ def selections(root=ROOT):
     archive = "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
     with tarfile.open(root / archive) as corpus:
         manifest = json.load(corpus.extractfile("corpus-manifest.json"))
-        witness = next(row for row in manifest["files"]
-                       if row["path"] == "data-global/startup/tables/item.lua"
-                       and row["sha256"] == ITEM_SHA256)
-        raw = corpus.extractfile(witness.get("blob_path", witness.get("cache_path"))).read()
+        witness = next(
+            row
+            for row in manifest["files"]
+            if row["path"] == "data-global/startup/tables/item.lua"
+            and row["sha256"] == ITEM_SHA256
+        )
+        raw = corpus.extractfile(
+            witness.get("blob_path", witness.get("cache_path"))
+        ).read()
     if hashlib.sha256(raw).hexdigest() != ITEM_SHA256 or not re.search(
         rb"\[9266\] = \{\s*itemId = 7936,\s*itemPos = \{ x = 32359, y = 32791, z = 6 \}",
         raw,

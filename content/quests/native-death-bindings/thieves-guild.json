@@ -9,6 +9,7 @@
       "transition": "oteryn:quest-transition/quest/u8_2/the_thieves_guild_quest/mission04/creature_event_1",
       "define_transition": false,
       "room": null,
+      "top_damage_party": true,
       "effects": [
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04",
