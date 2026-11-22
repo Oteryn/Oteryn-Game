@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'world-authoring'))
 import world_region_codec as codec
 
 MAX_MISSING_TILE_DISTANCE = 4
+FLAG_PROTECTION_ZONE = 1
 
 
 def ground_item(root, palette_index):
@@ -44,9 +45,14 @@ def choose_cell(root, actual_source, choice, occupied):
     path = f'content/world/placements/region-z{z:02}-x{x//256:03}-y{y//256:03}.b3'
     raw = (root / path).read_bytes()
     tiles = {t[:2]: t for _, sector in codec.decode_region(raw)[3] for t in sector}
+    source_tile = tiles.get(before[:2])
+    protected_source = source_tile is not None and source_tile[2] == FLAG_PROTECTION_ZONE
+
     def clear(cell, walkable=False):
         tile = tiles.get(cell)
-        return (tile is not None and not tile[2] and not tile[3] and len(tile[5]) == 1
+        return (tile is not None
+                and (not tile[2] or (protected_source and tile[2] == FLAG_PROTECTION_ZONE))
+                and not tile[3] and len(tile[5]) == 1
                 and (not walkable or ground_item(root, tile[5][0][0])))
     distance = sum(abs(a-b) for a, b in zip(before[:2], after[:2]))
     source_tile, target_tile = tiles.get(before[:2]), tiles.get(after[:2])
