@@ -50,11 +50,17 @@ fn plate_armor_postgres_darashia_branch_and_retry_preserve_fare_and_arrival() ->
 }
 
 fn execute(ghostship: bool) -> TestResult {
+    let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || scenario(ghostship).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Captain Fearless PostgreSQL scenario panicked")??;
+    let destination = if ghostship { "Ghostship" } else { "Darashia" };
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED Captain Fearless {destination} elapsed_ms={}",
+        started.elapsed().as_millis()
+    );
     Ok(())
 }
 
@@ -182,6 +188,7 @@ fn scenario(ghostship: bool) -> TestResult {
             ["We would like to serve you some time.",]
         );
         assert_eq!(travel_state(&h).await?, (100, 0, 0));
+        owner.clock_origin -= std::time::Duration::from_secs(1);
         talk(&owner, &deps, npc, 5, "darashia").await?;
         talk(&owner, &deps, npc, 6, "yes").await?;
         let command_id = branch_command(&deps, digest, ghostship)?;
@@ -397,7 +404,7 @@ async fn reach_coffin(
                 &mut admitted,
                 command,
                 1,
-                encode_step_intent(direction).to_vec(),
+                encode_step_intent(direction),
             )
             .await?;
             assert_eq!(
