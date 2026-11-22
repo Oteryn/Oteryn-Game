@@ -25,6 +25,7 @@ fn intent() -> NpcTradeIntent {
 
 fn receipt() -> NpcTradeReceipt {
     NpcTradeReceipt {
+        item_currency: false,
         npc_key: "npc.alesar".to_owned(),
         catalogue_revision: 9,
         offer_index: 2,

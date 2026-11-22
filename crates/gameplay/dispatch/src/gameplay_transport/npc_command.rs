@@ -549,10 +549,23 @@ impl NpcConversations {
         if offer.side != intent.side || offer.unit_price != intent.expected_unit_price {
             return Err(Box::new(stale()));
         }
-        if !entry.offers().contains(source) || source.currency.is_some() {
+        if !entry.offers().contains(source)
+            || source.currency.as_ref().is_some_and(|currency| {
+                currency.family != crate::content::ProjectV2Family::Item
+                    || currency.key == source.item.key
+                    || items
+                        .definition_ref(
+                            crate::content::item_ref::ITEM_FAMILY,
+                            &currency.key,
+                            &currency.revision,
+                        )
+                        .is_none()
+            })
+        {
             return Err(Box::new(rejected()));
         }
         Ok(NpcTradeOffer {
+            currency: source.currency.clone(),
             sub_type: source.sub_type,
             npc_key: npc_key.to_owned(),
             catalogue_revision: intent.catalogue_revision,
