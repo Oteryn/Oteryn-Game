@@ -13,6 +13,55 @@ pub trait SourceActorReservationProof: source_reservation_seal::Sealed {
     /// Independently current physical/source binding, excluding commercial re-grants.
     fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool;
 }
+/// A commandless owner event holding a live Player source in a test fixture.
+#[cfg(feature = "test-support")]
+pub fn held_source_reservation_for_test(
+    player: ExactActorRef,
+    session: GameSessionId,
+    event: [u8; 16],
+    binding: [u8; 32],
+) -> impl SourceActorReservationProof {
+    struct HeldSource {
+        player: ExactActorRef,
+        session: GameSessionId,
+        event: [u8; 16],
+        binding: [u8; 32],
+    }
+
+    impl source_reservation_seal::Sealed for HeldSource {}
+
+    impl SourceActorReservationProof for HeldSource {
+        fn owner(&self) -> (ExactActorRef, GameSessionId) {
+            (self.player, self.session)
+        }
+
+        fn event_identity(&self) -> [u8; 16] {
+            self.event
+        }
+
+        fn source_binding_digest(&self) -> [u8; 32] {
+            self.binding
+        }
+
+        fn affected_actors(&self) -> &[ExactActorRef] {
+            &[]
+        }
+
+        fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
+            runtime
+                .player_control_facts(self.player, self.session)
+                .is_ok()
+        }
+    }
+
+    HeldSource {
+        player,
+        session,
+        event,
+        binding,
+    }
+}
+
 /// A world callback owns an actual current scope, never a fabricated player/session.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum SourceReservationOwner {
