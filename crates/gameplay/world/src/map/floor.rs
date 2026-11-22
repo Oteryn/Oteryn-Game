@@ -54,7 +54,10 @@ pub use quest_callback::{
     prepare_quest_encounter_ejection,
 };
 pub use quest_callback_scene::{PreparedSceneRelocations, prepare_scene_relocations};
-pub use rope::{LadderTarget, bundle_upstairs_landing, prepare_bundle_ladder, prepare_bundle_rope};
+pub use rope::{
+    LadderTarget, bundle_upstairs_landing, commit_bundle_rope_creature, prepare_bundle_ladder,
+    prepare_bundle_rope,
+};
 pub use scripted_teleport::prepare_scripted_quest_teleport_facing;
 use std::collections::{BTreeMap, BTreeSet};
 use {

@@ -209,6 +209,43 @@ impl RopeProof<'_> {
     }
 }
 
+/// Pull the exact live creature from its current cell through the movement
+/// carrier. The carrier retains summon separation and movement reservation rules.
+pub fn commit_bundle_rope_creature(
+    runtime: &mut ChannelRuntimeV1,
+    cells: &NativeEntryMovementCells,
+    actor: ExactActorRef,
+    expected: MovementPositionSnapshot,
+    closed: &dyn CellBlocker,
+) -> Result<(), MovementError> {
+    if expected.context() != runtime.pinned_movement_context()
+        || cells.scope().world_id != expected.world_id()
+        || cells.scope().generation_digest != runtime.content_pin().server_artifact_digest()
+    {
+        return Err(MovementError::NotQualified);
+    }
+    let from = expected.position();
+    let source = LogicalCell {
+        x: from.x,
+        y: from.y,
+        z: i32::from(from.floor),
+    };
+    let destination = bundle_upstairs_landing(cells, source, false, closed, |next| {
+        if !crate::movement::relocate::creature_cell_admissible(cells, closed, next) {
+            return Ok(false);
+        }
+        runtime
+            .position_occupied_by_other(actor, next)
+            .map(|occupied| !occupied)
+            .map_err(MovementError::Actor)
+    })?;
+    runtime
+        .borrow_movement_position()
+        .commit_creature_relocation(actor, expected, destination)
+        .map(|_| ())
+        .map_err(MovementError::Actor)
+}
+
 /// Resolve the south-first landing one floor above a rope source. The caller
 /// supplies the occupancy policy for the actor or item being moved.
 pub fn bundle_upstairs_landing(

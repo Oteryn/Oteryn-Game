@@ -10,7 +10,7 @@ use crate::gameplay_transport::item_move::LoopMoveResult;
 use crate::map::floor::{self, BundleDoors};
 use crate::map::overlay::{ChannelOverlay, TilePos};
 use crate::map::view::EntrySource;
-use crate::movement::{MovementError, relocate};
+use crate::movement::MovementError;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 // Crystal 201189f8: data-global/scripts/lib/register_actions.lua, holeId and onUseRope.
@@ -112,16 +112,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(UseOutcome::rejected()));
         }
         let item_command = rope_item_command(command, intent)?;
-        let replay = self
-            .root
-            .read_item_loop_move_receipt(
-                self.character,
-                fence.character_id,
-                CommandRef::new(
-                    command.game_session_id,
-                    CommandId::new(item_command.command_id).map_err(|_| ())?,
-                ),
-            )
+        let receipt = CommandRef::new(
+            command.game_session_id,
+            CommandId::new(item_command.command_id).map_err(|_| ())?,
+        );
+        let budget =
+            crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)
+                .map_err(|_| ())?;
+        let replay = budget
+            .retry_durability("rope_pull_receipt", || {
+                self.root
+                    .read_item_loop_move_receipt(self.character, fence.character_id, receipt)
+            })
             .await
             .map_err(|_| ())?;
         let disposition = match replay {
@@ -289,6 +291,11 @@ fn rope_in_channel(
     let Some(at) = crate::gameplay_transport::bundle_map_position(runtime, cells, actor) else {
         return done(UseDisposition::NothingToUse);
     };
+    if cells.scope().world_id != runtime.binding().world_id()
+        || cells.scope().generation_digest != runtime.content_pin().server_artifact_digest()
+    {
+        return done(UseDisposition::Rejected);
+    }
     let facts = at.map.facts.pinned();
     let map = crate::gameplay_transport::world_map::MapViewSource {
         overlay: overlay.unwrap_or(&at.map.overlay),
@@ -430,27 +437,19 @@ fn pull_from_below(
                 .actor_staff_visibility(*actor)
                 .is_ok_and(|(ghost, invisible, _)| !ghost && !invisible)
     }) {
-        let unreserved = match session {
-            Some(session) => states.spell_idle(runtime, subject, session),
-            None => runtime.assert_actor_spell_unreserved(subject).is_ok(),
-        };
-        if states.is_dead(subject) || !unreserved {
-            return Err(impossible);
-        }
-        let pz_blocked = session.is_some_and(|session| {
-            crate::gameplay_transport::pvp_live::pz_blocked(states, subject, session, now)
-        });
-        let to = floor::bundle_upstairs_landing(cells, source, pz_blocked, &blocker, |to| {
-            if session.is_none() && !relocate::creature_cell_admissible(cells, &blocker, to) {
-                return Ok(false);
-            }
-            runtime
-                .position_occupied_by_other(subject, to)
-                .map(|occupied| !occupied)
-                .map_err(MovementError::Actor)
-        })
-        .map_err(|_| impossible)?;
         if let Some(session) = session {
+            if states.is_dead(subject) || !states.spell_idle(runtime, subject, session) {
+                return Err(impossible);
+            }
+            let pz_blocked =
+                crate::gameplay_transport::pvp_live::pz_blocked(states, subject, session, now);
+            let to = floor::bundle_upstairs_landing(cells, source, pz_blocked, &blocker, |to| {
+                runtime
+                    .position_occupied_by_other(subject, to)
+                    .map(|occupied| !occupied)
+                    .map_err(MovementError::Actor)
+            })
+            .map_err(|_| impossible)?;
             let proof = floor::prepare_quest_callback_teleport(
                 runtime, cells, subject, session, from, to, pz_blocked, &blocker,
             )
@@ -460,7 +459,7 @@ fn pull_from_below(
                 .map_err(|_| UseDisposition::Rejected)?;
             return Ok(RopeTurn::MovedPlayer(session));
         }
-        relocate::relocate_creature(runtime, subject, cells, &blocker, to)
+        floor::commit_bundle_rope_creature(runtime, cells, subject, from, &blocker)
             .map_err(|_| impossible)?;
         return Ok(RopeTurn::Done(UseDisposition::Committed));
     }
