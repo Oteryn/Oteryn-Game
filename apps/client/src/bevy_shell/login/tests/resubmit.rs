@@ -129,3 +129,28 @@ fn submit_repairs_empty_saved_gateway_from_environment() -> TestResult {
     assert_eq!(LoginSettings::load(&path)?.gateway_url, gateway);
     Ok(())
 }
+
+#[test]
+fn gateway_edit_signs_in_with_the_concurrent_oauth_client() -> TestResult {
+    let temp = Temp::new()?;
+    let path = temp.join("login.json");
+    let original = settings(&temp)?;
+    original.save(&path)?;
+    let mut owner = HostOwner::new(None)?;
+    owner.configure_login(Some(path.clone()), |_| None);
+    owner.request_login();
+
+    let mut external = original;
+    external.oauth_client_id = "another-client".into();
+    external.save(&path)?;
+    let gateway_url = "http://127.0.0.1:18567";
+    owner.login.form.settings.gateway_url = gateway_url.into();
+    let config = owner.login.submit()?;
+    assert_eq!(config.gateway_url, gateway_url);
+    assert_eq!(
+        LoginSettings::load(&path)?.oauth_client_id,
+        external.oauth_client_id
+    );
+    assert_eq!(config.oauth_client_id, external.oauth_client_id);
+    Ok(())
+}

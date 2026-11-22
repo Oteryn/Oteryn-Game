@@ -131,7 +131,7 @@ impl PreferenceStore {
 
     pub fn backup_path(&self) -> PathBuf {
         let pending = self.path.with_added_extension("pending-backup");
-        if pending.is_file() {
+        if pending.is_file() && Self::pending_backup_is_committed(&self.path, &pending).unwrap_or(false) {
             return pending;
         }
         Self::ordered_snapshots(&self.path)

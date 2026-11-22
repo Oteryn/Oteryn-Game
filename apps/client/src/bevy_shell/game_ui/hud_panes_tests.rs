@@ -551,3 +551,32 @@ fn c2d_dock_reset_completes_after_frame_releases_lock() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn concurrent_dock_move_and_close_keep_widgets_visible() -> TestResult {
+    let fixture = tempfile::tempdir()?;
+    for (side, dock) in [(Side::Left, Dock::Left), (Side::Right, Dock::Extra)] {
+        for move_first in [true, false] {
+            let path = fixture.path().join("concurrent-dock.json");
+            let mut initial = SidebarWidgets::default();
+            initial.set_sidebar(side, true);
+            initial.save(&path)?;
+            let mut moving = SidebarWidgets::load(&path)?;
+            let mut closing = SidebarWidgets::load(&path)?;
+            moving.place(Widget::Vip, dock, None);
+            closing.set_sidebar(side, false);
+            let latest = if move_first {
+                moving.save(&path)?;
+                closing.save(&path)?;
+                closing
+            } else {
+                closing.save(&path)?;
+                moving.save(&path)?;
+                moving
+            };
+            assert_eq!(latest.entry(Widget::Vip).ok_or("VIP")?.dock, Dock::Right);
+            assert_eq!(SidebarWidgets::load(&path)?, latest);
+        }
+    }
+    Ok(())
+}
