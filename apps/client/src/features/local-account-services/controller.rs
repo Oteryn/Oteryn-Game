@@ -168,9 +168,19 @@ async fn apply(
             return Ok(());
         }
         Action::Status => {
-            if let Some(id) = view.pending_id() {
-                match client.bazaar_status(token, id, cancel).await {
-                    Ok(receipt) => accept(view, receipt),
+            let selected = view.pending_id().map(str::to_owned);
+            let mut missing = None;
+            let mut found = false;
+            if let Some(id) = selected.as_deref() {
+                match client.bazaar_status(token, id, cancel.clone()).await {
+                    Ok(receipt) => {
+                        let pending = receipt.state == OperationState::Pending;
+                        accept(view, receipt);
+                        if !pending {
+                            return Ok(());
+                        }
+                        found = true;
+                    }
                     Err(NativeLoginError::Platform(HttpStatus(404)))
                         if view.post_refusal_status == Some(409) =>
                     {
@@ -179,24 +189,36 @@ async fn apply(
                         view.post_refusal_status = None;
                         view.quote = None;
                         view.feedback = tr!("The server refused the request").into();
+                        return Ok(());
                     }
                     Err(error @ NativeLoginError::Platform(HttpStatus(404))) => {
                         view.post_refusal_status = None;
-                        return Err(error);
+                        missing = Some(error);
                     }
                     Err(error) => return Err(error),
                 }
-            } else {
-                // A new grant must prove ownership before a prior ID enters the view.
-                for id in view.prior.request_ids() {
-                    match client.bazaar_status(token, &id, cancel.clone()).await {
-                        Ok(receipt) => {
-                            accept(view, receipt);
+            }
+            // A new grant must prove ownership before a prior ID enters the view.
+            for id in view.prior.request_ids() {
+                if selected.as_ref() == Some(&id) {
+                    continue;
+                }
+                match client.bazaar_status(token, &id, cancel.clone()).await {
+                    Ok(receipt) => {
+                        let pending = receipt.state == OperationState::Pending;
+                        accept(view, receipt);
+                        if !pending {
                             return Ok(());
                         }
-                        Err(NativeLoginError::Platform(HttpStatus(404))) => {}
-                        Err(error) => return Err(error),
+                        found = true;
                     }
+                    Err(NativeLoginError::Platform(HttpStatus(404))) => {}
+                    Err(error) => return Err(error),
+                }
+            }
+            if !found {
+                if let Some(error) = missing {
+                    return Err(error);
                 }
                 view.feedback = tr!("No server result yet").into();
             }

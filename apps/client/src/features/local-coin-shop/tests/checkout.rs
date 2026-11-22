@@ -495,3 +495,71 @@ fn checkout_refresh_case(deny_lookup: bool) -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn coin_status_recovers_two_retained_orders_despite_a_selected_order() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let next = mock.token(&client)?;
+        let browser: Browser = Arc::new(|_| false);
+        let execute = |view: &mut View, action, grant| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                grant,
+                &browser,
+                CancellationToken::new(),
+            ));
+        };
+        let purchase = || Action::Purchase {
+            package_id: PACKAGE.into(),
+            confirmed: true,
+        };
+        let prior = crate::account_services::PriorRequests::default();
+        let mut retained = std::collections::BTreeSet::new();
+        for _ in 0..2 {
+            let mut view = View::with_prior(None, prior.clone());
+            mock.with_coins(|coins| {
+                coins.hide_recent_orders = true;
+                coins.drop_after_create = true;
+            })?;
+            execute(&mut view, Action::Refresh, &token);
+            execute(&mut view, purchase(), &token);
+            retained.insert(view.pending.ok_or("unacknowledged order")?.request_id);
+        }
+
+        // Only the newer, acknowledged order is visible in recent history.
+        let hidden_orders = mock.with_coins(|coins| std::mem::take(&mut coins.orders))?;
+        assert_eq!(hidden_orders.len(), 2);
+        let mut other = View::new(None);
+        execute(&mut other, Action::Refresh, &token);
+        execute(&mut other, purchase(), &token);
+        let selected = other.order.ok_or("acknowledged order")?.request_id;
+        mock.with_coins(|coins| coins.hide_recent_orders = false)?;
+
+        let mut reopened = View::with_prior(None, prior);
+        execute(&mut reopened, Action::Refresh, &next);
+        assert_eq!(
+            reopened.order.as_ref().ok_or("selected order")?.request_id,
+            selected
+        );
+        mock.with_coins(|coins| {
+            coins.hide_recent_orders = true;
+            coins.orders.extend(hidden_orders);
+        })?;
+        for _ in 0..2 {
+            execute(&mut reopened, Action::Status, &next);
+            let recovered = &reopened.order.as_ref().ok_or("recovered order")?.request_id;
+            assert!(
+                retained.remove(recovered),
+                "status must recover a different retained order"
+            );
+        }
+        assert!(retained.is_empty());
+        assert_eq!(mock.with_coins(|coins| coins.creations)?, 3);
+        Ok(())
+    })
+}

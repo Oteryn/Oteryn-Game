@@ -71,59 +71,52 @@ async fn apply(
             }
         }
         Action::Status | Action::Inspect(_) => {
-            let id = match action {
-                Action::Inspect(id) => id,
-                _ => match view
-                    .pending
-                    .as_ref()
-                    .map(|p| &p.request_id)
-                    .or_else(|| view.order.as_ref().map(|o| &o.request_id))
-                {
-                    Some(id) => id.clone(),
-                    None => {
-                        // Only a current-bearer response may recover an earlier order.
-                        for id in view.prior.request_ids() {
-                            match client.coin_order_status(token, &id, cancel.clone()).await {
-                                Ok(order) => {
-                                    accept(view, order)?;
-                                    break;
-                                }
-                                Err(NativeLoginError::Platform(HttpStatus(404))) => {}
-                                Err(error) => return Err(error),
+            let target = match action {
+                Action::Inspect(id) => Some(id),
+                _ if let Some(pending) = &view.pending => Some(pending.request_id.clone()),
+                _ => {
+                    let mut selected = view.order.as_ref().map(|order| order.request_id.clone());
+                    // A displayed order must not hide unresolved requests from earlier grants.
+                    for id in view.prior.request_ids() {
+                        match client.coin_order_status(token, &id, cancel.clone()).await {
+                            Ok(order) => {
+                                accept(view, order)?;
+                                selected = None;
+                                break;
                             }
+                            Err(NativeLoginError::Platform(HttpStatus(404))) => {}
+                            Err(error) => return Err(error),
                         }
-                        if view.order.is_none() {
-                            view.feedback = tr!("No server result yet").into();
-                            return Ok(());
-                        }
-                        refresh(view, client, token, cancel).await?;
-                        view.feedback =
-                            tr!("Purchase status and wallet balance refreshed from Oteryn.").into();
-                        return Ok(());
                     }
-                },
+                    selected
+                }
             };
-            if view.pending.as_ref().is_some_and(|p| p.request_id != id) {
-                view.feedback =
-                    tr!("Resolve the pending order request before inspecting another order.")
-                        .into();
-                return Ok(());
-            }
-            match client.coin_order_status(token, &id, cancel.clone()).await {
-                Ok(order) => accept(view, order)?,
-                Err(NativeLoginError::Platform(HttpStatus(404)))
-                    if view.post_refusal_status == Some(409) && view.pending() =>
-                {
-                    view.prior.reconcile(&id);
-                    clear_refused_order(view);
-                    view.feedback = tr!("The server refused the request").into();
+            if let Some(id) = target {
+                if view.pending.as_ref().is_some_and(|p| p.request_id != id) {
+                    view.feedback =
+                        tr!("Resolve the pending order request before inspecting another order.")
+                            .into();
                     return Ok(());
                 }
-                Err(error @ NativeLoginError::Platform(HttpStatus(404))) => {
-                    view.post_refusal_status = None;
-                    return Err(error);
+                match client.coin_order_status(token, &id, cancel.clone()).await {
+                    Ok(order) => accept(view, order)?,
+                    Err(NativeLoginError::Platform(HttpStatus(404)))
+                        if view.post_refusal_status == Some(409) && view.pending() =>
+                    {
+                        view.prior.reconcile(&id);
+                        clear_refused_order(view);
+                        view.feedback = tr!("The server refused the request").into();
+                        return Ok(());
+                    }
+                    Err(error @ NativeLoginError::Platform(HttpStatus(404))) => {
+                        view.post_refusal_status = None;
+                        return Err(error);
+                    }
+                    Err(error) => return Err(error),
                 }
-                Err(error) => return Err(error),
+            } else if view.order.is_none() {
+                view.feedback = tr!("No server result yet").into();
+                return Ok(());
             }
             refresh(view, client, token, cancel).await?;
             view.feedback = tr!("Purchase status and wallet balance refreshed from Oteryn.").into();

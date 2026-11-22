@@ -33,8 +33,7 @@ impl LoginState {
             return;
         };
         self.record_edits();
-        let edited_fields = self.edited_fields;
-        let env_fallback = self.env_fallback;
+        let fields_to_save = std::array::from_fn(|i| self.edited_fields[i] || self.env_fields[i]);
         let visible = self.form.settings.clone();
         if let Err(error) = visible.validate() {
             self.form.feedback(error);
@@ -50,7 +49,7 @@ impl LoginState {
             if let Some(previous) = previous {
                 let _ = previous.task.await;
             }
-            edited.save_fields(&path, edited_fields, env_fallback)
+            edited.save_fields(&path, fields_to_save)
         });
         self.saving = Some(PendingSave {
             task,
@@ -101,6 +100,9 @@ impl LoginState {
                 return None;
             }
         };
+        if self.form.settings != settings {
+            self.revision = self.revision.saturating_add(1);
+        }
         self.shown_settings = settings.clone();
         self.form.settings = settings;
         self.form.submit().ok()

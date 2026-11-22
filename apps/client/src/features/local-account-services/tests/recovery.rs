@@ -463,3 +463,58 @@ fn bazaar_status_recovers_request_outside_recent_history() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn bazaar_status_recovers_retained_receipt_despite_pending_operation() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let next = mock.token(&client)?;
+        let execute = |view: &mut View, action, grant| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                grant,
+                CancellationToken::new(),
+            ));
+        };
+        let bid = || Action::Bid {
+            auction_id: AUCTION.into(),
+            coins: 50,
+            confirmed: true,
+        };
+        let mut first = View::default();
+        execute(&mut first, Action::Refresh(AuctionView::All), &token);
+        {
+            let mut authority = mock.authority.lock().map_err(|_| "lock")?;
+            authority.fail_after_commit = true;
+            authority.hide_recent_operations = true;
+        }
+        execute(&mut first, bid(), &token);
+        let retained = first.pending_id().ok_or("unacknowledged bid")?.to_owned();
+
+        let mut reopened = View {
+            prior: first.prior,
+            ..Default::default()
+        };
+        mock.authority.lock().map_err(|_| "lock")?.pending_first = true;
+        execute(&mut reopened, Action::Refresh(AuctionView::All), &next);
+        execute(&mut reopened, bid(), &next);
+        let pending = reopened.pending_id().ok_or("pending bid")?.to_owned();
+        assert_ne!(pending, retained);
+        assert_eq!(
+            reopened.receipt.as_ref().ok_or("pending receipt")?.state,
+            OperationState::Pending
+        );
+
+        execute(&mut reopened, Action::Status, &next);
+        let receipt = reopened.receipt.as_ref().ok_or("recovered receipt")?;
+        assert_eq!(receipt.request_id, retained);
+        assert_eq!(receipt.state, OperationState::Committed);
+        assert_eq!(reopened.pending_id(), Some(pending.as_str()));
+        assert_eq!(mock.authority.lock().map_err(|_| "lock")?.effects, 1);
+        Ok(())
+    })
+}
