@@ -210,13 +210,13 @@ fn scenario(resume: bool) -> TestResult {
         }
 
         add_item(&h, 204, fish, 100, 4).await?;
-        talk(&mut owner, &mut admitted, npc, "nupi", &[]).await?;
-        assert_eq!(
-            carried(&h, fish).await?,
-            100,
-            "completed hand-in is once only"
-        );
-        assert_eq!(carried(&h, SHARD).await?, 5);
+        talk(&mut owner, &mut admitted, npc, "nupi", &[REWARD]).await?;
+        assert_eq!(carried(&h, fish).await?, 0);
+        assert_eq!(carried(&h, SHARD).await?, 10);
+        add_item(&h, 205, fish, 100, 5).await?;
+        talk(&mut owner, &mut admitted, npc, "nupi", &[REWARD]).await?;
+        assert_eq!(carried(&h, fish).await?, 0);
+        assert_eq!(carried(&h, SHARD).await?, 15);
         assert_eq!(quest_state(&h).await?, (Some(2), true, 1));
 
         drop(seal);

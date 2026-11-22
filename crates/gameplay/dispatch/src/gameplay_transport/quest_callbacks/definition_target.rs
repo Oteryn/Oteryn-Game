@@ -155,7 +155,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         intent: &UseIntent,
-        source: [u8; 16],
+        source: Option<[u8; 16]>,
         target: Option<[u8; 16]>,
         inventory: &ItemUseInventory,
         encoded: &[u8],
@@ -165,22 +165,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let entries = || {
-            inventory.equipment.iter().chain(
-                inventory
-                    .backpack
-                    .iter()
-                    .flat_map(|bag| &bag.entries)
-                    .chain(inventory.nested.iter().map(|(_, entry)| entry))
-                    .map(|entry| &entry.item),
-            )
+        let backpack = || {
+            inventory
+                .backpack
+                .iter()
+                .flat_map(|bag| &bag.entries)
+                .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                .map(|entry| &entry.item)
         };
-        let Some(item) = entries().find(|entry| entry.item_instance_id == source) else {
-            return Ok(None);
-        };
+        let entries = || inventory.equipment.iter().chain(backpack());
         if entries().any(|entry| entry.item_instance_id == target) {
             return Ok(None);
         }
+        let item = if let Some(source) = source {
+            entries().find(|entry| entry.item_instance_id == source)
+        } else {
+            let index = self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .and_then(|native| native.item_index());
+            backpack().find(|entry| {
+                super::super::mount_taming::quest_objects::matches_source(
+                    &intent.target,
+                    None,
+                    entry.item_instance_id,
+                    index.and_then(|index| {
+                        index.definition_ref(
+                            &entry.definition.family,
+                            &entry.definition.production_key,
+                            &entry.definition.revision_ref,
+                        )
+                    }),
+                )
+            })
+        };
+        let Some(item) = item else {
+            return Ok(None);
+        };
+        let source = item.item_instance_id;
         let callbacks = self.callback_content();
         let accepts = |callback: &&Callback| {
             callback.item_on_target.as_ref().is_some_and(|tool| {
@@ -216,34 +238,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             ..UseOutcome::rejected()
         };
-        {
-            let mut runtime = self.runtime.lock().await;
-            self.states
-                .quest_callbacks
-                .finish_cancelled_ground_uses(&mut runtime);
-            if runtime.owner_fence().is_err()
-                || !runtime
-                    .player_control_facts(actor, command.game_session_id)
-                    .is_ok_and(|facts| facts.control_loss.is_none())
-            {
-                return Ok(Some(UseOutcome::rejected()));
-            }
-            if !self
-                .states
-                .world_gate
-                .lock()
-                .is_ok_and(|mut gate| gate.admit_use_with(actor, self.clock_origin.elapsed()))
-            {
-                return Ok(Some(outcome(UseDisposition::Exhausted)));
-            }
-        }
         let mut matches = candidates.filter(accepts);
-        let Some(callback) = matches.next() else {
-            return Ok(Some(UseOutcome::rejected()));
-        };
-        if matches.next().is_some() {
-            return Ok(Some(UseOutcome::rejected()));
-        }
+        let callback = matches.next().filter(|_| matches.next().is_none());
         let command_ref = CommandRef::new(
             command.game_session_id,
             CommandId::new(command.command_id).map_err(|_| ())?,
@@ -285,8 +281,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(UseOutcome::rejected()));
         }
         let mut revision = self.revision_sequencer.acquire(current.character_id).await;
-        let (context, turn) = {
+        let (callback, context, turn) = {
             let mut runtime = self.runtime.lock().await;
+            self.states
+                .quest_callbacks
+                .finish_cancelled_ground_uses(&mut runtime);
+            if runtime.owner_fence().is_err()
+                || !runtime
+                    .player_control_facts(actor, command.game_session_id)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+            {
+                return Ok(Some(UseOutcome::rejected()));
+            }
             let Ok(states) = self.states.spell_states.try_lock() else {
                 return Ok(Some(UseOutcome::rejected()));
             };
@@ -296,19 +302,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(UseOutcome::rejected()));
             }
             let position = at.position();
-            if position.floor != target_position.floor
-                || position.x.abs_diff(target_position.x) > u32::from(callback.use_range)
-                || position.y.abs_diff(target_position.y) > u32::from(callback.use_range)
-            {
+            if callback.is_some_and(|callback| {
+                position.floor != target_position.floor
+                    || position.x.abs_diff(target_position.x) > u32::from(callback.use_range)
+                    || position.y.abs_diff(target_position.y) > u32::from(callback.use_range)
+            }) {
                 return Ok(Some(outcome(UseDisposition::TooFar)));
             }
-            let changes_inventory = callback
-                .item_on_target
-                .as_ref()
-                .is_some_and(|tool| !tool.reusable || !tool.ingredients.is_empty())
-                || !callback.offerings.is_empty()
-                || callback.item_reward().is_some();
-            if changes_inventory
+            if !self
+                .states
+                .world_gate
+                .lock()
+                .is_ok_and(|mut gate| gate.admit_use_with(actor, self.clock_origin.elapsed()))
+            {
+                return Ok(Some(outcome(UseDisposition::Exhausted)));
+            }
+            let Some(callback) = callback else {
+                return Ok(Some(UseOutcome::rejected()));
+            };
+            if changes_carried_items(callback)
                 && !self
                     .states
                     .player_trades
@@ -353,7 +365,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime
                 .reserve_source_actors(&mut reservation, &proof)
                 .map_err(|_| ())?;
-            (context, GroundUseTurn(proof, reservation))
+            (callback, context, GroundUseTurn(proof, reservation))
         };
         let mut guard = GroundUseGuard {
             owner: &self.runtime,
@@ -519,6 +531,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return outcome(UseDisposition::Rejected);
         }
+        let at = runtime.read_actor_position(actor).ok()?.position();
+        if at.floor != corpse.position.floor
+            || at.x.abs_diff(corpse.position.x) > 1
+            || at.y.abs_diff(corpse.position.y) > 1
+        {
+            return outcome(UseDisposition::TooFar);
+        }
         if !self
             .states
             .world_gate
@@ -526,13 +545,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_ok_and(|mut gate| gate.admit(actor, now))
         {
             return outcome(UseDisposition::Exhausted);
-        }
-        let at = runtime.read_actor_position(actor).ok()?.position();
-        if at.floor != corpse.position.floor
-            || at.x.abs_diff(corpse.position.x) > 1
-            || at.y.abs_diff(corpse.position.y) > 1
-        {
-            return outcome(UseDisposition::TooFar);
         }
         outcome(
             if runtime

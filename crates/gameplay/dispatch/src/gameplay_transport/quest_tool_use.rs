@@ -85,8 +85,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 UseDisposition::Rejected
             })));
         }
-        let Some(ItemKey::Instance(source)) = source else {
-            return Ok(None);
+        let selected = match (&intent.target, source) {
+            (_, Some(ItemKey::Instance(item))) => Some(item),
+            (oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_), None)
+                if corpse.is_some() =>
+            {
+                None
+            }
+            _ => return Ok(None),
         };
         let Ok(inventory) = self
             .root
@@ -97,12 +103,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if let Some(outcome) = self
             .use_ground_definition_callback(
-                actor, command, intent, source, corpse, &inventory, &encoded,
+                actor, command, intent, selected, corpse, &inventory, &encoded,
             )
             .await?
         {
             return Ok(Some(outcome));
         }
+        let Some(source) = selected else {
+            return self
+                .use_carried_quest_item_selected(
+                    actor,
+                    command,
+                    intent,
+                    None,
+                    corpse.map(ItemKey::Instance),
+                    false,
+                    Some(CarriedQuestUseRead {
+                        command: command_ref,
+                        encoded,
+                        inventory: &inventory,
+                    }),
+                )
+                .await;
+        };
         let Some(item) = inventory
             .backpack
             .iter()

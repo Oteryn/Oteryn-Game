@@ -501,6 +501,14 @@ async fn exercise(
         }
     );
     place(&owner, admitted, at).await?;
+    if !lose_ack {
+        let (next, retry, _, _) = wire(
+            &owner, admitted, admitted.continuity.next_command_id,
+            &payload, Some(gold), Some(corpse), false,
+        ).await?;
+        admitted = next;
+        assert_eq!(retry, UseDisposition::Rejected, "the out-of-reach attempt must leave the gate uncharged");
+    }
     let until_first_decay: i64 = sqlx::query_scalar(
         "SELECT greatest(0, $1::bigint - floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint)",
     )
@@ -551,10 +559,16 @@ async fn exercise(
     let before = ground_snapshot(h).await?;
     owner.clock_origin -= std::time::Duration::from_secs(2);
     let command = admitted.continuity.next_command_id;
+    let definition_payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::ItemByDefinition(amulet),
+        use_with: None,
+        use_with_position: None,
+        use_with_map_item: Some(MapUseTarget::Item(std::num::NonZeroU64::MIN)),
+    }).map_err(debug)?;
     let actual = if lose_ack {
         composed_test_owner::interrupt_ground_use_after_commit(&owner);
         let (lost, result, actual, _) = framed_attempt(
-            &owner, admitted, command, 2, &payload, (Some(amulet), Some(corpse)), false, true,
+            &owner, admitted, command, 2, &definition_payload, (None, Some(corpse)), false, true,
         ).await?;
         assert!(result.is_empty(), "the client received no command result");
         assert_eq!(snapshot(h).await?, (1, 0, 1, 1));
@@ -1461,6 +1475,18 @@ async fn framed_attempt(
                 let envelope_result =
                     oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
                 if envelope_result.command_id == command {
+                    if command_type == 2 {
+                        use oteryn_protocol_oteryn::CommandStatus;
+                        let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(envelope_result.payload).map_err(debug)?;
+                        assert_eq!(
+                            envelope_result.status,
+                            if disposition == UseDisposition::Rejected {
+                                CommandStatus::Rejected
+                            } else {
+                                CommandStatus::Accepted
+                            }
+                        );
+                    }
                     result = Some(envelope_result.payload.to_vec());
                 }
             }

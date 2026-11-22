@@ -458,6 +458,7 @@ impl ChannelRuntimeV1 {
             generation,
             key,
             hireling: None,
+            placement: position,
             tile_entry_order: order,
             position: VersionedPosition {
                 actor_local_id,
@@ -473,6 +474,19 @@ impl ChannelRuntimeV1 {
         carrier.occupied.push(free_head);
         carrier.install_tile_entry_order(index, order);
         Ok(ExactActorRef(actor_ref))
+    }
+
+    /// The original placement of a current Channel NPC.
+    pub fn npc_placement(&self, actor: ExactActorRef) -> Option<LocalPosition> {
+        let index = self.carrier.validate_ref(&self.continuity, actor.0).ok()?;
+        match &self.carrier.slots[index] {
+            Slot::NpcOccupied {
+                placement,
+                hireling: None,
+                ..
+            } => Some(*placement),
+            _ => None,
+        }
     }
 
     /// The NPC key of a current NPC actor; `None` for any other or stale actor.

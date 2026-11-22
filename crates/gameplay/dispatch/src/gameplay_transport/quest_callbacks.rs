@@ -187,6 +187,19 @@ impl PendingCallbacks {
     }
 }
 
+fn changes_carried_items(callback: &Callback) -> bool {
+    callback
+        .item_on_target
+        .as_ref()
+        .is_some_and(|tool| !tool.reusable || !tool.ingredients.is_empty())
+        || !callback.offerings.is_empty()
+        || callback.item_reward().is_some()
+        || callback
+            .monk_reward
+            .as_ref()
+            .is_some_and(|reward| reward.item_source_id.is_some())
+}
+
 fn callbacks() -> &'static [Callback] {
     static DATA: OnceLock<Vec<Callback>> = OnceLock::new();
     DATA.get_or_init(|| world_callbacks::load().unwrap_or_default())
@@ -1307,6 +1320,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             if !callback.reaches(Position { x: at.x, y: at.y, floor: at.floor }, Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor }) {
                 return UseDisposition::TooFar;
+            }
+            if changes_carried_items(callback)
+                && !self.states.player_trades.physical_service(command.game_session_id)
+            {
+                return UseDisposition::Rejected;
             }
             if !callback.is_read_only() && !self
                 .states

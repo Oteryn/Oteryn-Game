@@ -306,6 +306,14 @@ pub(super) async fn assert_guest_blocked(
     .await?;
     let door = target(owner, JIMMY_DOOR)?;
     assert!(door.expected_revision > 0, "Jimmy opened the shared door");
+    assert!(!owner.bundle_map().ok_or("city map")?.facts.doors().blocks(JIMMY_DOOR));
+    let actor = guest.runtime_actor.ok_or("guest actor")?;
+    let entities = owner.observe_channel_entities_projected(actor, true).await.ok_or("guest entities")?;
+    let motion = entities.entities.iter()
+        .find(|entity| entity.identity == entities.observer)
+        .and_then(|entity| entity.motion.as_ref())
+        .ok_or("guest movement forecast")?;
+    assert_eq!(motion.prewalk_ms[StepDirection::South as usize - 1], 0);
     let command = guest.continuity.next_command_id;
     let reply = timeout_at(
         command_deadline(deadline),

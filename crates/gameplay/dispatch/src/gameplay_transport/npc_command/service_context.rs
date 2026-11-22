@@ -79,10 +79,12 @@ pub(super) fn at_placement(
     (x, y, floor): (u16, u16, i8),
 ) -> bool {
     // Placements use native -z and live cells use runtime z.
-    live_npc(runtime, observer, session, named).is_some_and(|npc| {
-        (npc.position.x, npc.position.y, npc.position.floor)
-            == (i32::from(x), i32::from(y), -i16::from(floor))
-    })
+    live_npc(runtime, observer, session, named)
+        .and_then(|npc| runtime.npc_placement(npc.actor))
+        .is_some_and(|placement| {
+            (placement.x, placement.y, placement.floor)
+                == (i32::from(x), i32::from(y), -i16::from(floor))
+        })
 }
 
 /// A House observer sees only its scoped native NPC slots. Channel keys cannot opt into House.

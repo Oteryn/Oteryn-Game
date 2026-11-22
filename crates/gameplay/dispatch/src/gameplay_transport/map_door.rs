@@ -256,6 +256,7 @@ pub(super) fn use_key_observed(
     actor: TilePos,
     key_action: u16,
     target: &WorldObjectTarget,
+    admit: impl FnOnce() -> bool,
 ) -> (UseOutcome, Option<KeyDoorOpening>) {
     let source = MapViewSource {
         overlay,
@@ -263,16 +264,23 @@ pub(super) fn use_key_observed(
         content_generation,
         reset_epoch: 0,
     };
-    let resolved = match resolve_map_target(&source, target, |_| None::<()>) {
+    let resolved = resolve_map_target(&source, target, |_| None::<()>);
+    if resolved
+        .as_ref()
+        .is_ok_and(|target| !reachable(actor, target.pos))
+    {
+        return (outcome(UseDisposition::TooFar), None);
+    }
+    if !admit() {
+        return (outcome(UseDisposition::Exhausted), None);
+    }
+    let resolved = match resolved {
         Ok(resolved) => resolved,
         Err(MapTargetRefusal::StateRevisionMismatch) => {
             return (outcome(UseDisposition::StaleState), None);
         }
         Err(MapTargetRefusal::Use(disposition)) => return (outcome(disposition), None),
     };
-    if !reachable(actor, resolved.pos) {
-        return (outcome(UseDisposition::TooFar), None);
-    }
     let (used, opening) = facts.doors().use_key_observed(
         resolved.placement_key,
         target.expected_revision,
@@ -363,6 +371,7 @@ mod tests {
                 actor,
                 3520,
                 &target,
+                || true,
             );
             assert_eq!(outcome.disposition, expected);
             assert!(

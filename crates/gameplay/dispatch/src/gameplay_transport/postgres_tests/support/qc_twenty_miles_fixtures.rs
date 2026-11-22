@@ -16,6 +16,9 @@ use std::collections::BTreeSet;
 use std::num::NonZeroU64;
 
 pub(super) const CHAIN: &str = "qc-twenty-miles";
+pub(super) const GUARDIAN: &str = "qc-twenty-miles-wandering-guardian";
+pub(super) const TRADE: &str = "qc-twenty-miles-open-trade";
+pub(super) const GOLD: &str = "qc-twenty-miles-merged-gold";
 pub(super) const RESUME: &str = "qc-twenty-miles-resume";
 pub(super) const START: Position = Position {
     x: 33550,
@@ -61,7 +64,7 @@ const NPCS: [(&str, Position); 5] = [
 ];
 
 pub(super) fn matches(name: &str) -> bool {
-    matches!(name, CHAIN | RESUME)
+    matches!(name, CHAIN | RESUME | GUARDIAN | TRADE | GOLD)
 }
 
 fn source(callback: &Callback) -> Option<Position> {
@@ -360,7 +363,7 @@ async fn only_live_item(h: &Harness, key: &str) -> TestResult<[u8; 16]> {
     rows.first().map(|id| *id.as_bytes()).ok_or_else(|| "item missing".into())
 }
 
-async fn move_sea_ear(
+async fn move_recovery_item(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     item: [u8; 16],
@@ -389,7 +392,7 @@ async fn move_sea_ear(
             slot: None,
         },
     ).await;
-    assert_eq!(result, LoopMoveResult::Committed, "Sea Ear movement with drop={drop}");
+    assert_eq!(result, LoopMoveResult::Committed, "recovery item movement with drop={drop}");
     Ok(())
 }
 
@@ -515,6 +518,7 @@ async fn awaken_fire_feathered(owner: &ComposedFreshAdmission<'_, '_, '_>, h: &H
 async fn install_npcs(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
+    wander: bool,
 ) -> TestResult<[EntityRef; 5]> {
     use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
     let table = pinned_placements()?;
@@ -551,6 +555,21 @@ async fn install_npcs(
                 .find(|npc| runtime.npc_key(npc.actor) == Some(key))
                 .ok_or_else(|| format!("missing live NPC {key}"))?.actor
         };
+        // Move both exact Guardian actors through the same cardinal owner used by NPC cadence.
+        if wander && key == NPCS[1].0 {
+            let expected = runtime.borrow_movement_position().read(actor).map_err(debug)?;
+            let position = expected.position();
+            runtime
+                .borrow_movement_position()
+                .commit_cardinal(
+                    expected,
+                    crate::foundation::MovementLocalPosition {
+                        y: position.y + 1,
+                        ..position
+                    },
+                )
+                .map_err(debug)?;
+        }
         found.push(EntityRef {
             identity: actor.placement_identity(),
             generation: actor.actor_local_generation(),
@@ -591,7 +610,7 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &caps)
             .ok_or("capabilities")?;
-    let npcs = install_npcs(owner, admitted).await?;
+    let npcs = install_npcs(owner, admitted, name == GUARDIAN).await?;
     let callbacks = reward_callbacks::load()?;
     macro_rules! say {
         ($npc:expr, $name:literal, [$($word:literal),+], $expected:expr) => {{
@@ -652,15 +671,15 @@ pub(super) async fn exercise(
         use_object(owner, admitted, "sea-ear-shell", None, Committed).await?;
         let item_key = world_callbacks::phase::SEA_EAR_ITEM;
         let ear = only_live_item(h, item_key).await?;
-        move_sea_ear(owner, admitted, ear, 22_002, true).await?;
+        move_recovery_item(owner, admitted, ear, 22_002, true).await?;
         enter(owner, admitted, "shell-cave-exit", true).await?;
         enter(owner, admitted, "maelstrom-to-shells", true).await?;
-        move_sea_ear(owner, admitted, ear, 22_003, false).await?;
+        move_recovery_item(owner, admitted, ear, 22_003, false).await?;
         enter(owner, admitted, "shell-cave-exit", true).await?;
         enter(owner, admitted, "maelstrom-to-grounds-with-ear", true).await?;
         say!(1, "guardian-sea-ear", ["mission"], true);
         say!(1, "recover-sea-ear-after-report", ["lost sea ear"], false);
-        move_sea_ear(owner, admitted, ear, 22_004, true).await?;
+        move_recovery_item(owner, admitted, ear, 22_004, true).await?;
         say!(1, "recover-sea-ear-after-report", ["lost sea ear"], false);
         assert_eq!(only_live_item(h, item_key).await?, ear);
         expire_dropped_item(h, ear).await?;
@@ -693,8 +712,29 @@ pub(super) async fn exercise(
     say!(0, "brandon-yes", ["assist", "yes"], true);
     enter(owner, admitted, "maelstrom-to-grounds", true).await?;
     say!(1, "guardian-yes-start", ["wedding ring", "something", "will"], true);
+    if name == GUARDIAN {
+        stage(h, 2).await?;
+        return Ok(());
+    }
     // A loose Seacrest Pearl is already present in the shipped map.
     pickup_pearl(owner, admitted).await?;
+    if name == TRADE {
+        let pearl = only_live_item(h, "oteryn:item.tibia.i21747").await?;
+        for (name, tool) in [("pile-1", None), ("stone-shrine-01", Some(21770))] {
+            {
+                let runtime = owner.runtime.lock().await;
+                owner.states.player_trades.fixture_open_offer(
+                    &runtime, admitted.game_session_id, pearl, owner.owner_now().get() / 1000,
+                ).ok_or("open trade offer")?;
+            }
+            use_object(owner, admitted, name, tool, Rejected).await?;
+            assert!(!owner.states.player_trades.open(admitted.game_session_id));
+            if tool.is_none() {
+                Box::pin(prove_use_commit_releases_guards(owner, admitted)).await?;
+            }
+        }
+        return Ok(());
+    }
     Box::pin(prove_use_commit_releases_guards(owner, admitted)).await?;
     use_object(owner, admitted, "pile-1", None, Rejected).await?;
     use_object(owner, admitted, "altar-1", None, Rejected).await?;
@@ -731,6 +771,32 @@ pub(super) async fn exercise(
         assert_eq!(track(h, &energy).await?, 0);
     }
     say!(1, "guardian-skulls-laid", ["mission", "yes"], true);
+    if name == GOLD {
+        let gold = "oteryn:item.tibia.i21746";
+        let issued = only_live_item(h, gold).await?;
+        move_recovery_item(owner, admitted, issued, 22_010, true).await?;
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        let receiver = super::fixture::id(216);
+        sqlx::raw_sql(sqlx::AssertSqlSafe(
+            crate::durability::item_fee_burn::test_support::item(216, gold, "definition-r1", 1),
+        )).execute(&mut *tx).await?;
+        sqlx::query(
+            "INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id)
+             SELECT character_id,parent_item_instance_id,encode($1,'hex')::uuid,world_id,max(placement_ordinal)+1,encode($1,'hex')::uuid
+             FROM game_item_container_entries GROUP BY character_id,parent_item_instance_id,world_id",
+        ).bind(receiver.as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        move_recovery_item(owner, admitted, issued, 22_011, false).await?;
+        assert_eq!(only_live_item(h, gold).await?, receiver);
+        say!(1, "recover-cursed-gold", ["lost cursed gold"], false);
+        move_recovery_item(owner, admitted, receiver, 22_012, true).await?;
+        expire_dropped_item(h, receiver).await?;
+        say!(1, "recover-cursed-gold", ["lost cursed gold"], true);
+        assert_ne!(only_live_item(h, gold).await?, receiver);
+        stage(h, 3).await?;
+        return Ok(());
+    }
     use_object(owner, admitted, "hoard-1-reentry", None, Rejected).await?;
     let hoard = source(&callback("hoard-1")?).ok_or("hoard source")?;
     let (origin, _) = stand_near(owner, admitted, hoard).await?;

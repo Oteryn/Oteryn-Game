@@ -15,6 +15,21 @@ fn qc_twenty_miles_resumes_the_pre_withdrawal_definition() -> TestResult {
     run(quest::RESUME)
 }
 
+#[test]
+fn qc_twenty_miles_merged_gold_recovery() -> TestResult {
+    run(quest::GOLD)
+}
+
+#[test]
+fn qc_twenty_miles_world_use_refuses_open_trade() -> TestResult {
+    run(quest::TRADE)
+}
+
+#[test]
+fn qc_twenty_miles_wandering_guardians_keep_dialogue() -> TestResult {
+    run(quest::GUARDIAN)
+}
+
 fn run(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

@@ -2506,6 +2506,38 @@ mod tests {
     }
 
     #[test]
+    fn sinatuki_repeat_hand_ins_load_at_the_completed_stage() -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let callbacks = super::offered_for(lowered.catalogue())?;
+        for item in ["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"] {
+            for quantity in [99, 100, 101] {
+                let carried = BTreeMap::from([(item.to_owned(), quantity)]);
+                let eligible: Vec<_> = callbacks
+                    .iter()
+                    .filter(|callback| {
+                        callback.npc == "oteryn:npc.sinatuki"
+                            && callback
+                                .storage
+                                .iter()
+                                .all(|state| (state.minimum..=state.maximum).contains(&2))
+                            && callback.inventory.iter().all(|rule| rule.holds(&carried))
+                    })
+                    .collect();
+                assert_eq!(eligible.len(), 1, "{item} × {quantity} at stage 2");
+                assert!(eligible[0].is_paid_exchange());
+                assert_eq!(u64::from(eligible[0].take[0].count), quantity.min(100));
+                let reward = eligible[0].give.as_ref().ok_or("Sinatuki crystals")?;
+                assert_eq!(
+                    (reward.item.as_str(), reward.count),
+                    ("oteryn:item.tibia.i7290", 5)
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn published_ungated_quest_hash_baseline() -> Result<(), String> {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;

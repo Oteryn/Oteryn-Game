@@ -1273,7 +1273,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => None,
         };
-        if matches!(source, Some(item_view::ItemKey::Instance(_))) {
+        if corpse.is_some() || matches!(source, Some(item_view::ItemKey::Instance(_))) {
             return self
                 .use_carried_quest_item(actor, command, &intent, source, corpse)
                 .await;

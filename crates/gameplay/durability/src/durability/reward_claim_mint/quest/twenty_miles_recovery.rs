@@ -30,24 +30,35 @@ pub(super) async fn missing(
     let recovery_keys = [recovery.to_owned(), format!("{recovery}-after-report")];
     // The root lock serializes this Character's reward writers. Lock the exact
     // issued instances too, including those in other players' or Ground custody.
-    // A merged issue has no independently identifiable surviving stack, so its
-    // retirement is not proof of loss.
+    // Follow whole-stack retirements to the receiver recorded by Item Loop.
+    // Select live descendants in the CTE, then lock by identity so a concurrent
+    // retirement of a selected descendant still refuses this attempt.
     let active: Vec<i64> = sqlx::query_scalar(
-        "WITH issues AS (
+        "WITH RECURSIVE issues AS (
            SELECT claimed_transaction_id AS transaction_id FROM game_reward_claims
            WHERE character_id=encode($1,'hex')::uuid AND claim_family='RewardClaim'
              AND claim_production_key=ANY($2::text[])
            UNION
            SELECT mint_transaction_id FROM game_quest_reward_sources
            WHERE character_id=encode($1,'hex')::uuid AND transition_key=ANY($3::text[])
+         ), lineage(item_instance_id) AS (
+           SELECT r.item_instance_id FROM issues JOIN game_reward_claim_mint_receipts r USING(transaction_id)
+           WHERE r.character_id=encode($1,'hex')::uuid
+           UNION
+           SELECT receiver.item_instance_id
+           FROM lineage JOIN game_item_instances merged USING(item_instance_id)
+           JOIN game_item_loop_move_lines source
+             ON source.transaction_id=merged.last_transaction_id
+             AND source.item_instance_id=merged.item_instance_id AND source.to_kind=0
+           JOIN game_item_loop_move_lines receiver
+             ON receiver.transaction_id=source.transaction_id AND receiver.to_kind=9
+             AND receiver.quantity_after > receiver.quantity_before
+           WHERE merged.lifecycle=2
+         ), surviving AS MATERIALIZED (
+           SELECT item_instance_id FROM lineage JOIN game_item_instances USING(item_instance_id)
+           WHERE lifecycle=1
          )
-         SELECT i.quantity FROM issues JOIN game_reward_claim_mint_receipts r USING(transaction_id)
-         JOIN game_item_instances i USING(item_instance_id)
-         WHERE r.character_id=encode($1,'hex')::uuid
-           AND (i.lifecycle=1 OR EXISTS (
-             SELECT 1 FROM game_item_loop_move_lines l
-             WHERE l.transaction_id=i.last_transaction_id AND l.item_instance_id=i.item_instance_id
-               AND l.quantity_after=0))
+         SELECT i.quantity FROM surviving JOIN game_item_instances i USING(item_instance_id)
          ORDER BY i.item_instance_id LIMIT 6 FOR UPDATE OF i",
     ).bind(character).bind(&claims).bind(&recovery_keys[..]).fetch_all(&mut **tx).await?;
     let issued: i64 = sqlx::query_scalar(

@@ -68,6 +68,7 @@ pub(crate) async fn prepare_owned_session_request(
 }
 
 pub(crate) struct RecoverySource {
+    #[allow(dead_code, reason = "the shared fixture exposes this control to dispatch PostgreSQL cases")]
     pub(crate) clock: std::sync::Arc<std::sync::atomic::AtomicU64>,
     pub(crate) evidence: crate::gameplay_transport::FreshEvidenceSource,
     task: tokio::task::JoinHandle<()>,
@@ -80,6 +81,7 @@ impl Drop for RecoverySource {
 }
 
 impl RecoverySource {
+    #[allow(dead_code, reason = "the shared fixture exposes this control to dispatch PostgreSQL cases")]
     pub(crate) fn stop_peer(&self) { self.task.abort(); }
     pub(crate) async fn start(h: &Harness) -> TestResult<Self> {
         Self::start_at(h, None).await
@@ -269,10 +271,12 @@ impl RecoverySource {
     /// A separately scoped fresh grant from this registered independent test
     /// producer. The native fresh-admission verifier/publication/commit remain
     /// unchanged; a recovery credential cannot be reused as a fresh grant.
+    #[allow(dead_code, reason = "the shared fixture exposes this control to dispatch PostgreSQL cases")]
     pub(crate) fn fresh_token(nonce: u8) -> TestResult<String> {
         Self::fresh_token_for(nonce, id(40), id(41))
     }
 
+    #[allow(dead_code, reason = "the shared fixture exposes this control to dispatch PostgreSQL cases")]
     pub(crate) fn fresh_token_for(
         nonce: u8,
         account: [u8; 16],

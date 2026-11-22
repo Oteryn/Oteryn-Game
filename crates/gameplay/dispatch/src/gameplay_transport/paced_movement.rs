@@ -10,10 +10,10 @@ pub(super) mod underwater_drown;
 
 /// The shared overlay controls the door's appearance. The entering session
 /// still needs Jimmy's own quest authority, even while another player holds it open.
-struct PlayerBundleDoors<'a> {
-    states: &'a channel_states::ChannelSessionStates,
-    facts: &'a crate::map::facts::BundleFacts,
-    session: GameSessionId,
+pub(super) struct PlayerBundleDoors<'a> {
+    pub(super) states: &'a channel_states::ChannelSessionStates,
+    pub(super) facts: &'a crate::map::facts::BundleFacts,
+    pub(super) session: GameSessionId,
 }
 
 impl crate::map::floor::CellBlocker for PlayerBundleDoors<'_> {
