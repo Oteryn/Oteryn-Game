@@ -520,6 +520,14 @@ fn scenario() -> TestResult {
         );
         // Field 11 carries the qualified Guildhall class (enum value 3).
         assert!(guildhall_page.windows(2).any(|field| field == [88, 3]));
+        let generation = initial.continuity.connection_generation.to_string();
+        let bound_receipts: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_house_management_receipts WHERE connection_generation=$1::text::numeric",
+        )
+        .bind(generation)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(bound_receipts, count);
         verify_guild_acl(&h, &restarted, &mut admitted).await?;
         drop(replayed);
         drop(restarted);
@@ -662,8 +670,8 @@ async fn verify_guild_acl_write_fence(h: &Harness, admitted: &AdmittedSession) -
     ] {
         let mut tx = h.pool.begin().await?;
         let session = admitted.game_session_id.as_bytes().as_slice();
-        sqlx::query("INSERT INTO game_house_management_receipts(game_session_id,command_id,character_id,world_id,house_key,request_binding,result_revision,action_kind,list_key) VALUES(encode($1,'hex')::uuid,10000,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,decode(repeat('01',32),'hex'),$5,1,'guest')")
-            .bind(session).bind(actor.as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(revision)
+        sqlx::query("INSERT INTO game_house_management_receipts(game_session_id,command_id,character_id,world_id,house_key,request_binding,result_revision,action_kind,list_key,connection_generation) VALUES(encode($1,'hex')::uuid,10000,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,decode(repeat('01',32),'hex'),$5,1,'guest',$6::text::numeric)")
+            .bind(session).bind(actor.as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(revision).bind(current.to_string())
             .execute(&mut *tx).await?;
         let error = sqlx::query("SELECT game_house_management_guild_acl_advance(encode($1,'hex')::uuid,10000,$2::text::numeric,'[]'::jsonb)")
             .bind(session).bind(generation.to_string()).execute(&mut *tx).await

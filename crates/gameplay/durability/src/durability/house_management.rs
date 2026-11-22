@@ -245,8 +245,8 @@ async fn apply(
         HouseManagementAction::MoveOut { .. } => (2, None),
         HouseManagementAction::CancelMoveOut => (3, None),
     };
-    sqlx::query("INSERT INTO game_house_management_receipts(game_session_id,command_id,character_id,world_id,house_key,request_binding,result_revision,action_kind,list_key) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7::text::numeric,$8,$9)")
-        .bind(session).bind(&command).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(house).bind(hash.as_slice()).bind(revision.to_string()).bind(kind).bind(list_key).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_house_management_receipts(game_session_id,command_id,character_id,world_id,house_key,request_binding,result_revision,action_kind,list_key,connection_generation) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7::text::numeric,$8,$9,$10::text::numeric)")
+        .bind(session).bind(&command).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(house).bind(hash.as_slice()).bind(revision.to_string()).bind(kind).bind(list_key).bind(fence.connection_generation.get().to_string()).execute(&mut **tx).await?;
     if let Some(rules) = qualified_guild {
         sqlx::query("SELECT game_house_management_guild_acl_advance(encode($1,'hex')::uuid,$2::text::numeric,$3::text::numeric,$4)")
             .bind(session).bind(&command).bind(fence.connection_generation.get().to_string())
