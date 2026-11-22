@@ -123,7 +123,10 @@ impl State {
         {
             return Some(Dispatch::Unregistered);
         }
-        if command.command_type != stash::COMMAND_TYPE_STASH_INTENT {
+        if !matches!(
+            command.command_type,
+            stash::COMMAND_TYPE_STASH_INTENT | stash::COMMAND_TYPE_STASH_ROW_ACTION
+        ) {
             self.stash_rows = None;
         }
         match command.command_type {
@@ -254,6 +257,16 @@ impl State {
                 )
                 .await
             }
+            stash::COMMAND_TYPE_STASH_ROW_ACTION => Some(
+                routing::stash::row_action(
+                    authority,
+                    self.actor,
+                    admitted,
+                    command,
+                    self.stash_rows.as_deref(),
+                )
+                .await,
+            ),
             _ => Some(Dispatch::Unregistered),
         }
     }

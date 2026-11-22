@@ -130,8 +130,17 @@ pub(super) fn meaningful(
             .is_ok_and(|intent| intent != loop_training::ExerciseIntent::Status),
         76 => house_move_out::decode_house_move_out_request(command.payload)
             .is_ok_and(|request| request.action != 0),
-        79 => stash::decode_stash_query(command.payload)
-            .is_ok_and(|(intent, _)| intent.action != stash::StashAction::Browse),
+        79 => stash::decode_stash_query(command.payload).is_ok_and(|(intent, _)| {
+            intent.action != stash::StashAction::Browse
+                && (!intent.action.needs_stash_actions()
+                    || selected.contains(&stash::CAPABILITY_STASH_ACTIONS_V1))
+        }),
+        stash::COMMAND_TYPE_STASH_ROW_ACTION => stash::decode_stash_row_intent(command.payload)
+            .is_ok_and(|intent| {
+                intent.action.changes_loot_list()
+                    && selected
+                        .contains(&oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1)
+            }),
         80 => market::decode_request(command.payload).is_ok_and(|request| request.action >= 5),
         81 => target_move::decode_target_move_intent(command.payload).is_ok(),
         84 => charm_progression::decode_charm_progression_request(command.payload)
@@ -168,7 +177,14 @@ pub(super) fn meaningful(
             oteryn_protocol_oteryn::daily_reward::DailyRewardClaim::decode(command.payload).is_ok()
         }
         40 => oteryn_protocol_oteryn::guild::decode_guild_intent(command.payload).is_ok(),
-        45 => oteryn_protocol_oteryn::party::decode_party_intent(command.payload).is_ok(),
+        45 => oteryn_protocol_oteryn::party::decode_party_intent(command.payload).is_ok_and(
+            |intent| {
+                !matches!(
+                    intent,
+                    oteryn_protocol_oteryn::party::PartyIntent::Revoke(_)
+                ) || selected.contains(&oteryn_protocol_oteryn::party::CAPABILITY_PARTY_REVOKE_V1)
+            },
+        ),
         56 => oteryn_protocol_oteryn::house::decode_house_intent(command.payload).is_ok(),
         60 => oteryn_protocol_oteryn::staff::decode_envelope(command.payload).is_ok(),
         66 => loop_training::decode_offline_training(command.payload).is_ok(),

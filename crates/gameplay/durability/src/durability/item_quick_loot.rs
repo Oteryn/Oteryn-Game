@@ -157,17 +157,19 @@ impl DurabilityRoot {
                         content.loop_facts(&definition).ok_or(LoopError::Refused(LoopMoveRefusal::Rejected))?;
                         Some(definition.production_key)
                     } else {None};
-                    let list=if settings.accept_only {&settings.accepted_items} else {&settings.skipped_items};
-                    if request.action==QuickLootAction::FilterAdd && list.len()>=oteryn_gameplay_items::quick_loot::MAX_FILTER_ITEMS && !key.as_ref().is_some_and(|key|list.contains(key)) { return refuse(LoopMoveRefusal::NoRoom); }
-                    let accepted=settings.accept_only;
-                    let revision:String=sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-                    settings_owner::store(&mut tx,fence.character_id,revision.parse().map_err(|_|DurabilityError::InvalidStoredState)?,settings).await?;
-                    match request.action {
-                        QuickLootAction::FilterAdd=>{sqlx::query("INSERT INTO game_character_quick_loot_filters(character_id,accepted,item_production_key) VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING").bind(fence.character_id.as_bytes().as_slice()).bind(accepted).bind(key.ok_or(DurabilityError::InvalidStoredState)?).execute(&mut *tx).await?;},
-                        QuickLootAction::FilterRemove=>{sqlx::query("DELETE FROM game_character_quick_loot_filters WHERE character_id=encode($1,'hex')::uuid AND accepted=$2 AND item_production_key=$3").bind(fence.character_id.as_bytes().as_slice()).bind(accepted).bind(key.ok_or(DurabilityError::InvalidStoredState)?).execute(&mut *tx).await?;},
-                        QuickLootAction::FilterClear=>{sqlx::query("DELETE FROM game_character_quick_loot_filters WHERE character_id=encode($1,'hex')::uuid AND accepted=$2").bind(fence.character_id.as_bytes().as_slice()).bind(accepted).execute(&mut *tx).await?;},
-                        QuickLootAction::FilterSelect=>{},
-                        _=>return refuse(LoopMoveRefusal::Rejected),
+                    if let Some(key) = key {
+                        if !settings_owner::edit_filter_in_transaction(&mut tx,fence.character_id,settings,&key,
+                            request.action==QuickLootAction::FilterAdd).await? {
+                            return refuse(LoopMoveRefusal::NoRoom);
+                        }
+                    } else {
+                        let accepted=settings.accept_only;
+                        let revision:String=sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                        settings_owner::store(&mut tx,fence.character_id,revision.parse().map_err(|_|DurabilityError::InvalidStoredState)?,settings).await?;
+                        if request.action==QuickLootAction::FilterClear {
+                            sqlx::query("DELETE FROM game_character_quick_loot_filters WHERE character_id=encode($1,'hex')::uuid AND accepted=$2")
+                                .bind(fence.character_id.as_bytes().as_slice()).bind(accepted).execute(&mut *tx).await?;
+                        }
                     }
                     return Ok(QuickLootResult {items:Vec::new()});
                 }

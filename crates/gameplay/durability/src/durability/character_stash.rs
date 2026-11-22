@@ -17,7 +17,10 @@ use sqlx::{Postgres, Row, Transaction};
 
 pub(crate) mod audit;
 mod browse;
+mod row_actions;
+mod stow;
 pub use browse::StashCatalogueEntry;
+pub use row_actions::StashRowRequest;
 
 #[derive(Debug, Clone)]
 pub struct StashRequest {
@@ -176,7 +179,14 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx,&record).await?;
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:stash:' || encode($1,'hex') || ':' || $2,0))")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).execute(&mut *tx).await?;
-            let previous=sqlx::query("SELECT uuid_send(r.transaction_id) AS transaction,uuid_send(r.character_id) AS character,r.intent,r.outcome,CASE WHEN r.action=2 THEN COALESCE(e.amount,0) ELSE 0 END AS stowed FROM game_character_stash_operations r LEFT JOIN game_character_stash_entries e ON e.transaction_id=r.transaction_id WHERE r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric")
+            let previous=sqlx::query("SELECT uuid_send(r.transaction_id) AS transaction, uuid_send(r.character_id) AS character,
+                r.intent,r.outcome,CASE WHEN r.action=2 THEN COALESCE((
+                    SELECT sum(e.amount)::bigint FROM game_character_stash_operations batch
+                    JOIN game_character_stash_entries e USING(transaction_id)
+                    WHERE (batch.game_session_id,batch.command_id)=(r.game_session_id,r.command_id)
+                ),0) ELSE 0 END AS stowed
+                FROM game_character_stash_operations r
+                WHERE r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric AND r.batch_ordinal=0")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).fetch_optional(&mut *tx).await?;
             if let Some(previous)=previous {
                 let same=previous.try_get::<Vec<u8>,_>("intent")?==intent && previous.try_get::<Vec<u8>,_>("character")?==fence.character_id.as_bytes();
@@ -201,26 +211,88 @@ impl DurabilityRoot {
             };
             let house_key=if hireling.is_some() {Some(super::house_hireling::audit::read_key(&mut tx,&fence).await?)}else{None};
             if context.1.loop_content_digest()!=context.0.source_digest() {return Err(DurabilityError::Unavailable);}
-            let planned=plan(&mut tx,fence,&request,context.0,context.1).await?;
-            let (transaction,event,occurred):(String,String,i64)=sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
-            let outcome=match &planned {Ok(_)=>StashOutcome::Committed,Err(outcome)=>*outcome};
-            let action=if matches!(request.intent.action,StashAction::Stow(_)) {2_i16}else{3};
-            let stowed_quantity=if action==2 {planned.as_ref().map(|p|p.amount).unwrap_or(0)}else{0};
-            let envelope=match &planned {Ok(plan)=>Some(audit::encode(fence,channel,&request,plan,&transaction,&event,occurred,house_key.as_deref())?),Err(_)=>None};
-            let world=fence.runtime_scope.world_id();
-            sqlx::query("INSERT INTO game_character_stash_operations(transaction_id,game_session_id,command_id,character_id,world_id,intent,action,outcome,event_id,occurred_at,envelope_sha256,house_key,house_scope_ownership_generation) VALUES($1::uuid,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,$8,$9::uuid,$10,sha256($11),$12,$13::text::numeric)")
-                .bind(&transaction).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&intent).bind(action).bind(outcome as i16).bind(envelope.as_ref().map(|_|event.as_str())).bind(occurred).bind(envelope.as_deref())
-                .bind(house_key.as_deref()).bind(house_key.as_ref().map(|_|fence.scope_ownership_generation.get().to_string())).execute(&mut *tx).await?;
-            if let Ok(plan)=planned {
-                apply(&mut tx,fence,&plan,action,&transaction).await?;
-                let envelope=envelope.ok_or(DurabilityError::InvalidStoredState)?;
-                sqlx::query("INSERT INTO game_character_stash_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,world_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,9,1,'ECONOMY_LEDGER_RETENTION_V1',encode($3,'hex')::uuid,$4,$4+2592000000,$5,sha256($5),1)")
-                    .bind(&event).bind(&transaction).bind(world.as_bytes().as_slice()).bind(occurred).bind(&envelope).execute(&mut *tx).await?;
-            }
+            let writer = StashWriter { fence, channel, request: &request, intent: &intent, house_key: house_key.as_deref() };
+            let receipt = if request.intent.action.needs_stash_actions() && request.access_refusal.is_none() {
+                match stow::select(&mut tx, fence, &request, context.0, context.1).await? {
+                    Ok(batches) => apply_batch(&mut tx, &writer, batches).await?,
+                    Err(outcome) => writer.write(&mut tx, Err(outcome), 0).await?,
+                }
+            } else {
+                let planned = plan(&mut tx, fence, &request, context.0, context.1).await?;
+                writer.write(&mut tx, planned, 0).await?
+            };
             super::db::commit_semantic_transaction(tx,deadline).await?;
-            Ok(Some(StashReceipt {transaction:uuid_text(&transaction)?,outcome,stowed_quantity}))
+            Ok(Some(receipt))
         })).await
     }
+}
+
+struct StashWriter<'a> {
+    fence: CurrentCharacterItemFence,
+    channel: crate::foundation::ChannelId,
+    request: &'a StashRequest,
+    intent: &'a [u8],
+    house_key: Option<&'a str>,
+}
+
+impl StashWriter<'_> {
+    async fn write(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        planned: Result<Plan, StashOutcome>,
+        ordinal: i16,
+    ) -> Result<StashReceipt, DurabilityError> {
+        let fence = self.fence;
+        let (transaction,event,occurred):(String,String,i64)=sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut **tx).await?;
+        let outcome = match &planned { Ok(_) => StashOutcome::Committed, Err(outcome) => *outcome };
+        let action = if self.request.intent.action.stow_handle().is_some() {2_i16} else {3};
+        let stowed_quantity = if action == 2 {planned.as_ref().map(|p|p.amount).unwrap_or(0)} else {0};
+        let envelope = match &planned {
+            Ok(plan) => Some(audit::encode(fence,self.channel,self.request,plan,&transaction,&event,occurred,self.house_key)?),
+            Err(_) => None,
+        };
+        let world = fence.runtime_scope.world_id();
+        sqlx::query("INSERT INTO game_character_stash_operations(transaction_id,game_session_id,command_id,character_id,world_id,intent,action,outcome,event_id,occurred_at,envelope_sha256,house_key,house_scope_ownership_generation,batch_ordinal) VALUES($1::uuid,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,$8,$9::uuid,$10,sha256($11),$12,$13::text::numeric,$14)")
+            .bind(&transaction).bind(fence.game_session_id.as_bytes().as_slice()).bind(self.request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(self.intent).bind(action).bind(outcome as i16).bind(envelope.as_ref().map(|_|event.as_str())).bind(occurred).bind(envelope.as_deref())
+            .bind(self.house_key).bind(self.house_key.map(|_|fence.scope_ownership_generation.get().to_string())).bind(ordinal).execute(&mut **tx).await?;
+        if let Ok(plan) = planned {
+            apply(tx,fence,&plan,action,&transaction).await?;
+            let envelope = envelope.ok_or(DurabilityError::InvalidStoredState)?;
+            sqlx::query("INSERT INTO game_character_stash_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,world_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,9,1,'ECONOMY_LEDGER_RETENTION_V1',encode($3,'hex')::uuid,$4,$4+2592000000,$5,sha256($5),1)")
+                .bind(&event).bind(&transaction).bind(world.as_bytes().as_slice()).bind(occurred).bind(envelope).execute(&mut **tx).await?;
+        }
+        Ok(StashReceipt {transaction:uuid_text(&transaction)?,outcome,stowed_quantity})
+    }
+}
+
+async fn apply_batch(
+    tx: &mut Transaction<'_, Postgres>,
+    writer: &StashWriter<'_>,
+    batches: Vec<Vec<stow::StowInput>>,
+) -> Result<StashReceipt, DurabilityError> {
+    sqlx::query("SAVEPOINT stash_batch").execute(&mut **tx).await?;
+    let mut primary: Option<StashReceipt> = None;
+    for (ordinal, inputs) in batches.into_iter().enumerate() {
+        let planned = stow::plan(tx, writer.fence, inputs).await?;
+        if let Err(refusal) = planned {
+            sqlx::query("ROLLBACK TO SAVEPOINT stash_batch").execute(&mut **tx).await?;
+            return writer.write(tx, Err(refusal), 0).await;
+        }
+        let receipt = writer.write(tx, planned, i16::try_from(ordinal)
+            .map_err(|_| DurabilityError::InvalidStoredState)?).await?;
+        // Verify this balance predecessor before a subsequent chunk can advance it.
+        // Everything remains in the same transaction and rolls back on any refusal.
+        sqlx::query("SET CONSTRAINTS ALL IMMEDIATE").execute(&mut **tx).await?;
+        sqlx::query("SET CONSTRAINTS ALL DEFERRED").execute(&mut **tx).await?;
+        if let Some(primary) = &mut primary {
+            primary.stowed_quantity = primary.stowed_quantity.checked_add(receipt.stowed_quantity)
+                .filter(|quantity| *quantity <= MAX_STASH_STOW_UNITS)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+        } else {
+            primary = Some(receipt);
+        }
+    }
+    primary.ok_or(DurabilityError::InvalidStoredState)
 }
 
 fn outcome_from_code(code: i16) -> Result<StashOutcome, DurabilityError> {
@@ -294,7 +366,8 @@ async fn plan<C: ItemLoopContent>(
             let Some(row) = row else { refuse!(Stale) };
             (definition(&row)?, amount, None)
         }
-        StashAction::Browse => refuse!(Rejected),
+        StashAction::Browse | StashAction::StowQuantity { .. } | StashAction::StowMatching(_)
+        | StashAction::StowContents(_) => refuse!(Rejected),
     };
     if !stowable(native, &definition) {
         refuse!(Unsupported);
@@ -351,31 +424,12 @@ async fn plan<C: ItemLoopContent>(
     // The balance is last in the lock order, after root, items and backpack slot.
     // Slot rows are INSERT/DELETE only and the runtime has no UPDATE on them: lock the slot's item row.
     sqlx::query("SELECT s.item_instance_id FROM game_item_container_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid FOR UPDATE OF i").bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-    let balance=sqlx::query("SELECT quantity,last_entry_id::text AS previous FROM game_character_stash_balances WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND definition_key=$3 AND definition_revision=$4 FOR UPDATE")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&definition.production_key).bind(&definition.revision_ref).fetch_optional(&mut **tx).await?;
-    let (before, previous) = if let Some(balance) = balance {
-        (
-            balance.try_get::<i64, _>("quantity")?,
-            Some(balance.try_get::<String, _>("previous")?),
-        )
-    } else {
-        (0, None)
-    };
+    let (before, previous) = balance(tx, fence, &definition).await?;
     if !stow && i64::from(amount) > before {
         refuse!(Insufficient);
     }
-    if stow {
-        let after = before + i64::from(amount);
-        if after > i64::from(MAX_STASH_UNITS) {
-            refuse!(AmountLimit);
-        }
-        let used:i64=sqlx::query_scalar("SELECT COALESCE(sum((quantity+99)/100),0)::bigint FROM game_character_stash_balances WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND quantity>0")
-            .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
-        let depot:i64=sqlx::query_scalar("SELECT COALESCE(max(n),0)::bigint FROM (SELECT sum(committed) AS n FROM game_character_depot_box_counters WHERE character_id=encode($1,'hex')::uuid GROUP BY town_id) towns")
-            .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
-        if depot + used - (before + 99) / 100 + (after + 99) / 100 > 15_000 {
-            refuse!(NoRoom);
-        }
+    if stow && let Err(refusal) = check_stow_capacity(tx, fence, before, amount).await? {
+        return Ok(Err(refusal));
     }
     let mut lines = Vec::new();
     if let Some(source) = source {
@@ -409,6 +463,45 @@ async fn plan<C: ItemLoopContent>(
     }))
 }
 
+async fn balance(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: CurrentCharacterItemFence,
+    definition: &TypedDefinitionRef,
+) -> Result<(i64, Option<String>), DurabilityError> {
+    let world = fence.runtime_scope.world_id();
+    let balance=sqlx::query("SELECT quantity,last_entry_id::text AS previous FROM game_character_stash_balances WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND definition_key=$3 AND definition_revision=$4 FOR UPDATE")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&definition.production_key).bind(&definition.revision_ref).fetch_optional(&mut **tx).await?;
+    Ok(if let Some(balance) = balance {
+        (
+            balance.try_get::<i64, _>("quantity")?,
+            Some(balance.try_get::<String, _>("previous")?),
+        )
+    } else {
+        (0, None)
+    })
+}
+
+async fn check_stow_capacity(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: CurrentCharacterItemFence,
+    before: i64,
+    amount: u32,
+) -> Result<Result<(), StashOutcome>, DurabilityError> {
+    let world = fence.runtime_scope.world_id();
+        let after = before + i64::from(amount);
+        if after > i64::from(MAX_STASH_UNITS) {
+            return Ok(Err(StashOutcome::AmountLimit));
+        }
+        let used:i64=sqlx::query_scalar("SELECT COALESCE(sum((quantity+99)/100),0)::bigint FROM game_character_stash_balances WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND quantity>0")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        let depot:i64=sqlx::query_scalar("SELECT COALESCE(max(n),0)::bigint FROM (SELECT sum(committed) AS n FROM game_character_depot_box_counters WHERE character_id=encode($1,'hex')::uuid GROUP BY town_id) towns")
+            .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        if depot + used - (before + 99) / 100 + (after + 99) / 100 > 15_000 {
+            return Ok(Err(StashOutcome::NoRoom));
+        }
+    Ok(Ok(()))
+}
+
 async fn apply(
     tx: &mut Transaction<'_, Postgres>,
     fence: CurrentCharacterItemFence,
@@ -427,8 +520,11 @@ async fn apply(
     sqlx::query("INSERT INTO game_character_stash_entries(entry_id,transaction_id,character_id,world_id,definition_key,definition_revision,amount,quantity_before,quantity_after,previous_entry_id) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7,$8,$9,$10::uuid)")
         .bind(entry).bind(transaction).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&plan.definition.production_key).bind(&plan.definition.revision_ref).bind(i64::from(plan.amount)).bind(plan.before).bind(after).bind(plan.previous.as_deref()).execute(&mut **tx).await?;
     for (position, line) in plan.lines.iter().enumerate() {
+        let parent = line.get("parent").map(|parent| serde_json::from_value::<Vec<u8>>(parent.clone()))
+            .transpose().map_err(|_| DurabilityError::InvalidStoredState)?;
+
         sqlx::query("INSERT INTO game_character_stash_item_lines(transaction_id,ordinal,item_instance_id,definition_key,definition_revision,quantity,direction,parent_item_instance_id,placement_ordinal,before_item) VALUES($1::uuid,$2,($3->>'item')::uuid,$4,$5,($3->>'count')::bigint,$6,encode($7,'hex')::uuid,($3->>'ordinal')::numeric,$8)")
-            .bind(transaction).bind(i16::try_from(position+1).map_err(|_|DurabilityError::InvalidStoredState)?).bind(line).bind(&plan.definition.production_key).bind(&plan.definition.revision_ref).bind(if action==2 {1_i16}else{2}).bind(&plan.parent).bind(line.get("before")).execute(&mut **tx).await?;
+            .bind(transaction).bind(i16::try_from(position+1).map_err(|_|DurabilityError::InvalidStoredState)?).bind(line).bind(&plan.definition.production_key).bind(&plan.definition.revision_ref).bind(if action==2 {1_i16}else{2}).bind(parent.as_deref().unwrap_or(&plan.parent)).bind(line.get("before")).execute(&mut **tx).await?;
     }
     if plan.previous.is_none() {
         sqlx::query("INSERT INTO game_character_stash_balances(character_id,world_id,definition_key,definition_revision,quantity,last_entry_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,$6::uuid)")
@@ -439,8 +535,22 @@ async fn apply(
     }
     for line in &plan.lines {
         if action == 2 {
-            sqlx::query("UPDATE game_item_instances SET quantity=0,lifecycle=2,last_transaction_id=$2::uuid WHERE item_instance_id=($1->>'item')::uuid").bind(line).bind(transaction).execute(&mut **tx).await?;
-            sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=($1->>'item')::uuid").bind(line).execute(&mut **tx).await?;
+            let retired: bool = sqlx::query_scalar("UPDATE game_item_instances SET quantity=quantity-($1->>'count')::bigint,
+                lifecycle=CASE WHEN quantity=($1->>'count')::bigint THEN 2 ELSE 1 END,last_transaction_id=$2::uuid
+                WHERE item_instance_id=($1->>'item')::uuid RETURNING lifecycle=2")
+                .bind(line).bind(transaction).fetch_one(&mut **tx).await?;
+            if retired {
+                let removed = if line["nested"] == true {
+                    sqlx::query("DELETE FROM game_item_nested_entries WHERE item_instance_id=($1->>'item')::uuid")
+                        .bind(line).execute(&mut **tx).await?
+                } else {
+                    sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=($1->>'item')::uuid")
+                        .bind(line).execute(&mut **tx).await?
+                };
+                if removed.rows_affected()!=1 {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+            }
         } else {
             sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,($1->>'count')::bigint,1,$5::uuid)")
                 .bind(line).bind(world.as_bytes().as_slice()).bind(&plan.definition.production_key).bind(&plan.definition.revision_ref).bind(transaction).execute(&mut **tx).await?;

@@ -1,0 +1,11 @@
+{
+  "id": 591,
+  "name": "STASH_ACTIONS_V1",
+  "owner_decision": "Server protocol gaps owner allocation 2026-11-22",
+  "owner": "Character stash",
+  "requires": [62],
+  "command_types": [6345],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Bundle World with STASH_V1. Negotiates additive carried-tree stow actions on command 79 and row targeting on command 6345."
+}

@@ -6,9 +6,11 @@ package oteryn.game.v1;
 message StashIntentV1 {
   uint32 page = 1; // 0..14999
   uint32 action = 2; // 1 browse, 2 whole-item stow, 3 withdraw
+  // 4 stow a quantity, 5 stow matching stacks, 6 stow container contents.
+  // Actions 4..6 require capability 591.
   optional uint64 item_handle = 3; // stow only
   optional bytes row_handle = 4; // withdraw only; exact 16-byte last_entry_id
-  optional uint32 amount = 5; // withdraw only; >0, at most 20*stack_max
+  optional uint32 amount = 5; // withdraw: 1..20*stack_max; quantity stow: 1..100
   optional StashFilterV1 filter = 6; // fresh view only; excluded from conversion receipt identity
 }
 message StashFilterV1 {
@@ -33,7 +35,7 @@ message StashReplyV1 {
   bool has_more = 4;
   repeated StashRowV1 rows = 5; // <=32, unique handles; order is server-selected by the view criteria
   string message = 6; // deterministic native message for outcome
-  uint32 stowed_quantity = 7; // success stow only, 1..100; replay retains the original tally
+  uint32 stowed_quantity = 7; // success stow only, 1..100 legacy or 1..50000 for actions 5/6
 }
 // Base conversion intent <=48 bytes; request with view criteria <=460 bytes; result/page delta <=36,000 bytes. Canonical decoding rejects
 // duplicate/unknown fields, cross-action fields, zero quantities and invalid pages.
@@ -55,3 +57,34 @@ message StashReplyV1 {
 // select only known matching metadata.
 // Conversion receipts retain their original canonical base intent; view criteria
 // never select a definition to mint or change a durable receipt.
+
+// Action 4 takes the requested units from the selected carried stack, retaining
+// the source's identity and placement when a remainder stays. An amount above
+// the current stack is INSUFFICIENT. Action 5 selects all eligible stacks with
+// the same exact definition/revision in the main-backpack tree. Action 6 stows
+// every eligible descendant of the selected carried container (including the
+// main backpack), preserving containers and the ineligible contents.
+// A batch is atomic. Its first ledger receipt identifies the original result,
+// whose total counts all units stowed by that command. It uses the same
+// authoritative locker/Steward, inventory and session fences as a legacy stow.
+// Crystal 201189f player.cpp:9521-9635 and protocolgame.cpp:10232-10254 cover the
+// three source actions. Oteryn limits them to its fenced carried stash owner.
+
+// Command 6345 requires capability 591. The row must be on the open page and
+// still be the positive current balance version for this Character and World.
+// 1 returns the Item reference for Cyclopedia inspection. 2 returns the
+// reference for Market Book (requires capability 63). 3/4 add/remove the
+// resolved definition in the active Quick Loot list (requires capability 98).
+// List modifications are fenced and receipted. They preserve the selected
+// list mode, recipients and stash balance. No durable identity is returned.
+message StashRowIntentV1 {
+  uint32 action = 1;
+  bytes row_handle = 2; // nonzero version, exactly 16 bytes
+}
+// Common ACCEPTED carries the admitted generation's Item reference. Common
+// REJECTED with empty payload is the generic "Sorry, not possible." refusal.
+// The reply does not close the stash page. The client opens its existing
+// Cyclopedia or Market view using the returned reference.
+message StashRowResultV1 {
+  uint32 definition_ref = 1; // nonzero
+}

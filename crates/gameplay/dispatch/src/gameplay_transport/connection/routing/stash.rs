@@ -16,16 +16,19 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     let Ok((intent, filter)) = decode_stash_query(command.payload) else {
         return Some(Dispatch::Unregistered);
     };
-    let selected = match intent.action {
-        StashAction::Stow(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
-        _ => None,
-    };
+    if intent.action.needs_stash_actions()
+        && !admitted.continuity.selected_capabilities.contains(CAPABILITY_STASH_ACTIONS_V1)
+    {
+        return Some(Dispatch::Unregistered);
+    }
+    let selected = intent.action.stow_handle()
+        .and_then(|handle| item_view.as_ref()?.resolve(handle));
     let row_open = match intent.action {
         StashAction::Withdraw { row, .. } => {
             open_rows.as_ref().is_some_and(|rows| rows.contains(&row))
         }
-        StashAction::Stow(_) => open_rows.is_some(),
         StashAction::Browse => false,
+        _ => open_rows.is_some(),
     };
     let reply = authority
         .stash_filtered(
@@ -47,4 +50,39 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     ))
     .then(|| reply.rows.iter().map(|r| r.handle).collect());
     Some(Dispatch::Stash(reply))
+}
+
+pub(in super::super) async fn row_action<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    admitted: &AdmittedSession,
+    command: ClientCommandView<'_>,
+    open_rows: Option<&[[u8; 16]]>,
+) -> Dispatch {
+    use crate::foundation::CommandStatus;
+    use oteryn_protocol_oteryn::{market::CAPABILITY_MARKET_V1, quick_loot::CAPABILITY_QUICK_LOOT_V1};
+
+    let Ok(intent) = decode_stash_row_intent(command.payload) else {
+        return Dispatch::Unregistered;
+    };
+    let selected = admitted.continuity.selected_capabilities;
+    if (intent.action == StashRowAction::Market && !selected.contains(CAPABILITY_MARKET_V1))
+        || (intent.action.changes_loot_list() && !selected.contains(CAPABILITY_QUICK_LOOT_V1))
+    {
+        return Dispatch::Unregistered;
+    }
+    let row_open = open_rows.is_some_and(|rows| rows.contains(&intent.row));
+    match authority.stash_row_action(
+        actor,
+        UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id: command.command_id,
+            item_fence: admitted.item_fence,
+        },
+        intent,
+        row_open,
+    ).await {
+        Some(reference) => Dispatch::Reply(CommandStatus::Accepted, encode_stash_row_result(reference)),
+        None => Dispatch::Unregistered,
+    }
 }

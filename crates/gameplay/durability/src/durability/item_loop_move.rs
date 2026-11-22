@@ -333,7 +333,7 @@ fn definition_of(row: &sqlx::postgres::PgRow) -> LoopResult<TypedDefinitionRef> 
 }
 
 /// The per-CommandRef serialization point of the loop writer and its replay read.
-async fn lock_loop_command(
+pub(super) async fn lock_loop_command(
     tx: &mut Transaction<'_, Postgres>,
     command: CommandRef,
 ) -> std::result::Result<(), sqlx::Error> {
