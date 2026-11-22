@@ -197,6 +197,7 @@ pub(super) async fn exercise(
         -1,
         "Gail report does not replace Oberon death"
     );
+    assert!(oberon_achievements(h).await?.is_empty());
     travel(owner, admitted, 33364, 31318, 9).await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -218,6 +219,10 @@ pub(super) async fn exercise(
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     assert_eq!(progress(h, "kills").await?, 1);
+    assert_eq!(
+        oberon_achievements(h).await?,
+        ["oteryn:achievement/master_debater", "oteryn:achievement/millennial_falcon"]
+    );
     travel(owner, admitted, 32671, 32736, 11).await?;
     step(owner, admitted, command, StepDirection::East).await?;
     command += 1;
@@ -256,6 +261,16 @@ pub(super) async fn exercise(
     let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.the_secret_library_quest'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert!(completed);
     Ok(())
+}
+
+async fn oberon_achievements(h: &Harness) -> TestResult<Vec<String>> {
+    Ok(sqlx::query_scalar(
+        "SELECT achievement_key FROM game_account_achievements
+         WHERE achievement_key IN ('oteryn:achievement/master_debater', 'oteryn:achievement/millennial_falcon')
+         ORDER BY achievement_key",
+    )
+    .fetch_all(&h.pool)
+    .await?)
 }
 
 async fn carry(

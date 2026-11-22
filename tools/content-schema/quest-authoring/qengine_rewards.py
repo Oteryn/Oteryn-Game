@@ -235,6 +235,17 @@ def build():
                     'sha256': sha(inputs['data/XML/mounts.xml'])}
     mounts, mount_mappings = qengine_mounts.populate(ROOT, inputs, looks, mount_source, item_packet)
     mappings.extend(mount_mappings)
+    # Crystal 201189f Task Board stock: Feral Trapper, Falconer and Antelope.
+    for first_offer, family in ((0, 'feral_trapper'), (3, 'falconer')):
+        key = 'oteryn:outfit.' + family
+        for addon in range(3):
+            target = {'kind': 'Outfit', 'outfit_key': key} if addon == 0 else {
+                'kind': 'Addon', 'outfit_key': key, 'addon': addon}
+            mappings.append({'grant_key': f'oteryn:taskboard/shop/offer-{first_offer + addon}',
+                             'target': target, 'compatible_provenance': ['task-board-shop-v1']})
+    mappings.append({'grant_key': 'oteryn:taskboard/shop/offer-9',
+                     'target': {'kind': 'Mount', 'mount_key': 'oteryn:content.mount.antelope'},
+                     'compatible_provenance': ['task-board-shop-v1']})
     lane_programmes=load_module('questpc7_costume_sources','tools/content-schema/quest-authoring/questpc7_outfit_programmes.py')
     lane_programmes.consumptive_mappings(ROOT,outfits,mappings)
     atlas = load_module('qengine_atlas_palette', 'tools/game-atlas-appearances/export.py')
@@ -433,9 +444,16 @@ def build():
         outfit=('battle_mage',0),achievement='oteryn:achievement/battle_mage')
     library_done=[requirement(library+'library_permission',7)]
     for name,bit,item,count,words in [('book',1,28792,5,['book','books','sturdy books']),('epaulettes',2,28793,20,['epaulettes'])]:
-        add('l2-battle-mage-'+name,'battle_mage_outfits_quest','dedoras',words,
-            [storage(prefix+'u11_80/battle_mage_outfits/addon'+str(bit),-1,1,0)],
-            take=[(item,count)],outfit=('battle_mage',bit),topic=3,requires=library_done)
+        addon=prefix+'u11_80/battle_mage_outfits/addon'
+        other=addon+str(3-bit)
+        for complete in (False, True):
+            add('l2-battle-mage-'+name+('-complete' if complete else ''),'battle_mage_outfits_quest','dedoras',words,
+                [storage(addon+str(bit),-1,1,0)],
+                take=[(item,count)],outfit=('battle_mage',bit),topic=3,
+                requires=library_done+[requirement(other,1) if complete else requirement(other,-1,0)],
+                achievement='oteryn:achievement/exalted_battle_mage' if complete else None)
+            if complete:
+                callbacks[-1]['sources'].append('https://tibia.fandom.com/?curid=86073&oldid=847545')
     for word,topic,next_topic in [('addon',0,1),('yes',1,2),('yes',2,3)]:
         offers.append({'npc':'oteryn:npc.dedoras','keywords':[word],'topic':topic,
             'next_topic':next_topic,'storage':[],'requires':library_done,
@@ -1014,7 +1032,15 @@ def build():
                 achievement='oteryn:achievement/cobbled_and_patched' if label=='makeshift' and bit==2 else None)
             callback=callbacks[-1];callback.update(minimum_level=level,requires_premium=True,
                 requires_outfits=['oteryn:outfit.'+family],forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
-            if bit==2:callback['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
+            if bit==2:
+                callback['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
+                wiki = {
+                    'dream-warrior': 'https://tibia.fandom.com/?curid=86660&oldid=848561',
+                    'issavi': 'https://tibia.fandom.com/?curid=94721&oldid=869754',
+                }.get(label)
+                if wiki:
+                    callback['achievement']='oteryn:achievement/'+family
+                    callback['sources'].append(wiki)
             if carried:callback['carried_item']=f'oteryn:item.tibia.i{item}'
             if label=='issavi':callback['sources'].append('owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each')
         if not carried:

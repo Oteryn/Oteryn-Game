@@ -66,7 +66,19 @@ fn scenario(large_rotation: bool) -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let deps = Dependencies::new()?;
+        let world = super::fixture::fence(1)?.runtime_scope.world_id();
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+            world,
+            "content-1",
+        )?;
+        let active = controller.active().ok_or("production generation")?;
+        let native = active.native_gameplay().ok_or("native generation")?;
+        let room = pin.qualified_room().clone();
+        let deps = Dependencies::with_content(
+            pin.into_channel_pin(),
+            room,
+            native.spell_book().clone(),
+        )?;
         {
             let mut runtime = deps.runtime.lock().await;
             runtime
@@ -99,11 +111,7 @@ fn scenario(large_rotation: bool) -> TestResult {
                 .map_err(debug)?;
         }
         let mut owner = deps.owner(&harness, &authority);
-        let (controller, _) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
-            deps.admitted.world_id,
-            "content-1",
-        )?;
-        owner.active_generation = controller.active();
+        owner.active_generation = Some(active);
 
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -330,8 +338,48 @@ fn scenario(large_rotation: bool) -> TestResult {
                 .is_none(),
             "same command id cannot change its intent"
         );
+        if !large_rotation {
+            let buy = wire::encode_match_request(ArenaAction::Drome(DromeAction::Buy(17)))
+                .map_err(debug)?;
+            let refused = owner
+                .arena_match_command(admitted, admitted.continuity.next_command_id, &buy)
+                .await
+                .ok_or("unaffordable Phant reply")?;
+            assert_eq!(wire::DromeResult::decode(&refused).map_err(debug)?.disposition, 7);
+            assert_eq!(phantastic_grants(&harness).await?, 0);
+            sqlx::query(
+                "UPDATE game_character_tibiadrome
+                 SET body=jsonb_set(body,'{progress,points}','8000')
+                 WHERE character_id=encode($1,'hex')::uuid",
+            )
+            .bind(id(41).as_slice())
+            .execute(&harness.pool)
+            .await?;
+            let command = admitted.continuity.next_command_id + 1;
+            let bought = owner
+                .arena_match_command(admitted, command, &buy)
+                .await
+                .ok_or("Phant purchase reply")?;
+            let result = wire::DromeResult::decode(&bought).map_err(debug)?;
+            assert_eq!((result.disposition, result.points), (1, 0));
+            assert_eq!(phantastic_grants(&harness).await?, 1);
+            assert_eq!(
+                owner.arena_match_command(admitted, command, &buy).await,
+                Some(bought)
+            );
+            assert_eq!(phantastic_grants(&harness).await?, 1);
+        }
         Ok(())
     })
+}
+
+async fn phantastic_grants(harness: &super::fixture::Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievement_grant_requests
+         WHERE achievement_key='oteryn:achievement/phantastic'",
+    )
+    .fetch_one(&harness.pool)
+    .await?)
 }
 
 #[test]

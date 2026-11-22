@@ -206,6 +206,13 @@ pub(super) async fn exercise(
             receipts, 1,
             "one actual death owns one non-completing stage receipt"
         );
+        let museum_goer: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_account_achievement_grant_requests
+             WHERE achievement_key='oteryn:achievement/museum_goer'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(museum_goer, i64::from(stage == "s8"));
     }
     Ok(())
 }

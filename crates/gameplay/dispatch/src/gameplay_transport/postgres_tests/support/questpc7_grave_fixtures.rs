@@ -265,6 +265,13 @@ pub(super) async fn exercise(
             .await?,
             1
         );
+        let scarlett_grants: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_account_achievements
+             WHERE achievement_key='oteryn:achievement/a_study_in_scarlett'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(scarlett_grants, i64::from(*name == "scarlett_etzel"));
         let name = match i {
             0 => "knight-passage-0",
             1 => "knight-passage-1",

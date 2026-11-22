@@ -333,3 +333,53 @@ pub(super) async fn pending_experience_case(
     );
     Ok(())
 }
+
+pub(super) async fn higher_tier_achievement_cases(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: &AdmittedSession,
+) -> TestResult {
+    use super::super::achievement_granters::{assert_progress, seed_progress};
+
+    let monsterhunter = "oteryn:achievement/monsterhunter";
+    let taskmaster = "oteryn:achievement/taskmaster";
+    let source = "oteryn:task-board";
+    seed_progress(h, monsterhunter, 199).await?;
+    seed_progress(h, taskmaster, 498).await?;
+    // Historical partially finished boards at each difficulty. The terminal
+    // kills, progression writes and replay go through the production owner.
+    let mut data = fixture_board_data(h).await?;
+    for (difficulty, tag, key, progress, granted) in [
+        (1, 65_010, monsterhunter, 200, true),
+        (2, 65_011, taskmaster, 499, false),
+        (3, 65_012, taskmaster, 500, true),
+    ] {
+        let weekly = data.weekly.as_mut().ok_or("weekly board")?;
+        weekly.difficulty = difficulty;
+        weekly.finished = false;
+        weekly.any_required = (u32::from(difficulty) + 1) * 1_000;
+        weekly.any_kills = weekly.any_required;
+        let task = weekly.kills.first_mut().ok_or("specific weekly task")?;
+        task.current = task.required - 1;
+        let race = task.race.clone();
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_character_task_boards SET body=$2 WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(41).as_slice()).bind(serde_json::to_value(&data)?)
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "fence read")?
+            .ok_or("current fence")?;
+        let occurrence = death_occurrence(tag);
+        assert!(owner.credit_task_board_kill(fence, &race, occurrence).await);
+        let grant = assert_progress(h, key, progress, granted, source).await?;
+        assert!(owner.credit_task_board_kill(fence, &race, occurrence).await);
+        assert_eq!(assert_progress(h, key, progress, granted, source).await?, grant);
+        data = fixture_board_data(h).await?;
+    }
+    Ok(())
+}
