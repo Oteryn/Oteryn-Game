@@ -600,11 +600,12 @@ pub(super) use crate::content::bundle_spell_tiles::tile_pos;
 /// SPAWN-1b (Codex P1 on #1981): one bundle spawn source as the Channel runtime realizes it
 /// (the carrier's `ActivationSpawnSourceFacts`): its points in authored order, each its
 /// placement cell `(x, y, z)`, respawn delay (ms), creature key, initial health and creature
-/// profile `blocked_by_nearby_players`, and the source's occupancy retry interval (ms).
-pub type BundleSpawnFacts = (Vec<BundleSpawnPointFacts>, u64);
+/// profile `blocked_by_nearby_players` and optional spawn weight. The source
+/// also carries its occupancy retry interval (ms).
+pub type BundleSpawnFacts = oteryn_gameplay_entities::carrier::ActivationSpawnSourceFacts;
 
 /// SPAWN-1b: one point of a [`BundleSpawnFacts`] (the carrier's `ActivationSpawnPointFacts`).
-pub type BundleSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
+pub type BundleSpawnPointFacts = oteryn_gameplay_entities::carrier::ActivationSpawnPointFacts;
 
 pub type BundleBossSpawnFacts = (
     String,
@@ -632,6 +633,12 @@ pub fn table_activation_spawns(
     let mut out = Vec::with_capacity(table.sources.len());
     for source in &table.sources {
         let z = i16::from(source.floor).checked_neg()?;
+        let weighted_cells: BTreeSet<_> = source
+            .points
+            .iter()
+            .filter(|point| point.weight.is_some())
+            .map(|point| (point.x, point.y))
+            .collect();
         let mut points = Vec::with_capacity(source.points.len());
         for point in &source.points {
             let index = usize::try_from(point.creature).ok()?;
@@ -650,6 +657,11 @@ pub fn table_activation_spawns(
                 creature.key.clone(),
                 health,
                 blockable,
+                point.weight.or_else(|| {
+                    weighted_cells
+                        .contains(&(point.x, point.y))
+                        .then_some(std::num::NonZeroU32::MIN)
+                }),
             ));
         }
         if !points.is_empty() {
@@ -671,7 +683,7 @@ impl BundleWorld {
             // A layer may replace previously admitted ground. Recheck the composed map
             // before handing ordinary source points to the creature owner.
             for (points, _) in &mut sources {
-                points.retain(|((x, y, z), _, _, _, _)| {
+                points.retain(|((x, y, z), _, _, _, _, _)| {
                     let (Ok(x), Ok(y), Ok(floor)) =
                         (u16::try_from(*x), u16::try_from(*y), i8::try_from(-*z))
                     else {
@@ -1237,6 +1249,7 @@ pub mod tests {
                 "oteryn:creature.rat".to_string(),
                 20,
                 false,
+                None,
             )
         };
         let wolf = |x, z, respawn_ms| {
@@ -1246,6 +1259,7 @@ pub mod tests {
                 "oteryn:creature.wolf".to_string(),
                 35,
                 true,
+                None,
             )
         };
         assert_eq!(

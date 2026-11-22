@@ -92,6 +92,7 @@ impl ChannelRuntimeV1 {
                     live: None,
                     attempt: 0,
                     successor: 0,
+                    draw_ordinal: 0,
                 });
             }
             realized.push(SpawnRealization {

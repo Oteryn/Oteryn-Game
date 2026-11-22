@@ -3470,6 +3470,7 @@ pub(crate) async fn realize_bundle_spawns(
                 point.creature.clone(),
                 u64::try_from(policy.maximum_health).map_err(|_| refuse())?,
                 policy.blocked_by_nearby_players,
+                None,
             )],
             5_000,
         ));
@@ -3504,6 +3505,7 @@ pub(crate) async fn realize_bundle_spawns(
                         key.to_owned(),
                         u64::try_from(policy.maximum_health).map_err(|_| refuse())?,
                         policy.blocked_by_nearby_players,
+                        None,
                     )],
                     5_000,
                 ));
@@ -4805,6 +4807,7 @@ source_authority = "OTERYN_GAME_JOURNAL"
                                 "oteryn:creature/rat".to_string(),
                                 20,
                                 false,
+                                None,
                             )
                         })
                         .collect::<Vec<_>>();

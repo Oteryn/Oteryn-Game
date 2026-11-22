@@ -637,6 +637,26 @@ default with `CHOSEN_OTERYN_APPROXIMATION` provenance.
 claims, including bosses subsequently killed. Occupancy may delay realization of
 a committed claim. It adds no wire payload or Platform authority.
 
+### Weighted ordinary spawn points
+
+An ordinary `Spawn.Source` point can declare a positive u32 `weight`. Points with the
+same position within that source form one spawn cell when any entry has a weight.
+An omitted weight in that cell defaults to 1. The source's first entry at the
+position supplies the cell's order and its last admitted ordinary entry supplies
+the cell's respawn delay. Source ordering and unweighted points retain their
+existing interpretation.
+
+A weighted point writes zero in the delay field, tag byte 3, then its positive
+ordinary `respawn_ms` and weight as canonical varints. This escape preserves the
+ordinary and boss encodings. A reader predating tag 3 rejects a weighted payload.
+The spawn frame counts encoded entries, while the Channel counts the shared cell
+once. Boss policies do not take weights.
+
+The Channel selects one eligible creature for each weighted cell at activation
+and on each successful respawn. The selection is derived from scope identity,
+source and cell ordinal, and the cell's admission ordinal. Retries reuse that
+ordinal. The existing ephemeral scope reset starts the sequence again.
+
 ## 16. Format v6 (C20d-W23)
 
 Version 6 carries each area's `town_id` (the source engine town id or null),
