@@ -1352,6 +1352,31 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         source_reward_items.extend(m25_items);
         source_reward_items.extend(galthen_furniture::qualified_records()?);
         source_reward_items.extend(galthen_loot::qualified_records()?);
+        // Exact Crystal 201189f8 corpse bodies missing from the older identity index.
+        // The active profile still has to match the captured Ground custody.
+        #[derive(Deserialize)]
+        struct OrdinaryCorpseCapture {
+            new_item_bindings: Vec<super::project::ProjectV2SourceIdentityBinding>,
+            records: Vec<ItemProfileRecord>,
+        }
+        let ordinary_corpses: OrdinaryCorpseCapture = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/ordinary-corpse-slice2.json"
+        ))
+        .map_err(|_| invalid("native ordinary corpse source records"))?;
+        for binding in ordinary_corpses.new_item_bindings {
+            let record = ordinary_corpses
+                .records
+                .iter()
+                .find(|record| record.production_binding == binding)
+                .ok_or_else(|| invalid("native ordinary corpse source binding"))?;
+            if admitted
+                .insert(binding.external_id.clone(), binding)
+                .is_some()
+            {
+                return Err(invalid("native ordinary corpse exact binding conflict"));
+            }
+            source_reward_items.push(record.clone());
+        }
         let item_detail_weights: BTreeMap<String, u32> = serde_json::from_slice(include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/item-detail-weight-facts.json"
         ))
