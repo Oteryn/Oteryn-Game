@@ -49,7 +49,14 @@ class NativeGoalCorpseProof(unittest.TestCase):
 
     def test_full_decay_closure_keeps_source_weights_and_capacities(self):
         policies, weights = native.policies()
-        self.assertEqual(len(policies), 20)
+        self.assertEqual(len(policies), 29)
+        self.assertEqual({item: policies[item] for item in (7535, 7537, 7538, 7539, 7540)}, {
+            7535: (7, 10000, 7537),
+            7537: (7, 10000, 7538),
+            7538: (7, 300000, 7539),
+            7539: (7, 300000, 7540),
+            7540: (None, None, None),
+        })
         self.assertEqual(policies[5973], (12, 10000, 4025))
         self.assertEqual(policies[5963], (10, 10000, 3990))
         self.assertEqual(policies[4013], (10, 60000, None))
@@ -70,7 +77,7 @@ class NativeGoalCorpseProof(unittest.TestCase):
             self.assertEqual(new['semantics']['physical']['value']['pickupable']['value'],
                              new['identity']['key'] in {'oteryn:item.tibia.i3990',
                                  'oteryn:item.tibia.i4103', 'oteryn:item.tibia.i4104'})
-            for group, accepted in old['semantics'].items():
+            for group, accepted in old.get('semantics', {}).items():
                 if group not in native.GROUPS:
                     self.assertEqual(new['semantics'][group], accepted)
         once = copy.deepcopy(items)

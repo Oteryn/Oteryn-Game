@@ -1407,7 +1407,7 @@ fn scenario_case(
         };
 
         let initial_level: Option<u32> = match name {
-            super::super::koshei_the_deathless_journey::NAME => Some(40),
+            super::super::koshei_the_deathless_journey::NAME => Some(150),
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
             "questpc7-eligibility-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
@@ -1733,12 +1733,16 @@ fn scenario_case(
             owner.rooms =
                 crate::gameplay_transport::SeamRooms::new(native_crop.then_some(room), Some(room));
         }
-        owner.quest_catalogue = Some(std::sync::Arc::new(
-            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-                .map_err(debug)?
-                .catalogue()
-                .clone(),
-        ));
+        let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(debug)?;
+        owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
+        if koshei {
+            let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
+            owner.quest_log_content = Some(
+                crate::gameplay_transport::quest_log::QuestLogLines::new(journal.content)
+                    .ok_or("Koshei journal line bounds")?,
+            );
+        }
         if draconia_escape {
             owner.quest_catalogue =
                 Some(super::super::draconia_escape_fixtures::catalogue(&callback, name)?);

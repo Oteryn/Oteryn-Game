@@ -42,8 +42,8 @@
         },
         {
           "key": "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/reward_door",
-          "initial": 0,
-          "minimum": 0,
+          "initial": -1,
+          "minimum": -1,
           "maximum": 1
         }
       ],
@@ -101,9 +101,9 @@
                 },
                 {
                   "track": "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/reward_door",
-                  "minimum": 0,
-                  "maximum": 0,
-                  "set": 0,
+                  "minimum": -1,
+                  "maximum": -1,
+                  "set": -1,
                   "preserve": true
                 },
                 {
@@ -205,8 +205,8 @@
                 },
                 {
                   "track": "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/reward_door",
-                  "minimum": 0,
-                  "maximum": 0,
+                  "minimum": -1,
+                  "maximum": -1,
                   "set": 1
                 }
               ],

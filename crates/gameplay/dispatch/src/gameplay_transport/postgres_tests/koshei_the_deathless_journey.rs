@@ -37,9 +37,15 @@ fn koshei_the_deathless_full_journey() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    let started = std::time::Instant::now();
     super::kill_reward_e2e_fixtures::scenario_thread::run(NAME, || {
         super::quest_world_callbacks_fixtures::scenario(NAME, SWITCH, false)
-    })
+    })?;
+    println!(
+        "POSTGRES_CASE_COMPLETED {NAME} duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
 
 pub(super) fn callback() -> TestResult<Callback> {
@@ -129,7 +135,7 @@ impl State {
              coalesce(max(value) FILTER(WHERE track_key=$2),0), \
              coalesce(max(value) FILTER(WHERE track_key=$3),0), \
              coalesce(max(value) FILTER(WHERE track_key=$4),0), \
-             coalesce(max(value) FILTER(WHERE track_key=$5),0) \
+             greatest(max(value) FILTER(WHERE track_key=$5),0) \
              FROM game_character_quest_tracks WHERE character_id=encode($6,'hex')::uuid",
         )
         .bind(TRACK)
@@ -247,26 +253,6 @@ async fn commission(
     let [npc] =
         super::classic_quests_fixtures::install_positions(owner, admitted, [CYCLOPS], [NPC])
             .await?;
-    let fence = owner
-        .current_quest_fence(admitted.game_session_id)
-        .await
-        .map_err(debug)?
-        .ok_or("forge fence")?;
-    // Arrange the initial wallet, with no quest item, on the new test character.
-    input_item(
-        owner,
-        fence.item_fence(),
-        &Offering {
-            position: NPC,
-            item: "oteryn:item.tibia.i3035".into(),
-            count: 50,
-        },
-        51000,
-        true,
-    )
-    .await?;
-    expected.items[6] = 50;
-    assert_eq!(State::read(h).await?, *expected);
     let (paid, _, _) =
         super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, start, false).await?;
     assert_eq!(paid, NpcIntentDisposition::Ok);
@@ -288,6 +274,9 @@ async fn commission(
     .execute(&h.pool)
     .await?;
     assert_eq!(aged.rows_affected(), 1);
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     let (granted, _, _) =
         super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, collect, false).await?;
     assert_eq!(granted, NpcIntentDisposition::Ok);
@@ -300,9 +289,9 @@ async fn commission(
 async fn seal(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
-) -> TestResult {
-    use crate::gameplay_transport::item_view::{ItemKey, SessionItemView, inventory_from_backpack};
-    let corpse = owner
+) -> TestResult<[u8; 16]> {
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    let body = owner
         .runtime
         .lock()
         .await
@@ -310,76 +299,115 @@ async fn seal(
         .into_iter()
         .find(|corpse| corpse.item.production_key == "oteryn:item.tibia.i7535")
         .ok_or("the committed encounter kill must produce the fresh Koshei corpse")?;
-    let fence = owner
-        .current_quest_fence(admitted.game_session_id)
-        .await
-        .map_err(debug)?
-        .ok_or("seal fence")?;
-    let bag = owner
-        .root
-        .read_character_backpack(owner.character, fence.character_id)
-        .await
-        .map_err(debug)?
-        .ok_or("backpack")?;
-    let amulet = bag
-        .entries
-        .iter()
-        .find(|entry| entry.item.definition.production_key == "oteryn:item.tibia.i7532")
-        .ok_or("collected amulet")?
-        .item
-        .item_instance_id;
     let index = owner
         .active_generation
         .and_then(|generation| generation.native_gameplay())
         .and_then(|native| native.item_index())
         .ok_or("item index")?;
-    let mut view = SessionItemView::resume(admitted.continuity.item_view).with_map_view();
-    view.snapshot(
-        inventory_from_backpack(Some(&bag), |definition| {
-            index.definition_ref(
-                &definition.family,
-                &definition.production_key,
-                &definition.revision_ref,
-            )
-        })
-        .ok_or("amulet inventory projection")?,
-        None,
-    )
-    .map_err(debug)?;
-    let corpse = ItemKey::Instance(corpse.item.item_instance_id);
-    let target = view
-        .map_view(&[corpse], |table| {
-            table
-                .handle(&corpse)
-                .ok_or(crate::gameplay_transport::item_view::ItemViewError::Exhausted)
-        })
-        .map_err(debug)?;
-    let source = view
-        .table()
-        .handle(&ItemKey::Instance(amulet))
-        .ok_or("amulet handle")?;
-    admitted.continuity.item_view = view.continuity();
+    let amulet = index
+        .definition_ref("Item", "oteryn:item.tibia.i7532", "definition-r1")
+        .ok_or("amulet definition ref")?;
+    let command = admitted.continuity.next_command_id;
+    let generation = admitted.continuity.connection_generation;
+    let (mut server, client) = tokio::io::duplex(1 << 20);
+    let (end, result) = tokio::join!(
+        serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS),
+        seal_client(client, amulet, body.position, generation, command),
+    );
+    match end {
+        ConnectionEnd::AdmittedThenDisconnected(next) => *admitted = next,
+        other => return Err(format!("seal connection ended: {other:?}").into()),
+    }
+    assert_eq!(result?, UseDisposition::Committed);
+    Ok(body.item.item_instance_id)
+}
+
+async fn seal_client(
+    mut client: tokio::io::DuplexStream,
+    amulet: std::num::NonZeroU32,
+    body: crate::foundation::MovementLocalPosition,
+    generation: u64,
+    command: u64,
+) -> TestResult<UseDisposition> {
+    use oteryn_protocol_oteryn::{self as wire, MessageType, item_view, world_map};
+    use tokio::io::AsyncWriteExt;
+    let (mut source, mut target) = (None, None);
+    loop {
+        let raw = crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
+        let frame = wire::decode_wire_envelope(&raw)?;
+        match frame.message_type() {
+            MessageType::SnapshotChunk => {
+                let (_, domains) = wire::decode_snapshot_chunk(frame.payload())?;
+                for domain in domains {
+                    if domain.domain_id == item_view::STATE_DOMAIN_CHARACTER_INVENTORY {
+                        let inventory =
+                            item_view::decode_character_inventory(domain.payload).map_err(debug)?;
+                        source = inventory
+                            .entries
+                            .iter()
+                            .find(|entry| entry.item_definition_ref == amulet)
+                            .map(|entry| entry.handle);
+                    } else if domain.domain_id == world_map::STATE_DOMAIN_WORLD_MAP_VIEW {
+                        let map =
+                            world_map::decode_world_map_snapshot(domain.payload).map_err(debug)?;
+                        target = map
+                            .tiles
+                            .iter()
+                            .filter(|tile| {
+                                (tile.position.x, tile.position.y, tile.position.floor)
+                                    == (body.x, body.y, -body.floor)
+                            })
+                            .flat_map(|tile| &tile.items)
+                            .find_map(|item| match item.origin {
+                                world_map::MapOrigin::Handle(handle)
+                                    if item.appearance_id == 7535 =>
+                                {
+                                    Some(handle)
+                                }
+                                _ => None,
+                            })
+                            .or(target);
+                    }
+                }
+            }
+            MessageType::SnapshotCommit => break,
+            _ => continue,
+        }
+    }
     let payload = use_wire::encode_item_use_intent(&UseIntent {
-        target: UseTarget::Item(source),
+        target: UseTarget::Item(source.ok_or("projected amulet handle")?),
         use_with: None,
-        use_with_map_item: Some(MapUseTarget::Item(target)),
+        use_with_map_item: Some(MapUseTarget::Item(
+            target.ok_or("projected fresh corpse handle")?,
+        )),
         use_with_position: None,
     })
     .map_err(debug)?;
-    let command = admitted.continuity.next_command_id;
-    let reply = wire(
-        owner,
-        admitted,
-        command,
-        use_wire::COMMAND_TYPE_USE_INTENT,
-        payload,
+    let frame = wire::encode_client_command(
+        generation,
+        &wire::ClientCommandValue {
+            command_id: command,
+            command_type: use_wire::COMMAND_TYPE_USE_INTENT,
+            payload: &payload,
+        },
     )
-    .await?;
-    assert_eq!(
-        use_wire::decode_use_result(&reply).map_err(debug)?,
-        UseDisposition::Committed
-    );
-    Ok(())
+    .map_err(debug)?;
+    client
+        .write_all(&u32::try_from(frame.len())?.to_be_bytes())
+        .await?;
+    client.write_all(&frame).await?;
+    loop {
+        let raw = crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
+        let frame = wire::decode_wire_envelope(&raw)?;
+        if frame.message_type() == MessageType::CommandResult {
+            let result = wire::decode_command_result(frame.payload())?;
+            assert_eq!(result.command_id, command);
+            client.shutdown().await?;
+            return use_wire::decode_use_result(result.payload)
+                .map_err(debug)
+                .map_err(Into::into);
+        }
+    }
 }
 
 pub(super) async fn exercise(
@@ -403,6 +431,37 @@ pub(super) async fn exercise(
     let mut expected = State::default();
     assert_eq!(State::read(h).await?, expected);
 
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("forge fence")?;
+    // Arrange the initial wallet, with no quest item, on the new test character.
+    input_item(
+        owner,
+        fence.item_fence(),
+        &Offering {
+            position: NPC,
+            item: "oteryn:item.tibia.i3035".into(),
+            count: 50,
+        },
+        51000,
+        true,
+    )
+    .await?;
+    expected.items[6] = 50;
+    assert_eq!(State::read(h).await?, expected);
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("combat fence")?;
+    let build = owner
+        .root
+        .read_character_build_state(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?;
+    super::annihilator_combat::prepare_supplies(owner, admitted, &build, true).await?;
     let fragment_chests = [
         (at(33194, 32458, -7), 0),
         (at(33305, 32277, -10), 1),
@@ -474,7 +533,20 @@ pub(super) async fn exercise(
     expected.mission[3] = 1;
     assert_eq!(State::read(h).await?, expected);
 
-    seal(owner, admitted).await?;
+    let corpse = seal(owner, admitted).await?;
+    let sample: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_quest_corpse_samples WHERE \
+         character_id=encode($1,'hex')::uuid AND corpse_item=encode($2,'hex')::uuid \
+         AND transition_key='oteryn:quest-reward/koshei/tomb-seal' AND appearance=7535)",
+    )
+    .bind(id(41).as_slice())
+    .bind(corpse.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(
+        sample,
+        "the seal receipt must identify the corpse minted by the encounter"
+    );
     expected.mission[4] = 1;
     expected.items[4] = 0;
     assert_eq!(State::read(h).await?, expected);
@@ -563,6 +635,5 @@ pub(super) async fn exercise(
             .is_some_and(|quest| quest.key != QUEST)
     }));
     assert_eq!(State::read(h).await?, expected);
-    println!("POSTGRES_CASE_COMPLETED {NAME}");
     Ok(())
 }
