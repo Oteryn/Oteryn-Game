@@ -321,6 +321,50 @@ fn saved_channels_request_public_membership_and_restore_conversations()
     let channels = next.chat_panel().console.channels;
     assert!(channels.contains(&ChannelTab::Conversation("Ada".into())));
     assert!(!channels.contains(&ChannelTab::Room(ChatRoom::Help)));
+    let open = ChatIntent::OpenRoom(ChatRoom::Help);
+    next_outbox.chat_public_result(
+        &open,
+        &oteryn_session::ChatOutcome {
+            command_id: 1,
+            status: oteryn_session::CommandStatus::Rejected,
+            disposition: oteryn_session::ChatDisposition::Rejected,
+            wait_seconds: 0,
+            result_server_sequence: 1,
+        },
+    );
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(8);
+    loop {
+        restored.sync_chat_context(&next);
+        if let Ok(crate::combat_input::PlayCommand::ChatPublic(intent)) = commands.try_recv() {
+            assert_eq!(intent, open);
+            break;
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "refused saved room never retried"
+        );
+        std::thread::sleep(std::time::Duration::from_millis(15));
+    }
+    next_outbox.chat_public_result(
+        &open,
+        &oteryn_session::ChatOutcome {
+            command_id: 2,
+            status: oteryn_session::CommandStatus::Accepted,
+            disposition: oteryn_session::ChatDisposition::Ok,
+            wait_seconds: 0,
+            result_server_sequence: 2,
+        },
+    );
+    next_outbox.chat_public_state(rooms, vec![]);
+    restored.sync_chat_context(&next);
+    restored.reset_defaults()?;
+    restored.sync_chat_context(&next);
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::ChatPublic(ChatIntent::CloseRoom(ChatRoom::Help))
+    ));
+    restored.sync_chat_context(&next);
+    assert_eq!(restored.preferences.console.public_rooms, [false; 8]);
     Ok(())
 }
 

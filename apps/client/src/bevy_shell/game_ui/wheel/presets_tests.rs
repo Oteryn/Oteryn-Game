@@ -155,7 +155,7 @@ fn official_version_one_planner_allocations_import_through_preset_controls() -> 
     let reply = p.diagram.reply.as_mut().ok_or("diagram")?;
     reply.available = 4000;
     reply.vocation = "Monk".into();
-    let (mut app, _, _) = fixture(p)?;
+    let (mut app, _commands, _outbox) = fixture(p)?;
     preset_field(&mut app, 1, "M1OzEtJWXaiWkp3t4pQMLIyDsFQkJEToBl_-MAAA");
     preset_action(&mut app, 5)?;
     assert_eq!(

@@ -95,6 +95,11 @@ impl PlayLink {
     pub fn chat_open_conversation(&self, name: &str) -> bool {
         oteryn_client_ui::chat::open_conversation(&mut lock(&self.mailbox).chat, name)
     }
+    pub(in crate::play) fn chat_close_room(&self, room: oteryn_session::ChatRoom) {
+        self.chat_channel_command(|mailbox| {
+            oteryn_client_ui::chat::close_room(&mut mailbox.chat, &mut mailbox.chat_public, room)
+        });
+    }
     fn chat_channel_command(
         &self,
         command: impl FnOnce(&mut Mailbox) -> Option<oteryn_session::ChatIntent>,

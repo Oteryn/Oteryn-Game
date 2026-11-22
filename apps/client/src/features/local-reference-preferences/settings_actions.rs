@@ -186,6 +186,7 @@ impl SettingsState {
 
     pub(super) fn accept_replaced(&mut self, preferences: ReferencePreferences) {
         self.chat_mode_seen = None;
+        self.restore_closed_rooms = true;
         self.change_screenshot_triggers(preferences.screenshots.triggers());
         self.preferences = preferences;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
@@ -241,7 +242,8 @@ impl SettingsState {
             pending_chat_mode: None,
             chat_mode_seen: None,
             room_retry: [None; 8],
-            unconfirmed_rooms: [false; 8],
+            unconfirmed_rooms: [None; 8],
+            restore_closed_rooms: false,
             restore_guild_channel: false,
             chat_context: None,
             help_report_pending: false,
