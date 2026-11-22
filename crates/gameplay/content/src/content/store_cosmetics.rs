@@ -98,35 +98,34 @@ pub fn unlock(
 #[cfg(test)]
 mod tests {
     #[test]
-    fn admitted_store_price_and_looks_match_proven_reference()
+    fn field_surgeon_store_price_and_looks_match_proven_reference()
     -> Result<(), Box<dyn std::error::Error>> {
         let evidence: serde_json::Value = serde_json::from_slice(include_bytes!(
             "../../../../../docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json"
         ))?;
         let records = evidence["records"].as_array().ok_or("records")?;
-        for offer in super::offers().ok_or("catalogue")? {
-            let reference = records
-                .iter()
-                .find(|r| r["facts"]["name"]["value"] == "Field Surgeon")
-                .ok_or("reference")?;
-            assert_eq!(
-                reference["facts"]["full_store_price"]["classification"],
-                "PROVEN"
-            );
-            assert_eq!(
-                reference["facts"]["full_store_price"]["value"].as_u64(),
-                Some(offer.price)
-            );
-            let looks = super::CATALOGUE
-                .as_ref()
-                .ok_or("catalogue")?
-                .source
-                .outfit_looks
-                .get(&offer.unlock_key)
-                .ok_or("looks")?;
-            assert_eq!(reference["facts"]["male_look_type"]["value"], looks[0]);
-            assert_eq!(reference["facts"]["female_look_type"]["value"], looks[1]);
-        }
+        let offer = super::offer("store:outfit:field-surgeon").ok_or("offer")?;
+        let reference = records
+            .iter()
+            .find(|r| r["facts"]["name"]["value"] == "Field Surgeon")
+            .ok_or("reference")?;
+        assert_eq!(
+            reference["facts"]["full_store_price"]["classification"],
+            "PROVEN"
+        );
+        assert_eq!(
+            reference["facts"]["full_store_price"]["value"].as_u64(),
+            Some(offer.price)
+        );
+        let looks = super::CATALOGUE
+            .as_ref()
+            .ok_or("catalogue")?
+            .source
+            .outfit_looks
+            .get(&offer.unlock_key)
+            .ok_or("looks")?;
+        assert_eq!(reference["facts"]["male_look_type"]["value"], looks[0]);
+        assert_eq!(reference["facts"]["female_look_type"]["value"], looks[1]);
         Ok(())
     }
 }

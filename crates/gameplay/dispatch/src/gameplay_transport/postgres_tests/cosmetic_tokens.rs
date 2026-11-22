@@ -5,7 +5,10 @@ use super::store_fixtures::{FakePlatform, Ledger, serve, uuid};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::CommandStatus;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
-use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+use crate::gameplay_transport::ComposedFreshAdmission;
+use crate::gameplay_transport::connection::{
+    AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
+};
 use crate::native_admission_source::store::StoreClient;
 use oteryn_protocol_oteryn::store as wire;
 use std::sync::{Arc, Mutex as SyncMutex};
@@ -360,9 +363,168 @@ fn scenario(tokens: bool) -> TestResult {
             ledger.lock().map_err(|_| "ledger poisoned")?.debits,
             if tokens { vec![] } else { vec![870] }
         );
+        if !tokens {
+            ledger.lock().map_err(|_| "ledger poisoned")?.balance += 30_000;
+            buy_catalogue_expansion(&owner, &mut admitted).await?;
+        }
         drop(owner);
         drop(authority);
         drop(seal);
         harness.cleanup().await
     })
 }
+
+
+async fn buy_catalogue_expansion(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    use crate::domain::appearance::{
+        AccountUnlocks, AppearanceContent, EarnedCosmetics, UnlockFact,
+    };
+    use wire::browse::{Artwork, Page, Query};
+
+    let mut request_seed = 160;
+    for (category, kind, prefix, picks) in [
+        ("cosmetics.mounts", 3, "mount", MOUNTS),
+        ("cosmetics.outfits", 2, "outfit", OUTFITS),
+    ] {
+        let query = Query {
+            category: category.into(),
+            search: String::new(),
+            sort: 1,
+            cursor: String::new(),
+        };
+        let rows = serve(
+            owner,
+            admitted,
+            &[(wire::browse::COMMAND_TYPE, query.encode().map_err(debug)?)],
+        )
+        .await?;
+        assert_eq!(rows[0].0, CommandStatus::Accepted, "{category}");
+        let page = Page::decode(&rows[0].1).map_err(debug)?;
+        assert_eq!(page.products.len(), 16, "{category}");
+        assert!(page.next.is_empty());
+        for (slug, price, looks, _) in picks {
+            let key = format!("store:{prefix}:{}", slug.replace('_', "-"));
+            let product = page
+                .products
+                .iter()
+                .find(|product| product.offer.offer_key == key)
+                .ok_or_else(|| format!("missing Store card {key}"))?;
+            assert_eq!(product.category, category);
+            assert_eq!(product.artwork, Artwork { kind, looks: *looks }, "{key}");
+            assert_eq!(product.offer.price, *price, "{key}");
+            assert_eq!(product.offer.currency, "TIBIA_COIN");
+            let request = wire::StorePurchaseRequest {
+                purchase_request_id: id(request_seed),
+                offer_key: product.offer.offer_key.clone(),
+                catalog_revision: product.revision.clone(),
+                price: product.offer.price,
+                currency: product.offer.currency.clone(),
+            };
+            let result = super::store_fixtures::purchase(
+                owner,
+                admitted,
+                (
+                    wire::COMMAND_TYPE_STORE_PURCHASE,
+                    wire::encode_purchase_request(&request).map_err(debug)?,
+                ),
+            )
+            .await?;
+            assert_eq!(result.code, wire::StorePurchaseCode::Accepted, "{key}");
+            request_seed += 1;
+        }
+    }
+
+    let cosmetics = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.cosmetics())
+        .ok_or("cosmetics")?;
+    let fence = crate::gameplay_transport::character_gameplay_fence::current(
+        owner,
+        admitted.game_session_id,
+        false,
+    )
+    .await
+    .ok_or("fence")?;
+    let state = owner
+        .root
+        .read_current_character_appearance_state(
+            owner.character,
+            owner.holder,
+            fence,
+            cosmetics.earned_grant_keys(),
+        )
+        .await
+        .map_err(debug)?;
+    let unlocks = EarnedCosmetics {
+        content: cosmetics,
+        facts: &state.earned,
+    };
+    assert_eq!(
+        unlocks.outfit(&"oteryn:outfit.field_surgeon".to_owned()),
+        UnlockFact::Compatible
+    );
+    for (slug, _, _, _) in MOUNTS {
+        let target = format!("oteryn:content.mount.{slug}");
+        assert_eq!(unlocks.mount(&target), UnlockFact::Compatible, "{target}");
+    }
+    for (slug, _, _, addons) in OUTFITS {
+        let target = format!("oteryn:outfit.{slug}");
+        assert_eq!(unlocks.outfit(&target), UnlockFact::Compatible, "{target}");
+        for addon in 1..=*addons {
+            assert_eq!(
+                unlocks.addon(&target, addon),
+                UnlockFact::Compatible,
+                "{target} addon {addon}"
+            );
+        }
+        assert_eq!(
+            unlocks.addon(&target, addons + 1),
+            UnlockFact::Incompatible,
+            "{target}"
+        );
+    }
+    Ok(())
+}
+
+// Crystal 201189f Store rows and prices, with TibiaWiki BR prices for the five unlisted mounts.
+// Each tuple pins the cosmetic slug, Tibia Coin price, male/female artwork and addon count.
+const MOUNTS: &[(&str, u64, [u32; 2], u8)] = &[
+    ("armoured_war_horse", 870, [426, 426], 0),
+    ("battle_werewolf", 870, [1873, 1873], 0),
+    ("boisterous_bull", 690, [1672, 1672], 0),
+    ("crimson_ray", 870, [521, 521], 0),
+    ("death_crawler", 600, [624, 624], 0),
+    ("desert_king", 450, [572, 572], 0),
+    ("flamesteed", 900, [626, 626], 0),
+    ("jade_lion", 450, [627, 627], 0),
+    ("jade_pincer", 600, [628, 628], 0),
+    ("magma_skull", 750, [1686, 1686], 0),
+    ("nethersteed", 900, [629, 629], 0),
+    ("obstinate_ox", 690, [1674, 1674], 0),
+    ("shadow_draptor", 870, [427, 427], 0),
+    ("steelbeak", 870, [522, 522], 0),
+    ("surly_steer", 690, [1673, 1673], 0),
+    ("tombstinger", 600, [546, 546], 0),
+];
+
+const OUTFITS: &[(&str, u64, [u32; 2], u8)] = &[
+    ("arena_champion", 870, [884, 885], 2),
+    ("evoker", 840, [725, 724], 2),
+    ("grove_keeper", 870, [908, 909], 2),
+    ("lupine_warden", 840, [899, 900], 2),
+    ("pharaoh", 750, [955, 956], 2),
+    ("philosopher", 750, [873, 874], 2),
+    ("retro_nobleman", 870, [966, 967], 0),
+    ("retro_summoner", 870, [964, 965], 0),
+    ("retro_warrior", 870, [962, 963], 0),
+    ("royal_pumpkin", 840, [760, 759], 2),
+    ("sea_dog", 600, [750, 749], 2),
+    ("seaweaver", 570, [733, 732], 2),
+    ("spirit_caller", 600, [699, 698], 2),
+    ("trophy_hunter", 870, [957, 958], 2),
+    ("winter_warden", 870, [853, 852], 2),
+];
