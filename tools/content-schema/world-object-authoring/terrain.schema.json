@@ -706,6 +706,91 @@
                   "const": "official_client"
                 },
                 "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1"
+                }
+              }
+            },
+            "route": {
+              "properties": {
+                "owner": {
+                  "const": "Terrain"
+                },
+                "reason": {
+                  "const": "scoped_spawn_ground"
+                }
+              }
+            },
+            "source_item_id": {
+              "enum": [
+                470,
+                5404,
+                20658,
+                32688,
+                32690,
+                32981,
+                32982,
+                32983,
+                33072,
+                35400,
+                40199,
+                42764,
+                43746,
+                44783,
+                44784,
+                44785,
+                44786,
+                44787,
+                44788,
+                44810,
+                44811,
+                44812,
+                45046,
+                45198,
+                45316,
+                48227,
+                48234,
+                48374,
+                48375,
+                50815,
+                50816,
+                50817,
+                50818,
+                50819,
+                50820,
+                51325,
+                51327,
+                52067,
+                52068,
+                52069,
+                52071,
+                52072,
+                52073,
+                52074,
+                52075,
+                52076,
+                52077,
+                52078,
+                52079,
+                52080,
+                52463,
+                52464
+              ]
+            }
+          },
+          "not": {
+            "required": [
+              "item_pointer"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "source": {
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "profile": {
                   "const": "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1"
                 }
               }

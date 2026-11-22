@@ -487,6 +487,10 @@ def outputs(
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "world-authoring"))
+        import spawn_ground
+
+        files.update(spawn_ground.catalogue_outputs(files[spawn_ground.MARKER]))
     return files, world_objects.census_document_bytes(result)
 
 
@@ -547,6 +551,7 @@ def qualified_shards():
             "content/world/terrain/terrain-08693-08693.json",
             "content/world/terrain/terrain-08749-08749.json",
             "content/world/terrain/terrain-08750-08750.json",
+            "content/world/terrain/terrain-08751-08802.json",
             "content/world/objects/objects-12917-12931.json",
             *activity_static.SHARDS.values(),
             feroxa_static.SHARD,

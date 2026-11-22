@@ -31,6 +31,7 @@ HELD = IMPORT / "map-content-linking/spawns/held-groups.json"
 HELD_SHA256 = "8a666c3d409edda5ac5996d6dec64cce24b30d5f43c75aa9a1175f1d07297c57"
 BOSSES = Path(__file__).with_name("boss-spawns.json")
 BOSS_CHANCES = Path(__file__).with_name("held-boss-chances.json")
+RECONCILIATION = ROOT / "imports/crystalserver/spawn-reconciliation/slice-2.json"
 FRAME = "global-target-2026-09-27"
 SHARD_SIZE = 2000
 SOURCE = {
@@ -135,6 +136,12 @@ def convert(xml: bytes) -> dict[str, str]:
     chances = json.loads(chances_bytes)["bosses"]
     scheduled_bosses = []
     pharaohs = {}
+    reconciliation = RECONCILIATION.read_bytes()
+    anchors = json.loads(reconciliation)["points"]
+    corrections = {
+        (row["source"], row["creature"], tuple(row["cell"])): tuple(row["destination"])
+        for row in anchors if "destination" in row
+    }
     for ordinal, element in enumerate(ET.fromstring(xml)):
         cx, cy, cz = (int(element.get(k)) for k in ("centerx", "centery", "centerz"))
         base = f"oteryn:spawn.x{cx}_y{cy}_z{cz}"
@@ -151,6 +158,11 @@ def convert(xml: bytes) -> dict[str, str]:
             x, y, z = cx + int(point.get("x")), cy + int(point.get("y")), int(point.get("z", cz))
             if z != cz or not (0 <= x <= 0xFFFF and 0 <= y <= 0xFFFF):
                 sys.exit(f"{key}: point ({x}, {y}, {z}) is off the source")
+            destination = corrections.pop((key, creature, (x, y, z)), None)
+            if destination is not None:
+                x, y, z = destination
+                if z != cz or not (0 <= x <= 0xFFFF and 0 <= y <= 0xFFFF):
+                    sys.exit(f"{key}: corrected position is off the source floor or plane")
             points.append(
                 {
                     "cell": {"floor": z, "x": x, "y": y},
@@ -209,6 +221,8 @@ def convert(xml: bytes) -> dict[str, str]:
                 }
             }
         )
+    if corrections:
+        sys.exit(f"spawn reconciliation matches no donor point: {sorted(corrections)}")
     if pharaohs.keys() != PHARAOHS.keys():
         sys.exit("Ancient Tombs source spawns are incomplete")
     records.extend(scheduled_bosses)
@@ -260,7 +274,10 @@ def convert(xml: bytes) -> dict[str, str]:
                                     "record_count": len(bosses["records"])},
                                    {"path": "tools/world-bundle-compiler/held-boss-chances.json",
                                     "sha256": hashlib.sha256(chances_bytes).hexdigest(),
-                                    "record_count": len(chances)}],
+                                    "record_count": len(chances)},
+                                   {"path": str(RECONCILIATION.relative_to(ROOT)),
+                                    "sha256": hashlib.sha256(reconciliation).hexdigest(),
+                                    "record_count": len(anchors)}],
         }
     )
     return {name: text + "\n" for name, text in files.items()}
