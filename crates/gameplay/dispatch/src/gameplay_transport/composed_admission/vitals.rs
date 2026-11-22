@@ -167,6 +167,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 state.set_resting_streak(streak);
             }
         }
+        self.tick_forge_avatar(actor, game_session_id).await;
         let result = if self
             .active_generation
             .and_then(|active| active.native_gameplay())
@@ -236,5 +237,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let _ = self.tick_familiar_defenses(actor, game_session_id).await;
         let _ = self.drain_native_ai_timers().await;
         resting.or(fifth_taint).or(result).or(party_vitals)
+    }
+
+    async fn tick_forge_avatar(&self, actor: ExactActorRef, session: GameSessionId) {
+        if oteryn_gameplay_foundation::scheduled_events::current_rates()
+            .exaltation_overload
+            .is_none()
+        {
+            return;
+        }
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return;
+        };
+        let now = self.owner_now();
+        let mut runtime = self.runtime.lock().await;
+        if actor_spell::qualified_protection_zone(&mut runtime, self.movement_cells(), actor)
+            != Some(false)
+        {
+            return;
+        }
+        let mut states = self.states.spell_states.lock().await;
+        if states.has_pending_spell_commit(actor, session) || states.is_dead(actor) {
+            return;
+        }
+        let Some(state) = states.get_mut(&runtime, actor, session) else {
+            return;
+        };
+        self.states.attack.lock().await.trigger_forge_avatar(
+            state,
+            actor,
+            session,
+            now,
+            &runtime.content_pin().server_artifact_digest(),
+        );
     }
 }

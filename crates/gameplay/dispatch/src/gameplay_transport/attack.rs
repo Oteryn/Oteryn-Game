@@ -26,7 +26,7 @@ mod attack_chase_search;
 pub(super) mod charm_combat;
 mod cyclopedia;
 mod drain;
-mod equipped_offence;
+pub(super) mod equipped_offence;
 #[path = "attack/house_transfer.rs"]
 mod house_transfer;
 mod monk_shrines;

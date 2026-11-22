@@ -155,6 +155,14 @@ impl PlayerSpellState {
         self.equipped_offence.clone()
     }
 
+    pub fn equipped_ruse_chance(&self) -> u64 {
+        self.equipped_offence.ruse_chance()
+    }
+
+    pub fn equipped_transcendence_chance(&self) -> u64 {
+        self.equipped_offence.transcendence_chance()
+    }
+
     /// Replace the offence with that of a fresh committed equipment read.
     pub fn install_equipped_offence(&mut self, offence: EquippedOffence) {
         self.equipped_offence = offence;

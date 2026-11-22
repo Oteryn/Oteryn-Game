@@ -72,6 +72,7 @@ pub(super) enum Case {
     CharmParry,
     T94,
     CharmSecondary,
+    ExaltationOverload,
 }
 
 impl Case {
@@ -88,6 +89,7 @@ impl Case {
                 | Self::ForgeRollback
                 | Self::ForgeFar
                 | Self::ForgeForeign
+                | Self::ExaltationOverload
         )
     }
     /// Cases that settle a shared kill need the second member's committed activity. Its
@@ -104,6 +106,7 @@ impl Case {
                 | Self::PzContention
                 | Self::ForgeReplay
                 | Self::ForgeRollback
+                | Self::ExaltationOverload
         )
     }
 }
@@ -139,6 +142,17 @@ pub(super) fn run(case: Case) -> TestResult {
                     let h = Harness::create(admin, &tag, false).await?;
                     eprintln!("PARTY-XP-1 POSTGRES_DATABASE_STARTED case={tag}");
                     let started = std::time::Instant::now();
+                    let _event_clock = if matches!(case, Case::ExaltationOverload) {
+                        use oteryn_gameplay_foundation::scheduled_events::{Schedule, test_clock};
+                        Some(test_clock::set(
+                            Schedule::parse(r#"{"events":[{"name":"Exaltation Overload",
+                                "startdate":"01/01/2030","enddate":"01/01/2030",
+                                "ingame":{"exaltation_overload":"october_2026"}}]}"#).map_err(debug)?,
+                            1_893_456_000,
+                        ))
+                    } else {
+                        None
+                    };
                     let result = scenario(&h, case, &controller, &pin).await;
                     h.cleanup().await?;
                     eprintln!(

@@ -35,6 +35,7 @@ pub struct EventRates {
     pub spawn: u32,
     pub skill: u32,
     pub double_daily_rewards: bool,
+    pub exaltation_overload: Option<ExaltationOverload>,
 }
 
 impl Default for EventRates {
@@ -45,6 +46,43 @@ impl Default for EventRates {
             spawn: NEUTRAL_RATE,
             skill: NEUTRAL_RATE,
             double_daily_rewards: false,
+            exaltation_overload: None,
+        }
+    }
+}
+
+/// Dated Tibia announcements. The two profiles share the Forge population
+/// and XP rules but grant different additive combat chances.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum ExaltationOverload {
+    /// Tibia news 8634.
+    #[serde(rename = "january_2026")]
+    January2026,
+    /// Tibia news 8947.
+    #[serde(rename = "october_2026")]
+    October2026,
+}
+
+impl ExaltationOverload {
+    pub const fn onslaught_permyriad(self) -> u16 {
+        match self {
+            Self::January2026 => 400,
+            Self::October2026 => 0,
+        }
+    }
+
+    pub const fn ruse_permyriad(self) -> u16 {
+        match self {
+            Self::January2026 => 0,
+            Self::October2026 => 400,
+        }
+    }
+
+    pub const fn transcendence_permyriad(self) -> u16 {
+        match self {
+            Self::January2026 => 100,
+            Self::October2026 => 150,
         }
     }
 }
@@ -118,6 +156,7 @@ struct SourceRates {
     skillrate: Option<u32>,
     #[serde(default)]
     double_daily_rewards: bool,
+    exaltation_overload: Option<ExaltationOverload>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -182,6 +221,7 @@ impl Schedule {
                     spawn: rate(event.ingame.spawnrate),
                     skill: rate(event.ingame.skillrate),
                     double_daily_rewards: event.ingame.double_daily_rewards,
+                    exaltation_overload: event.ingame.exaltation_overload,
                 },
             });
         }
@@ -254,6 +294,10 @@ impl Schedule {
                 skill: compound(active.skill, event.rates.skill),
                 double_daily_rewards: active.double_daily_rewards
                     || event.rates.double_daily_rewards,
+                exaltation_overload: event
+                    .rates
+                    .exaltation_overload
+                    .or(active.exaltation_overload),
             })
     }
 }

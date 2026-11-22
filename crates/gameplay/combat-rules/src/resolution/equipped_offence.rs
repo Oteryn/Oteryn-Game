@@ -23,6 +23,8 @@ pub struct EquippedOffence {
     /// Canary item.cpp:571-583,607-619: installed weapon and boots tiers.
     pub weapon_tier: u8,
     pub boots_tier: u8,
+    pub armor_tier: u8,
+    pub legs_tier: u8,
     pub reflect_percent: u64,
     /// Physical reflection points; other elements receive only reflectpercentall.
     pub reflect_flat: u32,
@@ -100,21 +102,56 @@ impl EquippedOffence {
     }
 
     /// Pinned Canary config.lua.dist:195-209, combat.cpp:2674-2681,2752-2756.
-    /// Boots amplify the fatal chance, not critical chance or base damage. Roll 0..=10000.
-    #[must_use]
-    pub fn fatal(&self, damage: u32, roll: u64) -> u32 {
-        if self.weapon_tier == 0 {
-            return damage;
-        }
+    /// Numerator of the chance in permyriad with a denominator of 10,000.
+    pub fn fatal_chance(&self, event_permyriad: u16) -> u64 {
         let weapon = u64::from(self.weapon_tier.min(10));
-        let boots = u64::from(self.boots_tier.min(10));
-        let base = 5 * weapon * weapon + 40 * weapon + 5;
-        let amplification = if boots == 0 {
+        let base = if weapon == 0 {
             0
         } else {
-            40 * boots * boots + 170 * boots + 40
+            5 * weapon * weapon + 40 * weapon + 5
         };
-        if roll.saturating_mul(10_000) >= base * (10_000 + amplification) {
+        (base * self.forge_amplification() + u64::from(event_permyriad) * 10_000).min(100_000_000)
+    }
+
+    fn forge_amplification(&self) -> u64 {
+        let boots = u64::from(self.boots_tier.min(10));
+        10_000
+            + if boots == 0 {
+                0
+            } else {
+                40 * boots * boots + 170 * boots + 40
+            }
+    }
+
+    /// Crystal item.cpp:182-192 and player.cpp:12185-12200.
+    pub fn ruse_chance(&self) -> u64 {
+        let tier = u64::from(self.armor_tier.min(10));
+        if tier == 0 {
+            return 0;
+        }
+        let base = 307_576 * tier * tier + 4_406_970 * tier + 260_000;
+        base * self.forge_amplification() / 1_000_000_000
+    }
+
+    /// Crystal item.cpp:218-228 and player.cpp:10489-10517.
+    pub fn transcendence_chance(&self) -> u64 {
+        let tier = u64::from(self.legs_tier.min(10));
+        if tier == 0 {
+            return 0;
+        }
+        let base = 127 * tier * tier + 1_070 * tier + 73;
+        // Preserve the fractional permyriad threshold for an integer draw.
+        (base * self.forge_amplification()).div_ceil(1_000_000)
+    }
+
+    #[must_use]
+    pub fn fatal(&self, damage: u32, roll: u64) -> u32 {
+        self.fatal_with_bonus(damage, roll, 0)
+    }
+
+    #[must_use]
+    pub fn fatal_with_bonus(&self, damage: u32, roll: u64, event_permyriad: u16) -> u32 {
+        if roll.saturating_mul(10_000) >= self.fatal_chance(event_permyriad) {
             return damage;
         }
         // The signed source uses round; magnitude is positive here.

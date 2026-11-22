@@ -20,7 +20,7 @@ fn double_daily_rewards_dispatch_doubles_preview_and_atomic_claims_only_during_e
 fn scenario() -> TestResult {
     let schedule = Schedule::parse(
         r#"{"events":[{"name":"Double Daily Rewards","startdate":"10/02/2026",
-            "starthour":"04:00","enddate":"10/05/2026","endhour":"03:59:59",
+            "starthour":"04:00","enddate":"10/06/2026","endhour":"03:59:59",
             "ingame":{"double_daily_rewards":true}}]}"#,
     )
     .map_err(debug)?;
@@ -131,7 +131,8 @@ async fn double_rewards(
         (2, [0, 4, 0, 0, 0, 2]),
         (3, [0, 0, 2, 0, 0, 2]),
         (4, [0, 0, 0, 25, 60, 2]),
-        (5, [6, 0, 0, 0, 0, 1]),
+        (5, [12, 0, 0, 0, 0, 2]),
+        (6, [0, 2, 0, 0, 0, 1]),
     ] {
         if day > 1 {
             epoch(h, day).await?;
@@ -184,7 +185,7 @@ async fn double_rewards(
     )
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(totals, (10, 4, 2, 2, 8));
+    assert_eq!(totals, (16, 6, 2, 2, 10));
     let duration: i64 = sqlx::query_scalar(
         "SELECT extract(epoch FROM effect_expires_at-effect_started_at)::bigint
          FROM game_character_daily_reward_lines WHERE kind='XP_BOOST'",
