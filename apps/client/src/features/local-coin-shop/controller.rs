@@ -92,6 +92,18 @@ async fn apply(
             }
             match client.coin_order_status(token, &id, cancel.clone()).await {
                 Ok(order) => accept(view, order)?,
+                // The initial create itself was refused. A missing ID can confirm there
+                // was no order only while this grant has never observed a row for it.
+                Err(NativeLoginError::Platform(HttpStatus(404)))
+                    if view.post_refusal_status == Some(409)
+                        && !view.uncertain.0.contains(&id)
+                        && view.order.as_ref().is_none_or(|o| o.request_id != id) =>
+                {
+                    view.prior.reconcile(&id);
+                    clear_refused_order(view);
+                    view.feedback = tr!("The server refused the request").into();
+                    return Ok(());
+                }
                 Err(error) => {
                     if matches!(error, NativeLoginError::Platform(HttpStatus(404))) {
                         view.post_refusal_status = None;

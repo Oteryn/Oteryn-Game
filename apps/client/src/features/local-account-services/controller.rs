@@ -174,6 +174,17 @@ async fn apply(
             {
                 match client.bazaar_status(token, id, cancel).await {
                     Ok(receipt) => accept(view, receipt),
+                    Err(NativeLoginError::Platform(HttpStatus(404)))
+                        if view.post_refusal_status == Some(409)
+                            && !view.unverified.0.contains(id)
+                            && !view.unresolved.contains(id) =>
+                    {
+                        view.prior.reconcile(id);
+                        view.pending = None;
+                        view.post_refusal_status = None;
+                        view.quote = None;
+                        view.feedback = tr!("The server refused the request").into();
+                    }
                     Err(error @ NativeLoginError::Platform(HttpStatus(404))) => {
                         view.post_refusal_status = None;
                         return Err(error);
