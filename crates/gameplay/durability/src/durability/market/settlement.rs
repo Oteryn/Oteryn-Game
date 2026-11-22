@@ -188,43 +188,50 @@ async fn advance_jobs(
     tx: &mut Transaction<'_, Postgres>,
     world: crate::foundation::WorldId,
 ) -> Result<bool> {
-    let rows=sqlx::query("SELECT o.offer_id::text,o.state,o.definition_key,o.matching_pending,o.expires_at_us<=floor(extract(epoch FROM clock_timestamp())*1000000)::bigint AS expired FROM game_market_offers o LEFT JOIN game_account_bank_balances b ON b.account_id=o.account_id AND b.world_id=o.world_id WHERE o.world_id=encode($1,'hex')::uuid AND ((o.state=1 AND o.expires_at_us<=floor(extract(epoch FROM clock_timestamp())*1000000)::bigint) OR (o.state=5 AND NOT EXISTS(SELECT 1 FROM game_market_operations attempted WHERE attempted.occurrence=decode('0102','hex')||uuid_send(o.offer_id)||decode('03','hex')||int8send(floor(extract(epoch FROM clock_timestamp())/86400)::bigint)) AND (o.held_credit_gold+coalesce(b.balance,0)<=9000000000000000 OR EXISTS(SELECT 1 FROM game_item_market_escrow_locations e WHERE e.offer_id=o.offer_id))) OR (o.state=1 AND o.matching_pending)) ORDER BY o.expires_at_us,o.offer_id LIMIT 100")
-        .bind(world.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
-    for row in rows {
-        let offer = uuid_text(row.try_get("offer_id")?)?;
-        let book=sqlx::query("SELECT 1 FROM game_market_books WHERE world_id=encode($1,'hex')::uuid AND definition_key=$2 FOR UPDATE SKIP LOCKED")
-            .bind(world.as_bytes().as_slice()).bind(row.try_get::<String,_>("definition_key")?).fetch_optional(&mut **tx).await?;
-        if book.is_none() {
+    for offer in lock_job_candidates(tx, world).await? {
+        // A fresh statement observes the offer and clock after discovery acquired the book.
+        let snapshot = "SELECT state,remaining,held_credit_gold::text,matching_pending,
+                               (SELECT count(*) FROM game_item_market_escrow_locations e WHERE e.offer_id=o.offer_id),
+                               expires_at_us<=floor(extract(epoch FROM statement_timestamp())*1000000)::bigint
+                        FROM game_market_offers o
+                        WHERE world_id=encode($1,'hex')::uuid AND offer_id=encode($2,'hex')::uuid";
+        let before: Option<(i16, i32, String, bool, i64, bool)> = sqlx::query_as(snapshot)
+            .bind(world.as_bytes().as_slice())
+            .bind(offer.as_bytes().as_slice())
+            .fetch_optional(&mut **tx)
+            .await?;
+        let Some((state, remaining, held_gold, pending, escrow_count, expired)) = before else {
             continue;
-        }
+        };
 
-        // The book serializes native writers. Compare the current state under that lock,
-        // since a candidate selected earlier can have become a no-op while waiting.
-        let snapshot = "SELECT state,remaining,held_credit_gold::text,matching_pending,(SELECT count(*) FROM game_item_market_escrow_locations e WHERE e.offer_id=o.offer_id) FROM game_market_offers o WHERE offer_id=encode($1,'hex')::uuid";
-        let before: (i16, i32, String, bool, i64) = sqlx::query_as(snapshot)
-            .bind(offer.as_slice()).fetch_one(&mut **tx).await?;
-        if before.3 && !row.try_get::<bool, _>("expired")? {
+        if state == 1 && expired {
+            expire_offer(tx, world, offer).await?;
+        } else if state == 1 && pending {
             sqlx::query("SELECT game_market_match(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
                 .bind(world.as_bytes().as_slice())
-                .bind(offer.as_slice())
+                .bind(offer.as_bytes().as_slice())
                 .execute(&mut **tx)
                 .await?;
-        } else if before.0 == 5 {
+        } else if state == 5 {
             sqlx::query(
                 "SELECT game_market_release(encode($1,'hex')::uuid,encode($2,'hex')::uuid)",
             )
             .bind(world.as_bytes().as_slice())
-            .bind(offer.as_slice())
+            .bind(offer.as_bytes().as_slice())
             .execute(&mut **tx)
             .await?;
-        } else if before.0 == 1 && row.try_get::<bool, _>("expired")? {
-            expire_offer(tx, world, offer).await?;
         } else {
             continue;
         }
-        let after: (i16, i32, String, bool, i64) = sqlx::query_as(snapshot)
-            .bind(offer.as_slice()).fetch_one(&mut **tx).await?;
-        if before != after {
+        let (after_state, after_remaining, after_held, after_pending, after_escrow, _):
+            (i16, i32, String, bool, i64, bool) = sqlx::query_as(snapshot)
+                .bind(world.as_bytes().as_slice())
+                .bind(offer.as_bytes().as_slice())
+                .fetch_one(&mut **tx)
+                .await?;
+        if (state, remaining, held_gold, pending, escrow_count)
+            != (after_state, after_remaining, after_held, after_pending, after_escrow)
+        {
             return Ok(true);
         }
     }
@@ -236,11 +243,11 @@ async fn advance_jobs(
 async fn expire_offer(
     tx: &mut Transaction<'_, Postgres>,
     world: crate::foundation::WorldId,
-    offer: [u8; 16],
+    offer: MarketOfferId,
 ) -> Result<()> {
     sqlx::query("SELECT game_market_write(encode($1,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,game_market_identity(encode($2,'hex')::uuid,'expire'),4::smallint,encode($2,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,NULL,NULL,sha256($2),NULL)")
         .bind(world.as_bytes().as_slice())
-        .bind(offer.as_slice())
+        .bind(offer.as_bytes().as_slice())
         .execute(&mut **tx)
         .await?;
     Ok(())
