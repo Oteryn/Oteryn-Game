@@ -621,6 +621,10 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # Source loot custody completion follows established Item owners. In
     # particular3081/3097 retain TIMED-CONTENT-1's amulet/ring authoring;
     # the bounded yield overlay fills only proven UNKNOWN custody fields.
+    import item_detail_source_facts
+    item_detail_weights = item_detail_source_facts.qualified_weights(root)
+    generated[item_detail_source_facts.WEIGHT_FACTS] = spell_import.canonical_bytes(
+        {str(identifier): value for identifier, value in item_detail_weights.items()})
     import boss_reward_yield_profiles
     boss_reward_yield_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Crystal santa_claus.lua:111-119 places these gifts through the ordinary
@@ -716,6 +720,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
                   if row["production_definition"]["production_key"] in protected_loot_yields.ARBAZILOTH_HARD_ITEMS]
     house_top_order = json.loads((root / house_decoration_actions.PROFILES).read_bytes())
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
+    item_detail_source_facts.apply(root, items, item_detail_weights)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.

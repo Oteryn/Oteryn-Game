@@ -2,12 +2,14 @@
 import json
 import unittest
 from pathlib import Path
+from item_detail_source_facts import WEIGHT_FACTS
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 class CompleteBossPolicyTests(unittest.TestCase):
     def test_complete_boss_policies_match_the_actual_native_catalogue(self):
+        weights = json.loads((ROOT / WEIGHT_FACTS).read_bytes())
         native = {}
         for path in ['content/items/definitions/spell-native-profiles.json',
                      'content/items/definitions/srx1-item-updates.json']:
@@ -28,6 +30,10 @@ class CompleteBossPolicyTests(unittest.TestCase):
                 if selected is not None and key not in selected:
                     continue
                 with self.subTest(item=key):
+                    if key in weights:
+                        physical = expected['semantics']['physical']['value']
+                        self.assertEqual(physical['weight'], {'state': 'KNOWN', 'value': 0})
+                        physical['weight'] = {'state': 'KNOWN', 'value': weights[key]}
                     self.assertEqual(native[key], expected)
                 count += 1
         self.assertEqual(count, 23)
