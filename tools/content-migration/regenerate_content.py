@@ -127,6 +127,7 @@ CHECKS = (
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
     ["python3", "tools/content-migration/refresh_season_creature_inventory.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/quest_access_bindings.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply", "--check"],
     ["python3", "tools/content-schema/world-authoring/quest_startup_bindings.py", "--apply", "--check"],
     ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
@@ -822,6 +823,7 @@ def main() -> int:
     run(["python3", "tools/content-schema/world-authoring/classic_quest_placements.py"])
     run(["python3", "tools/content-schema/world-authoring/convert_world_metadata.py", "--classic-quest-overlay"])
     run(["python3", "tools/content-schema/world-object-authoring/classic_quest_ground.py"])
+    run(["python3", "tools/content-schema/world-authoring/quest_access_bindings.py"])
     run(["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply"])
     run(["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available"])
     refresh_quest_callback_proof()

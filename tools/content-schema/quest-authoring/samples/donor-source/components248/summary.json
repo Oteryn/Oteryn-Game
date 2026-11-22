@@ -89,11 +89,11 @@
     },
     {
       "path": "crosswalk.json",
-      "sha256": "83724403a361c270367a0f93989c8acde20faf0e04923d6c4ca79226df7a73ba"
+      "sha256": "64385a74f754e9784331aed0f302d9cbf0dd28130270d63413fc42a5d0a2db7a"
     },
     {
       "path": "dialogue.json.gz",
-      "sha256": "42e98be69d43f59e949927afef861d4db4008034d1d8914f5b9d403cc7a3c94c"
+      "sha256": "41497263a247386f1d820724a8c6d45b1f1dc20ecbf2cc345ef56994f4883142"
     }
   ],
   "quest_semantic_completeness": "NOT_ESTABLISHED",

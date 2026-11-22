@@ -287,7 +287,8 @@ mod tests {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
         let catalogue = lowered.catalogue();
-        assert_eq!(catalogue.completion_sets.len(), 25);
+        // Devil Helmet and Dragon Corpse add two source claim sets.
+        assert_eq!(catalogue.completion_sets.len(), 27);
         for (quest, rule) in &catalogue.completion_sets {
             if quest == "oteryn:quest.fanfare_quest" {
                 // Crystal chest.lua:1680-1687: the access key is not final loot.
@@ -301,6 +302,14 @@ mod tests {
                     rule.groups,
                     vec![vec![
                         "oteryn:quest-progress/kv/legiondawnport/claimed".to_owned()
+                    ]]
+                );
+            } else if quest == "oteryn:quest.dragon_corpse_quest" {
+                assert!(rule.mint_only);
+                assert_eq!(
+                    rule.groups,
+                    vec![vec![
+                        "oteryn:quest-progress/kv/dragoncorpse/claimed".to_owned()
                     ]]
                 );
             } else {

@@ -679,7 +679,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         import protected_loot_yields
         quest_yields = protected_loot_yields.ITEMS
         import quest_loot_profiles
-        quest_loot_profiles.apply_loot_facts(facts, ROOT, creatures, tables)
+        quest_loot_profiles.apply_loot_facts(facts, ROOT, creatures, tables, native_item_profiles)
         import nrwicked_profiles
         nrwicked_profiles.bind_hard_loot(ROOT, creatures, definitions, tables)
     bindings, named, used = {}, {}, {}

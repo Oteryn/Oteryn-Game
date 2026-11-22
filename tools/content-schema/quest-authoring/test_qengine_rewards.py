@@ -199,12 +199,19 @@ class QuestRewards(unittest.TestCase):
 
     def test_l11_levels_one_shot_bases_and_selected_desks(self):
         rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
-        for label,level in [('dream-warrior',250),('issavi',250),('makeshift',100)]:
+        for label,level in [('dream-warrior',250),('issavi',250)]:
             for stage in ['base','first','second']:
                 row=rows[f'l11-{label}-{stage}'];self.assertEqual(row['minimum_level'],level);self.assertTrue(row['requires_premium'])
-            if label!='makeshift':
-                row=rows[f'l11-{label}-base'];self.assertEqual(row['storage'],[]);self.assertEqual(row['forbids_outfits'],[row['outfit']['outfit']])
+            row=rows[f'l11-{label}-base'];self.assertEqual(row['storage'],[]);self.assertEqual(row['forbids_outfits'],[row['outfit']['outfit']])
             self.assertEqual(rows[f'l11-{label}-second']['requires_addons'][0]['addons'],1)
+        # The Makeshift source tokens use the Item grant owner instead of NPC shortcuts.
+        outfit='oteryn:outfit.makeshift_warrior'
+        self.assertFalse(any(row['quest']=='oteryn:quest.makeshift_warrior_outfits_quest' for row in rows.values()))
+        grants={entry['grant_key']:entry['target'] for entry in self.author['document']['grant_mappings']}
+        prefix='oteryn:item-grant.outfit.1042-1043.'
+        self.assertEqual(grants[prefix+'base'],{'kind':'Outfit','outfit_key':outfit})
+        for bit in (1,2):
+            self.assertEqual(grants[prefix+f'addon{bit}'],{'kind':'Addon','outfit_key':outfit,'addon':bit})
         for stage,item,count in [('first',30169,5),('second',30168,1)]:
             self.assertEqual(rows[f'l11-dream-warrior-{stage}']['take'],[{'item':f'oteryn:item.tibia.i{item}','count':count}])
         for field,value in [('minimum_level',0),('forbids_outfits',[]),('forbids_outfits',['oteryn:outfit.knight'])]:
@@ -348,10 +355,11 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(callbacks['l6-citizen-rook-hat']['take'],[
             {'item':'oteryn:item.tibia.i3374','count':1},{'item':'oteryn:item.tibia.i5902','count':50},
             {'item':'oteryn:item.tibia.i5890','count':100}])
-        declaration=next(t for t in self.callbacks['tracks'] if t.get('writable'))
+        declaration,=(t for t in self.callbacks['tracks'] if t['key']=='oteryn:quest-progress/outfit_quest/ref')
+        self.assertTrue(declaration['writable'])
         self.assertEqual(declaration['quest'],'oteryn:quest.outfit_and_addon_quests')
         altered=copy.deepcopy(self.callbacks)
-        next(t for t in altered['tracks'] if t.get('writable'))['quest']='oteryn:quest.citizen_outfits_quest_on_rook'
+        next(t for t in altered['tracks'] if t['key']==declaration['key'])['quest']='oteryn:quest.citizen_outfits_quest_on_rook'
         with self.assertRaises(ValueError): q.validate_callbacks(altered)
 
     def test_oriental_source_costs_gender_and_foreign_door_owner(self):
@@ -519,13 +527,17 @@ class QuestRewards(unittest.TestCase):
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks'] + self.l13_callbacks['callbacks']
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-','l13-','m36-','qb-'))},
-                         {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),97)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),153)
+                         {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack',
+                          'sven-start','sven-honeycomb','sven-mead-report','sven-bear-report','sven-mammoth-report'})
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),96)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),164)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
-        source_routes = ('l12-cave-explorer-', 'l12-spike-')
+        source_routes = ('l12-cave-explorer-', 'l12-spike-', 'sven-', 'l2-battle-mage-report-')
+        library_handins = {'l2-battle-mage-book', 'l2-battle-mage-book-exalted',
+                           'l2-battle-mage-epaulettes', 'l2-battle-mage-epaulettes-exalted'}
         for callback in callbacks:
-            new_source = callback['key'].rsplit('/', 1)[-1].startswith(source_routes)
+            key = callback['key'].rsplit('/', 1)[-1]
+            new_source = key.startswith(source_routes) or key in library_handins
             revision = '201189f871d23597b82caf88fd611454a2ddefb8' if new_source else q.PIN
             self.assertTrue(callback['sources'][0].startswith(f'crystal:{revision}:'))
 

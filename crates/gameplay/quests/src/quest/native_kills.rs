@@ -354,7 +354,11 @@ mod tests {
     fn eligibility_requires_an_active_trial_and_an_unsaturated_counter() {
         let counter = &COUNTERS[0];
         let mut tracks = BTreeMap::new();
-        assert!(active(&tracks).is_empty());
+        let unconditional = [
+            "oteryn:quest-transition/native-kills/great-dragon-hunt/dragon",
+            "oteryn:quest-transition/native-kills/great-dragon-hunt/dragon_lord",
+        ];
+        assert_eq!(active(&tracks), unconditional);
         tracks.insert(counter.gate.into(), 1);
         assert!(active(&tracks).contains(&counter.transition));
         tracks.insert(counter.track.into(), counter.maximum);
@@ -363,7 +367,7 @@ mod tests {
         assert!(!active(&tracks).contains(&counter.transition));
         tracks.insert(counter.track.into(), 0);
         tracks.insert(counter.gate.into(), 2);
-        assert!(active(&tracks).is_empty());
+        assert_eq!(active(&tracks), unconditional);
         assert!(!tracks_creature("oteryn:creature.rat"));
     }
     #[test]

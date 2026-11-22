@@ -1,7 +1,7 @@
 {
-  "active_count": 137,
+  "active_count": 138,
   "apply_plan_sha256": "968ac099fa52114bcb2c80754d19128d811a8e028a8fdeceba238df4c0b53093",
-  "catalogue_sha256": "1c0eec447388fab317724e977e63390c00407ad353064f7de8cdf5039aa66731",
+  "catalogue_sha256": "0476ecf37e05cb1482b3a661280cd25af78d0426418520b7b9da8caa79762677",
   "evidence_record_count": 122,
   "evidence_shards": [
     "content/encounters/raids/evidence-00000-00121.json"
@@ -22,7 +22,7 @@
       "total": 102
     },
     "boss": {
-      "active": 70,
+      "active": 71,
       "total": 86
     },
     "calendar": {

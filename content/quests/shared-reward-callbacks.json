@@ -2,13 +2,14 @@
   "schema": 1,
   "tracks": [
     {
-      "key": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
-      "quest": "oteryn:quest.oramond_quest",
+      "key": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+      "quest": "oteryn:quest.the_secret_library_quest",
       "initial": -1,
       "min": -1,
-      "max": 2147483647,
+      "max": 7,
+      "writable": true,
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:93-103:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:90-193:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
       ]
     },
     {
@@ -209,17 +210,6 @@
       ]
     },
     {
-      "key": "oteryn:quest-progress/quest/makeshift_warrior/qualification",
-      "quest": "oteryn:quest.makeshift_warrior_outfits_quest",
-      "initial": 0,
-      "min": 0,
-      "max": 2,
-      "writable": true,
-      "sources": [
-        "owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:s1-s2:gnomadness-role"
-      ]
-    },
-    {
       "key": "oteryn:quest-progress/chosen-trial/dragon_slayer/phase",
       "quest": "oteryn:quest.authored.dragon_slayer_outfits_quest",
       "initial": 0,
@@ -253,28 +243,6 @@
       ]
     },
     {
-      "key": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
-      "quest": "oteryn:quest.cave_explorer_outfits_quest",
-      "initial": 0,
-      "min": 0,
-      "max": 2,
-      "writable": true,
-      "sources": [
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
-      ]
-    },
-    {
-      "key": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
-      "quest": "oteryn:quest.cave_explorer_outfits_quest",
-      "initial": 0,
-      "min": 0,
-      "max": 20,
-      "writable": true,
-      "sources": [
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
-      ]
-    },
-    {
       "key": "oteryn:quest-progress/chosen-trial/fire_fighter/phase",
       "quest": "oteryn:quest.fire_fighter_outfits_quest",
       "initial": 0,
@@ -294,6 +262,50 @@
       "writable": true,
       "sources": [
         "owner:chosen-trial:fire_fighter:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/fame",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnommander.lua:75-169"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/upper/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/middle/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/lower/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua"
       ]
     },
     {
@@ -1220,6 +1232,12 @@
           "minimum": 0,
           "maximum": 0,
           "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
         }
       ],
       "take": [],
@@ -1276,7 +1294,13 @@
       "give": {
         "item": "oteryn:item.tibia.i770",
         "count": 1,
-        "contents": []
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i6390",
+            "count": 1
+          }
+        ]
       },
       "outfit": null,
       "achievement": "oteryn:achievement/nightmare_walker",
@@ -1349,6 +1373,59 @@
         }
       ],
       "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l10-nightmare-protector",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6499",
+          "count": 1500
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/lord_protector",
+      "reply": [
+        "You have earned the rank of Lord Protector."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "requires_premium": true,
+      "completes": true
     },
     {
       "key": "oteryn:quest-reward/l10-nightmare-use-follower",
@@ -1803,13 +1880,14 @@
         "outfit": "oteryn:outfit.citizen_of_issavi",
         "addons": 2
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/citizen_of_issavi",
       "reply": [
         "Thank you for your help."
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eshaya.lua:sha256:0b84914661498605630d5e98bfb74579760e035d280e5395862c14b975e749db",
-        "owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each"
+        "owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each",
+        "https://tibia.fandom.com/index.php?curid=94999&oldid=875550"
       ],
       "requires": [
         {
@@ -1835,188 +1913,19 @@
           "addons": 1
         }
       ],
-      "carried_item": "oteryn:item.tibia.i37002"
-    },
-    {
-      "key": "oteryn:quest-reward/l11-makeshift-base",
-      "quest": "oteryn:quest.makeshift_warrior_outfits_quest",
-      "npc": "oteryn:npc.gnomadness",
-      "keywords": [
-        "yes"
-      ],
-      "topic": 11,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/makeshift_warrior/qualification",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.makeshift_warrior",
-        "addons": 0
-      },
-      "achievement": null,
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
-        "owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:base-qualification"
-      ],
-      "minimum_level": 100,
-      "requires_premium": true,
-      "forbids_outfits": [
-        "oteryn:outfit.makeshift_warrior"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/l11-makeshift-first",
-      "quest": "oteryn:quest.makeshift_warrior_outfits_quest",
-      "npc": "oteryn:npc.gnomadness",
-      "keywords": [
-        "document"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i27657",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.makeshift_warrior",
-        "addons": 1
-      },
-      "achievement": null,
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279"
-      ],
-      "minimum_level": 100,
-      "requires_premium": true,
-      "requires_outfits": [
-        "oteryn:outfit.makeshift_warrior"
-      ],
-      "forbids_addons": [
-        {
-          "outfit": "oteryn:outfit.makeshift_warrior",
-          "addons": 1
-        }
-      ],
-      "carried_item": "oteryn:item.tibia.i27657"
-    },
-    {
-      "key": "oteryn:quest-reward/l11-makeshift-second",
-      "quest": "oteryn:quest.makeshift_warrior_outfits_quest",
-      "npc": "oteryn:npc.gnomadness",
-      "keywords": [
-        "document"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i27656",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.makeshift_warrior",
-        "addons": 2
-      },
-      "achievement": "oteryn:achievement/cobbled_and_patched",
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279"
-      ],
-      "minimum_level": 100,
-      "requires_premium": true,
-      "requires_outfits": [
-        "oteryn:outfit.makeshift_warrior"
-      ],
-      "forbids_addons": [
-        {
-          "outfit": "oteryn:outfit.makeshift_warrior",
-          "addons": 2
-        }
-      ],
-      "requires_addons": [
-        {
-          "outfit": "oteryn:outfit.makeshift_warrior",
-          "addons": 1
-        }
-      ],
-      "carried_item": "oteryn:item.tibia.i27656"
-    },
-    {
-      "key": "oteryn:quest-reward/l11-makeshift-start",
-      "quest": "oteryn:quest.makeshift_warrior_outfits_quest",
-      "npc": "oteryn:npc.gnomadness",
-      "keywords": [
-        "salvage"
-      ],
-      "topic": 0,
-      "next_topic": 11,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/makeshift_warrior/qualification",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
-        "owner:chosen-Gnome-Deep-Hub-apprenticeship:meeting-admitted-Gnomadness-witnesses-exploration"
-      ],
-      "minimum_level": 100,
-      "requires_premium": true
+      "carried_item": "oteryn:item.tibia.i37002",
+      "completes": true
     },
     {
       "key": "oteryn:quest-reward/l12-cave-explorer-base",
       "quest": "oteryn:quest.cave_explorer_outfits_quest",
       "npc": "oteryn:npc.gnommander",
       "keywords": [
-        "cave explorer report"
+        "yes"
       ],
-      "topic": 0,
+      "topic": 21,
       "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        },
-        {
-          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
-          "minimum": 20,
-          "maximum": 20,
-          "set": 20,
-          "preserve": true
-        }
-      ],
+      "storage": [],
       "take": [],
       "give": null,
       "outfit": {
@@ -2025,30 +1934,49 @@
       },
       "achievement": null,
       "reply": [
-        "Thank you for your help."
+        "Here is your reward."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnommander.lua:75-169"
       ],
       "fee": {
         "gold": 1000,
         "include_bank": false
       },
+      "minimum_level": 25,
       "requires_premium": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.spike_task",
+          "storage": [],
+          "state_ops": [
+            {
+              "track": "oteryn:quest-progress/spike/fame",
+              "from": {
+                "kind": "between",
+                "minimum": 100,
+                "maximum": 2147483647
+              },
+              "effect": {
+                "kind": "add",
+                "value": -100
+              }
+            }
+          ]
+        }
+      ],
       "forbids_outfits": [
         "oteryn:outfit.cave_explorer"
-      ],
-      "minimum_level": 80
+      ]
     },
     {
       "key": "oteryn:quest-reward/l12-cave-explorer-first",
       "quest": "oteryn:quest.cave_explorer_outfits_quest",
       "npc": "oteryn:npc.gnommander",
       "keywords": [
-        "cave explorer addon 1"
+        "yes"
       ],
-      "topic": 0,
+      "topic": 22,
       "next_topic": 0,
       "storage": [],
       "take": [],
@@ -2059,18 +1987,38 @@
       },
       "achievement": null,
       "reply": [
-        "Thank you for your help."
+        "Here is your reward."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnommander.lua:75-169",
+        "tibiawiki:Cave Completionist:846114"
       ],
       "fee": {
         "gold": 2000,
         "include_bank": false
       },
-      "minimum_level": 80,
+      "minimum_level": 50,
       "requires_premium": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.spike_task",
+          "storage": [],
+          "state_ops": [
+            {
+              "track": "oteryn:quest-progress/spike/fame",
+              "from": {
+                "kind": "between",
+                "minimum": 100,
+                "maximum": 2147483647
+              },
+              "effect": {
+                "kind": "add",
+                "value": -100
+              }
+            }
+          ]
+        }
+      ],
       "requires_outfits": [
         "oteryn:outfit.cave_explorer"
       ],
@@ -2078,6 +2026,12 @@
         {
           "outfit": "oteryn:outfit.cave_explorer",
           "addons": 1
+        }
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/cave_completionist",
+          "target": 2
         }
       ]
     },
@@ -2086,9 +2040,9 @@
       "quest": "oteryn:quest.cave_explorer_outfits_quest",
       "npc": "oteryn:npc.gnommander",
       "keywords": [
-        "cave explorer addon 2"
+        "yes"
       ],
-      "topic": 0,
+      "topic": 23,
       "next_topic": 0,
       "storage": [],
       "take": [],
@@ -2099,11 +2053,11 @@
       },
       "achievement": null,
       "reply": [
-        "Thank you for your help."
+        "Here is your reward."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnommander.lua:75-169",
+        "tibiawiki:Cave Completionist:846114"
       ],
       "fee": {
         "gold": 3000,
@@ -2111,6 +2065,26 @@
       },
       "minimum_level": 80,
       "requires_premium": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.spike_task",
+          "storage": [],
+          "state_ops": [
+            {
+              "track": "oteryn:quest-progress/spike/fame",
+              "from": {
+                "kind": "between",
+                "minimum": 100,
+                "maximum": 2147483647
+              },
+              "effect": {
+                "kind": "add",
+                "value": -100
+              }
+            }
+          ]
+        }
+      ],
       "requires_outfits": [
         "oteryn:outfit.cave_explorer"
       ],
@@ -2120,50 +2094,12 @@
           "addons": 2
         }
       ],
-      "requires_addons": [
+      "achievement_progress": [
         {
-          "outfit": "oteryn:outfit.cave_explorer",
-          "addons": 1
+          "key": "oteryn:achievement/cave_completionist",
+          "target": 2
         }
       ]
-    },
-    {
-      "key": "oteryn:quest-reward/l12-cave-explorer-start",
-      "quest": "oteryn:quest.cave_explorer_outfits_quest",
-      "npc": "oteryn:npc.gnommander",
-      "keywords": [
-        "cave explorer trial"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        },
-        {
-          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 0,
-          "preserve": true
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
-      ],
-      "requires_premium": true,
-      "minimum_level": 80
     },
     {
       "key": "oteryn:quest-reward/l12-dragon-slayer-base",
@@ -2439,6 +2375,306 @@
       "minimum_level": 250
     },
     {
+      "key": "oteryn:quest-reward/l12-spike-lower-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 24,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Hunt seven of the local targets and then report back."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua"
+      ],
+      "minimum_level": 80,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72001
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-lower-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "kill"
+      ],
+      "topic": 25,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/lower/kills",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua"
+      ],
+      "experience": 3500,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/spike/fame",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-middle-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 24,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/middle/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Hunt seven of the local targets and then report back."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua"
+      ],
+      "minimum_level": 50,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/middle/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72001
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-middle-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "keywords": [
+        "killing"
+      ],
+      "topic": 25,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/middle/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/middle/kills",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua"
+      ],
+      "experience": 2000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/middle/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/spike/fame",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-upper-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 24,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/upper/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Hunt seven of the local targets and then report back."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua"
+      ],
+      "minimum_level": 25,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/upper/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72001
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-upper-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "killing"
+      ],
+      "topic": 25,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/upper/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/upper/kills",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua"
+      ],
+      "experience": 1000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/upper/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/spike/fame",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l2-battle-mage-base",
       "quest": "oteryn:quest.the_secret_library_quest",
       "npc": "oteryn:npc.dedoras",
@@ -2552,15 +2788,92 @@
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dedoras.lua:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:198-216:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
       ],
       "requires": [
         {
           "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
           "minimum": 7,
           "maximum": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0
         }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i28792",
+          "minimum": 6,
+          "maximum": 4294967295
+        }
+      ],
+      "failure_reply": [
+        "Bring more of the required materials before we trade."
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-book-exalted",
+      "quest": "oteryn:quest.battle_mage_outfits_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "book",
+        "books",
+        "sturdy books"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i28792",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.battle_mage",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/exalted_battle_mage",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:198-216:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1",
+        "https://tibia.fandom.com/index.php?curid=85574&oldid=848685"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon2",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i28792",
+          "minimum": 6,
+          "maximum": 4294967295
+        }
+      ],
+      "failure_reply": [
+        "Bring more of the required materials before we trade."
+      ],
+      "completes": true
     },
     {
       "key": "oteryn:quest-reward/l2-battle-mage-epaulettes",
@@ -2595,13 +2908,382 @@
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dedoras.lua:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:198-216:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
       ],
       "requires": [
         {
           "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
           "minimum": 7,
           "maximum": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i28793",
+          "minimum": 21,
+          "maximum": 4294967295
+        }
+      ],
+      "failure_reply": [
+        "Bring more of the required materials before we trade."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-epaulettes-exalted",
+      "quest": "oteryn:quest.battle_mage_outfits_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "epaulettes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i28793",
+          "count": 20
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.battle_mage",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/exalted_battle_mage",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:198-216:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1",
+        "https://tibia.fandom.com/index.php?curid=85574&oldid=848685"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon1",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i28793",
+          "minimum": 21,
+          "maximum": 4294967295
+        }
+      ],
+      "failure_reply": [
+        "Bring more of the required materials before we trade."
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-report-asuri",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "asuri"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/asuras/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I will add your findings to the library research."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:142-153:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-report-desert",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "desert"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/darashia/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I will add your findings to the library research."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:114-124:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-report-fishmen",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "fishmen"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/liquid_death/questline",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I will add your findings to the library research."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:119-131:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-report-isle",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "isle"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/small_islands/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I will add your findings to the library research."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:153-165:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-report-museum",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "museum"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/mo_ta/questline",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I will add your findings to the library research."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:104-115:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-report-order",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "order"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/falcon_bastion/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I will add your findings to the library research."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:131-142:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
         }
       ]
     },
@@ -9863,6 +10545,208 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sam.lua:sha256:ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/sven-bear-report",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "hug",
+        "bear hugging"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission03",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your last test is to push the mammoth northwest of town. Come back when you succeed."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:96-105:sha256:885076bfc128330b5ab9c41599bc6e604e710927b75367f9945d5cd3034bbe95"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/sven-honeycomb",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission01",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mead_total_sips",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5902",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "That buys twenty attempts at the mead barrel. Report back once you pass."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:144-152:sha256:885076bfc128330b5ab9c41599bc6e604e710927b75367f9945d5cd3034bbe95"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/sven-mammoth-report",
+      "quest": "oteryn:quest.barbarian_test",
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "mammoth",
+        "mammoth pushing"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/native/barbarian_test/completed",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/honorary_barbarian",
+      "reply": [
+        "You passed all three tests. Welcome as an honorary barbarian."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:107-115:sha256:885076bfc128330b5ab9c41599bc6e604e710927b75367f9945d5cd3034bbe95"
+      ],
+      "completes": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.the_ice_islands_quest",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+              "minimum": 7,
+              "maximum": 7,
+              "set": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/sven-mead-report",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "mead",
+        "barbarian mead"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission02",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7140",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this horn, fill it at the barrel, and use it to calm the bear before hugging it."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:84-94:sha256:885076bfc128330b5ab9c41599bc6e604e710927b75367f9945d5cd3034bbe95"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/sven-start",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission01",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Bring me a honeycomb and ask about mead."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:129-143:sha256:885076bfc128330b5ab9c41599bc6e604e710927b75367f9945d5cd3034bbe95"
       ]
     }
   ],

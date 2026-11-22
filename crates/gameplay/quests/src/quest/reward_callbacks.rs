@@ -2266,8 +2266,8 @@ mod tests {
         let callbacks = load()?;
         let original = callbacks
             .iter()
-            .find(|c| !c.participants.is_empty())
-            .ok_or("participant source")?;
+            .find(|c| c.key == "oteryn:quest-reward/l5-oriental-female-first-start")
+            .ok_or("Oriental participant source")?;
         for edit in 0..5 {
             let mut callback = serde_json::to_value(original).map_err(|e| e.to_string())?;
             match edit {
@@ -2624,9 +2624,9 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 204 existing, 31 QB, and 13 Sven and Dedoras routes. The final two terms are
+        // Shared covers 209 existing, 31 QB, and 13 Sven and Dedoras routes. The final two terms are
         // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 248 + 62 + 129 + 1 + 1 + 13 + 12);
+        assert_eq!(load()?.len(), 253 + 62 + 147 + 1 + 1 + 13 + 12);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2673,12 +2673,12 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 217);
+        assert_eq!(legacy.len(), 222);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
             .collect();
-        assert_eq!(original.len(), 205);
+        assert_eq!(original.len(), 210);
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;
@@ -2701,6 +2701,9 @@ mod tests {
                 "oteryn:quest-reward/sven-mammoth-report" => Some("oteryn:quest.barbarian_test"),
                 "oteryn:quest-reward/l10-nightmare-protector" => {
                     Some("oteryn:quest.nightmare_outfits_quest")
+                }
+                "oteryn:quest-reward/l11-issavi-second" => {
+                    Some("oteryn:quest.authored.citizen_of_issavi_outfits_quest")
                 }
                 _ => None,
             };

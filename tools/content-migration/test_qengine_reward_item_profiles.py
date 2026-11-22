@@ -49,7 +49,7 @@ class SharedPhysicalAdmission(unittest.TestCase):
     def run_admission(self, record, existing, schema='OTERYN_NATIVE_GAMEPLAY_MANIFEST/v5'):
         generated = {'profiles': json.dumps({'records': [existing]}).encode(),
                      'manifest': json.dumps({'schema': schema, 'item_profiles': {}}).encode()}
-        with tempfile.TemporaryDirectory() as directory, patch.object(profiles, 'capture', return_value={'records': [record]}):
+        with tempfile.TemporaryDirectory() as directory, patch.object(profiles, 'capture', return_value={'records': [record], 'custody_promotions': []}):
             profiles.admit(Path(directory), generated, 'profiles', 'manifest',
                            lambda row: row['production_definition']['production_key'],
                            lambda value: json.dumps(value).encode())

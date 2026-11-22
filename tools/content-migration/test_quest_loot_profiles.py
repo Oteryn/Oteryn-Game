@@ -34,6 +34,13 @@ class NativeQuestLootFacts(unittest.TestCase):
                        [814, 7452, 10305, 10422, 12600, 15793, 16122, 16123, 16124,
                         16133, 16135, 16138, 16142]}
         expected |= spike_drops
+        # The four quest reward bosses bring their complete native loot tables.
+        expected |= {f'oteryn:item.tibia.i{number}' for number in
+                     [813, 816, 818, 819, 822, 826, 828, 829, 830, 3065, 3067, 3069,
+                      3070, 3274, 3326, 6558, 7386, 7426, 7456, 8043, 8044, 8082, 8084,
+                      8092, 8896, 8899, 14040, 14042, 16119, 16120, 16121, 16125,
+                      16126, 21169, 21974, 21975, 21981, 22193, 31323, 31324, 37002,
+                      37003, 38634]}
         # Main now admits these seven canonical Items before native projection.
         # Model the pre-projection admission view this bridge test exercises,
         # retaining every source quantity and all unrelated canonical facts.

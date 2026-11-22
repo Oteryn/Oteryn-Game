@@ -111,6 +111,24 @@ def overlay_outputs(outputs, root=ROOT):
     outputs[SUMMARY] = canonical(summary)
 
 
+def donor_delta(summary):
+    """Remove only the source-qualified classic quest insertions from the donor totals."""
+    registered = summary.get("source", {}).get("classic_quests")
+    if registered is None:
+        return 0
+    capture = (ROOT / CAPTURE).read_bytes()
+    rows = json.loads(capture)["placements"]
+    expected = {
+        "path": CAPTURE,
+        "sha256": hashlib.sha256(capture).hexdigest(),
+        "attributes": dict(Counter(key for row in rows for key in row.get("attributes", {}))),
+        "items_added": sum(row.get("insert", False) for row in rows),
+    }
+    if registered != expected:
+        raise ValueError("CLASSIC_QUEST_PLACEMENT_SOURCE_CHANGED")
+    return expected["items_added"]
+
+
 def apply(check):
     paths = {INDEX, SUMMARY} | {
         region_path(row["position"]) for row in json.loads((ROOT / CAPTURE).read_bytes())["placements"]

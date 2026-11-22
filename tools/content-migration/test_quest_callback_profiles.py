@@ -363,20 +363,31 @@ class QuestCallbackProfiles(unittest.TestCase):
         rows = {row['production_definition']['production_key']: row
                 for row in json.loads(self.generated[PROFILE])['records']}
         expected = {'oteryn:item.tibia.i9388'}
+        fire_axe_claims = []
         for path in sorted((ROOT / 'content/interactions/reward_claims').glob('reward-claim*.json')):
             for record in json.loads(path.read_bytes())['records']:
-                for placement in record['definition'].get('native_contents', {}).get('placements', []):
+                definition = record['definition']
+                if definition['identity']['key'] == 'oteryn:reward-claim.kv.fireaxe2':
+                    fire_axe_claims.extend(definition['placements'])
+                for placement in definition.get('native_contents', {}).get('placements', []):
                     expected.add(placement['root']['key'])
                     expected.update(child['item']['key'] for child in placement['contents'])
         # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
-        # 3083), with 3083 also used by Triangle Tower; retain the complete closure.
-        self.assertEqual(len(expected), 160)
+        # 3083), with 3083 also used by Triangle Tower. The published closure
+        # has 159 distinct Item identities, including the Grizzly icon.
+        self.assertEqual(len(expected), 159)
         # Goblin Temple adds pan3466 and snowball2992; vial2874 was already present.
         self.assertTrue({'oteryn:item.tibia.i3466','oteryn:item.tibia.i2992'} <= expected)
         # Draconia adds the one-charge ice rapier and serpent sword to full bags.
         self.assertTrue({'oteryn:item.tibia.i3284', 'oteryn:item.tibia.i3297'} <= expected)
-        # Fire Axe adds the already-admitted dragon necklace and Fire Axe to bags.
-        self.assertTrue({'oteryn:item.tibia.i3085', 'oteryn:item.tibia.i3320'} <= expected)
+        # The first Fire Axe chest contains the necklace; the second grants the axe directly.
+        self.assertIn('oteryn:item.tibia.i3085', expected)
+        fire_axe = 'oteryn:item.tibia.i3320'
+        self.assertEqual([placement['reward'] for placement in fire_axe_claims], [{
+            'items': [{'count': 1, 'item': {
+                'family': 'Item', 'key': fire_axe, 'revision': 'definition-r1',
+            }}],
+        }])
         # Dreamer adds certificate, bread and the source-selected wine vial to the exact closure.
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (6498, 3602, 2874)} <= expected)
         # Desert2 adds exactly its three previously absent child identities;
@@ -390,7 +401,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertIn('oteryn:item.tibia.i3083', expected)
         self.assertTrue({'oteryn:item.tibia.i3084', 'oteryn:item.tibia.i3098',
                          'oteryn:item.tibia.i3077'} <= expected)
-        for key in expected:
+        for key in expected | {fire_axe}:
             row = rows[key]
             self.assertTrue(row['admission']['materializable'], key)
             self.assertIn('CharacterInventory', row['admission']['legal_destinations'], key)
