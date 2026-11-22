@@ -34,9 +34,9 @@ RELOCATIONS = {
     ('docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json', '82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba'): ('docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json', 'de06edad1c9f71d697829a7d5a61c934d6fe66138c7b0e65870eef567d2dda14'),
     # The closed139 name packet changes only terrain fingerprints. Its Rust
     # consumer changes only that packet's digest; qualification and rows are exact.
-    ('docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json', 'a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9'): ('docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json', '1b1703361f64fb7ff2ff7c9551f6c7f84ef55b20f13ed04131af4d648c399641'),
-    ('crates/gameplay/content/src/content/item_name_promotion.rs', '36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d'): ('crates/gameplay/content-promotion/src/content/item_name_promotion.rs', '5499116a0add5dcb0518eb1f86c59a90987a0c1322d35ac1f201069dafd04dba'),
-    ('crates/gameplay/content-promotion/src/content/item_name_promotion.rs', '36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d'): ('crates/gameplay/content-promotion/src/content/item_name_promotion.rs', '5499116a0add5dcb0518eb1f86c59a90987a0c1322d35ac1f201069dafd04dba'),
+    ('docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json', 'a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9'): ('docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json', '1451fab70fb2c2394e510db7ee7b8fbbcbe1d794b78b178a02981148acf3adda'),
+    ('crates/gameplay/content/src/content/item_name_promotion.rs', '36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d'): ('crates/gameplay/content-promotion/src/content/item_name_promotion.rs', '73aa8e7f4dbf6526f5511edc0e931205960d83f39edb0ce35cf9695d0f4ea7ca'),
+    ('crates/gameplay/content-promotion/src/content/item_name_promotion.rs', '36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d'): ('crates/gameplay/content-promotion/src/content/item_name_promotion.rs', '73aa8e7f4dbf6526f5511edc0e931205960d83f39edb0ce35cf9695d0f4ea7ca'),
     # QMINT3's tree-first reference view changes only the Forge289 compiler and
     # mapper fingerprints. All454 binding rows and289 literal promotions are
     # byte-equivalent; the consumer still rebuilds and checks their whole scope.

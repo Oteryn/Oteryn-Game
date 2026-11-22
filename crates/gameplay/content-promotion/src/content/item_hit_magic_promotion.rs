@@ -10,7 +10,7 @@ pub const ITEM_HIT_MAGIC_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json"
 );
 pub const ITEM_HIT_MAGIC_PACKET_SHA256: &str =
-    "e8d84ec762c6282299ee6c2d272b2966e7cdacb9fd97778dadebc5f5db973958";
+    "16c01dd97c4ea739c8bb03a4d9d3d12d0905fc872f23a5ff16cbc98597945b6a";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,
