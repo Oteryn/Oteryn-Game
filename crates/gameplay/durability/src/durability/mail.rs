@@ -21,6 +21,7 @@ pub enum MailPostRefusal {
     NotMailable,
     RecipientInboxFull,
     Exhausted,
+    MailboxOutOfReach,
     ReplayConflict,
 }
 
@@ -29,6 +30,12 @@ pub enum MailPostOutcome {
     Posted,
     AlreadyPosted,
     Refused(MailPostRefusal),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum MailPostTarget {
+    Reachable(u64),
+    ReplayOnly(u64),
 }
 
 impl crate::durability::DurabilityRoot {
@@ -45,6 +52,32 @@ impl crate::durability::DurabilityRoot {
         item: [u8; 16],
         mailbox_placement_key: u64,
     ) -> Result<MailPostOutcome, DurabilityError> {
+        self.post_admitted_mail_with_target(
+            recovery,
+            node,
+            fence,
+            command_id,
+            item,
+            MailPostTarget::Reachable(mailbox_placement_key),
+        )
+        .await
+    }
+
+    /// `ReplayOnly` can return an existing receipt for the exact intent, but cannot post mail.
+    pub async fn post_admitted_mail_with_target(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command_id: u64,
+        item: [u8; 16],
+        target: MailPostTarget,
+    ) -> Result<MailPostOutcome, DurabilityError> {
+        let (mailbox_placement_key, fresh_refusal) = match target {
+            MailPostTarget::Reachable(key) => (key, None),
+            MailPostTarget::ReplayOnly(key) => (key, Some(MailPostRefusal::MailboxOutOfReach)),
+        };
+        let invalid_fence = fresh_refusal.unwrap_or(MailPostRefusal::NotMailable);
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -54,19 +87,22 @@ impl crate::durability::DurabilityRoot {
             assert_recovery_fence(&mut tx, &record).await?;
             lock_admission_relations(&mut tx).await?;
             let command = CommandRef::new(fence.game_session_id, CommandId::new(command_id).map_err(|_| DurabilityError::InvalidStoredState)?);
-            let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else { return Ok(MailPostOutcome::Refused(MailPostRefusal::NotMailable)); };
+            let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else { return Ok(MailPostOutcome::Refused(invalid_fence)); };
             let world = WorldId::from_bytes(*world_id.as_bytes()).map_err(|_| DurabilityError::InvalidStoredState)?;
             if mailbox_placement_key == 0 || !character_item_fence_without_root(&mut tx, &node, &fence, command, fence.character_id, *world_id.as_bytes(), *channel_id.as_bytes()).await? {
-                return Ok(MailPostOutcome::Refused(MailPostRefusal::NotMailable));
+                return Ok(MailPostOutcome::Refused(invalid_fence));
             }
             // A posted root is stamped and in the recipient's Inbox, so its address and stamp
             // cannot be derived again: the immutable receipt answers the replay first.
             if let Some((root, mailbox)) = sqlx::query_as::<_, (Vec<u8>, Vec<u8>)>("SELECT uuid_send(root_item_instance_id), mailbox_placement_key FROM game_mail_operations WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND sender_character_id=encode($3,'hex')::uuid")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(command_id.to_string()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await? {
                 if !character_item_fence_is_current(&mut tx, &node, &fence, command, fence.character_id, *world_id.as_bytes(), *channel_id.as_bytes()).await? {
-                    return Ok(MailPostOutcome::Refused(MailPostRefusal::NotMailable));
+                    return Ok(MailPostOutcome::Refused(invalid_fence));
                 }
                 return Ok(if replay_intent_matches(&root, &mailbox, &item, mailbox_placement_key) { MailPostOutcome::AlreadyPosted } else { MailPostOutcome::Refused(MailPostRefusal::ReplayConflict) });
+            }
+            if let Some(refusal) = fresh_refusal {
+                return Ok(MailPostOutcome::Refused(refusal));
             }
             let row = sqlx::query("SELECT i.definition_production_key,t.text FROM game_item_instances i LEFT JOIN game_item_texts t USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1")
                 .bind(item.as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
