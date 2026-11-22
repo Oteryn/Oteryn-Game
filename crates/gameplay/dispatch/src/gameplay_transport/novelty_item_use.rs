@@ -7,7 +7,7 @@ use crate::durability::consume_transform::{ConsumeTransformRequest, ConsumeTrans
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::gameplay_transport::actor_spell::NoveltyEffectRequest;
-use oteryn_gameplay_items::novelty_items::{self, NoveltyEffects};
+use oteryn_gameplay_items::novelty_items::{self, NoveltyEffects, NoveltyKind};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent};
 #[path = "novelty_ground_use.rs"]
 mod ground;
@@ -209,6 +209,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome(UseDisposition::NotPossible)));
         };
         let effects: NoveltyEffects = serde_json::from_value(plan.effects).map_err(|_| ())?;
+        if effects.kind == NoveltyKind::CarriedTransform
+            && (intent.use_with.is_some()
+                || intent.use_with_map_item.is_some()
+                || intent.use_with_position.is_some())
+        {
+            return Ok(None);
+        }
         if !self
             .states
             .player_trades

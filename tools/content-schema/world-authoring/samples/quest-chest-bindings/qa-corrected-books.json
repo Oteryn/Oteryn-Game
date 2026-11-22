@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book",
+      "position": [
+        32850,
+        32285,
+        14
+      ],
+      "appearance": 2472,
+      "unique": 6196,
+      "source_line": 2124
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.chest_tible",
+      "position": [
+        32828,
+        32340,
+        7
+      ],
+      "appearance": 2472,
+      "unique": 6202,
+      "source_line": 2171
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": []
+}
