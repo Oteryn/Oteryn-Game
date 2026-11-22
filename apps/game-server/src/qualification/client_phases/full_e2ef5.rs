@@ -44,6 +44,23 @@ impl Row {
     }
 }
 
+fn admission_gap(
+    character: usize,
+    source: Box<dyn std::error::Error>,
+) -> Box<dyn std::error::Error> {
+    verdict::context(format!("admission character_index={character}: {source}"), source)
+}
+
+async fn admit_row(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    character: usize,
+) -> TestResult<DevClientSession> {
+    connect_character(clients, tag, character)
+        .await
+        .map_err(|source| admission_gap(character, source))
+}
+
 const HASTE_ACTIONS: &[&str] = &[
     "haste-cast",
     "haste-speed",
@@ -68,7 +85,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
         let watch = row.0.watch();
         let result: TestResult = async {
             let _row = watch.enter();
-            let mut client = connect_world(clients, tag).await?;
+            let mut client = admit_row(clients, tag, 1).await?;
             let mut completed = false;
             let deadline =
                 format!("{id} native journey exceeded {limit}s; remaining actions unproven");
@@ -213,7 +230,7 @@ async fn fresh(
         .copied()
         .ok_or("E2EF5 logout vitals absent")?;
     logout(client).await?;
-    *client = connect_world(clients, tag).await?;
+    *client = admit_row(clients, tag, 1).await?;
     if previous == client.join_snapshot().game_session_id
         || client.world_spatial().actor_position != position
         || client
@@ -849,6 +866,21 @@ async fn haste(
 mod tests {
     use super::*;
     #[test]
+    fn admission_gap_names_the_character_and_preserves_the_cause() {
+        let cause = oteryn_dev_client::SessionError::ServerProtocolError {
+            code: 1200,
+            connection_trace: None,
+        };
+        let expected_cause = verdict::classify(&cause);
+        let error = admission_gap(1, cause.into());
+        assert_eq!(
+            error.to_string(),
+            "admission character_index=1: server closed the connection with E1200"
+        );
+        assert_eq!(verdict::classify(error.as_ref()), expected_cause);
+    }
+
+    #[test]
     fn verdict_requires_every_distinct_action_and_nonzero_frame() {
         let mut row = Row::new("C17c", &["cast", "expiry"]);
         assert!(!row.complete());
@@ -959,7 +991,7 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         let watch = row.0.watch();
         let result: TestResult = async {
             let _row = watch.enter();
-            let mut client = connect_world(clients, tag).await?;
+            let mut client = admit_row(clients, tag, 1).await?;
             let mut peer_cancelled = false;
             let mut completed = false;
             let deadline = format!("{id} 240s journey deadline; remaining actions unproven");
@@ -1210,7 +1242,8 @@ pub(super) async fn acquire_rune(
             {
                 verdict::Harness::global().bounded_wait(deadline, "rune-purchase-funds");
                 let hunt = async {
-                    travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+                    let target = wild_rat(client, world, &[]).await?;
+                    approach_melee(client, world, target.position).await?;
                     client_hunt::hunt(client).await
                 };
                 match tokio::time::timeout_at(deadline, hunt).await {
@@ -1395,7 +1428,7 @@ async fn rune_rejoin(
     let previous = client.join_snapshot().game_session_id;
     let position = client.world_spatial().actor_position;
     player_logout(client).await?;
-    *client = connect_world(clients, tag).await?;
+    *client = admit_row(clients, tag, 1).await?;
     if previous == client.join_snapshot().game_session_id
         || client.world_spatial().actor_position != position
     {
@@ -1470,7 +1503,7 @@ async fn paralyze(
     );
     // Character 0 is still an ordinary player here: this mount precedes all
     // profile provisioning. No PvP policy, war, level or vocation is granted.
-    let mut peer = connect_character(clients, 0xb1, 0).await?;
+    let mut peer = admit_row(clients, 0xb1, 0).await?;
     let result: TestResult = tokio::time::timeout(Duration::from_secs(140), async {
         let path = route(world, tile(peer.world_spatial().actor_position)?, |at| rune_corridor(world, at).is_some())
             .ok_or("C16b no reachable non-PZ equal-ground target corridor")?;
@@ -1825,7 +1858,7 @@ async fn combat_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         let watch = row.0.watch();
         let result: TestResult = async {
             let _row = watch.enter();
-            let mut client = connect_character(clients, tag, usize::from(id != "C17d")).await?;
+            let mut client = admit_row(clients, tag, usize::from(id != "C17d")).await?;
             let mut peer_cancelled = false;
             let mut completed = false;
             let deadline = format!("{id} 420s journey deadline; required actions unproven");
@@ -2467,7 +2500,7 @@ async fn combat_rejoin(
         .ok_or("combat logout vitals absent")?;
     let previous = client.join_snapshot().game_session_id;
     player_logout(client).await?;
-    *client = connect_character(clients, tag, usize::from(row.0.id != "C17d")).await?;
+    *client = admit_row(clients, tag, usize::from(row.0.id != "C17d")).await?;
     if client.join_snapshot().game_session_id == previous
         || tile(client.world_spatial().actor_position)? != TOWN
         || client
@@ -2563,7 +2596,7 @@ async fn challenge(
         combat_access(client, world, book, words).await?,
     );
     let duration = challenge_duration(spell)?;
-    let mut peer = connect_character(clients, 0xc5, 1).await?;
+    let mut peer = admit_row(clients, 0xc5, 1).await?;
     let result = tokio::time::timeout(Duration::from_secs(130), async {
         let monster = with_observer_liveness(client, rat(&mut peer, world))
             .await?
@@ -2907,7 +2940,7 @@ async fn companion_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         let watch = row.0.watch();
         let result: TestResult = async {
             let _row = watch.enter();
-            let mut client = connect_world(clients, tag).await?;
+            let mut client = admit_row(clients, tag, 1).await?;
             let mut completed = false;
             let deadline =
                 format!("{id}: 600s companion journey deadline; required actions unproven");
@@ -3217,7 +3250,32 @@ async fn wild_rat(
 ) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    let points: Vec<_> = metadata
+        .spawns
+        .sources
+        .iter()
+        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
+        .filter(|(_, point)| {
+            metadata
+                .spawns
+                .creatures
+                .get(point.creature as usize)
+                .is_some_and(|entry| entry.key == "oteryn:creature.rat")
+        })
+        .collect();
+    // Arrival is a map fact. A rat may still be respawning, so defer visibility
+    // checks to the observation loop after the real STEP commands.
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+            && points.iter().any(|(floor, point)| {
+                at.floor == *floor && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= 1
+            })
+    })
+    .ok_or("earned hunt requires a reachable compiled Rat spawn outside PZ")?;
+    walk(client, world, &path).await?;
     let until = tokio::time::Instant::now() + Duration::from_secs(25);
     loop {
         let here = client.world_spatial().actor_position;
@@ -3274,7 +3332,7 @@ async fn companion_logout(
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-    let mut observer = connect_character(clients, tag, 0).await?;
+    let mut observer = admit_row(clients, tag, 0).await?;
     let result: TestResult<_> = async {
         let owner_position = tile(client.world_spatial().actor_position)?;
         let path = route(
@@ -3303,7 +3361,7 @@ async fn companion_logout(
         observer.take_events();
         with_observer_liveness(&mut observer, player_logout(client)).await?;
         let removal = companion_leaves(&mut observer, owned).await?;
-        *client = with_observer_liveness(&mut observer, connect_world(clients, tag + 1)).await?;
+        *client = with_observer_liveness(&mut observer, admit_row(clients, tag + 1, 1)).await?;
         if client.join_snapshot().game_session_id == session
             || tile(client.world_spatial().actor_position)? != TOWN
             || client
@@ -3552,7 +3610,7 @@ async fn companion_owner_death(
     for entity in owned {
         creature(client, *entity)?;
     }
-    let mut observer = connect_character(clients, tag, 0).await?;
+    let mut observer = admit_row(clients, tag, 0).await?;
     let result: TestResult<_> = async {
         let site = tile(encounter)?;
         let path = route(world, tile(observer.world_spatial().actor_position)?, |at| {
@@ -3770,6 +3828,19 @@ async fn inventory_quantity_or_applied(
     Ok(())
 }
 
+async fn approach_melee(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    target: ActorPosition,
+) -> TestResult {
+    let target = tile(target)?;
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
+    })
+    .ok_or("no ordinary melee approach to the hunt target")?;
+    walk(client, world, &path).await
+}
+
 async fn player_corpse(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -3780,12 +3851,7 @@ async fn player_corpse(
     let corpse_ref = provisioning::item_reference(&index, 5964)?;
     let existing = census(client)?;
     let owner = own_entity(client)?;
-    let at = tile(target.position)?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |p| {
-        p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 1
-    })
-    .ok_or("no ordinary melee approach to corpse-source rat")?;
-    walk(client, world, &path).await?;
+    approach_melee(client, world, target.position).await?;
     client.take_events();
     select_monster(client, Some(target.entity)).await?;
     let until = tokio::time::Instant::now() + Duration::from_secs(75);
@@ -4117,7 +4183,7 @@ async fn tile_item_row(clients: &SeamClients<'_>, world: &BundleWorld) {
     let watch = row.0.watch();
     let result: TestResult = async {
         let _row = watch.enter();
-        let mut client = connect_world(clients, 0xe0).await?;
+        let mut client = admit_row(clients, 0xe0, 1).await?;
         let mut completed = false;
         let result = watch
             .bound(
