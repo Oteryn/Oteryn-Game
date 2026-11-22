@@ -226,7 +226,7 @@ async fn qualify(h: &Harness, base: &str, worn: &str, full: i64) -> TestResult {
         "SELECT lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
     )
     .bind(id(RING_FIXTURE_ID).as_slice())
-    .fetch_one(h.pool)
+    .fetch_one(&h.pool)
     .await?;
     assert_eq!(lifecycle, 2, "Crystal decayTo 0 removes the spent ring");
     Ok(())
