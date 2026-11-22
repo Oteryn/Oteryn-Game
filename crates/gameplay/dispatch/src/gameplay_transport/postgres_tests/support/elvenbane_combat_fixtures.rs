@@ -323,19 +323,11 @@ async fn upper_defenders(
                 && at.y == 31647
                 && (32590..=32592).contains(&at.x)
             {
-                // The Orc Shaman retreats behind projectile blockers on this floor.
-                // Walk around the pillars to the open tile immediately west of it.
-                super::desert_earned_route_fixtures::walk_to(
-                    owner,
-                    member,
-                    Position {
-                        x: u16::try_from(at.x - 1)?,
-                        y: 31647,
-                        floor: -4,
-                    },
-                )
-                .await
-                .map_err(|error| format!("approaching the Orc Shaman at {at:?}: {error}"))?;
+                // The Orc Shaman retreats behind projectile blockers. Search
+                // the source walk for the nearest free adjacent firing tile.
+                super::desert_earned_route_fixtures::walk_to_adjacent(owner, member, at)
+                    .await
+                    .map_err(|error| format!("approaching the Orc Shaman at {at:?}: {error}"))?;
                 ChaseMode::Stand
             } else {
                 ChaseMode::Chase
