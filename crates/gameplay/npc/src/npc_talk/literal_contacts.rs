@@ -1,10 +1,11 @@
 //! Closed lore-only contacts; no quest, currency or exchange operations are admitted.
-pub(super) const REVISION_MATERIAL: &str = "literal-contacts:v2;mayor_pocaro:literal;wayland_smythers:literal;minzy:name,job,story;rascalio:name,job;rascalio-greet:Be greeted, |PLAYERNAME|!";
+pub(super) const REVISION_MATERIAL: &str = "literal-contacts:v3;chip:literal;mayor_pocaro:literal;wayland_smythers:literal;minzy:name,job,story;rascalio:name,job;rascalio-greet:Be greeted, |PLAYERNAME|!";
 
 pub(super) fn admitted(key: &str) -> bool {
     matches!(
         key,
-        "oteryn:npc.mayor_pocaro"
+        "oteryn:npc.chip"
+            | "oteryn:npc.mayor_pocaro"
             | "oteryn:npc.wayland_smythers"
             | "oteryn:npc.minzy"
             | "oteryn:npc.rascalio"
@@ -47,6 +48,35 @@ mod tests {
         .expect("catalogue")
         .service_model_for_project()
         .expect("model")
+    }
+
+    #[test]
+    fn lumberjack_chip_can_explain_his_work_through_the_npc_book() {
+        let book = NpcTalkBook::from_model(&model());
+        let entry = book.get("oteryn:npc.chip").expect("Chip must open focus");
+        let position = ChatPosition {
+            x: 32418,
+            y: 31702,
+            floor: 7,
+        };
+        let npcs = [TalkNpc {
+            id: 1u8,
+            position,
+            entry,
+        }];
+        let mut engaged = None;
+        assert_eq!(
+            talk(position, "hi", &npcs, &mut engaged)
+                .expect("greeting")
+                .text,
+            "Please don't keep me from my work."
+        );
+        assert_eq!(
+            talk(position, "story", &npcs, &mut engaged)
+                .expect("story")
+                .text,
+            "Queen Eloise from Carlin likely wouldn't approve. Be so kind to keep this little secret to yourself."
+        );
     }
 
     #[test]
