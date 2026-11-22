@@ -30,7 +30,12 @@ pub(super) struct Offer {
     topic: u16,
     #[serde(default)]
     any_topic: bool,
+    #[serde(default)]
+    crystal_keyword: bool,
     next_topic: u16,
+    // A dialogue alias can select the NPC's existing fenced reward callback.
+    #[serde(default)]
+    transition: Option<String>,
     storage: Vec<Storage>,
     #[serde(default)]
     requires: Vec<reward_callbacks::TrackRequirement>,
@@ -86,13 +91,21 @@ pub(super) fn prepare(
         intent,
     )?;
     let text = intent.text.trim().to_ascii_lowercase();
+    if phase == Phase::Rewards {
+        offer_topic::retire_cyclops_steel_quote(
+            admission,
+            command.game_session_id,
+            &context,
+            &text,
+        )?;
+    }
     if text == "no"
         || (phase == Phase::Offers
             && !matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
             && offers
                 .offers
                 .iter()
-                .any(|offer| offer.npc == context.2 && offer.keywords.contains(&text)))
+                .any(|offer| offer.npc == context.2 && offer.matches_keyword(&text)))
     {
         let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
         sessions
@@ -192,8 +205,18 @@ pub(super) fn prepare(
                 if !meets_level(offer.minimum_level) {
                     return refusal(&offer.failure_reply);
                 }
+                if let Some(key) = &offer.transition {
+                    // Keep the original callback, value plan and saved-definition pin.
+                    callbacks.iter().find(|callback| {
+                        callback.key == *key
+                            && callback.npc == context.2
+                            && callback.carried_item.is_none()
+                            && callback.world_claim.is_none()
+                    })?;
+                    failure_reply = offer.failure_reply.clone();
+                }
                 return Some(Choice {
-                    transition: None,
+                    transition: offer.transition.clone(),
                     next_topic: Some(Topic::from(offer.next_topic)),
                     reply: offer.reply.clone(),
                 });
@@ -219,7 +242,7 @@ pub(super) fn prepare(
             let mut blocked = offers.offers.iter().filter(|offer| {
                 offer.npc == context.2
                     && offer.matches_topic(topic.number)
-                    && offer.keywords.contains(&text)
+                    && offer.matches_keyword(&text)
                     && eligible(&offer.storage)
                     && !offer.requires.iter().all(|r| r.holds(catalogue, tracks))
             });

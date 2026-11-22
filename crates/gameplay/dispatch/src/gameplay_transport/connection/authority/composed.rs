@@ -1478,9 +1478,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return false;
         }
         record_entry_decision("playable", 1, started.elapsed(), "callback_dawnport");
-        let mut phase = "grizzly_resume";
+        let mut phase = "quest_dialogue_resume";
         let mut started = tokio::time::Instant::now();
         if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            if !Box::pin(self.prepare_quest_dialogue_resume(admitted.game_session_id)).await {
+                return false;
+            }
+            record_entry_decision("playable", 1, started.elapsed(), phase);
+            phase = "grizzly_resume";
+            started = tokio::time::Instant::now();
             if !self.prepare_grizzly_npc_resume(admitted).await {
                 return false;
             }
