@@ -166,6 +166,7 @@ pub(super) async fn access_exercise(
     h: &Harness,
     case: Access,
 ) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::StepDirection;
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             owner.offered_capabilities(),
@@ -173,6 +174,16 @@ pub(super) async fn access_exercise(
         )
         .ok_or("terrain tool capabilities")?;
     let source = case.source;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    if case.name == "present-pick" {
+        super::questpc7_ferumbras_fixtures::step(owner, admitted, StepDirection::East).await?;
+        assert_eq!(
+            owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+            super::quest_world_callbacks_fixtures::local(source),
+            "the closed floor does not descend"
+        );
+        super::questpc7_ferumbras_fixtures::step(owner, admitted, StepDirection::West).await?;
+    }
     let map = owner.bundle_map().ok_or("map")?;
     let key =
         oteryn_world_bundle::bundle::placement_key(source.floor, source.x, source.y, case.ordinal)
@@ -237,10 +248,15 @@ pub(super) async fn access_exercise(
                     .fetch_one(&h.pool)
                     .await?;
             assert_eq!(state, appearance, "{}", case.name);
+            let tile = crate::map::overlay::TilePos { x: source.x, y: source.y, floor: source.floor };
+            let base = map.overlay.base().tile(source.x, source.y, source.floor).ok_or("dug tile")?;
+            let ground = *base.ids().first().ok_or("dug ground")?;
+            let entry = map.facts.base_entry(tile, case.ordinal, ground).ok_or("dug entry")?;
+            assert_eq!(i64::from(entry.appearance_id), appearance, "{}", case.name);
             let direction = if case.start.x < source.x {
-                oteryn_protocol_oteryn::world_spatial::StepDirection::East
+                StepDirection::East
             } else {
-                oteryn_protocol_oteryn::world_spatial::StepDirection::West
+                StepDirection::West
             };
             super::questpc7_ferumbras_fixtures::step(owner, admitted, direction).await?;
         }
@@ -260,7 +276,6 @@ pub(super) async fn access_exercise(
             case.name
         );
     }
-    let actor = admitted.runtime_actor.ok_or("actor")?;
     if case.name == MARID_LAMP {
         assert_eq!(quantity(h, 3231).await?, 0);
         assert_eq!(quantity(h, 3243).await?, 1);
@@ -346,22 +361,15 @@ pub(super) async fn npc_exercise(
         talk(owner, admitted, seymour, 18000, "hi").await?,
         NpcIntentDisposition::Ok
     );
+    let original: (i64, i64) = sqlx::query_as(
+        "SELECT level,total_experience FROM game_character_progression_state \
+         WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(super::fixture::id(41).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
     for (level, xp, phrase) in [(3_i64, 200_i64, "killing rats"), (4, 400, "little present")] {
-        let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx)
-            .await?;
-        let updated = sqlx::query(
-            "UPDATE game_character_progression_state SET level=$1,total_experience=$2 \
-             WHERE character_id=encode($3,'hex')::uuid",
-        )
-        .bind(level)
-        .bind(xp)
-        .bind(super::fixture::id(41).as_slice())
-        .execute(&mut *tx)
-        .await?;
-        assert_eq!(updated.rows_affected(), 1);
-        tx.commit().await?;
+        set_test_level(h, level, xp).await?;
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await
@@ -384,6 +392,8 @@ pub(super) async fn npc_exercise(
         let lines = reply.conversation.ok_or("Seymour mission reply")?.lines;
         assert!(lines.iter().any(|line| line.contains(phrase)), "{lines:?}");
     }
+    // Restore the receipt-backed values before either exchange writes Character state.
+    set_test_level(h, original.0, original.1).await?;
     talk(owner, admitted, seymour, 18005, "bye").await?;
     let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     for (npc, key, keyword, input, output, command) in [
@@ -433,6 +443,25 @@ pub(super) async fn npc_exercise(
         );
         assert_eq!(quantity(h, output).await?, 1);
     }
+    Ok(())
+}
+
+async fn set_test_level(h: &Harness, level: i64, experience: i64) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let updated = sqlx::query(
+        "UPDATE game_character_progression_state SET level=$1,total_experience=$2 \
+         WHERE character_id=encode($3,'hex')::uuid",
+    )
+    .bind(level)
+    .bind(experience)
+    .bind(super::fixture::id(41).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(updated.rows_affected(), 1);
+    tx.commit().await?;
     Ok(())
 }
 

@@ -3803,6 +3803,44 @@
       "requires_world_admission": true
     },
     {
+      "key": "oteryn:quest-callback/present_quest/pick-32149-32110-11",
+      "quest": "oteryn:quest.present_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32149,
+          "y": 32110,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 101,
+        "appearance": 394
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32149,
+        "y": 32110,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile_pick.lua:17-23"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/qm03/pits",
       "quest": "oteryn:quest.the_pits_of_inferno_quest",
       "trigger": "step_in",
@@ -3930,6 +3968,198 @@
       },
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/down_floor.lua:1-11"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/scale_armor_quest/shovel-entrance",
+      "quest": "oteryn:quest.scale_armor_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32335,
+          "y": 32174,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 594
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32335,
+        "y": 32174,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/tools/shovel.lua",
+        "https://tibia.fandom.com/index.php?curid=3580&oldid=749125"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/silver_brooch_quest/pick-32775-32012-10",
+      "quest": "oteryn:quest.silver_brooch_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32775,
+          "y": 32012,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 101,
+        "appearance": 394
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32775,
+        "y": 32012,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile_pick.lua:17-23"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike_sword_quest/pick-32580-32103-11",
+      "quest": "oteryn:quest.spike_sword_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32580,
+          "y": 32103,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 101,
+        "appearance": 394
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32580,
+        "y": 32103,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile_pick.lua:17-23"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike_sword_quest/pick-32595-32068-9",
+      "quest": "oteryn:quest.spike_sword_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32595,
+          "y": 32068,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 101,
+        "appearance": 394
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32595,
+        "y": 32068,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile_pick.lua:17-23"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/steel_helmet_quest/shovel-entrance",
+      "quest": "oteryn:quest.steel_helmet_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32489,
+          "y": 31965,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 594
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32489,
+        "y": 31965,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/tools/shovel.lua",
+        "https://tibia.fandom.com/index.php?curid=10334&oldid=855096"
       ]
     },
     {

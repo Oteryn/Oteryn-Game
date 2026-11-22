@@ -50,6 +50,28 @@ def document():
                              'data-global/scripts/actions/other/down_floor.lua:1-11',
                              action=102, at=position(x, 32131, 8), appearance=appearance,
                              teleport=position(x + 1, 32131, 9)))
+    classic = ROOT / 'tools/content-schema/world-authoring/samples/quest-chest-bindings/classic-quests.json'
+    pick_quests = {
+        'oteryn:reward-claim.kv.present_box': 'present_quest',
+        'oteryn:reward-claim.kv.silverbrooch': 'silver_brooch_quest',
+        'oteryn:reward-claim.kv.spikesword': 'spike_sword_quest',
+    }
+    for hole in json.loads(classic.read_bytes())['pick_access']:
+        x, y, z = hole['position']
+        quest = pick_quests[hole['claims'][0]]
+        rows.append(callback(f'{quest}/pick-{x}-{y}-{z}', quest, 'step_in',
+                             'data-global/startup/tables/tile_pick.lua:17-23',
+                             action=hole['action'], at=position(x, y, z), appearance=394,
+                             teleport=position(x, y, z + 1)))
+    for quest, x, y, page, revision in [
+        ('scale_armor_quest', 32335, 32174, 3580, 749125),
+        ('steel_helmet_quest', 32489, 31965, 10334, 855096),
+    ]:
+        row = callback(f'{quest}/shovel-entrance', quest, 'step_in',
+                       'data/scripts/actions/tools/shovel.lua',
+                       at=position(x, y, 7), appearance=594, teleport=position(x, y, 8))
+        row['sources'].append(f'https://tibia.fandom.com/index.php?curid={page}&oldid={revision}')
+        rows.append(row)
     for name, at, to, facing, splash in [
         ('cliff', (32966, 32626, 5), (32968, 32626, 5), None, (32968, 32626, 5)),
         ('splash', (32968, 32630, 7), None, None, (32968, 32630, 7)),
