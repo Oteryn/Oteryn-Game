@@ -646,7 +646,8 @@ def native_loot_yield_facts(ref: dict, profile: dict) -> dict | None:
 
 def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIONS,
                 loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS,
-                native_item_profiles: dict | None = None) -> bytes:
+                native_item_profiles: dict | None = None, *,
+                qualify_carried_yields: bool | None = None) -> bytes:
     """The `loot_tables` section (OTERYN_NATIVE_LOOT_TABLES/v1, OTNGP08): one `creature_loot` row per
     pinned Creature profile with its definition's `loot` reference copied as is (`null` for a
     profile with no Creature definition), exactly the referenced loot tables, and the admission
@@ -669,9 +670,10 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     quest_yields = set()
     slice_creatures = set()
     # Repository-authored Quest rules bind the complete canonical dataset.
-    if (creature_definitions.resolve() == CREATURE_DEFINITIONS.resolve()
+    canonical_inputs = (creature_definitions.resolve() == CREATURE_DEFINITIONS.resolve()
             and loot_definitions.resolve() == LOOT_DEFINITIONS.resolve()
-            and item_definitions.resolve() == ITEM_DEFINITIONS.resolve()):
+            and item_definitions.resolve() == ITEM_DEFINITIONS.resolve())
+    if canonical_inputs:
         migration_tools = str(ROOT / 'tools/content-migration')
         if migration_tools not in sys.path:
             sys.path.insert(0, migration_tools)
@@ -689,6 +691,10 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     bindings, named, used = {}, {}, {}
     corpse_refs, yield_keys, corpse_tables = {}, set(), {}
     reward_boss_corpses = set()
+    # Calls supplying a candidate provider may be building intermediate content.
+    # The final composition explicitly qualifies the same closure as a disk read.
+    if qualify_carried_yields is None:
+        qualify_carried_yields = native_item_profiles is None
     profile_path = item_definitions / 'spell-native-profiles.json'
     if native_item_profiles is None:
         _, native_profiles = read(profile_path) if profile_path.exists() else (b'', {'records': []})
@@ -707,6 +713,10 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         if ref['family'] != 'Item' or fact is None or fact['item'] != ref:
             raise ValueError(f"Item named by the loot section is not an exact Item definition: {ref['key']}")
         named[ref['key']] = fact
+
+    if canonical_inputs and qualify_carried_yields:
+        import cloot2_item_admissions
+        cloot2_item_admissions.apply_loot_facts(ROOT, tables, facts, native_by_key)
 
     if any(record['profile']['target']['key'] == 'oteryn:creature.the_corruptor'
            for record in creatures['records']):

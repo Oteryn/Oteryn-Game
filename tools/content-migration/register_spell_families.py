@@ -735,6 +735,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
                   if row["production_definition"]["production_key"] in protected_loot_yields.ARBAZILOTH_HARD_ITEMS]
     house_top_order = json.loads((root / house_decoration_actions.PROFILES).read_bytes())
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
+    import cloot2_item_admissions
+    cloot2_item_admissions.admit(root, items, provider_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
