@@ -96,6 +96,86 @@ async fn install_offsets<const N: usize>(
     positions: Option<[Position; N]>,
     offset: impl Fn(i32) -> (i32, i32),
 ) -> TestResult<[EntityRef; N]> {
+    prepare_npc_service(owner, admitted, &keys).await?;
+    let mut runtime = owner.runtime.lock().await;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let at = runtime
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
+    let placements = keys
+        .into_iter()
+        .enumerate()
+        .map(|(i, key)| {
+            let p = if let Some(positions) = positions.as_ref() {
+                positions[i]
+            } else {
+                let (dx, dy) = offset(i32::try_from(i)?);
+                Position {
+                    x: u16::try_from(at.x + dx)?,
+                    y: u16::try_from(at.y + dy)?,
+                    floor: -i8::try_from(at.floor)?,
+                }
+            };
+            Ok(NpcPlacements {
+                key: key.into(),
+                placements: vec![NpcPlacement {
+                    x: p.x,
+                    y: p.y,
+                    floor: p.floor,
+                    direction: MovementFacing::South,
+                }],
+            })
+        })
+        .collect::<TestResult<Vec<_>>>()?;
+    place_npcs(&mut runtime, keys, placements)
+}
+
+pub(super) async fn install_published<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    table: &oteryn_world_bundle::npc::Table,
+) -> TestResult<[EntityRef; N]> {
+    use oteryn_world_bundle::npc::Direction;
+    let placements = keys
+        .iter()
+        .map(|key| {
+            let row = table
+                .npcs
+                .iter()
+                .find(|row| row.key == *key)
+                .ok_or_else(|| format!("missing published NPC {key}"))?;
+            Ok(NpcPlacements {
+                key: row.key.clone(),
+                placements: row
+                    .placements
+                    .iter()
+                    .map(|p| NpcPlacement {
+                        x: p.x,
+                        y: p.y,
+                        floor: p.floor,
+                        direction: match p.direction {
+                            Direction::North => MovementFacing::North,
+                            Direction::East => MovementFacing::East,
+                            Direction::South => MovementFacing::South,
+                            Direction::West => MovementFacing::West,
+                        },
+                    })
+                    .collect(),
+            })
+        })
+        .collect::<TestResult<Vec<_>>>()?;
+    prepare_npc_service(owner, admitted, &keys).await?;
+    let mut runtime = owner.runtime.lock().await;
+    place_npcs(&mut runtime, keys, placements)
+}
+
+async fn prepare_npc_service(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: &[&str],
+) -> TestResult {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
         std::ffi::OsStr::new("world"),
@@ -141,35 +221,14 @@ async fn install_offsets<const N: usize>(
             .map_err(debug)?,
         )
         .map_err(debug)?;
-    let at = runtime
-        .read_actor_position(actor)
-        .map_err(debug)?
-        .position();
-    let mut placements = keys
-        .into_iter()
-        .enumerate()
-        .map(|(i, key)| {
-            let p = if let Some(positions) = positions.as_ref() {
-                positions[i]
-            } else {
-                let (dx, dy) = offset(i32::try_from(i)?);
-                Position {
-                    x: u16::try_from(at.x + dx)?,
-                    y: u16::try_from(at.y + dy)?,
-                    floor: -i8::try_from(at.floor)?,
-                }
-            };
-            Ok(NpcPlacements {
-                key: key.into(),
-                placements: vec![NpcPlacement {
-                    x: p.x,
-                    y: p.y,
-                    floor: p.floor,
-                    direction: MovementFacing::South,
-                }],
-            })
-        })
-        .collect::<TestResult<Vec<_>>>()?;
+    Ok(())
+}
+
+fn place_npcs<const N: usize>(
+    runtime: &mut crate::foundation::ChannelRuntimeV1,
+    keys: [&str; N],
+    mut placements: Vec<NpcPlacements>,
+) -> TestResult<[EntityRef; N]> {
     placements.sort_by(|left, right| left.key.cmp(&right.key));
     runtime
         .place_npcs(&NpcPlacementTable { npcs: placements }, |_| true, true)
