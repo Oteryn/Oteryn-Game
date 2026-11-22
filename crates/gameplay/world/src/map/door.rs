@@ -463,6 +463,7 @@ pub enum DoorStepOut<T> {
     Nothing,
     Close {
         item_moves: Vec<(T, TilePos)>,
+        item_retirements: Vec<T>,
         closed_id: u16,
     },
 }
@@ -486,8 +487,8 @@ pub fn door_step_out_destination(
         })
 }
 
-/// Close a vacant doorway. Relocation requires an enterable destination. When
-/// both exits are blocked, existing item custody remains on the doorway.
+/// Clear movable non-corpses from a vacant doorway before closing it. A
+/// blocked relocation retires them through the Ground owner.
 pub fn door_step_out<T: Copy>(
     open_id: u16,
     creature_present: bool,
@@ -507,15 +508,14 @@ pub fn door_step_out<T: Copy>(
     {
         return DoorStepOut::Nothing;
     }
-    let item_moves = destination.map_or_else(Vec::new, |to| {
-        items
-            .iter()
-            .filter(|item| item.movable && !item.corpse)
-            .map(|item| (item.item, to))
-            .collect()
-    });
+    let movable = items.iter().filter(|item| item.movable && !item.corpse);
+    let (item_moves, item_retirements) = match destination {
+        Some(to) => (movable.map(|item| (item.item, to)).collect(), Vec::new()),
+        None => (Vec::new(), movable.map(|item| item.item).collect()),
+    };
     DoorStepOut::Close {
         item_moves,
+        item_retirements,
         closed_id,
     }
 }
@@ -541,6 +541,7 @@ mod step_out_tests {
                 door_step_out::<u8>(open, false, None, &[]),
                 DoorStepOut::Close {
                     item_moves: vec![],
+                    item_retirements: vec![],
                     closed_id: closed
                 }
             );
@@ -577,6 +578,7 @@ mod step_out_tests {
                 door_step_out::<u8>(open, false, None, &[]),
                 DoorStepOut::Close {
                     item_moves: vec![],
+                    item_retirements: vec![],
                     closed_id: open - 1
                 }
             );
@@ -606,6 +608,7 @@ mod step_out_tests {
                 door_step_out(5114, false, destination_choice, &items),
                 DoorStepOut::Close {
                     item_moves: vec![(1, destination), (2, destination)],
+                    item_retirements: vec![],
                     closed_id: 5113
                 }
             );
@@ -634,6 +637,7 @@ mod step_out_tests {
             ),
             DoorStepOut::Close {
                 item_moves: vec![],
+                item_retirements: vec![],
                 closed_id: 5113
             }
         );

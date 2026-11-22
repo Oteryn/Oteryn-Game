@@ -69,6 +69,8 @@ use sqlx::Row;
 
 mod activity_retirement;
 pub use activity_retirement::ActivityGroundRetirement;
+mod door_step_out;
+pub use door_step_out::{DoorGroundItem, DoorGroundRetirement};
 mod world_reset_cause;
 use world_reset_cause::RetireCause;
 
