@@ -26,9 +26,38 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual((states["outfits"]["minimum"], states["outfits"]["set"]), (3, 4))
         self.assertEqual((states["door"]["minimum"], states["door"]["set"]), (0, 1))
 
+    def test_nightmare_lord_protector_exchange_matches_committed_npc_source(self):
+        row = next(
+            callback
+            for callback in self.callbacks["callbacks"]
+            if callback["key"] == "oteryn:quest-reward/l10-nightmare-lord-protector"
+        )
+        self.assertEqual(
+            row["take"], [{"item": "oteryn:item.tibia.i6499", "count": 1500}]
+        )
+        self.assertIsNone(row["give"])
+        self.assertEqual(row["achievement"], "oteryn:achievement/lord_protector")
+        states = {state["track"].rsplit("/", 1)[-1]: state for state in row["storage"]}
+        self.assertEqual(
+            (states["outfits"]["minimum"], states["outfits"]["set"]), (3, 4)
+        )
+        self.assertEqual((states["door"]["minimum"], states["door"]["set"]), (0, 1))
+        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])[
+            "offers"
+        ]
+        (offer,) = (
+            offer
+            for offer in offers
+            if offer["npc"] == row["npc"] and offer["next_topic"] == row["topic"]
+        )
+        self.assertEqual(offer["storage"][0]["minimum"], 3)
+        self.assertEqual(offer["requires"], row["requires"])
+
     def test_demon_outfits_award_true_dedication_only_on_final_addon(self):
-        rewards = {row['key'].split('/')[-1]: row for row in self.callbacks['callbacks']}
-        self.assertIsNone(rewards['l3-demon-base']['achievement'])
+        rewards = {
+            row["key"].split("/")[-1]: row for row in self.callbacks["callbacks"]
+        }
+        self.assertIsNone(rewards["l3-demon-base"]["achievement"])
         for addon, other_bit in [('shield', 2), ('helmet', 1)]:
             with self.subTest(addon=addon):
                 name = f'l3-demon-{addon}'
@@ -557,7 +586,7 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-','l13-','m36-','qb-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack','between-the-lines-phillip-accept'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),104)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),153)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),154)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         additional_sources = {
             'oteryn:quest-reward/between-the-lines-phillip-accept':

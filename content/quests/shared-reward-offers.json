@@ -6139,6 +6139,40 @@
     {
       "npc": "oteryn:npc.the_dream_master",
       "keywords": [
+        "advancement",
+        "demonic",
+        "essence"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "So you want to advance to a {Lord Protector} rank? Did you bring 1500 demonic essences with you?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
         "join"
       ],
       "topic": 0,

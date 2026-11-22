@@ -797,6 +797,14 @@ impl QuestStateCatalogue {
         {
             return Err(QuestRefusal::NotSupported);
         }
+        if let Some(nightmare) = world_callbacks::tower_nightmare_rank(&transition.key) {
+            let qualifies = [world_callbacks::TOWER_BROTHERHOOD_RANK, nightmare]
+                .into_iter()
+                .any(|rank| stored.get(rank).is_some_and(|value| *value >= 4));
+            if !qualifies {
+                return Err(QuestRefusal::StageMismatch);
+            }
+        }
         let mut current = Vec::with_capacity(transition.effects.len());
         for effect in &transition.effects {
             let track = self

@@ -1639,6 +1639,8 @@ impl DurabilityRoot {
                         .map(|effect| effect.track.as_str())
                         .collect();
                     keys.extend(catalogue.completion_tracks(quest));
+                    let tower_rank = oteryn_gameplay_quests::quest::world_callbacks::tower_nightmare_rank(&transition.key);
+                    keys.extend(tower_rank);
                     if oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some() {
                         for key in oteryn_gameplay_quests::quest::shared_world_progress::hive_mission_tracks() {
                             keys.push(key);
@@ -1668,7 +1670,7 @@ impl DurabilityRoot {
                     let mut stored = BTreeMap::new();
                     for row in &rows {
                         let key: String = row.try_get("track_key")?;
-                        let read_only = reward_callback.as_ref().is_some_and(|c|
+                        let read_only = tower_rank == Some(key.as_str()) || reward_callback.as_ref().is_some_and(|c|
                             c.requires.iter().any(|r| r.track == key) || c.participants.iter().any(|p| p.tracks().any(|track| track == key)));
                         let expected_owner: &str = if read_only {
                             &catalogue.track(&key).ok_or(DurabilityError::InvalidStoredState)?.quest
@@ -1780,7 +1782,7 @@ impl DurabilityRoot {
                     } else if oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some() {
                         transition.effects.iter().map(|effect|effect.track.as_str()).collect()
                     } else { grizzly_plan.as_ref().map_or_else(
-                        || keys.iter().copied().filter(|key| reward_callback.as_ref().is_none_or(|c|
+                        || keys.iter().copied().filter(|key| tower_rank != Some(*key) && reward_callback.as_ref().is_none_or(|c|
                             !c.requires.iter().any(|r| r.track == *key)))
                             .filter(|key| transition.effects.iter().any(|effect| effect.track.as_str() == *key)
                                 || !catalogue.completion_tracks(quest).any(|read| read == *key)).collect(),

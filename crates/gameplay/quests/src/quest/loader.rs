@@ -886,6 +886,10 @@ mod tests {
         assert_eq!(expected.len() - before_qmech_native, 81);
         let before_ape_city_and_beginning = expected.len();
         for suffix in [
+            "ape-city-amphora-40092",
+            "ape-city-amphora-40093",
+            "ape-city-amphora-40094",
+            "ape-city-amphora-40095",
             "ape-city-cask-32495",
             "ape-city-cask-32497",
             "ape-city-cask-32499",
@@ -893,6 +897,7 @@ mod tests {
             "ape-city-cask-32503",
             "ape-city-cask-32505",
             "ape-city-cask-32507",
+            "ape-city-catacombs-amphora-gate",
             "ape-city-catacombs-entry",
             "ape-city-decipher",
             "ape-city-destroy-monument",
@@ -913,7 +918,7 @@ mod tests {
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
-        assert_eq!(expected.len() - before_ape_city_and_beginning, 24);
+        assert_eq!(expected.len() - before_ape_city_and_beginning, 29);
         assert!(expected.insert("oteryn:quest-callback/qd-steal-from-thieves-oasis-box".into()));
         assert_eq!(
             callbacks

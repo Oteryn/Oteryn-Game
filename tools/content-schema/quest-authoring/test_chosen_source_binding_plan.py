@@ -1,12 +1,16 @@
 import json
 import pathlib
 import unittest
+
 from native_talk_binding_evidence import canonical_definitions
 from quest_native_binding_preflight import verify_stage_runtime
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 PLAN = ROOT / "content/quests/missions/completion-binding-plan.json"
-SOURCE = ROOT / "tools/content-schema/quest-authoring/samples/server-completion/chosen-source-events-rewards/packet.json"
+SOURCE = (
+    ROOT
+    / "tools/content-schema/quest-authoring/samples/server-completion/chosen-source-events-rewards/packet.json"
+)
 
 
 REGISTERED_TALK_QUESTS = {
@@ -14,18 +18,22 @@ REGISTERED_TALK_QUESTS = {
     "oteryn:quest.goblin_merchant_quest",
     "oteryn:quest.machinery_of_war_quest",
     "oteryn:quest.authored.annual_autumn_vintage",
+    "oteryn:quest.authored.demon_wars_world_change",
     "oteryn:quest.barbarian_test",
 }
 
-REGISTERED_TALK_STAGES = {(key, "s1") for key in REGISTERED_TALK_QUESTS} | {
-    ("oteryn:quest.authored.bank_robbery_mini_world_change", "s1"),
-    ("oteryn:quest.authored.child_of_destiny_quest", "s1"),
-    ("oteryn:quest.authored.child_of_destiny_quest", "s5"),
-    ("oteryn:quest.shadows_of_yalahar_quest", "s1"),
-    ("oteryn:quest.authored.top_of_the_city_quest", "s1"),
-    ("oteryn:quest.authored.top_of_the_city_quest", "s4"),
-} | {("oteryn:quest.pilgrimage_of_ashes", f"s{stage}") for stage in range(1, 8)}
-
+REGISTERED_TALK_STAGES = (
+    {(key, "s1") for key in REGISTERED_TALK_QUESTS}
+    | {
+        ("oteryn:quest.authored.bank_robbery_mini_world_change", "s1"),
+        ("oteryn:quest.authored.child_of_destiny_quest", "s1"),
+        ("oteryn:quest.authored.child_of_destiny_quest", "s5"),
+        ("oteryn:quest.shadows_of_yalahar_quest", "s1"),
+        ("oteryn:quest.authored.top_of_the_city_quest", "s1"),
+        ("oteryn:quest.authored.top_of_the_city_quest", "s4"),
+    }
+    | {("oteryn:quest.pilgrimage_of_ashes", f"s{stage}") for stage in range(1, 8)}
+)
 
 
 class ChosenSourceBindingPlanTest(unittest.TestCase):
@@ -42,7 +50,9 @@ class ChosenSourceBindingPlanTest(unittest.TestCase):
         self.assertTrue(self.source_keys <= set(self.by_quest))
         source_rows = [self.by_quest[key] for key in self.source_keys]
         self.assertEqual(1471, sum(len(row["stages"]) for row in source_rows))
-        self.assertEqual(509, sum(len(row["reward_identity_associations"]) for row in source_rows))
+        self.assertEqual(
+            509, sum(len(row["reward_identity_associations"]) for row in source_rows)
+        )
 
     def test_source_rows_remain_non_executable(self):
         self.assertFalse(self.plan["runtime_enabled"])
@@ -51,16 +61,33 @@ class ChosenSourceBindingPlanTest(unittest.TestCase):
             self.assertFalse(row["runtime_enabled"])
             self.assertIsNone(row["native_reward_delivery_binding"])
             for stage in row["stages"]:
-                if key == "oteryn:quest.adventures_of_galthen_quest" and stage["stage_key"] in {"s5", "s8"}:
+                if key == "oteryn:quest.adventures_of_galthen_quest" and stage[
+                    "stage_key"
+                ] in {"s5", "s8"}:
                     self.assertFalse(stage["runtime_enabled"])
                     stage_key = stage["stage_key"]
-                    predecessor, creature = {"s5": ("s4", "ahau"), "s8": ("s7", "mitmah_vanguard")}[stage_key]
-                    self.assertEqual(stage["native_dispatch_binding"], {
-                        "owner": "native_kills",
-                        "creature": {"family": "Creature", "key": "oteryn:creature."+creature, "revision": "definition-r1"},
-                        "transition": "oteryn:quest-transition/chosen-source/adventures_of_galthen_quest/"+stage_key,
-                        "predecessor": {"track": "oteryn:quest-progress/chosen-source/adventures_of_galthen_quest/"+predecessor, "value": 1},
-                    })
+                    predecessor, creature = {
+                        "s5": ("s4", "ahau"),
+                        "s8": ("s7", "mitmah_vanguard"),
+                    }[stage_key]
+                    self.assertEqual(
+                        stage["native_dispatch_binding"],
+                        {
+                            "owner": "native_kills",
+                            "creature": {
+                                "family": "Creature",
+                                "key": "oteryn:creature." + creature,
+                                "revision": "definition-r1",
+                            },
+                            "transition": "oteryn:quest-transition/chosen-source/adventures_of_galthen_quest/"
+                            + stage_key,
+                            "predecessor": {
+                                "track": "oteryn:quest-progress/chosen-source/adventures_of_galthen_quest/"
+                                + predecessor,
+                                "value": 1,
+                            },
+                        },
+                    )
                 elif (key, stage["stage_key"]) in REGISTERED_TALK_STAGES:
                     self.assertTrue(stage["runtime_enabled"])
                     verify_stage_runtime(ROOT, canonical_definitions(ROOT)[key], stage)
@@ -78,32 +105,53 @@ class ChosenSourceBindingPlanTest(unittest.TestCase):
                 if intent["kind"] == "talk":
                     talks.append(intent)
         self.assertEqual(251, len(talks))
-        self.assertTrue(all("DIALOGUE_LANE_OWNS_TALK_BINDING" in row["unresolved"] for row in talks))
+        self.assertTrue(
+            all("DIALOGUE_LANE_OWNS_TALK_BINDING" in row["unresolved"] for row in talks)
+        )
 
     def test_authored_dialogue_candidates_are_preserved(self):
-        authored = [row for row in self.plan["records"] if row["quest"] not in self.source_keys]
+        authored = [
+            row for row in self.plan["records"] if row["quest"] not in self.source_keys
+        ]
         self.assertEqual(68, len(authored))
         talks = [
-            stage for row in authored for stage in row["stages"]
+            stage
+            for row in authored
+            for stage in row["stages"]
             if stage["event_identity_associations"]["kind"] == "talk"
         ]
         self.assertEqual(79, len(talks))
-        self.assertTrue(all(stage["NPC_dialogue_candidates"] is not None for stage in talks))
+        self.assertTrue(
+            all(stage["NPC_dialogue_candidates"] is not None for stage in talks)
+        )
 
     def test_selected_native_kills_and_registered_talk_keep_rewards_held(self):
-        bound = {(row["quest"], stage["stage_key"])
-                 for row in self.plan["records"] for stage in row["stages"]
-                 if stage["native_dispatch_binding"] is not None}
-        self.assertEqual(bound, {
-            ("oteryn:quest.adventures_of_galthen_quest", "s5"),
-            ("oteryn:quest.adventures_of_galthen_quest", "s8"),
-        } | REGISTERED_TALK_STAGES)
+        bound = {
+            (row["quest"], stage["stage_key"])
+            for row in self.plan["records"]
+            for stage in row["stages"]
+            if stage["native_dispatch_binding"] is not None
+        }
+        self.assertEqual(
+            bound,
+            {
+                ("oteryn:quest.adventures_of_galthen_quest", "s5"),
+                ("oteryn:quest.adventures_of_galthen_quest", "s8"),
+            }
+            | REGISTERED_TALK_STAGES,
+        )
 
     def test_only_registered_native_talk_stage_is_enabled(self):
-        bound = [(row["quest"], stage) for row in self.plan["records"]
-                 for stage in row["stages"] if stage["native_dispatch_binding"] is not None and stage["event_identity_associations"]["kind"] == "talk"]
-        self.assertEqual(REGISTERED_TALK_STAGES,
-                         {(key, stage["stage_key"]) for key, stage in bound})
+        bound = [
+            (row["quest"], stage)
+            for row in self.plan["records"]
+            for stage in row["stages"]
+            if stage["native_dispatch_binding"] is not None
+            and stage["event_identity_associations"]["kind"] == "talk"
+        ]
+        self.assertEqual(
+            REGISTERED_TALK_STAGES, {(key, stage["stage_key"]) for key, stage in bound}
+        )
         self.assertEqual(len(REGISTERED_TALK_STAGES), len(bound))
         for quest, stage in bound:
             self.assertTrue(stage["runtime_enabled"])
@@ -111,7 +159,10 @@ class ChosenSourceBindingPlanTest(unittest.TestCase):
             verify_stage_runtime(ROOT, canonical_definitions(ROOT)[quest], stage)
         self.assertEqual(
             0,
-            sum(row["native_reward_delivery_binding"] is not None for row in self.plan["records"]),
+            sum(
+                row["native_reward_delivery_binding"] is not None
+                for row in self.plan["records"]
+            ),
         )
 
 

@@ -372,9 +372,9 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
-          "minimum": 4,
+          "minimum": 0,
           "maximum": 5,
-          "set": 4,
+          "set": 0,
           "at_least": true
         }
       ],
@@ -431,9 +431,9 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
-          "minimum": 4,
+          "minimum": 0,
           "maximum": 5,
-          "set": 4,
+          "set": 0,
           "at_least": true
         }
       ],
@@ -490,9 +490,9 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
-          "minimum": 4,
+          "minimum": 0,
           "maximum": 5,
-          "set": 4,
+          "set": 0,
           "at_least": true
         }
       ],

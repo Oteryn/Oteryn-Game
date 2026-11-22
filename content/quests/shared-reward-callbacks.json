@@ -187,6 +187,17 @@
       ]
     },
     {
+      "key": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/door",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
+      ]
+    },
+    {
       "key": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/document_claim_0",
       "quest": "oteryn:quest.nightmare_outfits_quest",
       "initial": 0,
@@ -1385,6 +1396,58 @@
       "achievement": "oteryn:achievement/nightmare_walker",
       "reply": [
         "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l10-nightmare-lord-protector",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6499",
+          "count": 1500
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/lord_protector",
+      "reply": [
+        "You advanced to {Lord Protector} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls."
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"

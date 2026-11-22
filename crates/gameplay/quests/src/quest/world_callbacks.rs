@@ -1588,6 +1588,20 @@ fn extend_callbacks(
         .map_err(|e| format!("{e:?}"))
 }
 
+pub(super) const TOWER_BROTHERHOOD_RANK: &str =
+    "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits";
+
+/// Crystal movement_tower.lua admits rank four from either order on these three cells.
+pub fn tower_nightmare_rank(key: &str) -> Option<&'static str> {
+    matches!(
+        key,
+        "oteryn:quest-callback/dreamer-dread-lord-tower-3054"
+            | "oteryn:quest-callback/dreamer-dread-lord-tower-3055"
+            | "oteryn:quest-callback/dreamer-dread-lord-tower-3056"
+    )
+    .then_some("oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits")
+}
+
 /// Exact canonical state operation used by both lowering and the mutation boundary.
 pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
@@ -1685,6 +1699,12 @@ pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
     }
     if let Some(policy) = super::world_change_journals::policy_binding(&callback.key)? {
         fields.insert("journal_policy".into(), policy);
+    }
+    if let Some(alternate) = tower_nightmare_rank(&callback.key) {
+        fields.insert(
+            "tower_nightmare_rank".into(),
+            serde_json::json!([alternate, 4]),
+        );
     }
     fields.remove("sources");
     fields.remove("success_message");
@@ -3520,8 +3540,12 @@ fn ape_city_amphoras_and_dread_lord_benefits_are_admitted() -> Result<(), String
             .ok_or("Dread Lord transition")?;
         let rank = benefit.storage[0].track.clone();
         let nightmare = rank.replace("brotherhood_", "nightmare_");
-        for (brotherhood, nightmare_rank, eligible) in [(3, 0, false), (0, 3, false), (4, 0, true)]
-        {
+        for (brotherhood, nightmare_rank, eligible) in [
+            (3, 0, false),
+            (0, 3, false),
+            (4, 0, true),
+            (0, 4, uid != 3047),
+        ] {
             let tracks = BTreeMap::from([
                 (rank.clone(), brotherhood),
                 (nightmare.clone(), nightmare_rank),

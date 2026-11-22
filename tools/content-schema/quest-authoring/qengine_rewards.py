@@ -1070,6 +1070,61 @@ def build():
                 [storage(rank, 3, 3, preserve=True)])
             offers[-1].update(requires=requirements,
                 reply=['Did you bring 1500 demonic essences to advance to Dread Lord?'])
+        else:
+            path = f"data-global/npc/{npc}.lua"
+            donor = inputs[path].decode()
+            offer = re.search(
+                r'NightmareOutfits.Outfits\) == 3 then\s+npcHandler:say\("([^"]+)"[^\n]+\s+'
+                r"npcHandler:setTopic\(playerId, (\d+)\)",
+                donor,
+            )
+            if offer is None:
+                raise ValueError("missing Dream Master rank-four offer")
+            topic = int(offer[2])
+            exchange = re.search(
+                rf"getTopic\(playerId\) == {topic} then\s+if player:removeItem\((\d+), (\d+)\) then"
+                r".*?NightmareOutfits.Outfits, 4\).*?NightmareOutfits.Door, 1\)"
+                r'\s+player:addAchievement\("([^"]+)"\)\s+npcHandler:say\("([^"]+)"',
+                donor,
+                re.DOTALL,
+            )
+            if exchange is None:
+                raise ValueError("missing Dream Master rank-four exchange")
+            source = f"crystal:{PIN}:{path}:sha256:{sha(inputs[path])}"
+            door = prefix + "u7_9/nightmare_outfits/door"
+            achievement = exchange[3].lower().replace(" ", "_")
+            declarations.append(
+                {
+                    "key": door,
+                    "quest": "oteryn:quest." + quest,
+                    "initial": 0,
+                    "min": 0,
+                    "max": 1,
+                    "writable": True,
+                    "sources": [source],
+                }
+            )
+            add(
+                "l10-nightmare-" + achievement.replace("_", "-"),
+                quest,
+                npc,
+                ["yes"],
+                [storage(rank, 3, 4), storage(door, 0, 1)],
+                take=[(int(exchange[1]), int(exchange[2]))],
+                topic=topic,
+                requires=requirements,
+                achievement="oteryn:achievement/" + achievement,
+                source=source,
+            )
+            callbacks[-1].update(requires_premium=True, reply=[exchange[4]])
+            source_offer(
+                npc,
+                ["advancement", "demonic", "essence"],
+                0,
+                topic,
+                [storage(rank, 3, 3, preserve=True)],
+            )
+            offers[-1].update(requires=requirements, reply=[offer[1]])
         source_offer(npc,['yes'],1,2,[storage(rank,0,0,preserve=True)])
         offers[-1]['requires']=requirements
         for stage,item,threshold,bit in [('follower',768,1,0),('officer',769,2,1),('leader',770,3,2)]:
