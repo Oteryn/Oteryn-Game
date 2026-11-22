@@ -1,6 +1,8 @@
 //! oteryn-choice: native local view of confirmed server facts, with no gameplay authority.
 #[path = "state/bosses.rs"]
 pub mod bosses;
+#[path = "state/display.rs"]
+pub mod display;
 mod input;
 #[path = "state/kills.rs"]
 pub mod kills;

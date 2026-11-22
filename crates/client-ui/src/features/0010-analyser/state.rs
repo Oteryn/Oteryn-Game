@@ -9,6 +9,9 @@ pub use report::Report;
 // Measurements continue while the window is closed; charts retain at most 60 minute buckets.
 #[derive(Debug, Clone, Default)]
 pub struct Panel {
+    pub display: super::display::Preferences,
+    pub high_revision: u64,
+    pub impact_high: [u64; 2],
     pub reports: std::collections::BTreeMap<&'static str, Report>,
     pub open_tools: Vec<Tool>,
     pub recent: [measurements::Recent; 3],
@@ -35,8 +38,12 @@ pub struct Panel {
     pub input_sources: std::collections::BTreeMap<(u8, u32), u64>,
     pub impact_types: std::collections::BTreeMap<u32, u64>,
     pub loot: std::collections::BTreeMap<u32, ItemStats>,
+    pub auto_track_value: u64,
+    pub auto_tracked: std::collections::BTreeSet<u32>,
+    pub pending_drop_values: std::collections::BTreeMap<u32, u64>,
     pub loot_tracked: std::collections::BTreeSet<u32>,
     pub loot_only_tracked: bool,
+    pub drop_race_names: std::collections::BTreeMap<u32, String>,
     pub loot_drops: std::collections::VecDeque<super::tracking::Drop>,
     pub omitted_drops: u64,
     pub supply: std::collections::BTreeMap<u32, ItemStats>,

@@ -69,6 +69,40 @@ pub(super) fn submit(panel: &mut Panel, importing: bool, path: Option<&str>) -> 
     result.is_ok()
 }
 impl PlayLink {
+    pub fn analyser_feedback(&self, message: &'static str) {
+        lock(&self.mailbox).analyser.feedback = Some(message);
+    }
+    pub fn analyser_split_party(&self) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        if panel.party_pending || panel.party_feedback.is_some() {
+            panel.feedback = Some("Refresh complete party measurements before splitting");
+            return;
+        }
+        match party_import::export_adjusted(&panel.party, &panel.party_adjustments)
+            .and_then(|text| Summary::parse(&text))
+        {
+            Ok(summary) => apply(panel, summary),
+            Err(error) => panel.feedback = Some(error),
+        }
+    }
+    pub fn analyser_paste_hunt(&self, log: &str) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        match Summary::from_hunt_log(log) {
+            Ok(summary) => apply(panel, summary),
+            Err(error) => {
+                panel.party_import = None;
+                panel.feedback = Some(error);
+            }
+        }
+    }
+    pub fn analyser_edit_split(&self, name: &str, cost: Option<&str>, excluded: Option<bool>) {
+        oteryn_client_ui::analyser::party::edit(
+            &mut lock(&self.mailbox).analyser,
+            name,
+            cost,
+            excluded,
+        );
+    }
     pub fn analyser_import_party(&self, path: &Path) -> io::Result<()> {
         if !lock(&self.mailbox).analyser.selected {
             return Err(io::Error::other(tr!("No active analyser session")));
