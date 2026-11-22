@@ -21,7 +21,7 @@ fn named_battle_lists_filter_sort_save_and_attack_live_entities()
             generation: 1,
         },
         position: ActorPosition {
-            x: 1,
+            x: i32::from(id) * 2,
             y: 2,
             floor: 7,
         },
@@ -79,6 +79,18 @@ fn named_battle_lists_filter_sort_save_and_attack_live_entities()
         link.sync_battle_lists(&mut preferences.battle_lists, 0)
             .is_none()
     );
+    lock(&link.mailbox).wire.observe_wire(low.position);
+    for (order, expected) in [
+        ("AppearanceDescending", vec![low, player, high]),
+        ("DistanceAscending", vec![low, high, player]),
+        ("DistanceDescending", vec![player, high, low]),
+        ("NameDescending", vec![high, low, player]),
+    ] {
+        let mut lists = vec![serde_json::from_value(serde_json::json!({"sort": order}))?];
+        link.sync_battle_lists(&mut lists, 0);
+        assert_eq!(link.filtered_battle_rows(0), expected);
+    }
+    link.sync_battle_lists(&mut preferences.battle_lists, 0);
     let sorted = BattleListPreferences {
         sort: BattleSort::HealthAscending,
         ..Default::default()

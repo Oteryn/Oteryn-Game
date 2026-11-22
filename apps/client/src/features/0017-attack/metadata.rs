@@ -44,8 +44,11 @@ impl PlayLink {
             return Vec::new();
         }
         refresh(&mut mailbox, &self.commands);
-        mailbox.battle_lists.preferences[index]
-            .rows_with_metadata(&mailbox.battle.rows, &mailbox.battle.metadata.values)
+        mailbox.battle_lists.preferences[index].rows_with_metadata(
+            &mailbox.battle.rows,
+            mailbox.wire.own_native(),
+            &mailbox.battle.metadata.values,
+        )
     }
 }
 impl Outbox {

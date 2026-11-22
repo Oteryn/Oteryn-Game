@@ -14,6 +14,10 @@ pub enum BattleSort {
     /// Tibia's display-time order: the order the creatures appeared in the battle rows.
     #[default]
     Appearance,
+    AppearanceDescending,
+    DistanceAscending,
+    DistanceDescending,
+    NameDescending,
     Name,
     HealthAscending,
     HealthDescending,
@@ -90,9 +94,22 @@ pub fn name(row: &WorldSpatialEntity) -> &str {
         .unwrap_or("")
 }
 
-
 impl BattleListPreferences {
     pub fn rows(&self, entities: &[WorldSpatialEntity]) -> Vec<WorldSpatialEntity> {
+        self.rows_at(entities, None)
+    }
+
+    fn rows_at(
+        &self,
+        entities: &[WorldSpatialEntity],
+        own: Option<oteryn_session::ActorPosition>,
+    ) -> Vec<WorldSpatialEntity> {
+        let distance = |row: &WorldSpatialEntity| {
+            own.map(|p| {
+                u64::from(row.position.x.abs_diff(p.x).saturating_sub(1))
+                    + u64::from(row.position.y.abs_diff(p.y).saturating_sub(1))
+            })
+        };
         let search = self.search.to_lowercase();
         let mut rows: Vec<_> = entities
             .iter()
@@ -104,12 +121,21 @@ impl BattleListPreferences {
             })
             .copied()
             .collect();
+        if self.sort == BattleSort::AppearanceDescending {
+            rows.reverse();
+            return rows;
+        }
         if self.sort == BattleSort::Appearance {
             return rows;
         }
         rows.sort_by(|a, b| {
             let order = match self.sort {
-                BattleSort::Appearance => std::cmp::Ordering::Equal,
+                BattleSort::DistanceAscending => distance(a).cmp(&distance(b)),
+                BattleSort::DistanceDescending => distance(b).cmp(&distance(a)),
+                BattleSort::NameDescending => name(b).to_lowercase().cmp(&name(a).to_lowercase()),
+                BattleSort::Appearance | BattleSort::AppearanceDescending => {
+                    std::cmp::Ordering::Equal
+                }
                 BattleSort::Name => name(a).to_lowercase().cmp(&name(b).to_lowercase()),
                 BattleSort::HealthAscending => health(a).cmp(&health(b)),
                 BattleSort::HealthDescending => health(b).cmp(&health(a)),
@@ -162,12 +188,13 @@ impl BattleListPreferences {
     pub fn rows_with_metadata(
         &self,
         entities: &[WorldSpatialEntity],
+        own: Option<oteryn_session::ActorPosition>,
         metadata: &std::collections::BTreeMap<
             oteryn_session::EntityRef,
             oteryn_client_runtime::cui3::battle_metadata::PlayerMetadata,
         >,
     ) -> Vec<WorldSpatialEntity> {
-        self.rows(entities)
+        self.rows_at(entities, own)
             .into_iter()
             .filter(|row| {
                 if row.kind != EntityKind::Player || !self.needs_metadata() {

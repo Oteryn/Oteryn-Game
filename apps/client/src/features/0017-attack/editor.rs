@@ -10,8 +10,12 @@ use crate::play::{
     mailbox::{Mailbox, lock},
 };
 
-const SORTS: [(BattleSort, &str); 5] = [
+const SORTS: [(BattleSort, &str); 9] = [
     (BattleSort::Appearance, "appearance"),
+    (BattleSort::AppearanceDescending, "newest"),
+    (BattleSort::DistanceAscending, "nearest"),
+    (BattleSort::DistanceDescending, "farthest"),
+    (BattleSort::NameDescending, "name-desc"),
     (BattleSort::Name, "name"),
     (BattleSort::HealthAscending, "low"),
     (BattleSort::HealthDescending, "high"),
@@ -165,7 +169,7 @@ pub(in crate::play) fn form(_link: &PlayLink) -> form::Form {
             "Maximum HP %",
             "Players (yes/no)",
             "Creatures (yes/no)",
-            "Order (appearance, name, low, high, identity)",
+            "Order (appearance, newest, nearest, farthest, name, name-desc, low, high, identity)",
             "Profession (any, none, sorcerer, druid, paladin, knight, monk)",
             "Guild (any, mine, outside)",
         ],
