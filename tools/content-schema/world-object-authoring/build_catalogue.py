@@ -483,7 +483,13 @@ def outputs(
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += engnpc2_ram_world.NOTE
+        import crystal_npc_ground
+
+        contact_grounds = crystal_npc_ground.outputs()
+        for path in (crystal_npc_ground.DRAGON, crystal_npc_ground.SKULLFROST):
+            files[path] = contact_grounds[path]
         index["notes"] = activity_static.compose_terrain_notes(index["notes"])
+        index["notes"] += crystal_npc_ground.NOTE
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()

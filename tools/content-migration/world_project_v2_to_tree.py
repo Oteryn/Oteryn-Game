@@ -567,7 +567,7 @@ def main(*, items_only: bool = False) -> int:
     })
 
     npc_declarations = [row for row in declarations["records"] if row.get("kind") == "NPC"]
-    if len(npc_declarations) != 1282:
+    if len(npc_declarations) != 1292:
         raise RuntimeError(f"NPC_SOURCE_COUNT_MISMATCH:{len(npc_declarations)}")
 
     npc_rows = []
@@ -647,7 +647,7 @@ def main(*, items_only: bool = False) -> int:
     })
 
     dialogue_declarations = [row for row in declarations["records"] if row.get("kind") == "Dialogue"]
-    if len(dialogue_declarations) != 836:
+    if len(dialogue_declarations) != 839:
         raise RuntimeError(f"DIALOGUE_SOURCE_COUNT_MISMATCH:{len(dialogue_declarations)}")
 
     # No source bindings exist for Dialogue declarations (WorldProject/v2 NPC admission wave A).
@@ -697,7 +697,7 @@ def main(*, items_only: bool = False) -> int:
                             "schema": declarations["schema"]}})
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
-    if len(service_records) != 400:
+    if len(service_records) != 401:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}

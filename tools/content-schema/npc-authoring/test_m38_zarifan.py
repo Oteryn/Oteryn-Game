@@ -13,12 +13,15 @@ class ZarifanContactTest(unittest.TestCase):
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["cell"], {"x": 33040, "y": 32484, "floor": 11})
         self.assertTrue(records[0]["block_solid_contact"])
-        # The reviewed solid-contact exceptions, exactly: Zarifan (M38) and Vescu (QB-1).
+        # The generated catalogue must contain exactly the reviewed solid contacts.
         self.assertEqual({r["declaration"]["npc"]
                           for name, text in files.items() if name.startswith("placements-")
                           for r in json.loads(text)["records"]
                           if r["declaration"].get("block_solid_contact", False)},
-                         {"oteryn:npc.bron", "oteryn:npc.gnommander", "oteryn:npc.zarifan"})
+                         {f"oteryn:npc.{key}" for key in (
+                             "bron", "doctor_marrow", "ellipses", "gnommander", "kepar", "palimuth", "rafzan",
+                             "raymond_striker", "sinatuki", "the_first_dragon",
+                             "wyrdins_apprentice", "zalamon", "zarifan")})
         candidate = next(c for c in json.loads(cp.CANDIDATES.read_text())["candidates"]
                          if c["identity"]["key"] == "oteryn:npc.zarifan")
         self.assertEqual(candidate["movement"]["walk_interval_ms"], 2000)

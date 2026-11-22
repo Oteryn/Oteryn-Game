@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "e9b1d61558d7cc0be4d538027e8d6911d13228cfa0d77f5840182025e2913bfe",
+  "input_sha256": "e29693649acba0ba49d9603bb2bbe41c6d272c255f96c69565c5151e5318f334",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -212,7 +212,7 @@
         },
         {
           "creature": "oteryn:creature.the_collector",
-          "source_path": "content/world/spawns/spawns-54000-54680.json",
+          "source_path": "content/world/spawns/spawns-54000-54688.json",
           "source_group": "oteryn:spawn.x32028_y31816_z8.boss.oteryn_creature_the_collector",
           "source_point": 0,
           "cell": {
@@ -317,22 +317,20 @@
           "boss_policy": null
         },
         {
-          "creature": "oteryn:creature.white_pale",
-          "source_path": "content/world/spawns/spawns-boss-spawn1.json",
-          "source_group": "oteryn:spawn.boss_spawn1.white_pale",
+          "creature": "oteryn:creature.doctor_perhaps",
+          "source_path": "content/world/spawns/spawns-54000-54688.json",
+          "source_group": "oteryn:spawn.x32751_y31450_z6.fixed_boss",
           "source_point": 0,
           "cell": {
-            "floor": 11,
-            "x": 33264,
-            "y": 31875
+            "floor": 6,
+            "x": 32749,
+            "y": 31452
           },
           "respawn_ms": null,
           "boss_policy": {
-            "at_reset": {
-              "chance": {
-                "denominator": 50,
-                "numerator": 1
-              }
+            "respawn": {
+              "max_s": 90,
+              "min_s": 90
             }
           }
         }
@@ -423,22 +421,20 @@
           "boss_policy": null
         },
         {
-          "creature": "oteryn:creature.arachir_the_ancient_one",
-          "source_path": "content/world/spawns/spawns-boss-spawn1.json",
-          "source_group": "oteryn:spawn.boss_spawn1.arachir_the_ancient_one",
+          "creature": "oteryn:creature.black_knight",
+          "source_path": "content/world/spawns/spawns-54000-54688.json",
+          "source_group": "oteryn:spawn.x32874_y31948_z11.fixed_boss",
           "source_point": 0,
           "cell": {
-            "floor": 12,
-            "x": 32964,
-            "y": 32400
+            "floor": 11,
+            "x": 32874,
+            "y": 31946
           },
           "respawn_ms": null,
           "boss_policy": {
-            "at_reset": {
-              "chance": {
-                "denominator": 50,
-                "numerator": 1
-              }
+            "respawn": {
+              "max_s": 80,
+              "min_s": 80
             }
           }
         }
@@ -530,7 +526,7 @@
         },
         {
           "creature": "oteryn:creature.ancient_lion_knight",
-          "source_path": "content/world/spawns/spawns-54000-54680.json",
+          "source_path": "content/world/spawns/spawns-54000-54688.json",
           "source_group": "oteryn:spawn.x32439_y32470_z6.boss.oteryn_creature_ancient_lion_knight",
           "source_point": 0,
           "cell": {
@@ -636,7 +632,7 @@
         },
         {
           "creature": "oteryn:creature.xogixath",
-          "source_path": "content/world/spawns/spawns-54000-54680.json",
+          "source_path": "content/world/spawns/spawns-54000-54688.json",
           "source_group": "oteryn:spawn.x33794_y31478_z8.boss.oteryn_creature_xogixath",
           "source_point": 0,
           "cell": {
@@ -752,7 +748,7 @@
       "name": "boss",
       "tier": 2,
       "chosen": "oteryn:creature.forest_fury",
-      "global_micros": 68188000000,
+      "global_micros": 68190000000,
       "offensive_micros": 68290000000,
       "defense_v1_micros": null,
       "defense_v2_micros": 68290000000,

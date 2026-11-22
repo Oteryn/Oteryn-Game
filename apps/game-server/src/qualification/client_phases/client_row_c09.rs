@@ -43,7 +43,7 @@ async fn acquire_meat(
     }
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
+        root.join("content/services/trade/trade-00000-00324.json"),
     )?)?;
     let key = "oteryn:item.tibia.i3577";
     let sellers: std::collections::BTreeSet<_> = trades["records"]
