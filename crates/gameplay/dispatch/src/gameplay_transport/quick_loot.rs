@@ -5,10 +5,19 @@ use super::{
 };
 use crate::foundation::CommandStatus;
 use crate::foundation::{CommandId, CommandRef};
-use oteryn_protocol_oteryn::quick_loot::{QuickLootRequest, QuickLootResult};
+use oteryn_protocol_oteryn::quick_loot::QuickLootRequest;
 
 macro_rules! authority_methods {
     () => {
+        fn quick_loot_destinations(
+            &self,
+            _admitted: AdmittedSession,
+            _command: UseCommand,
+            _request: oteryn_protocol_oteryn::quick_loot::QuickLootRequest,
+        ) -> impl std::future::Future<Output = Option<(crate::foundation::CommandStatus, Vec<u8>)>>
+        {
+            async { None }
+        }
         fn quick_loot(
             &self,
             _admitted: AdmittedSession,
@@ -27,6 +36,14 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        async fn quick_loot_destinations(
+            &self,
+            admitted: connection::AdmittedSession,
+            command: connection::UseCommand,
+            request: oteryn_protocol_oteryn::quick_loot::QuickLootRequest,
+        ) -> Option<(crate::foundation::CommandStatus, Vec<u8>)> {
+            self.execute_quick_loot(admitted, command, request).await
+        }
         async fn quick_loot(
             &self,
             admitted: connection::AdmittedSession,
@@ -36,7 +53,11 @@ macro_rules! composed_methods {
             crate::foundation::CommandStatus,
             oteryn_protocol_oteryn::quick_loot::QuickLootResult,
         )> {
-            self.execute_quick_loot(admitted, command, request).await
+            let (status, result) = self.execute_quick_loot(admitted, command, request).await?;
+            Some((
+                status,
+                oteryn_protocol_oteryn::quick_loot::decode_quick_loot_result(&result).ok()?,
+            ))
         }
     };
 }
@@ -48,7 +69,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         command: UseCommand,
         request: QuickLootRequest,
-    ) -> Option<(CommandStatus, QuickLootResult)> {
+    ) -> Option<(CommandStatus, Vec<u8>)> {
         let fence = command.item_fence?;
         let actor = admitted.runtime_actor?;
         let permit = self.spell_lane_permit().await?;
@@ -89,7 +110,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     command.game_session_id,
                     CommandId::new(command.command_id).ok()?,
                 ),
-                &super::item_ref_admission::NativeItemWeights(content).with_wheel(self.premium_coordinator),
+                &super::item_ref_admission::NativeItemWeights(content)
+                    .with_wheel(self.premium_coordinator),
                 cell,
                 premium,
                 request,
@@ -98,10 +120,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()?;
         match result {
             Ok(result) => Some((CommandStatus::Accepted, result)),
-            Err(_) => Some((
-                CommandStatus::Rejected,
-                QuickLootResult { items: Vec::new() },
-            )),
+            Err(_) => Some((CommandStatus::Rejected, Vec::new())),
         }
     }
 }

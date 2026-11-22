@@ -1597,6 +1597,21 @@ pub trait FreshAdmissionAuthority {
         async move { Some(self.cast_spell(actor, session, command_id, intent).await) }
     }
 
+    fn cast_parameter_spell_completion(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _command_id: u64,
+        _intent: oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
+    ) -> impl Future<
+        Output = Option<(
+            SpellCastOutcome,
+            Option<oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult>,
+        )>,
+    > {
+        async { Some((SpellCastOutcome::rejected(), None)) }
+    }
+
     /// One `ACCOUNT_ACHIEVEMENTS_QUERY` page of the request's account's earned facts (display
     /// contract §4). The transport passes the account of the admitted controller, never one from
     /// the payload, with the session and CommandId of the request.

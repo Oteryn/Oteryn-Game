@@ -118,6 +118,14 @@ pub(super) fn encode(
                 ),
             )
         }
+        Dispatch::ParameterSpell(outcome, payload) => (
+            if outcome.disposition == SpellCastDisposition::Rejected {
+                CommandStatus::Rejected
+            } else {
+                CommandStatus::Accepted
+            },
+            std::mem::take(payload),
+        ),
         Dispatch::Spell(outcome) => (
             if outcome.disposition == SpellCastDisposition::Rejected {
                 CommandStatus::Rejected
@@ -143,6 +151,7 @@ pub(super) fn encode(
             )
         }
         Dispatch::ContainerSort(_) => (CommandStatus::Accepted, vec![1]),
+        Dispatch::ContainerPage(page, _) => (CommandStatus::Accepted, page.encode().to_vec()),
         Dispatch::ContainerView(outcome, _) => (
             CommandStatus::Accepted,
             encode_container_view_result(*outcome),

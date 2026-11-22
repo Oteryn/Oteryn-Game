@@ -570,6 +570,10 @@ mod connection {
             id: oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
             requires: &[14, 49],
         },
+        OfferedCapability {
+            id: 606,
+            requires: &[4, 14],
+        },
     ];
 
     fn select(supported: &[u32]) -> SelectedCapabilities {
@@ -895,6 +899,74 @@ mod connection {
             }
             Ok(())
         })
+    }
+
+    #[test]
+    fn ordinary_container_seek_dispatch_updates_visible_handles_and_requires_selection()
+    -> TestResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                run(async {
+                    use oteryn_protocol_oteryn::{
+                        MessageType, decode_command_result, decode_state_delta,
+                        decode_wire_envelope,
+                    };
+                    for selected in [false, true] {
+                        let contents = container(None, &[10, 11, 12, 13]);
+                        let authority =
+                            TreeAuthority::new(vec![Some(contents.clone()), Some(contents)]);
+                        let (view, _) = mirror(true);
+                        let bag = handle_of(&view, instance(1));
+                        let mut caps = vec![4, 6, 12, 14];
+                        if selected {
+                            caps.push(606);
+                        }
+                        let frames = [
+                            view_command(1, open(bag))?,
+                            command(2, 6375, &[0, 2, 0, 2])?,
+                        ];
+                        let (_, frames) = serve(&authority, session(&caps)?, &frames).await?;
+                        let mut response = None;
+                        let mut page = None;
+                        for bytes in &frames {
+                            let envelope = decode_wire_envelope(bytes)?;
+                            if envelope.message_type() == MessageType::CommandResult {
+                                let result = decode_command_result(envelope.payload())?;
+                                if result.command_id == 2 {
+                                    response = Some((result.status, result.payload));
+                                }
+                            } else if envelope.message_type() == MessageType::StateDelta {
+                                let delta = decode_state_delta(envelope.payload())?;
+                                if delta.domain_id == 14 {
+                                    page = Some(
+                                        decode_container_views(delta.payload)
+                                            .map_err(|e| format!("{e:?}"))?,
+                                    );
+                                }
+                            }
+                        }
+                        let (status, payload) = response.ok_or("seek result")?;
+                        let last = &page.ok_or("domain 14")?.views[0];
+                        if selected {
+                            assert_eq!(status, CommandStatus::Accepted);
+                            assert_eq!(payload, &[2, 0, 4, 0, 2]);
+                            assert_eq!(last.entries.len(), 2);
+                            assert_eq!(authority.container_reads.borrow().len(), 2);
+                        } else {
+                            assert_eq!(status, CommandStatus::Rejected);
+                            assert!(payload.is_empty());
+                            assert_eq!(last.entries.len(), 4);
+                            assert_eq!(authority.container_reads.borrow().len(), 1);
+                        }
+                    }
+                    Ok(())
+                })
+                .map_err(|e| e.to_string())
+            })?
+            .join()
+            .map_err(|_| "pagination scenario thread panicked")?
+            .map_err(Into::into)
     }
 
     #[test]

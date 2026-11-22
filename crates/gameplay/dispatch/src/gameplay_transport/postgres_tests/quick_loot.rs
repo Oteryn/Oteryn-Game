@@ -29,7 +29,9 @@ fn request(action: QuickLootAction) -> QuickLootRequest {
 
 #[test]
 fn quick_loot_pouch_postgres_dispatch_unlimited_slots_coin_only_and_weight() -> TestResult {
-    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-pouch", || scenario_with_pouch(true))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-pouch", || {
+        scenario_with_pouch(true)
+    })
 }
 
 fn scenario() -> TestResult {
@@ -48,7 +50,10 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                world,
+                "content-1",
+            )?;
         let generation = controller.active().ok_or("active")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();
@@ -577,6 +582,8 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
                 count, 2048,
                 "full list reloads without truncation or mutation"
             );
+            owner.premium_coordinator = Some(&premium);
+            quick_loot_destination_management(&owner, &mut admitted, &harness.pool).await?;
             equip_quiver_via_wire(&owner, admitted, &harness.pool).await?;
         }
         drop(owner);
@@ -584,6 +591,103 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+async fn quick_loot_destination_management(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    pool: &sqlx::PgPool,
+) -> TestResult {
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let coin = id(119);
+    // Crystal coins follow their Obtain category. Use gold with no matching
+    // stack in the destination so this test can assert the physical parent.
+    sqlx::raw_sql(sqlx::AssertSqlSafe(
+        crate::durability::item_fee_burn::test_support::item(
+            119,
+            "oteryn:item.tibia.i3043",
+            "definition-r1",
+            1,
+        ),
+    ))
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id)
+                 VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,20,encode($3,'hex')::uuid)")
+        .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(coin.as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 98, 607])
+            .ok_or("quick loot destination capability")?;
+    let assign = QuickLootRequest {
+        recipient: Some(QuickLootRecipient::Container),
+        recipient_id: Some(id(71)),
+        ..request(QuickLootAction::Assign)
+    };
+    let review = request(QuickLootAction::ReviewDestinations);
+    let commands = [
+        QuickLootRequest {
+            action: QuickLootAction::AssignAllLoot,
+            ..assign
+        },
+        review,
+        QuickLootRequest {
+            category: Some(QuickLootCategory::Gold),
+            ..request(QuickLootAction::UnassignLoot)
+        },
+        QuickLootRequest {
+            action: QuickLootAction::AssignObtain,
+            category: Some(QuickLootCategory::Gold),
+            ..assign
+        },
+        review,
+        QuickLootRequest {
+            corpse: Some(id(70)),
+            ..request(QuickLootAction::Distribute)
+        },
+    ];
+    let commands: Vec<_> = commands
+        .iter()
+        .map(|request| {
+            Ok((
+                request.action.command_type(),
+                encode_quick_loot_request(request).map_err(debug)?,
+            ))
+        })
+        .collect::<TestResult<_>>()?;
+    let (replies, _) =
+        super::parameter_spell_fixtures::exchange(owner, admitted, &commands, false, false).await?;
+    assert_eq!(replies.len(), commands.len());
+    assert!(
+        replies
+            .iter()
+            .all(|(status, _)| *status == CommandStatus::Accepted)
+    );
+    let first = decode_quick_loot_destinations(&replies[1].1).map_err(debug)?;
+    assert_eq!(first.loot.len(), 6);
+    assert!(first.loot.iter().all(|r| r.recipient_id == Some(id(71))));
+    let after = decode_quick_loot_destinations(&replies[4].1).map_err(debug)?;
+    assert!(
+        !after
+            .loot
+            .iter()
+            .any(|r| r.category == Some(QuickLootCategory::Gold))
+    );
+    assert_eq!(after.obtain.len(), 1);
+    assert_eq!(after.obtain[0].category, Some(QuickLootCategory::Gold));
+    assert_eq!(after.obtain[0].recipient_id, Some(id(71)));
+    let distribution = decode_quick_loot_result(&replies[5].1).map_err(debug)?;
+    assert!(distribution.items.contains(&QuickLootItemResult {
+        item: coin,
+        accepted: true
+    }));
+    let actual: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(parent_item_instance_id) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(coin.as_slice()).fetch_one(pool).await?;
+    assert_eq!(actual, id(71));
+    Ok(())
 }
 
 async fn wire_requests(
@@ -775,7 +879,8 @@ async fn equip_quiver_via_wire(
             ItemMoveIntent {
                 source: std::num::NonZeroU64::new(base + 3).ok_or("meat handle")?,
                 destination: ItemMoveDestination::Container(
-                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?, None
+                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?,
+                    None
                 )
             },
             selection
@@ -791,7 +896,8 @@ async fn equip_quiver_via_wire(
             ItemMoveIntent {
                 source: std::num::NonZeroU64::new(base + 2).ok_or("ammo handle")?,
                 destination: ItemMoveDestination::Container(
-                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?, None
+                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?,
+                    None
                 )
             },
             selection

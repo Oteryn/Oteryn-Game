@@ -1634,6 +1634,20 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn cast_parameter_spell_completion(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
+    ) -> Option<(
+        actor_spell::SpellCastOutcome,
+        Option<oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult>,
+    )> {
+        self.complete_parameter_spell(actor, session, command_id, intent)
+            .await
+    }
+
     /// Display contract §4: a read-only query of the facts, no Character fence and no Channel
     /// owner lock. More facts than catalogue keys prove an unknown key, so one more than the
     /// catalogue's size is read and the page build refuses it.

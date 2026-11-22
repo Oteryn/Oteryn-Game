@@ -15,8 +15,7 @@ pub(super) async fn execute(
     a: AdmittedSession,
     r: wire::Request,
 ) -> Option<Vec<u8>> {
-    if !a.continuity.selected_capabilities.contains(148)
-    {
+    if !a.continuity.selected_capabilities.contains(148) {
         return None;
     }
     let fence = a.item_fence?;
@@ -159,8 +158,35 @@ pub(super) async fn execute(
     }
     .encode()
 }
+async fn gift_status(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> Option<[u8; wire::GIFT_OF_LIFE_STATUS_BYTES]> {
+    let runtime = owner.runtime.lock().await;
+    if !super::battle_instinct_status::actor_is_current(&runtime, admitted) {
+        return None;
+    }
+    let states = owner.states.spell_states.lock().await;
+    let state = states.get(&runtime, admitted.runtime_actor?, admitted.game_session_id)?;
+    let now = owner.owner_now().get();
+    let stage = state
+        .wheel_effects_at(now)
+        .and_then(|effects| effects.revelation_stages.get("gift_of_life").copied())
+        .unwrap_or(0);
+    let (_, remaining) = state.wheel_gift_save(now, true)?;
+    let mut result = [stage; wire::GIFT_OF_LIFE_STATUS_BYTES];
+    result[1..].copy_from_slice(&remaining.div_ceil(1000).to_le_bytes());
+    Some(result)
+}
+
 macro_rules! authority_methods {
     () => {
+        fn wheel_gift_status(
+            &self,
+            _admitted: $crate::gameplay_transport::connection::AdmittedSession,
+        ) -> impl std::future::Future<Output = Option<[u8; 9]>> {
+            async { None }
+        }
         fn wheel_presentation_available(&self) -> bool {
             false
         }
@@ -176,6 +202,13 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        async fn wheel_gift_status(
+            &self,
+            admitted: connection::AdmittedSession,
+        ) -> Option<[u8; 9]> {
+            wheel_presentation::gift_status(self, admitted).await
+        }
+
         fn wheel_presentation_available(&self) -> bool {
             self.wheel_ruleset.as_ref().is_some_and(|r| {
                 self.premium_coordinator.is_some()

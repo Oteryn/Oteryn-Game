@@ -6,6 +6,9 @@ use crate::charm_wire::{
 
 pub const CAPABILITY_QUICK_LOOT_V1: u32 = 98;
 pub const COMMAND_TYPE_QUICK_LOOT: u32 = 114;
+pub const CAPABILITY_QUICK_LOOT_DESTINATIONS_V1: u32 = 607;
+pub const COMMAND_TYPE_QUICK_LOOT_DESTINATIONS: u32 = 6376;
+pub const COMMAND_TYPE_QUICK_LOOT_DISTRIBUTE: u32 = 6377;
 pub const MAX_QUICK_LOOT_REQUEST_BYTES: usize = 64;
 pub const MAX_QUICK_LOOT_RESULT_BYTES: usize = 32_768;
 pub const MAX_QUICK_LOOT_RESULTS: usize = 1_280;
@@ -22,6 +25,13 @@ pub enum QuickLootAction {
     FilterRemove = 5,
     FilterClear = 6,
     FilterSelect = 7,
+    UnassignLoot = 8,
+    ReviewDestinations = 9,
+    AssignObtain = 10,
+    UnassignObtain = 11,
+    AssignAllLoot = 12,
+    AssignAllObtain = 13,
+    Distribute = 14,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuickLootCategory {
@@ -30,6 +40,15 @@ pub enum QuickLootCategory {
     Equipment = 3,
     Consumable = 4,
     Other = 5,
+}
+impl QuickLootCategory {
+    pub const ALL: [Self; 5] = [
+        Self::Gold,
+        Self::CreatureProduct,
+        Self::Equipment,
+        Self::Consumable,
+        Self::Other,
+    ];
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuickLootRecipient {
@@ -63,6 +82,137 @@ pub struct QuickLootItemResult {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuickLootResult {
     pub items: Vec<QuickLootItemResult>,
+}
+
+impl QuickLootAction {
+    pub const fn command_type(self) -> u32 {
+        match self {
+            Self::Click
+            | Self::LootAll
+            | Self::Assign
+            | Self::FilterAdd
+            | Self::FilterRemove
+            | Self::FilterClear
+            | Self::FilterSelect => COMMAND_TYPE_QUICK_LOOT,
+            Self::UnassignLoot
+            | Self::ReviewDestinations
+            | Self::AssignObtain
+            | Self::UnassignObtain
+            | Self::AssignAllLoot
+            | Self::AssignAllObtain => COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+            Self::Distribute => COMMAND_TYPE_QUICK_LOOT_DISTRIBUTE,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct QuickLootDestination {
+    pub category: Option<QuickLootCategory>,
+    pub recipient: QuickLootRecipient,
+    pub recipient_id: Option<[u8; 16]>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QuickLootDestinations {
+    pub loot: Vec<QuickLootDestination>,
+    pub obtain: Vec<QuickLootDestination>,
+    pub fallback_to_main: bool,
+}
+
+pub const MAX_QUICK_LOOT_DESTINATIONS_BYTES: usize = 3 + 2 * 6 * 18;
+
+// Each section is sorted by category, with the default row first when present.
+pub fn encode_quick_loot_destinations(value: &QuickLootDestinations) -> WireResult<Vec<u8>> {
+    let mut bytes = vec![u8::from(value.fallback_to_main)];
+    for rows in [&value.loot, &value.obtain] {
+        if rows.len() > 6 {
+            return malformed();
+        }
+        bytes.push(rows.len() as u8);
+        let mut previous = None;
+        for row in rows {
+            let category = row.category.map_or(0, |c| c as u8);
+            if previous.is_some_and(|p| p >= category)
+                || row.recipient_id.is_some()
+                    == (row.recipient == QuickLootRecipient::MainContainer)
+            {
+                return malformed();
+            }
+            previous = Some(category);
+            bytes.extend([category, row.recipient as u8]);
+            if let Some(id) = row.recipient_id {
+                bytes.extend(id);
+            }
+        }
+    }
+    Ok(bytes)
+}
+
+pub fn decode_quick_loot_destinations(mut bytes: &[u8]) -> WireResult<QuickLootDestinations> {
+    if bytes.len() > MAX_QUICK_LOOT_DESTINATIONS_BYTES {
+        return Err(QuickLootWireError::LimitExceeded);
+    }
+    let original = bytes;
+    let (fallback, rest) = bytes.split_first().ok_or(QuickLootWireError::Malformed)?;
+    bytes = rest;
+    let mut by_kind = [Vec::new(), Vec::new()];
+    for rows in &mut by_kind {
+        let (count, rest) = bytes.split_first().ok_or(QuickLootWireError::Malformed)?;
+        if *count > 6 {
+            return malformed();
+        }
+        bytes = rest;
+        for _ in 0..*count {
+            let ([category, kind], rest) = bytes
+                .split_first_chunk::<2>()
+                .ok_or(QuickLootWireError::Malformed)?;
+            let category = if *category == 0 {
+                None
+            } else {
+                Some(
+                    *QuickLootCategory::ALL
+                        .get(usize::from(*category - 1))
+                        .ok_or(QuickLootWireError::Malformed)?,
+                )
+            };
+            let (recipient, recipient_id) = match kind {
+                3 => {
+                    bytes = rest;
+                    (QuickLootRecipient::MainContainer, None)
+                }
+                1 | 2 => {
+                    let (id, rest) = rest
+                        .split_first_chunk::<16>()
+                        .ok_or(QuickLootWireError::Malformed)?;
+                    bytes = rest;
+                    (
+                        if *kind == 1 {
+                            QuickLootRecipient::Container
+                        } else {
+                            QuickLootRecipient::GoldPouch
+                        },
+                        Some(*id),
+                    )
+                }
+                _ => return malformed(),
+            };
+            rows.push(QuickLootDestination {
+                category,
+                recipient,
+                recipient_id,
+            });
+        }
+    }
+    let [loot, obtain] = by_kind;
+    let result = QuickLootDestinations {
+        loot,
+        obtain,
+        fallback_to_main: *fallback == 1,
+    };
+    if encode_quick_loot_destinations(&result)? != original {
+        return malformed();
+    }
+    Ok(result)
 }
 
 fn malformed<T>() -> WireResult<T> {
@@ -146,11 +296,35 @@ fn validate_request(r: &QuickLootRequest) -> WireResult<()> {
                 && r.recipient_id.is_none()
                 && !r.fallback_to_main
         }
-        QuickLootAction::Assign => {
+        QuickLootAction::Assign
+        | QuickLootAction::AssignObtain
+        | QuickLootAction::AssignAllLoot
+        | QuickLootAction::AssignAllObtain => {
             r.corpse.is_none()
+                && (!matches!(
+                    r.action,
+                    QuickLootAction::AssignAllLoot | QuickLootAction::AssignAllObtain
+                ) || r.category.is_none())
+                && (!matches!(
+                    r.action,
+                    QuickLootAction::AssignObtain | QuickLootAction::AssignAllObtain
+                ) || !r.fallback_to_main)
                 && r.recipient.is_some()
                 && r.recipient_id.is_some()
                     == !matches!(r.recipient, Some(QuickLootRecipient::MainContainer))
+        }
+        QuickLootAction::UnassignLoot
+        | QuickLootAction::UnassignObtain
+        | QuickLootAction::ReviewDestinations
+        | QuickLootAction::Distribute => {
+            r.corpse.is_some() == (r.action == QuickLootAction::Distribute)
+                && (!matches!(
+                    r.action,
+                    QuickLootAction::ReviewDestinations | QuickLootAction::Distribute
+                ) || r.category.is_none())
+                && r.recipient.is_none()
+                && r.recipient_id.is_none()
+                && !r.fallback_to_main
         }
         QuickLootAction::FilterAdd
         | QuickLootAction::FilterRemove
@@ -195,6 +369,13 @@ pub fn decode_quick_loot_request(payload: &[u8]) -> WireResult<QuickLootRequest>
                         (5, QuickLootAction::FilterRemove),
                         (6, QuickLootAction::FilterClear),
                         (7, QuickLootAction::FilterSelect),
+                        (8, QuickLootAction::UnassignLoot),
+                        (9, QuickLootAction::ReviewDestinations),
+                        (10, QuickLootAction::AssignObtain),
+                        (11, QuickLootAction::UnassignObtain),
+                        (12, QuickLootAction::AssignAllLoot),
+                        (13, QuickLootAction::AssignAllObtain),
+                        (14, QuickLootAction::Distribute),
                     ],
                 )?,
             ),

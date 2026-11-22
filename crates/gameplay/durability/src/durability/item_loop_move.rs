@@ -1108,7 +1108,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
         return refuse(LoopMoveRefusal::Stale);
     };
     let row = sqlx::query(
-        "SELECT e.character_id::text AS entry_character, \
+        "SELECT e.character_id::text AS entry_character, e.parent_item_instance_id::text AS entry_parent, \
                 d.character_id::text AS depot_character, d.town_id, d.box_number, \
                 x.character_id::text AS inbox_character, \
                 n.parent_item_instance_id::text AS nested_parent, \
@@ -1144,8 +1144,15 @@ async fn apply_loop_move<C: ItemLoopContent>(
     }
     let depot_character = optional_uuid(row.try_get("depot_character")?)?;
     let inbox_character = optional_uuid(row.try_get("inbox_character")?)?;
-    let source = if let Some(context) = quick {
-        quick_loot::assert_corpse_source(tx, fence, request.item, context).await?;
+    if let Some(quick_loot::MoveContext { source: quick_loot::MoveSource::Carried(expected), .. }) = quick {
+        let main = entry_character == Some(*character.as_bytes())
+            && optional_uuid(row.try_get("entry_parent")?)? == Some(expected);
+        if !main && nested_parent != Some(expected) {
+            return refuse(LoopMoveRefusal::Stale);
+        }
+    }
+    let source = if let Some(quick_loot::MoveContext { source: quick_loot::MoveSource::Corpse { id, cell }, .. }) = quick {
+        quick_loot::assert_corpse_source(tx, fence, request.item, id, cell).await?;
         SourceKind::Corpse
     } else if search.is_some() && depot_character.is_none() {
         // Depot search: an Inbox root, or an entry nested under a depot or Inbox root.

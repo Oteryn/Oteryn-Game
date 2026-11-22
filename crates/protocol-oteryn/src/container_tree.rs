@@ -41,6 +41,47 @@ pub const STATE_DOMAIN_CONTAINER_VIEWS: u32 = 14;
 pub const SNAPSHOT_TYPE_CONTAINER_VIEWS_V1: u32 = 1;
 pub const DELTA_TYPE_CONTAINER_VIEWS_V1: u32 = 1;
 pub const COMMAND_TYPE_CONTAINER_VIEW_INTENT: u32 = 21;
+pub const CAPABILITY_CONTAINER_PAGES_V1: u32 = 606;
+pub const COMMAND_TYPE_CONTAINER_VIEW_SEEK: u32 = 6375;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ContainerSeek {
+    pub view_id: u8,
+    pub offset: u16,
+    pub page_size: u8,
+}
+
+impl ContainerSeek {
+    pub fn decode(payload: &[u8]) -> Option<Self> {
+        let [view_id, low, high, page_size] = payload else {
+            return None;
+        };
+        let offset = u16::from_le_bytes([*low, *high]);
+        (*view_id <= MAX_CONTAINER_VIEW_ID
+            && (1..=MAX_CONTAINER_VIEW_ENTRIES).contains(&usize::from(*page_size))
+            && offset.is_multiple_of(u16::from(*page_size)))
+        .then_some(Self {
+            view_id: *view_id,
+            offset,
+            page_size: *page_size,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ContainerPage {
+    pub offset: u16,
+    pub total: u16,
+    pub page_size: u8,
+}
+
+impl ContainerPage {
+    pub fn encode(self) -> [u8; 5] {
+        let [low, high] = self.offset.to_le_bytes();
+        let [total_low, total_high] = self.total.to_le_bytes();
+        [low, high, total_low, total_high, self.page_size]
+    }
+}
 
 /// `BAGS0-RL-03`: open container views of one session (Canary's 4-bit container id).
 pub const MAX_CONTAINER_VIEWS: usize = 16;

@@ -1,5 +1,5 @@
 name=spell
-commands=3
+commands=3,6380
 [route]
 match routing::spell::route(authority, session.actor, &session.admitted, command).await {
     Some(dispatch) => dispatch,

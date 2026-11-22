@@ -1,5 +1,5 @@
 name=container_view
-commands=21
+commands=21,6375
 [route]
 match routing::container_view::route(
     authority,

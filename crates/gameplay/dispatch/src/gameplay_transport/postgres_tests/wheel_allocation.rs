@@ -480,6 +480,10 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                 expected(true, 1, vessels)?, "free accounts cannot change vessels");
             owner.premium_coordinator = Some(&gate);
             let gift_remaining = if matches!(transition, WheelExtensionCase::Gift) {
+                assert_eq!(
+                    send_kind(&owner, &mut admitted, 6378, &id(101)).await?,
+                    (CommandStatus::Rejected, b"Sorry, not possible.".to_vec())
+                );
                 assert!(owner.load_wheel_gift(deps.actor, session).await);
                 assert!(owner.refresh_wheel_vitals(deps.actor, session).await);
                 let now = owner.owner_now().get();
@@ -503,6 +507,12 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                     assert_eq!(next.wheel_gift_save(now, false), Some((1, 10 * 60 * 60 * 1_000_000)));
                     *state = next;
                 }
+                let (status, payload) = send_kind(&owner, &mut admitted, 6379, &[]).await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                assert_eq!(payload.len(), 9);
+                assert_eq!(payload[0], 3);
+                let observed = u64::from_le_bytes(payload[1..].try_into()?);
+                assert!(observed > 0 && observed <= 36_000_000);
                 assert!(owner.save_wheel_gift(deps.actor, session, false).await);
                 let (snapshot_revision, remaining, occurrence): (i64, i64, String) = sqlx::query_as(
                     "SELECT revision,remaining_micros,occurrence::text FROM game_character_wheel_gift_state WHERE character_id=encode($1,'hex')::uuid")
