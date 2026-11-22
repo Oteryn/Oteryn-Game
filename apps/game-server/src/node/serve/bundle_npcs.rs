@@ -777,6 +777,42 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn christmas_messengers_share_the_season_with_santa_on_distinct_cells() {
+        let messenger = "oteryn:npc.messenger_of_santa";
+        let santa = "oteryn:npc.santa_claus";
+        let boot = timed_boot(&[messenger, santa]);
+        let mut runtime = channel_runtime_with(32);
+
+        let mut closed = seasonal::SeasonalNpcSpawns::admit(Some(&boot), &[], |_| true);
+        closed.tick(&mut runtime).expect("out of season");
+        assert!(runtime.visible_entities().npcs.is_empty());
+
+        let christmas = ["christmas".into()];
+        let mut active = seasonal::SeasonalNpcSpawns::admit(Some(&boot), &christmas, |at| {
+            (at.x, at.y, at.floor) != (32654, 31665, -8)
+        });
+        active.tick(&mut runtime).expect("seasonal placements");
+        active.tick(&mut runtime).expect("idempotent retry");
+        let positions: BTreeSet<_> = runtime
+            .visible_entities()
+            .npcs
+            .into_iter()
+            .filter(|npc| runtime.npc_key(npc.actor) == Some(messenger))
+            .map(|npc| (npc.position.x, npc.position.y, npc.position.floor))
+            .collect();
+        assert_eq!(
+            positions,
+            BTreeSet::from([
+                (32308, 31837, 8),
+                (32641, 31892, 9),
+                (32356, 32210, 7),
+                (32916, 32070, 9),
+            ])
+        );
+        assert_eq!(runtime.visible_entities().npcs.len(), 19);
+    }
+
+    #[test]
     fn w05d_santa_placements_require_active_calendar_catalogue_and_real_tiles() {
         let santa = "oteryn:npc.santa_claus";
         let boot = timed_boot(&[santa]);

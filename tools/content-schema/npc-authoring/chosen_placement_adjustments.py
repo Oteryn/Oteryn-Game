@@ -49,6 +49,15 @@ def choose_cell(root, actual_source, choice, occupied):
         return (tile is not None and not tile[2] and not tile[3] and len(tile[5]) == 1
                 and (not walkable or ground_item(root, tile[5][0][0])))
     distance = sum(abs(a-b) for a, b in zip(before[:2], after[:2]))
+    source_tile, target_tile = tiles.get(before[:2]), tiles.get(after[:2])
+    # A reserved arrival can share its protection zone and floor decoration
+    # with its neighbor. The bundle compiler still qualifies the full stack.
+    same_walkable_surface = (
+        distance == 1 and source_tile is not None and target_tile is not None
+        and source_tile[2:] == target_tile[2:]
+        and not source_tile[3] and bool(source_tile[5])
+        and ground_item(root, source_tile[5][0][0])
+    )
     if distance != 1:
         # A source cell with no native tile at all may move to the uniquely nearest
         # clear ground of its own region and floor, never past a nearer clear cell.
@@ -59,7 +68,7 @@ def choose_cell(root, actual_source, choice, occupied):
                        if cell != (x, y)
                        and abs(cell[0]-before[0]) + abs(cell[1]-before[1]) <= distance)):
             raise ValueError('chosen placement must adjoin its exact retained source cell')
-    if not clear((x, y)):
+    if not clear((x, y)) and not same_walkable_surface:
         raise ValueError('chosen placement target is not clear native ground')
     return after, {'origin':'oteryn', 'basis':'CHOSEN_OTERYN_APPROXIMATION',
                    'source_cell':{'x':before[0],'y':before[1],'floor':before[2]},

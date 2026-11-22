@@ -1,95 +1,261 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing. NODEBOOT-SAM: Sam Thais equipment trade at the agreeing Canary/Crystal promotion-candidate cell 32361,32198,z7 for node-boot NPC and player trade. QB-1: Hunter (Legola), Mage and Summoner (Angelina, Lynda, Myra, Zoltan) and Wizard (Lugri, The Queen of the Banshees) outfit hand-ins at their single agreeing promotion-candidate cells. QB-2: Cave Explorer (Gnommander, a source-backed solid contact), Revenant (Flickering Soul), Hand of the Inquisition (Grof, Kulag, Miles, Tim and Walter the Guard) at their single agreeing promotion-candidate cells. QB-3: mainland Citizen (Lubo, Hanna) and Warrior (Trisha, Cornelia) addon hand-ins at their agreeing promotion-candidate cells; Hanna's alternate example-map cell is excluded by explicit selection. QB Barbarian Outfits: Bron and Ajax near Northport at their single agreeing promotion-candidate cells (Bron as a source-backed block_solid_contact: no adjacent clear single-item ground). QCX13: Frodo and Mordecai at their retained promotion-candidate cells for the existing seller offers. QH-TOP-OF-THE-CITY: Iriana at her agreeing Canary/Crystal candidate cell; Jimmy at the TibiaWiki and Polish TibiaWiki cell 32857,31383,6, on the passage stub the qh_jimmy_stub world overlay restores (owner evidence 2026-11-17). QC-SINATUKI: Sinatuki (Nibelor, Sinatuki Quest) at the agreeing Canary/Crystal promotion-candidate cell 32425,31085,z7.",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing. NODEBOOT-SAM: Sam Thais equipment trade at the agreeing Canary/Crystal promotion-candidate cell 32361,32198,z7 for node-boot NPC and player trade. QB-1: Hunter (Legola), Mage and Summoner (Angelina, Lynda, Myra, Zoltan) and Wizard (Lugri, The Queen of the Banshees) outfit hand-ins at their single agreeing promotion-candidate cells. QB-2: Cave Explorer (Gnommander, a source-backed solid contact), Revenant (Flickering Soul), Hand of the Inquisition (Grof, Kulag, Miles, Tim and Walter the Guard) at their single agreeing promotion-candidate cells. QB-3: mainland Citizen (Lubo, Hanna) and Warrior (Trisha, Cornelia) addon hand-ins at their agreeing promotion-candidate cells; Hanna's alternate example-map cell is excluded by explicit selection. QB Barbarian Outfits: Bron and Ajax near Northport at their single agreeing promotion-candidate cells (Bron as a source-backed block_solid_contact: no adjacent clear single-item ground). QCX13: Frodo and Mordecai at their retained promotion-candidate cells for the existing seller offers. QH-TOP-OF-THE-CITY: Iriana at her agreeing Canary/Crystal candidate cell; Jimmy at the TibiaWiki and Polish TibiaWiki cell 32857,31383,6, on the passage stub the qh_jimmy_stub world overlay restores (owner evidence 2026-11-17). QC-SINATUKI: Sinatuki (Nibelor, Sinatuki Quest) at the agreeing Canary/Crystal promotion-candidate cell 32425,31085,z7. CNPC1 joins six-region contacts by runtime NPC identity to the Crystal 201189f world-npc.xml and uses retained TibiaWiki BR revision cells where the XML has no placement. The original candidates supply agreeing positions and the override rows retain pinned evidence where they differ.",
   "npcs": [
+    "oteryn:npc.a_confused_frog",
+    "oteryn:npc.a_dwarven_ghost",
+    "oteryn:npc.a_fluffy_squirrel",
+    "oteryn:npc.a_frog",
+    "oteryn:npc.a_ghostly_woman_ghostland",
+    "oteryn:npc.a_lost_soul",
+    "oteryn:npc.a_prisoner",
     "oteryn:npc.a_seagull",
     "oteryn:npc.a_sleeping_dragon",
     "oteryn:npc.a_strange_chalice",
+    "oteryn:npc.a_strange_fellow",
     "oteryn:npc.a_swan",
     "oteryn:npc.a_sweaty_cyclops",
+    "oteryn:npc.a_tainted_soul",
+    "oteryn:npc.a_tortured_soul",
+    "oteryn:npc.a_wrinkled_bonelord",
+    "oteryn:npc.abran_ironeye",
     "oteryn:npc.ajax",
     "oteryn:npc.al_dee",
+    "oteryn:npc.albinius",
     "oteryn:npc.aldo",
     "oteryn:npc.alexander",
+    "oteryn:npc.alia",
+    "oteryn:npc.alkestios",
+    "oteryn:npc.allen",
+    "oteryn:npc.alwin",
     "oteryn:npc.amanda",
+    "oteryn:npc.amarie",
     "oteryn:npc.ambassador_manop",
     "oteryn:npc.amber",
+    "oteryn:npc.an_apparition",
+    "oteryn:npc.an_orc_guard",
+    "oteryn:npc.anerui",
+    "oteryn:npc.aneus",
     "oteryn:npc.angelina",
     "oteryn:npc.anna",
+    "oteryn:npc.appaloosa",
     "oteryn:npc.ariella",
+    "oteryn:npc.arkarra",
+    "oteryn:npc.arnold",
+    "oteryn:npc.aruda",
+    "oteryn:npc.ashari",
+    "oteryn:npc.ashtamor",
     "oteryn:npc.asima",
+    "oteryn:npc.asrak",
     "oteryn:npc.asralius",
     "oteryn:npc.aurelia",
     "oteryn:npc.avar_tar",
+    "oteryn:npc.bambi_bonecrusher",
+    "oteryn:npc.barbara",
+    "oteryn:npc.bashira",
+    "oteryn:npc.basilisk",
+    "oteryn:npc.baxter",
+    "oteryn:npc.benjamin",
+    "oteryn:npc.bezil",
+    "oteryn:npc.bill_the_worker",
     "oteryn:npc.billy",
+    "oteryn:npc.black_bert",
     "oteryn:npc.blind_orc",
+    "oteryn:npc.blossom_bonecrusher",
+    "oteryn:npc.bob_the_worker",
+    "oteryn:npc.boozer",
+    "oteryn:npc.borkas",
+    "oteryn:npc.boveas",
+    "oteryn:npc.bozo",
+    "oteryn:npc.brasith",
     "oteryn:npc.brewster",
     "oteryn:npc.briasol",
+    "oteryn:npc.brodrosch",
     "oteryn:npc.broken_servant_sentry",
     "oteryn:npc.bron",
     "oteryn:npc.buddel",
+    "oteryn:npc.budrik",
+    "oteryn:npc.bunny_bonecrusher",
+    "oteryn:npc.busty_bonecrusher",
     "oteryn:npc.cael",
+    "oteryn:npc.captain_bluebear",
+    "oteryn:npc.captain_fearless",
+    "oteryn:npc.captain_greyhound",
+    "oteryn:npc.captain_seagull",
     "oteryn:npc.captain_waverider",
     "oteryn:npc.captain_waverider_island",
+    "oteryn:npc.caramellia",
+    "oteryn:npc.carina",
     "oteryn:npc.carlos",
+    "oteryn:npc.ceiron",
+    "oteryn:npc.cerdras",
     "oteryn:npc.charles",
+    "oteryn:npc.chatterbone",
+    "oteryn:npc.chephan",
+    "oteryn:npc.chester_kahs",
     "oteryn:npc.chip",
+    "oteryn:npc.christoph",
+    "oteryn:npc.chuck_the_worker",
+    "oteryn:npc.cillia",
     "oteryn:npc.cipfried",
     "oteryn:npc.cledwyn",
     "oteryn:npc.cornelia",
+    "oteryn:npc.corym_butler",
+    "oteryn:npc.corym_footman",
+    "oteryn:npc.corym_ratter",
+    "oteryn:npc.corym_servant",
+    "oteryn:npc.corym_slave",
+    "oteryn:npc.corym_worker_1",
+    "oteryn:npc.corym_worker_2",
+    "oteryn:npc.corym_worker_3",
+    "oteryn:npc.corym_worker_4",
+    "oteryn:npc.corym_worker_5",
     "oteryn:npc.cranky_lizard_crone",
+    "oteryn:npc.cruleo",
+    "oteryn:npc.dagomir",
     "oteryn:npc.dallheim",
+    "oteryn:npc.dane",
     "oteryn:npc.dedoras",
+    "oteryn:npc.demon_skeleton",
     "oteryn:npc.dermot",
+    "oteryn:npc.digger",
     "oteryn:npc.dixi",
     "oteryn:npc.domizian",
+    "oteryn:npc.donald_mcronald",
+    "oteryn:npc.dorian",
+    "oteryn:npc.dove",
+    "oteryn:npc.dreadeye",
+    "oteryn:npc.dronk",
+    "oteryn:npc.drunken_sailor",
+    "oteryn:npc.dukosch",
     "oteryn:npc.duncan",
+    "oteryn:npc.duria",
+    "oteryn:npc.dustrunner",
+    "oteryn:npc.eclesius",
     "oteryn:npc.edala",
+    "oteryn:npc.edgar_ellen",
+    "oteryn:npc.edowir",
     "oteryn:npc.elane",
+    "oteryn:npc.elathriel",
+    "oteryn:npc.elf_guard",
+    "oteryn:npc.elvith",
     "oteryn:npc.emael",
+    "oteryn:npc.emma",
+    "oteryn:npc.emperor_kruzak",
     "oteryn:npc.enpa_deia_pema",
     "oteryn:npc.eremo",
+    "oteryn:npc.eroth",
+    "oteryn:npc.etzel",
+    "oteryn:npc.eustacio",
+    "oteryn:npc.eva",
     "oteryn:npc.ezebeth",
+    "oteryn:npc.faluae",
+    "oteryn:npc.fenbala",
+    "oteryn:npc.ferus",
+    "oteryn:npc.finarfin",
     "oteryn:npc.flickering_soul",
+    "oteryn:npc.florentine",
     "oteryn:npc.frank_the_plank",
+    "oteryn:npc.frans",
     "oteryn:npc.frodo",
     "oteryn:npc.gail",
+    "oteryn:npc.galuna",
+    "oteryn:npc.gamel",
     "oteryn:npc.gamon",
     "oteryn:npc.gelidrazah_s_thirst",
+    "oteryn:npc.george_the_boyscout",
+    "oteryn:npc.gewen",
+    "oteryn:npc.gnomewart",
     "oteryn:npc.gnommander",
+    "oteryn:npc.gorn",
+    "oteryn:npc.gregor",
     "oteryn:npc.grizzly_adams",
+    "oteryn:npc.grodrik",
     "oteryn:npc.grof_the_guard",
+    "oteryn:npc.grumpy_stone",
+    "oteryn:npc.guide_alexena",
+    "oteryn:npc.guide_elena",
     "oteryn:npc.guide_jonathan",
+    "oteryn:npc.guide_luke",
+    "oteryn:npc.guide_thelandil",
     "oteryn:npc.guide_tiko",
     "oteryn:npc.habdel",
     "oteryn:npc.hanna",
+    "oteryn:npc.hardek",
+    "oteryn:npc.harkath_bloodblade",
+    "oteryn:npc.harsky",
+    "oteryn:npc.hector_the_mentor",
+    "oteryn:npc.hemor_the_guard",
     "oteryn:npc.henricus",
     "oteryn:npc.hjaern",
+    "oteryn:npc.hoggle",
+    "oteryn:npc.hugo",
+    "oteryn:npc.humgolf",
+    "oteryn:npc.humnog_the_guard",
     "oteryn:npc.humphrey",
+    "oteryn:npc.huntsman",
     "oteryn:npc.hyacinth",
+    "oteryn:npc.imalas",
+    "oteryn:npc.irea",
     "oteryn:npc.iriana",
     "oteryn:npc.irmana",
     "oteryn:npc.ishina",
     "oteryn:npc.isimov",
     "oteryn:npc.ivalisse",
+    "oteryn:npc.iwar",
     "oteryn:npc.jack_springer",
+    "oteryn:npc.jack_the_worker",
+    "oteryn:npc.jagran",
+    "oteryn:npc.jean_claude",
+    "oteryn:npc.jimbin",
     "oteryn:npc.jimmy",
     "oteryn:npc.jorge",
+    "oteryn:npc.julian",
+    "oteryn:npc.junkar_mines",
+    "oteryn:npc.junkar_thais",
+    "oteryn:npc.kalvin",
+    "oteryn:npc.karl",
     "oteryn:npc.kasmir",
     "oteryn:npc.kawill",
+    "oteryn:npc.kendra_thais",
     "oteryn:npc.kepar",
+    "oteryn:npc.kevin",
     "oteryn:npc.king_tibianus",
+    "oteryn:npc.kroox",
     "oteryn:npc.kulag_the_guard",
     "oteryn:npc.lai",
+    "oteryn:npc.larfion_the_shaman",
+    "oteryn:npc.lavirias",
+    "oteryn:npc.lea",
+    "oteryn:npc.lector",
+    "oteryn:npc.lee_delle",
+    "oteryn:npc.leeland",
     "oteryn:npc.legola",
+    "oteryn:npc.lesser_messenger_of_heaven",
+    "oteryn:npc.liane",
+    "oteryn:npc.lightfoot",
     "oteryn:npc.lily",
+    "oteryn:npc.livielle",
+    "oteryn:npc.llathriel",
+    "oteryn:npc.lokur",
+    "oteryn:npc.loria",
+    "oteryn:npc.lothar",
+    "oteryn:npc.lou_toose",
+    "oteryn:npc.loui",
     "oteryn:npc.lubo",
     "oteryn:npc.lugri",
+    "oteryn:npc.lukosch",
+    "oteryn:npc.lungelen",
     "oteryn:npc.lynda",
     "oteryn:npc.maealil",
+    "oteryn:npc.maria",
     "oteryn:npc.marina",
     "oteryn:npc.maris_mistrock",
+    "oteryn:npc.markwin",
+    "oteryn:npc.marvik",
+    "oteryn:npc.maryza",
     "oteryn:npc.mayor_pocaro",
+    "oteryn:npc.melfar",
     "oteryn:npc.miles_the_guard",
     "oteryn:npc.minzy",
     "oteryn:npc.miraia",
@@ -97,51 +263,145 @@
     "oteryn:npc.morgan",
     "oteryn:npc.muriel",
     "oteryn:npc.myra",
+    "oteryn:npc.mysterious_ornate_chest",
+    "oteryn:npc.naji",
+    "oteryn:npc.nelliem",
+    "oteryn:npc.nezil",
+    "oteryn:npc.nielson",
+    "oteryn:npc.noodles",
+    "oteryn:npc.norbert",
     "oteryn:npc.norf",
     "oteryn:npc.norma",
     "oteryn:npc.norman_the_foreman",
+    "oteryn:npc.nurik",
+    "oteryn:npc.nydala",
     "oteryn:npc.obi",
+    "oteryn:npc.oblivis",
+    "oteryn:npc.odemara",
+    "oteryn:npc.olrik",
+    "oteryn:npc.oswald",
+    "oteryn:npc.ottokar",
+    "oteryn:npc.padreia",
     "oteryn:npc.palimuth",
+    "oteryn:npc.palomino",
     "oteryn:npc.para_norbert",
+    "oteryn:npc.partos",
+    "oteryn:npc.pat_the_worker",
     "oteryn:npc.paulie",
+    "oteryn:npc.perac",
     "oteryn:npc.percybald",
+    "oteryn:npc.phillip",
+    "oteryn:npc.pig",
+    "oteryn:npc.prisoner",
+    "oteryn:npc.pukosch",
     "oteryn:npc.pydar",
+    "oteryn:npc.pyro_peter",
     "oteryn:npc.queen_eloise",
     "oteryn:npc.quentin",
+    "oteryn:npc.quero",
+    "oteryn:npc.ra_clette",
+    "oteryn:npc.rachel",
     "oteryn:npc.rafzan",
     "oteryn:npc.rahkem",
+    "oteryn:npc.rapanaio",
+    "oteryn:npc.rapanaio_boat",
     "oteryn:npc.rashid",
     "oteryn:npc.raymond_striker",
     "oteryn:npc.razan",
+    "oteryn:npc.repenter",
     "oteryn:npc.rhargu",
+    "oteryn:npc.riddler",
+    "oteryn:npc.robin",
+    "oteryn:npc.roderick",
+    "oteryn:npc.rodney",
+    "oteryn:npc.roger_the_worker",
+    "oteryn:npc.rokyn",
+    "oteryn:npc.romella",
+    "oteryn:npc.rose",
+    "oteryn:npc.rowenna",
+    "oteryn:npc.s_zallar_m_andar",
     "oteryn:npc.sam",
     "oteryn:npc.santiago",
+    "oteryn:npc.sarina",
     "oteryn:npc.scott_the_scout",
+    "oteryn:npc.scutty",
     "oteryn:npc.seymour",
+    "oteryn:npc.shanar",
+    "oteryn:npc.shauna",
+    "oteryn:npc.sherry_mcronald",
+    "oteryn:npc.shiantis",
+    "oteryn:npc.shiriel",
+    "oteryn:npc.shirith",
+    "oteryn:npc.shortsighted_dwarf",
+    "oteryn:npc.sigurd",
     "oteryn:npc.sinatuki",
+    "oteryn:npc.skjaar",
+    "oteryn:npc.smiley",
     "oteryn:npc.snake_eye",
+    "oteryn:npc.sniff",
     "oteryn:npc.spectulus",
+    "oteryn:npc.stan",
+    "oteryn:npc.storkus",
+    "oteryn:npc.stutch",
+    "oteryn:npc.suzy",
+    "oteryn:npc.sylvester",
+    "oteryn:npc.talesia",
+    "oteryn:npc.talphion",
+    "oteryn:npc.tezila",
+    "oteryn:npc.thanita",
+    "oteryn:npc.the_dream_master",
     "oteryn:npc.the_first_dragon",
     "oteryn:npc.the_forgemaster",
     "oteryn:npc.the_oracle",
     "oteryn:npc.the_queen_of_the_banshees",
     "oteryn:npc.tibra",
+    "oteryn:npc.tigo",
     "oteryn:npc.tim_the_guard",
+    "oteryn:npc.tired_tree",
+    "oteryn:npc.todd",
     "oteryn:npc.tom",
+    "oteryn:npc.tooth_fairy",
+    "oteryn:npc.toothless_tim",
+    "oteryn:npc.topsy",
+    "oteryn:npc.towncryer",
+    "oteryn:npc.trimegis",
     "oteryn:npc.trisha",
+    "oteryn:npc.tulf",
+    "oteryn:npc.turvy",
     "oteryn:npc.tyrias",
+    "oteryn:npc.ukea",
+    "oteryn:npc.uncle",
+    "oteryn:npc.urkalio",
     "oteryn:npc.uzgod",
+    "oteryn:npc.uzon",
+    "oteryn:npc.uzon_back",
+    "oteryn:npc.vad_inchi",
     "oteryn:npc.vascalir",
+    "oteryn:npc.velvet",
     "oteryn:npc.viola",
+    "oteryn:npc.vladruc",
+    "oteryn:npc.wally",
+    "oteryn:npc.walter_jaeger",
     "oteryn:npc.walter_the_guard",
+    "oteryn:npc.warbert",
     "oteryn:npc.wayland_smythers",
     "oteryn:npc.willard",
+    "oteryn:npc.william",
     "oteryn:npc.willie",
+    "oteryn:npc.wyat",
+    "oteryn:npc.wyrdins_apprentice",
+    "oteryn:npc.xed",
+    "oteryn:npc.xelvar",
+    "oteryn:npc.xodet",
     "oteryn:npc.yalahari",
     "oteryn:npc.yana",
+    "oteryn:npc.yanni",
     "oteryn:npc.yberius",
+    "oteryn:npc.yulas",
     "oteryn:npc.zalamon",
     "oteryn:npc.zarifan",
+    "oteryn:npc.zebron",
+    "oteryn:npc.zerbrus",
     "oteryn:npc.zethra",
     "oteryn:npc.zirella",
     "oteryn:npc.zlak",
@@ -200,8 +460,30 @@
     ]
   },
   "block_solid_contacts": [
+    "oteryn:npc.abran_ironeye",
+    "oteryn:npc.arnold",
+    "oteryn:npc.aruda",
     "oteryn:npc.bron",
+    "oteryn:npc.budrik",
+    "oteryn:npc.cerdras",
+    "oteryn:npc.chuck_the_worker",
+    "oteryn:npc.corym_butler",
+    "oteryn:npc.corym_worker_5",
+    "oteryn:npc.eclesius",
+    "oteryn:npc.edgar_ellen",
+    "oteryn:npc.emma",
+    "oteryn:npc.gnomewart",
     "oteryn:npc.gnommander",
+    "oteryn:npc.kalvin",
+    "oteryn:npc.llathriel",
+    "oteryn:npc.mysterious_ornate_chest",
+    "oteryn:npc.oblivis",
+    "oteryn:npc.prisoner",
+    "oteryn:npc.sherry_mcronald",
+    "oteryn:npc.talesia",
+    "oteryn:npc.tooth_fairy",
+    "oteryn:npc.uncle",
+    "oteryn:npc.wally",
     "oteryn:npc.zarifan"
   ],
   "native_contacts": [
@@ -209,6 +491,19 @@
     "oteryn:npc.minzy"
   ],
   "placement_adjustments": {
+    "oteryn:npc.brodrosch": {
+      "source": {
+        "x": 32659,
+        "y": 31957,
+        "z": 15
+      },
+      "target": {
+        "x": 32659,
+        "y": 31958,
+        "z": 15
+      },
+      "reason": "Use the adjacent identical protection-zone tile to keep Thorgrin's Crystal Kazordoon arrival clear."
+    },
     "oteryn:npc.edala": {
       "source": {
         "x": 32697,
@@ -221,6 +516,19 @@
         "z": 2
       },
       "reason": "M01c collector route: original source cell contains BlockSolid item 3667; chosen adjacent native ground retains the donor position as provenance."
+    },
+    "oteryn:npc.gewen": {
+      "source": {
+        "x": 32588,
+        "y": 31942,
+        "z": 0
+      },
+      "target": {
+        "x": 32587,
+        "y": 31942,
+        "z": 0
+      },
+      "reason": "Use the adjacent identical carpet tile to keep Uzon's Crystal Kazordoon arrival clear."
     },
     "oteryn:npc.humphrey": {
       "source": {
@@ -303,111 +611,6 @@
     }
   },
   "placement_overrides": {
-    "oteryn:npc.buddel": {
-      "basis": "Crystal world-npc.xml:1219-1221 anchors Buddel in Svargrond. The source leaves direction unspecified, so the native placement uses north.",
-      "placements": [
-        {
-          "direction": "NORTH",
-          "position": {
-            "x": 32255,
-            "y": 31195,
-            "z": 7
-          }
-        }
-      ],
-      "source": {
-        "origin": "crystal",
-        "path": "data-global/world/world-npc.xml",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      }
-    },
-    "oteryn:npc.jack_springer": {
-      "basis": "Crystal world-npc.xml:2722-2724 anchors Jack Springer at the Isle of the Kings. The source leaves direction unspecified, so the native placement uses north.",
-      "placements": [
-        {
-          "direction": "NORTH",
-          "position": {
-            "x": 32326,
-            "y": 32261,
-            "z": 9
-          }
-        }
-      ],
-      "source": {
-        "origin": "crystal",
-        "path": "data-global/world/world-npc.xml",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      }
-    },
-    "oteryn:npc.rashid": {
-      "basis": "Pinned Canary startup/weekday schedule; the existing native UTC weekday filter requires these exact seven cells instead of the wiki-arbitrated migration cell.",
-      "placements": [
-        {
-          "direction": "SOUTH",
-          "position": {
-            "x": 32328,
-            "y": 31782,
-            "z": 6
-          }
-        },
-        {
-          "direction": "SOUTH",
-          "position": {
-            "x": 32207,
-            "y": 31155,
-            "z": 7
-          }
-        },
-        {
-          "direction": "SOUTH",
-          "position": {
-            "x": 32300,
-            "y": 32837,
-            "z": 7
-          }
-        },
-        {
-          "direction": "SOUTH",
-          "position": {
-            "x": 32577,
-            "y": 32753,
-            "z": 7
-          }
-        },
-        {
-          "direction": "SOUTH",
-          "position": {
-            "x": 33066,
-            "y": 32879,
-            "z": 6
-          }
-        },
-        {
-          "direction": "SOUTH",
-          "position": {
-            "x": 33235,
-            "y": 32483,
-            "z": 7
-          }
-        },
-        {
-          "direction": "SOUTH",
-          "position": {
-            "x": 33166,
-            "y": 31810,
-            "z": 6
-          }
-        }
-      ],
-      "source": {
-        "origin": "canary",
-        "path": "data-otservbr-global/scripts/globalevents/spawn/rashid.lua",
-        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-        "sha256": "77c696b75f7027c3f4120e5392874ce0809495c3c425ba4a005bff3521a546b8"
-      }
-    },
     "oteryn:npc.a_sleeping_dragon": {
       "source": {
         "origin": "crystal",
@@ -483,6 +686,426 @@
         "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
         "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
       }
+    },
+    "oteryn:npc.buddel": {
+      "basis": "Crystal world-npc.xml:1219-1221 anchors Buddel in Svargrond. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32255,
+            "y": 31195,
+            "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.busty_bonecrusher": {
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "placements": [
+        {
+          "position": {
+            "x": 32290,
+            "y": 31789,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ],
+      "basis": "Crystal world-npc.xml lines 1625. The XML loader defaults omitted direction to north."
+    },
+    "oteryn:npc.drunken_sailor": {
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "placements": [
+        {
+          "position": {
+            "x": 32848,
+            "y": 31532,
+            "z": 15
+          },
+          "direction": "NORTH"
+        }
+      ],
+      "basis": "Crystal world-npc.xml lines 3273. The XML loader defaults omitted direction to north."
+    },
+    "oteryn:npc.eustacio": {
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "placements": [
+        {
+          "position": {
+            "x": 32939,
+            "y": 32030,
+            "z": 7
+          },
+          "direction": "SOUTH"
+        }
+      ],
+      "basis": "Crystal world-npc.xml lines 1811. The XML loader defaults omitted direction to north."
+    },
+    "oteryn:npc.jack_springer": {
+      "basis": "Crystal world-npc.xml:2722-2724 anchors Jack Springer at the Isle of the Kings. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32326,
+            "y": 32261,
+            "z": 9
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.ra_clette": {
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "placements": [
+        {
+          "position": {
+            "x": 33030,
+            "y": 32139,
+            "z": 5
+          },
+          "direction": "NORTH"
+        }
+      ],
+      "basis": "Crystal world-npc.xml lines 415. The XML loader defaults omitted direction to north."
+    },
+    "oteryn:npc.rashid": {
+      "basis": "Pinned Canary startup/weekday schedule; the existing native UTC weekday filter requires these exact seven cells instead of the wiki-arbitrated migration cell.",
+      "placements": [
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 32328,
+            "y": 31782,
+            "z": 6
+          }
+        },
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 32207,
+            "y": 31155,
+            "z": 7
+          }
+        },
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 32300,
+            "y": 32837,
+            "z": 7
+          }
+        },
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 32577,
+            "y": 32753,
+            "z": 7
+          }
+        },
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 33066,
+            "y": 32879,
+            "z": 6
+          }
+        },
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 33235,
+            "y": 32483,
+            "z": 7
+          }
+        },
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 33166,
+            "y": 31810,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "canary",
+        "path": "data-otservbr-global/scripts/globalevents/spawn/rashid.lua",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "77c696b75f7027c3f4120e5392874ce0809495c3c425ba4a005bff3521a546b8"
+      }
+    },
+    "oteryn:npc.repenter": {
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "placements": [
+        {
+          "position": {
+            "x": 32765,
+            "y": 31599,
+            "z": 11
+          },
+          "direction": "NORTH"
+        },
+        {
+          "position": {
+            "x": 32752,
+            "y": 31601,
+            "z": 11
+          },
+          "direction": "NORTH"
+        },
+        {
+          "position": {
+            "x": 32755,
+            "y": 31611,
+            "z": 11
+          },
+          "direction": "NORTH"
+        },
+        {
+          "position": {
+            "x": 32753,
+            "y": 31625,
+            "z": 11
+          },
+          "direction": "NORTH"
+        },
+        {
+          "position": {
+            "x": 32773,
+            "y": 31627,
+            "z": 11
+          },
+          "direction": "NORTH"
+        }
+      ],
+      "basis": "Crystal world-npc.xml lines 2889, 2892, 2901, 2904, 2907. The XML loader defaults omitted direction to north."
+    },
+    "oteryn:npc.sniff": {
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "placements": [
+        {
+          "position": {
+            "x": 33001,
+            "y": 32096,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ],
+      "basis": "Crystal world-npc.xml lines 1835. The XML loader defaults omitted direction to north."
+    },
+    "oteryn:npc.uzon": {
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "placements": [
+        {
+          "position": {
+            "x": 32536,
+            "y": 31836,
+            "z": 4
+          },
+          "direction": "NORTH"
+        }
+      ],
+      "basis": "Crystal world-npc.xml lines 169. The XML loader defaults omitted direction to north."
+    },
+    "oteryn:npc.wyrdins_apprentice": {
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "placements": [
+        {
+          "position": {
+            "x": 32434,
+            "y": 31985,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ],
+      "basis": "Crystal world-npc.xml lines 1757. The XML loader defaults omitted direction to north."
+    },
+    "oteryn:npc.xodet": {
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "placements": [
+        {
+          "position": {
+            "x": 32398,
+            "y": 32222,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ],
+      "basis": "Crystal world-npc.xml lines 1955. The XML loader defaults omitted direction to north."
+    }
+  },
+  "wiki_br_contacts": {
+    "oteryn:npc.a_frog": {
+      "pageid": 10877,
+      "cells": [
+        [
+          32363,
+          32119,
+          7
+        ]
+      ]
+    },
+    "oteryn:npc.bambi_bonecrusher": {
+      "pageid": 10626,
+      "cells": [
+        [
+          32341,
+          31748,
+          7
+        ]
+      ]
+    },
+    "oteryn:npc.cillia": {
+      "pageid": 10890,
+      "cells": [
+        [
+          32392,
+          32198,
+          8
+        ]
+      ]
+    },
+    "oteryn:npc.grodrik": {
+      "pageid": 11268,
+      "cells": [
+        [
+          32637,
+          31882,
+          9
+        ]
+      ]
+    },
+    "oteryn:npc.harkath_bloodblade": {
+      "pageid": 10985,
+      "cells": [
+        [
+          32344,
+          32184,
+          7
+        ]
+      ]
+    },
+    "oteryn:npc.jean_claude": {
+      "pageid": 11536,
+      "cells": [
+        [
+          33006,
+          32052,
+          6
+        ]
+      ]
+    },
+    "oteryn:npc.lou_toose": {
+      "pageid": 12369,
+      "cells": [
+        [
+          32314,
+          31749,
+          7
+        ]
+      ]
+    },
+    "oteryn:npc.oblivis": {
+      "pageid": 65807,
+      "cells": [
+        [
+          32220,
+          32118,
+          7
+        ]
+      ]
+    },
+    "oteryn:npc.prisoner": {
+      "pageid": 11129,
+      "cells": [
+        [
+          32314,
+          32270,
+          9
+        ]
+      ]
+    },
+    "oteryn:npc.sylvester": {
+      "pageid": 11565,
+      "cells": [
+        [
+          32897,
+          32142,
+          6
+        ]
+      ]
+    },
+    "oteryn:npc.vad_inchi": {
+      "pageid": 12322,
+      "cells": [
+        [
+          32308,
+          32174,
+          6
+        ]
+      ]
     }
   }
 }

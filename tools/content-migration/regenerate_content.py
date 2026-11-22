@@ -119,6 +119,7 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-migration/regional_npc_prices.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
@@ -834,6 +835,8 @@ def main() -> int:
     questpc7_thaian_authoring.install(ROOT)
     from buddel_travel import install_buddel
     install_buddel(ROOT, WORLD)
+    from regional_npc_prices import install as install_regional_npc_prices
+    install_regional_npc_prices(ROOT, WORLD)
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()

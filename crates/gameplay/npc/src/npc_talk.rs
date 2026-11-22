@@ -387,7 +387,7 @@ impl NpcTalkBook {
         let journal_npcs = world_change_journals::npc_keys(source).unwrap_or_default();
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|sinatuki-fish-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|sinatuki-fish-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::quest_access::book_digest(
                     &crate::content::npc_catalogue::quest_shops::book_digest(
                         &crate::content::npc_catalogue::grizzly_shop::book_digest(
@@ -415,6 +415,7 @@ impl NpcTalkBook {
                 YASIR_NAME,
                 YASIR_PASSAGE,
                 literal_contacts::REVISION_MATERIAL,
+                literal_contacts::REGIONAL_SOURCE,
             )),
             ..Self::default()
         };
@@ -466,6 +467,8 @@ impl NpcTalkBook {
                 .filter_map(|reference| model.services().get(reference))
                 .any(|service| service.bank);
             let mut journal_fallback = false;
+            let mut regional_source = false;
+            let mut regional_walkaway = None;
             let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if native_quest
                 && matches!(
                     reference.key.as_str(),
@@ -682,6 +685,21 @@ impl NpcTalkBook {
                     None,
                     keywords,
                 )
+            } else if let Some(messages) = npc
+                .bank_dialogue
+                .as_ref()
+                .and_then(|dialogue| literal_contacts::regional_messages(&reference.key, dialogue))
+            {
+                regional_source = true;
+                regional_walkaway = messages.walkaway;
+                let passage = (!travel_routes.is_empty())
+                    .then(|| "Ask me for a passage to your destination.".into());
+                (
+                    messages.greet,
+                    messages.farewell,
+                    passage,
+                    messages.keywords,
+                )
             } else if let Some(replies) = &npc.generated_replies {
                 let mut lines: Vec<&str> = Vec::new();
                 for (_, line) in &replies.services {
@@ -823,6 +841,7 @@ impl NpcTalkBook {
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank
+                        || regional_source
                         || literal_contacts::greeting(&reference.key).is_some()
                         || reference.key == "oteryn:npc.lynda"
                         || matches!(reference.key.as_str(), YASIR | OROCKLE | DEEP_SEAS_GUARDIAN)
@@ -849,8 +868,8 @@ impl NpcTalkBook {
                             .as_ref()
                             .and_then(|dialogue| dialogue.walkaway.first().cloned())
                     } else {
-                        isle_messages
-                            .map(|messages| messages.walkaway)
+                        regional_walkaway
+                            .or_else(|| isle_messages.map(|messages| messages.walkaway))
                             .or_else(|| reward_messages.map(|messages| messages.walkaway.clone()))
                     },
                     topic_reply,

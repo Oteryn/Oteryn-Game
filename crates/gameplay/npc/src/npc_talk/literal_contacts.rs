@@ -1,5 +1,87 @@
-//! Closed lore-only contacts; no quest, currency or exchange operations are admitted.
+//! Closed literal dialogue bindings for existing NPC contacts and services.
+use std::collections::BTreeMap;
+use std::sync::OnceLock;
+
+use crate::content::ProjectV2DialogueKeyword;
+use crate::content::npc_catalogue::service::NpcBankDialogue;
+
 pub(super) const REVISION_MATERIAL: &str = "literal-contacts:v2;mayor_pocaro:literal;wayland_smythers:literal;minzy:name,job,story;rascalio:name,job;rascalio-greet:Be greeted, |PLAYERNAME|!";
+pub(super) const REGIONAL_SOURCE: &str =
+    include_str!("../../../../../content/npcs/six-region-talk.json");
+
+#[derive(serde::Deserialize)]
+struct RegionalDocument {
+    schema: String,
+    source_revision: String,
+    contacts: BTreeMap<String, RegionalContact>,
+}
+
+#[derive(serde::Deserialize)]
+struct RegionalContact {
+    greet: ReplySource,
+    farewell: ReplySource,
+    walkaway: Option<ReplySource>,
+    keywords: Vec<String>,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum ReplySource {
+    Catalogue,
+    HandlerDefault,
+}
+
+impl ReplySource {
+    fn message(&self, lines: &[String], handler_default: &str) -> Option<String> {
+        match self {
+            Self::Catalogue => {
+                let [line] = lines else { return None };
+                Some(line.clone())
+            }
+            Self::HandlerDefault => Some(handler_default.to_owned()),
+        }
+    }
+}
+
+pub(super) struct RegionalMessages {
+    pub(super) greet: String,
+    pub(super) farewell: String,
+    pub(super) walkaway: Option<String>,
+    pub(super) keywords: Vec<ProjectV2DialogueKeyword>,
+}
+
+pub(super) fn regional_messages(key: &str, dialogue: &NpcBankDialogue) -> Option<RegionalMessages> {
+    static REGIONAL: OnceLock<Option<RegionalDocument>> = OnceLock::new();
+    let document = REGIONAL
+        .get_or_init(|| {
+            let document: RegionalDocument = serde_json::from_str(REGIONAL_SOURCE).ok()?;
+            (document.schema == "OTERYN_REGIONAL_NPC_TALK/v1"
+                && document.source_revision == "201189f871d23597b82caf88fd611454a2ddefb8")
+                .then_some(document)
+        })
+        .as_ref()?;
+    let source = document.contacts.get(key)?;
+    Some(RegionalMessages {
+        greet: source
+            .greet
+            .message(&dialogue.greet, "Greetings, |PLAYERNAME|.")?,
+        farewell: source
+            .farewell
+            .message(&dialogue.farewell, "Good bye, |PLAYERNAME|.")?,
+        walkaway: source
+            .walkaway
+            .as_ref()
+            .and_then(|reply| reply.message(&dialogue.walkaway, "Good bye.")),
+        keywords: dialogue
+            .keywords
+            .iter()
+            .filter(|keyword| {
+                super::literal_keyword(keyword) && source.keywords.contains(&keyword.key)
+            })
+            .cloned()
+            .collect(),
+    })
+}
 
 pub(super) fn admitted(key: &str) -> bool {
     matches!(
@@ -47,6 +129,83 @@ mod tests {
         .expect("catalogue")
         .service_model_for_project()
         .expect("model")
+    }
+
+    #[test]
+    fn regional_guide_and_merchant_use_their_catalogue_dialogue_and_offers() {
+        let model = model();
+        let book = NpcTalkBook::from_model(&model);
+        let at = ChatPosition {
+            x: 1,
+            y: 1,
+            floor: 7,
+        };
+        for (key, keyword, trade) in [
+            ("oteryn:npc.guide_elena", "temple", false),
+            ("oteryn:npc.gorn", "job", true),
+        ] {
+            let source = model
+                .npcs()
+                .iter()
+                .find(|(r, _)| r.key == key)
+                .expect("source NPC")
+                .1;
+            let dialogue = source.bank_dialogue.as_ref().expect("source dialogue");
+            let topic = dialogue
+                .keywords
+                .iter()
+                .find(|k| k.key == keyword)
+                .expect("source topic");
+            let entry = book.get(key).expect("regional contact is admitted");
+            let npcs = [TalkNpc {
+                id: 1u8,
+                position: at,
+                entry,
+            }];
+            let mut engaged = None;
+            assert_eq!(
+                talk(at, "hi", &npcs, &mut engaged).expect("greet").text,
+                dialogue.greet[0]
+            );
+            assert_eq!(
+                talk(at, keyword, &npcs, &mut engaged).expect("topic").text,
+                topic.reply[0]
+            );
+            let offers: Vec<_> = source
+                .services
+                .iter()
+                .flat_map(|r| &model.services()[r].offers)
+                .cloned()
+                .collect();
+            assert_eq!(entry.offers(), offers);
+            assert_eq!(!entry.offers().is_empty(), trade);
+        }
+    }
+
+    #[test]
+    fn regional_merchants_charge_the_pinned_crystal_prices() {
+        let model = model();
+        let book = NpcTalkBook::from_model(&model);
+        for (npc, item, price) in [
+            ("oteryn:npc.allen", "oteryn:item.tibia.i32477", 40),
+            ("oteryn:npc.bezil", "oteryn:item.tibia.i3308", 6),
+            ("oteryn:npc.iwar", "oteryn:item.tibia.i32481", 40),
+            ("oteryn:npc.nydala", "oteryn:item.tibia.i32490", 40),
+            ("oteryn:npc.ukea", "oteryn:item.tibia.i32486", 40),
+        ] {
+            let offer = book
+                .get(npc)
+                .expect("regional merchant")
+                .offers()
+                .iter()
+                .find(|offer| {
+                    offer.item.key == item
+                        && offer.direction
+                            == crate::content::ProjectV2ServiceOfferDirection::SellToPlayer
+                })
+                .expect("donor shop item");
+            assert_eq!(offer.unit_price, price, "{npc} sells {item}");
+        }
     }
 
     #[test]
