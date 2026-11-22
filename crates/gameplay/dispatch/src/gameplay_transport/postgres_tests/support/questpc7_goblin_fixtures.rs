@@ -399,9 +399,10 @@ pub(super) async fn exercise_stalkers(owner:&mut ComposedFreshAdmission<'_, '_, 
     ).await?;
     owner.refresh_quest_session(a.game_session_id, true).await;
     let report = conversation("report-kill", "kill")?;
+    let platinum = quantity(h, 3035).await?;
     let (paid, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &report, false).await?;
     assert_eq!(paid, NpcIntentDisposition::Ok);
-    assert_eq!(quantity(h, 3035).await?, 1);
+    assert_eq!(quantity(h, 3035).await?, platinum + 1);
     assert_eq!(value(owner,a,&format!("{ROOT}reports")).await?, 500);
     let awards:i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/task_manager'")
         .fetch_one(&h.pool).await?;
@@ -409,7 +410,7 @@ pub(super) async fn exercise_stalkers(owner:&mut ComposedFreshAdmission<'_, '_, 
     let get = conversation("accept-kill", "get kill")?;
     let _ = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &get, false).await?;
     assert_eq!(value(owner,a,&format!("{ROOT}stalkers")).await?, -1, "the 20-hour cooldown refuses a new start");
-    assert_eq!(quantity(h,3035).await?,1);
+    assert_eq!(quantity(h,3035).await?,platinum + 1);
     let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
         .fetch_one(&h.pool).await?;
     super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
@@ -426,7 +427,7 @@ pub(super) async fn exercise_stalkers(owner:&mut ComposedFreshAdmission<'_, '_, 
     let guards = conversation("report-guards", "guards")?;
     let (paid, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &guards, false).await?;
     assert_eq!(paid, NpcIntentDisposition::Ok);
-    assert_eq!(quantity(h, 3035).await?, 2, "guards reports the finished task even with the original offer unvisited");
+    assert_eq!(quantity(h, 3035).await?, platinum + 2, "guards reports the finished task even with the original offer unvisited");
     assert_eq!(value(owner, a, &format!("{ROOT}captures")).await?, -1);
     assert_eq!(value(owner, a, &format!("{ROOT}reports")).await?, 501);
     Ok(())

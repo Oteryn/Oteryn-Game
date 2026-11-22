@@ -2601,6 +2601,12 @@ pub(super) async fn exercise(
             .fetch_one(&h.pool)
             .await?;
             assert_eq!(awards, i64::from(step_index == 2));
+            let completions: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key='oteryn:quest.glooth_engineer_outfits_quest' AND completes",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(completions, awards);
         }
         if let Some(key) = &callback.achievement {
             let earned: i64 = sqlx::query_scalar(
@@ -2633,10 +2639,18 @@ pub(super) async fn exercise(
             assert_eq!(row, (tracks[&state.track].quest.clone(), state.set));
         }
         for state in &required {
-            let row: (String,i64) = sqlx::query_as("SELECT quest_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(fence.character_id.as_bytes().as_slice()).bind(&state.track).fetch_one(&h.pool).await?;
+            let row: Option<(String,i64)> = sqlx::query_as("SELECT quest_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(fence.character_id.as_bytes().as_slice()).bind(&state.track).fetch_optional(&h.pool).await?;
+            if family == "glooth-engineer"
+                && steps[step_index].0 == "second"
+                && state.track.ends_with("/glooth_engineer_outfits/addon1")
+            {
+                assert!(row.is_none(), "the high-vote second addon leaves the first untouched");
+                assert_eq!(tracks[&state.track].initial, 0);
+                continue;
+            }
             assert_eq!(
                 row,
-                (tracks[&state.track].quest.clone(), state.minimum),
+                Some((tracks[&state.track].quest.clone(), state.minimum)),
                 "read-only parent ownership and progress retained"
             );
         }
