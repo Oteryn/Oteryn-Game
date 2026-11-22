@@ -11,6 +11,7 @@ use std::collections::BTreeMap;
 pub(super) async fn install(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
+    stage_ready: bool,
 ) -> TestResult {
     let canonical = owner.quest_catalogue.clone().ok_or("catalogue")?;
     let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
@@ -52,6 +53,19 @@ pub(super) async fn install(
             transitions.insert(t.key.clone(), t.clone());
         }
     }
+    if stage_ready {
+        // The native Curos and Zalamon routes own these tracks. Start this Tome
+        // fixture at their reward stages and drive each reward through its owner.
+        for (key, value) in [
+            ("oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline", 4),
+            ("oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline", 17),
+            ("oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04", 5),
+        ] {
+            let mut track = canonical.track(key).cloned().ok_or("foreign prerequisite")?;
+            track.initial = value;
+            tracks.insert(key.into(), track);
+        }
+    }
     for (key, quest, values) in [
         (
             "frontier-ready",
@@ -62,28 +76,6 @@ pub(super) async fn install(
             "frontier-finished",
             "the_new_frontier_quest",
             vec![(format!("{FRONTIER}mission10_1"), 2)],
-        ),
-        (
-            "curos-ready",
-            "an_uneasy_alliance_quest",
-            vec![(
-                "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline".into(),
-                4,
-            )],
-        ),
-        (
-            "zalamon-ready",
-            "children_of_the_revolution_quest",
-            vec![
-                (
-                    "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline".into(),
-                    17,
-                ),
-                (
-                    "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04".into(),
-                    5,
-                ),
-            ],
         ),
     ] {
         for (track, _) in &values {

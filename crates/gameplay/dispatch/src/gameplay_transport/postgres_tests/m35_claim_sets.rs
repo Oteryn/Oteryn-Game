@@ -730,7 +730,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 .0;
         let fence = crate::gameplay_transport::item_fence_of(current).ok_or("fence")?;
         if matches!(case, Case::Draconia | Case::BlackKnight) {
-            let minimum = catalogue
+            let binding = catalogue
                 .as_ref()
                 .and_then(|catalogue| catalogue.authored_bindings())
                 .and_then(|bindings| {
@@ -739,17 +739,33 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                         .iter()
                         .find(|binding| binding.quest == quest)
                 })
-                .and_then(|binding| binding.admission.as_ref())
-                .ok_or("canonical claim-set level admission")?
-                .minimum_level;
-            assert_eq!(
-                minimum,
-                if matches!(case, Case::Draconia) {
-                    25
-                } else {
-                    50
-                }
-            );
+                .ok_or("canonical claim-set binding")?;
+            let minimum = if matches!(case, Case::Draconia) {
+                use crate::map::door::DoorUse;
+                use oteryn_world_bundle::bundle::placement_key;
+
+                assert!(binding.admission.is_none());
+                let tower = super::qready1_reward_claims::retained_world((32804, 31583, -2), native)?;
+                let door = placement_key(-2, 32804, 31583, 1).ok_or("Draconia tower door")?;
+                let doors = tower.facts().doors();
+                assert_eq!(doors.toggle(door, 0, false, 24, true), Some(DoorUse::Locked));
+                assert_eq!(
+                    doors.toggle(door, 0, false, 25, true),
+                    Some(DoorUse::Toggled {
+                        revision: 1,
+                        open: true
+                    })
+                );
+                25
+            } else {
+                let minimum = binding
+                    .admission
+                    .as_ref()
+                    .ok_or("canonical claim-set level admission")?
+                    .minimum_level;
+                assert_eq!(minimum, 50);
+                minimum
+            };
             let progression = h
                 .root
                 .read_character_progression(&authority, fence.character_id)
