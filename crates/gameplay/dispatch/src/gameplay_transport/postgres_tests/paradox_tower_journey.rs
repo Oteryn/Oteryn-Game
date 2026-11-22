@@ -26,7 +26,10 @@ use oteryn_protocol_oteryn::{
     },
     npc_service::NpcIntentDisposition,
     quest_log::{QuestLogQuery, QuestLogView, decode_quest_log, encode_quest_log_query},
-    world_object::{UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent},
+    world_object::{
+        MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
+        encode_item_use_intent, encode_use_intent,
+    },
     world_spatial_entities::EntityRef,
 };
 use serde::Deserialize;
@@ -40,6 +43,7 @@ const SKULLS: &str = "oteryn:quest-callback/paradox-tower/native-skulls";
 const KEY: Position = pos(32497, 31887, -7);
 const ALTAR: Position = pos(32566, 31957, -1);
 const CHEST: Position = pos(32479, 31900, -1);
+const FOOD_DOOR: Position = pos(32479, 31903, -4);
 
 const CONTACTS: &[&str] = &[
     "oteryn:npc.a_prisoner",
@@ -166,6 +170,7 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
         let expected = match z {
             1 => vec![expected(CHEST, vec![409, 2321, 2472])],
             2 => vec![expected(pos(32479, 31901, -2), vec![409, 2576])],
+            4 => vec![expected(FOOD_DOOR, vec![409, 1631])],
             _ => Vec::new(),
         };
         crops.push(crop(
@@ -254,21 +259,20 @@ async fn completed(h: &Harness) -> TestResult<bool> {
     .await?)
 }
 
-fn use_target(
+fn object_target(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     p: Position,
     ordinal: u8,
-) -> TestResult<Vec<u8>> {
+) -> TestResult<WorldObjectTarget> {
     let map = owner.bundle_map().ok_or("Paradox native map")?;
     let key = oteryn_world_bundle::bundle::placement_key(p.floor, p.x, p.y, ordinal)
         .ok_or("native placement")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    Ok(encode_use_intent(&WorldObjectTarget {
+    Ok(WorldObjectTarget {
         placement,
         expected_revision: map.facts.object_revision(key),
     })
-    .map_err(debug)?)
 }
 
 async fn use_wire(
@@ -281,7 +285,7 @@ async fn use_wire(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("use clock")?;
-    let payload = use_target(owner, p, ordinal)?;
+    let payload = encode_use_intent(&object_target(owner, p, ordinal)?).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
     let result = wire::wire(owner, admitted, command, 2, payload).await?;
     Ok(decode_use_result(&result).map_err(debug)?)
@@ -522,7 +526,7 @@ async fn foods(
     let counter = &callback.storage.first().ok_or("food counter")?.track;
     assert_eq!(track(h, counter).await?, None);
     if z == 4 {
-        tower::walk(owner, admitted, pos(32476, 31905, -4)).await?;
+        open_food_room(owner, admitted, h).await?;
         tower::walk(owner, admitted, pos(32476, 31901, -4)).await?;
     } else {
         tower::walk(owner, admitted, pos(32477, 31905, -3)).await?;
@@ -549,8 +553,8 @@ async fn foods(
         );
     }
     if z == 4 {
-        tower::walk(owner, admitted, pos(32476, 31901, -4)).await?;
-        tower::walk(owner, admitted, pos(32476, 31905, -4)).await?;
+        tower::walk(owner, admitted, pos(32479, 31901, -4)).await?;
+        tower::walk(owner, admitted, pos(32479, 31904, -4)).await?;
         tower::walk(owner, admitted, pos(32478, 31905, -4)).await?;
     } else {
         tower::walk(owner, admitted, pos(32477, 31904, -3)).await?;
@@ -565,6 +569,55 @@ async fn foods(
     consumed(h, &callback, i64::try_from(callback.offerings.len())?).await?;
     assert_eq!(carried(owner, admitted, h).await?, before);
     upper::ascend(owner, admitted, &callback, z).await
+}
+
+async fn open_food_room(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let inventory = carried(owner, admitted, h).await?;
+    tower::walk(owner, admitted, pos(32478, 31904, -4)).await?;
+    tower::walk(owner, admitted, pos(32479, 31904, -4)).await?;
+    assert_eq!(
+        use_wire(owner, admitted, FOOD_DOOR, 1).await?,
+        UseDisposition::Locked
+    );
+    let reference = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| index.definition_ref("Item", "oteryn:item.tibia.i2970", "definition-r1"))
+        .ok_or("Paradox key definition")?;
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(std::num::NonZeroU64::MIN),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(object_target(owner, FOOD_DOOR, 1)?)),
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("key use clock")?;
+    let (next, disposition, _) = super::item_craft_fixtures::exchange(
+        owner,
+        *admitted,
+        admitted.continuity.next_command_id,
+        &payload,
+        Some(reference),
+    )
+    .await?;
+    *admitted = next;
+    assert_eq!(disposition, UseDisposition::Committed);
+    tower::walk(owner, admitted, pos(32479, 31901, -4)).await?;
+    assert_eq!(
+        carried(owner, admitted, h).await?,
+        inventory,
+        "door key is retained"
+    );
+    assert!(!completed(h).await?);
+    Ok(())
 }
 
 async fn riddle(
@@ -757,7 +810,7 @@ pub(super) async fn exercise(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("reward clock")?;
-    let payload = use_target(owner, CHEST, 2)?;
+    let payload = encode_use_intent(&object_target(owner, CHEST, 2)?).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
     let response = wire::wire(owner, admitted, command, 2, payload.clone()).await?;
     assert_eq!(

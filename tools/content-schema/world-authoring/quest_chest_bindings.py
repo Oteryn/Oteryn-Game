@@ -436,6 +436,46 @@ def selections(root=ROOT):
             "claims": ["oteryn:reward-claim.kv.panpipe"],
         }
         sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
+    alias_path = "content/quests/native-reward-placement-aliases.json"
+    key = "oteryn:reward-claim.quest.key.id3899"
+    if (root / alias_path).is_file() and any(
+        alias["claim"] == key
+        for alias in json.loads((root / alias_path).read_bytes())["aliases"]
+    ):
+        position = (32479, 31903, 4)
+        gates_path = "tools/content-schema/quest-authoring/samples/doors/gates.json"
+        manifest_path = "tools/content-schema/quest-authoring/samples/doors/manifest.json"
+        gate_key = "canary:door-gate/key/3899"
+        gates_raw = (root / gates_path).read_bytes()
+        manifest_raw = (root / manifest_path).read_bytes()
+        (gate,) = (
+            row for row in json.loads(gates_raw)["gates"] if row["identity"]["key"] == gate_key
+        )
+        (entry,) = (
+            row for row in json.loads(manifest_raw)["entries"] if row.get("destination") == gate_key
+        )
+        if (
+            gate["condition"]["key_binding"] != "canary:door-key/3899"
+            or [claim["key"] for claim in gate["condition"]["key_from_claims"]]
+            != ["canary:reward-claim/quest/key/id3899"]
+            or gate["placements"] != [{"position": dict(zip("xyz", position)), "appearance": None}]
+            or tuple(entry["position"]) != position
+            or entry["status"] != "mapped"
+            or {row["source"] for row in entry["sources"]} != {"canary", "crystalserver"}
+            or any(row["action_key"] != "Storage.Quest.Key.ID3899" for row in entry["sources"])
+            or position in doors
+        ):
+            raise ValueError("PARADOX_KEY_DOOR_SOURCE_DRIFT")
+        doors[position] = {
+            "position": list(position),
+            "appearance": 1631,
+            "action": 3899,
+            "claims": [key],
+        }
+        for path, raw in ((gates_path, gates_raw), (manifest_path, manifest_raw)):
+            evidence = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
+            if evidence not in sources:
+                sources.append(evidence)
     return {"unique": bindings, "action": doors}, sources
 
 
