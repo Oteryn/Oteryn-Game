@@ -2295,6 +2295,80 @@ mod tests {
     }
 
     #[test]
+    fn admitted_imbuement_profiles_match_crystal_slots_and_families() -> Result<(), ContentError> {
+        use super::super::{
+            ReferenceImbuementAllowance, ReferenceImbuementTier, ReferenceItemField as Field,
+        };
+
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let supplied =
+            NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))?;
+        let world = test_source(1)?.world_id;
+        let (controller, _) = try_activate_input(world, &supplied)
+            .map_err(|_| invalid("imbuement parity activation"))?;
+        let generation = controller
+            .active()
+            .ok_or_else(|| invalid("active content"))?;
+        let native = generation
+            .native_gameplay()
+            .ok_or_else(|| invalid("native content"))?;
+        let source: Value = serde_json::from_str(include_str!(
+            "../../../../../imports/crystalserver/facts/items-imbuement-parity-201189f8.json"
+        ))
+        .unwrap();
+        let rows = source["records"].as_object().unwrap();
+        assert_eq!(rows.len(), 217);
+        let mut wrong_slots = Vec::new();
+        let mut wrong_families = Vec::new();
+        for (id, donor) in rows {
+            let key = format!("oteryn:item.tibia.i{id}");
+            let policy = native
+                .item_policy(&key, "definition-r1")
+                .unwrap_or_else(|| panic!("missing admitted imbuement item {key}"));
+            assert!(policy.record().admission.materializable, "{key}");
+            let Field::Known(profile) = &policy.record().semantics.imbuement else {
+                wrong_slots.push(id);
+                wrong_families.push(id);
+                continue;
+            };
+            let slots = u8::try_from(donor["slot_count"].as_u64().unwrap()).unwrap();
+            if profile.slot_count != Field::Known(slots) {
+                wrong_slots.push(id);
+            }
+            let Field::Known(allowances) = &profile.allowed_family_tiers else {
+                wrong_families.push(id);
+                continue;
+            };
+            let mut expected: Vec<_> = donor["families"]
+                .as_object()
+                .unwrap()
+                .iter()
+                .map(|(family, tier)| ReferenceImbuementAllowance {
+                    family: serde_json::from_value(Value::String(family.clone())).unwrap(),
+                    tier: match tier.as_str().unwrap() {
+                        "2" => ReferenceImbuementTier::Two,
+                        "3" => ReferenceImbuementTier::Three,
+                        "10" => ReferenceImbuementTier::Ten,
+                        value => panic!("unexpected donor tier {value} on {key}"),
+                    },
+                })
+                .collect();
+            assert!(!expected.is_empty(), "{key}");
+            expected.sort_unstable();
+            let mut actual = allowances.clone();
+            actual.sort_unstable();
+            if actual != expected || profile.excluded_families != Field::Known(vec![]) {
+                wrong_families.push(id);
+            }
+        }
+        assert!(
+            wrong_slots.is_empty() && wrong_families.is_empty(),
+            "wrong slot counts: {wrong_slots:?}, wrong family allowances: {wrong_families:?}"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn m18_exit_carpet_uses_validated_native_collision_and_ground_custody() {
         // Crystal201189f items.xml:35502-35504 and the pinned appearance's
         // clip/unmove flags: the source timeout exit is carpet17400, not a wall.

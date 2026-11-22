@@ -6,6 +6,7 @@ import argparse
 import copy
 import importlib
 import first_dragon_item_profiles
+import imbuement_item_profiles
 import m01c_key_door_equipment_pin
 import qengine_reward_equipment_pin
 import json
@@ -83,6 +84,7 @@ def registered_source_document(root, document):
     if forge:
         admitted = equipped.forge_owners(root, forge)
         project({'records': [rows[key] for key in admitted]}, admitted)
+    imbuement_item_profiles.apply_crystal_audit(root, result, require_all=False)
     return result
 
 
