@@ -667,7 +667,7 @@ fn storage_owner_preserves_order_and_rejects_unowned_effects() -> Result<(), Npc
 
 // The accepted source cohorts from both parents retain these exact predecessors.
 // Draconia has no historical definition; Stag and schema2 have separate owners.
-const EXPECTED_LEGACY_QUESTS: [&str; 25] = [
+const EXPECTED_LEGACY_QUESTS: [&str; 27] = [
     "oteryn:quest.a_father_s_burden_quest",
     "oteryn:quest.a_pirates_tail",
     "oteryn:quest.bigfoot_s_burden_quest",
@@ -683,6 +683,8 @@ const EXPECTED_LEGACY_QUESTS: [&str; 25] = [
     "oteryn:quest.kilmaresh_quest",
     "oteryn:quest.marlin_trophy_quest",
     "oteryn:quest.outfit_and_addon_quests",
+    "oteryn:quest.the_ape_city_quest",
+    "oteryn:quest.the_beginning_quest",
     "oteryn:quest.the_djinn_war_efreet_faction",
     "oteryn:quest.the_djinn_war_marid_faction",
     "oteryn:quest.the_dream_courts_quest",
@@ -815,6 +817,8 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.marlin_trophy_quest",
         "oteryn:quest.outfit_and_addon_quests",
         "oteryn:quest.kilmaresh_quest",
+        "oteryn:quest.the_ape_city_quest",
+        "oteryn:quest.the_beginning_quest",
         "oteryn:quest.the_djinn_war_efreet_faction",
         "oteryn:quest.the_djinn_war_marid_faction",
         "oteryn:quest.the_dream_courts_quest",
@@ -1221,7 +1225,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .filter(|program| program.document.schema == 1)
             .count(),
-        28
+        30
     );
     // Canonical main adds the exact source cohort checked above; schema2
     // Mystery has no fabricated legacy definition or absent-value mapping.
@@ -1700,6 +1704,157 @@ fn m54_citizen_source_aliases_require_both_local_sagas() -> Result<(), NpcRuleEr
     assert_eq!(
         plan.track_changes[0].key,
         "oteryn:quest-progress/source-completion/outfit_and_addon_quests/citizen-rook"
+    );
+    Ok(())
+}
+
+#[test]
+fn ape_city_and_beginning_programs_are_admitted_by_the_production_loader()
+-> Result<(), NpcRuleError> {
+    let loaded = super::super::loader::load_embedded_quest_state("ape-city-and-beginning")
+        .map_err(|error| NpcRuleError::Invalid(format!("{error:?}")))?;
+    let source = NpcRuleCatalog::runtime()?;
+    for npc in [
+        "oteryn:npc.hairycles",
+        "oteryn:npc.santiago",
+        "oteryn:npc.zirella",
+        "oteryn:npc.carlos",
+    ] {
+        assert!(
+            source.admitted_for_npc(npc, loaded.catalogue())?.is_some(),
+            "{npc}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn ape_city_final_report_requires_the_destroyed_monument() -> Result<(), NpcRuleError> {
+    let loaded = super::super::loader::load_embedded_quest_state("ape-city-final-report")
+        .map_err(|error| NpcRuleError::Invalid(format!("{error:?}")))?;
+    let npc = "oteryn:npc.hairycles";
+    let source = NpcRuleCatalog::runtime()?
+        .admitted_for_npc(npc, loaded.catalogue())?
+        .ok_or_else(|| NpcRuleError::Invalid("Hairycles".into()))?;
+    let stage = "oteryn:quest-progress/quest/u7_6/the_ape_city/questline";
+    let monument = "oteryn:quest-progress/quest/u7_6/the_ape_city/snake_destroyer";
+    let mut facts = Facts::empty();
+    facts.tracks.insert(stage.into(), 17);
+    let pending = source
+        .plan_item_exchange(&facts.input(npc, "mission", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("mission reminder".into()))?;
+    assert!(pending.track_changes.is_empty());
+    assert!(!pending.completes);
+
+    facts.tracks.insert(monument.into(), 1);
+    let finished = source
+        .plan_item_exchange(&facts.input(npc, "mission", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("mission report".into()))?;
+    assert!(finished.completes);
+    assert_eq!(finished.track_changes[0].key, stage);
+    assert_eq!(finished.track_changes[0].after, 18);
+    assert!(finished.effects.contains(&NpcRuleEffect::Achievement {
+        name: "Friend of the Apes".into(),
+    }));
+
+    facts.tracks.insert(stage.into(), 18);
+    let replay = source
+        .plan_item_exchange(&facts.input(npc, "mission", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("finished reply".into()))?;
+    assert!(!replay.completes);
+    assert!(replay.track_changes.is_empty());
+    Ok(())
+}
+
+#[test]
+fn beginning_reports_bind_three_legs_and_the_wood_delivery() -> Result<(), NpcRuleError> {
+    let loaded = super::super::loader::load_embedded_quest_state("beginning-reports")
+        .map_err(|error| NpcRuleError::Invalid(format!("{error:?}")))?;
+    let source = NpcRuleCatalog::runtime()?;
+    let npc = "oteryn:npc.santiago";
+    let program = source
+        .admitted_for_npc(npc, loaded.catalogue())?
+        .ok_or_else(|| NpcRuleError::Invalid("Santiago".into()))?;
+    let mut facts = Facts::empty();
+    facts.tracks.insert(
+        "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage".into(),
+        6,
+    );
+    let leg = NpcItemKey {
+        item: "oteryn:item.tibia.i7882".into(),
+        subtype: None,
+    };
+    for count in [2, 3] {
+        facts.inventory.items.insert(leg.clone(), count);
+        let mut input = facts.input(npc, "hi", 0);
+        input.trigger = NpcRuleTrigger::Greet;
+        let plan = program
+            .plan_item_exchange(&input)?
+            .ok_or_else(|| NpcRuleError::Invalid("Santiago report".into()))?;
+        assert_eq!(
+            plan.effects
+                .contains(&NpcRuleEffect::Experience { amount: 100 }),
+            count == 3
+        );
+        assert_eq!(
+            plan.inventory_after.items.get(&leg).copied().unwrap_or(0),
+            if count == 3 { 0 } else { count }
+        );
+    }
+    let npc = "oteryn:npc.zirella";
+    let program = source
+        .admitted_for_npc(npc, loaded.catalogue())?
+        .ok_or_else(|| NpcRuleError::Invalid("Zirella".into()))?;
+    for value in [6, 7] {
+        facts.tracks.insert(
+            "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage".into(),
+            value,
+        );
+        let plan = program.plan_storage(&facts.input(npc, "yes", 8))?;
+        assert_eq!(
+            plan.is_some_and(|plan| {
+                plan.effects
+                    .contains(&NpcRuleEffect::Experience { amount: 50 })
+                    && plan.track_changes.iter().all(|change| change.after == 8)
+            }),
+            value == 7
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn beginning_carlos_outfit_branch_completes_the_tutorial() -> Result<(), NpcRuleError> {
+    let loaded = super::super::loader::load_embedded_quest_state("beginning-completion")
+        .map_err(|error| NpcRuleError::Invalid(format!("{error:?}")))?;
+    let npc = "oteryn:npc.carlos";
+    let source = NpcRuleCatalog::runtime()?
+        .admitted_for_npc(npc, loaded.catalogue())?
+        .ok_or_else(|| NpcRuleError::Invalid("Carlos".into()))?;
+    let greet = "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage";
+    let log = "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log";
+    let mut facts = Facts::empty();
+    facts.tracks.insert(greet.into(), 1);
+    facts.tracks.insert(log.into(), 1);
+    assert!(
+        source
+            .plan_storage(&facts.input(npc, "outfit", 0))?
+            .is_none()
+    );
+    let plan = source
+        .plan_storage(&facts.input(npc, "outfit", 1))?
+        .ok_or_else(|| NpcRuleError::Invalid("Carlos outfit branch".into()))?;
+    assert!(plan.completes);
+    assert_eq!(plan.track_changes.len(), 2);
+    assert!(
+        plan.track_changes
+            .iter()
+            .any(|change| change.key == greet && change.after == 8)
+    );
+    assert!(
+        plan.track_changes
+            .iter()
+            .any(|change| change.key == log && change.after == 7)
     );
     Ok(())
 }

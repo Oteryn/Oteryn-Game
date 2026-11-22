@@ -828,6 +828,36 @@ mod tests {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
         assert_eq!(expected.len() - before_qmech_native, 69);
+        let before_ape_city_and_beginning = expected.len();
+        for suffix in [
+            "ape-city-cask-32495",
+            "ape-city-cask-32497",
+            "ape-city-cask-32499",
+            "ape-city-cask-32501",
+            "ape-city-cask-32503",
+            "ape-city-cask-32505",
+            "ape-city-cask-32507",
+            "ape-city-catacombs-entry",
+            "ape-city-decipher",
+            "ape-city-destroy-monument",
+            "ape-city-holy-hair",
+            "ape-city-lever-1",
+            "ape-city-lever-2",
+            "ape-city-lever-3",
+            "ape-city-lever-4",
+            "ape-city-lever-5",
+            "ape-city-lever-6",
+            "ape-city-wall-1040",
+            "ape-city-wall-1041",
+            "ape-city-witches-cap",
+            "beginning-santiago-cellar",
+            "beginning-santiago-coat",
+            "beginning-zirella-rope",
+            "beginning-zirella-shovel",
+        ] {
+            assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
+        }
+        assert_eq!(expected.len() - before_ape_city_and_beginning, 24);
         assert_eq!(
             callbacks
                 .into_iter()

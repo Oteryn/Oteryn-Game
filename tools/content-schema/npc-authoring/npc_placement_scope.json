@@ -62,6 +62,7 @@
     "oteryn:npc.guide_jonathan",
     "oteryn:npc.guide_tiko",
     "oteryn:npc.habdel",
+    "oteryn:npc.hairycles",
     "oteryn:npc.hanna",
     "oteryn:npc.henricus",
     "oteryn:npc.hjaern",
@@ -101,6 +102,7 @@
     "oteryn:npc.norma",
     "oteryn:npc.norman_the_foreman",
     "oteryn:npc.obi",
+    "oteryn:npc.padreia",
     "oteryn:npc.palimuth",
     "oteryn:npc.para_norbert",
     "oteryn:npc.paulie",
@@ -121,6 +123,7 @@
     "oteryn:npc.sinatuki",
     "oteryn:npc.snake_eye",
     "oteryn:npc.spectulus",
+    "oteryn:npc.the_blind_prophet",
     "oteryn:npc.the_first_dragon",
     "oteryn:npc.the_forgemaster",
     "oteryn:npc.the_oracle",
@@ -483,6 +486,63 @@
         "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
         "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
       }
+    },
+    "oteryn:npc.hairycles": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal world NPC spawn at line 977.",
+      "placements": [
+        {
+          "position": {
+            "x": 32826,
+            "y": 32574,
+            "z": 6
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.padreia": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal world NPC spawn at line 1664.",
+      "placements": [
+        {
+          "position": {
+            "x": 32302,
+            "y": 31814,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.the_blind_prophet": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal world NPC spawn at line 2221.",
+      "placements": [
+        {
+          "position": {
+            "x": 33021,
+            "y": 32604,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ]
     }
   }
 }

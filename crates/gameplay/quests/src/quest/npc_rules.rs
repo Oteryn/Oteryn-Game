@@ -509,6 +509,8 @@ impl NpcRuleCatalog {
             .get_or_init(|| {
                 let mut catalogue = Self::load_embedded()?;
                 let supplemental = Self::from_json_documents(&[
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/ape-city.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/beginning.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/m41-kilmaresh.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"),
@@ -547,6 +549,8 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.hero_of_rathleton_quest"
                                 | "oteryn:quest.hot_cuisine_quest"
                                 | "oteryn:quest.in_service_of_yalahar_quest"
+                                | "oteryn:quest.the_ape_city_quest"
+                                | "oteryn:quest.the_beginning_quest"
                                 | "oteryn:quest.the_paradox_tower_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
                                 | "oteryn:quest.the_djinn_war_efreet_faction"

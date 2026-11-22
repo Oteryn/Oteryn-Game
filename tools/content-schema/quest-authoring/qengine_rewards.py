@@ -1154,7 +1154,10 @@ def build():
             'rewards':rewards}]})
     greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
-    generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})
+    quest_shops = questl2_ready.djinn.shops(inputs, PIN)
+    ape_and_rook = json.loads((ROOT / 'content/quests/authoring/ape-city-and-beginning-shops.json').read_bytes())
+    quest_shops.extend(ape_and_rook['shops'])
+    generated['content/quests/shared-quest-shops.json'] = encoded({'schema': 1, 'shops': quest_shops})
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))
     access = load_module('qengine_l1_access', 'tools/content-schema/quest-authoring/qengine_access.py')
     worlds=[]

@@ -9,7 +9,8 @@
     "https://tibia.fandom.com/wiki/Little_Corym_Charlatan",
     "imports/canary/items-xml/items.xml#17449-17450",
     "content/creatures/definitions/spell-native-profiles.json#exact-ordinary-creature-corpse-bindings",
-    "imports/canary/items-xml/items.xml#corpse-capacity-and-decay"
+    "imports/canary/items-xml/items.xml#corpse-capacity-and-decay",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/vermins/cockroach.lua:17-41"
   ],
   "capacity_projections": [
     {
@@ -25,6 +26,7 @@
   "loot_creatures": {
     "oteryn:creature.behemoth": 5999,
     "oteryn:creature.bonebeast": 6030,
+    "oteryn:creature.cockroach": 7763,
     "oteryn:creature.dipthrah": 6031,
     "oteryn:creature.dworc_voodoomaster": 6055,
     "oteryn:creature.faun": 25815,
