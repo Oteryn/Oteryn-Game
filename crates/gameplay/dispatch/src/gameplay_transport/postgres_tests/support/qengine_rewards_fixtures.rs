@@ -198,7 +198,8 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l2-battle-mage-book" | "l2-battle-mage-epaulettes" => &["addon", "yes", "yes"],
         "l2-elementalist-start" | "l2-elementalist-base" => &["slime", "yes"],
         "l2-festive-mask-start" | "l2-festive-feather-start" => &["addons"],
-        "l3-demon-base" | "l3-demon-shield" | "l3-demon-helmet" => &["outfit", "yes"],
+        "l3-demon-base" | "l3-demon-shield" | "l3-demon-helmet"
+        | "l3-demon-shield-complete" | "l3-demon-helmet-complete" => &["outfit", "yes"],
         "l4-nobleman-first-start" => &["addon", "yes", "dress", "yes", "yes"],
         "l4-nobleman-second-start" => &["addon", "yes", "hat", "yes", "yes"],
         "l4-nobleman-first" | "l4-nobleman-second" => &["addon"],

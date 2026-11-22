@@ -47,13 +47,15 @@ pub(super) fn scenario(earned: bool) -> TestResult {
         let callback = oteryn_gameplay_quests::quest::world_callbacks::load()?
             .into_iter()
             .find(|row| row.key == KEY)
-            .ok_or("source four-vocation party/offering callback missing")?;
+            .ok_or("source five-vocation party/offering callback missing")?;
         let party = callback
             .effects
             .party_transfer
             .as_ref()
             .ok_or("party transfer")?;
-        assert_eq!(party.stations.len(), 4);
+        assert_eq!(party.stations.len(), 5);
+        assert_eq!(party.stations[4].vocation, "monk");
+        assert_eq!(callback.offerings[4].item, "oteryn:item.tibia.i50181");
         let fresh = prepare_current_session(&h).await?;
         let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -71,7 +73,7 @@ pub(super) fn scenario(earned: bool) -> TestResult {
         let generation = controller.active().ok_or("generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
         if earned {
-            for key in ["oteryn:item.tibia.i5102", "oteryn:item.tibia.i5103"] {
+            for key in ["oteryn:item.tibia.i5102", "oteryn:item.tibia.i5103", "oteryn:item.tibia.i50181"] {
                 assert!(
                     native.item_policy(key, "definition-r1").is_some(),
                     "source level20 gate requires native profile {key}"
@@ -159,8 +161,8 @@ pub(super) fn scenario(earned: bool) -> TestResult {
         super::tutorial_vitals_fixture::publish_native_activation(&h, &activated).await?;
         super::maintain_ready(&h.root).await?;
         let mut sessions = Vec::new();
-        for n in 0..3 {
-            let character = create_peer(&h, &authority, &evidence.evidence, n).await?;
+        for (n, starting_vocation) in [(0, "Monk"), (1, "Monk"), (2, "Monk"), (3, "Knight")] {
+            let character = create_peer(&h, &authority, &evidence.evidence, n, starting_vocation).await?;
             sessions.push(
                 super::activity_deadline_paging_fixtures::admit_created_member(
                     &h,
@@ -223,6 +225,7 @@ pub(super) fn scenario(earned: bool) -> TestResult {
             sessions[1],
             admitted.game_session_id,
             sessions[2],
+            sessions[3],
         ]
         .into_iter()
         .enumerate()
@@ -278,7 +281,7 @@ pub(super) fn scenario(earned: bool) -> TestResult {
                 .await
                 .map_err(debug)?;
             let build = convert_vocation(formula, &before, &party.stations[station].vocation)
-                .map_err(debug)?;
+                .map_err(|error| format!("vocation conversion at station {station}: {error:?}"))?;
             assert!(matches!(
                 h.root
                     .commit_character_build(
@@ -302,7 +305,7 @@ pub(super) fn scenario(earned: bool) -> TestResult {
                         formula
                     )
                     .await
-                    .map_err(debug)?,
+                    .map_err(|error| format!("vocation commit at station {station}: {error:?}"))?,
                 BuildCommitOutcome::Committed(_)
             ));
             let fence = current(&owner, session).await?;
@@ -348,7 +351,7 @@ pub(super) fn scenario(earned: bool) -> TestResult {
         }
         let real_sessions:i64 = sqlx::query_scalar("SELECT count(DISTINCT character_id) FROM game_durability_reconnect_sessions WHERE session_state=2").fetch_one(&h.pool).await?;
         assert_eq!(
-            real_sessions, 4,
+            real_sessions, 5,
             "every station uses an independently admitted Character"
         );
         if earned {
@@ -387,8 +390,8 @@ pub(super) fn scenario(earned: bool) -> TestResult {
             .await?;
         }
 
-        // Every item is born through native MINT/TRANSFER/DROP. Omit the fourth altar.
-        for (n, offering) in callback.offerings.iter().take(3).enumerate() {
+        // Every item is born through native MINT/TRANSFER/DROP. Omit the Monk altar.
+        for (n, offering) in callback.offerings.iter().take(4).enumerate() {
             let mut input = offering.clone();
             if n == 1 {
                 input.count = 7;
@@ -424,8 +427,8 @@ pub(super) fn scenario(earned: bool) -> TestResult {
             current(&owner, admitted.game_session_id)
                 .await?
                 .item_fence(),
-            &callback.offerings[3],
-            303,
+            &callback.offerings[4],
+            304,
             false,
         )
         .await?;
@@ -489,7 +492,7 @@ pub(super) fn scenario(earned: bool) -> TestResult {
             interrupted.is_err(),
             "an unknown durable outcome closes without an acknowledgement"
         );
-        assert_eq!(burns(&h).await?, 4);
+        assert_eq!(burns(&h).await?, 5);
         assert_eq!(positions(&owner, &members).await?, before);
         for (_, session) in &members {
             assert!(owner.has_pending_quest_callback(*session));
@@ -508,7 +511,7 @@ pub(super) fn scenario(earned: bool) -> TestResult {
             );
             assert!(!owner.has_pending_quest_callback(*session));
         }
-        assert_eq!(burns(&h).await?, 4);
+        assert_eq!(burns(&h).await?, 5);
         assert_eq!(
             owner.bundle_map().ok_or("map")?.facts.object_revision(key),
             8
@@ -518,7 +521,7 @@ pub(super) fn scenario(earned: bool) -> TestResult {
             UseDisposition::Committed,
             "exact original command replays the reconciled outcome"
         );
-        assert_eq!(burns(&h).await?, 4);
+        assert_eq!(burns(&h).await?, 5);
         assert_eq!(
             owner.bundle_map().ok_or("map")?.facts.object_revision(key),
             8
@@ -532,13 +535,13 @@ pub(super) fn scenario(earned: bool) -> TestResult {
         assert_eq!(receipts, 1);
         let quantity:i64=sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_quest_callback_consumptions WHERE transition_key=$1").bind(KEY).fetch_one(&h.pool).await?;
         assert_eq!(
-            quantity, 10,
+            quantity, 11,
             "source remove() consumes the entire seven-apple stack and each other exact sacrifice"
         );
         let xp: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_xp_receipts")
             .fetch_one(&h.pool)
             .await?;
-        assert_eq!(xp, 4);
+        assert_eq!(xp, 5);
         let builds: Vec<(String, i64)> = sqlx::query_as(
             "SELECT cause,count(*) FROM game_character_build_receipts GROUP BY cause ORDER BY cause",
         )
@@ -546,7 +549,7 @@ pub(super) fn scenario(earned: bool) -> TestResult {
         .await?;
         assert_eq!(
             builds,
-            vec![("vocation_choice".into(), 1), ("vocation_trial".into(), 3)]
+            vec![("vocation_choice".into(), 1), ("vocation_trial".into(), 4)]
         );
         if earned {
             super::desert_earned_route_fixtures::earn(&mut owner, &mut admitted, &h).await?;
@@ -785,6 +788,7 @@ async fn create_peer(
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
     evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
     member: u8,
+    starting_vocation: &str,
 ) -> TestResult<[u8; 16]> {
     let account = crate::gameplay_transport::canonical_uuid(&id(120 + member));
     evidence
@@ -807,7 +811,7 @@ async fn create_peer(
         "account_id":account,
         "target_world_id":crate::gameplay_transport::canonical_uuid(&id(42)),
         "requested_name":format!("Desert A{}",char::from(b'a'+member)),
-        "requested_sex":"Male","requested_vocation":"Monk",
+        "requested_sex":"Male","requested_vocation":starting_vocation,
         "interpretation_context":{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"content-1","starter_template_revision":"starter-1"},
         "issued_at_source":now.to_string(),
         "expires_at_source":(now+120).to_string(),

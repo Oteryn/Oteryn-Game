@@ -128,6 +128,7 @@ CHECKS = (
     ["python3", "tools/content-schema/quest-authoring/arena_completion.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
     ["python3", "tools/content-schema/world-object-authoring/feroxa_static.py", "--check"],
+    ["python3", "tools/content-schema/world-object-authoring/blood_vestibule_ground.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
     ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
@@ -848,6 +849,7 @@ def main() -> int:
                  "build_srx3_omrafir_attacks.py", "build_srx3_w01_prepare_death.py"):
         run(["python3", native + name])
     run(["python3", native + "build_srx3_soul_war_death_events.py", "--refresh-native-pin"])
+    run(["python3", "tools/content-schema/world-object-authoring/blood_vestibule_ground.py"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])

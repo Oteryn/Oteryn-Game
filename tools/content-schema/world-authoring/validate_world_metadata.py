@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from convert_world_metadata import SCRIPT_TELEPORTS
+from quest_chest_bindings import REVISION as STARTUP_REVISION, STARTUP_TELEPORT_NAMESPACE
 from jsonschema import Draft202012Validator
 
 HERE = Path(__file__).resolve().parent
@@ -138,10 +139,16 @@ def family_records(
                 "revision": "definition-r1",
             }:
                 errors.append(f"{key}: source binding target differs from identity")
+            expected_revision = (
+                STARTUP_REVISION
+                if family == "Transition.Teleport"
+                and bound.get("identity_namespace") == STARTUP_TELEPORT_NAMESPACE
+                else summary["source"].get("revision")
+            )
             if (
                 family not in OWN_SOURCE_REVISION
                 and bound.get("identity_namespace") != WIKI_NAMESPACE
-                and bound.get("source_revision") != summary["source"].get("revision")
+                and bound.get("source_revision") != expected_revision
             ):
                 errors.append(
                     f"{key}: source binding revision differs from the pinned source"

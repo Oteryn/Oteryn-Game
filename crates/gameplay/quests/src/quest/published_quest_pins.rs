@@ -73,6 +73,28 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
 // new rules bound to the new hash. Existing absent-track defaults did not change.
 const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
+    // Saved definitions from main at 3e099164 precede the Simon and Demon reward additions.
+    (
+        "oteryn:quest.deeper_fibula_quest",
+        hash(b"525b4c15a0f707d9201bedf573ea32e6b17b335a9328b2db89b088c9ab84411d"),
+        &[hash(
+            b"cf4bbe71022ae339892baec90149fb287837d1ae9736cc70f4b27fdd7cb22088",
+        )],
+    ),
+    (
+        "oteryn:quest.demon_helmet_quest",
+        hash(b"1b75daf7bd1219fec3fff46027cef7f6099d78b22782ac9b84cb54575c733cd4"),
+        &[hash(
+            b"d8dc7ff3be9461581bca7600168cf4ee5de64d90e1ff622e52cabd7309a06028",
+        )],
+    ),
+    (
+        "oteryn:quest.demon_oak",
+        hash(b"4a22d6fc365d36435dd7805abddc6c90fd88ac273cd39fb3d2f4aa98e5aa7201"),
+        &[hash(
+            b"057ad49a3c234eed32bb2eec994e78225d67424ba67796d099844eaa3d454a8e",
+        )],
+    ),
     (
         "oteryn:quest.ferumbras_ascension_quest",
         hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),

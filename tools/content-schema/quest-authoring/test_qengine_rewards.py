@@ -7,6 +7,21 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_demon_outfits_award_true_dedication_only_on_final_addon(self):
+        rewards = {row['key'].split('/')[-1]: row for row in self.callbacks['callbacks']}
+        self.assertIsNone(rewards['l3-demon-base']['achievement'])
+        for addon, other_bit in [('shield', 2), ('helmet', 1)]:
+            with self.subTest(addon=addon):
+                name = f'l3-demon-{addon}'
+                self.assertIsNone(rewards[name]['achievement'])
+                complete = rewards[name + '-complete']
+                self.assertEqual(complete['achievement'], 'oteryn:achievement/true_dedication')
+                self.assertEqual(complete['requires_addons'], [
+                    {'outfit': 'oteryn:outfit.demon', 'addons': other_bit},
+                ])
+                self.assertEqual(rewards[name]['requires'][-1]['maximum'] + 1,
+                                 complete['requires'][-1]['minimum'])
+
     def test_royal_costume_completes_only_after_crown_exchange(self):
         rows = {row['key'].split('/')[-1]: row for row in self.callbacks['callbacks']}
         for name, before, after in [('base', -1, 1), ('shield', 1, 2), ('crown', 2, 3)]:
@@ -480,6 +495,23 @@ class QuestRewards(unittest.TestCase):
             with self.assertRaises(ValueError):
                 q.validate_callbacks(bad)
 
+    def test_simon_donations_and_numbered_key_share_the_fibula_rewards_owner(self):
+        fibula=json.loads(self.outputs['content/quests/npc-callbacks/fibula.json'])
+        sale={c['key'].split('/')[-1]:c for c in fibula['callbacks']
+              if c['npc']=='oteryn:npc.simon_the_beggar'}
+        self.assertEqual(set(sale), {
+            'fibula-simon-first-donation', 'fibula-simon-second-donation',
+            'fibula-simon-key', 'fibula-simon-restart',
+        })
+        for suffix, cost, topic in [('first-donation',100,9), ('second-donation',500,10), ('key',200,11)]:
+            row=sale['fibula-simon-'+suffix]
+            self.assertEqual(row['fee'], {'gold':cost, 'include_bank':True})
+            self.assertEqual((row['topic'],row['keywords']), (topic,['yes']))
+        key=sale['fibula-simon-key']
+        self.assertTrue(key['repeatable'])
+        self.assertEqual(key['give'], {'item':'oteryn:item.tibia.i2968',
+                                       'count':1, 'contents':[], 'key_number':3940})
+
     def test_fibula_terminal_requires_original_receipts_and_native_level_without_duplicate_loot(self):
         fibula=json.loads(self.outputs['content/quests/npc-callbacks/fibula.json'])
         terminal,=[c for c in fibula['callbacks'] if c['key'].endswith('/fibula-complete')]
@@ -497,7 +529,7 @@ class QuestRewards(unittest.TestCase):
         callbacks=self.callbacks['callbacks'] + self.l13_callbacks['callbacks']
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-','l13-','m36-','qb-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),97)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),99)
         self.assertEqual(sum(c['outfit'] is None for c in callbacks),148)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
