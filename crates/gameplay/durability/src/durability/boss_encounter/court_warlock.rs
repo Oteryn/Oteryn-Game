@@ -8,17 +8,8 @@ use super::super::item_transfer::CurrentCharacterItemFence;
 use super::super::runtime_scope_assignment::{NodeIncarnationProof, assignment_scope_key};
 use super::super::{DurabilityError, DurabilityRoot};
 use super::cooldown_storage::{self, BossCooldownAdmissionData, BossCooldownChange, BossRewardKey};
-use crate::domain::CharacterId;
-use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
-use oteryn_gameplay_entities::carrier::encounter_access::{
-    InstalledQuestEncounterProof, PublishedQuestEncounterProof,
-};
 use oteryn_gameplay_quests::quest::world_callbacks::court_warlock as source;
 use sqlx::{Postgres, Transaction};
-
-const RESERVED: i16 = 1;
-const PUBLISHED: i16 = 2;
-const REFUNDED: i16 = 3;
 
 #[derive(Clone, Copy)]
 pub enum SourceBossLever {
@@ -35,19 +26,8 @@ pub struct SourceBossReservation {
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum SourceBossAdmission {
-    Reserve,
+    Commit,
     Reconcile,
-    Publish,
-    ConfirmProjection(InstalledQuestEncounterProof),
-    CommitPublication(InstalledQuestEncounterProof),
-    SealProjection(PublishedQuestEncounterProof),
-    Refund,
-}
-
-/// Exact recovery candidate. The read does not authorize settlement.
-pub struct SourceBossRecovery {
-    scope: RuntimeScopeRefV1,
-    admission: [u8; 16],
 }
 
 impl SourceBossLever {
@@ -68,8 +48,9 @@ impl SourceBossLever {
 }
 
 impl DurabilityRoot {
-    /// Reserve the exact staging party, authorize publication, and seal the
-    /// installed native projection. The publication decision ends refund eligibility.
+    /// Charge the exact staging party and record the paid admission atomically.
+    /// The live owner can reconcile an ambiguous commit before publishing its staged room.
+    /// The paid admission survives owner loss (BOSS-RAID-0 §6.4).
     pub async fn source_boss_lever_admission(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -89,19 +70,6 @@ impl DurabilityRoot {
         party.sort_by_key(|fence| *fence.character_id.as_bytes());
         let scope = party[0].runtime_scope;
         let generation = party[0].scope_ownership_generation;
-        let proof_matches = match operation {
-            SourceBossAdmission::ConfirmProjection(proof)
-            | SourceBossAdmission::CommitPublication(proof) => {
-                proof.matches(admission, scope, generation)
-            }
-            SourceBossAdmission::SealProjection(proof) => {
-                proof.matches(admission, scope, generation)
-            }
-            _ => true,
-        };
-        if !proof_matches {
-            return Ok(false);
-        }
         if party
             .windows(2)
             .any(|pair| pair[0].character_id == pair[1].character_id)
@@ -122,6 +90,11 @@ impl DurabilityRoot {
             if !assert_runtime_scope_fence(&mut tx, scope, generation, &node).await? {
                 return Ok(false);
             }
+            for fence in &party {
+                if assert_item_only_fence(&mut tx, fence, &node).await?.is_err() {
+                    return Ok(false);
+                }
+            }
             let keys = party.iter().map(|fence| {
                 BossRewardKey::new(fence.character_id, lever.boss())
                     .map_err(|_| DurabilityError::InvalidStoredState)
@@ -129,75 +102,20 @@ impl DurabilityRoot {
             let party_bytes: Vec<u8> = keys.iter()
                 .flat_map(|key| key.character.as_bytes().iter().copied()).collect();
             let scope_key = assignment_scope_key(scope);
-            let row: Option<(bool, i16, bool, bool, bool)> = sqlx::query_as(
-                "SELECT scope_key=$2 AND scope_generation=$3::text::numeric AND boss_key=$4 AND party=$5,
-                        state,projection_pending,installation_confirmed,publication_committed
-                   FROM game_source_boss_admissions
-                  WHERE admission=encode($1,'hex')::uuid FOR UPDATE",
+            let exact: Option<bool> = sqlx::query_scalar(
+                "SELECT scope_key=$2 AND scope_generation=$3::text::numeric AND boss_key=$4 AND party=$5
+                   FROM game_source_boss_admissions WHERE admission=encode($1,'hex')::uuid",
             )
             .bind(admission.as_slice()).bind(scope_key.as_slice()).bind(generation.get().to_string())
             .bind(lever.boss()).bind(&party_bytes).fetch_optional(&mut *tx).await?;
-
-            if row.is_some_and(|(exact, ..)| !exact) {
-                return Ok(false);
+            if operation == SourceBossAdmission::Reconcile {
+                return if exact == Some(true) {
+                    exact_cooldowns(&mut tx, &keys, &admission).await
+                } else {
+                    Ok(false)
+                };
             }
-            if operation == SourceBossAdmission::Refund {
-                if matches!(row, Some((true, RESERVED, false, _, false) | (true, PUBLISHED, true, _, false))) {
-                    refund_source_admission(&mut tx, &keys, &admission).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
-                }
-                return Ok(true);
-            }
-            match (operation, row) {
-                // These replays only read the previously fenced decisions.
-                (SourceBossAdmission::Publish, Some((true, PUBLISHED, ..)))
-                | (SourceBossAdmission::SealProjection(_), Some((true, PUBLISHED, false, true, true))) => {
-                    return Ok(true);
-                }
-                (SourceBossAdmission::ConfirmProjection(_) | SourceBossAdmission::CommitPublication(_)
-                    | SourceBossAdmission::SealProjection(_), Some((true, PUBLISHED, true, ..))) => {}
-                (SourceBossAdmission::ConfirmProjection(_) | SourceBossAdmission::CommitPublication(_)
-                    | SourceBossAdmission::SealProjection(_), _)
-                | (_, Some((true, PUBLISHED, ..))) => return Ok(false),
-                _ => {}
-            }
-            for fence in &party {
-                if assert_item_only_fence(&mut tx, fence, &node).await?.is_err() {
-                    return Ok(false);
-                }
-            }
-            if let Some((true, PUBLISHED, true, installed, published)) = row {
-                if !exact_cooldowns(&mut tx, &keys, &admission).await? {
-                    return Ok(false);
-                }
-                match operation {
-                    SourceBossAdmission::ConfirmProjection(_) if !installed => {
-                        confirm_source_installation(&mut tx, &admission).await?;
-                    }
-                    SourceBossAdmission::ConfirmProjection(_) => {}
-                    SourceBossAdmission::CommitPublication(_) if installed && !published => {
-                        commit_source_publication(&mut tx, &admission).await?;
-                    }
-                    SourceBossAdmission::CommitPublication(_) if published => {}
-                    SourceBossAdmission::SealProjection(_) if published => {
-                        seal_source_projection(&mut tx, &admission).await?;
-                    }
-                    _ => return Ok(false),
-                }
-                commit_semantic_transaction(tx, deadline).await?;
-                return Ok(true);
-            }
-            if row == Some((true, RESERVED, false, false, false)) {
-                if !exact_cooldowns(&mut tx, &keys, &admission).await? {
-                    return Ok(false);
-                }
-                if operation == SourceBossAdmission::Publish {
-                    authorize_source_publication(&mut tx, &admission).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
-                }
-                return Ok(true);
-            }
-            if row.is_some() || operation != SourceBossAdmission::Reserve {
+            if exact.is_some() {
                 return Ok(false);
             }
 
@@ -231,107 +149,18 @@ impl DurabilityRoot {
             if change != BossCooldownChange::Applied {
                 return Ok(false);
             }
-            sqlx::query(
-                "INSERT INTO game_source_boss_admissions(admission,scope_key,scope_generation,boss_key,party,state)
-                 VALUES(encode($1,'hex')::uuid,$2,$3::text::numeric,$4,$5,$6)",
+            let inserted = sqlx::query(
+                "INSERT INTO game_source_boss_admissions(admission,scope_key,scope_generation,boss_key,party)
+                 VALUES(encode($1,'hex')::uuid,$2,$3::text::numeric,$4,$5)
+                 ON CONFLICT (admission) DO NOTHING",
             ).bind(admission.as_slice()).bind(scope_key.as_slice()).bind(generation.get().to_string())
-                .bind(lever.boss()).bind(party_bytes).bind(RESERVED).execute(&mut *tx).await?;
+                .bind(lever.boss()).bind(party_bytes).execute(&mut *tx).await?;
+            if inserted.rows_affected() != 1 {
+                return Ok(false);
+            }
             commit_semantic_transaction(tx, deadline).await?;
             Ok(true)
         })).await
-    }
-
-    /// Find at most one unsealed admission. With no candidate this only reads
-    /// the pending index, and it never waits for an in-flight admission row.
-    pub async fn source_boss_recovery(
-        &self,
-        scope: RuntimeScopeRefV1,
-    ) -> Result<Option<SourceBossRecovery>, DurabilityError> {
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    let admission: Option<Vec<u8>> = sqlx::query_scalar(
-                        "SELECT uuid_send(admission) FROM game_source_boss_admissions
-                          WHERE scope_key=$1 AND (state=1 OR (state=2 AND projection_pending))
-                          ORDER BY scope_generation,admission LIMIT 1 FOR UPDATE SKIP LOCKED",
-                    )
-                    .bind(assignment_scope_key(scope).as_slice())
-                    .fetch_optional(&mut *tx)
-                    .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
-                    admission
-                        .map(|admission| {
-                            let admission = admission
-                                .try_into()
-                                .map_err(|_| DurabilityError::InvalidStoredState)?;
-                            Ok(SourceBossRecovery { scope, admission })
-                        })
-                        .transpose()
-                })
-            })
-            .await
-    }
-
-    /// Revalidate the candidate against the ready owner and lock the exact row.
-    /// Return whether a refund was applied. A committed publication is sealed.
-    pub async fn settle_source_boss_recovery(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        generation: ScopeOwnershipGeneration,
-        candidate: SourceBossRecovery,
-    ) -> Result<bool, DurabilityError> {
-        let recovery = authority
-            .record_for(self)
-            .map_err(|_| DurabilityError::Unavailable)?;
-        let node = node.clone();
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    if !assert_runtime_scope_fence(&mut tx, candidate.scope, generation, &node)
-                        .await?
-                    {
-                        return Ok(false);
-                    }
-                    let row: Option<(String, Vec<u8>, bool)> = sqlx::query_as(
-                        "SELECT boss_key,party,publication_committed FROM game_source_boss_admissions
-                          WHERE scope_key=$1 AND scope_generation<=$2::text::numeric
-                            AND admission=encode($3,'hex')::uuid
-                            AND (state=1 OR (state=2 AND projection_pending)) FOR UPDATE",
-                    )
-                    .bind(assignment_scope_key(candidate.scope).as_slice())
-                    .bind(generation.get().to_string())
-                    .bind(candidate.admission.as_slice())
-                    .fetch_optional(&mut *tx)
-                    .await?;
-                    let Some((boss, party, published)) = row else {
-                        return Ok(false);
-                    };
-                    if published {
-                        seal_source_projection(&mut tx, &candidate.admission).await?;
-                        commit_semantic_transaction(tx, deadline).await?;
-                        return Ok(false);
-                    }
-                    let (members, _) = party.as_chunks::<16>();
-                    let keys = members
-                        .iter()
-                        .map(|&id| {
-                            let character = CharacterId::from_bytes(id)
-                                .map_err(|_| DurabilityError::InvalidStoredState)?;
-                            BossRewardKey::new(character, &boss)
-                                .map_err(|_| DurabilityError::InvalidStoredState)
-                        })
-                        .collect::<Result<Vec<_>, _>>()?;
-                    refund_source_admission(&mut tx, &keys, &candidate.admission).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(true)
-                })
-            })
-            .await
     }
 }
 
@@ -353,108 +182,4 @@ async fn exact_cooldowns(
         }
     }
     Ok(true)
-}
-
-async fn refund_source_admission(
-    tx: &mut Transaction<'_, Postgres>,
-    keys: &[BossRewardKey],
-    admission: &[u8; 16],
-) -> Result<(), DurabilityError> {
-    cooldown_storage::lock_reward_roots(tx, keys)
-        .await
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-    for key in keys {
-        sqlx::query(
-            "DELETE FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid
-              AND boss_key=$2 AND admission=encode($3,'hex')::uuid",
-        )
-        .bind(key.character.as_bytes().as_slice())
-        .bind(key.boss.as_str())
-        .bind(admission.as_slice())
-        .execute(&mut **tx)
-        .await?;
-    }
-    let changed = sqlx::query(
-        "UPDATE game_source_boss_admissions
-             SET state=$2, projection_pending=false, installation_confirmed=false
-          WHERE admission=encode($1,'hex')::uuid
-            AND (state=1 OR (state=2 AND projection_pending)) AND NOT publication_committed",
-    )
-    .bind(admission.as_slice())
-    .bind(REFUNDED)
-    .execute(&mut **tx)
-    .await?;
-    require_one_transition(changed.rows_affected())
-}
-
-async fn authorize_source_publication(
-    tx: &mut Transaction<'_, Postgres>,
-    admission: &[u8; 16],
-) -> Result<(), DurabilityError> {
-    let changed = sqlx::query(
-        "UPDATE game_source_boss_admissions SET state=$2, projection_pending=true
-          WHERE admission=encode($1,'hex')::uuid AND state=$3",
-    )
-    .bind(admission.as_slice())
-    .bind(PUBLISHED)
-    .bind(RESERVED)
-    .execute(&mut **tx)
-    .await?;
-    require_one_transition(changed.rows_affected())
-}
-
-async fn confirm_source_installation(
-    tx: &mut Transaction<'_, Postgres>,
-    admission: &[u8; 16],
-) -> Result<(), DurabilityError> {
-    let changed = sqlx::query(
-        "UPDATE game_source_boss_admissions SET installation_confirmed=true
-          WHERE admission=encode($1,'hex')::uuid AND state=$2
-            AND projection_pending AND NOT installation_confirmed",
-    )
-    .bind(admission.as_slice())
-    .bind(PUBLISHED)
-    .execute(&mut **tx)
-    .await?;
-    require_one_transition(changed.rows_affected())
-}
-
-async fn commit_source_publication(
-    tx: &mut Transaction<'_, Postgres>,
-    admission: &[u8; 16],
-) -> Result<(), DurabilityError> {
-    let changed = sqlx::query(
-        "UPDATE game_source_boss_admissions SET publication_committed=true
-          WHERE admission=encode($1,'hex')::uuid AND state=$2
-            AND projection_pending AND installation_confirmed AND NOT publication_committed",
-    )
-    .bind(admission.as_slice())
-    .bind(PUBLISHED)
-    .execute(&mut **tx)
-    .await?;
-    require_one_transition(changed.rows_affected())
-}
-
-async fn seal_source_projection(
-    tx: &mut Transaction<'_, Postgres>,
-    admission: &[u8; 16],
-) -> Result<(), DurabilityError> {
-    let changed = sqlx::query(
-        "UPDATE game_source_boss_admissions SET projection_pending=false
-          WHERE admission=encode($1,'hex')::uuid AND state=$2
-            AND projection_pending AND installation_confirmed AND publication_committed",
-    )
-    .bind(admission.as_slice())
-    .bind(PUBLISHED)
-    .execute(&mut **tx)
-    .await?;
-    require_one_transition(changed.rows_affected())
-}
-
-fn require_one_transition(changed: u64) -> Result<(), DurabilityError> {
-    if changed == 1 {
-        Ok(())
-    } else {
-        Err(DurabilityError::InvalidStoredState)
-    }
 }

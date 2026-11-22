@@ -80,6 +80,22 @@ fn cwarlock_stack_solo_exit_occupied_landing_postgres() -> TestResult {
     scenario(admin, 7)
 }
 
+#[test]
+fn cwarlock_successor_keeps_paid_cooldown_before_publication_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(admin, 8)
+}
+
+#[test]
+fn cwarlock_successor_keeps_paid_cooldown_after_publication_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(admin, 9)
+}
+
 fn scenario(_admin: String, mode: u8) -> TestResult {
     let started = std::time::Instant::now();
     super::kill_reward_e2e_fixtures::scenario_thread::run("cwarlock", move || {
@@ -330,7 +346,8 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                     )])
                     .map_err(debug)?;
             }
-            let mut peer = if mode == 5 {
+            let handoff = matches!(mode, 8 | 9);
+            let mut peer = if mode == 5 || handoff {
                 Some(
                     Box::pin(prepare_peer(
                         &h,
@@ -347,13 +364,31 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
             } else {
                 None
             };
+            use std::sync::atomic::Ordering;
+            let interrupted = mode == 8;
+            if interrupted {
+                owner.states.quest_callbacks.interrupt_source_boss_before_projection
+                    .store(true, Ordering::Release);
+            }
             let before = owner.owner_now().get();
-            assert_eq!(
-                use_lever(&owner, &admitted, &placement, 0, 4).await,
-                UseDisposition::Committed
-            );
+            let outcome = use_lever(&owner, &admitted, &placement, 0, 4).await;
             let began = owner.owner_now().get();
-            {
+            if interrupted {
+                assert_eq!(outcome, UseDisposition::Rejected);
+                assert!(!owner.states.quest_callbacks.interrupt_source_boss_before_projection
+                    .load(Ordering::Acquire));
+                let runtime = owner.runtime.lock().await;
+                let peer = peer.as_ref().ok_or("staged peer")?.runtime_actor.ok_or("peer actor")?;
+                for (actor, y) in [(deps.actor, 32146), (peer, 32145)] {
+                    let at = runtime.read_actor_position(actor).map_err(debug)?.position();
+                    assert_eq!((at.x, at.y, at.floor), (33842, y, 3));
+                }
+                assert_eq!(runtime.visible_entities().creatures.len(), 1, "staging did not remove the stale monster");
+                assert!(owner.states.spell_states.lock().await.encounter_phases.active
+                    .lock().map_err(|_| "phases")?.is_empty());
+                assert_eq!(crate::map::view::MapFacts::object_revision(world.facts(), key), 0);
+            } else {
+                assert_eq!(outcome, UseDisposition::Committed);
                 let runtime = owner.runtime.lock().await;
                 let at = runtime
                     .read_actor_position(deps.actor)
@@ -365,6 +400,30 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                     0,
                     "initial three-second delay"
                 );
+            }
+            if handoff {
+                if !interrupted {
+                    let runtime = owner.runtime.lock().await;
+                    let peer = peer.as_ref().ok_or("published peer")?.runtime_actor.ok_or("peer actor")?;
+                    let at = runtime.read_actor_position(peer).map_err(debug)?.position();
+                    assert_eq!((at.x, at.y, at.floor), (33838, 32141, 2));
+                    assert_eq!(owner.states.spell_states.lock().await.encounter_phases.active
+                        .lock().map_err(|_| "phases")?.len(), 1);
+                    assert_eq!(crate::map::view::MapFacts::object_revision(world.facts(), key), 1);
+                }
+                let mut party = Vec::new();
+                for member in [&admitted, peer.as_ref().ok_or("handoff peer")?] {
+                    let fence = owner.current_quest_fence(member.game_session_id)
+                        .await.map_err(|()| "handoff party fence")?.ok_or("missing member fence")?;
+                    party.push(fence.item_fence());
+                }
+                super::source_boss_handoff_fixtures::assert_paid_handoff(
+                    &h, &deps, &owner, crate::durability::boss_encounter::SourceBossLever::CourtWarlock, party,
+                ).await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
             }
             let cooldown: i64 = sqlx::query_scalar("SELECT available_at-floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_character_boss_cooldowns WHERE boss_key=$1")
                 .bind(source::BOSS).fetch_one(&h.pool).await?;

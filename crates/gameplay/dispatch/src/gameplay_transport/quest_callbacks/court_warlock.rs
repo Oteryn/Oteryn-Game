@@ -18,7 +18,7 @@ pub(super) struct SourceBossUse<'a> {
 
 #[cfg(test)]
 tokio::task_local! {
-    pub(in crate::gameplay_transport) static PRE_SOURCE_BOSS_CONFIRM:
+    pub(in crate::gameplay_transport) static PRE_SOURCE_BOSS_CHARGE:
         std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
 }
 
@@ -42,9 +42,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } = source_use;
         let QuestCause::Use(command) = cause else {
             return UseDisposition::Rejected;
-        };
-        let Ok(_turn) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
-            return UseDisposition::Exhausted;
         };
         let ready = self.execute_quest_encounter(
             runtime, states, actor, session, map, callback, key, revision, after, true, cause,
@@ -102,11 +99,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             lever,
             party,
         };
-        let reserved = self
-            .source_boss_admission(&admission, SourceBossAdmission::Reserve)
+        let Some(lever_projection) = map.facts.reserve_source_boss_lever(key, revision, after)
+        else {
+            return UseDisposition::Rejected;
+        };
+        let staged = match self.stage_source_boss(runtime, states, actor, session, &source_use) {
+            Ok(staged) => staged,
+            Err(disposition) => return disposition,
+        };
+        #[cfg(test)]
+        if let Ok(barrier) = PRE_SOURCE_BOSS_CHARGE.try_with(std::sync::Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
+        let retry = super::super::AdmissionRetryBudget::for_command(self.root);
+        let paid = retry
+            .retry_durability("source_boss_admission", || {
+                self.source_boss_admission(&admission, SourceBossAdmission::Commit)
+            })
             .await;
         #[cfg(test)]
-        let reserved = if matches!(reserved, Ok(true))
+        let paid = if matches!(paid, Ok(true))
             && self
                 .states
                 .quest_callbacks
@@ -115,78 +128,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Err(DurabilityError::CommitOutcomeUnknown)
         } else {
-            reserved
+            paid
         };
-        let uncertain = matches!(
-            reserved,
+        let paid = if matches!(
+            paid,
             Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::RootPassDeadlineExceeded)
-        );
-        let reserved = if uncertain {
-            super::super::AdmissionRetryBudget::for_command(self.root)
+        ) {
+            retry
                 .retry_durability("source_boss_admission_reconcile", || {
                     self.source_boss_admission(&admission, SourceBossAdmission::Reconcile)
                 })
                 .await
         } else {
-            reserved
+            paid
         };
-        match reserved {
-            Ok(true) => {}
-            Ok(false) => {
-                if uncertain {
-                    self.try_refund_source_boss_lever(&admission).await;
-                }
-                return UseDisposition::Rejected;
-            }
-            Err(error) => {
-                super::super::operator_event(&format!(
-                    "source_boss_admission_deferred reason={error:?}"
-                ));
-                return UseDisposition::Rejected;
-            }
-        }
-        let Some(lever_projection) = map.facts.reserve_source_boss_lever(key, revision, after)
-        else {
-            self.try_refund_source_boss_lever(&admission).await;
-            return UseDisposition::Rejected;
-        };
-        let staged = match self.stage_source_boss(
-            runtime, states, actor, session, map, callback, key, revision, after, cause,
-        ) {
-            Ok(staged) => staged,
-            Err(disposition) => {
-                self.try_refund_source_boss_lever(&admission).await;
-                return disposition;
-            }
-        };
-        // Authorize installation. The admission remains refundable until the
-        // durable publication decision.
-        let retry = super::super::AdmissionRetryBudget::for_command(self.root);
-        let publish = || self.source_boss_admission(&admission, SourceBossAdmission::Publish);
-        let publication = retry.retry_durability("source_boss_publish", publish).await;
-        #[cfg(test)]
-        let publication = if matches!(publication, Ok(true))
-            && self
-                .states
-                .quest_callbacks
-                .lose_source_boss_publish_ack
-                .swap(false, std::sync::atomic::Ordering::AcqRel)
-        {
-            Err(DurabilityError::CommitOutcomeUnknown)
-        } else {
-            publication
-        };
-        let publication = if matches!(
-            publication,
-            Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::RootPassDeadlineExceeded)
-        ) {
-            retry
-                .retry_durability("source_boss_publish_reconcile", publish)
-                .await
-        } else {
-            publication
-        };
-        match publication {
+        match paid {
             Ok(true) => {
                 #[cfg(test)]
                 if self
@@ -197,130 +153,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     return UseDisposition::Rejected;
                 }
-                let installed = staged.install(admission.id);
-                #[cfg(test)]
-                if let Ok(barrier) = PRE_SOURCE_BOSS_CONFIRM.try_with(std::sync::Arc::clone) {
-                    barrier.0.notify_one();
-                    barrier.1.notified().await;
-                }
-                let proof = installed.proof();
-                let confirm = || {
-                    self.source_boss_admission(
-                        &admission,
-                        SourceBossAdmission::ConfirmProjection(proof),
-                    )
-                };
-                let confirmed = retry
-                    .retry_durability("source_boss_projected", confirm)
-                    .await;
-                let confirmed = if matches!(
-                    confirmed,
-                    Err(DurabilityError::CommitOutcomeUnknown
-                        | DurabilityError::RootPassDeadlineExceeded)
-                ) {
-                    retry
-                        .retry_durability("source_boss_projected_reconcile", confirm)
-                        .await
-                } else {
-                    confirmed
-                };
-                match confirmed {
-                    Ok(true) => {
-                        #[cfg(test)]
-                        if self
-                            .states
-                            .quest_callbacks
-                            .interrupt_source_boss_after_confirmation
-                            .swap(false, std::sync::atomic::Ordering::AcqRel)
-                        {
-                            return UseDisposition::Rejected;
-                        }
-                        // The decision precedes native publication. Any later
-                        // owner seals it and retains the cooldowns.
-                        let commit = || {
-                            self.source_boss_admission(
-                                &admission,
-                                SourceBossAdmission::CommitPublication(proof),
-                            )
-                        };
-                        let committed = retry
-                            .retry_durability("source_boss_commit_publication", commit)
-                            .await;
-                        let committed = if matches!(
-                            committed,
-                            Err(DurabilityError::CommitOutcomeUnknown
-                                | DurabilityError::RootPassDeadlineExceeded)
-                        ) {
-                            retry
-                                .retry_durability(
-                                    "source_boss_commit_publication_reconcile",
-                                    commit,
-                                )
-                                .await
-                        } else {
-                            committed
-                        };
-                        match committed {
-                            Ok(true) => {}
-                            Ok(false) => return UseDisposition::Rejected,
-                            Err(error) => {
-                                super::super::operator_event(&format!(
-                                    "source_boss_publication_commit_deferred reason={error:?}"
-                                ));
-                                return UseDisposition::Rejected;
-                            }
-                        }
-                        let proof = self.publish_installed_source_boss(
-                            installed,
-                            states,
-                            map,
-                            lever_projection,
-                        );
-                        #[cfg(test)]
-                        let fail_seal = self
-                            .states
-                            .quest_callbacks
-                            .defer_source_boss_seal
-                            .swap(false, std::sync::atomic::Ordering::AcqRel);
-                        #[cfg(not(test))]
-                        let fail_seal = false;
-                        let sealed = if fail_seal {
-                            Err(DurabilityError::CommitRejected)
-                        } else {
-                            retry
-                                .retry_durability("source_boss_seal", || {
-                                    self.source_boss_admission(
-                                        &admission,
-                                        SourceBossAdmission::SealProjection(proof),
-                                    )
-                                })
-                                .await
-                        };
-                        if !matches!(sealed, Ok(true)) {
-                            super::super::operator_event(&format!(
-                                "source_boss_seal_deferred result={sealed:?}"
-                            ));
-                        }
-                        UseDisposition::Committed
-                    }
-                    // A refused or unacknowledged installation remains pending
-                    // for the recovery cycle. Dropping it rolls back the carrier.
-                    Ok(false) => UseDisposition::Rejected,
-                    Err(error) => {
-                        super::super::operator_event(&format!(
-                            "source_boss_projection_deferred reason={error:?}"
-                        ));
-                        UseDisposition::Rejected
-                    }
-                }
+                self.publish_source_boss(staged, states, map, lever_projection);
+                UseDisposition::Committed
             }
-            Ok(false) => {
-                self.try_refund_source_boss_lever(&admission).await;
-                UseDisposition::Rejected
-            }
+            Ok(false) => UseDisposition::Rejected,
             Err(error) => {
                 super::super::operator_event(&format!(
-                    "source_boss_publish_deferred reason={error:?}"
+                    "source_boss_admission_deferred reason={error:?}"
                 ));
                 UseDisposition::Rejected
             }
@@ -340,54 +179,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.reset_epoch,
                 operation,
             )
-            .await
-    }
-
-    async fn try_refund_source_boss_lever(&self, admission: &SourceBossReservation) {
-        if let Err(error) = self
-            .source_boss_admission(admission, SourceBossAdmission::Refund)
-            .await
-        {
-            super::super::operator_event(&format!("source_boss_refund_deferred reason={error:?}"));
-        }
-    }
-
-    pub(in crate::gameplay_transport) async fn settle_source_boss_lever(&self) {
-        if let Err(error) = self.recover_source_boss_admission().await {
-            super::super::operator_event(&format!(
-                "source_boss_recovery_deferred reason={error:?}"
-            ));
-        }
-    }
-
-    pub(in crate::gameplay_transport) async fn recover_source_boss_admission(
-        &self,
-    ) -> Result<bool, DurabilityError> {
-        use crate::foundation::RuntimeScopeRefV1;
-
-        let scope = RuntimeScopeRefV1::channel(self.world_id, self.channel_id);
-        let Some(candidate) = self.root.source_boss_recovery(scope).await? else {
-            return Ok(false);
-        };
-        // The source command excludes recovery for its whole turn. This gate
-        // does not hold the Channel runtime while SQL revalidates the decision.
-        let Ok(_turn) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
-            return Ok(false);
-        };
-        let generation = {
-            let Ok(runtime) = self.runtime.try_lock() else {
-                return Ok(false);
-            };
-            let Ok(fence) = runtime.owner_fence() else {
-                return Ok(false);
-            };
-            if runtime.binding().runtime_scope() != scope {
-                return Ok(false);
-            }
-            fence.generation()
-        };
-        self.root
-            .settle_source_boss_recovery(self.character, self.holder, generation, candidate)
             .await
     }
 }

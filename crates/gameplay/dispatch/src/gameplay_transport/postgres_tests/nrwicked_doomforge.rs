@@ -2,8 +2,6 @@
 use super::fixture::{Harness, debug};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::{channel_content_pin::ChannelContentPin, qualify_native_entry_room};
-use crate::durability::item_transfer::CurrentCharacterItemFence;
-use crate::durability::runtime_scope_assignment::{AssignmentReceipt, NodeIncarnationProof};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::boot::{boot, tests as fixture};
@@ -86,43 +84,27 @@ fn nrwicked_reconnect_grace_retains_the_fight_until_expiry() -> TestResult {
 }
 
 #[test]
-fn nrwicked_successor_refunds_only_unpublished_boss_admissions() -> TestResult {
+fn nrwicked_successor_keeps_paid_cooldown_before_publication() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run_case(admin, "nrwicked_successor_admission", FORGE, Scenario::AdmissionRecovery)
+    run_case(admin, "nrwicked_paid_before_publish", FORGE, Scenario::PaidBeforePublication)
 }
 
 #[test]
-fn nrwicked_successor_refunds_publication_interrupted_before_projection() -> TestResult {
+fn nrwicked_successor_keeps_paid_cooldown_after_publication() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run_case(admin, "nrwicked_projection_owner_loss", FORGE, Scenario::ProjectionOwnerLoss)
+    run_case(admin, "nrwicked_paid_after_publish", FORGE, Scenario::PaidAfterPublication)
 }
 
 #[test]
-fn nrwicked_successor_refunds_confirmed_installation_interrupted_before_publication() -> TestResult {
+fn nrwicked_charge_refuses_stale_party_session_without_payment() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run_case(admin, "nrwicked_confirmed_owner_loss", FORGE, Scenario::ConfirmedOwnerLoss)
-}
-
-#[test]
-fn nrwicked_successor_keeps_cooldown_when_seal_fails_after_publication() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    run_case(admin, "nrwicked_published_seal_failure", FORGE, Scenario::PublishedSealFailure)
-}
-
-#[test]
-fn nrwicked_confirm_with_stale_party_session_preserves_pending_admission() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    run_case(admin, "nrwicked_stale_confirmation", FORGE, Scenario::StaleConfirmation)
+    run_case(admin, "nrwicked_stale_charge", FORGE, Scenario::StaleCharge)
 }
 
 #[derive(Clone, Copy)]
@@ -132,11 +114,9 @@ enum Scenario {
     Abandonment,
     ReconnectGrace,
     AdmissionAckLost,
-    AdmissionRecovery,
-    ProjectionOwnerLoss,
-    ConfirmedOwnerLoss,
-    PublishedSealFailure,
-    StaleConfirmation,
+    PaidBeforePublication,
+    PaidAfterPublication,
+    StaleCharge,
 }
 
 fn run(admin: String, fixture_name: &'static str, destination: TilePos) -> TestResult {
@@ -545,16 +525,6 @@ async fn two_player_encounter(
             owner.owner_now(),
         )
         .ok_or("second spell state")?;
-    if matches!(case, Scenario::AdmissionRecovery) {
-        // The observer is the still-unpublished party; leave the actual lever to the first actor.
-        let closed = crate::map::floor::BundleDoors(facts);
-        let previous = runtime.read_actor_position(other).map_err(debug)?;
-        let position = MovementLocalPosition { x: i32::from(ARENA_EXIT.x), y: i32::from(ARENA_EXIT.y), floor: 14 };
-        let proof = crate::map::floor::prepare_quest_callback_teleport(
-            &runtime, owner.movement_cells(), other, other_session, previous, position, false, &closed,
-        ).map_err(debug)?;
-        runtime.commit_quest_relocation(vec![proof], || true).map_err(debug)?;
-    }
     drop(runtime);
     let players = [(first, session), (other, other_session)];
     for (actor, session) in players {
@@ -564,58 +534,38 @@ async fn two_player_encounter(
     let fence = owner.current_quest_fence(session).await
         .map_err(|()| "Arbaziloth lever fence")?.ok_or("missing Arbaziloth lever fence")?;
     use std::sync::atomic::Ordering;
-    let unpublished = if matches!(case, Scenario::AdmissionRecovery) {
-        use crate::durability::boss_encounter::{
-            SourceBossAdmission, SourceBossLever, SourceBossReservation,
-        };
-        let party = vec![owner.current_quest_fence(other_session).await
-            .map_err(|_| "unpublished party fence")?.ok_or("unpublished party")?.item_fence()];
-        let occurrence = id(202);
-        assert!(owner.root.source_boss_lever_admission(
-            owner.character,
-            owner.holder,
-            SourceBossReservation {
-                id: occurrence,
-                lever: SourceBossLever::Arbaziloth,
-                party,
-            },
-            owner.reset_epoch,
-            SourceBossAdmission::Reserve,
-        ).await?);
-        Some(occurrence)
-    } else {
-        None
+    use super::source_boss_handoff_fixtures::{
+        active_cooldowns, assert_paid_handoff, assert_paid_receipt,
     };
+    use crate::durability::boss_encounter::SourceBossLever;
+    let lever = SourceBossLever::Arbaziloth;
     if matches!(case, Scenario::AdmissionAckLost) {
         owner.states.quest_callbacks.lose_source_boss_commit_ack.store(true, Ordering::Release);
-        owner.states.quest_callbacks.lose_source_boss_publish_ack.store(true, Ordering::Release);
     }
-    if matches!(case, Scenario::AdmissionAckLost | Scenario::PublishedSealFailure) {
-        owner.states.quest_callbacks.defer_source_boss_seal.store(true, Ordering::Release);
-    }
-    if matches!(case, Scenario::ProjectionOwnerLoss) {
+    if matches!(case, Scenario::PaidBeforePublication) {
         owner.states.quest_callbacks.interrupt_source_boss_before_projection.store(true, Ordering::Release);
-    }
-    if matches!(case, Scenario::ConfirmedOwnerLoss) {
-        owner.states.quest_callbacks.interrupt_source_boss_after_confirmation.store(true, Ordering::Release);
     }
     let use_lever = owner.use_object(first, UseCommand {
         game_session_id: session, command_id: 1, item_fence: Some(fence.item_fence()),
     }, WorldObjectTarget { placement: lever_placement.clone(), expected_revision: 0 });
-    let outcome = if matches!(case, Scenario::StaleConfirmation) {
-        use crate::gameplay_transport::quest_callbacks::PRE_SOURCE_BOSS_CONFIRM;
+    let outcome = if matches!(case, Scenario::StaleCharge) {
+        use crate::gameplay_transport::quest_callbacks::PRE_SOURCE_BOSS_CHARGE;
         use std::sync::Arc;
         let barrier = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
-        let using_lever = PRE_SOURCE_BOSS_CONFIRM.scope(barrier.clone(), use_lever);
+        let using_lever = PRE_SOURCE_BOSS_CHARGE.scope(barrier.clone(), use_lever);
         tokio::pin!(using_lever);
         tokio::select! {
             outcome = &mut using_lever => return Err(format!(
-                "lever ended before installation confirmation: {:?}", outcome.disposition,
+                "lever ended before payment: {:?}", outcome.disposition,
             ).into()),
             () = barrier.0.notified() => {}
         }
+        assert!(
+            active_cooldowns(h, lever).await?.is_empty(),
+            "staging and the lever reservation must precede payment"
+        );
         // Advance the peer's actual durable generation after the party fences
-        // were captured and the pre-publication authorization committed.
+        // were captured and the room was staged, before charging.
         let changed = sqlx::query(
             "UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1
               WHERE game_session_id=encode($1,'hex')::uuid AND session_state=2",
@@ -629,10 +579,9 @@ async fn two_player_encounter(
     } else {
         use_lever.await
     };
-    if matches!(case, Scenario::ProjectionOwnerLoss | Scenario::ConfirmedOwnerLoss | Scenario::StaleConfirmation) {
+    if matches!(case, Scenario::PaidBeforePublication | Scenario::StaleCharge) {
         assert_eq!(outcome.disposition, UseDisposition::Rejected);
         assert!(!owner.states.quest_callbacks.interrupt_source_boss_before_projection.load(Ordering::Acquire));
-        assert!(!owner.states.quest_callbacks.interrupt_source_boss_after_confirmation.load(Ordering::Acquire));
         {
             let runtime = owner.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
@@ -647,33 +596,26 @@ async fn two_player_encounter(
         }
         let key = bundle::placement_key(LEVER.floor, LEVER.x, LEVER.y, 2).ok_or("lever key")?;
         assert_eq!(crate::map::view::MapFacts::object_revision(facts, key), 0);
-        assert_eq!(
-            source_boss_admission_state(h).await?,
-            [(2, true, matches!(case, Scenario::ConfirmedOwnerLoss), 2)],
-        );
-        if matches!(case, Scenario::StaleConfirmation) {
+        if matches!(case, Scenario::StaleCharge) {
+            assert!(active_cooldowns(h, lever).await?.is_empty());
+            let admissions: i64 = sqlx::query_scalar("SELECT count(*) FROM game_source_boss_admissions")
+                .fetch_one(&h.pool).await?;
+            assert_eq!(admissions, 0, "the stale party cannot be charged");
             return Ok(());
         }
-        return exercise_source_boss_handoff(h, deps, owner, SourceBossHandoff::Unpublished(fence.item_fence())).await;
+        let peer = owner.current_quest_fence(other_session).await
+            .map_err(|()| "peer fence")?.ok_or("missing peer fence")?;
+        return assert_paid_handoff(h, deps, owner, lever, vec![fence.item_fence(), peer.item_fence()]).await;
     }
     assert_eq!(outcome.disposition, UseDisposition::Committed, "production Arbaziloth lever");
-    if let Some(unpublished) = unpublished {
-        return exercise_source_boss_handoff(h, deps, owner, SourceBossHandoff::Mixed {
-            published: fence.item_fence(), unpublished,
-        }).await;
-    }
     if matches!(case, Scenario::AdmissionAckLost) {
         assert!(!owner.states.quest_callbacks.lose_source_boss_commit_ack.load(Ordering::Acquire));
-        assert!(!owner.states.quest_callbacks.lose_source_boss_publish_ack.load(Ordering::Acquire));
-        assert!(!owner.states.quest_callbacks.defer_source_boss_seal.load(Ordering::Acquire));
-        assert_eq!(source_boss_admission_state(h).await?, [(2, true, true, 2)]);
-        assert!(!owner.recover_source_boss_admission().await?);
-        assert_eq!(source_boss_admission_state(h).await?, [(2, false, true, 2)]);
-        let cooldowns: (i64, i64, i64) = sqlx::query_as(
-            "SELECT count(*), count(DISTINCT admission), count(DISTINCT available_at)
-               FROM game_character_boss_cooldowns WHERE boss_key='oteryn:boss.arbaziloth'",
-        ).fetch_one(&h.pool).await?;
-        assert_eq!(cooldowns, (2, 1, 1), "replay retains the paid party admission");
+        let cooldowns = active_cooldowns(h, lever).await?;
+        assert_eq!(cooldowns.len(), 2);
+        assert_eq!(cooldowns[0].1, cooldowns[1].1, "replay retains the same paid admission");
+        assert_eq!(cooldowns[0].2, cooldowns[1].2, "replay retains both deadlines");
+        let admission = cooldowns[0].1.as_slice().try_into()?;
+        assert_paid_receipt(h, &admission).await?;
     }
     if matches!(case, Scenario::HardWin) {
         // Complete the prior win's persisted count after admitting the current
@@ -715,8 +657,7 @@ async fn two_player_encounter(
         runtime.companion_snapshot(forgemaster).map_err(debug)?.health,
         10_500
     );
-    if matches!(case, Scenario::PublishedSealFailure) {
-        assert!(!owner.states.quest_callbacks.defer_source_boss_seal.load(Ordering::Acquire));
+    if matches!(case, Scenario::PaidAfterPublication) {
         assert_eq!(states.encounter_phases.active.lock().map_err(|_| "phases")?.len(), 1);
         let key = bundle::placement_key(LEVER.floor, LEVER.x, LEVER.y, 2).ok_or("lever key")?;
         assert_eq!(crate::map::view::MapFacts::object_revision(facts, key), 1);
@@ -724,9 +665,7 @@ async fn two_player_encounter(
         drop(runtime);
         let peer = owner.current_quest_fence(other_session).await
             .map_err(|()| "published peer fence")?.ok_or("missing published peer fence")?;
-        return exercise_source_boss_handoff(h, deps, owner, SourceBossHandoff::UnsealedPublication([
-            fence.item_fence(), peer.item_fence(),
-        ])).await;
+        return assert_paid_handoff(h, deps, owner, lever, vec![fence.item_fence(), peer.item_fence()]).await;
     }
     if matches!(case, Scenario::AdmissionAckLost) {
         assert_eq!(states.encounter_phases.active.lock().map_err(|_| "phases")?.len(), 1);
@@ -1191,301 +1130,6 @@ async fn drive_encounter_ai_until(
             owner, owner.owner_now().get().max(due), phase_changed,
         ).await?,
         "the qualified AI turn did not apply the expected encounter phase"
-    );
-    Ok(())
-}
-
-#[derive(Clone, Copy)]
-enum SourceBossHandoff {
-    Unpublished(CurrentCharacterItemFence),
-    Mixed {
-        published: CurrentCharacterItemFence,
-        unpublished: [u8; 16],
-    },
-    UnsealedPublication([CurrentCharacterItemFence; 2]),
-}
-
-async fn exercise_source_boss_handoff(
-    h: &Harness,
-    deps: &Dependencies,
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    case: SourceBossHandoff,
-) -> TestResult {
-    use crate::durability::runtime_scope_assignment::{
-        AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey,
-        RuntimeScopeAssignmentWriter,
-    };
-    let before = source_boss_admission_state(h).await?;
-    let (scope, refunded, after) = match case {
-        SourceBossHandoff::Unpublished(member) => {
-            assert!(matches!(before.as_slice(), [(2, true, _, 2)]));
-            (member.runtime_scope, true, vec![(3, false, false, 0)])
-        }
-        SourceBossHandoff::Mixed { published, .. } => {
-            assert_eq!(before, [(1, false, false, 1), (2, false, true, 1)]);
-            (published.runtime_scope, true, vec![(2, false, true, 1), (3, false, false, 0)])
-        }
-        SourceBossHandoff::UnsealedPublication([member, _]) => {
-            assert_eq!(before, [(2, true, true, 2)], "native publication happened on the unsealed admission");
-            (member.runtime_scope, false, vec![(2, false, true, 2)])
-        }
-    };
-    let published_cooldowns = if matches!(case, SourceBossHandoff::UnsealedPublication(_)) {
-        let cooldowns = active_source_boss_cooldowns(h).await?;
-        assert_eq!(cooldowns.len(), 2);
-        cooldowns
-    } else {
-        Vec::new()
-    };
-    sqlx::query(
-        "INSERT INTO game_control_scope_grants VALUES
-        (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 2)",
-    )
-    .bind(owner.world_id.as_bytes().as_slice())
-    .bind(owner.channel_id.as_bytes().as_slice())
-    .execute(&h.pool)
-    .await?;
-    let predecessor = h
-        .root
-        .read_runtime_scope_predecessor(scope)
-        .await
-        .map_err(debug)?
-        .ok_or("source boss predecessor")?;
-    let successor = super::fixture::registered_node(&h.root, 2).await?;
-    let writer = RuntimeScopeAssignmentWriter::open(h.root.clone(), "sequencer-writer")
-        .await
-        .map_err(debug)?;
-    let moved = writer
-        .submit(&AssignmentRequest {
-            operation_key: OperationKey::from_bytes([203; 32]),
-            actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
-            command: AssignmentCommand::Replace {
-                scope,
-                predecessor,
-                target: successor.fact(),
-            },
-        })
-        .await
-        .map_err(debug)?;
-    let AssignmentOutcome::Committed(moved) = moved else {
-        return Err("source boss replacement refused".into());
-    };
-    assert_eq!(moved.assignment.ownership_generation, 2);
-    publish_source_boss_successor_readiness(h, &successor, &moved).await?;
-
-    assert!(!owner.recover_source_boss_admission().await?);
-    assert_eq!(
-        source_boss_admission_state(h).await?,
-        before,
-        "stale runtime cannot refund either outcome"
-    );
-    let content = owner.runtime.lock().await.content_pin().clone();
-    let assignment = moved.assignment;
-    let fact = successor.fact();
-    let runtime = crate::foundation::ChannelRuntimeV1::from_committed_scope_assignment(
-        scope,
-        fact.node_id(),
-        fact.registration_revision(),
-        assignment.ownership_generation,
-        assignment.source_revision,
-        &assignment.decision_identity,
-        2,
-        content,
-    ).map_err(debug)?;
-    let runtime = tokio::sync::Mutex::new(runtime);
-    let mut replacement = deps.owner_from(&h.root, &successor, owner.character);
-    replacement.runtime = (&runtime).into();
-    assert_eq!(replacement.recover_source_boss_admission().await?, refunded, "successor refund decision");
-    assert_eq!(source_boss_admission_state(h).await?, after);
-    assert!(!replacement.recover_source_boss_admission().await?, "recovery replay is a no-op");
-    assert_eq!(source_boss_admission_state(h).await?, after);
-    if let SourceBossHandoff::Mixed { published, unpublished } = case {
-        let retained: (Vec<u8>, Vec<u8>) = sqlx::query_as(
-            "SELECT uuid_send(character_id),uuid_send(admission) FROM game_character_boss_cooldowns
-              WHERE boss_key='oteryn:boss.arbaziloth'",
-        )
-        .fetch_one(&h.pool)
-        .await?;
-        assert_eq!(retained.0, published.character_id.as_bytes());
-        assert_ne!(retained.1, unpublished);
-    }
-    if let SourceBossHandoff::UnsealedPublication(party) = case {
-        assert_eq!(active_source_boss_cooldowns(h).await?, published_cooldowns);
-        assert_source_boss_cooldown_refuses_fresh_admission(h, &replacement, party, assignment.ownership_generation).await?;
-        assert_eq!(source_boss_admission_state(h).await?, after);
-        assert_eq!(active_source_boss_cooldowns(h).await?, published_cooldowns);
-    }
-    Ok(())
-}
-
-async fn active_source_boss_cooldowns(h: &Harness) -> TestResult<Vec<(Vec<u8>, Vec<u8>, i64)>> {
-    Ok(sqlx::query_as(
-        "SELECT uuid_send(character_id),uuid_send(admission),available_at
-           FROM game_character_boss_cooldowns
-          WHERE boss_key='oteryn:boss.arbaziloth'
-            AND available_at > floor(extract(epoch FROM statement_timestamp())*1000)::bigint
-          ORDER BY character_id",
-    )
-    .fetch_all(&h.pool)
-    .await?)
-}
-
-async fn assert_source_boss_cooldown_refuses_fresh_admission(
-    h: &Harness,
-    replacement: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    mut party: [CurrentCharacterItemFence; 2],
-    generation: u64,
-) -> TestResult {
-    use super::fixture::id;
-    use crate::durability::boss_encounter::{SourceBossAdmission, SourceBossLever, SourceBossReservation};
-    use crate::durability::item_transfer::character_item_fence_is_current;
-    use crate::foundation::{CommandId, CommandRef, ScopeOwnershipGeneration};
-
-    let generation = ScopeOwnershipGeneration::new(generation).map_err(debug)?;
-    for member in &mut party {
-        // Bind the seeded sessions to the independently committed successor
-        // scope so the reserve is refused on cooldown with current item fences.
-        let changed = sqlx::query(
-            "UPDATE game_durability_reconnect_sessions SET scope_ownership_generation=$2::text::numeric
-              WHERE game_session_id=encode($1,'hex')::uuid AND scope_ownership_generation=$3::text::numeric",
-        )
-        .bind(member.game_session_id.as_bytes().as_slice())
-        .bind(generation.get().to_string())
-        .bind(member.scope_ownership_generation.get().to_string())
-        .execute(&h.pool)
-        .await?;
-        assert_eq!(changed.rows_affected(), 1);
-        member.scope_ownership_generation = generation;
-    }
-    let mut tx = h.pool.begin().await?;
-    for member in &party {
-        assert!(character_item_fence_is_current(
-            &mut tx,
-            replacement.holder,
-            member,
-            CommandRef::new(member.game_session_id, CommandId::new(2).map_err(debug)?),
-            member.character_id,
-            *replacement.world_id.as_bytes(),
-            *replacement.channel_id.as_bytes(),
-        ).await?, "fresh admission has current party fences");
-    }
-    tx.rollback().await?;
-    assert!(!replacement.root.source_boss_lever_admission(
-        replacement.character,
-        replacement.holder,
-        SourceBossReservation { id: id(204), lever: SourceBossLever::Arbaziloth, party: party.into() },
-        replacement.reset_epoch,
-        SourceBossAdmission::Reserve,
-    ).await?, "the same party cannot reserve a new attempt within its cooldown");
-    Ok(())
-}
-
-async fn source_boss_admission_state(h: &Harness) -> TestResult<Vec<(i16, bool, bool, i64)>> {
-    Ok(sqlx::query_as(
-        "SELECT a.state, a.projection_pending, a.installation_confirmed, (
-             SELECT count(*)
-               FROM game_character_boss_cooldowns c
-              WHERE c.admission=a.admission AND c.boss_key=a.boss_key)
-           FROM game_source_boss_admissions a
-          WHERE a.boss_key='oteryn:boss.arbaziloth' ORDER BY a.state",
-    )
-    .fetch_all(&h.pool)
-    .await?)
-}
-
-async fn publish_source_boss_successor_readiness(
-    h: &Harness,
-    successor: &NodeIncarnationProof,
-    moved: &AssignmentReceipt,
-) -> TestResult {
-    use crate::durability::admission_authority_guards::{
-        AdmissionGuardStore, GuardPublicationDisposition,
-    };
-    use crate::durability::runtime_scope_assignment::AssignmentError;
-    use crate::foundation::admission_authority_publication::{
-        AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
-        AdmissionAuthorityPublicationV1, AdmissionPublicationPreconditionV1,
-    };
-
-    let generation = moved.assignment.ownership_generation;
-    assert_eq!(moved.assignment.holder, Some(successor.fact()));
-    let key = AdmissionAuthorityGuardKeyV1::Runtime(moved.assignment.scope);
-    let previous = AdmissionGuardStore::from_root(h.root.clone())
-        .load(std::slice::from_ref(&key))
-        .await
-        .map_err(debug)?
-        .pop()
-        .flatten()
-        .ok_or("successor readiness predecessor")?;
-    assert_eq!(
-        moved.fenced_publication_revision,
-        Some(previous.publication_revision)
-    );
-    assert!(matches!(
-        previous.state,
-        AdmissionAuthorityGuardStateV1::Runtime {
-            ownership_generation,
-            ready: false,
-            ..
-        } if ownership_generation == generation
-    ));
-
-    let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
-        .fetch_one(&h.pool)
-        .await?;
-    let mut publisher = super::fresh_fixture::fresh::Source::new(now)?;
-    publisher.rows.retain(|row| row.key == key);
-    let [change] = publisher.rows.as_mut_slice() else {
-        return Err("successor runtime publisher".into());
-    };
-    let AdmissionAuthorityGuardStateV1::Runtime {
-        ownership_generation,
-        ..
-    } = &mut change.state
-    else {
-        return Err("successor runtime state".into());
-    };
-    *ownership_generation = generation;
-    change.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
-        expected_publication_revision: previous.publication_revision,
-    };
-    change.publication_revision = previous
-        .publication_revision
-        .checked_add(1)
-        .ok_or("successor publication revision")?;
-    change.source.source_revision = previous
-        .source
-        .source_revision
-        .checked_add(1)
-        .ok_or("successor source revision")?;
-    change.source.decision_identity = format!("doomforge-runtime-ready-{generation}");
-
-    // Isolate the authority mismatch in the previous readiness helper.
-    let mut wrong_publisher = change.clone();
-    wrong_publisher.source.authority = "game-runtime-publisher".into();
-    let wrong_publication =
-        crate::bestiary_postgres_harness::ground_native_readiness_enforcement::prepare(
-            wrong_publisher, now,
-        )?;
-    assert_eq!(
-        h.root
-            .publish_runtime_readiness(successor, &wrong_publication)
-            .await
-            .map_err(debug)?,
-        GuardPublicationDisposition::Conflict,
-    );
-
-    let publication = AdmissionAuthorityPublicationV1::prepare(&publisher, now).map_err(debug)?;
-    assert!(matches!(
-        h.root.publish_runtime_readiness(&h.node, &publication).await,
-        Err(AssignmentError::NotCurrentHolder)
-    ));
-    assert_eq!(
-        h.root
-            .publish_runtime_readiness(successor, &publication)
-            .await
-            .map_err(debug)?,
-        GuardPublicationDisposition::Applied,
     );
     Ok(())
 }

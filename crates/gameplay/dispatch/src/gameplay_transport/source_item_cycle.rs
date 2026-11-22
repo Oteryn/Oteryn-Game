@@ -5,6 +5,11 @@ use std::future::{Future, poll_fn};
 use std::pin::pin;
 use std::task::Poll;
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static SOURCE_OWNER_SWEEP_COMPLETE: std::sync::Arc<tokio::sync::Notify>;
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn run_source_owner_cycles(
         &self,
@@ -112,8 +117,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Rotten slots retain cyclic pre/AI/post order across resumed sweeps;
             // monster melee runs with the AI phase, between them.
             // No whole-population grant is introduced.
-            let start = self.background_start("source-cycle", 17);
-            for index in (start..17).chain(0..start) {
+            let start = self.background_start("source-cycle", 16);
+            for index in (start..16).chain(0..start) {
                 self.background_turn("source-cycle", index + 1, async {
                     match index {
                         0 => {
@@ -209,11 +214,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         14 => {
                             let _ = self.refresh_cake_regeneration().await;
                         }
-                        15 => {
-                            self.root
-                                .with_background_operation(self.settle_source_boss_lever())
-                                .await;
-                        }
                         _ => {
                             if self.ensure_source_map_initialized().await {
                                 self.root
@@ -227,6 +227,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
                 .await;
             }
+            #[cfg(test)]
+            let _ = SOURCE_OWNER_SWEEP_COMPLETE.try_with(|complete| complete.notify_one());
             if let Some(cycle) = npc_voices.as_mut() {
                 self.emit_npc_voices(cycle, self.owner_now().get()).await;
             }
