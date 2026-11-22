@@ -547,6 +547,7 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/forbidden-fruit.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
@@ -2612,8 +2613,8 @@ mod tests {
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Shared rewards contain 238 existing rows plus 18 full-outfit reward branches.
-        // The final two terms are Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 256 + 59 + 125 + 1 + 1 + 13 + 12);
+        // The final terms cover Rottin Wood, the Forgemaster's routes, and Forbidden Fruit.
+        assert_eq!(load()?.len(), 256 + 59 + 125 + 1 + 1 + 13 + 12 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

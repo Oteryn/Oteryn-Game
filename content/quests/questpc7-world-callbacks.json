@@ -1203,9 +1203,13 @@
       "success_message": "The conspiracy is ended. You recover the blueprint, four Glooth Bags and five platinum coins.",
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
+        "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_reward.lua:2-12,18"
       ],
       "completes": true,
+      "achievements": [
+        "oteryn:achievement/the_professor_s_nut"
+      ],
       "item_reward": {
         "item": "oteryn:item.tibia.i21897",
         "count": 1,

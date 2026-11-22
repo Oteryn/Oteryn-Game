@@ -2378,13 +2378,14 @@
         "outfit": "oteryn:outfit.cave_explorer",
         "addons": 2
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/cave_completionist",
       "reply": [
         "Thank you for your help."
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b",
+        "https://tibia.fandom.com/index.php?curid=65413&oldid=846114"
       ],
       "fee": {
         "gold": 3000,

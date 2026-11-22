@@ -1117,6 +1117,9 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-authored-bindings" {
         return Box::pin(super::authored_quest_bindings_fixtures::exercise(owner, admitted, h)).await;
     }
+    if name == "qengine-rewards-forbidden-fruit" {
+        return Box::pin(forbidden_fruit(owner, admitted, h)).await;
+    }
     if name == "qengine-rewards-l13-rift-story" {
         return Box::pin(super::qengine_endgame_stories_fixtures::rift(
             owner, admitted, h, authority,
@@ -1733,3 +1736,50 @@ pub(super) mod m39_any_topic;
 
 #[path = "qengine_rewards/questl2_passages.rs"]
 pub(super) mod questl2_passages;
+
+async fn forbidden_fruit(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::qengine_voucher_stories_fixtures::{mint, quantity, use_native};
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1;
+    use oteryn_protocol_oteryn::world_object::{CAPABILITY_ITEM_USE_V1, UseDisposition};
+    use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
+
+    const FRUIT: u16 = 24966;
+    let required = [
+        CAPABILITY_ITEM_VIEW_MOVE_V1,
+        CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        CAPABILITY_ITEM_USE_V1,
+    ];
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &required)
+            .ok_or("carried item view and USE capabilities")?;
+    assert_eq!(admitted.continuity.selected_capabilities.as_slice(), required);
+    let mut ordinal = 99300;
+    for _ in 0..2 {
+        mint(owner, admitted, FRUIT, 1, &mut ordinal).await?;
+    }
+    use_native(owner, admitted, FRUIT, UseDisposition::Committed).await?;
+    assert_eq!(quantity(h, FRUIT).await?, 1, "exact replay consumes nothing");
+    use_native(owner, admitted, FRUIT, UseDisposition::Rejected).await?;
+    assert_eq!(quantity(h, FRUIT).await?, 1, "a second fruit is preserved");
+    let grants: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievement_grant_requests \
+         JOIN game_account_achievements USING (account_id, achievement_key) \
+         WHERE achievement_key = 'oteryn:achievement/forbidden_fruit'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(grants, 1);
+    let eaten: i64 = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks \
+         WHERE track_key = 'oteryn:quest-progress/crystalserver/quest/u11_02/forgotten_knowledge/forbidden_fruit'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(eaten, 1);
+    Ok(())
+}

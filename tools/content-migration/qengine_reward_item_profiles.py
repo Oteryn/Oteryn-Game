@@ -48,6 +48,8 @@ IDS |= {12785}
 IDS |= {21504, 21505, 21506, 21507, 9106}
 # M56: exact carried Molten Wax consumption through the existing quest input owner.
 IDS |= {9106}
+# Crystal 201189f8 Forgotten Knowledge consumes the Thorn Knight's Forbidden Fruit.
+IDS |= {24966}
 # QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.
 IDS |= {27654}
 IDS |= qmech_m39.ITEMS
