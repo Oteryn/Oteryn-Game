@@ -642,8 +642,14 @@ fn untracked_bestiary_stage_is_captured_after_credited_kill() -> Result {
     let mut settings = SettingsState::new(None);
     settings.preferences.screenshots.on_bestiary_unlock = true;
     let start = std::time::Instant::now();
-    for (index, kills) in [(0, 9), (1, 10)] {
+    for (index, kills) in [(0, 9), (1, 10), (2, 20)] {
         let now = start + std::time::Duration::from_secs(index * 3);
+        if index == 2 {
+            settings.cancel_screenshot();
+            settings.preferences.screenshots.automatic_disabled = true;
+            settings.prepare_screenshots(now, Some(&link));
+            settings.preferences.screenshots.automatic_disabled = false;
+        }
         if index > 0 {
             outbox.push(vec![oteryn_session::SessionEvent::AnalyserFacts(
                 oteryn_session::AppliedDelta {
@@ -691,7 +697,7 @@ fn untracked_bestiary_stage_is_captured_after_credited_kill() -> Result {
     }
     // This session admitted bestiary queries independently of the analyser feed.
     settings.cancel_screenshot();
-    settings.prepare_screenshots(start + std::time::Duration::from_secs(10), Some(&link));
+    settings.prepare_screenshots(start + std::time::Duration::from_secs(12), Some(&link));
     assert!(
         commands.try_recv().is_ok(),
         "refresh bestiary progress without a kill feed"

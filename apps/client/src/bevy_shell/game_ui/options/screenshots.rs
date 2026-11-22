@@ -115,7 +115,7 @@ fn open_directory(
         let result =
             crate::play::screenshot::screenshot_directory(std::path::Path::new(&configured))
                 .and_then(|directory| {
-                    std::fs::create_dir_all(&directory)?;
+                    crate::play::screenshot::ensure_screenshot_directory(&directory)?;
                     open(&directory)
                 });
         if let Err(error) = result {
@@ -171,6 +171,11 @@ mod tests {
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
         assert!(folder.join("opened").is_file());
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(folder.metadata()?.permissions().mode() & 0o077, 0);
+        }
         Ok(())
     }
     #[test]

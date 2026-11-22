@@ -210,29 +210,38 @@ pub(crate) fn retry_capture_name<T>(mut attempt: impl FnMut() -> io::Result<T>) 
     attempt()
 }
 
-/// Open a new screenshot with private permissions before writing any pixels.
-pub(crate) fn create_capture_file(path: &Path) -> io::Result<File> {
+/// Newly created screenshot directories have the same privacy whether opened or saved into.
+pub(crate) fn ensure_screenshot_directory(path: &Path) -> io::Result<()> {
     let mut directory = DirBuilder::new();
     directory.recursive(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        directory.mode(0o700);
+    }
+    directory.create(path).map_err(|error| {
+        if error.kind() == io::ErrorKind::AlreadyExists {
+            io::Error::new(io::ErrorKind::NotADirectory, error)
+        } else {
+            error
+        }
+    })
+}
+
+/// Open a new screenshot with private permissions before writing any pixels.
+pub(crate) fn create_capture_file(path: &Path) -> io::Result<File> {
     let mut options = File::options();
     options.write(true).create_new(true);
     #[cfg(unix)]
     {
-        use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
-        directory.mode(0o700);
+        use std::os::unix::fs::OpenOptionsExt;
         options.mode(0o600);
     }
-    let parent = path
+    if let Some(parent) = path
         .parent()
-        .filter(|parent| !parent.as_os_str().is_empty());
-    if let Some(parent) = parent {
-        directory.create(parent).map_err(|error| {
-            if error.kind() == io::ErrorKind::AlreadyExists {
-                io::Error::new(io::ErrorKind::NotADirectory, error)
-            } else {
-                error
-            }
-        })?;
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
+        ensure_screenshot_directory(parent)?;
     }
     options.open(path)
 }

@@ -191,8 +191,13 @@ fn new_incoming_pvp_situation_requests_a_capture() -> Result {
     let mut settings = SettingsState::new(None);
     settings.preferences.screenshots.on_player_attacking = true;
     let start = std::time::Instant::now();
-    for (index, incoming) in [false, true, true].into_iter().enumerate() {
+    for (index, incoming) in [false, true, true, true].into_iter().enumerate() {
         let now = start + std::time::Duration::from_secs(3 * index as u64);
+        if index == 3 {
+            settings.preferences.screenshots.automatic_disabled = true;
+            settings.prepare_screenshots(now, Some(&link));
+            settings.preferences.screenshots.automatic_disabled = false;
+        }
         settings.prepare_screenshots(now, Some(&link));
         let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
             return Err("PvP query".into());
@@ -204,10 +209,13 @@ fn new_incoming_pvp_situation_requests_a_capture() -> Result {
             black_limits_milli: [6000; 3],
             skull: 0,
             remaining_ms: 0,
-            situations: vec![oteryn_client_runtime::party_skull::PvpSituation {
-                incoming,
-                remaining_ms: 9000,
-            }],
+            situations: vec![
+                oteryn_client_runtime::party_skull::PvpSituation {
+                    incoming,
+                    remaining_ms: 9000,
+                };
+                1 + usize::from(index == 3)
+            ],
         };
         outbox.bevy_pvp_result(
             &command,

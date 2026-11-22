@@ -15,6 +15,7 @@ pub(in super::super) struct ScreenshotRuntime {
     last_query: Option<Instant>,
     last_pvp_query: Option<Instant>,
     incoming_situations: Option<usize>,
+    last_pvp_observation: Option<Instant>,
     previous: Option<Signals>,
     bestiary: BestiaryCapture,
     automatic_pending: bool,
@@ -38,6 +39,10 @@ impl BestiaryCapture {
         }
         let mut unlocked = false;
         let mut completed = false;
+        // A retained panel reply can predate the moment this option was enabled.
+        if self.last_request.is_none() {
+            self.reply_revision = panel.reply_revision;
+        }
         if self.reply_revision != panel.reply_revision {
             self.reply_revision = panel.reply_revision;
             if let Some(reply) = &panel.reply {
@@ -208,7 +213,13 @@ impl SettingsState {
             if preferences.on_player_attacking && !preferences.automatic_disabled {
                 let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
                 let panel = &mailbox.properties.party_skull;
-                if let Some(count) = panel.incoming_situations {
+                if runtime.last_pvp_query.is_none() {
+                    runtime.last_pvp_observation = panel.status_received_at;
+                }
+                if panel.status_received_at != runtime.last_pvp_observation
+                    && let Some(count) = panel.incoming_situations
+                {
+                    runtime.last_pvp_observation = panel.status_received_at;
                     runtime.automatic_pending |= runtime
                         .incoming_situations
                         .replace(count)
@@ -230,6 +241,7 @@ impl SettingsState {
             } else {
                 runtime.incoming_situations = None;
                 runtime.last_pvp_query = None;
+                runtime.last_pvp_observation = None;
             }
             let (boss_baseline, boss_advanced) = link.boss_capture(
                 !preferences.automatic_disabled && preferences.on_boss_defeat,
