@@ -17,6 +17,8 @@ const BLANK_RUNE_ID: u32 = 3147;
 const STARTER_CONJURE: &str = "adori dis min vis";
 const ORDINARY_CONJURE: &str = "adori min vis";
 const CONJURED_CHARGES: u64 = 10;
+const XODET: &str = "oteryn:npc.xodet";
+const XODET_WANDER_RADIUS: u32 = 2;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -370,11 +372,16 @@ async fn acquire(
         .iter()
         .filter(|n| sellers.contains(&n.key))
         .filter_map(|n| {
+            let wander = if n.key == XODET {
+                XODET_WANDER_RADIUS
+            } else {
+                0
+            };
+            let approach = wire::TALK_RANGE_TILES - wander;
             route(world, here, |at| {
                 n.placements.iter().any(|p| {
                     p.floor == at.floor
-                        && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)))
-                            <= wire::TALK_RANGE_TILES
+                        && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
                 })
             })
             .map(|p| (n, p))
@@ -382,29 +389,45 @@ async fn acquire(
         .min_by_key(|(_, p)| p.len())
         .ok_or_else(|| seller_gap(item_id, sellers.len(), placed))?;
     walk(client, world, &path).await?;
+    let position = client.world_spatial().actor_position;
     let actor = client
         .world_entities()
-        .and_then(|es| {
-            es.iter().find(|e| {
-                e.kind == oteryn_dev_client::EntityKind::Npc
+        .and_then(|entities| {
+            let mut candidates = entities.iter().filter(|entry| {
+                entry.kind == oteryn_dev_client::EntityKind::Npc
+                    && entry.position.floor == position.floor
+                    && entry
+                        .position
+                        .x
+                        .abs_diff(position.x)
+                        .max(entry.position.y.abs_diff(position.y))
+                        <= wire::TALK_RANGE_TILES
                     && npc.placements.iter().any(|p| {
-                        let distance = e
+                        let distance = entry
                             .position
                             .x
                             .abs_diff(i32::from(p.x))
-                            .max(e.position.y.abs_diff(i32::from(p.y)));
-                        e.position.floor == -i16::from(p.floor)
-                            && (distance == 0
-                                || (distance <= 2
-                                    && npc.key == "oteryn:npc.xodet"
-                                    && e.display_name.is_some_and(|name| {
+                            .max(entry.position.y.abs_diff(i32::from(p.y)));
+                        position.floor == -i16::from(p.floor)
+                            && if npc.key == XODET {
+                                distance <= XODET_WANDER_RADIUS
+                                    && entry.display_name.is_none_or(|name| {
                                         name.as_str().is_ok_and(|name| name == "Xodet")
-                                    })))
+                                    })
+                            } else {
+                                distance == 0
+                            }
                     })
-            })
+            });
+            let entry = candidates.next()?;
+            candidates.next().is_none().then_some(entry.entity)
         })
-        .map(|e| e.entity)
-        .ok_or("vendor not visible")?;
+        .ok_or_else(|| {
+            format!(
+                "need=unique-visible-vendor-within-talk-range;seller={}",
+                npc.key
+            )
+        })?;
     for text in ["hi", "trade"] {
         let reply = npc_shop::talk(
             client.session_mut(),
@@ -486,17 +509,17 @@ async fn use_rune(
 }
 
 async fn drain_after(client: &mut DevClientSession, sequence: u64) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
-    loop {
-        client.service_liveness(Duration::from_millis(25)).await?;
-        client.take_events();
-        if client.last_server_sequence() > sequence {
-            return Ok(());
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("pending deltas did not drain after sequence {sequence}").into());
-        }
+    // A quiet refusal has no state delta. A subsequent real command drains
+    // the earlier command's pushes without requiring unrelated combat traffic.
+    let reply = client.session_mut().attack_target(None).await?;
+    if reply.status != CommandStatus::Accepted
+        || reply.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+        || reply.result_server_sequence <= sequence
+    {
+        return Err(format!("refusal readback after sequence {sequence} failed: {reply:?}").into());
     }
+    client.take_events();
+    Ok(())
 }
 async fn inventory_count(client: &mut DevClientSession, r: NonZeroU32, n: u64) -> TestResult<u64> {
     inventory_wait(client, &[(r, n)]).await
