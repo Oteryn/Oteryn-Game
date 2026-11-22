@@ -204,7 +204,7 @@ impl Case {
             .get("authorization")
             .and_then(|v| v.strip_prefix("Bearer "))
             .unwrap_or(&manifest.synthetic_access_token);
-        AccessToken(SecretText(bearer.to_owned()))
+        AccessToken(SecretText(bearer.to_owned()), None)
     }
 }
 fn metadata<'a>(manifest: &'a Manifest, key: &str) -> Result<&'a str, Box<dyn std::error::Error>> {

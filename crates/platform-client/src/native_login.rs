@@ -328,9 +328,15 @@ fn format_uuid(bytes: &[u8; 16]) -> String {
 /// A Platform OAuth access token for scope `game:ticket`. Consumed by ticket issuance, which
 /// revokes it on the Platform side.
 #[derive(Debug)]
-pub struct AccessToken(SecretText);
+pub struct AccessToken(SecretText, Option<SecretText>);
 
 impl AccessToken {
+    /// Account identity supplied by Platform in the successful token exchange.
+    #[must_use]
+    pub fn account_id(&self) -> Option<&str> {
+        self.1.as_ref().map(SecretText::expose)
+    }
+
     /// The bearer value for a Platform request; never logged.
     pub(crate) fn expose(&self) -> &str {
         self.0.expose()

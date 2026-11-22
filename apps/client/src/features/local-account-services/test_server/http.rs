@@ -8,6 +8,7 @@ impl MockPlatform {
         let authority = Arc::new(Mutex::new(Authority {
             coins: Some(coins::CoinAuthority::new(base.clone())?),
             offline: true,
+            oauth_account: Some("account-a".into()),
             ..Authority::default()
         }));
         let state = authority.clone();
@@ -67,10 +68,12 @@ impl Authority {
             self.oauth_exchanges += 1;
             return (
                 200,
-                format!(
-                    r#"{{"token_type":"Bearer","access_token":"services-test-token-{}"}}"#,
-                    self.oauth_exchanges
-                ),
+                serde_json::json!({
+                    "token_type": "Bearer",
+                    "access_token": format!("services-test-token-{}", self.oauth_exchanges),
+                    "account_id": self.oauth_account
+                })
+                .to_string(),
             );
         }
         if authorized && method == "POST" {

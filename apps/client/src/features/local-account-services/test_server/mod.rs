@@ -35,6 +35,7 @@ pub(crate) struct Authority {
     pub fail_after_commit: bool,
     pub bazaar_post_failure: Option<u16>,
     pub coin_post_failure: Option<u16>,
+    pub oauth_account: Option<String>,
     pub oauth_exchanges: u32,
     pub pending_first: bool,
     pub paginate: bool,

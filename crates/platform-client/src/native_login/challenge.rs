@@ -123,6 +123,8 @@ impl NativeLoginClient {
             struct TokenResponse {
                 token_type: String,
                 access_token: String,
+                #[serde(default)]
+                account_id: serde_json::Value,
             }
             let token: TokenResponse =
                 serde_json::from_slice(&body).map_err(|_| PlatformClientError::InvalidPayload)?;
@@ -131,9 +133,15 @@ impl NativeLoginClient {
             {
                 return Err(PlatformClientError::InvalidPayload.into());
             }
-            Ok(TokenExchange::Token(AccessToken(SecretText(
-                token.access_token,
-            ))))
+            let account_id = token
+                .account_id
+                .as_str()
+                .filter(|id| is_visible_ascii(id, 256))
+                .map(|id| SecretText(id.to_owned()));
+            Ok(TokenExchange::Token(AccessToken(
+                SecretText(token.access_token),
+                account_id,
+            )))
         };
         run(cancellation, request).await
     }
