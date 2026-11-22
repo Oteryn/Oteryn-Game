@@ -102,8 +102,9 @@ pub(super) fn encode(
                 outcome.gate_message_id,
             );
             use oteryn_protocol_oteryn::world_object::{
-                CAPABILITY_GAMEPLAY_OCCURRENCES_V1, CAPABILITY_POTION_UTTERANCE_V1, COMMAND_TYPE_USE_INTENT,
-                encode_use_result_with_utterance, encode_use_reward_result,
+                CAPABILITY_GAMEPLAY_OCCURRENCES_V1, CAPABILITY_POTION_UTTERANCE_V1,
+                COMMAND_TYPE_USE_INTENT, encode_use_result_with_utterance,
+                encode_use_reward_result,
             };
             let payload = if command.command_type == COMMAND_TYPE_USE_INTENT
                 && session
@@ -118,7 +119,9 @@ pub(super) fn encode(
                     disposition,
                     gate_message_id,
                     outcome.potion_utterance.filter(|_| {
-                        session.selected_capabilities.contains(CAPABILITY_POTION_UTTERANCE_V1)
+                        session
+                            .selected_capabilities
+                            .contains(CAPABILITY_POTION_UTTERANCE_V1)
                     }),
                 )
             };

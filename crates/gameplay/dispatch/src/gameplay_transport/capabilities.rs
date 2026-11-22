@@ -113,11 +113,14 @@ pub(super) const BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES: &[OfferedCapability]
 
 /// Bound of one session's selection. A test keeps the production offered set within it.
 /// CAPCAP-1 raised it from 32 to 64, CAPCAP-2 to 112, CAPCAP-4 to 128 and the WU26 native-client
-/// batch to 160. The configured Bundle World offer with Training, Store, rule-violation,
-/// character panels and conditional presentation capabilities requires more room.
+/// batch to 160. Package s9sp has 187 base Bundle World offers. Leave room for conditional
+/// offers such as Training, Store, rule-violation and character presentation.
 /// A selection larger than this bound fails as `SelectionUnavailable`.
-pub const SELECTED_CAPACITY: usize = 168;
-const _: () = assert!(SELECTED_CAPACITY < oteryn_protocol_oteryn::MAX_CAPABILITY_COUNT);
+pub const SELECTED_CAPACITY: usize = 224;
+const _: () = {
+    assert!(BUNDLE_WORLD_OFFERED_CAPABILITIES.len() <= SELECTED_CAPACITY);
+    assert!(SELECTED_CAPACITY < oteryn_protocol_oteryn::MAX_CAPABILITY_COUNT);
+};
 
 /// One GameSession's selected capabilities: strictly ascending, each offered by the server at
 /// fresh admission. `Copy` so it travels with the session's continuity.

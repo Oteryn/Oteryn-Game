@@ -51,7 +51,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_latest_character_death(self.character, self.holder, fence)
             .await
             .ok()?;
-        let Some((death, pvp)) = death else {
+        let Some((death, pvp, _)) = death else {
             return Some(vec![0]);
         };
         let protection = DeathProtection {
