@@ -43,6 +43,10 @@ impl PreferenceStore {
 
     /// Read a portable settings file with the same validation as local storage.
     pub fn read_transfer(path: &Path) -> io::Result<ReferencePreferences> {
+        Self::decode_transfer(&Self::transfer_bytes(path)?)
+    }
+
+    fn transfer_bytes(path: &Path) -> io::Result<Vec<u8>> {
         use std::io::Read;
         let mut bytes = Vec::new();
         std::fs::File::open(path)?
@@ -51,7 +55,11 @@ impl PreferenceStore {
         if bytes.len() > 1 << 20 {
             return Err(io::Error::other(tr!("Settings file exceeds 1 MiB")));
         }
-        let mut document: serde_json::Value = serde_json::from_slice(&bytes)
+        Ok(bytes)
+    }
+
+    fn decode_transfer(bytes: &[u8]) -> io::Result<ReferencePreferences> {
+        let mut document: serde_json::Value = serde_json::from_slice(bytes)
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         if let Some(fields) = document.as_object_mut()
             && fields.get("hotkey_profiles").is_some_and(|value| {
@@ -122,7 +130,12 @@ impl PreferenceStore {
     }
 
     pub fn backup_path(&self) -> PathBuf {
-        self.path.with_extension("backup.json")
+        let pending = self.path.with_added_extension("pending-backup");
+        if pending.is_file() {
+            pending
+        } else {
+            self.path.with_extension("backup.json")
+        }
     }
 
     pub fn defaults(path: PathBuf) -> Self {
