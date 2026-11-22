@@ -9,16 +9,25 @@ type SessionBaseline = Mutex<MiscellaneousPreferences>;
 
 impl SettingsState {
     #[cfg(bevy_shell)]
-    pub(crate) fn disable_remember_device(&mut self) -> Result<(), String> {
-        use std::sync::atomic::Ordering;
+    pub(crate) fn record_device_opt_out(&self) -> impl FnOnce() -> Result<(), String> + use<> {
+        let path = self.base_path.as_ref().map(|p| p.with_extension("session-options.json"));
+        let epoch = self.remember_epoch.clone();
+        move || {
+            epoch.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
+            if let Some(path) = path {
+                MiscellaneousPreferences::record_opt_out(&path).map_err(|error| error.to_string())?;
+            }
+            Ok(())
+        }
+    }
 
+    #[cfg(bevy_shell)]
+    pub(crate) fn finish_device_opt_out(&mut self) {
         self.preferences.miscellaneous.remember_device = false;
-        self.remember_epoch.fetch_add(1, Ordering::AcqRel);
         let Some(base) = &self.base_path else {
-            return Ok(());
+            return;
         };
         let path = base.with_extension("session-options.json");
-        MiscellaneousPreferences::record_opt_out(&path).map_err(|error| error.to_string())?;
         let baseline = self.session_baseline.clone();
         let previous = self.session_save.take();
         self.session_save = Some(
@@ -42,7 +51,6 @@ impl SettingsState {
                 earlier.and(current)
             }),
         );
-        Ok(())
     }
 
     pub(super) fn persist_preferences(
@@ -116,5 +124,47 @@ fn save_options(
         .publish_edits(before, path)
         .map_err(|error| error.to_string())?;
     *previous = options;
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn opt_out_after_epoch_check_wins_the_merged_write() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("options.json");
+    let before = MiscellaneousPreferences::default();
+    let edited = MiscellaneousPreferences {
+        remember_device: true,
+        confirm_exit: false,
+        ..before
+    };
+    let mut recorded = None;
+    save_options(&Mutex::new(before), edited, &path, || {
+        recorded = Some(MiscellaneousPreferences::record_opt_out(&path));
+        true
+    })?;
+    recorded.ok_or("epoch check did not run")??;
+    let persisted: MiscellaneousPreferences = serde_json::from_slice(&std::fs::read(&path)?)?;
+    assert!(!persisted.remember_device);
+    assert!(!persisted.confirm_exit);
+    assert!(!path.with_added_extension("opt-out").exists());
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn failed_merged_publication_keeps_opt_out_for_replay() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("options.json");
+    let before = MiscellaneousPreferences {
+        remember_device: true,
+        ..Default::default()
+    };
+    before.save(&path)?;
+    MiscellaneousPreferences::record_opt_out(&path)?;
+    crate::atomic_file::fail_durable_rename_to(&path);
+    assert!(save_options(&Mutex::new(before), before, &path, || true).is_err());
+    assert!(path.with_added_extension("opt-out").exists());
+    assert!(!MiscellaneousPreferences::read(&path)?.remember_device);
     Ok(())
 }

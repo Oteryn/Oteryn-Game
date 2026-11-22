@@ -76,7 +76,7 @@ impl Default for View {
 }
 impl View {
     pub fn pending(&self) -> bool {
-        self.prior.blocked() || self.pending.is_some() || !self.unresolved.is_empty()
+        self.prior.post_in_flight() || self.pending.is_some() || !self.unresolved.is_empty()
     }
     pub fn can_retry(&self) -> bool {
         self.pending.is_some() && self.post_refusal_status.is_none()
@@ -87,8 +87,20 @@ impl View {
             .map(|r| r.request_id.as_str())
             .or_else(|| self.unresolved.iter().next().map(String::as_str))
     }
-    fn install_page(&mut self, page: BazaarPage) {
-        for receipt in &page.recent_operations {
+    async fn install_page(
+        &mut self,
+        mut page: BazaarPage,
+        client: &NativeLoginClient,
+        token: &AccessToken,
+        cancel: CancellationToken,
+    ) {
+        for listed in std::mem::take(&mut page.recent_operations) {
+            let Ok(receipt) = client
+                .bazaar_status(token, &listed.request_id, cancel.clone())
+                .await
+            else {
+                continue;
+            };
             if self.prior.contains(&receipt.request_id)
                 || self
                     .pending
@@ -97,7 +109,7 @@ impl View {
                 || self
                     .receipt
                     .as_ref()
-                    .is_some_and(|old| old.request_id == receipt.request_id && old != receipt)
+                    .is_some_and(|old| old.request_id == receipt.request_id && old != &receipt)
             {
                 controller::accept(self, receipt.clone());
             } else if receipt.state == OperationState::Pending {
@@ -105,6 +117,7 @@ impl View {
             } else {
                 self.unresolved.remove(&receipt.request_id);
             }
+            page.recent_operations.push(receipt);
         }
         self.page = Some(page);
     }
@@ -142,7 +155,7 @@ impl View {
     }
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
-        if self.prior.blocked() {
+        if self.prior.post_in_flight() {
             text.push('\n');
             text.push_str(tr!(
                 "Resolve the pending operation before starting another."

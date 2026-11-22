@@ -26,6 +26,7 @@ type ConnectionRoot = (GameSessionId, u64);
 struct Recipient {
     connection_generation: u64,
     connection_root: ConnectionRoot,
+    soulpit_completion: Option<[u8; 16]>,
     queue: VecDeque<Arc<ServerMessage>>,
 }
 
@@ -84,6 +85,7 @@ impl ServerMessageHub {
             Recipient {
                 connection_generation,
                 connection_root,
+                soulpit_completion: None,
                 queue: VecDeque::new(),
             },
         );
@@ -123,6 +125,36 @@ impl ServerMessageHub {
         self.changed.notify_waiters();
         true
     }
+    /// An Instance session can complete only one Soulpit. Keep its occurrence
+    /// after dequeue so replays cannot send it again on this connection.
+    pub(super) fn send_soulpit_completion(
+        &self,
+        session: GameSessionId,
+        generation: u64,
+        occurrence: [u8; 16],
+        message: &ServerMessage,
+    ) {
+        if encode_server_message(message).is_err() {
+            return;
+        }
+        let Ok(mut state) = self.state.lock() else {
+            return;
+        };
+        let Some(recipient) = state.recipients.get_mut(&session) else {
+            return;
+        };
+        if recipient.connection_generation != generation
+            || recipient.soulpit_completion == Some(occurrence)
+            || recipient.queue.len() >= MAX_ANNOUNCEMENTS
+        {
+            return;
+        }
+        recipient.soulpit_completion = Some(occurrence);
+        recipient.queue.push_back(Arc::new(message.clone()));
+        drop(state);
+        self.changed.notify_waiters();
+    }
+
     pub(super) fn forget(&self, session: GameSessionId) {
         if let Ok(mut state) = self.state.lock() {
             state.recipients.remove(&session);

@@ -62,3 +62,70 @@ fn resubmission_restores_saved_gateway_after_cancellation() -> TestResult {
     assert_eq!(saved.oauth_client_id, external.oauth_client_id);
     Ok(())
 }
+
+#[test]
+fn failed_resubmission_retries_the_submitted_gateway() -> TestResult {
+    let temp = Temp::new()?;
+    let path = temp.join("login.json");
+    let original = settings(&temp)?;
+    original.save(&path)?;
+    let mut owner = HostOwner::new(None)?;
+    owner.configure_login(Some(path.clone()), |_| None);
+    owner.request_login();
+
+    let held = crate::atomic_file::lock(&path)?;
+    let submitted = "http://127.0.0.1:18567";
+    owner.login.form.settings.gateway_url = submitted.into();
+    owner.submit_login();
+    owner.cancel_login();
+    owner.login.form.settings.gateway_url = original.gateway_url.clone();
+    drop(held);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    while LoginSettings::load(&path)?.gateway_url != submitted {
+        assert!(std::time::Instant::now() < deadline);
+        std::thread::yield_now();
+    }
+
+    let held = crate::atomic_file::lock(&path)?;
+    owner.submit_login();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    while owner.login.save_pending() {
+        assert!(owner.login.poll_save().is_none());
+        assert!(std::time::Instant::now() < deadline);
+        std::thread::yield_now();
+    }
+    drop(held);
+    assert_eq!(owner.login.submit()?.gateway_url, original.gateway_url);
+    assert_eq!(
+        LoginSettings::load(&path)?.gateway_url,
+        original.gateway_url
+    );
+    Ok(())
+}
+
+#[test]
+fn submit_repairs_empty_saved_gateway_from_environment() -> TestResult {
+    let temp = Temp::new()?;
+    let path = temp.join("login.json");
+    let mut original = settings(&temp)?;
+    let gateway = std::mem::take(&mut original.gateway_url);
+    std::fs::write(&path, serde_json::to_vec(&original)?)?;
+    let mut owner = HostOwner::new(None)?;
+    owner.configure_login(Some(path.clone()), |key| {
+        (key == "OTERYN_GATEWAY_URL").then(|| gateway.clone())
+    });
+    owner.request_login();
+    owner.submit_login();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    loop {
+        if let Some((config, _)) = owner.login.poll_save() {
+            assert_eq!(config.gateway_url, gateway);
+            break;
+        }
+        assert!(owner.login.save_pending(), "{}", owner.login.form.message());
+        assert!(std::time::Instant::now() < deadline);
+        std::thread::yield_now();
+    }
+    assert_eq!(LoginSettings::load(&path)?.gateway_url, gateway);
+    Ok(())
+}
