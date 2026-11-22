@@ -18,8 +18,9 @@ impl PlayView {
     ) -> Result<Self, BatchError> {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
+        let minimap = Default::default();
         let mut view = Self {
-            #[cfg(feature = "bevy-shell")]
+            #[cfg(bevy_shell)]
             last_step: None,
             shared_frontend: false,
             game_notifications: Default::default(),
@@ -35,6 +36,7 @@ impl PlayView {
             party_icon_epoch: std::time::Instant::now(),
             party_icons_refresh: None,
             party_icons: Vec::new(),
+            guild_emblems: Vec::new(),
             vitals: None,
             battle_instinct: None,
             battle_instinct_refresh: None,
@@ -51,10 +53,16 @@ impl PlayView {
             scene: Scene::centered_on(local.world(), None, own, StepDir::South, &[])?,
             local,
             live_map: false,
-            minimap: Default::default(),
+            _minimap_editor_owner: std::sync::Arc::new(
+                super::feature_local_minimap::state::EditorOwner(std::sync::Arc::clone(&minimap)),
+            ),
+            minimap,
             anchor,
             map_floor: None,
             in_flight: false,
+            walk: None,
+            prewalk: None,
+            chord: Default::default(),
             inputs: VecDeque::new(),
             cursor_spell: None,
             entities: Vec::new(),
@@ -64,6 +72,7 @@ impl PlayView {
             action_line: None,
             logout_line: None,
             server_messages: VecDeque::new(),
+            message_namespace: 0,
         };
         for entry in overlay {
             view.set_marker(entry);

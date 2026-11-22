@@ -38,6 +38,7 @@ pub(crate) fn generate(root: &Path) -> Result<String, String> {
     }
     source.push_str("];\n");
     // Offline login and sibling rows are not all feature registrations on this checkout.
-    source.push_str("const RESERVED_CHORDS: &[&str] = &[\"ENTER\", \"KEYPADENTER\", \"CTRL+SHIFT+G\", \"CTRL+SHIFT+L\", \"CTRL+P\"];\n");
+    // Ctrl+P is Global's VIP list chord; Prey's own Ctrl+P is the registered 0140-prey-open row.
+    source.push_str("const RESERVED_CHORDS: &[&str] = &[\"ENTER\", \"KEYPADENTER\", \"CTRL+SHIFT+G\", \"CTRL+SHIFT+L\"];\n");
     Ok(source)
 }

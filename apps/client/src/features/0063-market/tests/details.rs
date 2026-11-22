@@ -118,6 +118,20 @@ impl Stepper for Peer {
                 .map_err(|_| oteryn_session::SessionError::SessionUnusable)?,
         })
     }
+    async fn market(
+        &mut self,
+        command: &oteryn_client_runtime::market::MarketCommand,
+    ) -> Result<oteryn_client_runtime::market::MarketResponse, oteryn_session::SessionError> {
+        Ok(oteryn_client_runtime::market::MarketResponse {
+            status: oteryn_session::CommandStatus::Accepted,
+            reply: Some(oteryn_client_runtime::market::market::MarketReply {
+                action: command.0.action,
+                code: 1,
+                offer: [0; 16],
+                rows: Vec::new(),
+            }),
+        })
+    }
     async fn serve(
         &mut self,
         duration: std::time::Duration,
@@ -213,4 +227,41 @@ fn t124_catalogue_and_completed_prices_reach_the_real_session_caller() -> Result
         .join()
         .map_err(|_| "market caller thread")??;
     Ok(())
+}
+
+#[test]
+fn successful_trade_refreshes_the_book_projection() -> Result<(), Error> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+            runtime.block_on(async {
+                let (link, mut incoming, outbox) = play_channel();
+                outbox.market_initialize(true);
+                assert!(link.market_query(Query::Book {
+                    definition: 42,
+                    page: 3
+                }));
+                let crate::combat_input::PlayCommand::Feature(query) = incoming.try_recv()? else {
+                    return Err("book query".into());
+                };
+                let mut peer = Peer;
+                outbox.market_details_result(&query, &peer.feature(&query).await?);
+                assert!(link.market_details("42", "1", "100", true, false));
+                link.market_select_offer(0);
+                link.market_request(oteryn_client_ui::market::Intent::AcceptOffer);
+                let crate::combat_input::PlayCommand::Market(command) = incoming.try_recv()? else {
+                    return Err("trade".into());
+                };
+                outbox.market_execute(&mut peer, &command).await?;
+                let panel = link.market_panel();
+                assert_eq!(panel.rows.len(), 2);
+                assert_eq!(panel.page, 3);
+                assert_eq!(panel.details.statistics.as_ref().map(|s| s.trades), Some(2));
+                assert!(!panel.details.book_has_next);
+                Ok::<(), Error>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "Book refresh test panicked")?
 }

@@ -688,7 +688,7 @@ fn hireling_package_resource_and_byte_worst_cases_are_bounded_by_existing_rows()
         let mut over = usage;
         over.participants += 1;
         assert_eq!(
-            check_npc_trade_usage(SIDE_BUY, false, true, false, false, &over),
+            check_npc_trade_usage(SIDE_BUY, false, true, false, false, false, &over),
             Err(AuditError::CapacityExceeded)
         );
         let mut ordinary = value.clone();
@@ -883,7 +883,15 @@ fn npc_buy_bank_value_line_is_v2_only_and_conserves_the_single_trade() {
     let mut over_value_lines = npc_trade_usage(&value);
     over_value_lines.value_lines = 2;
     assert_eq!(
-        check_npc_trade_usage(SIDE_BUY, false, false, false, false, &over_value_lines),
+        check_npc_trade_usage(
+            SIDE_BUY,
+            false,
+            false,
+            false,
+            false,
+            false,
+            &over_value_lines
+        ),
         Err(AuditError::InvalidInput)
     );
     // Prost accepts a repeated singular message by merging it. The canonical native gate
@@ -1231,4 +1239,58 @@ fn worst_case_sell_all_payload_and_envelope_are_the_registered_rows() {
     // A 21st stack is refused before encoding.
     let over = singles(FEE_INPUTS_MAX + 1, 1);
     assert_eq!(check_npc_trade(&over), Err(AuditError::CapacityExceeded));
+}
+
+#[test]
+fn default_trade_states_reject_nonzero_key_numbers() {
+    let mut exchange = trade(SIDE_EXCHANGE, 1, 0);
+    let cause = exchange.cause.as_mut().unwrap();
+    cause.npc_key = "oteryn:npc.al_dee".into();
+    cause.offer_index = 0;
+    exchange.lines = vec![
+        burn(
+            LINE_ITEM_BURN,
+            10,
+            definition("Item", "oteryn:item.tibia.i3462", "definition-r1"),
+            1,
+            1,
+            0,
+        ),
+        mint_line(
+            LINE_ITEM_MINT,
+            20,
+            definition("Item", "oteryn:item.tibia.i3456", "definition-r1"),
+            2,
+            1,
+        ),
+    ];
+    let package = worst_case_hireling_package(
+        crate::domain::hireling::catalogue::PACKAGES
+            .first()
+            .unwrap(),
+    );
+    for value in [buy(), sell(), exchange, package] {
+        assert_eq!(check_npc_trade(&value), Ok(()));
+        for (index, line) in value.lines.iter().enumerate() {
+            if line.before.is_some() {
+                let mut changed = value.clone();
+                changed.lines[index].before.as_mut().unwrap().key_number = 1;
+                assert_eq!(check_npc_trade(&changed), Err(AuditError::InvalidInput));
+            }
+            let mut changed = value.clone();
+            changed.lines[index].after.as_mut().unwrap().key_number = 1;
+            assert_eq!(check_npc_trade(&changed), Err(AuditError::InvalidInput));
+        }
+        if let Some(package) = &value.hireling_package {
+            for index in 0..package.children.len() {
+                let mut changed = value.clone();
+                changed.hireling_package.as_mut().unwrap().children[index]
+                    .after
+                    .as_mut()
+                    .unwrap()
+                    .key_number = 1;
+                assert_eq!(check_npc_trade(&changed), Err(AuditError::InvalidInput));
+            }
+        }
+    }
 }

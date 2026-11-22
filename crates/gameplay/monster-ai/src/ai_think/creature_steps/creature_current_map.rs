@@ -220,7 +220,7 @@ impl CreatureAiTable {
                 ],
             };
             let (route, work) =
-                measured_current_route(start, target, exact, &mut reader, budget).await;
+                measured_current_route(start, target, exact, false, &mut reader, budget).await;
             // No await between charging the completed search and retaining its result.
             if let Some(entry) = self.entry_mut(actor) {
                 super::creature_paths::install_route(entry, runtime, start, route, work);

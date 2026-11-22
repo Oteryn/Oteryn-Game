@@ -28,7 +28,8 @@ pub fn generate(root: &Path, out: &Path) -> Result<(), String> {
     }
     let value: serde_json::Value = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
     let mut rust = String::from("pub(super) const PROFESSIONS: &[(&str, &str, &[&str])] = &[\n");
-    for row in value["bundles"].as_array().ok_or("spell bundles missing")? {
+    let bundles = value["bundles"].as_array().ok_or("spell bundles missing")?;
+    for row in bundles {
         let spell = &row["bundle"]["spell"];
         let name = spell["name"].as_str().ok_or("spell name missing")?;
         let words = spell["words"].as_str().unwrap_or("");
@@ -39,7 +40,74 @@ pub fn generate(root: &Path, out: &Path) -> Result<(), String> {
             .map(|value| value.as_str().ok_or("invalid vocation"))
             .collect::<Result<_, _>>()?;
         rust.push_str(&format!("({name:?}, {words:?}, &{vocations:?}),\n"));
+        if let Some(alias) = rune_display_alias(spell, bundles)
+            && !name.eq_ignore_ascii_case(alias)
+        {
+            rust.push_str(&format!("({alias:?}, {words:?}, &{vocations:?}),\n"));
+        }
     }
     rust.push_str("];\n");
     std::fs::write(out.join("spell_metadata.rs"), rust).map_err(|e| e.to_string())
+}
+
+// Use the same conservative source unanimity as the server's display projection.
+// The caller keeps the rune-use professions; the creator only supplies a label.
+fn rune_display_alias<'a>(
+    spell: &'a serde_json::Value,
+    bundles: &'a [serde_json::Value],
+) -> Option<&'a str> {
+    if spell["carrier"].as_str()? != "rune" {
+        return None;
+    }
+    let item = item_id(&spell["rune"]["item"])?;
+    let mut label = None;
+    for row in bundles {
+        let creator = &row["bundle"]["spell"];
+        if creator["carrier"].as_str() != Some("instant")
+            || item_id(&creator["execution"]["conjure"]["result"]) != Some(item)
+        {
+            continue;
+        }
+        let name = creator["name"].as_str()?;
+        match label {
+            Some(previous) if previous != name => return None,
+            None => label = Some(name),
+            _ => {}
+        }
+    }
+    label
+}
+
+fn item_id(reference: &serde_json::Value) -> Option<u32> {
+    if reference["family"].as_str()? != "Item" {
+        return None;
+    }
+    let key = reference["key"].as_str()?;
+    key.strip_prefix("candidate:item/")
+        .or_else(|| key.strip_prefix("oteryn:item.tibia.i"))?
+        .parse()
+        .ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::rune_display_alias;
+    use serde_json::json;
+
+    #[test]
+    fn rune_alias_matches_numeric_id_across_reference_formats() {
+        let rune = json!({"carrier":"rune", "rune":{"item":{
+            "family":"Item", "key":"candidate:item/3153", "revision":"candidate"
+        }}});
+        let bundles = [json!({"bundle":{"spell":{
+            "carrier":"instant", "name":"Cure Poison Rune",
+            "execution":{"conjure":{"result":{
+                "family":"Item", "key":"oteryn:item.tibia.i3153", "revision":"native"
+            }}}
+        }}})];
+        assert_eq!(
+            rune_display_alias(&rune, &bundles),
+            Some("Cure Poison Rune")
+        );
+    }
 }

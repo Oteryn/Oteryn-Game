@@ -73,6 +73,7 @@ pub(super) async fn exercise(
         item: ItemKey::Instance(item),
         count: None,
         target: LoopTarget::Ground(WorldTilePosition { x, y: 0, floor: -7 }),
+        slot: None,
     };
     let to = |x| move_to(letter, x);
     let carried = (String::from("oteryn:item.tibia.i3505"), 0, 0);
@@ -158,6 +159,7 @@ pub(super) async fn exercise(
                     item: ItemKey::Instance(label),
                     count: None,
                     target: LoopTarget::Container(ItemKey::Instance(parcel)),
+                    slot: None,
                 },
             )
             .await,
@@ -170,18 +172,27 @@ pub(super) async fn exercise(
     );
     if let Some(item)=charge_item {
         assert_eq!(owner.move_loop_item(actor,command(508),LoopMove{item:ItemKey::Instance(item),count:None,
-            target:LoopTarget::Container(ItemKey::Instance(parcel))}).await,LoopMoveResult::Committed);
+            target:LoopTarget::Container(ItemKey::Instance(parcel)),slot:None}).await,LoopMoveResult::Committed);
     }
     // The mail owner admits one post per sender each second.
     tokio::time::sleep(std::time::Duration::from_millis(1100)).await;
-    assert_eq!(
-        owner.move_loop_item(actor, command(507), move_to(parcel, 8)).await,
-        LoopMoveResult::Committed
-    );
+    let parcel_command = if mode == Mode::MailPostCapacity {
+        post_parcel_and_observe_capacity(owner, admitted).await?
+    } else {
+        assert_eq!(
+            owner
+                .move_loop_item(actor, command(507), move_to(parcel, 8))
+                .await,
+            LoopMoveResult::Committed
+        );
+        507
+    };
     let stamped = (String::from("oteryn:item.tibia.i3504"), 1, 2);
     assert_eq!(state(pool, parcel).await?, stamped);
     assert_eq!(
-        owner.move_loop_item(actor, command(507), move_to(parcel, 8)).await,
+        owner
+            .move_loop_item(actor, command(parcel_command), move_to(parcel, 8))
+            .await,
         LoopMoveResult::Committed
     );
     assert_eq!(state(pool, parcel).await?, stamped);
@@ -222,6 +233,131 @@ pub(super) async fn exercise(
         eprintln!("SRX1_PG partially used keg: parcel/Inbox/retrieval/replay preserves 441 charges");
     }
     Ok(())
+}
+
+async fn post_parcel_and_observe_capacity(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult<u64> {
+    use crate::gameplay_transport::{
+        connection::serve_admitted,
+        tcp_tls::{read_frame, write_frame},
+    };
+    use oteryn_protocol_oteryn::{
+        ClientCommandValue, CommandStatus, MessageType, decode_command_result,
+        decode_snapshot_chunk, decode_wire_envelope, encode_client_command, item_view,
+        world_map::{self, MapDefinition, MapOrigin},
+    };
+    use tokio::io::AsyncWriteExt;
+    let selected = &[4, 6, 18, 115, 508];
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), selected)
+            .ok_or("mail capacity capabilities")?;
+    let command_id = admitted.continuity.next_command_id;
+    let index = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.item_index())
+        .ok_or("mail item index")?;
+    let parcel = index
+        .definition_ref("Item", "oteryn:item.tibia.i3503", "definition-r1")
+        .ok_or("parcel definition")?;
+    let mailbox = MapDefinition::Item(
+        index
+            .definition_ref("Item", "oteryn:item.tibia.i3501", "definition-r1")
+            .ok_or("mailbox definition")?,
+    );
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = async {
+        serve_admitted(&mut server, admitted, owner, SCENARIO_LIVENESS).await;
+        drop(server);
+    };
+    let driving = async {
+        let mut parcel_handle = None;
+        let mut mailbox_handle = None;
+        let before = loop {
+            let frame = read_frame(&mut client).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::SnapshotChunk {
+                for domain in decode_snapshot_chunk(envelope.payload()).map_err(debug)?.1 {
+                    if domain.domain_id == item_view::STATE_DOMAIN_CHARACTER_INVENTORY {
+                        let inventory =
+                            item_view::decode_character_inventory(domain.payload).map_err(debug)?;
+                        parcel_handle = inventory
+                            .entries
+                            .iter()
+                            .find(|entry| entry.item_definition_ref == parcel)
+                            .map(|entry| entry.handle.get());
+                    }
+                    if domain.domain_id == world_map::STATE_DOMAIN_WORLD_MAP_VIEW {
+                        let map =
+                            world_map::decode_world_map_snapshot(domain.payload).map_err(debug)?;
+                        mailbox_handle = map
+                            .tiles
+                            .iter()
+                            .filter(|tile| tile.position.x == 8)
+                            .flat_map(|tile| &tile.items)
+                            .find_map(|entry| match entry.origin {
+                                MapOrigin::Handle(handle) if entry.definition == mailbox => {
+                                    Some(handle.get())
+                                }
+                                _ => None,
+                            });
+                    }
+                }
+            }
+            if let Some(capacity) = super::super::player_trade_fixtures::capacity_frame(&frame, selected)? {
+                break capacity;
+            }
+        };
+        let post = encode_intent(&MailIntent::Post {
+            item_handle: parcel_handle.ok_or("wire parcel handle")?,
+            mailbox_handle: mailbox_handle.ok_or("wire mailbox handle")?,
+        })
+        .map_err(debug)?;
+        let frame = encode_client_command(
+            admitted.continuity.connection_generation,
+            &ClientCommandValue {
+                command_id,
+                command_type: u32::from(oteryn_protocol_oteryn::mail::COMMAND_TYPE_MAIL),
+                payload: &post,
+            },
+        )
+        .map_err(debug)?;
+        write_frame(&mut client, &frame).await?;
+        let mut posted = false;
+        tokio::time::timeout(std::time::Duration::from_secs(3), async {
+            loop {
+                let frame = read_frame(&mut client).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                    assert_eq!(result.command_id, command_id);
+                    assert_eq!(result.status, CommandStatus::Accepted);
+                    assert_eq!(result.payload, [MailOutcome::Posted as u8]);
+                    posted = true;
+                }
+                if let Some(after) = super::super::player_trade_fixtures::capacity_frame(&frame, selected)? {
+                    assert!(posted);
+                    assert_eq!(after.capacity, before.capacity);
+                    assert!(
+                        after.free > before.free,
+                        "posting the parcel frees carrying capacity"
+                    );
+                    return Ok::<_, Box<dyn std::error::Error>>(());
+                }
+            }
+        })
+        .await??;
+        client.shutdown().await?;
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (_, result) = tokio::time::timeout(std::time::Duration::from_secs(12), async {
+        tokio::join!(serving, driving)
+    })
+    .await?;
+    result?;
+    Ok(command_id)
 }
 
 fn hex(item: [u8; 16]) -> String {

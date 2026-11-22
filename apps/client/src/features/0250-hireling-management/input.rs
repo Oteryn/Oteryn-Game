@@ -1,4 +1,3 @@
-#[cfg(any(windows, test))]
 #[path = "input/configuration.rs"]
 pub(in crate::play) mod configuration;
 use crate::combat_input::PlayCommand;

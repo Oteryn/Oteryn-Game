@@ -88,6 +88,7 @@ fn replays_server_payload_and_rejects_invalid_combat_state() -> Result<(), Error
                                 content_generation: [1; 32], actor_position: position,
                                 own_identity: [5; 16],
                                 entities: vec![oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity {
+                                    motion: None,
                                     entity: oteryn_protocol_oteryn::world_spatial_entities::EntityRef { identity: [5; 16], generation: 1 },
                                     kind: oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Player,
                                     display_name: None, position,

@@ -172,3 +172,29 @@ fn e2e_n03_depot_list_retrieve_one_and_refusals() -> Result<(), Error> {
     }
     Ok(())
 }
+
+#[test]
+fn depot_actions_parse_only_their_required_fields() -> Result<(), Error> {
+    for detail in [false, true] {
+        let (link, mut receiver, outbox) = play_channel();
+        outbox.depot_search_initialize(true);
+        let mut inputs = Inputs::default();
+        if detail {
+            activate(&link, &inputs, 5);
+            assert_eq!(sent(&mut receiver)?, Request::Open { after: 0 });
+            outbox.depot_search_result(&response(1, CommandStatus::Accepted, encode(&Reply {
+                outcome: Outcome::Listed, retrieved: 0,
+                results: vec![row(2854, 1, vec![TierCount { tier: 2, count: 1 }])],
+            })?));
+            inputs.0[0].clear();
+            inputs.0[3] = "2".into();
+            activate(&link, &inputs, 4);
+            assert_eq!(sent(&mut receiver)?, Request::Detail { client_id: 2854, tier: 2 });
+        } else {
+            inputs.0[3].clear();
+            activate(&link, &inputs, 1);
+            assert_eq!(sent(&mut receiver)?, Request::Search { client_id: 100 });
+        }
+    }
+    Ok(())
+}

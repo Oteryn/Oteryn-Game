@@ -12,7 +12,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> QuestLogObservation {
         let world = {
             let runtime = self.runtime.lock().await;
-            if runtime.player_control_facts(actor, session).is_err() {
+            if !quest_reader(&runtime, actor, session) {
                 return QuestLogObservation::Unavailable;
             }
             runtime.binding().runtime_scope().world_id()
@@ -62,13 +62,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     return QuestLogObservation::Unavailable;
                 };
-                if self
-                    .runtime
-                    .lock()
-                    .await
-                    .player_control_facts(actor, session)
-                    .is_err()
-                {
+                if !quest_reader(&*self.runtime.lock().await, actor, session) {
                     return QuestLogObservation::Unavailable;
                 }
                 let Ok(mut sessions) = self.states.quest_sessions.lock() else {
@@ -87,13 +81,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry.copy = Some(copy);
                 entry.version = next;
             }
-            if self
-                .runtime
-                .lock()
-                .await
-                .player_control_facts(actor, session)
-                .is_err()
-            {
+            if !quest_reader(&*self.runtime.lock().await, actor, session) {
                 return QuestLogObservation::Unavailable;
             }
         }
@@ -128,4 +116,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             version: entry.version,
         })
     }
+}
+
+fn quest_reader(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+) -> bool {
+    runtime.player_control_facts(actor, session).is_ok()
+        || runtime
+            .house_player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
 }

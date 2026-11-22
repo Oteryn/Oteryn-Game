@@ -28,6 +28,16 @@ must fail closed rather than silently building from unverified or substituted
 input. What the owner packages with the Oteryn client from that verified input is
 outside this repository.
 
+## Game font and creature HUD flags
+
+The client draws creature names, value numbers and spell words with Tibia's game font, and
+skull and party shield marks with Tibia's flag artwork, from the official client's
+`bin/graphics_resources.rcc` (a Qt resource bundle). Copy that file next to the sprite sheets as
+`content/assets/files/graphics_resources.rcc`; it is ignored by Git and never committed.
+`crates/client-assets/src/tibia_graphics.rs` reads only the font and the two flag strips from
+it and checks each against its pinned `sha256`; without the file, or on a mismatch, the client
+keeps its builtin glyphs.
+
 ## Known gap versus the pinned server engines
 
 Server-side Item data currently stays on Canary `47dfd51f` / Crystal `ff7ede5`

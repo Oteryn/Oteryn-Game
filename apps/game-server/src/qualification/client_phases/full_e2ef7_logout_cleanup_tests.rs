@@ -96,6 +96,7 @@ where
                 actor_position: position,
                 own_identity: own,
                 entities: vec![spatial::WorldSpatialEntity {
+                    motion: None,
                     display_name: None,
                     kind: spatial::EntityKind::Player,
                     entity: spatial::EntityRef {

@@ -20,6 +20,7 @@ async fn move_item(
             equip_drop: true,
             container_tree: false,
             world_interaction: false,
+            manual_sort: false,
         },
     )
     .map_err(debug)?;

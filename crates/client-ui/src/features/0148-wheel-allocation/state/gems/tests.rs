@@ -174,3 +174,79 @@ fn gem_review_and_wheel_preview_requests_are_serialized() -> Result<(), &'static
     assert!(confirm(&mut p).is_some());
     Ok(())
 }
+
+#[test]
+fn inactive_workshop_grades_do_not_contribute_active_totals() -> Result<(), &'static str> {
+    let mut p = current();
+    p.confirmed_atelier.as_mut().ok_or("atelier")?.grades = vec![atelier::GradeView {
+        kind: 0,
+        mod_id: 48,
+        grade: 3,
+    }];
+    p.gems.reply = Some(wire::Reply {
+        request: wire::Request {
+            nonce: 1,
+            revision: 4,
+        },
+        catalogue: "current".into(),
+        vocation: "monk".into(),
+        grades_current: false,
+        qualified_gems: vec![],
+        modifiers: vec![wire::Modifier {
+            kind: 0,
+            id: 48,
+            name: "Capacity".into(),
+            effects: vec![],
+        }],
+    });
+    let totals = super::super::workshop_lines(&p).join("\n");
+    assert!(totals.contains("+0 Health"));
+    assert!(totals.contains("Promotion Points: 0"));
+    let label = super::super::modifier_label(&p, 0, 48);
+    assert!(label.contains("Grade I"));
+    assert!(label.contains("stored Grade IV"));
+    let detail = view::modifier(&p, 0, 48);
+    assert!(detail.contains("Workshop grade 1"));
+    assert!(detail.contains("stored Grade IV"));
+    Ok(())
+}
+
+#[test]
+fn vessel_graphic_reads_every_v2_board_slot() -> Result<(), &'static str> {
+    let mut p = current();
+    p.atelier_v2 = true;
+    p.gem = None;
+    let gem = p
+        .confirmed_atelier
+        .as_mut()
+        .ok_or("atelier")?
+        .gems
+        .first_mut()
+        .ok_or("gem")?;
+    gem.vessel = true;
+    let id = gem.id;
+    p.vessel_board = Some(crate::gem_atelier::VesselBoard {
+        slots: vec![
+            atelier::v2::VesselSlotView {
+                quality: 0,
+                open: true,
+                gem: None
+            };
+            12
+        ],
+        ..Default::default()
+    });
+    let empty = atlas::panel_glyphs(&p);
+    for slot in 0..12 {
+        p.vessel_board.as_mut().ok_or("board")?.slots[slot].gem = Some(id);
+        let occupied = atlas::panel_glyphs(&p);
+        assert_eq!(
+            occupied.len(),
+            empty.len(),
+            "preserve the native atlas dimensions"
+        );
+        assert!(occupied != empty, "slot {slot} must be visible");
+        p.vessel_board.as_mut().ok_or("board")?.slots[slot].gem = None;
+    }
+    Ok(())
+}

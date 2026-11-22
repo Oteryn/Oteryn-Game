@@ -1,4 +1,5 @@
 use oteryn_gameplay_world::map::view::MapFacts;
+use super::annihilator_combat::{KNIGHT_POTION, PALADIN_POTION};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 
 use oteryn_protocol_oteryn::attack::*;
@@ -40,7 +41,20 @@ pub(super) async fn scenario(
             })
             .ok_or("actual source Dragon")?
     };
-    fight(owner, member, target.actor, target.generation).await?;
+    let potion = if all_defenders {
+        PALADIN_POTION
+    } else {
+        KNIGHT_POTION
+    };
+    fight(
+        owner,
+        member,
+        target.actor,
+        target.generation,
+        potion,
+        ChaseMode::Chase,
+    )
+    .await?;
     let fence = owner
         .current_quest_fence(member.game_session_id)
         .await
@@ -100,6 +114,8 @@ async fn fight(
     member: &mut AdmittedSession,
     target: crate::foundation::ExactActorRef,
     generation: u64,
+    potion: &str,
+    chase: ChaseMode,
 ) -> TestResult {
     let player = member.runtime_actor.ok_or("player")?;
     let initial = owner
@@ -118,7 +134,7 @@ async fn fight(
         COMMAND_TYPE_FIGHT_MODES_INTENT,
         encode_fight_modes_intent(&FightModes {
             fight_mode: FightMode::Offensive,
-            chase: ChaseMode::Chase,
+            chase,
             ..FightModes::DEFAULT
         }),
     )
@@ -136,9 +152,9 @@ async fn fight(
     .await?;
     let mut killed = false;
     let mut dealt_damage = false;
-    for pass in 0..512 {
+    for _ in 0..512 {
         // The connection scheduler normally drives chase separately from swings.
-        let chase = owner.chase_step_now(player, member.game_session_id).await;
+        owner.chase_step_now(player, member.game_session_id).await;
         owner
             .refresh_attack_weapon(player, member.game_session_id)
             .await;
@@ -190,35 +206,7 @@ async fn fight(
             break;
         }
         if heal {
-            super::annihilator_combat::heal(owner, member).await?;
-        }
-        if pass % 32 == 0 {
-            let (player_at, target_at, origin, maximum, forge) = {
-                let runtime = owner.runtime.lock().await;
-                let current = runtime.companion_snapshot(target).map_err(debug)?;
-                (
-                    runtime
-                        .read_actor_position(player)
-                        .map_err(debug)?
-                        .position(),
-                    current.position,
-                    runtime.creature_spawn_cell(target),
-                    current.maximum_health,
-                    current.forge,
-                )
-            };
-            eprintln!(
-                "ELVENBANE_WIRE_POS pass={pass} player={player_at:?} target={target_at:?} origin={origin:?} maximum={maximum} forge={forge:?} chase={chase:?}"
-            );
-            eprintln!(
-                "ELVENBANE_WIRE_ATTACK pass={pass} health={remaining} initial_max={} combat={:?}",
-                initial.maximum_health,
-                owner.states.attack.lock().await.combat_state(
-                    player,
-                    member.game_session_id,
-                    owner.owner_now()
-                )
-            );
+            super::annihilator_combat::heal(owner, member, potion).await?;
         }
         owner.clock_origin = owner
             .clock_origin
@@ -310,13 +298,12 @@ async fn upper_defenders(
                 .visible_entities()
                 .creatures
                 .into_iter()
-                .filter(|row| {
-                    runtime
-                        .creature_spawn_cell(row.actor)
-                        .is_some_and(|origin| origin.floor == floor)
+                .filter_map(|row| {
+                    let origin = runtime.creature_spawn_cell(row.actor)?;
+                    (origin.floor == floor).then_some((row, origin))
                 })
                 .collect();
-            targets.sort_by_key(|row| row.actor.placement_identity());
+            targets.sort_by_key(|(row, _)| row.actor.placement_identity());
             assert_eq!(
                 targets.len(),
                 if floor == 4 { 2 } else { 3 },
@@ -324,8 +311,44 @@ async fn upper_defenders(
             );
             targets
         };
-        for target in targets {
-            fight(owner, member, target.actor, target.generation).await?;
+        for (target, origin) in targets {
+            let at = owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(target.actor)
+                .map_err(debug)?
+                .position();
+            let chase = if (origin.x, origin.y, origin.floor) == (32590, 31647, 4)
+                && at.y == 31647
+                && (32590..=32592).contains(&at.x)
+            {
+                // The Orc Shaman retreats behind projectile blockers on this floor.
+                // Walk around the pillars to the open tile immediately west of it.
+                super::desert_earned_route_fixtures::walk_to(
+                    owner,
+                    member,
+                    Position {
+                        x: u16::try_from(at.x - 1)?,
+                        y: 31647,
+                        floor: -4,
+                    },
+                )
+                .await
+                .map_err(|error| format!("approaching the Orc Shaman at {at:?}: {error}"))?;
+                ChaseMode::Stand
+            } else {
+                ChaseMode::Chase
+            };
+            fight(
+                owner,
+                member,
+                target.actor,
+                target.generation,
+                PALADIN_POTION,
+                chase,
+            )
+            .await?;
         }
     }
     Ok(())

@@ -8,7 +8,8 @@ use oteryn_session::{
 #[test]
 fn pinned_boss_area_category_reaches_wire_caller_and_gpu_alpha()
 -> Result<(), Box<dyn std::error::Error>> {
-    let dir = std::env::temp_dir().join(format!("oteryn-boss-opacity-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let dir = fixture.path().join("oteryn-boss-opacity");
     std::fs::create_dir_all(&dir)?;
     let path = dir.join("manifest.json");
     let bytes = br#"{"files":[],"boss_area_effects":[41]}"#;
@@ -79,6 +80,5 @@ fn pinned_boss_area_category_reaches_wire_caller_and_gpu_alpha()
     assert!(alpha(&view).contains(&0.4));
     preferences.boss_area_opacity = 101;
     assert!(view.set_preferences(preferences).is_err());
-    std::fs::remove_dir_all(dir)?;
     Ok(())
 }

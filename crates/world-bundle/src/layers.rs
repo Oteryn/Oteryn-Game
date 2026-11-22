@@ -56,6 +56,7 @@ pub fn validate(manifest: &Manifest, layers: &[Layer]) -> Result<(), Error> {
 /// Compose only layers admitted by this bundle; the caller supplies the epoch selection.
 /// No layer precedence is invented: overlapping selections are refused.
 pub fn compose(bundle: &mut crate::bundle::Bundle, selected: &[&str]) -> Result<(), Error> {
+    let mut palette = bundle.manifest.palette.clone();
     let mut occupied = BTreeSet::new();
     let mut replacements = BTreeMap::new();
     for key in selected {
@@ -64,9 +65,9 @@ pub fn compose(bundle: &mut crate::bundle::Bundle, selected: &[&str]) -> Result<
             .iter()
             .find(|layer| layer.key == *key)
             .ok_or_else(|| Error::Key(format!("layer not compiled: {key}")))?;
-        let offset = u32::try_from(bundle.manifest.palette.len())
-            .map_err(|_| Error::Limit("layer palette".into()))?;
-        bundle.manifest.palette.extend_from_slice(&layer.palette);
+        let offset =
+            u32::try_from(palette.len()).map_err(|_| Error::Limit("layer palette".into()))?;
+        palette.extend_from_slice(&layer.palette);
         for sector in &layer.sectors {
             for tile in &sector.tiles {
                 if !occupied.insert((sector.floor, tile.y, tile.x)) {
@@ -84,9 +85,9 @@ pub fn compose(bundle: &mut crate::bundle::Bundle, selected: &[&str]) -> Result<
         }
     }
     let mut sectors = BTreeMap::new();
-    for s in std::mem::take(&mut bundle.sectors) {
-        for tile in s.tiles {
-            sectors.insert((s.floor, s.sy, s.sx, tile.y, tile.x), tile);
+    for s in &bundle.sectors {
+        for tile in &s.tiles {
+            sectors.insert((s.floor, s.sy, s.sx, tile.y, tile.x), tile.clone());
         }
     }
     for (at, tile) in &replacements {
@@ -109,6 +110,7 @@ pub fn compose(bundle: &mut crate::bundle::Bundle, selected: &[&str]) -> Result<
     {
         return Err(Error::Limit("composed layer totals".into()));
     }
+    bundle.manifest.palette = palette;
     bundle.sectors = grouped
         .into_iter()
         .map(|((floor, sy, sx), tiles)| Sector {
@@ -119,4 +121,80 @@ pub fn compose(bundle: &mut crate::bundle::Bundle, selected: &[&str]) -> Result<
         })
         .collect();
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::bundle::{BuildClass, Extent, FORMAT, Family, Identity, Manifest, VERSION};
+    #[test]
+    fn failed_composition_preserves_palette_and_sectors() {
+        let manifest = Manifest {
+            subareas: Default::default(),
+            format: FORMAT.into(),
+            min_reader_version: VERSION,
+            projection_class: "server".into(),
+            compiler_version: "test".into(),
+            build_class: BuildClass::Production,
+            identity: Identity::default(),
+            world: Extent {
+                min_x: 0,
+                min_y: 0,
+                max_x: 1,
+                max_y: 1,
+                floors: vec![-7],
+            },
+            palette: vec![],
+            draft_areas: vec![],
+            skipped_provisional_keys: vec![],
+            dropped_teleports: vec![],
+            spawns: Default::default(),
+            npcs: Default::default(),
+        };
+
+        let tile = sector::Tile {
+            x: 0,
+            y: 0,
+            flags: 0,
+            house: 1,
+            zones: vec![],
+            items: vec![],
+        };
+        let sector = Sector {
+            floor: 0,
+            sx: 0,
+            sy: 0,
+            tiles: vec![tile],
+        };
+        let palette = vec![PaletteEntry {
+            key: "item/test".into(),
+            family: Family::Item,
+            id: 0,
+            terrain: None,
+        }];
+        let mut layer_sector = sector.clone();
+        layer_sector.tiles[0].house = 0;
+        let layer = Layer {
+            key: "event".into(),
+            palette,
+            sectors: vec![layer_sector],
+        };
+        for selection in [
+            vec!["event"],
+            vec!["event", "missing"],
+            vec!["event", "event"],
+        ] {
+            let mut bundle = crate::bundle::Bundle {
+                manifest: manifest.clone(),
+                sectors: vec![sector.clone()],
+                layers: vec![layer.clone()],
+                spawns: Default::default(),
+                npcs: Default::default(),
+                digest: [0; 32],
+            };
+            assert!(compose(&mut bundle, &selection).is_err());
+            assert_eq!(bundle.manifest, manifest);
+            assert_eq!(bundle.sectors, vec![sector.clone()]);
+        }
+    }
 }

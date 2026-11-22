@@ -1,6 +1,28 @@
 // RC5: the admission relation fence is one statement and keeps every lock and its mode.
 
 #[test]
+fn inventory_capacity_observation_rejects_mutation_locks_postgres() -> TestResult {
+    run_postgres_test(async {
+        let (database, url) = migrated_database("capacity_observation_read_only").await?;
+        let root = ready_root(&url).await?;
+        let code = root.try_issue_semantic_pass()?.run(|holder, deadline| {
+            Box::pin(async move {
+                let mut tx = super::begin_observation_transaction(holder, deadline).await?;
+                let result = sqlx::query("SELECT character_id FROM game_character_roots FOR UPDATE")
+                    .fetch_all(&mut *tx).await;
+                let code = result.err().and_then(|error| {
+                    error.as_database_error().and_then(|error| error.code()).map(|code| code.into_owned())
+                });
+                tx.rollback().await?;
+                Ok(code)
+            })
+        }).await?;
+        assert_eq!(code.as_deref(), Some("25006"), "observation must reject mutation locks even on an empty table");
+        database.cleanup().await
+    })
+}
+
+#[test]
 fn admission_relation_fence_locks_every_relation_exclusive_in_one_statement() -> TestResult {
     run_postgres_test(async {
         let (database, url) = migrated_database("holder_fence_one_stmt").await?;

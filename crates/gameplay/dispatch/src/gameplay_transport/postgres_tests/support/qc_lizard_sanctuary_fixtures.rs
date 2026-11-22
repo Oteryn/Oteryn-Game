@@ -88,6 +88,7 @@ pub(super) async fn exercise(
         item: ItemKey::MapBase { bundle_digest: digest, placement_key: egg, reset_epoch: 0 },
         count: None,
         target: LoopTarget::MainBackpack,
+        slot: None,
     }).await;
     assert_eq!(move_result, LoopMoveResult::Committed);
     let custody = async || super::questpc7_outfit_items_fixtures::quantity(h, 21469).await;

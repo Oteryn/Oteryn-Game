@@ -1,0 +1,22 @@
+[
+  {
+    "mechanic": "0502-actor-motion",
+    "kind": "handlers",
+    "id": "0502-actor-motion-mount",
+    "status": "supported",
+    "commands": [
+      6242
+    ],
+    "direction": "client_to_server",
+    "capability": 502,
+    "entry": "mod.rs::mount_command",
+    "test": "tests::mount_chord_is_control_r",
+    "not_applicable": {
+      "settings": "Uses the standard Ctrl+R riding shortcut.",
+      "state": "The session owns capability-gated visibility motion facts.",
+      "protocol": "Mount intent and visibility codecs are owned by protocol-oteryn and session.",
+      "view": "The app scene owns artwork and per-actor clocks.",
+      "input": "mount_key in this module supplies Ctrl+R."
+    }
+  }
+]

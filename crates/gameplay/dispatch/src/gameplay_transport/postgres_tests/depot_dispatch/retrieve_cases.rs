@@ -104,6 +104,7 @@ pub(super) async fn exercise(
                                 floor: -7,
                             },
                         ),
+                        slot: None,
                     },
                 )
                 .await,

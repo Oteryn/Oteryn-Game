@@ -126,9 +126,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return true;
         };
-        let Ok(Some(fence)) = tokio::time::timeout_at(
+        let Ok(Ok(Some(fence))) = tokio::time::timeout_at(
             deadline,
-            super::super::character_gameplay_fence::current(self, admitted.game_session_id, false),
+            self.root.observe_current_gameplay_fence(self.character, admitted.game_session_id, false),
         )
         .await
         else {
@@ -140,7 +140,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(Ok(status)) = tokio::time::timeout_at(
             deadline,
             self.root
-                .staff_live_status(self.character, self.holder, fence.item_fence()),
+                .observe_staff_live_status(self.character, self.holder, fence.item_fence()),
         )
         .await
         else {

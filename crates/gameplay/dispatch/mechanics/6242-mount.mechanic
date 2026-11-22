@@ -1,0 +1,4 @@
+name=mount
+commands=6242
+[route]
+routing::mount::route(authority, session.actor, &session.admitted, command).await

@@ -11,7 +11,7 @@ use std::collections::VecDeque;
 #[derive(Debug, Clone)]
 pub enum AutoWalkTarget {
     Cell(oteryn_protocol_oteryn::world_spatial::ActorPosition),
-    /// Browse Field reaches any adjacent cell, never requiring the occupied target tile.
+    /// A Global Browse Field target. The route reaches any tile adjacent to its runtime cell.
     AdjacentCell(oteryn_protocol_oteryn::item_view::WorldTilePosition),
     Follow(oteryn_protocol_oteryn::world_spatial_entities::EntityRef),
     Item(item_view::ItemKey),
@@ -67,18 +67,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             MovementLocalPosition {
                 x: i32::from(pos.x),
                 y: i32::from(pos.y),
-                floor: -i16::from(pos.floor),
+                floor: self.runtime_floor(i16::from(pos.floor)),
             }
         };
         let explicit = matches!(target, AutoWalkTarget::Cell(_) | AutoWalkTarget::Follow(_));
         let exact = matches!(target, AutoWalkTarget::Cell(_));
         let mut follow = None;
         let position = match target {
-            AutoWalkTarget::AdjacentCell(at) => MovementLocalPosition {
-                x: at.x,
-                y: at.y,
-                floor: at.floor,
-            },
+            AutoWalkTarget::AdjacentCell(at) => self
+                .wire_position_frame(&runtime)
+                .and_then(|frame| {
+                    frame.unproject(oteryn_protocol_oteryn::world_spatial::ActorPosition {
+                        x: at.x,
+                        y: at.y,
+                        floor: at.floor,
+                    })
+                })
+                .ok_or(())?,
             AutoWalkTarget::Cell(at) => self
                 .wire_position_frame(&runtime)
                 .and_then(|frame| frame.unproject(at))
@@ -142,14 +147,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         content_generation: runtime.content_pin().client_artifact_digest(),
                         reset_epoch: self.reset_epoch,
                     };
-                    let pos = match target {
+                    let (pos, placement_key) = match target {
                         AutoWalkTarget::Item(key) => {
                             match world_map::resolve_map_handle(&source, key) {
+                                Ok(world_map::MapHandleTarget::Base {
+                                    pos, placement_key, ..
+                                }) => (pos, Some(placement_key)),
                                 Ok(
-                                    world_map::MapHandleTarget::Base { pos, .. }
-                                    | world_map::MapHandleTarget::Added { pos, .. }
+                                    world_map::MapHandleTarget::Added { pos, .. }
                                     | world_map::MapHandleTarget::Ground { pos, .. },
-                                ) => pos,
+                                ) => (pos, None),
                                 Err(_) => return Ok(None),
                             }
                         }
@@ -159,12 +166,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             unreachable!("explicit targets resolved above")
                         }
                         AutoWalkTarget::Object(target) => {
-                            match world_map::resolve_map_target(&source, &target, |_| Some(())) {
-                                Ok(target) => target.pos,
-                                Err(_) => return Ok(None),
-                            }
+                            let Ok(target) =
+                                world_map::resolve_map_target(&source, &target, |_| Some(()))
+                            else {
+                                return Ok(None);
+                            };
+                            (target.pos, Some(target.placement_key))
                         }
                     };
+                    // Extended-range quest callbacks use the player's chosen position.
+                    // A failed reach check must not walk into range and apply the callback.
+                    if placement_key.is_some_and(|key| {
+                        self.callback_content().iter().any(|callback| {
+                            callback.use_range > 1
+                                && super::super::quest_callbacks::matches(map, callback, key)
+                        })
+                    }) {
+                        return Ok(None);
+                    }
                     native(pos)
                 } else if let AutoWalkTarget::Object(target) = target {
                     if let Some(chest) = Self::chest_target(self.chest, &target.placement) {

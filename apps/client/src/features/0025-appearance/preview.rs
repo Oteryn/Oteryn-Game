@@ -1,16 +1,19 @@
-//! Standing outfit composition uses the same verified sheets as the world view.
-#[cfg(any(windows, feature = "bevy-shell"))]
+//! Timed outfit composition uses the same verified sheets as the world view.
+#[cfg(bevy_shell)]
+use crate::appearance_mount_binding as mount_binding;
+#[cfg(bevy_shell)]
 use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog, SpriteSheets};
-#[cfg(any(windows, feature = "bevy-shell"))]
+#[cfg(bevy_shell)]
 use oteryn_client_ui::appearance::Preview;
-#[cfg(any(windows, feature = "bevy-shell"))]
+#[cfg(bevy_shell)]
 use std::path::Path;
-#[cfg(any(windows, feature = "bevy-shell"))]
+#[cfg(bevy_shell)]
 pub struct Assets {
     index: AppearanceIndex,
     sheets: SpriteSheets,
+    mounts: Option<([u8; 32], std::collections::BTreeMap<String, u32>)>,
 }
-#[cfg(any(windows, feature = "bevy-shell"))]
+#[cfg(bevy_shell)]
 impl Assets {
     pub fn load(root: &Path) -> Result<Self, String> {
         use oteryn_client_assets::world::{MANIFEST_PATH, MANIFEST_SHA256};
@@ -24,26 +27,100 @@ impl Assets {
         let index = AppearanceIndex::load(&store, &catalog).map_err(|e| e.to_string())?;
         Ok(Self {
             index,
+            mounts: mount_binding::load(root).ok(),
             sheets: SpriteSheets::new(store, catalog),
         })
     }
     pub fn draw(&mut self, preview: &Preview) -> Result<Vec<u8>, String> {
+        let mut pixels = vec![32; 96 * 96 * 4];
+        self.draw_look(
+            preview.look_type,
+            preview.addons,
+            Some(preview.colours),
+            false,
+            (2, 0, false),
+            &mut pixels,
+        )?;
+        Ok(pixels)
+    }
+    pub fn draw_panel(
+        &mut self,
+        panel: &oteryn_client_ui::appearance::Panel,
+        direction: u32,
+        elapsed_ms: u64,
+        moving: bool,
+    ) -> Result<Vec<u8>, String> {
+        let preview = panel.preview().ok_or("Choose an outfit")?;
+        let mount = panel.fields[2].trim();
+        let mut pixels = vec![32; 96 * 96 * 4];
+        if !mount.is_empty() {
+            let catalogue = panel
+                .catalogue
+                .as_ref()
+                .ok_or("Waiting for appearance choices")?;
+            if !catalogue.mounts.iter().any(|key| key == mount) {
+                return Err("Choose an owned mount".into());
+            }
+            let (_, mounts) = self
+                .mounts
+                .as_ref()
+                .filter(|(digest, _)| *digest == catalogue.context.cosmetics_digest)
+                .ok_or("Mount artwork needs updating")?;
+            let look = *mounts.get(mount).ok_or("Mount artwork unavailable")?;
+            self.draw_look(
+                look,
+                0,
+                None,
+                false,
+                (direction, elapsed_ms, moving),
+                &mut pixels,
+            )?;
+        }
+        self.draw_look(
+            preview.look_type,
+            preview.addons,
+            Some(preview.colours),
+            !mount.is_empty(),
+            (direction, elapsed_ms, moving),
+            &mut pixels,
+        )?;
+        Ok(pixels)
+    }
+    fn draw_look(
+        &mut self,
+        look: u32,
+        addons: u8,
+        colours: Option<[[u8; 3]; 4]>,
+        mounted: bool,
+        (direction, elapsed_ms, moving): (u32, u64, bool),
+        pixels: &mut [u8],
+    ) -> Result<(), String> {
         let outfit = self
             .index
-            .outfit(preview.look_type)
+            .outfit_preview(look, moving)
             .ok_or("Outfit artwork unavailable")?;
-        let mut pixels = vec![32; 96 * 96 * 4];
         for addon in 0..outfit.pattern_height.min(3) {
-            if addon != 0 && preview.addons & (1 << (addon - 1)) == 0 {
+            if addon != 0 && addons & (1 << (addon - 1)) == 0 {
                 continue;
             }
-            let at = ((addon * outfit.pattern_width + 2 % outfit.pattern_width) * outfit.layers)
-                as usize;
+            let at = frame_index(
+                [
+                    outfit.pattern_width,
+                    outfit.pattern_height,
+                    outfit.pattern_depth,
+                    outfit.layers,
+                ],
+                &outfit.phase_ms,
+                addon,
+                direction,
+                elapsed_ms,
+                mounted,
+            );
             let base = *outfit.sprite_ids.get(at).ok_or("Missing outfit frame")?;
             if base == 0 {
                 continue;
             }
-            let mask = if outfit.layers > 1 {
+            let mask = if colours.is_some() && outfit.layers > 1 {
                 outfit.sprite_ids.get(at + 1).copied().filter(|id| *id != 0)
             } else {
                 None
@@ -55,12 +132,12 @@ impl Assets {
                         .sheets
                         .cell_rgba(base, x, y)
                         .map_err(|e| e.to_string())?;
-                    if let Some(mask) = mask {
+                    if let (Some(mask), Some(colours)) = (mask, colours) {
                         let mask = self
                             .sheets
                             .cell_rgba(mask, x, y)
                             .map_err(|e| e.to_string())?;
-                        tint(&mut cell, &mask, preview.colours);
+                        tint(&mut cell, &mask, colours);
                     }
                     for row in 0..32 {
                         for column in 0..32 {
@@ -86,8 +163,34 @@ impl Assets {
                 }
             }
         }
-        Ok(pixels)
+        Ok(())
     }
+}
+#[cfg(bevy_shell)]
+fn frame_index(
+    [width, height, depth, layers]: [u32; 4],
+    phase_ms: &[u32],
+    addon: u32,
+    direction: u32,
+    elapsed_ms: u64,
+    mounted: bool,
+) -> usize {
+    let cycle: u64 = phase_ms.iter().map(|ms| u64::from(*ms)).sum();
+    let mut remaining = elapsed_ms % cycle.max(1);
+    let phase = phase_ms
+        .iter()
+        .position(|ms| {
+            if remaining < u64::from(*ms) {
+                true
+            } else {
+                remaining -= u64::from(*ms);
+                false
+            }
+        })
+        .unwrap_or(0) as u32;
+    ((((phase * depth + u32::from(mounted && depth > 1)) * height + addon) * width
+        + direction % width)
+        * layers) as usize
 }
 fn tint(base: &mut [u8], mask: &[u8], colours: [[u8; 3]; 4]) {
     for (pixel, mask) in base
@@ -115,6 +218,22 @@ fn tint(base: &mut [u8], mask: &[u8], colours: [[u8; 3]; 4]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(bevy_shell)]
+    #[test]
+    fn preview_frames_follow_direction_duration_and_full_pattern_stride() {
+        let frame_index = |addon, direction, elapsed| {
+            super::frame_index([4, 3, 2, 2], &[100, 200], addon, direction, elapsed, false)
+        };
+        assert_eq!(frame_index(1, 0, 0), 8);
+        assert_eq!(frame_index(1, 1, 99), 10);
+        assert_eq!(frame_index(1, 1, 100), 58);
+        assert_eq!(frame_index(1, 1, 299), 58);
+        assert_eq!(frame_index(1, 1, 300), 10);
+        assert_eq!(
+            super::frame_index([4, 3, 2, 2], &[100, 200], 1, 1, 100, true),
+            82
+        );
+    }
     #[test]
     fn outfit_mask_tints_all_four_parts_without_changing_alpha() {
         let mut base = [200, 100, 50, 255].repeat(4);

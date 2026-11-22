@@ -19,6 +19,7 @@ fn skinning_decoded_stationary_corpse_updates_native_look_target()
         floor: 0,
     };
     let fresh = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Corpse,
         entity: reference,

@@ -15,6 +15,7 @@ type Fixture = (
 );
 fn player() -> WorldSpatialEntity {
     WorldSpatialEntity {
+        motion: None,
         display_name: EntityDisplayName::new("Visible player").ok(),
         entity: EntityRef {
             identity: [4; 16],
@@ -52,6 +53,8 @@ fn app() -> std::result::Result<Fixture, Box<dyn std::error::Error>> {
             },
             frame: Handle::default(),
             font: Handle::default(),
+            checked: Handle::default(),
+            unchecked: Handle::default(),
         })
         .init_resource::<InputFocus>()
         .add_systems(Update, project);
@@ -276,15 +279,27 @@ fn combined_menu_preserves_base_look_and_real_name_and_old_choices_cannot_replac
                 party: Some(Box::new(target)),
                 inspection: None,
                 report: None,
+                trade: None,
+                browse: None,
+                npc: None,
+                player: Some("Visible player".into()),
+                attack: None,
             },
         );
     }
     app.update();
+    // Tibia Global names no header row: the real name rides on the player entries.
     assert!(
         app.world_mut()
             .query::<&Text>()
             .iter(app.world())
-            .any(|text| text.0 == "Visible player")
+            .any(|text| text.0 == "Message to Visible player")
+    );
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Invite to Party")
     );
     assert!(
         app.world_mut()
@@ -377,5 +392,96 @@ fn rule_violation_shortcut_respects_text_focus() -> Result {
             .player_report_panel()
             .open
     );
+    Ok(())
+}
+
+#[test]
+fn player_context_starts_fresh_trade_picker() -> Result {
+    let (mut app, mut commands, events) = app()?;
+    events.bevy_trade_initialize(None);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .request_world_context(TileCoord::new(101, 100));
+    app.update();
+    choose(&mut app, "Trade with Visible player")?;
+    let owner = app.world().non_send::<HostOwner>();
+    let panel = owner.play.as_ref().ok_or("play")?.link.player_trade_panel();
+    assert!(panel.open);
+    assert_eq!(panel.partner, Some(player().entity));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn world_browse_field_choice_retains_native_tile_and_session() -> Result {
+    let (mut app, _commands, events) = app()?;
+    events.bevy_browse_field_supported();
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view = PlayView::new(TileCoord::new(100, 100), 0, &[])?;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .request_world_context(TileCoord::new(101, 100));
+    app.update();
+    choose(&mut app, "Browse Field")?;
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    let request = owner
+        .take_container_tool_request()
+        .ok_or("browse request")?;
+    assert_eq!(
+        request.tool,
+        crate::bevy_shell::controls::ContainerTool::BrowseField
+    );
+    assert_eq!(request.position, Some((101, 100, 0)));
+    assert_eq!(request.generation, owner.generation());
+    Ok(())
+}
+
+#[test]
+fn npc_context_talk_and_trade_greet_the_npc_on_that_tile() -> Result {
+    let npc = WorldSpatialEntity {
+        kind: EntityKind::Npc,
+        display_name: EntityDisplayName::new("Visible NPC").ok(),
+        entity: EntityRef {
+            identity: [9; 16],
+            generation: 2,
+        },
+        ..player()
+    };
+    for (caption, said) in [("Talk", "hi"), ("Trade", "trade")] {
+        let (mut app, mut commands, events) = app()?;
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .play
+            .as_mut()
+            .ok_or("play")?
+            .view = PlayView::new(TileCoord::new(100, 100), 7, &[])?.with_entities(vec![npc])?;
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .request_world_context(TileCoord::new(101, 100));
+        app.update();
+        assert!(
+            choose(&mut app, caption).is_err(),
+            "no NPC entries before the session admits NPC dialogue"
+        );
+        app.world_mut().non_send_mut::<HostOwner>().dialogs.clear();
+        app.update();
+        events.bevy_npc_dialogue_supported();
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .request_world_context(TileCoord::new(101, 100));
+        app.update();
+        choose(&mut app, caption)?;
+        let PlayCommand::NpcTalk(intent) = commands.try_recv()? else {
+            return Err("NPC greeting".into());
+        };
+        assert_eq!(intent.npc_actor, npc.entity);
+        assert_eq!(intent.text, said);
+        assert!(!app.world().non_send::<HostOwner>().dialogs.active());
+        assert!(commands.try_recv().is_err());
+    }
     Ok(())
 }

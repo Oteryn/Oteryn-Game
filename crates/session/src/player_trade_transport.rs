@@ -5,14 +5,16 @@ impl<S: SessionStream> Session<S> {
     /// Latest authoritative trade projection, including unsolicited partner actions.
     pub fn player_trade_state(&self) -> Option<player_trade::State> {
         self.gated_snapshot(player_trade::STATE_DOMAIN_PLAYER_TRADE)
-            .and_then(|snapshot| player_trade::decode_state(&snapshot.payload).ok())
+            .and_then(|snapshot| {
+                player_trade::decode_state_for(&snapshot.payload, self.is_selected(501)).ok()
+            })
     }
 
     pub(crate) fn record_player_trade_delta(
         &mut self,
         delta: &GatedDelta,
     ) -> Result<(), SessionError> {
-        let state = player_trade::decode_state(&delta.payload)
+        let state = player_trade::decode_state_for(&delta.payload, self.is_selected(501))
             .map_err(|_| SessionError::SessionUnusable)?;
         if let Some(snapshot) = self
             .gated_snapshots
@@ -52,7 +54,8 @@ impl<S: SessionStream> Session<S> {
             value,
         };
         let event = SessionEvent::PlayerTrade(applied(
-            player_trade::decode_state(delta.payload).map_err(|_| SessionError::SessionUnusable)?,
+            player_trade::decode_state_for(delta.payload, self.is_selected(501))
+                .map_err(|_| SessionError::SessionUnusable)?,
         ));
         match self
             .gated_revisions

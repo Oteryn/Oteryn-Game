@@ -9,7 +9,9 @@ pub use oteryn_client_runtime::depot::{
 mod protocol;
 mod state;
 mod view;
-pub use protocol::{apply_container, apply_result, deposit_items, request, request_container};
+pub use protocol::{
+    apply_container, apply_result, deposit_items, request, request_container, request_in_mode,
+};
 pub use state::{DepotPanel, Intent};
 pub use view::panel_text;
 

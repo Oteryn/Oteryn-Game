@@ -406,6 +406,7 @@ impl RetryPacing {
 pub struct NativeLoginClient {
     client: Client,
     platform: Url,
+    platform_web: Url,
     gateway: Url,
     oauth_client_id: String,
     pacing: RetryPacing,
@@ -433,7 +434,8 @@ impl NativeLoginClient {
             .map_err(|_error| PlatformClientError::ClientCreation)?;
         Ok(Self {
             client,
-            platform: platform.base_url.clone(),
+            platform: platform.api_base_url.clone(),
+            platform_web: platform.base_url.clone(),
             gateway: gateway.base_url.clone(),
             oauth_client_id: oauth_client_id.to_owned(),
             pacing: RetryPacing::CONTRACT,
@@ -500,7 +502,7 @@ impl NativeLoginClient {
         code_challenge: &str,
     ) -> Result<Url, PlatformClientError> {
         let mut url = self
-            .platform
+            .platform_web
             .join("oauth/authorize")
             .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
         url.query_pairs_mut()

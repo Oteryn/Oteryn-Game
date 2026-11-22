@@ -27,6 +27,7 @@
     "oteryn:npc.briasol",
     "oteryn:npc.broken_servant_sentry",
     "oteryn:npc.bron",
+    "oteryn:npc.buddel",
     "oteryn:npc.cael",
     "oteryn:npc.captain_waverider",
     "oteryn:npc.captain_waverider_island",
@@ -302,6 +303,25 @@
     }
   },
   "placement_overrides": {
+    "oteryn:npc.buddel": {
+      "basis": "Crystal world-npc.xml:1219-1221 anchors Buddel in Svargrond. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32255,
+            "y": 31195,
+            "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
     "oteryn:npc.jack_springer": {
       "basis": "Crystal world-npc.xml:2722-2724 anchors Jack Springer at the Isle of the Kings. The source leaves direction unspecified, so the native placement uses north.",
       "placements": [

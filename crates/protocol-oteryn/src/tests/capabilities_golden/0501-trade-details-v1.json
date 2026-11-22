@@ -1,0 +1,17 @@
+{
+  "id": 501,
+  "name": "TRADE_DETAILS_V1",
+  "constant": "trade_details::CAPABILITY_TRADE_DETAILS_V1",
+  "requires": [
+    4
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

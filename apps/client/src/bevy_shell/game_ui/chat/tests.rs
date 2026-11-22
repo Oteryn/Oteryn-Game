@@ -84,11 +84,38 @@ fn selected_channel_controls_the_real_command_destination() -> Result<(), Box<dy
     Ok(())
 }
 
+/// Presses Enter once through the chat keyboard owner; Tibia Global has no Send button.
+fn enter(app: &mut bevy::prelude::App) -> Result<(), Box<dyn std::error::Error>> {
+    use bevy::{
+        ecs::system::RunSystemOnce,
+        input::{
+            ButtonState,
+            keyboard::{Key, KeyboardInput},
+        },
+        prelude::*,
+    };
+    if !app.world().contains_resource::<Messages<KeyboardInput>>() {
+        app.add_message::<KeyboardInput>();
+    }
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::Enter,
+        logical_key: Key::Enter,
+        state: ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window: Entity::PLACEHOLDER,
+    });
+    app.world_mut()
+        .run_system_once(super::keyboard)
+        .map_err(|error| format!("chat keyboard: {error:?}"))?;
+    Ok(())
+}
+
 #[test]
-fn native_activate_sends_the_visible_editor_through_the_existing_owner()
+fn enter_sends_the_visible_editor_through_the_existing_owner()
 -> Result<(), Box<dyn std::error::Error>> {
-    use super::{Action, ChatState, Control, Field, HostOwner, widgets};
-    use bevy::{prelude::*, text::EditableText, ui_widgets::Activate};
+    use super::{ChatState, Field, HostOwner};
+    use bevy::{prelude::*, text::EditableText};
     let (link, mut commands, outbox) = play_channel();
     crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
         &outbox,
@@ -112,15 +139,10 @@ fn native_activate_sends_the_visible_editor_through_the_existing_owner()
         .world_mut()
         .spawn((Field::Message, EditableText::new("visible typed message")))
         .id();
-    let send = app
-        .world_mut()
-        .spawn(Control {
-            action: Action::Send,
-            generation,
-        })
-        .observe(widgets::activate)
-        .id();
-    app.world_mut().trigger(Activate { entity: send });
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(editor, bevy::input_focus::FocusCause::Navigated);
+    enter(&mut app)?;
     let sent = std::iter::from_fn(|| commands.try_recv().ok())
         .find_map(|command| match command {
             PlayCommand::ChatPublic(intent) => Some(intent),
@@ -162,7 +184,7 @@ fn native_activate_sends_the_visible_editor_through_the_existing_owner()
         "stale draft",
     );
     app.world_mut().resource_mut::<ChatState>().generation = Some(generation.saturating_add(1));
-    app.world_mut().trigger(Activate { entity: send });
+    enter(&mut app)?;
     assert!(
         next_commands.try_recv().is_err(),
         "stale visible controls must not send"
@@ -223,34 +245,29 @@ fn native_composer_mode_button_cycles_the_existing_console_owner()
         ))
         .observe(widgets::activate)
         .id();
-    app.world_mut().trigger(Activate { entity: button });
-    let owner = app.world().non_send::<HostOwner>();
-    assert_eq!(
-        owner
+    let mode = |app: &App| -> Result<ComposerMode, Box<dyn std::error::Error>> {
+        Ok(app
+            .world()
+            .non_send::<HostOwner>()
             .play
             .as_ref()
             .ok_or("play")?
             .link
             .chat_panel()
             .console
-            .mode,
-        ComposerMode::Off
-    );
-    assert_eq!(app.world().resource::<InputFocus>().get(), None);
-    app.world_mut().trigger(Activate { entity: button });
-    let owner = app.world().non_send::<HostOwner>();
-    assert_eq!(
-        owner
-            .play
-            .as_ref()
-            .ok_or("play")?
-            .link
-            .chat_panel()
-            .console
-            .mode,
-        ComposerMode::Temporary
-    );
-    assert_eq!(app.world().resource::<InputFocus>().get(), Some(editor));
+            .mode)
+    };
+    // The button cycles Chat On, Chat Auto, Chat Off; Auto leaves the keys with the game
+    // until the player clicks into the input.
+    for (expected, focused) in [
+        (ComposerMode::Auto, None),
+        (ComposerMode::Off, None),
+        (ComposerMode::On, Some(editor)),
+    ] {
+        app.world_mut().trigger(Activate { entity: button });
+        assert_eq!(mode(&app)?, expected);
+        assert_eq!(app.world().resource::<InputFocus>().get(), focused);
+    }
     assert_eq!(
         app.world()
             .get::<EditableText>(editor)
@@ -262,10 +279,9 @@ fn native_composer_mode_button_cycles_the_existing_console_owner()
 }
 
 #[test]
-fn foreground_game_modal_blocks_background_chat_activate() -> Result<(), Box<dyn std::error::Error>>
-{
-    use super::{Action, ChatState, Control, Field, HostOwner, widgets};
-    use bevy::{input_focus::InputFocus, prelude::*, text::EditableText, ui_widgets::Activate};
+fn foreground_game_modal_blocks_background_chat_enter() -> Result<(), Box<dyn std::error::Error>> {
+    use super::{ChatState, Field, HostOwner};
+    use bevy::{input_focus::InputFocus, prelude::*, text::EditableText};
     let (link, mut commands, outbox) = play_channel();
     crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
         &outbox,
@@ -297,15 +313,10 @@ fn foreground_game_modal_blocks_background_chat_activate() -> Result<(), Box<dyn
             EditableText::new("must not send behind modal"),
         ))
         .id();
-    let send = app
-        .world_mut()
-        .spawn(Control {
-            action: Action::Send,
-            generation,
-        })
-        .observe(widgets::activate)
-        .id();
-    app.world_mut().trigger(Activate { entity: send });
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(editor, bevy::input_focus::FocusCause::Navigated);
+    enter(&mut app)?;
     assert!(commands.try_recv().is_err());
     assert!(
         !app.world()
@@ -469,5 +480,335 @@ fn chat_input_sends_typing() -> Result<(), Box<dyn std::error::Error>> {
         }
         assert!(commands.try_recv().is_err());
     }
+    Ok(())
+}
+
+#[test]
+fn message_menu_mirrors_the_selected_tab_read_only_and_closes_it()
+-> Result<(), Box<dyn std::error::Error>> {
+    use super::*;
+    use bevy::{
+        asset::AssetPlugin,
+        picking::{
+            backend::HitData,
+            events::Pointer,
+            pointer::{Location, PointerButton, PointerId},
+        },
+        text::TextReadWriteMode,
+        ui_widgets::Activate,
+    };
+    let (link, _, outbox) = play_channel();
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        ChatRoomSet::default(),
+        vec![oteryn_session::ChatLine::Private {
+            speaker_name: "Sender".into(),
+            text: "select this message".into(),
+        }],
+    );
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .insert_non_send(owner)
+        .init_resource::<InputFocus>()
+        .add_systems(
+            Startup,
+            (crate::bevy_shell::ui::setup, super::super::setup).chain(),
+        );
+    app.add_message::<bevy::input::keyboard::KeyboardInput>();
+    install(&mut app);
+    app.update();
+    app.world_mut()
+        .query_filtered::<&mut Node, With<super::super::GameRoot>>()
+        .single_mut(app.world_mut())?
+        .display = Display::Flex;
+    let action = |app: &mut App, label: &str| -> Result<(), Box<dyn std::error::Error>> {
+        let row = app
+            .world_mut()
+            .query::<(Entity, &EditableText, &TextReadWriteMode)>()
+            .iter(app.world())
+            .find_map(|(entity, text, mode)| {
+                (text.value().to_string().contains("select this message")
+                    && *mode == TextReadWriteMode::ReadOnly)
+                    .then_some(entity)
+            })
+            .ok_or("selectable message row missing")?;
+        app.world_mut().trigger(PointerClick {
+            entity: row,
+            pointer: Pointer::new(
+                PointerId::Mouse,
+                Location {
+                    target: bevy::camera::NormalizedRenderTarget::None {
+                        width: 100,
+                        height: 100,
+                    },
+                    position: Vec2::ZERO,
+                },
+            ),
+            button: PointerButton::Secondary,
+            hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            duration: std::time::Duration::ZERO,
+            count: 1,
+        });
+        app.update();
+        let entity = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == label).then_some(parent.parent()))
+            .ok_or("message menu action missing")?;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        Ok(())
+    };
+    let pane = |app: &mut App| -> Result<(Display, String), Box<dyn std::error::Error>> {
+        let display = app
+            .world_mut()
+            .query_filtered::<&Node, With<MirrorPane>>()
+            .single(app.world())?
+            .display;
+        let text = app
+            .world_mut()
+            .query_filtered::<&Text, With<MirrorText>>()
+            .single(app.world())?
+            .0
+            .clone();
+        Ok((display, text))
+    };
+    assert_eq!(pane(&mut app)?.0, Display::None);
+    action(&mut app, "Mirror This Tab")?;
+    let (display, text) = pane(&mut app)?;
+    assert_eq!(display, Display::Flex);
+    assert!(text.contains("select this message"));
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        let panel = owner.play.as_ref().ok_or("play")?.link.chat_panel();
+        assert_eq!(panel.console.mirror, Some(panel.console.tab));
+        assert_eq!(
+            oteryn_client_ui::chat::mirror_text(&panel).as_deref(),
+            Some(text.as_str())
+        );
+    }
+    action(&mut app, "Close Mirrored Tab")?;
+    assert_eq!(pane(&mut app)?, (Display::None, String::new()));
+    Ok(())
+}
+
+#[test]
+fn transcript_rows_are_selectable_and_offer_sender_actions()
+-> Result<(), Box<dyn std::error::Error>> {
+    use super::*;
+    use bevy::{
+        asset::AssetPlugin,
+        picking::{
+            backend::HitData,
+            events::Pointer,
+            pointer::{Location, PointerButton, PointerId},
+        },
+        text::TextReadWriteMode,
+        ui_widgets::Activate,
+    };
+    let (link, _, outbox) = play_channel();
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        ChatRoomSet::default(),
+        vec![oteryn_session::ChatLine::Private {
+            speaker_name: "Sender".into(),
+            text: "select this message".into(),
+        }],
+    );
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .insert_non_send(owner)
+        .init_resource::<InputFocus>()
+        .add_systems(
+            Startup,
+            (crate::bevy_shell::ui::setup, super::super::setup).chain(),
+        );
+    app.add_message::<bevy::input::keyboard::KeyboardInput>();
+    install(&mut app);
+    app.update();
+    app.world_mut()
+        .query_filtered::<&mut Node, With<super::super::GameRoot>>()
+        .single_mut(app.world_mut())?
+        .display = Display::Flex;
+    app.insert_resource(UiScale(1.5));
+    let action = |app: &mut App, label: &str| -> Result<(), Box<dyn std::error::Error>> {
+        let row = app
+            .world_mut()
+            .query::<(Entity, &EditableText, &TextReadWriteMode)>()
+            .iter(app.world())
+            .find_map(|(entity, text, mode)| {
+                (text.value().to_string().contains("select this message")
+                    && *mode == TextReadWriteMode::ReadOnly)
+                    .then_some(entity)
+            })
+            .ok_or("selectable message row missing")?;
+        app.world_mut().trigger(PointerClick {
+            entity: row,
+            pointer: Pointer::new(
+                PointerId::Mouse,
+                Location {
+                    target: bevy::camera::NormalizedRenderTarget::None {
+                        width: 1000,
+                        height: 600,
+                    },
+                    position: Vec2::new(200., 100.),
+                },
+            ),
+            button: PointerButton::Secondary,
+            hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            duration: std::time::Duration::ZERO,
+            count: 1,
+        });
+        app.update();
+        let parent = app.world_mut().query_filtered::<&ChildOf, With<crate::bevy_shell::gameplay_dialogs::popup::PopupEntry>>().iter(app.world()).next().ok_or("popup entry")?.parent();
+        crate::bevy_shell::game_ui::hud_panes::context_menu::assert_anchor(
+            app.world(),
+            parent,
+            Vec2::new(200. / 1.5, 100. / 1.5),
+        );
+        let entity = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == label).then_some(parent.parent()))
+            .ok_or("message menu action missing")?;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        Ok(())
+    };
+    action(&mut app, "Communication Lists")?;
+    action(&mut app, "Message to Sender")?;
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .console
+            .current,
+        Some(oteryn_client_ui::chat::ChannelTab::Conversation(
+            "Sender".into()
+        ))
+    );
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    let lists = crate::play::FeatureForm::all()
+        .iter()
+        .map(|form| link.feature_form_view(*form))
+        .find(|view| view.title == "Communication lists")
+        .ok_or("communication lists form missing")?;
+    assert!(lists.open);
+    assert_eq!(lists.fields, vec!["Sender".to_owned()]);
+    Ok(())
+}
+
+#[test]
+fn speech_colors_survive_message_projection() -> Result<(), Box<dyn std::error::Error>> {
+    use super::*;
+    use bevy::asset::AssetPlugin;
+    let panel = oteryn_client_ui::chat::ChatPanel {
+        selected: true,
+        open: true,
+        lines: vec![
+            oteryn_session::ChatLine::Private {
+                speaker_name: "Sender".into(),
+                text: "private-color".into(),
+            },
+            oteryn_session::ChatLine::Room {
+                room: oteryn_session::ChatRoom::Help,
+                speaker_name: "Helper".into(),
+                text: "room-color".into(),
+            },
+        ],
+        ..default()
+    };
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    app.add_systems(
+        Startup,
+        (move |mut commands: Commands, skins: Res<Skins>| {
+            for row in widgets::transcript_rows(&panel) {
+                widgets::message_row(&mut commands, &skins, 1, &row);
+            }
+        })
+        .after(crate::bevy_shell::ui::setup),
+    );
+    app.update();
+    let color = |app: &mut App, marker: &str| -> Result<Color, Box<dyn std::error::Error>> {
+        app.world_mut()
+            .query::<(&EditableText, &TextColor)>()
+            .iter(app.world())
+            .find_map(|(text, color)| text.value().to_string().contains(marker).then_some(color.0))
+            .ok_or_else(|| "message color missing".into())
+    };
+    let private = color(&mut app, "private-color")?;
+    let room = color(&mut app, "room-color")?;
+    assert_ne!(private, room);
+    Ok(())
+}
+
+#[test]
+fn console_font_size_option_sizes_the_transcript_rows() -> Result<(), Box<dyn std::error::Error>> {
+    use super::*;
+    use bevy::asset::AssetPlugin;
+    let (link, _commands, outbox) = play_channel();
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        ChatRoomSet::default(),
+        Vec::new(),
+    );
+    let mut settings = crate::play::SettingsState::new(None);
+    let mut preferences = settings.preferences.clone();
+    preferences.console_font_px = 20;
+    settings.apply(preferences);
+    settings.sync_local_preferences(&link);
+    let panel = link.chat_panel();
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    app.add_systems(
+        Startup,
+        (move |mut commands: Commands, skins: Res<Skins>| {
+            for row in widgets::transcript_rows(&panel) {
+                widgets::message_row(&mut commands, &skins, 1, &row);
+            }
+        })
+        .after(crate::bevy_shell::ui::setup),
+    );
+    app.update();
+    let sizes = app
+        .world_mut()
+        .query_filtered::<&bevy::text::TextFont, With<Transcript>>()
+        .iter(app.world())
+        .map(|font| font.font_size)
+        .collect::<Vec<_>>();
+    assert!(!sizes.is_empty());
+    assert!(
+        sizes
+            .iter()
+            .all(|size| *size == bevy::text::FontSize::Px(20.))
+    );
     Ok(())
 }

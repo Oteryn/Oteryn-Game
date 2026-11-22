@@ -281,7 +281,12 @@ impl Turn<'_, '_, '_, '_> {
             state,
             now.get(),
             delta,
-            i64::from(equipment),
+            i64::from(equipment)
+                + i64::from(
+                    self.runtime
+                        .house_actor_motion(self.actor, self.session)
+                        .map_or(0, |motion| motion.3),
+                ),
         );
         let duration = house_step_duration(cells, destination, speed, direction)
             .ok_or(MovementError::NotQualified)?;
@@ -300,7 +305,8 @@ impl Turn<'_, '_, '_, '_> {
         } else {
             None
         };
-        self.runtime
+        let moved = self
+            .runtime
             .compare_move_house(
                 &current,
                 LocalPosition {
@@ -311,6 +317,12 @@ impl Turn<'_, '_, '_, '_> {
                 facing,
             )
             .map_err(MovementError::Actor)?;
+        // The resolver flags both a floor change and a successful bundle teleport.
+        // Keep STEP pacing, but leave the new translation revision without a walk.
+        if !stairhop {
+            self.runtime
+                .record_house_walk(self.actor, self.session, &moved, duration);
+        }
         if let Some(cooldowns) = cooldowns {
             state.cooldowns = cooldowns;
         }

@@ -10,3 +10,5 @@ pub fn command(
         payload: wire::encode_highscores_query(query)?,
     })
 }
+
+pub use oteryn_session::highscores_catalogue as catalogue;

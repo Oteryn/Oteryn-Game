@@ -1,6 +1,9 @@
 //! P05 purchase/upgrade through the existing full Task Board owner.
-use super::{TaskBoardPanel, task_board};
+use super::{FullIntent, TaskBoardPanel};
 use oteryn_client_runtime::raw_feature::FeatureCommand;
+
+/// The highest level a Talisman path reaches; the server refuses an upgrade past it.
+pub const MAX_LEVEL: u16 = 355;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
@@ -10,16 +13,11 @@ pub enum Intent {
 }
 
 pub fn request(panel: &mut TaskBoardPanel, intent: Intent) -> Option<FeatureCommand> {
-    let (action, selection) = match intent {
-        Intent::Buy => (17, 0),
-        Intent::Upgrade(path) => (18, u16::from(path)),
-    };
-    super::protocol::command(
+    super::full_request(
         panel,
-        task_board::full::Request {
-            action,
-            selection,
-            race: String::new(),
+        match intent {
+            Intent::Buy => FullIntent::BuyTalisman,
+            Intent::Upgrade(path) => FullIntent::UpgradeTalisman(path),
         },
     )
 }

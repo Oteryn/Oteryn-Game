@@ -1,11 +1,15 @@
 //! Inventory panel for the live main backpack and its direct contents.
-use oteryn_client_runtime::inventory::{CharacterInventory, ItemEntry, ItemHandle, rows};
+use oteryn_client_runtime::inventory::{
+    CharacterInventory, InventoryCapacity, ItemEntry, ItemHandle, rows,
+};
 use oteryn_input_actions::{ButtonState, Modifier, NormalizedInputEvent};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct InventoryPanel {
     pub open: bool,
     pub inventory: Option<CharacterInventory>,
+    /// The latest capacity under capability 508 (`inventory_capacity`); `None` without it.
+    pub capacity: Option<InventoryCapacity>,
     selected: Option<ItemHandle>,
 }
 

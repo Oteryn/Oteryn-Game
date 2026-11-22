@@ -2,8 +2,8 @@ use oteryn_client::play::{PreferenceStore, ReferencePreferences};
 #[test]
 fn connection_optimisation_survives_the_admission_store_read()
 -> Result<(), Box<dyn std::error::Error>> {
-    let path =
-        std::env::temp_dir().join(format!("connection-preference-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("connection-preference.json");
     let preferences = ReferencePreferences {
         optimise_connection: true,
         ..ReferencePreferences::default()

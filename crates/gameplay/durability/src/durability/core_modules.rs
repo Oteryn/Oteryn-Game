@@ -312,6 +312,7 @@ pub enum DurabilityError {
     RootUnavailable,
     RootPassDeadlineExceeded,
     CommitRejected,
+    CommitTransactionTimeout,
     CommitOutcomeUnknown,
     RootTaskFailed,
     InvalidStoredState,
@@ -352,6 +353,9 @@ impl Display for DurabilityError {
             Self::CommitRejected => {
                 formatter.write_str("PostgreSQL rejected durability transaction commit")
             }
+            Self::CommitTransactionTimeout => {
+                formatter.write_str("PostgreSQL terminated the durability transaction during commit")
+            }
             Self::CommitOutcomeUnknown => {
                 formatter.write_str("game durability commit outcome is unknown")
             }
@@ -379,6 +383,14 @@ impl DurabilityError {
     }
 
     pub fn from_commit_error(error: sqlx::Error) -> Self {
+        // PostgreSQL's transaction_timeout terminates the session and rolls
+        // back the transaction. Keep this distinct from a failed commit proof.
+        if error
+            .as_database_error()
+            .is_some_and(|database| database.code().as_deref() == Some("25P04"))
+        {
+            return Self::CommitTransactionTimeout;
+        }
         let class = SqlxFailureClass::classify(&error);
         drop(error);
         if matches!(

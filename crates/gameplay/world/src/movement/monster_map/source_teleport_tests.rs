@@ -54,6 +54,10 @@ pub(super) fn fixture() -> Result<
         .map_err(debug)?;
     let pin = runtime.content_pin();
     let mut map = MonsterMap {
+        cells: crate::content::qualify_native_entry_room(world)
+            .map_err(debug)?
+            .movement_cells()
+            .clone(),
         valid: true,
         scope: runtime.binding().runtime_scope(),
         generation: runtime.binding().scope_generation(),

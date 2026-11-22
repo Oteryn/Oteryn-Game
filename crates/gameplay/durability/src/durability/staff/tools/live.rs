@@ -42,7 +42,29 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
     ) -> Result<StaffLiveStatus, DurabilityError> {
-        self.with_staff_tools_fence(authority, node, fence, |tx, fence, environment, activation| Box::pin(async move {
+        self.read_staff_live_status(authority, node, fence, true)
+            .await
+    }
+
+    /// Periodic enforcement defers when an admission write already holds the fence.
+    pub async fn observe_staff_live_status(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+    ) -> Result<StaffLiveStatus, DurabilityError> {
+        self.read_staff_live_status(authority, node, fence, false)
+            .await
+    }
+
+    async fn read_staff_live_status(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        wait: bool,
+    ) -> Result<StaffLiveStatus, DurabilityError> {
+        self.with_staff_fence(authority, node, fence, wait, |tx, fence, environment, activation| Box::pin(async move {
             let row = sqlx::query("SELECT EXISTS(SELECT 1 FROM game_staff_bans b JOIN game_character_roots c ON c.account_id=b.account_id WHERE c.character_id=encode($1,'hex')::uuid AND ($3::text IS NULL OR b.environment=$3) AND b.lifted_at_ms IS NULL AND b.starts_at_ms<=floor(extract(epoch FROM clock_timestamp())*1000)::bigint AND b.ends_at_ms>floor(extract(epoch FROM clock_timestamp())*1000)::bigint) AS banned, EXISTS(SELECT 1 FROM game_staff_disconnects d WHERE ($3::text IS NULL OR d.environment=$3) AND (d.game_session_id=encode($2,'hex')::uuid OR EXISTS(SELECT 1 FROM game_activity_runtime_returns a WHERE a.destination_game_session_id=encode($2,'hex')::uuid AND a.source_game_session_id=d.game_session_id))) OR game_security_session_revoked(encode($2,'hex')::uuid) AS kicked, EXISTS(SELECT 1 FROM game_staff_actor_flags f WHERE f.game_session_id=encode($2,'hex')::uuid AND f.character_id=encode($1,'hex')::uuid AND ($3::text IS NULL OR f.environment=$3) AND f.ghost) AS ghost, EXISTS(SELECT 1 FROM game_staff_actor_flags f WHERE f.game_session_id=encode($2,'hex')::uuid AND f.character_id=encode($1,'hex')::uuid AND ($3::text IS NULL OR f.environment=$3) AND f.invisible) AS invisible, COALESCE((SELECT g.group_id FROM game_staff_character_groups g JOIN game_staff_control_heads h ON h.environment=g.environment AND h.activation_sha256=g.activation_sha256 WHERE g.character_id=encode($1,'hex')::uuid AND ($3::text IS NULL OR g.environment=$3) AND $4::text IS NOT NULL AND g.activation_sha256=$4 ORDER BY g.group_id DESC LIMIT 1),0)::smallint AS staff_group")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice())
                 .bind(environment).bind(activation).fetch_one(tx).await?;

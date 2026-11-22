@@ -101,7 +101,7 @@ async fn war_opponent_allowed(
     else {
         return Ok(false);
     };
-    let opponents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guild_members a JOIN game_guild_members b ON b.character_id=encode($2,'hex')::uuid JOIN game_guild_wars w ON w.world_id=encode($3,'hex')::uuid AND w.state=2 AND ((w.declaring_guild=a.guild_id AND w.opposing_guild=b.guild_id) OR (w.opposing_guild=a.guild_id AND w.declaring_guild=b.guild_id)) WHERE a.character_id=encode($1,'hex')::uuid)")
+    let opponents: bool = sqlx::query_scalar(concat!("SELECT EXISTS(SELECT 1 FROM game_guild_members a JOIN game_guild_members b ON b.character_id=encode($2,'hex')::uuid JOIN game_guild_wars w ON w.world_id=encode($3,'hex')::uuid AND ", super::guild_war::active_war_predicate!(), " AND ((w.declaring_guild=a.guild_id AND w.opposing_guild=b.guild_id) OR (w.opposing_guild=a.guild_id AND w.declaring_guild=b.guild_id)) WHERE a.character_id=encode($1,'hex')::uuid)"))
         .bind(authority.character_id_bytes().as_slice()).bind(target.as_slice()).bind(world_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
     Ok(opponents)
 }

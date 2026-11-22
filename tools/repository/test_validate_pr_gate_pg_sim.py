@@ -13,6 +13,7 @@ import tempfile
 import textwrap
 import time
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 VALIDATOR = Path(__file__).with_name("validate_pr_gate_pg_sim.py")
@@ -25,6 +26,8 @@ class QualificationPlacementTests(unittest.TestCase):
         spec.loader.exec_module(self.module)
         self.pr = (ROOT / ".github/workflows/merge-gate.yml").read_text()
         self.mq = (ROOT / ".github/workflows/merge-group-gate.yml").read_text()
+        self.reusable = (ROOT / ".github/workflows/rust-fast-archive.yml").read_text()
+        self.worker_source = (ROOT / "tools/repository/run_rust_fast_archive.py").read_text()
 
     def validate(self, pr=None, mq=None):
         with tempfile.TemporaryDirectory() as directory:
@@ -43,8 +46,43 @@ class QualificationPlacementTests(unittest.TestCase):
         return job.split(f"      - name: {name}\n", 1)[1].split("\n      - name: ", 1)[0]
 
     def archive_step(self, name):
-        build = self.pr.split("  rust_fast_build:\n", 1)[1].split("\n  rust_fast:\n", 1)[0]
+        build = self.reusable.split("  build:\n", 1)[1].split("\n  tests:\n", 1)[0]
         return build.split(f"      - name: {name}\n", 1)[1].split("\n      - name: ", 1)[0]
+
+    def worker_step(self, name):
+        worker = self.reusable.split("  tests:\n", 1)[1]
+        return worker.split(f"      - name: {name}\n", 1)[1].split("\n      - name: ", 1)[0]
+
+    def result_fixture(self, root, roles, packages, image, platform):
+        paths = {}
+        for role in roles:
+            directory = root / "rust-fast-results" / f"rust-fast-results-2-{role}-tests-1-5" / role / "tests-1-5"
+            directory.mkdir(parents=True)
+            document = {
+                "head": "a" * 40, "base_sha": "b" * 40, "role": role, "shard": "1/5", "slug": "tests-1-5",
+                "run_id": "71", "run_attempt": "2", "image": image, "platform": platform,
+                "build_image": image, "build_platform": platform,
+                "pending_packages": sorted(packages), "exit_code": 0, "completed": True,
+            }
+            (directory / "result.json").write_text(json.dumps(document))
+            (directory / "junit.xml").write_text(
+                '<testsuites>' + ''.join(f'<testsuite name="{package}::unit" tests="1">'
+                f'<testcase name="{role}"/></testsuite>' for package in packages) + '</testsuites>')
+            paths[role] = directory
+        env = dict(os.environ, EXPECTED_SHA="a" * 40, BASE_SHA="b" * 40, SHARD="1/5", SLUG="tests-1-5",
+                   GITHUB_RUN_ID="71", GITHUB_RUN_ATTEMPT="2", ARCHIVE_ROLES=json.dumps(roles),
+                   RUST_SELECTION=json.dumps({"mode": "packages", "packages": packages}),
+                   TEST_SHARDS=json.dumps({"tests-1-5": packages}), PLAN_IMAGE=image, PLAN_PLATFORM=platform,
+                   GITHUB_OUTPUT=str(root / "output"), RUNNER_TEMP=str(root))
+        return paths, env
+
+    @staticmethod
+    def collect_results(root, env):
+        return subprocess.run([sys.executable, "-I", str(ROOT / "tools/repository/collect_rust_fast_results.py"),
+                               "--reports", str(root / "rust-fast-results"),
+                               "--archive-root", str(root / "rust-fast-archive"),
+                               "--extract-root", str(root / "rust-fast-extract")],
+                              env=env, capture_output=True, text=True, check=False)
 
     @staticmethod
     def step_script(step):
@@ -108,9 +146,18 @@ class QualificationPlacementTests(unittest.TestCase):
         self.assertEqual(job.count("kind: tests\n"), 5)
         self.assertEqual(clippy.count("kind: clippy\n"), 1)
         self.assertEqual(re.findall(r"(?m)^    runs-on: (.+)$", clippy), [expected])
-        build = self.pr.split("  rust_fast_build:\n", 1)[1].split("\n  rust_fast:\n", 1)[0]
+        caller = self.pr.split("  rust_fast_build:\n", 1)[1].split("\n  rust_fast:\n", 1)[0]
+        build = self.reusable.split("  build:\n", 1)[1].split("\n  tests:\n", 1)[0]
+        worker = self.reusable.split("  tests:\n", 1)[1]
+        self.assertIn("    uses: ./.github/workflows/rust-fast-archive.yml\n", caller)
+        self.assertIn("archive: ${{ matrix.archive }}", caller)
         self.assertIn("    runs-on: ubuntu-24.04\n", build)
-        self.assertIn("needs.runner_route.outputs.rust_test_build_required == 'true'", build)
+        self.assertIn("    runs-on: ubuntu-24.04\n", worker)
+        self.assertIn("    needs: build\n", worker)
+        self.assertEqual(worker.count("shard: "), 5)
+        self.assertIn("needs.runner_route.outputs.rust_test_build_required == 'true'", caller)
+        for value in ("target_sha", "base_sha", "rust_selection", "test_shards", "plan_image", "plan_platform"):
+            self.assertRegex(caller, rf"(?m)^      {value}: ")
         for name in (
             "Restore trimmed Cargo cache from protected main",
             "Normalize source mtimes for the restored Cargo cache",
@@ -124,9 +171,13 @@ class QualificationPlacementTests(unittest.TestCase):
                 )
         self.assertIn("    needs: [scope, lanes, runner_route, rust_fast_build]\n", job)
         self.assertIn('nextest archive --locked "${package_args[@]}" "${target_args[@]}"', build)
-        self.assertIn('nextest run --archive-file "$artifact/$archive/unit-tests.tar.zst"', job)
-        self.assertIn('--workspace-remap . --extract-to "$destination"', job)
-        self.assertIn('--partition "hash:${SHARD}" --no-tests=pass --no-fail-fast', job)
+        self.assertIn('"nextest", "run", "--archive-file", str(artifact / "unit-tests.tar.zst")', self.worker_source)
+        self.assertIn('"--workspace-remap", ".", "--extract-to", str(extract)', self.worker_source)
+        self.assertIn('"--partition", f\'hash:{result["shard"]}\', "--no-tests=pass", "--no-fail-fast"', self.worker_source)
+        self.assertIn('"$FAST_ARCHIVE_HELPER" run', self.worker_step("Run this archive and record its current result"))
+        self.assertNotIn("nextest run", job)
+        self.assertIn("artifact-ids: ${{ needs.build.outputs.artifact_id }}",
+                      self.worker_step("Download this unit-test archive by immutable ID"))
         self.assertIn("          retention-days: 30\n", self.archive_step("Upload unit-test archive"))
         for name in ("Add swap for the library test build", "Install pinned mold linker"):
             with self.subTest(step=name):
@@ -136,17 +187,21 @@ class QualificationPlacementTests(unittest.TestCase):
     def test_hosted_disk_cleanup_requires_pressure(self):
         step = self.archive_step("Free hosted runner disk before the Cargo cache restore")
         script = textwrap.dedent(step.split("run: &cleanup_cargo_disk |\n", 1)[1])
-        self.assertEqual(self.pr.count("run: *cleanup_cargo_disk\n"), 2)
+        collector = self.rust_fast_step("Free hosted runner disk for cached or archived artifacts")
+        collector_script = textwrap.dedent(collector.split("run: &cleanup_cargo_disk |\n", 1)[1])
+        self.assertEqual(self.pr.count("run: *cleanup_cargo_disk\n"), 1)
+        self.assertEqual(self.reusable.count("run: *cleanup_cargo_disk\n"), 1)
         mocks = """
 set -euo pipefail
 df() { if [[ "$1" == -Pk ]]; then echo "/dev/root 150000000 60000000 $FREE_KIB 40% /"; fi; }
 sudo() { echo "sudo $*"; }
 """
-        for available, cleanup in (("83886081", False), ("83886080", False), ("83886079", True), ("unknown", True)):
-            with self.subTest(available=available):
-                run = subprocess.run(["bash", "-c", mocks + script], check=True, capture_output=True,
-                                     text=True, env=dict(os.environ, FREE_KIB=available))
-                self.assertEqual("sudo rm -rf" in run.stdout, cleanup)
+        for name, body in (("archive-and-workers", script), ("hosted-clippy-and-client", collector_script)):
+            for available, cleanup in (("83886081", False), ("83886080", False), ("83886079", True), ("unknown", True)):
+                with self.subTest(cleanup=name, available=available):
+                    run = subprocess.run(["bash", "-c", mocks + body], check=True, capture_output=True,
+                                         text=True, env=dict(os.environ, FREE_KIB=available))
+                    self.assertEqual("sudo rm -rf" in run.stdout, cleanup)
 
     def test_unit_test_archive_uses_full_cargo_selection_on_partial_ledger_hit(self):
         step = self.archive_step("Archive changed-crate unit tests")
@@ -198,12 +253,27 @@ sudo() { echo "sudo $*"; }
                                OTERYN_DISPATCH_TEST_ARCHIVE="stale",
                                RUNNER_TEMP=directory, RUNNER_OS="Linux", RUNNER_ARCH="X64",
                                RUST_SELECTION=json.dumps(dict(mode=mode, packages=["first", "second"])))
-                    result = subprocess.check_output(["bash", "-c", script], env=env, text=True)
+                    # Exact older heads lack the shared producer helper and must
+                    # retain their original target/package selection.
+                    result = subprocess.check_output(["bash", "-c", script], cwd=root, env=env, text=True)
                     archive = root / "rust-fast-archive" / role / "unit-tests.tar.zst"
                     self.assertEqual(result.splitlines(), [
                         scope, shard, "+1.100.0", "nextest", "archive", "--locked", *packages, *args,
                         "--archive-file", str(archive), "--zstd-level", "1",
                     ])
+        for role in ("dispatch-1", "dispatch-2", "dispatch-3"):
+            with self.subTest(shared_role=role), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                helper = root / "tools/ci/shared_dispatch_archive.py"
+                helper.parent.mkdir(parents=True)
+                helper.touch()
+                shared_script = 'python3() { printf "%s\\n" "$@"; }\n' + self.step_script(step)
+                env = dict(os.environ, ARCHIVE=role, RUNNER_TEMP=directory,
+                           RUST_SELECTION='{"mode":"packages","packages":["first","second"]}')
+                result = subprocess.run(["bash", "-c", shared_script], cwd=root, env=env,
+                                        check=True, text=True, capture_output=True)
+                self.assertEqual(result.stdout.splitlines(), [str(helper.relative_to(root)), "build",
+                    str(root / "rust-fast-archive" / role), role])
 
     def test_archive_matrix_preserves_older_heads_and_selected_targets(self):
         step = self.pr.split("      - name: Select changed workspace crates\n", 1)[1]
@@ -260,22 +330,43 @@ sudo() { echo "sudo $*"; }
                 self.assertEqual(json.loads(selected_outputs["selection"])["packages"], sorted(selected or all_packages))
 
     def test_dedicated_archives_require_every_distinct_artifact_id(self):
-        script = self.step_script(self.rust_fast_step("Select unit-test artifact IDs"))
-        with tempfile.TemporaryDirectory() as directory:
-            output = Path(directory) / "output"
-            env = dict(os.environ, GITHUB_OUTPUT=str(output),
-                       ARCHIVE_ROLES='["lib","dispatch-1","dispatch-2","dispatch-3","bins"]',
-                       LIB_ARTIFACT_ID="10", DISPATCH_1_ARTIFACT_ID="21", DISPATCH_2_ARTIFACT_ID="22",
-                       DISPATCH_3_ARTIFACT_ID="23", BINS_ARTIFACT_ID="30")
-            subprocess.run(["bash", "-c", script], env=env, check=True, capture_output=True)
-            self.assertEqual(output.read_text(), "ids=10,21,22,23,30\n")
-            output.unlink()
-            for invalid_id in ("", "21"):
-                with self.subTest(invalid_id=invalid_id):
-                    env["DISPATCH_2_ARTIFACT_ID"] = invalid_id
-                    rejected = subprocess.run(["bash", "-c", script], env=env, capture_output=True)
-                    self.assertNotEqual(rejected.returncode, 0)
+        # Every worker gets only its own producer's immutable ID. Cross-role
+        # completeness is now checked on the exact set of result artifacts.
+        script = self.step_script(self.archive_step("Record uploaded archive ID"))
+        for artifact_id in ("21", "", "0", "not-an-id"):
+            with self.subTest(artifact_id=artifact_id), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "output"
+                env = dict(os.environ, GITHUB_OUTPUT=str(output), ARTIFACT_ID=artifact_id)
+                result = subprocess.run(["bash", "-c", script], env=env, capture_output=True)
+                self.assertEqual(result.returncode == 0, artifact_id == "21")
+                if artifact_id == "21":
+                    self.assertEqual(output.read_text(), "artifact_id=21\n")
+                else:
                     self.assertFalse(output.exists())
+        self.assertIn("artifact-ids: ${{ needs.build.outputs.artifact_id }}",
+                      self.worker_step("Download this unit-test archive by immutable ID"))
+        self.assertIn("name: rust-fast-unit-tests-${{ github.run_attempt }}-${{ inputs.archive }}",
+                      self.archive_step("Upload unit-test archive"))
+        roles = ["lib", "dispatch-1", "dispatch-2", "dispatch-3", "bins"]
+        for defect in (None, "missing", "duplicate-plan", "aliased-role"):
+            with self.subTest(defect=defect), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                paths, env = self.result_fixture(root, roles, ["selected"], "image-1", "Linux-X64")
+                if defect == "missing":
+                    (paths["dispatch-2"] / "result.json").unlink()
+                elif defect == "duplicate-plan":
+                    env["ARCHIVE_ROLES"] = json.dumps([*roles, "dispatch-1"])
+                elif defect == "aliased-role":
+                    (paths["dispatch-2"] / "result.json").write_bytes(
+                        (paths["dispatch-1"] / "result.json").read_bytes())
+                result = self.collect_results(root, env)
+                self.assertEqual(result.returncode == 0, defect is None, result.stderr)
+                if defect is None:
+                    self.assertIn("completed=true\n", (root / "output").read_text())
+                    self.assertEqual({p.name for p in (root / "rust-fast-archive").iterdir()}, set(roles))
+                else:
+                    self.assertFalse((root / "output").exists())
+                    self.assertFalse((root / "rust-fast-archive").exists())
 
     def test_unit_test_ledger_handles_mixed_runner_images(self):
         archive_step = self.archive_step("Report archive runner identity")
@@ -288,7 +379,8 @@ sudo() { echo "sudo $*"; }
         archive = textwrap.dedent(archive_step.split("        run: |\n", 1)[1])
         plan = textwrap.dedent(plan_step.split("        run: |\n", 1)[1])
         select = textwrap.dedent(select_step.split("        run: |\n", 1)[1].split("\n\n      #", 1)[0])
-        # Print planner arguments to verify the recording identity without writing cache files.
+        # The collector did not execute any tests. Its own image must never
+        # change the planned key; identity checks belong to actual workers.
         plan = "python() { printf '%s\\n' \"$@\"; }\n" + plan
         planned_image = "20261111.370.1"
         new_image = "20261116.376.1"
@@ -309,48 +401,72 @@ sudo() { echo "sudo $*"; }
                     PLAN_IMAGE=planned_image, PLAN_PLATFORM="Linux-X64", ARCHIVE_RESULT=archive_result,
                     ARCHIVE_IMAGE=image, ARCHIVE_PLATFORM=f"Linux-{arch}",
                     ImageVersion=image, RUNNER_OS="Linux", RUNNER_ARCH=arch,
+                    GITHUB_RUN_ATTEMPT="2",
                     SLUG="tests-1-5", TEST_SHARDS='{"tests-1-5": ["pending"]}',
                 )
                 if archive_result == "success":
                     subprocess.run(["bash", "-c", archive], env=env, check=True)
-                    self.assertEqual(output.read_text(), f"image={image}\nplatform=Linux-{arch}\n")
+                    self.assertEqual(output.read_text(), f"image={image}\nplatform=Linux-{arch}\nrun_attempt=2\n")
                     output.unlink()
 
-                result = subprocess.run(["bash", "-c", plan], env=env, capture_output=True, text=True)
-                if archive_result == "skipped":
-                    self.assertEqual(result.returncode, 1)
-                    self.assertIn(
-                        f"::error::complete ledger hit planned on image {planned_image}/Linux-X64 "
-                        f"but shard runs on {image}/Linux-{arch}; re-run all jobs", result.stdout,
-                    )
-                    self.assertNotIn("job_result_key.py", result.stdout)
-                    self.assertFalse(output.exists())
-                    continue
-
+                result = subprocess.run(["bash", "-c", plan], cwd=ROOT, env=env, capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn(f"image={image}\n", result.stdout)
-                self.assertIn(f"os=Linux-{arch}\n", result.stdout)
-                mismatch = (image, arch) != (planned_image, "X64")
-                if mismatch:
-                    self.assertEqual(result.stdout.count("::notice::"), 1)
-                    self.assertEqual(output.read_text(), "bypass=true\n")
-                else:
-                    self.assertNotIn("::notice::", result.stdout)
-                    self.assertFalse(output.exists())
-                env["BYPASS_LEDGER"] = "true" if output.exists() else ""
+                self.assertIn(f"image={planned_image}\n", result.stdout)
+                self.assertIn("os=Linux-X64\n", result.stdout)
+                self.assertNotIn("::notice::", result.stdout)
+                self.assertFalse(output.exists())
+                env["BYPASS_LEDGER"] = ""
                 subprocess.run(["bash", "-c", select], env=env, check=True)
                 self.assertTrue(output.read_text().endswith("hit=false\n"))
-                self.assertEqual((temp / "rust-fast-run.tsv").read_text(), full if mismatch else "pending\t--bins\n")
+                self.assertEqual((temp / "rust-fast-run.tsv").read_text(), "pending\t--bins\n")
+
+        spec = importlib.util.spec_from_file_location("archive_worker", ROOT / "tools/repository/run_rust_fast_archive.py")
+        worker = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(worker)
+        selected = ["cached", "pending", "no-unit-target"]
+        for test_image, test_arch, builder_image, builder_platform in (
+            (planned_image, "X64", planned_image, "Linux-X64"),
+            (new_image, "X64", planned_image, "Linux-X64"),
+            (planned_image, "ARM64", planned_image, "Linux-X64"),
+            (planned_image, "X64", new_image, "Linux-X64"),
+            (planned_image, "X64", planned_image, "Linux-ARM64"),
+            ("unknown", "X64", "unknown", "Linux-X64"),
+        ):
+            for pending in (["pending"], []):
+                with self.subTest(worker=test_image, arch=test_arch, builder=builder_image,
+                                  builder_platform=builder_platform, pending=pending), tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    env = dict(EXPECTED_SHA="a" * 40, BASE_SHA="b" * 40, ARCHIVE="lib", SHARD="1/5", SLUG="tests-1-5",
+                        RUST_SELECTION=json.dumps({"mode": "packages", "packages": selected}),
+                        TEST_SHARDS=json.dumps({"tests-1-5": pending}), PLAN_IMAGE=planned_image,
+                        PLAN_PLATFORM="Linux-X64", BUILD_IMAGE=builder_image, BUILD_PLATFORM=builder_platform,
+                        ImageVersion=test_image, RUNNER_OS="Linux", RUNNER_ARCH=test_arch,
+                        GITHUB_RUN_ID="71", GITHUB_RUN_ATTEMPT="2", GITHUB_OUTPUT=str(root / "output"))
+                    with patch.dict(os.environ, env), patch.object(worker.subprocess, "check_output", return_value="a" * 40):
+                        worker.plan(root / "result")
+                    compatible = (test_image, test_arch, builder_image, builder_platform) == (
+                        planned_image, "X64", planned_image, "Linux-X64")
+                    expected = sorted(pending if compatible else selected)
+                    result = json.loads((root / "result/result.json").read_text())
+                    self.assertEqual(result["pending_packages"], expected)
+                    self.assertEqual(result["completed"], not expected)
+                    self.assertEqual((root / "output").read_text(), f"hit={str(not expected).lower()}\n")
 
     def test_unit_test_ledger_requires_matching_archive_builder(self):
         route = self.pr.split("      - name: Plan unit-test job-result keys\n", 1)[1]
         route = textwrap.dedent(route.split("        run: |\n", 1)[1].split("\n      - name: ", 1)[0])
         plan = self.rust_fast_step("Plan job-result keys").split("        run: |\n", 1)[1]
-        record = self.rust_fast_step("Record passed crates in the job-result ledger").split("        run: |\n", 1)[1]
+        record_step = self.rust_fast_step("Record passed crates in the job-result ledger")
+        self.assertIn("steps.nextest.outputs.cacheable == 'true'", record_step)
+        self.assertIn("steps.nextest.outputs.completed == 'true'", record_step)
+        record = record_step.split("        run: |\n", 1)[1]
         name = "oteryn-simulation-determinism"
         image = "20261111.370.1"
         platform = "Linux-X64"
         rows = f"{name}\t--lib\n"
+        spec = importlib.util.spec_from_file_location("ledger_keys", ROOT / "tools/repository/job_result_key.py")
+        ledger_keys = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ledger_keys)
         for builder_image, builder_platform, secondary in (
             (image, platform, "passed"), ("20261116.376.1", platform, "passed"),
             (image, "Linux-ARM64", "passed"), (image, platform, "image-mismatch"),
@@ -359,56 +475,81 @@ sudo() { echo "sudo $*"; }
             with self.subTest(builder_image=builder_image, builder_platform=builder_platform, secondary=secondary), \
                  tempfile.TemporaryDirectory() as directory:
                 temp = Path(directory)
+                # Exercise real index-based keys in an isolated fixture. The
+                # author's sparse checkout and untracked new control files
+                # must not turn every negative case into a vacuous cache miss.
+                checkout = temp / "checkout"
+                checkout.mkdir()
+                for filename in ledger_keys.COMMON_FILES:
+                    path = checkout / filename
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes((ROOT / filename).read_bytes())
+                for filename, content in (("Cargo.toml", "[workspace]\n"),
+                    ("Cargo.lock", "fixture lock\n"),
+                    ("crates/simulation-determinism/Cargo.toml", '[package]\nname = "' + name + '"\n'),
+                    ("crates/simulation-determinism/src/lib.rs", "pub fn fixture() {}\n")):
+                    path = checkout / filename
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(content)
+                subprocess.run(["git", "init", "--quiet"], cwd=checkout, check=True, capture_output=True)
+                subprocess.run(["git", "add", "--all"], cwd=checkout, check=True, capture_output=True)
                 packages = temp / "rust-fast-packages.tsv"
                 packages.write_text(rows)
                 (temp / "rust-fast-test-packages.tsv").write_text(rows)
                 (temp / "rust-fast-run.tsv").write_text(rows)
                 (temp / "rust-fast-metadata.json").write_text(json.dumps({
-                    "workspace_root": str(ROOT), "workspace_members": [name],
+                    "workspace_root": str(checkout), "workspace_members": [name],
                     "packages": [{
                         "id": name, "name": name,
-                        "manifest_path": str(ROOT / "crates/simulation-determinism/Cargo.toml"),
+                        "manifest_path": str(checkout / "crates/simulation-determinism/Cargo.toml"),
                     }],
                 }))
                 roles = ["lib", "dispatch-1", "dispatch-2", "dispatch-3", "bins"]
+                paths, collector_env = self.result_fixture(temp, roles, [name], image, platform)
                 for role in roles:
-                    artifact = temp / "rust-fast-archive" / role
-                    artifact.mkdir(parents=True)
+                    result_path = paths[role] / "result.json"
+                    result = json.loads(result_path.read_text())
                     role_image = "different-image" if role == "dispatch-2" and secondary == "image-mismatch" else builder_image
-                    (artifact / "runner-image").write_text(role_image + "\n")
-                    (artifact / "runner-platform").write_text(builder_platform + "\n")
-                    junit = temp / "rust-fast-extract" / role / "junit.xml"
-                    junit.parent.mkdir(parents=True)
+                    result.update(build_image=role_image, build_platform=builder_platform)
+                    if role == "dispatch-2" and secondary == "failed":
+                        result["exit_code"] = 100
+                    result_path.write_text(json.dumps(result))
+                    junit = paths[role] / "junit.xml"
                     if role == "dispatch-2" and secondary == "missing":
+                        junit.unlink()
                         continue
                     outcome = "<failure/>" if role == "dispatch-2" and secondary == "failed" else ""
                     binary_id = f"{name}::ci_test" if role.startswith("dispatch-") else name
                     junit.write_text(f'<testsuite name="{binary_id}" tests="1">'
                                      f'<testcase name="{role}">{outcome}</testcase></testsuite>')
+                collected = self.collect_results(temp, collector_env)
+                self.assertEqual(collected.returncode, 100 if secondary == "failed" else 0, collected.stderr)
+                matched = (builder_image, builder_platform) == (image, platform)
+                cacheable = matched and secondary != "image-mismatch"
+                self.assertIn(f"cacheable={str(cacheable).lower()}\n", (temp / "output").read_text())
                 output = temp / "output"
                 env = dict(
-                    os.environ, KIND="tests", JOB="rust_fast-tests 1/5", BASE_SHA="base",
+                    os.environ, KIND="tests", JOB="rust_fast-tests 1/5", BASE_SHA="b" * 40,
                     PER_PACKAGE="--per-package", RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output),
                     GITHUB_STEP_SUMMARY=str(temp / "summary"), CARGO_TARGET_DIR=directory,
                     PLAN_IMAGE=image, PLAN_PLATFORM=platform, ARCHIVE_RESULT="success",
-                    ARCHIVE_IMAGE=builder_image, ARCHIVE_PLATFORM=builder_platform,
+                    ARCHIVE_IMAGE=image, ARCHIVE_PLATFORM=platform,
                     ARCHIVE_ROLES=json.dumps(roles),
                     ImageVersion=image, RUNNER_OS="Linux", RUNNER_ARCH="X64",
                 )
-                subprocess.run(["bash", "-c", textwrap.dedent(plan)], cwd=ROOT, env=env,
+                subprocess.run(["bash", "-c", textwrap.dedent(plan)], cwd=checkout, env=env,
                                check=True, capture_output=True)
-                recorded = subprocess.run(["bash", "-c", textwrap.dedent(record)], cwd=ROOT, env=env,
+                recorded = subprocess.run(["bash", "-c", textwrap.dedent(record)], cwd=checkout, env=env,
                                           check=True, capture_output=True, text=True)
-                subprocess.run(["bash", "-c", route], cwd=ROOT, env=env, check=True, capture_output=True)
+                subprocess.run(["bash", "-c", route], cwd=checkout, env=env, check=True, capture_output=True)
                 remaining = temp / "remaining.tsv"
                 later_plan = temp / "rust-fast-test-plan-1.json"
                 subprocess.run(
                     [sys.executable, "-I", str(ROOT / "tools/repository/job_result_key.py"), "select",
                      "--plan", str(later_plan), "--packages", str(packages),
                      "--dir", str(temp / "jobresult"), "--out", str(remaining)],
-                    cwd=ROOT, env=env, check=True, capture_output=True,
+                    cwd=checkout, env=env, check=True, capture_output=True,
                 )
-                matched = (builder_image, builder_platform) == (image, platform)
                 passed = matched and secondary == "passed"
                 self.assertEqual(remaining.read_text(), "" if passed else rows)
                 self.assertEqual((temp / "jobresult/ledger.json").exists(), passed)
@@ -417,9 +558,11 @@ sudo() { echo "sudo $*"; }
                 recorded_key = json.loads((temp / "jr-plan.json").read_text())["units"][name]
                 lookup_key = json.loads(later_plan.read_text())["units"][name]
                 self.assertTrue(recorded_key and lookup_key)
-                self.assertEqual(recorded_key == lookup_key, matched)
-        self.assertIn("ARCHIVE_IMAGE: ${{ needs.rust_fast_build.outputs.runner_image }}", self.pr)
-        self.assertIn("ARCHIVE_PLATFORM: ${{ needs.rust_fast_build.outputs.runner_platform }}", self.pr)
+                # Both keys name the planner identity. Incompatible execution
+                # evidence is refused instead of contaminating that ledger.
+                self.assertEqual(recorded_key, lookup_key)
+        self.assertIn("ARCHIVE_IMAGE: ${{ needs.runner_route.outputs.rust_test_image }}", self.pr)
+        self.assertIn("ARCHIVE_PLATFORM: ${{ needs.runner_route.outputs.rust_test_platform }}", self.pr)
 
     def test_self_hosted_target_setup_and_stale_junit_cleanup(self):
         name = "Select persistent self-hosted Cargo target directory"
@@ -474,10 +617,19 @@ sudo() { echo "sudo $*"; }
                             )
                             self.assertIn(expected_error, result.stderr)
                             self.assertFalse(github_env.exists())
-        self.assertIn(
-            'junit="${CARGO_TARGET_DIR:-target}/nextest/rust-fast/junit.xml"',
-            self.rust_fast_step("Unit-test changed crates (nextest shard ${{ matrix.shard }})"),
-        )
+        self.assertIn('Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target")) / "nextest/rust-fast/junit.xml"',
+                      self.worker_source)
+        self.assertIn('junit.unlink(missing_ok=True)', self.worker_source)
+        # Execute the archived worker's stale-JUnit cases, including a complete
+        # test failure, runner error and process termination. Warm artifacts
+        # above remain untouched; only stale evidence is discarded.
+        spec = importlib.util.spec_from_file_location("worker_regressions", ROOT / "tools/repository/test_run_rust_fast_archive.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        stale_case = module.ArchiveShard("test_test_failures_complete_but_runner_errors_cannot_reuse_a_stale_report")
+        result = unittest.TestResult()
+        stale_case.run(result)
+        self.assertTrue(result.wasSuccessful(), result.errors + result.failures)
 
     def test_no_workflows(self):
         self.module.MERGE_GATE = Path("/nonexistent/oteryn-pr.yml")

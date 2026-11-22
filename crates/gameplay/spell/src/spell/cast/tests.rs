@@ -1513,3 +1513,32 @@ fn c11_guiding_presence_mantra_is_used_only_without_own_mantra() {
     assert_eq!(state.ascetic_attack_bonus_at(3, 1_000_100), 0);
     assert_eq!(state.ascetic_attack_bonus_at(4, 100), 0);
 }
+
+#[test]
+fn retained_exact_field_attacker_still_proves_attribution_after_overflow() {
+    use crate::foundation::{
+        ActorLocalGeneration, ChannelId, ExactActorRef, GameSessionId, WorldId,
+    };
+
+    let id = |n| [n, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, n];
+    let mut source = ExactActorRef::transport_fixture(
+        WorldId::decode(&id(1)).expect("world"),
+        ChannelId::decode(&id(2)).expect("channel"),
+    );
+    let session = GameSessionId::decode(&id(3)).expect("session");
+    let mut state = PlayerSpellState::new(druid(8), 0, 0).expect("state");
+    for generation in 1..=17 {
+        source.0.actor_local_generation = ActorLocalGeneration(generation);
+        state
+            .stage_committed_player_hit_history(source, session, 1, generation)
+            .expect("hit");
+    }
+    assert_eq!(
+        state.source_field_attack_history(source, session, 1, 17, 1),
+        Some(true)
+    );
+    assert_eq!(
+        state.source_field_attack_history(source, session, 2, 17, 1),
+        None
+    );
+}

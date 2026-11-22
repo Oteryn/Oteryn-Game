@@ -135,11 +135,7 @@ impl ControlInput {
                 NormalizedInputEvent::MouseButton { button, state, .. } => {
                     let mapped = self.mouse.get(button).copied().unwrap_or_else(|| {
                         if prefs.mouse == MousePreset::LeftHanded {
-                            match *button {
-                                MouseButton::PRIMARY => MouseButton::SECONDARY,
-                                MouseButton::SECONDARY => MouseButton::PRIMARY,
-                                _ => *button,
-                            }
+                            swap_button(*button)
                         } else {
                             *button
                         }
@@ -165,5 +161,52 @@ impl ControlInput {
             }
         }
         routed
+    }
+}
+
+impl super::ReferencePreferences {
+    pub(super) fn reconcile_controls(&mut self, previous: Option<&Self>) {
+        let legacy_mouse_changed =
+            previous.map_or(self.controls.mouse == MousePreset::Standard, |old| {
+                self.controls.mouse == old.controls.mouse
+                    && self.swap_mouse_buttons
+                    && self.swap_mouse_buttons != old.swap_mouse_buttons
+            });
+        if legacy_mouse_changed {
+            self.controls.mouse = if self.swap_mouse_buttons {
+                MousePreset::LeftHanded
+            } else {
+                MousePreset::Standard
+            };
+        }
+        self.swap_mouse_buttons = false;
+        // Default legacy aliases in an older editor snapshot cannot erase an explicit control choice.
+        let legacy_rotation_changed =
+            previous.map_or(self.controls.rotation == RotationModifier::Control, |old| {
+                self.controls.rotation == old.controls.rotation
+                    && self.rotation_modifier != "CTRL"
+                    && self.rotation_modifier != old.rotation_modifier
+            });
+        if legacy_rotation_changed {
+            self.controls.rotation = match self.rotation_modifier.as_str() {
+                "ALT" => RotationModifier::Alt,
+                "SHIFT" => RotationModifier::Shift,
+                _ => RotationModifier::Control,
+            };
+        }
+        self.rotation_modifier = match self.controls.rotation {
+            RotationModifier::Alt => "ALT",
+            RotationModifier::Shift => "SHIFT",
+            RotationModifier::Control => "CTRL",
+        }
+        .into();
+    }
+}
+
+pub(super) fn swap_button(button: MouseButton) -> MouseButton {
+    match button {
+        MouseButton::PRIMARY => MouseButton::SECONDARY,
+        MouseButton::SECONDARY => MouseButton::PRIMARY,
+        other => other,
     }
 }

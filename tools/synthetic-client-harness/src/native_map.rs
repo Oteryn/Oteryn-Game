@@ -113,7 +113,7 @@ fn native_live_map_snapshot_then_delta_changes_the_scene_and_item_selection()
                             .iter()
                             .filter(|q| q.size == [4.0; 2] || q.size == [12.0; 2])
                             .count(),
-                        31 * 25 + 2
+                        31 * 25 + 1 // Light cells and player; the live item has no duplicate target-marker glyph.
                     );
                     let (link, commands, outbox) = play_channel();
                     let (send, incoming) = mpsc::unbounded_channel();
@@ -181,7 +181,7 @@ fn native_live_map_snapshot_then_delta_changes_the_scene_and_item_selection()
                                 .iter()
                                 .filter(|q| q.size == [4.0; 2] || q.size == [12.0; 2])
                                 .count(),
-                            31 * 25 + 1 + if revision == 2 { 2 } else { 0 }
+                            31 * 25 + 1
                         );
                         if revision == 2 {
                             view.click(TileCoord::new(added_position.x, added_position.y))?;
@@ -241,6 +241,7 @@ fn native_live_appearance_snapshot_reaches_visible_scene()
                         tiles: Vec::new(),
                     };
                     let entity = oteryn_session::WorldSpatialEntity {
+                        motion: None,
                         display_name: Some(
                             oteryn_session::EntityDisplayName::new("Live Rat")
                                 .map_err(|e| format!("{e:?}"))?,

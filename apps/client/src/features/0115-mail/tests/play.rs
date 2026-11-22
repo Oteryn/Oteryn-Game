@@ -364,3 +364,193 @@ fn e2e_e09_real_mail_outcomes_replay_into_mail_panel() -> Result<(), Error> {
         Ok(())
     }).checked()?.join().map_err(|_| "e09 scenario thread failed").checked()?
 }
+
+#[test]
+fn rejected_unicode_edits_never_submit_stored_values() -> Result<(), Error> {
+    use crate::play::mailbox::lock;
+    let (link, mut incoming, _) = play_channel();
+    {
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.properties.mail.selected = true;
+        mailbox.properties.house_transfer.selected = true;
+        mailbox.properties.guildhall.selected = true;
+        mailbox.boss_encounter.selected = true;
+    }
+    link.mail_edit(0, "7".into());
+    link.mail_edit(2, "previous inscription".into());
+    link.mail_edit(2, "ż".repeat(4000));
+    link.mail_request(Intent::Write);
+    assert!(incoming.try_recv().is_err(), "submitted stale inscription");
+    assert!(!link.mail_panel().feedback.is_empty());
+    link.house_transfer_edit(0, "oteryn:content.house.test".into());
+    link.house_transfer_edit(0, "界".repeat(256));
+    link.house_transfer_request(oteryn_client_ui::house_transfer::Intent::Enter);
+    assert!(incoming.try_recv().is_err(), "submitted stale house");
+    link.guildhall_edit(0, "00000000-0000-7000-8000-000000000001".into());
+    link.guildhall_edit(1, "00000000-0000-7000-8000-000000000002".into());
+    link.guildhall_edit(2, "1".into());
+    link.guildhall_edit(0, "界".repeat(256));
+    link.guildhall_request(oteryn_client_ui::guildhall::Intent::Transfer);
+    assert!(incoming.try_recv().is_err(), "submitted stale guild");
+    link.boss_encounter_edit(0, "oteryn:creature.test".into());
+    link.boss_encounter_edit(0, "界".repeat(256));
+    link.boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::Enter);
+    assert!(incoming.try_recv().is_err(), "submitted stale boss");
+    Ok(())
+}
+
+#[test]
+fn writing_drafts_follow_item_and_session_identity() -> Result<(), Error> {
+    use crate::play::mailbox::lock;
+    let (link, _, outbox) = play_channel();
+    let selected = Peer {
+        exchanges: Arc::new(Script {
+            entries: Mutex::new(VecDeque::new()),
+            release: tokio::sync::Semaphore::new(0),
+        }),
+        inventory: None,
+    };
+    outbox.properties_initialize(&selected);
+    link.mail_edit(0, "7".into());
+    link.mail_edit(2, "letter A".into());
+    link.mail_edit(0, "7".into());
+    assert_eq!(link.mail_panel().fields[2], "letter A");
+    link.mail_edit(0, "8".into());
+    assert!(
+        link.mail_panel().fields[2].is_empty(),
+        "letter B inherited A's draft"
+    );
+    link.mail_edit(2, "letter B".into());
+    outbox.properties_initialize(&selected);
+    assert!(link.mail_panel().fields.iter().all(String::is_empty));
+    link.mail_edit(0, "7".into());
+    link.mail_edit(2, "another session".into());
+    lock(&link.mailbox).properties.end();
+    assert!(link.mail_panel().fields.iter().all(String::is_empty));
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+impl crate::play::Outbox {
+    /// Admits the property capabilities the Bevy item and furniture menus drive.
+    pub(crate) fn bevy_property_items_selected(&self) {
+        let mut mailbox = crate::play::mailbox::lock(&self.0);
+        mailbox.properties.mail.selected = true;
+        mailbox.properties.timed_item.selected = true;
+        mailbox.properties.house_furniture_rotation.selected = true;
+        mailbox.properties.house_furniture_wrap.selected = true;
+    }
+    /// Admits capability 511, the writing window's item text read.
+    pub(crate) fn bevy_item_inscription_selected(&self) {
+        crate::play::mailbox::lock(&self.0)
+            .properties
+            .mail_inscription
+            .selected = true;
+    }
+    /// Applies a server reply through the production property reducer.
+    pub(crate) fn bevy_properties_result(
+        &self,
+        command: &FeatureCommand,
+        result: &GatedCommandResult,
+    ) {
+        self.properties_result(command, result);
+    }
+}
+
+/// Selects the writing window and, with `inscription`, capability 511.
+fn writing_window(mail: bool) -> (PlayLink, tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>, crate::play::Outbox) {
+    let (link, incoming, outbox) = play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.properties.mail.selected = mail;
+        mailbox.properties.mail_inscription.selected = true;
+    }
+    (link, incoming, outbox)
+}
+
+fn inscription_reply(text: &str) -> Result<GatedCommandResult, Error> {
+    let payload = oteryn_client_ui::item_inscription::Reply { text: text.into(), max_length: 4000, writable: true }
+        .encode()
+        .ok_or("inscription reply")?;
+    Ok(GatedCommandResult { command_id: 1, server_sequence: 1, status: CommandStatus::Accepted, payload })
+}
+
+fn sent_feature(incoming: &mut tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>) -> Result<FeatureCommand, Error> {
+    match incoming.try_recv()? {
+        crate::combat_input::PlayCommand::Feature(command) => Ok(command),
+        other => Err(format!("unexpected command {other:?}").into()),
+    }
+}
+
+#[test]
+fn inscription_read_waits_for_the_mail_capability() -> Result<(), Error> {
+    use oteryn_client_ui::item_inscription::Known;
+    let (link, mut incoming, _outbox) = writing_window(false);
+    link.mail_write_item(7.try_into()?);
+    assert!(incoming.try_recv().is_err());
+    for _ in 0..2 {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        crate::play::feature_0115_mail::input::tick(&mut mailbox, &link.commands);
+        assert_eq!(mailbox.properties.mail_inscription.known, Known::Unread);
+    }
+    assert!(incoming.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn inscription_read_keeps_typed_text_and_asks_for_the_dropped_write_again() -> Result<(), Error> {
+    let (link, mut incoming, outbox) = writing_window(true);
+    link.mail_edit(0, "7".into());
+    link.mail_edit(2, "typed letter".into());
+    link.mail_request(Intent::Write);
+    let read = sent_feature(&mut incoming)?;
+    outbox.properties_result(&read, &inscription_reply("old text")?);
+    assert_eq!(link.mail_panel().fields[2], "typed letter");
+    assert_eq!(link.mail_panel().feedback, "The item's text was read; press Write to replace it");
+    link.mail_request(Intent::Write);
+    let write = sent_feature(&mut incoming)?;
+    assert_eq!(
+        wire::decode_intent(&write.payload).checked()?,
+        wire::MailIntent::WriteText { item_handle: 7, text: "typed letter".into() }
+    );
+    Ok(())
+}
+
+#[test]
+fn inscription_read_at_the_form_byte_bound_fills_the_editor_and_beyond_blocks_write() -> Result<(), Error> {
+    let (link, mut incoming, outbox) = writing_window(true);
+    link.mail_write_item(7.try_into()?);
+    let read = sent_feature(&mut incoming)?;
+    let bound = "ż".repeat(3998);
+    outbox.properties_result(&read, &inscription_reply(&bound)?);
+    assert_eq!(link.mail_panel().fields[2], bound);
+    link.mail_request(Intent::Write);
+    assert!(sent_feature(&mut incoming).is_ok(), "a read text at the bound is written");
+
+    let (link, mut incoming, outbox) = writing_window(true);
+    link.mail_write_item(8.try_into()?);
+    let read = sent_feature(&mut incoming)?;
+    outbox.properties_result(&read, &inscription_reply(&"ż".repeat(3999))?);
+    assert!(link.mail_panel().fields[2].is_empty());
+    assert_eq!(link.mail_panel().feedback, "The letter text is too long");
+    link.mail_edit(2, "replacement".into());
+    link.mail_request(Intent::Write);
+    assert!(incoming.try_recv().is_err(), "an unshown text is never replaced");
+    assert_eq!(link.mail_panel().feedback, "The letter text is too long");
+    Ok(())
+}
+
+#[test]
+fn inscription_read_opened_for_an_item_keeps_typed_text_and_prompts_write() -> Result<(), Error> {
+    let (link, mut incoming, outbox) = writing_window(true);
+    link.mail_edit(0, "7".into());
+    link.mail_edit(2, "typed letter".into());
+    link.mail_write_item(7.try_into()?);
+    let read = sent_feature(&mut incoming)?;
+    outbox.properties_result(&read, &inscription_reply("old text")?);
+    assert_eq!(link.mail_panel().fields[2], "typed letter");
+    assert_eq!(link.mail_panel().feedback, "The item's text was read; press Write to replace it");
+    assert!(!link.mail_panel().feedback.contains("again"));
+    assert!(incoming.try_recv().is_err());
+    Ok(())
+}

@@ -42,6 +42,7 @@ fn window(revision: u64) -> Result<Vec<u8>, Error> {
         offers.reverse();
     }
     Ok(npc_service::encode_npc_trade_window(&NpcTradeWindow {
+        details: Vec::new(),
         open: Some((npc().entity, revision)),
         offers,
     })

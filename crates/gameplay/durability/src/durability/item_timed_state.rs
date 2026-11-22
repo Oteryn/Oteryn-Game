@@ -675,13 +675,24 @@ pub(super) async fn write_expiry(
     request: &TimedExpiryRequest,
     tuple: SelectedType2Tuple,
 ) -> Result<TimedWriteOutcome> {
-    let RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = fence.runtime_scope
-    else {
-        return Err(TimedWriteError::AuthorityRejected);
+    write_expiry_in_scope(connection, fence, request, tuple, None).await
+}
+
+/// The private-scope clock has already locked and validated the original Channel binding.
+/// The audit retains that Channel ID and the actual current scope generation.
+pub(super) async fn write_expiry_in_scope(
+    connection: &mut PgConnection,
+    fence: &CurrentCharacterGameplayFence,
+    request: &TimedExpiryRequest,
+    tuple: SelectedType2Tuple,
+    origin_channel: Option<[u8; 16]>,
+) -> Result<TimedWriteOutcome> {
+    let channel_id = match (fence.runtime_scope, origin_channel) {
+        (RuntimeScopeRefV1::Channel { channel_id, .. }, None) => *channel_id.as_bytes(),
+        (RuntimeScopeRefV1::Instance { .. }, Some(origin)) => origin,
+        _ => return Err(TimedWriteError::AuthorityRejected),
     };
+    let world_id = fence.runtime_scope.world_id();
     let holder = fence.character_id;
     let definition = &request.definition.definition;
     let full = request.definition.full;
@@ -820,7 +831,7 @@ pub(super) async fn write_expiry(
             after: Some(after_state),
             character_id: holder.as_bytes().to_vec(),
             world_id: world_id.as_bytes().to_vec(),
-            channel_id: channel_id.as_bytes().to_vec(),
+            channel_id: channel_id.to_vec(),
             runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
             container_entry: entry.clone(),
             equipment_container_slot: in_slot,

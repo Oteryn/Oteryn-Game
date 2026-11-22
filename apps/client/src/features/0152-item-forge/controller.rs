@@ -4,13 +4,10 @@ use crate::play::mailbox::Mailbox;
 use oteryn_client_runtime::{cui3::item_forge::Operation, forge_preview as wire};
 use tokio::sync::mpsc::UnboundedSender;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[cfg_attr(
-    not(windows),
-    allow(
+#[allow(
         dead_code,
         reason = "The Windows Forge form constructs its native actions"
-    )
-)]
+    )]
 pub(in crate::play) enum Action {
     CurrentDust,
     Effects,

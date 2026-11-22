@@ -33,6 +33,7 @@ const MOVE_SELECTION: ItemMoveSelection = ItemMoveSelection {
     equip_drop: false,
     container_tree: false,
     world_interaction: true,
+    manual_sort: false,
 };
 
 #[test]
@@ -231,7 +232,7 @@ fn scenario(target_move: bool) -> TestResult {
             1,
             1,
             "runtime-scope-assignment:1",
-            2,
+            3, // Player, follow target and the additional bound corpse fixture.
             channel_pin,
         )
         .map_err(debug)?;
@@ -246,6 +247,17 @@ fn scenario(target_move: bool) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
+        // Domain-1 remains usable without map-view selection: corpses share the actor's wire frame.
+        let corpse_identity = {
+            let mut runtime = owner.runtime.lock().await;
+            let creature = runtime.admit_pinned_test_creature(at(2, 2)).map_err(debug)?;
+            runtime.commit_monster_lab_damage(creature, b"native-floor-corpse", 20).map_err(debug)?;
+            let mut death = runtime.borrow_combat_death();
+            let receipt = death.committed_lethal_receipt(creature).map_err(debug)?;
+            death.project_committed_lethal(receipt).map_err(debug)?;
+            runtime.bind_corpse_item(creature, id(88), "Item", COIN, "definition-r1").map_err(debug)?;
+            creature.corpse_identity()
+        };
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(deps.admitted.game_session_id)
@@ -387,7 +399,7 @@ fn scenario(target_move: bool) -> TestResult {
             };
             resumed.continuity.selected_capabilities = SelectedCapabilities::select(
                 owner.offered_capabilities(),
-                &[4, 6, 11, 13, 15, 18, 31],
+                &[4, 6, 13, 31],
             )
             .ok_or("without target capability")?;
             let before = owner
@@ -399,7 +411,7 @@ fn scenario(target_move: bool) -> TestResult {
                 .map_err(debug)?;
             let (mut server, mut client) = tokio::io::duplex(1 << 20);
             let client_flow = async {
-                let result = super::target_move::without_capability(&mut client).await;
+                let result = super::target_move::without_capability(&mut client, corpse_identity).await;
                 client.shutdown().await?;
                 result
             };
@@ -421,6 +433,8 @@ fn scenario(target_move: bool) -> TestResult {
                 before
             );
         }
+        assert_eq!(owner.runtime.lock().await.bound_corpse(corpse_identity).ok_or("bound corpse")?.position.floor, 7);
+
         let bag = h
             .root
             .read_character_backpack(&authority, fence.character_id)
@@ -951,8 +965,6 @@ async fn result_at_rest(
                 // The relocation's revision update is legitimate even after returning to the
                 // same tile. Every observed position must stay at that tile after cancellation.
                 let value = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(delta.payload).map_err(debug)?;
-                // A generic bundle_view carries no pinned activity source role, so
-                // wire_position keeps the legacy +z floor (only source rooms negate).
                 assert_eq!(
                     (
                         value.actor_position.x,

@@ -1,5 +1,8 @@
 //! Persisted heterogeneous slot assignments; every active action uses an existing command path.
 use super::item_actions::item_source;
+#[path = "readiness.rs"]
+mod readiness;
+use crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings;
 use crate::play::{
     PlayLink, SettingsState,
     mailbox::{Mailbox, lock},
@@ -111,7 +114,7 @@ pub enum BarAction {
     },
     Equip {
         definition: NonZeroU32,
-        /// Upgrade tier the hotkey is bound to (0 = any); the equip request carries no tier yet.
+        /// Exact upgrade tier on tiered worlds (0 = unforged).
         #[serde(default)]
         upgrade_tier: u8,
     },
@@ -123,12 +126,20 @@ pub enum BarAction {
     },
     Use {
         definition: NonZeroU32,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        sub_type: Option<u32>,
         mode: super::item_actions::ItemUseMode,
     },
     Passive {
         ability: PassiveAbility,
     },
 }
+impl BarAction {
+    pub(crate) fn equip_tier_supported(&self, tiered: bool) -> bool {
+        tiered || !matches!(self, Self::Equip { upgrade_tier, .. } if *upgrade_tier != 0)
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct BarActions(pub BTreeMap<usize, BarAction>);
@@ -182,6 +193,7 @@ pub(crate) struct ItemCooldownRead {
 }
 #[derive(Debug, Default)]
 pub(crate) struct BarActionsState {
+    pub scope: u64,
     pub saved: BarActions,
     pub item_cooldowns_selected: bool,
     pub item_cooldowns: BTreeMap<u32, (std::time::Instant, u64)>,
@@ -223,9 +235,18 @@ impl PlayLink {
     }
 }
 pub(in crate::play) fn set_action(mailbox: &mut Mailbox, slot: usize, action: BarAction) -> bool {
-    if let BarAction::Equip { definition, .. } = &action
-        && !mailbox.hotkey_equip.items.contains(&definition.get())
-    {
+    // An Equip action, alone or inside a multiaction, names a carried object.
+    let carried = |action: &BarAction| match action {
+        BarAction::Equip { definition, .. } => {
+            mailbox.hotkey_equip.items.contains(&definition.get())
+        }
+        _ => true,
+    };
+    let carried = match &action {
+        BarAction::Multi { actions } => actions.iter().all(carried),
+        other => carried(other),
+    };
+    if !carried {
         return false;
     }
     let mut next = mailbox.bar_actions.saved.clone();
@@ -259,6 +280,11 @@ impl SettingsState {
             state.keys.clone_from(&self.preferences.action_keys);
         }
     }
+}
+
+fn action_ready(mailbox: &Mailbox, action: &BarAction) -> bool {
+    action.equip_tier_supported(mailbox.hotkey_equip.tiered)
+        && readiness::action_ready(mailbox, action)
 }
 
 pub(in crate::play) fn activate(link: &PlayLink, slot: NonZeroU32) -> bool {
@@ -304,6 +330,10 @@ fn activate_inner(
     if mailbox.world_input_blocked() {
         return true;
     }
+    if !action.equip_tier_supported(mailbox.hotkey_equip.tiered) {
+        mailbox.spell_bar.feedback = "This world does not support exact upgrade tiers.".into();
+        return true;
+    }
     if read_items && super::item_cooldowns::begin(mailbox, commands, slot, &action, true) {
         return true;
     }
@@ -323,12 +353,11 @@ fn activate_inner(
     };
     match action {
         BarAction::Spell { name, words, aim } => {
-            if let Some(entry) = mailbox
-                .spell_catalog
-                .catalog
-                .entries()
-                .iter()
-                .find(|entry| entry.name == name && entry.words == words && entry.available)
+            if let Some(entry) = ArchiveBindings::matching_spell(
+                &name,
+                &words,
+                mailbox.spell_catalog.catalog.entries(),
+            ) && entry.available
                 && let Some(index) = NonZeroU32::new(entry.cast_index)
             {
                 let cursor_aim = if aim == SpellAim::Cursor {
@@ -365,9 +394,11 @@ fn activate_inner(
             }
         }
         BarAction::Multi { .. } => {}
-        BarAction::Use { definition, mode } => {
-            super::item_actions::use_item(mailbox, commands, definition, mode)
-        }
+        BarAction::Use {
+            definition,
+            sub_type,
+            mode,
+        } => super::item_actions::use_item(mailbox, commands, definition, sub_type, mode),
         BarAction::Equip {
             definition,
             upgrade_tier,
@@ -396,14 +427,7 @@ fn activate_inner(
             }
         }
         BarAction::Text { text, .. } => {
-            let draft = std::mem::replace(&mut mailbox.chat.text, text);
-            crate::play::feature_0007_chat::input::enqueue(
-                mailbox,
-                commands,
-                oteryn_client_ui::chat::Mode::Say,
-                "",
-            );
-            mailbox.chat.text = draft;
+            crate::play::feature_0007_chat::input::enqueue_hotkey_text(mailbox, commands, text);
         }
         BarAction::Passive { .. } => {
             mailbox.spell_bar.feedback = "Passive status: no cast command is sent".into();
@@ -416,10 +440,18 @@ pub(in crate::play) fn label(mailbox: &Mailbox, action: &BarAction) -> String {
     match action {
         BarAction::Spell { name, .. } => name.clone(),
         BarAction::Multi { actions } => format!("Multiaction ({} actions)", actions.len()),
-        BarAction::Use { definition, mode } => format!(
-            "Use {definition} on {}\nVisible: {}",
-            mode.label(),
-            super::amount::visible_count(mailbox, definition.get())
+        BarAction::Use {
+            definition,
+            sub_type,
+            mode,
+        } => format!(
+            "Use {definition}{}\nVisible: {}",
+            if *mode == super::item_actions::ItemUseMode::Use {
+                String::new()
+            } else {
+                format!(" on {}", mode.label())
+            },
+            super::amount::visible_subtype_count(mailbox, definition.get(), *sub_type)
                 .map_or_else(|| "?".into(), |count| count.to_string())
         ),
         BarAction::Equip {
@@ -480,8 +512,12 @@ pub(in crate::play) fn slot_label(mailbox: &Mailbox, _slot: usize, action: &BarA
             .iter()
             .enumerate()
             .find_map(|(index, action)| {
-                if let BarAction::Use { definition, .. } = action
-                    && item_source(mailbox, *definition, None).is_some()
+                if let BarAction::Use {
+                    definition,
+                    sub_type,
+                    ..
+                } = action
+                    && item_source(mailbox, *definition, *sub_type).is_some()
                     && !mailbox
                         .spell_catalog
                         .catalog
@@ -519,58 +555,4 @@ pub(in crate::play) fn slot_label(mailbox: &Mailbox, _slot: usize, action: &BarA
             .unwrap_or_else(|| "Multiaction: cooling down".into());
     }
     label(mailbox, action)
-}
-fn action_ready(mailbox: &Mailbox, action: &BarAction) -> bool {
-    let entry = match action {
-        BarAction::Spell { name, words, .. } => mailbox
-            .spell_catalog
-            .catalog
-            .entries()
-            .iter()
-            .find(|entry| entry.name == *name && entry.words == *words),
-        BarAction::Use { definition, .. } => {
-            if item_source(mailbox, *definition, None).is_none() || mailbox.world_context.pending {
-                return false;
-            }
-            mailbox
-                .spell_catalog
-                .catalog
-                .entries()
-                .iter()
-                .find(|entry| entry.rune_item == Some(definition.get()))
-        }
-        BarAction::Equip { definition, .. } => {
-            return mailbox.hotkey_equip.items.contains(&definition.get())
-                && !mailbox.hotkey_equip.pending;
-        }
-        _ => return false,
-    };
-    let Some(entry) = entry else {
-        return match action {
-            BarAction::Use { definition, .. } => mailbox
-                .bar_actions
-                .item_cooldowns
-                .get(&definition.get())
-                .is_some_and(|(received, remaining)| {
-                    u64::try_from(received.elapsed().as_millis()).unwrap_or(u64::MAX) >= *remaining
-                }),
-            _ => false,
-        };
-    };
-    if !entry.available {
-        return false;
-    }
-    let elapsed = mailbox
-        .spell_bar
-        .cooldown_received_at
-        .map_or(0, |received| {
-            u64::try_from(received.elapsed().as_millis()).unwrap_or(u64::MAX)
-        });
-    NonZeroU32::new(entry.cast_index).is_some_and(|index| {
-        mailbox
-            .spell_bar
-            .bar
-            .remaining_ms(index, &entry.cooldown_groups)
-            <= elapsed
-    })
 }

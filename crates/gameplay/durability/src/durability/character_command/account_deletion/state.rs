@@ -239,7 +239,6 @@ pub(super) async fn decide(
                 if member.try_get::<Option<Vec<u8>>,_>("custody_sha256")?.as_deref()!=Some(actual.as_slice()) {return Ok(pending());}
             }
             if decision=="FINALIZE" {
-                if r.deletion.physical_erasure_after_seconds.is_none() {return Ok(pending());}
                 let Some(retention)=r.deletion.name_release_after_seconds else { return Ok(pending()); };
                 let closed:i64=sqlx::query_scalar("SELECT closed_at FROM game_account_closures WHERE account_id=$1::uuid").bind(&intent.account_id).fetch_one(&mut **tx).await?;
                 if now < (closed as u64).saturating_add(retention) { return Ok(pending()); }

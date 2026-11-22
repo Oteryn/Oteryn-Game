@@ -1,4 +1,4 @@
-"""Complete Thaian authoring with the native writer on an explicit World package."""
+"""Complete an explicit World package with the native writer."""
 from __future__ import annotations
 
 import argparse
@@ -8,6 +8,8 @@ from pathlib import Path
 import stat
 import subprocess
 import tempfile
+
+from prebuilt import executable as prebuilt_executable
 
 DOCUMENTS = (
     "assets/catalog.json",
@@ -56,12 +58,30 @@ def read_documents(root: Path, *, exact: bool = False) -> dict[str, bytes]:
     return result
 
 
-def complete_world_project(repo_root: Path, input_root: Path) -> dict[str, int | str]:
+def complete_world_project(
+    repo_root: Path,
+    input_root: Path,
+    *,
+    include_buddel: bool = False,
+    canonicalizer_manifest: Path | None = None,
+) -> dict[str, int | str]:
+    from buddel_travel import install_buddel
     from questpc7_thaian_authoring import _install_documents
     from regenerate_content import source_cohort_extent
 
     repo_root = repo_root.resolve(strict=True)
     input_root = input_root.absolute()
+    if canonicalizer_manifest is None:
+        manifest = os.environ.get("OTERYN_WORLD_CANONICALIZER_MANIFEST")
+        if manifest is not None:
+            canonicalizer_manifest = Path(manifest)
+    if canonicalizer_manifest is None:
+        command = ["cargo", "run", "--locked", "-p", "oteryn-gameplay-content",
+                   "--bin", "oteryn-world-project-canonicalize", "--"]
+    else:
+        # An explicitly supplied artifact must qualify; never hide a stale or
+        # corrupted producer behind a new, unreported fallback build.
+        command = [str(prebuilt_executable("canonicalizer", canonicalizer_manifest, repo_root))]
     original = read_documents(input_root)
     # Stage this caller's package, never substitute the repository's generated World.
     # A failed admission or writer must leave the caller's package untouched.
@@ -73,11 +93,12 @@ def complete_world_project(repo_root: Path, input_root: Path) -> dict[str, int |
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
         _install_documents(repo_root, staging_root)
+        if include_buddel:
+            install_buddel(repo_root, staging_root)
         authored_extent = source_cohort_extent(staging_root)
         # Native capture enforces the existing bounded source limits before serialization.
         subprocess.run([
-            "cargo", "run", "--locked", "-p", "oteryn-gameplay-content",
-            "--bin", "oteryn-world-project-canonicalize", "--",
+            *command,
             "--input-root", str(staging_root), "--output-root", str(output_root),
         ], cwd=repo_root, check=True)
         canonical = read_documents(output_root, exact=True)
@@ -114,8 +135,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--input-root", type=Path, required=True)
+    parser.add_argument("--canonicalizer-manifest", type=Path,
+                        help="same-head manifest from content-migration/prebuilt.py build")
     args = parser.parse_args()
-    extent = complete_world_project(args.repo_root, args.input_root)
+    extent = complete_world_project(
+        args.repo_root, args.input_root, include_buddel=True,
+        canonicalizer_manifest=args.canonicalizer_manifest,
+    )
     print(json.dumps({"canonical_documents": len(DOCUMENTS), "source_cohort": extent}, sort_keys=True))
 
 

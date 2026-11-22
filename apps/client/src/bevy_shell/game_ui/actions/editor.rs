@@ -11,7 +11,14 @@ use bevy::{
     ui_widgets::TextInput,
 };
 
+mod assign;
 mod catalog;
+mod objects;
+#[cfg(test)]
+use assign::REFUSED;
+use assign::{add_to_multi, apply, toggle_multi};
+#[cfg(test)]
+mod equip_tests;
 #[cfg(test)]
 mod tests;
 
@@ -22,16 +29,21 @@ pub(super) struct EditorState {
     message: String,
     page: usize,
     catalog_key: Option<catalog::Key>,
+    pending: Option<Pending>,
+    /// The multiaction being composed: spells and objects collect here until it is saved.
+    multi: Option<Vec<BarAction>>,
 }
 impl EditorState {
     pub(super) fn active(&self) -> bool {
         self.selected.is_some()
     }
     pub(super) fn open(&mut self, slot: usize, generation: u64) {
+        self.pending = None;
         self.selected = Some((slot, generation));
         self.message.clear();
         self.page = 0;
         self.catalog_key = None;
+        self.multi = None;
     }
 }
 #[derive(Component)]
@@ -42,7 +54,7 @@ pub(super) struct Field(usize);
 pub(super) struct Description;
 #[derive(Component)]
 pub(super) struct Feedback;
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
 enum Edit {
     PreviousSpells,
     NextSpells,
@@ -50,6 +62,7 @@ enum Edit {
     InsertText,
     Equip,
     Use,
+    CursorPosition,
     SelfActor,
     Target,
     Cursor,
@@ -59,9 +72,25 @@ enum Edit {
     AimTarget,
     AimFacing,
     AimCursor,
+    Multi,
     Key,
     Clear,
     Close,
+}
+
+struct Pending {
+    selected: (usize, u64),
+    anchor: Entity,
+    action: Edit,
+    fields: Vec<(Entity, usize)>,
+    assignment: String,
+}
+fn editing(text: &EditableText) -> bool {
+    text.pending_paste.is_some()
+        || text
+            .pending_edits
+            .iter()
+            .any(bevy::text::TextEdit::is_destructive)
 }
 
 pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
@@ -119,9 +148,11 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     commands.entity(panel).add_child(description);
     for (index, caption) in [
         "Search spells by name or words",
-        "Drag an object onto an unlocked action slot to assign it.",
+        "Objects carried (choose one, then an object action)",
         "Text",
         "Keyboard chord",
+        "Item subtype (blank: any)",
+        "Equip upgrade tier (0–10 on tiered worlds, otherwise blank)",
     ]
     .into_iter()
     .enumerate()
@@ -190,6 +221,24 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
                 .id();
             commands.entity(panel).add_child(choices);
         }
+        if index == 1 {
+            let objects = commands
+                .spawn((
+                    objects::ObjectsRoot,
+                    Node {
+                        width: percent(100.),
+                        max_height: px(62.),
+                        flex_wrap: FlexWrap::Wrap,
+                        column_gap: px(3.),
+                        row_gap: px(3.),
+                        overflow: Overflow::scroll_y(),
+                        ..default()
+                    },
+                    bevy::ui_widgets::ScrollArea,
+                ))
+                .id();
+            commands.entity(panel).add_child(objects);
+        }
     }
     let actions = commands
         .spawn(Node {
@@ -205,7 +254,8 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         (Edit::Text, "Send text"),
         (Edit::InsertText, "Insert text"),
         (Edit::Equip, "Equip"),
-        (Edit::Use, "Use position"),
+        (Edit::Use, "Use item"),
+        (Edit::CursorPosition, "Use position"),
         (Edit::SelfActor, "Use on self"),
         (Edit::Target, "Use on target"),
         (Edit::Cursor, "Use at cursor"),
@@ -215,6 +265,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         (Edit::AimTarget, "Towards target"),
         (Edit::AimFacing, "Facing"),
         (Edit::AimCursor, "Towards cursor"),
+        (Edit::Multi, "Multiaction"),
         (Edit::Key, "Bind key"),
         (Edit::Clear, "Clear"),
         (Edit::Close, "Close"),
@@ -239,12 +290,39 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     commands.entity(panel).add_children(&[actions, feedback]);
 }
 
+fn slot_binding(slot: usize) -> Option<crate::play::PreferenceBinding> {
+    let id = format!("local-spell-action-bar-spell-{}", slot + 1);
+    crate::play::preference_bindings()
+        .ok()?
+        .into_iter()
+        .find(|binding| binding.id == id)
+}
+
+pub(super) fn slot_chord<'a>(
+    prefs: &'a crate::play::ReferencePreferences,
+    binding: &'a crate::play::PreferenceBinding,
+    slot: usize,
+    chat_on: bool,
+) -> &'a str {
+    if binding.is_extra_action_bar_slot() {
+        return prefs.binding_chord(binding);
+    }
+    if let Some(chord) = prefs.legacy_action_chord(slot, chat_on) {
+        return chord;
+    }
+    prefs
+        .binding_maps(chat_on)
+        .ok()
+        .and_then(|(primary, _)| primary.get(binding.id))
+        .map_or(binding.default_chord, String::as_str)
+}
+
 fn activate(
     event: On<Activate>,
     guard: ModalGuard,
     edits: Query<&Edit>,
-    fields: Query<(&Field, &EditableText)>,
-    owner: NonSend<HostOwner>,
+    fields: Query<(Entity, &Field, &EditableText)>,
+    mut owner: NonSendMut<HostOwner>,
     mut state: ResMut<EditorState>,
     mut focus: ResMut<InputFocus>,
 ) {
@@ -262,18 +340,13 @@ fn activate(
     }
     if matches!(action, Edit::Close) {
         state.selected = None;
+        state.pending = None;
         focus.clear();
         return;
     }
     let Some(play) = &owner.play else {
         return;
     };
-    let mut values: [String; 4] = Default::default();
-    for (field, text) in &fields {
-        if let Some(value) = values.get_mut(field.0) {
-            *value = text.value().to_string();
-        }
-    }
     match action {
         Edit::PreviousSpells => {
             state.page = state.page.saturating_sub(1);
@@ -283,76 +356,40 @@ fn activate(
             state.page = state.page.saturating_add(1);
             return;
         }
+        Edit::Multi => {
+            state.pending = None;
+            let saved = owner.settings.preferences.bar_actions.0.get(&slot);
+            let message = toggle_multi(&play.link, slot, saved, &mut state.multi);
+            state.message = message;
+            return;
+        }
         _ => {}
     }
-    state.message = if apply(&play.link, slot, *action, &values) {
-        "Saved action assignment".into()
-    } else {
-        "Choose a valid live spell, carried item, text or unused keyboard chord.".into()
-    };
-}
-
-fn apply(link: &crate::play::PlayLink, slot: usize, action: Edit, values: &[String; 4]) -> bool {
-    if slot >= ROW_SLOTS * 3 {
-        return false;
+    state.pending = None;
+    if fields.iter().any(|(_, _, text)| editing(text)) {
+        let Some(assignment) = play.link.spell_slot_labels().get(slot).cloned() else {
+            return;
+        };
+        state.pending = Some(Pending {
+            selected: (slot, generation),
+            anchor: event.entity,
+            action: *action,
+            fields: fields
+                .iter()
+                .map(|(entity, field, _)| (entity, field.0))
+                .collect(),
+            assignment,
+        });
+        return;
     }
-    match action {
-        Edit::AimTarget | Edit::AimFacing | Edit::AimCursor => link.bar_gesture(BarGesture::Aim {
-            slot,
-            aim: match action {
-                Edit::AimTarget => crate::play::SpellAim::Target,
-                Edit::AimFacing => crate::play::SpellAim::Facing,
-                _ => crate::play::SpellAim::Cursor,
-            },
-        }),
-        Edit::Key => link.bind_action_key(slot, &values[3]),
-        Edit::Clear => {
-            link.clear_bar_action(slot);
-            link.assign_spell_slot(slot, None)
+    let mut values: [String; 6] = Default::default();
+    for (_, field, text) in &fields {
+        if let Some(value) = values.get_mut(field.0) {
+            *value = text.value().to_string();
         }
-        Edit::Text | Edit::InsertText => link.assign_bar_action(
-            slot,
-            BarAction::Text {
-                text: values[2].clone(),
-                send_automatically: matches!(action, Edit::Text),
-            },
-        ),
-        Edit::Instinct | Edit::Harmony | Edit::Serene => link.assign_bar_action(
-            slot,
-            BarAction::Passive {
-                ability: match action {
-                    Edit::Instinct => PassiveAbility::BattleInstinct,
-                    Edit::Harmony => PassiveAbility::Harmony,
-                    _ => PassiveAbility::Serene,
-                },
-            },
-        ),
-        Edit::Equip | Edit::Use | Edit::SelfActor | Edit::Target | Edit::Cursor => {
-            let Ok(definition) = values[1].trim().parse::<std::num::NonZeroU32>() else {
-                return false;
-            };
-            link.assign_bar_action(
-                slot,
-                if matches!(action, Edit::Equip) {
-                    BarAction::Equip {
-                        definition,
-                        upgrade_tier: 0,
-                    }
-                } else {
-                    BarAction::Use {
-                        definition,
-                        mode: match action {
-                            Edit::SelfActor => ItemUseMode::SelfActor,
-                            Edit::Target => ItemUseMode::Target,
-                            Edit::Cursor => ItemUseMode::Cursor,
-                            _ => ItemUseMode::CursorPosition,
-                        },
-                    }
-                },
-            )
-        }
-        Edit::Close | Edit::PreviousSpells | Edit::NextSpells => false,
     }
+    let message = apply(&mut owner, slot, *action, &values, &mut state.multi);
+    state.message = message;
 }
 
 // Bevy injects the editor owner, disjoint widget queries and focus/input resources separately.
@@ -373,6 +410,7 @@ pub(super) fn project(
                 .is_some_and(|(_, generation)| generation != owner.generation()))
     {
         state.selected = None;
+        state.pending = None;
         focus.clear();
     }
     for mut node in &mut root {
@@ -386,20 +424,40 @@ pub(super) fn project(
         }
     }
     if state.rendered != state.selected {
+        state.pending = None;
         if let Some((slot, _)) = state.selected {
-            let mut values: [String; 4] = Default::default();
-            values[3] = owner
-                .settings
-                .preferences
-                .action_keys
-                .0
-                .get(&slot)
-                .cloned()
-                .unwrap_or_default();
+            let mut values: [String; 6] = Default::default();
+            if let Some(binding) = slot_binding(slot) {
+                let chat_on = owner
+                    .play
+                    .as_ref()
+                    .is_some_and(|play| play.link.preference_chat_open());
+                values[3] =
+                    slot_chord(&owner.settings.preferences, &binding, slot, chat_on).to_owned();
+            }
             match owner.settings.preferences.bar_actions.0.get(&slot) {
                 Some(BarAction::Text { text, .. }) => values[2].clone_from(text),
-                Some(BarAction::Use { definition, .. } | BarAction::Equip { definition, .. }) => {
-                    values[1] = definition.to_string()
+                Some(BarAction::Use {
+                    definition,
+                    sub_type,
+                    ..
+                }) => {
+                    values[1] = definition.to_string();
+                    values[4] = sub_type.map_or_else(String::new, |value| value.to_string());
+                }
+                Some(BarAction::Equip {
+                    definition,
+                    upgrade_tier,
+                }) => {
+                    values[1] = definition.to_string();
+                    if *upgrade_tier != 0
+                        || owner
+                            .play
+                            .as_ref()
+                            .is_some_and(|play| play.link.hotkey_equip_panel().tiered)
+                    {
+                        values[5] = upgrade_tier.to_string();
+                    }
                 }
                 _ => {}
             }
@@ -455,10 +513,68 @@ fn keyboard(
         && roots.iter().any(|entity| guard.allows(entity))
     {
         state.selected = None;
+        state.pending = None;
         focus.clear();
     }
 }
+fn finish(
+    mut owner: NonSendMut<HostOwner>,
+    guard: ModalGuard,
+    mut state: ResMut<EditorState>,
+    fields: Query<(&Field, &EditableText)>,
+    actions: Query<&Edit>,
+) {
+    let Some(pending) = state.pending.take() else {
+        return;
+    };
+    if owner.modal_active()
+        || owner.generation() != pending.selected.1
+        || state.selected != Some(pending.selected)
+        || !guard.allows(pending.anchor)
+        || !actions
+            .get(pending.anchor)
+            .is_ok_and(|action| *action == pending.action)
+    {
+        return;
+    }
+    let Some(play) = &owner.play else {
+        return;
+    };
+    if play.link.server_modal_active()
+        || play.link.spell_slot_labels().get(pending.selected.0) != Some(&pending.assignment)
+    {
+        return;
+    }
+    let mut values: [String; 6] = Default::default();
+    let mut waiting = false;
+    for &(entity, index) in &pending.fields {
+        let Ok((field, text)) = fields.get(entity) else {
+            return;
+        };
+        if field.0 != index {
+            return;
+        }
+        waiting |= editing(text);
+        if let Some(value) = values.get_mut(index) {
+            *value = text.value().to_string();
+        }
+    }
+    if waiting {
+        state.pending = Some(pending);
+        return;
+    }
+    let message = apply(
+        &mut owner,
+        pending.selected.0,
+        pending.action,
+        &values,
+        &mut state.multi,
+    );
+    state.message = message;
+}
 pub(super) fn install(app: &mut App) {
     app.add_systems(Update, keyboard.before(project));
+    app.add_systems(PostUpdate, finish.after(bevy::text::EditableTextSystems));
     app.add_systems(Update, catalog::project.after(project));
+    app.add_systems(Update, objects::project.after(project));
 }

@@ -1,0 +1,17 @@
+{
+  "id": 506,
+  "name": "HOLDINGS_SEARCH_V1",
+  "constant": "cyclopedia_character::items::filtered::CAPABILITY",
+  "requires": [
+    199
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

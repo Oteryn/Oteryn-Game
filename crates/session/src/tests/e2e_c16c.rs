@@ -14,6 +14,7 @@ fn named_actor(
     position: ActorPosition,
 ) -> Result<WorldSpatialEntity, BoxError> {
     Ok(WorldSpatialEntity {
+        motion: None,
         display_name: Some(
             oteryn_protocol_oteryn::entity_names::EntityDisplayName::new(name)
                 .map_err(|error| format!("{error:?}"))?,

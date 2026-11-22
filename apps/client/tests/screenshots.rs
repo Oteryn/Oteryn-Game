@@ -1,8 +1,8 @@
 use oteryn_client::screenshots::{CapturePolicy, Event, Rect, save_bmp};
 #[test]
 fn screenshot_is_saved_with_selected_crop() -> Result<(), Box<dyn std::error::Error>> {
-    let path = std::env::temp_dir().join(format!("cg-login-shot-{}.bmp", std::process::id()));
-    let _ = std::fs::remove_file(&path);
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("cg-login-shot.bmp");
     let pixels = [1, 2, 3, 255, 4, 5, 6, 255];
     save_bmp(
         &path,
@@ -67,7 +67,8 @@ fn shell_capture_observes_live_facts_and_retries_failed_saves()
         achievement: Some(5),
     });
     assert!(capture.pending());
-    let path = std::env::temp_dir().join(format!("capture-caller-{}.bmp", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("capture-caller.bmp");
     let rect = Rect {
         x: 0,
         y: 0,

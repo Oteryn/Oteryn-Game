@@ -8,6 +8,17 @@
 // round-trip tests and the qualification client; the server composes only its own direction.
 #![cfg_attr(not(test), allow(dead_code))]
 
+/// Convert runtime/presentation z (ground 7) to the native map frame (ground -7).
+/// Already-native positions keep their frame, including fixture worlds.
+pub const fn native_floor(floor: i16) -> i16 {
+    floor.saturating_abs().saturating_neg()
+}
+
+/// Convert a native client floor to the bundle movement runtime's z coordinate.
+pub const fn runtime_floor(floor: i16) -> i16 {
+    floor.saturating_abs()
+}
+
 pub const COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT: u32 = 1;
 pub const STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY: u32 = 1;
 pub const DELTA_TYPE_WORLD_SPATIAL_V1: u32 = 1;

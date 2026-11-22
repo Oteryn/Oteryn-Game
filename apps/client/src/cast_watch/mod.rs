@@ -1,12 +1,10 @@
 //! Account-only Watch entry. Canary livestream.cpp:314,541: a distinct read-only connection.
-#[cfg(windows)]
-mod native;
-#[cfg(any(windows, test))]
+#[cfg(any(bevy_shell, test))]
 mod picture;
-#[cfg(windows)]
-pub use native::run;
 #[cfg(test)]
 mod tests;
+#[cfg(bevy_shell)]
+mod viewer;
 use oteryn_client_ui::cast_view::Panel;
 use oteryn_session::{cast::Message, cast_viewer::CastViewerSession};
 use std::{
@@ -15,6 +13,8 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+#[cfg(bevy_shell)]
+pub use viewer::run;
 
 /// One-use Platform grant; deliberately has no Debug implementation or CharacterId.
 pub struct WatchConfig {

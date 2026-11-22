@@ -1,0 +1,7 @@
+name=tutorial_vocation
+commands=6243
+transport=tutorial_vocation
+composed=tutorial_vocation
+authority=tutorial_vocation
+[route]
+routing::tutorial_vocation::route(authority, &session.admitted, command).await

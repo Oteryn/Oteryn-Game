@@ -289,6 +289,8 @@ mod tests {
         app.insert_non_send(owner)
             .init_resource::<scene::SceneCache>()
             .init_resource::<Assets<Image>>()
+            .init_resource::<Assets<Mesh>>()
+            .init_resource::<Assets<ColorMaterial>>()
             .init_resource::<Time>()
             .init_resource::<WorldViewport>()
             .insert_resource(Skins {

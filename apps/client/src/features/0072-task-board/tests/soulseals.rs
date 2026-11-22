@@ -131,7 +131,6 @@ fn t114_fight_dialog_uses_server_catalogue_costs_authorization_and_confirmed_spe
     Ok(())
 }
 
-#[cfg(not(windows))]
 #[test]
 fn soulseal_dialog_refreshes_confirmed_balance_without_inventing_fight_offers() -> Result<(), Error>
 {

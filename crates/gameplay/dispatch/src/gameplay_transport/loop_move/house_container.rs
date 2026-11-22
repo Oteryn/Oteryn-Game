@@ -186,7 +186,7 @@ pub(super) async fn move_item(
     };
     let result = admission
         .root
-        .commit_house_item_loop_move_with_capacity(
+        .commit_house_item_loop_move_at(
             permit,
             admission.character,
             admission.holder,
@@ -201,6 +201,8 @@ pub(super) async fn move_item(
                 destination,
             },
             house_capacity_v2,
+            // Capability 510: the placed entry takes the requested slot in the same transaction.
+            request.slot,
         )
         .await;
     if matches!(result, Ok(Ok(_))) {

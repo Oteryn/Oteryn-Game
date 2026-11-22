@@ -832,6 +832,8 @@ def main() -> int:
     import questpc7_thaian_authoring
     # install completes authoring through the native writer; no pins name staged Python bytes.
     questpc7_thaian_authoring.install(ROOT)
+    from buddel_travel import install_buddel
+    install_buddel(ROOT, WORLD)
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()

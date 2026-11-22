@@ -13,6 +13,8 @@ use bevy::{
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 fn app() -> Result<(App, Entity), Box<dyn std::error::Error>> {
     let mut owner = HostOwner::new(None)?;
+    // The developer connection fields under test live behind the Advanced toggle.
+    owner.login.advanced = true;
     owner.request_login();
     let mut app = App::new();
     app.add_plugins((

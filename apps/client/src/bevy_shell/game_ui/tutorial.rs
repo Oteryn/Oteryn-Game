@@ -1,4 +1,6 @@
 //! Server tutorial steps projected onto the gameplay HUD.
+#[path = "tutorial/vocation.rs"]
+mod vocation;
 use super::{GameRegions, modal::ModalGuard};
 use crate::bevy_shell::{owner::HostOwner, ui::Skins};
 use bevy::{prelude::*, ui_widgets::Activate};
@@ -71,6 +73,7 @@ struct Action {
 }
 
 pub(super) fn install(app: &mut App) {
+    vocation::install(app);
     app.init_resource::<State>().add_systems(
         Update,
         (sync, render, highlight).chain().after(super::project),
@@ -79,6 +82,16 @@ pub(super) fn install(app: &mut App) {
 fn sync(owner: NonSend<HostOwner>, mut state: ResMut<State>) {
     let panel = owner.play.as_ref().map(|play| play.link.notices_panel());
     state.steps.sync(owner.generation(), panel.as_ref());
+    if owner.play.as_ref().is_some_and(|play| {
+        play.link
+            .tutorial_vocation_panel()
+            .observation
+            .is_some_and(|observation| observation.chosen != 0)
+    }) && state.steps.current()
+        == Some("Tutorial: choose your vocation to begin your adventure.")
+    {
+        state.steps.next();
+    }
 }
 fn render(mut commands: Commands, skins: Res<Skins>, mut state: ResMut<State>) {
     let key = state.steps.current().map(|_| state.steps.key());

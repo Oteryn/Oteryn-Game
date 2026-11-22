@@ -1,15 +1,50 @@
 use super::*;
-// TibiaStyle.qml:302,307,309: source chat limit and tab geometry.
-pub(super) const TAB_HEIGHT: f32 = 16.;
+// Tibia Global console QML: 16 px tab bar plus a 2 px overlap, 96 x 18 tabs, 18 x 18 tab
+// scroll buttons; the input row is one 16 px line.
+pub(super) const TAB_HEIGHT: f32 = 18.;
 pub(super) const TAB_WIDTH: f32 = 96.;
+pub(super) const TAB_BUTTON: f32 = 18.;
+pub(super) const INPUT_HEIGHT: f32 = 16.;
+pub(super) const INPUT_SPACING: f32 = 2.;
+pub(super) const CHAT_MODE_WIDTH: f32 = 64.;
+use crate::bevy_shell::gameplay_dialogs::{
+    art::{self, ArtSlot},
+    popup,
+    scale::{Module, Scaled, ScaledFont},
+};
+/// The chat module's scale tag for a node of `width` x `height` at 100% (0 = layout's).
+pub(super) fn chat_size(width: f32, height: f32) -> Scaled {
+    Scaled {
+        module: Module::Chat,
+        size: Vec2::new(width, height),
+    }
+}
+/// The chat module's scale tag for a text of `size` pixels at 100%.
+pub(super) fn chat_font(size: f32) -> ScaledFont {
+    ScaledFont {
+        module: Module::Chat,
+        size,
+    }
+}
 use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
 use bevy::text::TextCursorStyle;
 use bevy::ui_widgets::{ScrollArea, TextInput};
 
+#[derive(Event)]
+pub(super) struct CopyText(pub(super) String);
+
 pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Res<Skins>) {
+    commands.add_observer(
+        |request: On<CopyText>, clipboard: Option<ResMut<bevy::clipboard::Clipboard>>| {
+            if let Some(mut clipboard) = clipboard {
+                let _ = clipboard.set_text(request.0.clone());
+            }
+        },
+    );
     let root = commands
         .spawn((
             ChatRoot,
+            crate::bevy_shell::gameplay_dialogs::scale::ModuleRoot(Module::Chat),
             TabGroup::new(0),
             Node {
                 width: percent(100.),
@@ -21,21 +56,65 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
         ))
         .id();
     commands.entity(regions.chat).add_child(root);
-    let tabs = commands
+    let tab_row = commands
         .spawn((
-            Tabs,
-            ScrollArea,
+            TabRow,
+            chat_size(0., TAB_HEIGHT),
             Node {
                 width: percent(100.),
                 min_height: px(TAB_HEIGHT),
                 height: px(TAB_HEIGHT),
                 flex_shrink: 0.,
+                ..default()
+            },
+        ))
+        .id();
+    let tabs = commands
+        .spawn((
+            Tabs,
+            ScrollArea,
+            chat_size(0., TAB_HEIGHT),
+            Node {
+                flex_grow: 1.,
+                min_width: px(0.),
+                height: px(TAB_HEIGHT),
                 overflow: Overflow::scroll_x(),
                 column_gap: px(1.),
                 ..default()
             },
         ))
         .id();
+    let previous = sized_button(
+        &mut commands,
+        &skins,
+        "<",
+        Vec2::splat(TAB_BUTTON),
+        Action::PreviousTab,
+    );
+    let next = sized_button(
+        &mut commands,
+        &skins,
+        ">",
+        Vec2::splat(TAB_BUTTON),
+        Action::NextTab,
+    );
+    let channels = sized_button(
+        &mut commands,
+        &skins,
+        "+",
+        Vec2::splat(TAB_BUTTON),
+        Action::Channels,
+    );
+    let close = sized_button(
+        &mut commands,
+        &skins,
+        "x",
+        Vec2::splat(TAB_BUTTON),
+        Action::Close,
+    );
+    commands
+        .entity(tab_row)
+        .add_children(&[previous, tabs, next, channels, close]);
     let history = commands
         .spawn((
             HistoryScroll,
@@ -52,58 +131,190 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
             },
         ))
         .id();
-    let text = commands
+    let transcript = commands
         .spawn((
-            Transcript,
-            source::text("", source::font(skins.font.clone(), false)),
+            TranscriptRoot,
+            Node {
+                width: percent(100.),
+                flex_direction: FlexDirection::Column,
+                ..default()
+            },
         ))
         .id();
-    commands.entity(history).add_child(text);
+    let text = message_row(
+        &mut commands,
+        &skins,
+        0,
+        &RenderedRow {
+            text: String::new(),
+            line: None,
+            recipient: None,
+            font_px: oteryn_client_ui::chat::ConsoleDisplay::default().font_px,
+        },
+    );
+    commands.entity(transcript).add_child(text);
+    commands.entity(history).add_child(transcript);
     let compose = commands
-        .spawn(Node {
-            width: percent(100.),
-            height: px(23.),
-            min_height: px(23.),
-            flex_shrink: 0.,
-            column_gap: px(2.),
-            align_items: AlignItems::Center,
-            ..default()
-        })
+        .spawn((
+            ComposeRow,
+            chat_size(0., INPUT_HEIGHT),
+            Node {
+                width: percent(100.),
+                height: px(INPUT_HEIGHT),
+                min_height: px(INPUT_HEIGHT),
+                flex_shrink: 0.,
+                column_gap: px(INPUT_SPACING),
+                align_items: AlignItems::Center,
+                ..default()
+            },
+        ))
         .id();
-    let mode = button(&mut commands, &skins, "Say", 55., Action::Mode, 0);
-    commands.entity(mode).insert(ModeButton);
+    // A square Say/Whisper/Yell button as tall as the input; Enter sends, there is no Send.
+    let mode = commands
+        .spawn((
+            source::button(skins.buttons.clone(), INPUT_HEIGHT),
+            Control {
+                action: Action::Mode,
+                generation: 0,
+            },
+            ModeButton,
+        ))
+        .insert(fixed(Vec2::splat(INPUT_HEIGHT)))
+        .observe(activate)
+        .id();
+    let icon = art::icon(
+        &mut commands,
+        ArtSlot::ChatSay,
+        skins.font.clone(),
+        Vec2::splat(INPUT_HEIGHT - 2.),
+    );
+    commands
+        .entity(icon)
+        .insert(chat_size(INPUT_HEIGHT - 2., INPUT_HEIGHT - 2.));
+    commands.entity(mode).add_child(icon);
     let frame = commands
         .spawn((
+            InputArea,
             source::frame(skins.inset.clone(), [1.; 4]),
+            chat_size(0., INPUT_HEIGHT),
             Node {
                 flex_grow: 1.,
                 min_width: px(0.),
-                height: px(23.),
+                height: px(INPUT_HEIGHT),
                 ..default()
             },
         ))
         .id();
     let input = text_input(&mut commands, &skins, Field::Message, 255);
-    commands.entity(frame).add_child(input);
-    let send = button(&mut commands, &skins, "Send", 44., Action::Send, 0);
-    let channels = button(&mut commands, &skins, "+", 22., Action::Channels, 0);
-    let close = button(&mut commands, &skins, "×", 22., Action::Close, 0);
-    let chat_mode = button(
+    commands.entity(input).observe(tab_cycle);
+    let hint = commands
+        .spawn((
+            Placeholder,
+            source::text(PLACEHOLDER, source::font(skins.font.clone(), false)),
+            chat_font(11.),
+            Node {
+                position_type: PositionType::Absolute,
+                left: px(3.),
+                top: px(1.),
+                ..default()
+            },
+        ))
+        .insert((TextColor(INACTIVE_TAB), Pickable::IGNORE))
+        .id();
+    commands.entity(frame).add_children(&[input, hint]);
+    let chat_mode = sized_button(
         &mut commands,
         &skins,
         "Chat On",
-        70.,
+        Vec2::new(CHAT_MODE_WIDTH, INPUT_HEIGHT),
         Action::ComposerMode,
-        0,
     );
     commands.entity(chat_mode).insert(ChatModeButton);
     commands
         .entity(compose)
-        .add_children(&[mode, frame, send, channels, close, chat_mode]);
+        .add_children(&[mode, frame, chat_mode]);
+    // The read-only mirror takes the right third of the console, as the drop target did; the
+    // transcript shrinks to the rest while it is open.
+    let mirror = commands
+        .spawn((
+            MirrorPane,
+            ScrollArea,
+            ScrollPosition::default(),
+            source::frame(skins.inset.clone(), [1.; 4]),
+            Node {
+                display: Display::None,
+                position_type: PositionType::Absolute,
+                right: px(0.),
+                top: px(TAB_HEIGHT),
+                bottom: px(INPUT_HEIGHT),
+                width: percent(100. / 3.),
+                overflow: Overflow::scroll(),
+                padding: UiRect::all(px(2.)),
+                ..default()
+            },
+            BackgroundColor(Color::srgb_u8(20, 20, 20)),
+        ))
+        .id();
+    let mirror_text = commands
+        .spawn((
+            MirrorText,
+            source::text("", source::font(skins.font.clone(), false)),
+        ))
+        .insert(TextLayout::default())
+        .id();
+    commands.entity(mirror).add_child(mirror_text);
     commands
         .entity(root)
-        .add_children(&[tabs, history, compose]);
+        .add_children(&[tab_row, history, compose, mirror]);
     super::channels::setup(&mut commands, root, &skins);
+}
+
+/// The empty input's hint, shown until the player focuses it or types.
+pub(super) const PLACEHOLDER: &str = "Type here to chat";
+/// The hint of Chat Auto, where keys reach the chat only after a click into the input.
+pub(super) const AUTO_PLACEHOLDER: &str = "Click here to chat";
+pub(super) const ACTIVE_TAB: Color = Color::WHITE;
+pub(super) const INACTIVE_TAB: Color = Color::srgb(0.56, 0.56, 0.56);
+#[derive(Component)]
+pub(super) struct Placeholder;
+
+mod input_hint;
+pub(super) use input_hint::{auto_release, placeholder, tab_colors, tab_cycle};
+
+/// The input frame of the chat; in Chat Auto a press anywhere else gives the keyboard back
+/// to the game.
+#[derive(Component)]
+#[require(bevy::picking::hover::Hovered)]
+pub(super) struct InputArea;
+
+/// A button of exactly `size` logical pixels with a caption.
+fn sized_button(
+    commands: &mut Commands,
+    skins: &Skins,
+    caption: &str,
+    size: Vec2,
+    action: Action,
+) -> Entity {
+    let entity = button(commands, skins, caption, size.x, action, 0);
+    commands.entity(entity).insert(fixed(size));
+    entity
+}
+/// The node of a fixed-size framed button, scaled with the chat module.
+pub(super) fn fixed(size: Vec2) -> (Node, Scaled) {
+    (
+        Node {
+            width: px(size.x),
+            min_width: px(size.x),
+            height: px(size.y),
+            min_height: px(size.y),
+            border: UiRect::all(px(1.)),
+            flex_shrink: 0.,
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            ..default()
+        },
+        chat_size(size.x, size.y),
+    )
 }
 
 pub(super) fn button(
@@ -122,7 +333,10 @@ pub(super) fn button(
         .observe(activate)
         .id();
     let caption = commands
-        .spawn(source::button_caption(caption, skins.font.clone()))
+        .spawn((
+            source::button_caption(caption, skins.font.clone()),
+            chat_font(8.),
+        ))
         .id();
     commands.entity(entity).add_child(caption);
     entity
@@ -137,21 +351,24 @@ pub(super) fn text_input(
     commands
         .spawn((
             field,
+            crate::bevy_shell::input::ChatComposer,
             TextInput,
             EditableText {
                 max_characters: Some(limit),
                 ..default()
             },
             source::font(skins.font.clone(), false),
+            chat_font(11.),
+            chat_size(0., INPUT_HEIGHT),
             TextColor(source::TEXT_COLOR),
             TextLayout::no_wrap(),
             TextCursorStyle::default(),
             TabIndex(0),
             Node {
                 width: percent(100.),
-                height: px(23.),
-                min_height: px(23.),
-                padding: UiRect::all(px(3.)),
+                height: px(INPUT_HEIGHT),
+                min_height: px(INPUT_HEIGHT),
+                padding: UiRect::axes(px(3.), px(1.)),
                 ..default()
             },
         ))
@@ -179,7 +396,7 @@ pub(super) fn activate(
     let Some(play) = &owner.play else {
         return;
     };
-    if !matches!(control.action, Action::Send | Action::Conversation) {
+    if !matches!(control.action, Action::Conversation) {
         state.pending = None;
     }
     match &control.action {
@@ -203,23 +420,9 @@ pub(super) fn activate(
             play.link.chat_open_entry(entry);
             play.link.chat_channel_dialog_cancel();
         }
-        Action::Send => {
-            for (entity, field, mut text) in &mut fields {
-                if *field == Field::Message
-                    && submission::request(&owner, &mut state, entity, *field, &mut text, true)
-                {
-                    focus.set(entity, FocusCause::Navigated);
-                }
-            }
-        }
-        Action::Mode => {
-            state.mode = match state.mode {
-                Mode::Say => Mode::Whisper,
-                Mode::Whisper => Mode::Yell,
-                Mode::Yell => Mode::Guild,
-                _ => Mode::Say,
-            };
-        }
+        Action::Mode => state.mode = next_mode(state.mode),
+        Action::PreviousTab => play.link.chat_channel_cycle(false),
+        Action::NextTab => play.link.chat_channel_cycle(true),
         Action::Channels => play.link.chat_channel_dialog_open(),
         Action::Close => play.link.chat_close_current(),
         Action::ChannelCancel => play.link.chat_channel_dialog_cancel(),
@@ -227,8 +430,7 @@ pub(super) fn activate(
             let mut opened = false;
             for (entity, field, mut text) in &mut fields {
                 if *field == Field::Recipient {
-                    opened =
-                        submission::request(&owner, &mut state, entity, *field, &mut text, true);
+                    opened = request(&owner, &mut state, entity, *field, &mut text, true);
                 }
             }
             if opened {
@@ -243,3 +445,33 @@ pub(super) fn activate(
         _ => {}
     }
 }
+
+/// The mode button cycles Say, Whisper and Yell, as in Tibia Global.
+pub(super) fn next_mode(mode: Mode) -> Mode {
+    match mode {
+        Mode::Say => Mode::Whisper,
+        Mode::Whisper => Mode::Yell,
+        _ => Mode::Say,
+    }
+}
+/// The mode button's icon.
+pub(super) fn mode_art(mode: Mode) -> ArtSlot {
+    match mode {
+        Mode::Whisper => ArtSlot::ChatWhisper,
+        Mode::Yell => ArtSlot::ChatYell,
+        _ => ArtSlot::ChatSay,
+    }
+}
+
+#[derive(Clone, PartialEq)]
+pub(super) struct RenderedRow {
+    text: String,
+    line: Option<oteryn_session::ChatLine>,
+    recipient: Option<String>,
+    /// The console font size in pixels; a change re-renders the transcript.
+    font_px: u16,
+}
+mod messages;
+mod transcript;
+pub(super) use messages::message_row;
+pub(super) use transcript::transcript_rows;

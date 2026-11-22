@@ -222,3 +222,77 @@ fn item_move_refused_container_without_browse_retries_next_visibility_tick() -> 
         .join()
         .map_err(|_| "container retry test thread panicked")?
 }
+
+#[test]
+fn committed_mail_and_trade_results_invalidate_capacity() -> TestResult {
+    use oteryn_protocol_oteryn::{mail, player_trade};
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?
+                .block_on(async {
+                    let authority = MoveOwner::default();
+                    let (mut stream, _client) = tokio::io::duplex(1 << 20);
+                    let mut admitted = admitted(false)?;
+                    let actor = admitted.runtime_actor.ok_or("actor")?;
+                    let mut session = setup::prepare(
+                        &mut stream,
+                        &mut admitted,
+                        &authority,
+                        IDLE_LIVENESS,
+                        actor,
+                        observation(),
+                        integrity::Integrity::default(),
+                    )
+                    .await
+                    .map_err(|_| "setup")?;
+                    for (command_type, payload, invalidates) in [
+                        (
+                            u32::from(mail::COMMAND_TYPE_MAIL),
+                            vec![mail::MailOutcome::Posted as u8],
+                            true,
+                        ),
+                        (
+                            u32::from(mail::COMMAND_TYPE_MAIL),
+                            vec![mail::MailOutcome::TextWritten as u8],
+                            false,
+                        ),
+                        (
+                            player_trade::COMMAND_TYPE_PLAYER_TRADE_INTENT,
+                            player_trade::ResultCode::Completed.payload(),
+                            true,
+                        ),
+                        (
+                            player_trade::COMMAND_TYPE_PLAYER_TRADE_INTENT,
+                            player_trade::ResultCode::Accepted.payload(),
+                            false,
+                        ),
+                    ] {
+                        let deadline =
+                            tokio::time::Instant::now() + std::time::Duration::from_secs(5);
+                        session.inventory_capacity_refresh_at = Some(deadline);
+                        session.sequence += 1;
+                        let mut dispatch = Dispatch::Reply(CommandStatus::Accepted, payload);
+                        result::encode(
+                            &mut session,
+                            oteryn_protocol_oteryn::ClientCommandView {
+                                command_id: 1,
+                                command_type,
+                                payload: &[],
+                            },
+                            &mut dispatch,
+                        )
+                        .map_err(|_| "command result")?;
+                        assert_eq!(
+                            session.inventory_capacity_refresh_at,
+                            (!invalidates).then_some(deadline)
+                        );
+                    }
+                    Ok(())
+                })
+        })?
+        .join()
+        .map_err(|_| "capacity result thread")?
+}

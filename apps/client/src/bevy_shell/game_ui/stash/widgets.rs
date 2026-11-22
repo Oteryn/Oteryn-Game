@@ -15,6 +15,7 @@ pub(super) fn build(
     let overlay = commands
         .spawn((
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("stash"),
             GlobalZIndex(166),
             TabGroup {
                 order: 3,
@@ -28,7 +29,6 @@ pub(super) fn build(
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
         ))
         .id();
     let root = commands
@@ -142,6 +142,24 @@ pub(super) fn build(
             commands.entity(root).add_child(entity);
         }
         let enabled = panel.selected && !panel.pending;
+        label(
+            commands,
+            skins,
+            root,
+            "Carried items — click to stow the whole stack at a depot",
+        );
+        let carried = line(commands, root);
+        for (row, item) in panel.carried.iter().enumerate() {
+            button(
+                commands,
+                skins,
+                carried,
+                state,
+                Kind::Stow(row),
+                &format!("Stow item {} × {}", item.item_definition_ref, item.count),
+                enabled,
+            );
+        }
         let filters = line(commands, root);
         for (kind, caption) in [
             (Kind::Filter, "Apply filters".to_owned()),
@@ -152,6 +170,7 @@ pub(super) fn build(
         let list = commands
             .spawn((
                 ScrollArea,
+                crate::bevy_shell::game_ui::install::RememberScroll("stash", 0),
                 Node {
                     height: px(230.),
                     min_height: px(0.),

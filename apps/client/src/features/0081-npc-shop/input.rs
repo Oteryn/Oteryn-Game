@@ -76,7 +76,7 @@ impl PlayLink {
 impl PlayLink {
     pub fn npc_shop_options(&self, options: oteryn_client_ui::npc_shop::ShopOptions) -> bool {
         let mut mailbox = lock(&self.mailbox);
-        if mailbox.npc_shop.pending || mailbox.npc_shop.live.pending {
+        if !options.ignore_equipped || mailbox.npc_shop.pending || mailbox.npc_shop.live.pending {
             return false;
         }
         mailbox.npc_shop.live.options = options;

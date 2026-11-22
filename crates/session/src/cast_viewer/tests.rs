@@ -88,3 +88,60 @@ fn s17b_observer_rejects_oversized_prefix_before_allocating_body()
             Ok::<(), Box<dyn std::error::Error>>(())
         })
 }
+
+struct PendingShutdown;
+impl tokio::io::AsyncRead for PendingShutdown {
+    fn poll_read(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+        _: &mut tokio::io::ReadBuf<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        std::task::Poll::Pending
+    }
+}
+impl tokio::io::AsyncWrite for PendingShutdown {
+    fn poll_write(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+        bytes: &[u8],
+    ) -> std::task::Poll<std::io::Result<usize>> {
+        std::task::Poll::Ready(Ok(bytes.len()))
+    }
+    fn poll_flush(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        std::task::Poll::Ready(Ok(()))
+    }
+    fn poll_shutdown(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        std::task::Poll::Pending
+    }
+}
+#[test]
+fn leave_bounds_pending_shutdown() -> Result<(), Box<dyn std::error::Error>> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let session = CastViewerSession {
+                stream: PendingShutdown,
+                frames: Frames::default(),
+                generation: 1,
+                epoch: 1,
+                sequence: 0,
+                ended: false,
+                chat_allowed: false,
+                delay: 0,
+                deadline: Duration::from_millis(10),
+                next_deadline: tokio::time::Instant::now(),
+            };
+            assert!(matches!(
+                tokio::time::timeout(Duration::from_secs(1), session.leave()).await,
+                Ok(Ok(()))
+            ));
+        });
+    Ok(())
+}

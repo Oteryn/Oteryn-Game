@@ -468,6 +468,7 @@ fn resume_carries_the_counter_and_revisions_and_every_older_handle_is_stale() {
 fn spatial_objects_get_handles_and_lose_them_on_leaving() {
     use super::super::world_spatial::{EntityKind, EntityRef};
     let object = |n: u8| WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Corpse,
         entity: EntityRef {
@@ -913,6 +914,7 @@ mod connection {
         let world_id = WorldId::decode(&uuid_v7(0x33)).expect("world");
         let channel_id = ChannelId::decode(&uuid_v7(0x44)).expect("channel");
         WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: EntityKind::Player,
             entity: EntityRef {
@@ -1273,4 +1275,56 @@ fn inventory_snapshot_uses_the_world_map_appearance_binding() {
         );
         assert_eq!(item.appearance_id, appearance);
     }
+}
+
+#[test]
+fn a_forty_eight_entry_corpse_is_shown_whole_only_with_capability_512() {
+    use oteryn_protocol_oteryn::item_view::{
+        MAX_CORPSE_CONTAINER_48_ENTRIES, MAX_OPEN_CONTAINER_ENTRIES, decode_open_container_for,
+    };
+    let here = at(10, 10, 7);
+    let contents: Vec<u16> = (100..148).collect();
+    assert_eq!(contents.len(), MAX_CORPSE_CONTAINER_48_ENTRIES);
+
+    // CORPSE48: a 514 session sees and may take every entry.
+    let mut view =
+        SessionItemView::resume(ItemViewContinuity::default()).with_corpse_container_48();
+    view.snapshot(inventory(&[]), None).expect("fixture");
+    let (decision, delta) = view
+        .open(corpse(7), observe(here, here, &contents))
+        .expect("48 entries");
+    assert_eq!(decision, OpenDecision::Open);
+    let shown =
+        decode_open_container_for(&delta.expect("delta").payload, false, true).expect("514 view");
+    assert_eq!(shown.entries.len(), 48);
+    assert_eq!(view.open_corpse_of(&instance(147)), Some(corpse(7)));
+    assert_eq!(view.table().limit(), MAX_LIVE_ITEM_HANDLES + 18);
+
+    // A legacy session never receives more than 30 and cannot take a hidden entry.
+    let mut legacy = SessionItemView::resume(ItemViewContinuity::default());
+    legacy.snapshot(inventory(&[]), None).expect("fixture");
+    let (decision, delta) = legacy
+        .open(corpse(7), observe(here, here, &contents))
+        .expect("legacy view");
+    assert_eq!(decision, OpenDecision::Open);
+    let shown = decode_open_container(&delta.expect("delta").payload).expect("legacy view");
+    assert_eq!(shown.entries.len(), MAX_OPEN_CONTAINER_ENTRIES);
+    assert_eq!(legacy.open_corpse_of(&instance(129)), Some(corpse(7)));
+    assert_eq!(legacy.open_corpse_of(&instance(130)), None);
+    assert_eq!(legacy.table().limit(), MAX_LIVE_ITEM_HANDLES);
+    // The same 48 entries observed again produce no delta.
+    assert_eq!(
+        legacy
+            .open_corpse_committed(Some(observe(here, here, &contents)))
+            .expect("unchanged"),
+        None
+    );
+    // Taking the first entry reveals the 31st.
+    let delta = legacy
+        .open_corpse_committed(Some(observe(here, here, &contents[1..])))
+        .expect("changed")
+        .expect("delta");
+    let shown = decode_open_container(&delta.payload).expect("legacy view");
+    assert_eq!(shown.entries.len(), MAX_OPEN_CONTAINER_ENTRIES);
+    assert_eq!(legacy.open_corpse_of(&instance(130)), Some(corpse(7)));
 }

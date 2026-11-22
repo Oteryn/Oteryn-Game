@@ -515,7 +515,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let moved = client
         .move_item(&item_view::ItemMoveIntent {
             source: label_item.handle,
-            destination: item_view::ItemMoveDestination::Container(parcel_item.handle),
+            destination: item_view::ItemMoveDestination::Container(parcel_item.handle, None),
         })
         .await?;
     if moved.outcome != item_view::ItemMoveOutcome::Moved {

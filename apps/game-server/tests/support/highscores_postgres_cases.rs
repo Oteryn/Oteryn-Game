@@ -1137,7 +1137,7 @@ fn actual_job_restart_preserves_durable_deadline_after_a_failed_reset() -> TestR
 fn actual_job_periodic_failure_keeps_prior_cut_and_backs_off_without_busy_loop() -> TestResult {
     run("hsjobfailure", async |h| {
         seed_near_due_headers(h, -1).await?;
-        h.pool.execute("CREATE FUNCTION highscore_job_fail() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'fixture periodic failure'; END;$$; CREATE TRIGGER highscore_job_fail BEFORE INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION highscore_job_fail();").await?;
+        h.pool.execute("CREATE SEQUENCE highscore_job_failure_seen; GRANT USAGE ON SEQUENCE highscore_job_failure_seen TO oteryn_game_highscore_job; CREATE FUNCTION highscore_job_fail() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN PERFORM nextval('highscore_job_failure_seen'); RAISE EXCEPTION 'fixture periodic failure'; END;$$; CREATE TRIGGER highscore_job_fail BEFORE INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION highscore_job_fail();").await?;
         let root = DurabilityRoot::connect_test_runtime(&h.database.url)?;
         assert!(root.maintain_ready_once().await?);
         let job =
@@ -1145,14 +1145,21 @@ fn actual_job_periodic_failure_keeps_prior_cut_and_backs_off_without_busy_loop()
         let (sender, resets) = tokio::sync::mpsc::channel(1);
         let observer = async {
             wait_for_passes(&job, 1).await;
+            let attempted: bool =
+                sqlx::query_scalar("SELECT is_called FROM highscore_job_failure_seen")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert!(attempted, "the due pass must reach snapshot insertion");
             assert_eq!(
                 h.count("game_world_highscore_snapshots").await?,
                 SNAPSHOTS_PER_CUT
             );
-            h.pool
-                .execute("DROP TRIGGER highscore_job_fail ON game_world_highscore_snapshots")
-                .await?;
-            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            assert!(
+                tokio::time::timeout(std::time::Duration::from_secs(6), wait_for_passes(&job, 2))
+                    .await
+                    .is_err(),
+                "an ordinary publication failure must not use the five-second retry"
+            );
             assert_eq!(job.completed_passes(), 1);
             assert_eq!(
                 h.count("game_world_highscore_snapshots").await?,
@@ -1162,7 +1169,7 @@ fn actual_job_periodic_failure_keeps_prior_cut_and_backs_off_without_busy_loop()
             Ok(())
         };
         tokio::time::timeout(
-            std::time::Duration::from_secs(5),
+            std::time::Duration::from_secs(12),
             drive_real_job(&job, resets, observer),
         )
         .await??;

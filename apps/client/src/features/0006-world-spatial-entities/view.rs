@@ -4,6 +4,26 @@ use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{ActorPosition, WorldSpatialEntity};
 
 impl PlayView {
+    pub(in crate::play) fn sync_outfit_palette(
+        &mut self,
+        link: &crate::play::PlayLink,
+    ) -> Result<(), BatchError> {
+        let changed = {
+            let mailbox = crate::play::mailbox::lock(&link.mailbox);
+            let palette = mailbox
+                .properties
+                .appearance
+                .catalogue
+                .as_ref()
+                .map_or(&[][..], |catalogue| catalogue.palette.as_slice());
+            self.scene.set_outfit_palette(palette)
+        };
+        if changed {
+            self.rebuild()?;
+        }
+        Ok(())
+    }
+
     pub fn set_own_identity(&mut self, identity: [u8; 16]) {
         self.scene.set_own_identity(identity);
     }
@@ -34,6 +54,9 @@ impl PlayView {
                 !matches!(input, crate::play::Input::TargetWalk(target)
                     if target.floor != position.floor)
             });
+        }
+        if self.own != TileCoord::new(position.x, position.y) || self.floor != position.floor {
+            self.walk = None;
         }
         self.own = TileCoord::new(position.x, position.y);
         self.floor = position.floor;

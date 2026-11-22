@@ -43,8 +43,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     async fn depot(
         &mut self,
         intent: oteryn_session::DepotIntent,
+        slot: Option<u32>,
     ) -> Result<Option<oteryn_session::DepotReply>, SessionError> {
-        oteryn_client_runtime::depot::send(self, intent).await
+        oteryn_client_runtime::depot::send(self, intent, slot).await
     }
 
     async fn target_walk(
@@ -307,8 +308,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     async fn world_context(
         &mut self,
         command: &oteryn_client_runtime::world_interaction::Command,
+        raw_wire: bool,
     ) -> Result<String, SessionError> {
-        oteryn_client_runtime::world_interaction::send(self, command).await
+        oteryn_client_runtime::world_interaction::send_framed(self, command, raw_wire).await
     }
     fn feature_selected(&self, capability: u32) -> bool {
         self.is_selected(capability)

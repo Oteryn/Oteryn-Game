@@ -34,6 +34,7 @@ BUILD_INPUTS = {
 CANONICAL_CONTROL_PATHS = {
     ".github/workflows/merge-gate.yml",
     ".github/workflows/merge-group-gate.yml",
+    ".github/workflows/rust-fast-archive.yml",
     ".github/workflows/rust.yml",
 }
 MERGE_AUTHORITY_AUDIT_PATH = ".github/workflows/merge-authority-audit.yml"
@@ -501,6 +502,22 @@ def workflow_directory_reference_is_routing_only(
             return False
         allowed_indices.add(path_index)
         start = predicate_index + 1
+
+    if consumer_path == ".github/workflows/merge-gate.yml" and pattern == ".github/workflows":
+        # These complete lines name fixed workflows rather than consuming the
+        # directory. Exact-file references remain consumers in the caller.
+        fixed_workflow_lines = (
+            b"uses: ./.github/workflows/rust-fast-archive.yml",
+            b"|| contains(needs.scope.outputs.file_records, "
+            b"'.github/workflows/native-entry-room-qualification.yml')",
+            b"|| contains(needs.scope.outputs.file_records, "
+            b"'.github/workflows/rust-fast-archive.yml')",
+        )
+        offset = 0
+        for line in content.splitlines(keepends=True):
+            if line.strip() in fixed_workflow_lines:
+                allowed_indices.add(offset + line.index(needle))
+            offset += len(line)
 
     return bool(allowed_indices) and set(occurrences) == allowed_indices
 

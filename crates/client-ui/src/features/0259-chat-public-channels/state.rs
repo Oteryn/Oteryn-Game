@@ -11,6 +11,12 @@ pub struct ChatPanel {
     pub open: bool,
     pub rooms: ChatRoomSet,
     pub lines: Vec<ChatLine>,
+    /// Received-line count published with this log snapshot.
+    pub received: u64,
+    /// Received events awaiting the next log snapshot.
+    pub pending_lines: u64,
+    /// Positional speech invalidation epoch.
+    pub scope: u64,
     /// Capability 493: the recipient of each own private echo, in step with `lines`.
     pub recipients: Vec<Option<String>>,
     pub room: ChatRoom,
@@ -31,6 +37,9 @@ impl Default for ChatPanel {
             open: false,
             rooms: ChatRoomSet::default(),
             lines: Vec::new(),
+            received: 0,
+            pending_lines: 0,
+            scope: 0,
             recipients: Vec::new(),
             room: ChatRoom::World,
             text: String::new(),

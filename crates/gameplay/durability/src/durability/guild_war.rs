@@ -14,6 +14,15 @@ use sqlx::Row;
 
 const GUILD_WAR_PASS_MAX: i64 = 100;
 
+// Use the transaction's decision time and the locked score wherever a war confers privileges.
+macro_rules! active_war_predicate {
+    () => {
+        "w.state=2 AND w.ends_at>floor(extract(epoch FROM transaction_timestamp())*1000)::bigint \
+         AND w.declaring_frags<w.frag_limit AND w.opposing_frags<w.frag_limit"
+    };
+}
+pub(super) use active_war_predicate;
+
 impl DurabilityRoot {
     #[allow(
         clippy::too_many_arguments,
@@ -131,7 +140,7 @@ pub(crate) async fn attribute_guild_war_frag_in_transaction(
         .iter()
         .map(|c| c.character_id.as_bytes().to_vec())
         .collect();
-    let row = sqlx::query("SELECT w.war_id::text,w.declaring_guild::text,kg.guild_id::text AS killer_guild,vg.guild_id::text AS victim_guild,h.attacker::text AS killer FROM game_character_pvp_harm h JOIN game_guild_members km ON km.character_id=h.attacker JOIN game_guilds kg ON kg.guild_id=km.guild_id AND kg.world_id=encode($2,'hex')::uuid JOIN game_guild_members vm ON vm.character_id=encode($1,'hex')::uuid JOIN game_guilds vg ON vg.guild_id=vm.guild_id AND vg.world_id=kg.world_id JOIN game_guild_wars w ON w.world_id=kg.world_id AND w.state=2 AND ((w.declaring_guild=kg.guild_id AND w.opposing_guild=vg.guild_id) OR (w.opposing_guild=kg.guild_id AND w.declaring_guild=vg.guild_id)) WHERE h.victim=encode($1,'hex')::uuid AND h.attacker=ANY(SELECT encode(x,'hex')::uuid FROM unnest($3::bytea[]) x) AND h.damage>0 AND h.created_at>=clock_timestamp()-interval '5 minutes' ORDER BY h.created_at DESC LIMIT 1 FOR UPDATE OF w")
+    let row = sqlx::query(concat!("SELECT w.war_id::text,w.declaring_guild::text,kg.guild_id::text AS killer_guild,vg.guild_id::text AS victim_guild,h.attacker::text AS killer FROM game_character_pvp_harm h JOIN game_guild_members km ON km.character_id=h.attacker JOIN game_guilds kg ON kg.guild_id=km.guild_id AND kg.world_id=encode($2,'hex')::uuid JOIN game_guild_members vm ON vm.character_id=encode($1,'hex')::uuid JOIN game_guilds vg ON vg.guild_id=vm.guild_id AND vg.world_id=kg.world_id JOIN game_guild_wars w ON w.world_id=kg.world_id AND ", active_war_predicate!(), " AND ((w.declaring_guild=kg.guild_id AND w.opposing_guild=vg.guild_id) OR (w.opposing_guild=kg.guild_id AND w.declaring_guild=vg.guild_id)) WHERE h.victim=encode($1,'hex')::uuid AND h.attacker=ANY(SELECT encode(x,'hex')::uuid FROM unnest($3::bytea[]) x) AND h.damage>0 AND h.created_at>=clock_timestamp()-interval '5 minutes' ORDER BY h.created_at DESC LIMIT 1 FOR UPDATE OF w"))
         .bind(victim.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(contributor_ids).fetch_optional(&mut **tx).await?;
     let Some(row) = row else { return Ok(()) };
     let war: String = row.try_get("war_id")?;

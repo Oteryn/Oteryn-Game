@@ -24,6 +24,7 @@ impl Stepper for RespawnSession {
             .send(direction)
             .map_err(|_| SessionError::SessionUnusable)?;
         Ok(StepOutcome {
+            step_wait_ms: 0,
             command_id: 1,
             status: CommandStatus::Accepted,
             disposition: StepDisposition::Moved,
@@ -89,6 +90,8 @@ fn death_notice_blocks_world_input_until_server_respawn() -> Result<(), String> 
     ]);
     assert_eq!(view.tick(&link), Ok(()));
     assert_eq!(view.own(), TileCoord::new(20, 30));
+    assert!(view.death_modal_notice().is_some());
+    assert!(view.acknowledge_death(&link));
     let deadline = Instant::now() + Duration::from_secs(3);
     while view.hud_status().contains("You are dead") && Instant::now() < deadline {
         assert_eq!(view.tick(&link), Ok(()));

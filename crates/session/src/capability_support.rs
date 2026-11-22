@@ -86,6 +86,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::inspection::CAPABILITY_INSPECTION_V1,
     property_services::party_skull::CAPABILITY_PARTY_SKULL_V1,
     prey::CAPABILITY_PREY_V1,
+    oteryn_protocol_oteryn::container_sort::CAPABILITY_CONTAINER_SORT_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
     property_services::raid_schedule::CAPABILITY_RAID_SCHEDULE_V1,
@@ -112,6 +113,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     player_typing::CAPABILITY_PLAYER_TYPING_V1,
     // CL26s1: public channels.
     chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1,
+    // Tibia Global's hireling management window, command 470 (requires 165).
+    hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1,
     oteryn_protocol_oteryn::vip_presence::CAPABILITY_VIP_PRESENCE_V1,
     chat::public_channels::CAPABILITY_CHAT_PUBLIC_CHANNELS_V1,
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
@@ -175,10 +178,26 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
     oteryn_protocol_oteryn::highscores_loyalty::CAPABILITY_HIGHSCORES_LOYALTY_V1,
     oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1,
+    oteryn_protocol_oteryn::server_info::CAPABILITY_SERVER_INFO_V1,
+    oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1,
+    oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1,
+    oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::CAPABILITY_BLESSINGS_DIALOG_V1,
+    oteryn_protocol_oteryn::tutorial_vocation::CAPABILITY_TUTORIAL_VOCATION_V1,
+    oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_DEFAULTS_V1,
+    cyclopedia_character::items::filtered::CAPABILITY,
+    highscores_catalogue::CAPABILITY,
+    oteryn_protocol_oteryn::inventory_capacity::CAPABILITY_INVENTORY_CAPACITY_V1,
+    oteryn_protocol_oteryn::guild_emblem::CAPABILITY_GUILD_EMBLEM_V1,
+    // Tibia Global's Manual Sort Mode: the slot of a command-9 container destination (requires 14).
+    oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1,
+    // The writing window's current item text (requires 4 and 115), command 6246.
+    oteryn_protocol_oteryn::item_inscription::CAPABILITY_ITEM_INSCRIPTION_READ_V1,
     // chsw in-game Channel switch (512), commands 6247, 6248 and 6251.
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_CHANNEL_SWITCH_V1,
     // chsw Channel on Party, VIP and Guild rows (513).
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1,
+    // CORPSE48: domain 11 shows up to 48 corpse entries (requires 4).
+    oteryn_protocol_oteryn::item_view::CAPABILITY_CORPSE_CONTAINER_48_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -201,6 +220,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     oteryn_protocol_oteryn::world_clock::CAPABILITY_WORLD_LIGHT_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1,
+    oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
     oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1,
     oteryn_protocol_oteryn::capability_tables::CAPABILITY_ITEM_LOOK_V1,
@@ -237,6 +257,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::inspection::CAPABILITY_INSPECTION_V1,
     property_services::party_skull::CAPABILITY_PARTY_SKULL_V1,
     prey::CAPABILITY_PREY_V1,
+    oteryn_protocol_oteryn::container_sort::CAPABILITY_CONTAINER_SORT_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
     property_services::raid_schedule::CAPABILITY_RAID_SCHEDULE_V1,
@@ -260,6 +281,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1,
     oteryn_protocol_oteryn::team_finder_members::CAPABILITY_TEAM_FINDER_MEMBERS_V1,
     player_typing::CAPABILITY_PLAYER_TYPING_V1,
+    hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1,
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
     condition_status::CAPABILITY_CONDITION_STATUS_V1,
@@ -293,6 +315,10 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     atelier::v2::CAPABILITY_GEM_ATELIER_V2,
     // WU26 own sanction record, command 6240.
     oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
+    highscores_catalogue::CAPABILITY,
+    oteryn_protocol_oteryn::tutorial_vocation::CAPABILITY_TUTORIAL_VOCATION_V1,
+    oteryn_protocol_oteryn::server_info::CAPABILITY_SERVER_INFO_V1,
+    oteryn_protocol_oteryn::item_inscription::CAPABILITY_ITEM_INSCRIPTION_READ_V1,
     // chsw in-game Channel switch, commands 6247, 6248 and 6251.
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_CHANNEL_SWITCH_V1,
     // chsw Channel on Party, VIP and Guild rows (513).
@@ -348,6 +374,24 @@ mod weapon_proficiency_tests {
             assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
         }
         assert!(gated_routes().any(|(id, commands, _)| id == 195 && commands.contains(&641)));
+    }
+}
+
+#[cfg(test)]
+mod hireling_management_tests {
+    use super::*;
+
+    #[test]
+    fn hireling_management_is_advertised_and_routed_with_its_prerequisite() {
+        for capability in [
+            hireling::CAPABILITY_HIRELING_V1,
+            hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1,
+        ] {
+            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
+        }
+        assert!(gated_routes().any(|(id, commands, _)| id
+            == hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1
+            && commands.contains(&hireling::management::COMMAND_TYPE_HIRELING_MANAGEMENT)));
     }
 }
 
@@ -414,6 +458,36 @@ mod native_advertisement_tests {
             schema_revision: 1,
             selected_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
         })?;
+        Ok(())
+    }
+
+    #[test]
+    fn srvcat_bootstrap_advertises_extensions_and_gates_world_queries()
+    -> Result<(), FoundationProtocolError> {
+        let mut id = [1u8; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        let bootstrap = encode_client_bootstrap(&ClientBootstrapValue {
+            schema_revision: 1,
+            character_id: CharacterId::decode(&id)?,
+            admission_material: b"srvcat-bootstrap-regression",
+            client_build_id: "srvcat-bootstrap-regression",
+            supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+        })?;
+        let envelope = decode_wire_envelope(&bootstrap)?;
+        let supported = envelope.client_bootstrap()?.supported_capabilities;
+        for capability in [505, 506, 507] {
+            assert!(
+                supported.contains(&capability),
+                "native bootstrap omitted {capability}"
+            );
+        }
+        assert_eq!(
+            super::gated_routes()
+                .find(|(capability, _, _)| *capability == 507)
+                .map(|(_, commands, _)| commands),
+            Some(&[6244, 6245][..])
+        );
         Ok(())
     }
 }

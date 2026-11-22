@@ -165,3 +165,61 @@ fn a_failed_chase_search_researches_targets_on_the_next_think() {
             .is_some()
     );
 }
+
+#[test]
+fn walk_back_installs_and_executes_a_cardinal_detour() {
+    let mut channel = Channel::new();
+    let creature = channel.admit(at(90, 100), 0);
+    let spawn = at(91, 101);
+    channel
+        .table
+        .entry_mut(creature)
+        .expect("entry")
+        .state
+        .spawn = Some(spawn);
+    let blocking = BTreeSet::from([
+        crate::content::LogicalCell {
+            x: 91,
+            y: 100,
+            z: 7,
+        },
+        crate::content::LogicalCell {
+            x: 90,
+            y: 101,
+            z: 7,
+        },
+    ]);
+    let sources = vec![Native {
+        actor: creature,
+        base: 67,
+        pin: channel.runtime.content_pin().server_artifact_digest(),
+    }];
+    let navigation = channel.runtime.content_pin().map_revision_digest();
+    channel.table.run_due_thinks(
+        &mut channel.runtime,
+        0,
+        &channel.root,
+        &channel.revisions,
+        &[],
+    );
+    let mut now = 0;
+    for _ in 0..8 {
+        channel.table.drive_movement(
+            &mut channel.runtime,
+            &channel.cells,
+            &blocking,
+            navigation,
+            &sources,
+            &EngineeringGroundSpeed,
+            &channel.root,
+            now,
+            &mut channel.path_budget,
+            false,
+        );
+        let Some(due) = channel.table.entry(creature).expect("entry").motion.due else {
+            break;
+        };
+        now = due;
+    }
+    assert_eq!(channel.position(creature), spawn);
+}

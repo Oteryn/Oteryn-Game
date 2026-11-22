@@ -52,6 +52,28 @@ pub(super) fn apply<S: SessionStream>(
     check_delta(&delta, DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1, revision.1)?;
     let value = decode_world_map_delta(&header, delta.payload)
         .map_err(|_| SessionError::Protocol(FoundationProtocolError::StateRevisionMismatch))?;
+    let snapshot = session
+        .gated_snapshots
+        .iter_mut()
+        .find(|snapshot| snapshot.domain_id == STATE_DOMAIN_WORLD_MAP_VIEW)
+        .ok_or(SessionError::MissingDomain(STATE_DOMAIN_WORLD_MAP_VIEW))?;
+    let mut next = decode_world_map_snapshot(&snapshot.payload)
+        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
+    next.header = value.header;
+    next.tiles.retain(|tile| {
+        in_window(value.header.origin, tile.position)
+            && !value.cleared.contains(&tile.position)
+            && !value
+                .tiles
+                .iter()
+                .any(|replacement| replacement.position == tile.position)
+    });
+    next.tiles.extend(value.tiles.iter().cloned());
+    next.tiles.sort_by_key(|tile| tile_order(&tile.position));
+    let payload =
+        encode_world_map_snapshot(&next).map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
+    snapshot.payload = payload;
+    snapshot.revision = delta.new_revision;
     revision.1 = delta.new_revision;
     session.map_header = Some(value.header);
     Ok(SessionEvent::WorldMap(AppliedDelta {

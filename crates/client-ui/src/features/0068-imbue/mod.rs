@@ -38,6 +38,7 @@ pub struct ImbuePanel {
     pub tracker_open: bool,
     pub equipment: equipment_tracker::EquipmentTracker,
     pub tracker_minutes: String,
+    pub tracker_hidden: [bool; 4],
     pub pending: bool,
     pub refresh_required: bool,
     pub item: Option<ItemHandle>,
@@ -56,6 +57,7 @@ impl ImbuePanel {
             open: self.open,
             tracker_open: self.tracker_open,
             tracker_minutes: self.tracker_minutes.clone(),
+            tracker_hidden: self.tracker_hidden,
             feedback: Some(tr!("Select an item in the current activity and refresh it")),
             ..Self::default()
         };

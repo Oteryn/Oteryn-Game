@@ -74,6 +74,7 @@ fn multiaction_skips_rune_group_cooldown_then_uses_live_item_handle()
             actions: vec![
                 BarAction::Use {
                     definition,
+                    sub_type: None,
                     mode: ItemUseMode::CursorPosition
                 },
                 BarAction::Spell {

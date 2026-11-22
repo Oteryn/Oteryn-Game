@@ -226,13 +226,16 @@ fn child_fanout_maximum_plus_one_is_rejected_from_typed_registrations()
             Some(ordinal),
         )?);
     }
-    assert!(matches!(
+    // Both limits are eight; the root-work bound rejects oversized input before
+    // examining child metadata, as the owning domain contract requires.
+    assert_eq!(
         plan(source, children.clone(), children),
         Err(InteractionError::CapacityExceeded {
-            resource: "child fan-out",
-            ..
+            resource: "root work",
+            limit: 8,
+            observed: 9,
         })
-    ));
+    );
     Ok(())
 }
 

@@ -9,6 +9,7 @@ pub struct Panel {
     pub catalogue_market: Option<u32>,
     pub catalogue: std::collections::BTreeMap<u32, InspectedItem>,
     pub catalogue_query: Option<catalogue::PageQuery>,
+    pub catalogue_items_query: Option<catalogue::Query>,
     pub catalogue_market_requested: Option<u32>,
     pub catalogue_sources: Vec<String>,
     pub catalogue_source_next: Option<u32>,
@@ -112,6 +113,7 @@ impl Panel {
         self.catalogue_market = None;
         self.catalogue_loaded = false;
         self.catalogue_query = None;
+        self.catalogue_items_query = None;
         self.catalogue_page = None;
         self.catalogue_categories.clear();
         self.catalogue_definition.clear();

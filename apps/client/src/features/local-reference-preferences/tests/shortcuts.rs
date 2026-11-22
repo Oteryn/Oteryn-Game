@@ -2,7 +2,8 @@ use crate::play::{SettingsState, ShortcutEdit, WINDOW_ACTIONS};
 #[test]
 fn t059_settings_selector_persists_order_and_routes_the_selected_shortcut()
 -> Result<(), Box<dyn std::error::Error>> {
-    let path = std::env::temp_dir().join(format!("t059-shortcuts-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("t059-shortcuts.json");
     let mut state = SettingsState::new(Some(path.clone()));
     let id = WINDOW_ACTIONS[0].0;
     assert!(state.edit_shortcut(id, ShortcutEdit::Remove));

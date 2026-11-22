@@ -194,11 +194,47 @@ pub(super) fn perform(
         return true;
     }
     if !book.selected {
-        return if matches!(action.kind, Kind::Search | Kind::Refresh) {
-            link.spell_catalog_search(&values.search, &values.maximum, "", false, "")
-        } else {
-            false
-        };
+        if !matches!(
+            action.kind,
+            Kind::Search | Kind::Refresh | Kind::Vocation | Kind::Group | Kind::Premium
+        ) {
+            return false;
+        }
+        let mut vocation = catalogue.vocation.clone();
+        let mut group = catalogue.group;
+        let mut learned = catalogue.learned_only;
+        if matches!(action.kind, Kind::Vocation) {
+            let choices = oteryn_client_ui::spell_catalog::VOCATIONS;
+            vocation = match vocation
+                .as_deref()
+                .and_then(|v| choices.iter().position(|c| *c == v))
+            {
+                Some(index) => choices.get(index + 1).map(|v| (*v).to_owned()),
+                None => Some(choices[0].to_owned()),
+            };
+        } else if matches!(action.kind, Kind::Group) {
+            let mut groups: Vec<_> = catalogue
+                .catalog
+                .entries()
+                .iter()
+                .flat_map(|entry| entry.cooldown_groups.iter().copied())
+                .collect();
+            groups.sort_unstable();
+            groups.dedup();
+            group = match group.and_then(|g| groups.iter().position(|candidate| *candidate == g)) {
+                Some(index) => groups.get(index + 1).copied(),
+                None => groups.first().copied(),
+            };
+        } else if matches!(action.kind, Kind::Premium) {
+            learned = !learned;
+        }
+        return link.spell_catalog_search(
+            &values.search,
+            &values.maximum,
+            &group.map(|g| g.to_string()).unwrap_or_default(),
+            learned,
+            vocation.as_deref().unwrap_or(""),
+        );
     }
     let Some(minimum) = number(&values.minimum) else {
         state.feedback = "Enter a valid minimum level.".into();
@@ -221,7 +257,11 @@ pub(super) fn perform(
                 return false;
             };
             filter.min_level = 0;
-            filter.max_level = if filter.max_level == level { 0 } else { level };
+            filter.max_level = if book.filter.max_level == level {
+                0
+            } else {
+                level
+            };
         }
         Kind::Vocation => {
             filter.vocation = ((usize::from(filter.vocation) + 1) % SPELLBOOK_VOCATIONS.len()) as u8

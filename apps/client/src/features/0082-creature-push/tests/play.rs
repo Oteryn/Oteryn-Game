@@ -28,6 +28,7 @@ fn native_drag_sends_push_once_without_attacking_or_walking()
             generation: 8,
         };
         let entity = oteryn_session::WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind,
             entity: target,
@@ -43,6 +44,7 @@ fn native_drag_sends_push_once_without_attacking_or_walking()
             },
         };
         let ground = oteryn_session::WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: oteryn_session::EntityKind::GroundItem,
             entity: EntityRef {

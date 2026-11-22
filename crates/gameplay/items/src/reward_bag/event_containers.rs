@@ -52,8 +52,8 @@ pub struct EventContainerRule {
 }
 
 /// The committed source packet includes the requested presents, Christmas bundles,
-/// special boxes, anniversary boxes and music box. Glooth bag 21203 remains outside
-/// this slice; its captured table is validated but is not a playable event rule.
+/// special boxes, anniversary boxes and music box. Generated bags retain this
+/// source metadata even when their rewards belong to the generated converter.
 pub fn event_container_rules() -> Option<&'static [EventContainerRule]> {
     #[derive(serde::Deserialize)]
     struct Catalogue {
@@ -81,16 +81,23 @@ pub fn event_container_rules() -> Option<&'static [EventContainerRule]> {
         .as_deref()
 }
 
+/// Source eligibility and presentation survive a change of reward converter.
 pub fn event_container_rule(key: &str) -> Option<&'static EventContainerRule> {
-    // SP04 owns generated playable bags, including their historical receipts.
-    // Keep the captured W19 tables as evidence without claiming those sources.
+    let id: u32 = key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()?;
+    event_container_rules()?.iter().find(|rule| {
+        rule.item_id == id
+            && (rule.selection != Selection::Weighted
+                || rule.item_id == 12045
+                || super::playable_bag(super::reward_bags().unwrap_or_default(), key).is_some())
+    })
+}
+
+pub fn legacy_conversion_rule(key: &str) -> Option<&'static EventContainerRule> {
+    // Generated bags own the rewards; the captured rule still owns source metadata.
     if super::playable_bag(super::reward_bags()?, key).is_some() {
         return None;
     }
-    let id: u32 = key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()?;
-    event_container_rules()?.iter().find(|rule| {
-        rule.item_id == id && (rule.selection != Selection::Weighted || rule.item_id == 12045)
-    })
+    event_container_rule(key)
 }
 
 fn bounded(draw: u64, domain: u8, upper: u64) -> Option<u64> {
@@ -226,7 +233,7 @@ pub(super) fn conversion(
     used: &TypedDefinitionRef,
     draw: u64,
 ) -> Option<CookingConversion> {
-    let rule = event_container_rule(&used.production_key)?;
+    let rule = legacy_conversion_rule(&used.production_key)?;
     let mut outputs = Vec::new();
     for (id, count) in selected_rewards(rule, draw)? {
         let id = created_reward_item_id(id);
@@ -275,7 +282,7 @@ pub fn permits_empty_container(recipe: &str, output_key: &str) -> bool {
     else {
         return false;
     };
-    event_container_rule(&format!("oteryn:item.tibia.i{source}"))
+    legacy_conversion_rule(&format!("oteryn:item.tibia.i{source}"))
         .is_some_and(|rule| rule.rewards.iter().any(|reward| reward.item_id == id))
 }
 
@@ -298,7 +305,7 @@ mod tests {
         for bag in super::super::reward_bags().expect("reward bags") {
             if bag.playable {
                 assert!(
-                    event_container_rule(&bag.bag).is_none(),
+                    legacy_conversion_rule(&bag.bag).is_none(),
                     "dual owner: {}",
                     bag.bag
                 );
@@ -321,8 +328,8 @@ mod tests {
                 37463, 37465, 37466, 37467, 37468, 37469, 37614, 39704, 39705, 39706, 39710,
             ]
         );
-        assert!(event_container_rule("oteryn:item.tibia.i12045").is_none());
-        assert!(event_container_rule("oteryn:item.tibia.i21203").is_none());
+        assert!(legacy_conversion_rule("oteryn:item.tibia.i12045").is_none());
+        assert!(legacy_conversion_rule("oteryn:item.tibia.i21203").is_none());
         assert!(event_container_rule("oteryn:item.tibia.i3600").is_none());
         assert!(event_container_rule("oteryn:creature.tibia.i6570").is_none());
     }
@@ -501,6 +508,16 @@ mod tests {
         broken = present.clone();
         broken.roll_max = Some(0);
         assert!(selected_rewards(&broken, 0).is_none());
+    }
+
+    #[test]
+    fn sp04_anniversary_receipts_consume_one_unit() {
+        for id in [39704, 39705, 39706, 39710] {
+            assert!(!consumes_whole_stack(&format!(
+                "oteryn:reward-bag.event_{id}"
+            )));
+        }
+        assert!(!consumes_whole_stack("oteryn:reward-bag.event_6570"));
     }
 
     #[test]

@@ -444,6 +444,18 @@ fn apply_key_rule(
     source_ids: &BTreeMap<String, u64>,
     appearance_items: Vec<ProjectReferenceRecord>,
 ) -> Result<ItemKeySwitch, ItemIdentityError> {
+    let mut candidate = draft.clone();
+    let applied = prepare_key_rule(&mut candidate, table, source_ids, appearance_items)?;
+    *draft = candidate;
+    Ok(applied)
+}
+
+fn prepare_key_rule(
+    draft: &mut ProjectV2Draft,
+    table: &ItemKeyAliasTable,
+    source_ids: &BTreeMap<String, u64>,
+    appearance_items: Vec<ProjectReferenceRecord>,
+) -> Result<ItemKeySwitch, ItemIdentityError> {
     let mut canonical = BTreeSet::new();
     let mut removed = 0_usize;
     let mut kept = Vec::with_capacity(draft.core.records.len());
@@ -578,3 +590,21 @@ impl Switch<'_> {
 #[cfg(all(test, oteryn_gameplay_content_unit_tests))]
 #[path = "../../../content/src/content/item_identity_tests.rs"]
 mod appearance_proof_tests;
+
+/// Promotions require an unambiguous native definition for every Item key.
+#[cfg(not(oteryn_gameplay_content_unit_tests))]
+pub(super) fn validate_unique_item_keys(draft: &ProjectV2Draft) -> Result<(), String> {
+    let mut keys = BTreeSet::new();
+    for record in &draft.core.records {
+        if let ProjectReferenceRecord::Item { identity, .. } = record
+            && !keys.insert(identity.key.as_str())
+        {
+            return Err(format!("duplicate native Item key: {}", identity.key));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(all(test, not(oteryn_gameplay_content_unit_tests)))]
+#[path = "item_identity_promotion_tests.rs"]
+mod tests;

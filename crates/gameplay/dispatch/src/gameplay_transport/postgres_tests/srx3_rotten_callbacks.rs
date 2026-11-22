@@ -1103,6 +1103,7 @@ fn run_rotten_native_lethal_case_checks(
                             item_fence: Some(fence),
                         },
                         crate::gameplay_transport::item_move::LoopMove {
+                            slot: None,
                             item: crate::gameplay_transport::item_view::ItemKey::Instance(
                                 actual.item.item_instance_id,
                             ),

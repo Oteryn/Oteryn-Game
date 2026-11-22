@@ -21,6 +21,14 @@ pub(in crate::play) fn submit(
         panel.feedback = tr!("Waiting for the server").into();
         return;
     }
+    // Validate every submitted field before producing any command, including unused fields.
+    if panel
+        .fields
+        .iter()
+        .any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, 512)) {
+        panel.feedback = "A form field exceeds its UTF-8 byte limit or contains invalid text".into();
+        return;
+    }
     match super::protocol::command(panel, intent) {
         Ok(command) => {
             if oteryn_client_ui::house_transfer::request(panel, command.kind)
@@ -44,13 +52,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn house_transfer_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.house_transfer.open = true;
-        }
+        lock(&self.mailbox).properties.house_transfer.open = true;
     }
     pub fn house_transfer_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::house_transfer::open_key(events) {
@@ -66,9 +68,10 @@ pub(in crate::play) fn edit(
     field: usize,
     value: String,
 ) {
-    if panel.pending || value.len() > 512 || value.contains('\0') {
+    if panel.pending {
         return;
     }
+    // Retain rejected input so a later submit cannot send the previous stored value.
     if let Some(slot) = panel.fields.get_mut(field) {
         if *slot == value {
             return;

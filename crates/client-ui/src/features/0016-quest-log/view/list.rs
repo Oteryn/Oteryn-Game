@@ -63,6 +63,7 @@ pub fn quest_rows(panel: &QuestPanel) -> Vec<&QuestListEntry> {
                 if q.completed { "completed" } else { "active" }
             )
             .contains(&search)
+                || panel.title(q.quest_index).to_lowercase().contains(&search)
                 || known.contains(&q.quest_index)
         })
         .collect();

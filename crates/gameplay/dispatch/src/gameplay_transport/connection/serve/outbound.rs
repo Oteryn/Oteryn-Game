@@ -83,6 +83,12 @@ where
         return Err(ServeEnd::Disconnected);
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
+    if matches!(dispatch, Dispatch::Depot(_))
+        && let Some(view) = &session.item_view
+    {
+        // Carry reserved display ordinals across resume, even if writing the reply fails.
+        session.admitted.continuity.item_view = view.continuity();
+    }
     if matches!(
         dispatch,
         Dispatch::Logout(LogoutResult::Accepted)
@@ -315,6 +321,11 @@ where
                     && payload.as_slice()
                         == [oteryn_protocol_oteryn::mail::MailOutcome::TextWritten as u8]) =>
         {
+            if command.command_type
+                == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH
+            {
+                session.inventory_capacity_refresh_at = None;
+            }
             let Some(view) = session.item_view.as_mut() else {
                 return Err(ServeEnd::Disconnected);
             };
@@ -410,10 +421,10 @@ where
         // NPC-CMD-1a: the whole domain 7 payload, then the domain 8 window (NPC-CMD-1b-read),
         // follow the result, to the speaker alone.
         Dispatch::NpcTrade(_, update, deltas) | Dispatch::NpcShop(_, _, update, deltas) => {
-            effects::npc_trade(stream, session, update, deltas).await?;
+            effects::npc_trade(authority, stream, session, update, deltas).await?;
         }
         Dispatch::Npc(_, update, _) => {
-            effects::npc(stream, session, update).await?;
+            effects::npc(authority, stream, session, update).await?;
         }
         Dispatch::Attack(_) => {
             pvp_expert::refresh(stream, authority, session).await?;

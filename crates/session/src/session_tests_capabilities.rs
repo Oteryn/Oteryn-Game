@@ -277,3 +277,39 @@ fn t114_soulseal_command_crosses_selected_session_gate_and_refuses_unselected()
 }
 
 include!("session_tests_coin_history.rs");
+
+#[test]
+fn container_sort_native_admission_emits_selected_sort_command() -> Result<(), BoxError> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+        block_on(async {
+            for selected in [false, true] {
+                let (client, mut server) = tokio::io::duplex(128 * 1024);
+                let peer = tokio::spawn(async move {
+                    let raw = if selected { vec![(14, 1, 1, oteryn_protocol_oteryn::container_tree::encode_container_views(&Default::default()).map_err(|e| format!("{e:?}"))?)] } else { vec![] };
+                    join_peer_with(&mut server, CLIENT_SUPPORTED_CAPABILITIES,
+                        if selected { &[4, 6, 12, 14, 146] } else { &[] }, &[],
+                        if selected { item_snapshot(vec![])? } else { (1, spatial(0)) },
+                        &raw).await?;
+                    if selected {
+                        let frame = read_frame(&mut server).await?;
+                        let envelope = decode_wire_envelope(&frame)?;
+                        let command = envelope.client_command(1)?;
+                        assert_eq!(command.command_type, 168);
+                        assert_eq!(command.payload, [3, 1, 0, 0]);
+                        write_frame(&mut server, &encode_command_result(1, 41,
+                            command.command_id, CommandStatus::Accepted, &[1])?).await?;
+                    }
+                    Ok::<(), BoxError>(())
+                });
+                let mut admission = admission()?;
+                admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
+                let mut session = Session::admit(client, admission).await?;
+                let result = session.gated_command(146, 168, &[3, 1, 0, 0]).await;
+                if selected { assert_eq!(result?.payload, [1]); }
+                else { assert!(matches!(result, Err(SessionError::CapabilityNotSelected { capability: 146 }))); }
+                peer.await??;
+            }
+            Ok::<(), BoxError>(())
+        })?
+    })?.join().map_err(|_| "container sort thread panicked")?
+}

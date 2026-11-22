@@ -19,7 +19,13 @@ pub struct SettingsState {
     pub(super) screenshot_runtime: super::screenshot::ScreenshotRuntime,
     pub(super) screenshot_requested: bool,
     pub(super) window_actions: std::collections::VecDeque<&'static str>,
+    /// Deferred sidebar toggles belong only to the session that received the hotkey.
+    #[cfg(bevy_shell)]
+    pub(super) skills_toggles:
+        Vec<std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>>,
     pending_chat_mode: Option<bool>,
+    /// The play session (by its mailbox) whose chat mode was restored, and the mode last seen.
+    chat_mode_seen: Option<(usize, oteryn_client_ui::chat::ComposerMode)>,
     chat_context: Option<bool>,
     pub custom_choices: Vec<(String, super::CustomAction)>,
     pub(super) custom_choices_refreshed: Option<std::time::Instant>,
@@ -37,7 +43,15 @@ pub struct SettingsState {
     hud_toggle: Option<crate::play::HudPanel>,
     battle_edit: u64,
     magical_archive_requested: bool,
+    /// A page the options window turns to when it next runs (Ctrl+K: the hotkey page).
+    page_request: Option<SettingsPage>,
     store: Option<PreferenceStore>,
+    #[cfg(bevy_shell)]
+    outgoing_stores: Vec<PreferenceStore>,
+    #[cfg(bevy_shell)]
+    background_preferences: bool,
+    #[cfg(bevy_shell)]
+    session_save: Option<bevy_tasks::Task<Result<(), String>>>,
     input: PreferenceInput,
     control_input: super::controls::ControlInput,
     control_epoch: std::time::Instant,
@@ -53,6 +67,9 @@ pub struct SettingsState {
 mod session_options;
 #[path = "settings_actions.rs"]
 mod settings_actions;
+#[cfg(bevy_shell)]
+#[path = "background_preferences.rs"]
+mod background_preferences;
 
 impl crate::play::PlayLink {
     /// A visible console owns the text context only while its composer is enabled.

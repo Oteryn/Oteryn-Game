@@ -14,6 +14,7 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
         .spawn((
             Overlay,
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("item_details"),
             GlobalZIndex(160),
             bevy::input_focus::tab_navigation::TabGroup {
                 order: 2,
@@ -27,7 +28,6 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
                 align_items: AlignItems::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
         ))
         .id();
     let panel = commands
@@ -91,6 +91,7 @@ pub(super) fn render(
     let scroll = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("item_details", 0),
             Node {
                 width: percent(100.),
                 max_height: px(460.),
@@ -164,6 +165,7 @@ pub(super) fn render(
             let chrome = commands
                 .spawn((
                     ScrollArea,
+                    crate::bevy_shell::game_ui::install::RememberScroll("item_details", 1),
                     source::frame(skin.inset.clone(), [1.; 4]),
                     Node {
                         width: percent(100.),
@@ -247,6 +249,39 @@ pub(super) fn render(
             "Refresh",
             model.selected && !model.pending && model.last_request.is_some_and(read_request),
             72.,
+        ),
+        (
+            Kind::Cyclopedia,
+            "Cyclopedia",
+            !model.pending
+                && model.reply.as_ref().is_some_and(|reply| {
+                    reply.status == 1
+                        && reply
+                            .items
+                            .get(selected_index)
+                            .is_some_and(|item| item.definition_ref != 0)
+                }),
+            90.,
+        ),
+        (
+            Kind::Proficiency,
+            "Proficiency",
+            !model.pending
+                && model.reply.as_ref().is_some_and(|reply| {
+                    reply.status == 1
+                        && reply.items.get(selected_index).is_some_and(|item| {
+                            item.attributes.iter().any(|(label, value)| {
+                                label == "Weapon Type"
+                                    && matches!(
+                                        value.split(',').next().map(str::trim),
+                                        Some(
+                                            "axe" | "club" | "distance" | "fist" | "sword" | "wand"
+                                        )
+                                    )
+                            })
+                        })
+                }),
+            90.,
         ),
         (Kind::Copy, "Copy", copy_text(model).is_some(), 60.),
         (Kind::Close, "Close", true, 60.),

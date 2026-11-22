@@ -476,6 +476,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return reject("The choice committed; your actor is waiting for its owned build.");
         }
+        self.invalidate_first_vocation_position(session, actor, std::time::Instant::now());
         self.states
             .npc_conversations
             .complete_dawnport_choice(session, choice.occurrence);

@@ -414,11 +414,17 @@ jobs:
   world_bundle:
     name: Merge Queue / World bundle
     needs: candidate
-    if: needs.candidate.outputs.world_bundle != 'false'
+    if: needs.candidate.outputs.world_bundle != 'false' || needs.candidate.outputs.rust == 'true' || needs.candidate.outputs.server_qualification != 'false'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
+    env:
+      CARGO_BUILD_JOBS: '2'
+    outputs:
+      world_compiler_sha256: ${{ steps.compiler.outputs.sha256 }}
+      world_compiler_artifact_id: ${{ steps.compiler_upload.outputs.artifact-id }}
+      world_compiler_producer_attempt: ${{ steps.compiler.outputs.producer_attempt }}
     steps:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -434,14 +440,47 @@ jobs:
       - name: Install Rust toolchain
         run: rustup toolchain install 1.100.0 --profile minimal
 
+      - name: Test current-run compiler artifact guards
+        run: python3 -m unittest discover -s tools/content-migration -p test_world_compiler_artifact.py
+
+      - name: Build the shared release World compiler once
+        id: compiler
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+          printf 'producer_attempt=%s\n' "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+          python3 tools/qualification/node_boot/prebuilt.py build world-compiler "$RUNNER_TEMP/world-compiler-build"
+          digest="$(sha256sum "$RUNNER_TEMP/world-compiler-build/bundle.tar.gz" | cut -d' ' -f1)"
+          printf 'sha256=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+
+      # Publish before pin-check so integration-heavy can finish its own test
+      # compilation in parallel and retrieve this exact compiler without a job barrier.
+      - name: Publish the current-attempt release compiler
+        id: compiler_upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: world-compiler-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/world-compiler-build/bundle.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
       - name: Check the World pins and build the bundle twice
-        run: cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"
+        if: needs.candidate.outputs.world_bundle != 'false'
+        run: |
+          set -euo pipefail
+          python3 tools/qualification/node_boot/prebuilt.py unpack world-compiler \
+            "$RUNNER_TEMP/world-compiler-build/bundle.tar.gz" "$RUNNER_TEMP/world-compiler-prebuilt"
+          "$RUNNER_TEMP/world-compiler-prebuilt/world-compiler/oteryn-world-bundle-compiler" \
+            pin-check . "$RUNNER_TEMP/world-bundle"
 
       - name: Name the bundle artifact by its digest
+        if: needs.candidate.outputs.world_bundle != 'false'
         id: artifact
         run: echo "name=$(cat "$RUNNER_TEMP/world-bundle/artifact-name.txt")" >> "$GITHUB_OUTPUT"
 
       - name: Upload the World bundle
+        if: needs.candidate.outputs.world_bundle != 'false'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ steps.artifact.outputs.name }}
@@ -457,6 +496,7 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+      actions: read
     # Workspace legs select whole-workspace targets so they share the protected-main cache's
     # feature resolution. The Bevy client leg has its own time budget. The result that
     # game_gate reads is success only when every leg succeeds.
@@ -632,6 +672,31 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libasound2-dev libudev-dev
           cargo +1.100.0 nextest run --locked -p oteryn-client --features bevy-shell --lib --no-fail-fast
+
+      - name: Compile heavy integration targets while the release compiler builds
+        if: matrix.shard == 'integration-heavy'
+        shell: bash
+        env:
+          SHARD: ${{ matrix.shard }}
+          CARGO_BUILD_JOBS: '2'
+        run: |
+          set -euo pipefail
+          cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/metadata.json"
+          python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD" > "$RUNNER_TEMP/shard-args.txt"
+          mapfile -t shard_args < "$RUNNER_TEMP/shard-args.txt"
+          test "${#shard_args[@]}" -gt 0
+          cargo +1.100.0 nextest list --locked --workspace "${shard_args[@]}" --message-format json > "$RUNNER_TEMP/integration-heavy-inventory.json"
+          python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["test-count"] > 0' "$RUNNER_TEMP/integration-heavy-inventory.json"
+
+      - name: Reuse the same-run release compiler after test compilation
+        if: matrix.shard == 'integration-heavy'
+        env:
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          compiler="$(python3 tools/content-migration/world_compiler_artifact.py "$RUNNER_TEMP/integration-world-compiler")"
+          printf 'OTERYN_WORLD_COMPILER_BIN=%s\n' "$compiler" >> "$GITHUB_ENV"
 
       - name: Test workspace integration targets
         if: matrix.shard == 'integration-heavy' || matrix.shard == 'integration-rest'
@@ -1069,7 +1134,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
-          echo "1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321  tools/ci/plan_pg_partitions.py" | sha256sum -c -
+          echo "ae799f44591c0b5f73fa16c177e71c523da9a53923c4791ebb88c99521537ee9  tools/ci/plan_pg_partitions.py" | sha256sum -c -
           python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq \
             "$PG_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$GITHUB_WORKSPACE" tools/ci/plan_pg_partitions.py
 
@@ -1090,7 +1155,7 @@ jobs:
           JOB_INDEX="${ARCHIVE_INDEX:?missing archive worker index}"
           JOB_TOTAL="${ARCHIVE_TOTAL:?missing archive worker count}"
           # Verify the reviewed planner before it chooses which tests to run.
-          echo "1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321  tools/ci/plan_pg_partitions.py" | sha256sum -c -
+          echo "ae799f44591c0b5f73fa16c177e71c523da9a53923c4791ebb88c99521537ee9  tools/ci/plan_pg_partitions.py" | sha256sum -c -
           python3 tools/ci/plan_pg_partitions.py "$plan" "$JOB_INDEX" "$JOB_TOTAL" \
             tools/ci/pg_test_durations.json --optional-archives
 
@@ -1362,6 +1427,28 @@ jobs:
 
   # The physical qualification runs as the `pr` shard set of node-boot-qualification.yml:
   # the same journeys and rows as one run.sh, split over hosted machines.
+  node_boot_platform_build:
+    name: Node boot / shared Platform build
+    needs: candidate
+    if: needs.candidate.outputs.server_qualification != 'false'
+    uses: ./.github/workflows/node-boot-build.yml
+    permissions:
+      contents: read
+    with:
+      revision: ${{ github.event.merge_group.head_sha || github.sha }}
+      variants: '["platform"]'
+
+  server_seam_build:
+    name: Server Seam / early shipping library build
+    needs: candidate
+    if: needs.candidate.outputs.server_qualification != 'false'
+    uses: ./.github/workflows/node-boot-build.yml
+    permissions:
+      contents: read
+    with:
+      revision: ${{ github.event.merge_group.head_sha || github.sha }}
+      variants: '["server-seam"]'
+
   node_boot_plan:
     name: Merge Queue / Node boot / plan shards
     needs: candidate
@@ -1374,6 +1461,7 @@ jobs:
     outputs:
       shards: ${{ steps.plan.outputs.shards }}
       build_variants: ${{ steps.plan.outputs.build_variants }}
+      parallel_variants: ${{ steps.plan.outputs.parallel_variants }}
     steps:
       - name: Check out exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1390,10 +1478,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "7135b31f6acc0ebc2626b80823f0a67c7afed41ef509900ad3b14437dce1c373  .github/workflows/node-boot-build.yml" | sha256sum -c -
-          echo "56029b4b5706f4983c262d65982abcbe029eaff9c30c408bd583561639722ed7  tools/qualification/node_boot/prebuilt.py" | sha256sum -c -
+          echo "fe1f1df027a012e269fba8e8088b433ffdaff2a939be4a1a05d7827537455cb0  .github/workflows/node-boot-build.yml" | sha256sum -c -
+          echo "288a79b279ca36544338daf3834bdaec8be9f00e39072f6e8d1770e814e4daa0  tools/qualification/node_boot/prebuilt.py" | sha256sum -c -
           python3 tools/qualification/node_boot/test_matrix.py
           python3 tools/qualification/node_boot/test_prebuilt.py
+          python3 tools/qualification/node_boot/test_shared_prebuilt.py
 
       - name: Plan shards
         id: plan
@@ -1405,6 +1494,8 @@ jobs:
           printf 'shards=%s\n' "$(cat "$RUNNER_TEMP/shards.json")" >> "$GITHUB_OUTPUT"
           variants="$(python3 tools/qualification/node_boot/prebuilt.py plan "$RUNNER_TEMP/shards.json")"
           printf 'build_variants=%s\n' "$variants" >> "$GITHUB_OUTPUT"
+          parallel="$(python3 -c 'import json,sys; print(json.dumps([variant for variant in json.loads(sys.argv[1]) if variant not in ("default", "world-compiler")]))' "$variants")"
+          printf 'parallel_variants=%s\n' "$parallel" >> "$GITHUB_OUTPUT"
 
   node_boot_build:
     name: Node boot / shared qualification build
@@ -1414,13 +1505,37 @@ jobs:
       contents: read
     with:
       revision: ${{ github.event.merge_group.head_sha || github.sha }}
-      variants: ${{ needs.node_boot_plan.outputs.build_variants }}
+      variants: ${{ needs.node_boot_plan.outputs.parallel_variants }}
+
+  # Only the shipping default may reuse the Seam library. Native spawn/clock
+  # variants keep their own feature graphs and start without this dependency.
+  node_boot_default_build:
+    name: Node boot / shipping binaries with the earlier Seam library
+    needs: [node_boot_plan, server_seam_build]
+    if: >-
+      !cancelled() && needs.node_boot_plan.result == 'success'
+      && needs.server_seam_build.result == 'success'
+      && contains(fromJSON(needs.node_boot_plan.outputs.build_variants || '[]'), 'default')
+    uses: ./.github/workflows/node-boot-build.yml
+    permissions:
+      contents: read
+    with:
+      revision: ${{ github.event.merge_group.head_sha || github.sha }}
+      variants: '["default"]'
+      server_seam_sha256: ${{ needs.server_seam_build.outputs.server-seam }}
 
   node_boot_shard:
     name: Merge Queue / Node boot / ${{ matrix.shard.name }}
-    needs: [candidate, node_boot_plan, node_boot_build]
-    # Fails closed: only an explicit protected-base `false` skips the physical qualification.
-    if: needs.candidate.outputs.server_qualification != 'false'
+    needs: [candidate, node_boot_plan, node_boot_build, node_boot_default_build, node_boot_platform_build, world_bundle]
+    # A deliberately skipped default build must not skip native spawn/clock shards.
+    if: >-
+      !cancelled() && needs.candidate.outputs.server_qualification != 'false'
+      && needs.node_boot_plan.result == 'success' && needs.node_boot_build.result == 'success'
+      && needs.node_boot_platform_build.result == 'success'
+      && needs.world_bundle.result == 'success'
+      && (needs.node_boot_default_build.result == 'success'
+          || (needs.node_boot_default_build.result == 'skipped'
+              && !contains(fromJSON(needs.node_boot_plan.outputs.build_variants || '[]'), 'default')))
     runs-on: ubuntu-24.04
     # W20a's natural day and W20b's light decay run serially for almost two hours.
     # Include build, the basic seam, World setup and the remaining journeys.
@@ -1511,24 +1626,45 @@ jobs:
         if: steps.build_inputs.outputs.needs_default == 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: node-boot-build-default
-          path: ${{ runner.temp }}/node-boot-download/default
+          name: node-boot-build-${{ steps.build_inputs.outputs.default_variant }}
+          path: ${{ runner.temp }}/node-boot-download/${{ steps.build_inputs.outputs.default_variant }}
+
+      - name: Verify the shared World compiler producer identity
+        if: steps.build_inputs.outputs.needs_world == 'true'
+        env:
+          COMPILER_ARTIFACT_ID: ${{ needs.world_bundle.outputs.world_compiler_artifact_id }}
+          COMPILER_PRODUCER_ATTEMPT: ${{ needs.world_bundle.outputs.world_compiler_producer_attempt }}
+        run: |
+          set -euo pipefail
+          [[ "$COMPILER_ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$COMPILER_PRODUCER_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+          (( COMPILER_PRODUCER_ATTEMPT <= GITHUB_RUN_ATTEMPT ))
+          printf 'World compiler artifact %s from producer attempt %s (consumer attempt %s).\n' \
+            "$COMPILER_ARTIFACT_ID" "$COMPILER_PRODUCER_ATTEMPT" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Download the shared World compiler
         if: steps.build_inputs.outputs.needs_world == 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: node-boot-build-world-compiler
+          artifact-ids: ${{ needs.world_bundle.outputs.world_compiler_artifact_id }}
           path: ${{ runner.temp }}/node-boot-download/world-compiler
+
+      - name: Download the shared Platform binary
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: node-boot-build-platform
+          path: ${{ runner.temp }}/node-boot-download/platform
 
       - name: Verify and unpack exact-candidate inputs
         env:
           MAIN_VARIANT: ${{ steps.build_inputs.outputs.main_variant }}
           NEEDS_DEFAULT: ${{ steps.build_inputs.outputs.needs_default }}
           NEEDS_WORLD: ${{ steps.build_inputs.outputs.needs_world }}
-          MAIN_SHA256: ${{ needs.node_boot_build.outputs[steps.build_inputs.outputs.main_variant] }}
-          DEFAULT_SHA256: ${{ needs.node_boot_build.outputs.default }}
-          WORLD_SHA256: ${{ needs.node_boot_build.outputs.world-compiler }}
+          MAIN_SHA256: ${{ steps.build_inputs.outputs.main_variant == 'default' && needs.node_boot_default_build.outputs.default || needs.node_boot_build.outputs[steps.build_inputs.outputs.main_variant] }}
+          DEFAULT_VARIANT: ${{ steps.build_inputs.outputs.default_variant }}
+          DEFAULT_SHA256: ${{ needs.node_boot_build.outputs[steps.build_inputs.outputs.default_variant] }}
+          PLATFORM_SHA256: ${{ needs.node_boot_platform_build.outputs.platform }}
+          WORLD_SHA256: ${{ needs.world_bundle.outputs.world_compiler_sha256 }}
         run: |
           set -euo pipefail
           unpack() {
@@ -1539,13 +1675,15 @@ jobs:
             python3 tools/qualification/node_boot/prebuilt.py unpack "$variant" "$archive" "$RUNNER_TEMP/node-boot-prebuilt"
           }
           unpack "$MAIN_VARIANT" "$MAIN_SHA256"
-          if [[ "$NEEDS_DEFAULT" == true ]]; then unpack default "$DEFAULT_SHA256"; fi
+          if [[ "$NEEDS_DEFAULT" == true ]]; then unpack "$DEFAULT_VARIANT" "$DEFAULT_SHA256"; fi
+          unpack platform "$PLATFORM_SHA256"
           if [[ "$NEEDS_WORLD" == true ]]; then unpack world-compiler "$WORLD_SHA256"; fi
 
       - name: Run node boot shard
         env:
           PLATFORM_SOURCE: ${{ github.workspace }}/_platform
           NODE_BOOT_PREBUILT_DIR: ${{ runner.temp }}/node-boot-prebuilt
+          GAME_PLATFORM_PREBUILT_DIR: ${{ runner.temp }}/node-boot-prebuilt
         run: |
           # A failing shard still writes result.json, so no errexit here.
           set +e
@@ -1595,7 +1733,7 @@ jobs:
   # reported, as the single-machine run never failed on them.
   node_boot:
     name: Merge Queue / Node boot against the real Platform
-    needs: [candidate, node_boot_plan, node_boot_build, node_boot_shard]
+    needs: [candidate, node_boot_plan, node_boot_build, node_boot_default_build, node_boot_platform_build, node_boot_shard, world_bundle]
     # Fails closed: only an explicit protected-base `false` skips the physical qualification.
     if: always() && needs.candidate.outputs.server_qualification != 'false'
     runs-on: ubuntu-24.04
@@ -1625,6 +1763,10 @@ jobs:
         env:
           PLAN_RESULT: ${{ needs.node_boot_plan.result }}
           BUILD_RESULT: ${{ needs.node_boot_build.result }}
+          DEFAULT_RESULT: ${{ needs.node_boot_default_build.result }}
+          DEFAULT_REQUIRED: ${{ contains(fromJSON(needs.node_boot_plan.outputs.build_variants || '[]'), 'default') }}
+          PLATFORM_RESULT: ${{ needs.node_boot_platform_build.result }}
+          WORLD_RESULT: ${{ needs.world_bundle.result }}
           SHARD_RESULT: ${{ needs.node_boot_shard.result }}
           SHARDS: ${{ needs.node_boot_plan.outputs.shards }}
           PREFIX: node-boot-${{ github.run_id }}-
@@ -1633,6 +1775,12 @@ jobs:
           echo "Node boot results: plan=$PLAN_RESULT shards=$SHARD_RESULT"
           test "$PLAN_RESULT" = success
           test "$BUILD_RESULT" = success
+          test "$PLATFORM_RESULT" = success
+          test "$WORLD_RESULT" = success
+          case "$DEFAULT_REQUIRED:$DEFAULT_RESULT" in
+            true:success|false:skipped) ;;
+            *) exit 1 ;;
+          esac
           printf '%s' "$SHARDS" > "$RUNNER_TEMP/shards.json"
           status=0
           python3 tools/qualification/node_boot/matrix.py summarize "$RUNNER_TEMP/shards.json" "$RUNNER_TEMP/shards" \
@@ -1643,9 +1791,11 @@ jobs:
 
   server_seam:
     name: Merge Queue / Server Seam over TCP+TLS
-    needs: candidate
+    needs: [candidate, server_seam_build, node_boot_platform_build]
     # Fails closed: only an explicit protected-base `false` skips the physical qualification.
-    if: needs.candidate.outputs.server_qualification != 'false'
+    if: >-
+      !cancelled() && needs.candidate.outputs.server_qualification != 'false'
+      && needs.server_seam_build.result == 'success' && needs.node_boot_platform_build.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
@@ -1690,27 +1840,39 @@ jobs:
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.100.0 --profile minimal
 
-      # The qualification builds game-server in target/debug; protected-main artifacts make
-      # that build incremental. A cache hit never substitutes for running the qualification.
-      - name: Restore trimmed Cargo cache from protected main
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Download the early Server Seam library
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
-          restore-keys: |
-            rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
-            rust-linux-v2-1.100.0-
+          name: node-boot-build-server-seam
+          path: ${{ runner.temp }}/server-seam-download/server-seam
 
-      - name: Normalize source mtimes for the restored Cargo cache
-        run: python tools/repository/normalize_cargo_mtimes.py
+      - name: Download the shared Platform binary
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: node-boot-build-platform
+          path: ${{ runner.temp }}/server-seam-download/platform
+
+      - name: Verify and unpack exact-candidate Seam inputs
+        env:
+          SEAM_SHA256: ${{ needs.server_seam_build.outputs.server-seam }}
+          PLATFORM_SHA256: ${{ needs.node_boot_platform_build.outputs.platform }}
+        run: |
+          set -euo pipefail
+          unpack() {
+            local variant="$1" digest="$2"
+            local archive="$RUNNER_TEMP/server-seam-download/$variant/bundle.tar.gz"
+            [[ "$digest" =~ ^[0-9a-f]{64}$ ]]
+            printf '%s  %s\n' "$digest" "$archive" | sha256sum -c -
+            python3 tools/qualification/node_boot/prebuilt.py unpack "$variant" "$archive" "$RUNNER_TEMP/server-seam-prebuilt"
+          }
+          unpack server-seam "$SEAM_SHA256"
+          unpack platform "$PLATFORM_SHA256"
 
       - name: Run real composed qualification
         env:
           PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+          GAME_PLATFORM_PREBUILT_DIR: ${{ runner.temp }}/server-seam-prebuilt
+          SERVER_SEAM_PREBUILT_DIR: ${{ runner.temp }}/server-seam-prebuilt
           OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
         run: |
           set -euo pipefail

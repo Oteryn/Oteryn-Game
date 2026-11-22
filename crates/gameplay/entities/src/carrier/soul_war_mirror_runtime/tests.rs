@@ -469,6 +469,46 @@ fn srx3_mirror_periodic_health_event_changes_same_actor_type_preserving_old_maxi
 }
 
 #[test]
+fn lethal_periodic_player_damage_commits_fourth_taint_death_receipt() {
+    use oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement};
+    use oteryn_gameplay_foundation::foundation::condition::{ConditionDefinition, TickFacts};
+    let (mut runtime, player, session, _, _) = fixture(8);
+    let mut at = runtime.read_actor_position(player).expect("player position").position();
+    at.x += 2;
+    let target = runtime.spawn_arena_opponent(
+        "oteryn:creature.bony_sea_devil", at, |_, _| Some(true)
+    ).expect("native FourthTaint creature");
+    runtime.set_test_creature_health(target, 1).expect("wounded target");
+    runtime.install_current_soul_war_player_source(player, session, None, 201_000, &PeriodicSource)
+        .expect("current condition source outside the Soul War realm");
+    let field = runtime_actor_periodic::CreatureFieldEntry {
+        definition: ConditionDefinition::new("source-field.fourth.lethal", 1,
+            ConditionValues::DamageOverTime { element: DotElement::Fire, total_min: 1000,
+                total_max: 1000, per_tick: 1000, interval_ms: 1000, delayed: false },
+        ).expect("periodic recipe"),
+        source: Some(player),
+        lineage: Some(oteryn_gameplay_foundation::foundation::condition::ConditionLineage {
+            source_character: id(5),
+            source_session: *session.as_bytes(),
+            source_lease_generation: 1,
+            source_actor_placement: player.placement_identity(),
+            source_scope_generation: player.scope_generation().get(),
+            source_content_digest: runtime.content_pin().server_artifact_digest(),
+            source_catalog_digest: *NATIVE_CATALOG.get().expect("native catalog"),
+            source_creation_command: 1,
+        }),
+        occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([8; 16]),
+    };
+    runtime.commit_creature_field_entry(target, 201_000, Some(&field)).expect("field entry");
+    let receipt = runtime.apply_creature_periodic_turn_with_sources(
+        target, 201_000, TickFacts::default(),
+        &mut |r, source, _| Ok(r.bound_attacker_lease(source, session).ok().map(|_| 100)),
+    ).expect("the resolved lethal tick commits");
+    assert_eq!(receipt.health_after, 0);
+    runtime.borrow_combat_death().committed_lethal_receipt(target).expect("committed death receipt");
+}
+
+#[test]
 fn srx3_fourth_taint_null_periodic_killer_consumes_tick_without_death() {
     use oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement};
     use oteryn_gameplay_foundation::foundation::condition::{ConditionDefinition, TickFacts};

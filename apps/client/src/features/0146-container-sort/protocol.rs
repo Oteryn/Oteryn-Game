@@ -46,3 +46,13 @@ pub(in crate::play) fn apply(
     }
     .into();
 }
+
+#[cfg(all(test, bevy_shell))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_sort_fixture(&self) {
+        crate::play::mailbox::lock(&self.0)
+            .properties
+            .container_sort
+            .selected = true;
+    }
+}

@@ -1,0 +1,10 @@
+{
+  "id": 6243,
+  "name": "TUTORIAL_VOCATION",
+  "owner_decision": "Native tutorial vocation task",
+  "capability": 504,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/tutorial-vocation-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/tutorial-vocation-v1.md#reply",
+  "max_payload_bytes": 1,
+  "max_result_payload_bytes": 2
+}

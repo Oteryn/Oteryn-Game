@@ -19,12 +19,34 @@ impl PlayLink {
 
     pub fn open_party(&self) {
         self.party_request(Intent::Refresh);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).party.open = true;
+        self.open_shared_party();
+    }
+
+    pub(in crate::play) fn open_shared_party(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.party.open { return; }
+        mailbox.party.open = true;
+        drop(mailbox);
+        let mailbox = std::sync::Arc::downgrade(&self.mailbox);
+        let commands = self.commands.downgrade();
+        if std::thread::Builder::new().name("party-refresh".into()).spawn(move || {
+            loop {
+                std::thread::sleep(std::time::Duration::from_secs(1));
+                let (Some(mailbox), Some(commands)) = (mailbox.upgrade(), commands.upgrade()) else { break; };
+                let mut mailbox = lock(&mailbox);
+                if !mailbox.party.open || !mailbox.party.selected || commands.is_closed() { break; }
+                if mailbox.party.pending.is_some() || mailbox.party.received_at.is_some_and(|at| at.elapsed() < std::time::Duration::from_secs(1)) { continue; }
+                if let Some(command) = request(&mut mailbox.party, Intent::Refresh)
+                    && commands.send(PlayCommand::Party(command)).is_err() {
+                    mailbox.party.pending = None;
+                    mailbox.party.feedback = Some(tr!("The session has ended"));
+                    break;
+                }
+            }
+        }).is_err() {
+            let mut mailbox = lock(&self.mailbox);
+            mailbox.party.open = false;
+            mailbox.party.feedback = Some(tr!("The current party view is unavailable; refresh again"));
         }
     }
 }
@@ -43,7 +65,7 @@ impl crate::play::PlayView {
                 entry.kind == oteryn_session::EntityKind::Player
                     && entry.position.floor == self.floor
                     && oteryn_renderer::TileCoord::new(entry.position.x, entry.position.y) == tile
-                    && tile != self.own
+                    && Some(entry.entity.identity) != self.scene.own_identity()
             })
             .map(|entry| entry.entity)
     }
@@ -66,17 +88,12 @@ impl PlayLink {
                 }
                 oteryn_client_ui::party::Action::Context(x, y) => {
                     let target =
-                        crate::input::click_tile(view.scene().view(), f64::from(x), f64::from(y))
+                        view.click_tile(f64::from(x), f64::from(y))
                             .and_then(|tile| view.party_target(tile));
                     let Some(target) = target else {
                         continue;
                     };
                     consumed = true;
-                    #[cfg(windows)]
-                    if !self.uses_shared_frontend() {
-                        super::view::context_menu(self, target);
-                    }
-                    #[cfg(not(windows))]
                     let _ = target;
                 }
             }

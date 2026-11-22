@@ -80,6 +80,7 @@ pub(super) fn check(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
         false,
         false,
         false,
+        false,
         &npc_trade_usage(value),
     )
 }

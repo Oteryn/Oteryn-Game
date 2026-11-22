@@ -25,15 +25,7 @@ impl PlayLink {
             return false;
         }
         self.rest_status_request();
-        #[cfg(windows)]
-        crate::play::status_window::open_window(
-            self,
-            tr!("Rest and food — Ctrl+Alt+Shift+R"),
-            |mailbox| &mut mailbox.rest_status,
-        );
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).rest_status.open = true;
-        }
+        lock(&self.mailbox).rest_status.open = true;
         true
     }
     pub fn rest_status_panel(&self) -> oteryn_client_ui::rest_status::RestStatusPanel {

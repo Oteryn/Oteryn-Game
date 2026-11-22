@@ -1964,3 +1964,53 @@ fn charm_gaps_single_tick_allows_cleanse_before_next_overdue_occurrence() {
     assert!(store.take_next_due(now, TickFacts::default()).is_none());
     assert!(store.cleanse_immunity_remaining(ConflictKey::Element(DotElement::Poison), now) > 0);
 }
+
+#[test]
+fn tick_cleanup_retains_both_permanent_appearances() -> Result<(), String> {
+    let root = root();
+    let outfits = [
+        ConditionDefinition::new_permanent_outfit("environment.swimming", 1, 267)
+            .and_then(|definition| {
+                definition.with_appearance(crate::domain::appearance::AppearanceSelection {
+                    outfit_key: "environment.swimming".to_owned(),
+                    colours: Default::default(),
+                    addons: 0,
+                    mount_key: None,
+                })
+            })
+            .ok_or("swimming")?,
+        ConditionDefinition::new_permanent_item_outfit("environment.bath", 1)
+            .and_then(|definition| {
+                definition.with_item_appearance(
+                    "oteryn:item.tibia.i26087",
+                    "definition-r1",
+                    [4; 32],
+                )
+            })
+            .ok_or("bath")?,
+    ];
+    for definition in outfits {
+        let mut store = ConditionStore::new();
+        apply(
+            &mut store,
+            &definition,
+            ConditionSourceKind::Field,
+            &facts(0, &root),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let expected = store.clone();
+        let appearance = expected.displayed_temporary_appearance_at(0);
+        assert!(appearance.is_some());
+        for now in [1, 10_000 * MS, u64::MAX - 1] {
+            assert!(store.take_due(now, TickFacts::default()).is_empty());
+            assert_eq!(store.displayed_temporary_appearance_at(now), appearance);
+        }
+        assert_eq!(store.dispel_key(ConditionType::Outfit.conflict_key()), 1);
+        assert!(
+            store
+                .displayed_temporary_appearance_at(u64::MAX - 1)
+                .is_none()
+        );
+    }
+    Ok(())
+}

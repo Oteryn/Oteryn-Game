@@ -90,3 +90,24 @@ fn open_passes_the_built_url_to_the_system_browser_opener() {
         Language::En
     ));
 }
+
+#[test]
+fn destinations_append_to_base_path_and_discard_query_and_fragment() {
+    for base in [
+        "https://oteryn.example/platform?source=game#login",
+        "https://oteryn.example/platform/?source=game",
+        "https://oteryn.example/platform/#login",
+    ] {
+        for (link, path) in ALL.into_iter().zip([
+            "support/tickets",
+            "legal/cookies",
+            "shop/history",
+            "shop/transfer",
+        ]) {
+            assert_eq!(
+                url(base, link, Language::En),
+                Some(format!("https://oteryn.example/platform/en/{path}"))
+            );
+        }
+    }
+}

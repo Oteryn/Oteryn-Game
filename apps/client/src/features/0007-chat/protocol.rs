@@ -9,7 +9,7 @@ impl Outbox {
 }
 
 /// Seeds server-owned chat state for shared frontend caller tests only.
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 pub(crate) fn bevy_chat_fixture(
     outbox: &Outbox,
     rooms: oteryn_session::ChatRoomSet,
@@ -17,4 +17,12 @@ pub(crate) fn bevy_chat_fixture(
 ) {
     outbox.chat_initialize(true);
     outbox.chat_public_state(rooms, lines);
+}
+
+#[cfg(all(test, bevy_shell))]
+pub(crate) fn edit_chat_fixture(
+    link: &crate::play::PlayLink,
+    edit: impl FnOnce(&mut oteryn_client_ui::chat::ChatPanel),
+) {
+    edit(&mut lock(&link.mailbox).chat);
 }

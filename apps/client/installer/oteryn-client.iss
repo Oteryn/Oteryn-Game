@@ -1,7 +1,7 @@
 ; Oteryn Windows client installer (CLIENT-INSTALLER-0, docs/architecture/
 ; CLIENT-INSTALLER-0_WINDOWS_CLIENT_INSTALLER_CONTRACT_CANDIDATE.md). Per-user, no elevation.
 ;
-; The release payload (oteryn-client.exe, client.env, packages.json) is not installed by
+; The release payload (oteryn-client.exe, client.env, packages.json, ui-assets) is not installed by
 ; [Files]: PrepareToInstall verifies or stages it into releases\<release_id>[~<n>], and after
 ; Setup installed its tracked files ssPostInstall activates it with one MoveFileExW rename of
 ; current.txt (section 2.1 steps 1-3); a failed activation exits with code 20. The transaction mutex
@@ -66,6 +66,13 @@
   #error a payload SHA-256 is not 64 hex digits
 #endif
 
+#define UiAsset0 "ui-assets\images\skin\classic\button-grey-up.png"
+#define UiAsset1 "ui-assets\images\skin\classic\button-grey-down.png"
+#define UiAsset2 "ui-assets\images\skin\classic\checkbox-checked.png"
+#define UiAsset3 "ui-assets\images\skin\classic\checkbox-unchecked.png"
+#define UiAsset4 "ui-assets\images\skin\classic\dialog-frame-borderimage.png"
+#define UiAsset5 "ui-assets\images\1pixel-down-frame.png"
+
 [Setup]
 ; One fixed AppId for every release and channel (section 2).
 AppId={{9355097F-B319-4FEC-9314-3661537B6A22}
@@ -98,6 +105,12 @@ Source: "{#LauncherPath}"; DestDir: "{app}"; DestName: "oteryn-launcher.exe"; Fl
 Source: "{#PayloadDir}\oteryn-client.exe"; DestDir: "{tmp}"; Flags: dontcopy
 Source: "{#PayloadDir}\client.env"; DestDir: "{tmp}"; Flags: dontcopy
 Source: "{#PayloadDir}\packages.json"; DestDir: "{tmp}"; Flags: dontcopy
+Source: "{#PayloadDir}\{#UiAsset0}"; DestDir: "{tmp}"; DestName: "oteryn-ui-0.png"; Flags: dontcopy
+Source: "{#PayloadDir}\{#UiAsset1}"; DestDir: "{tmp}"; DestName: "oteryn-ui-1.png"; Flags: dontcopy
+Source: "{#PayloadDir}\{#UiAsset2}"; DestDir: "{tmp}"; DestName: "oteryn-ui-2.png"; Flags: dontcopy
+Source: "{#PayloadDir}\{#UiAsset3}"; DestDir: "{tmp}"; DestName: "oteryn-ui-3.png"; Flags: dontcopy
+Source: "{#PayloadDir}\{#UiAsset4}"; DestDir: "{tmp}"; DestName: "oteryn-ui-4.png"; Flags: dontcopy
+Source: "{#PayloadDir}\{#UiAsset5}"; DestDir: "{tmp}"; DestName: "oteryn-ui-5.png"; Flags: dontcopy
 
 [Icons]
 Name: "{autoprograms}\Oteryn"; Filename: "{app}\oteryn-launcher.exe"
@@ -398,8 +411,61 @@ begin
   end;
 end;
 
-{ A release directory is valid when it holds exactly the three payload files with the embedded
-  SHA-256 values and nothing else. }
+{ The assets are verified from the same embedded hashes on staging and on reuse. }
+function UiAssetPath(I: Integer): String;
+begin
+  case I of
+    0: Result := '{#UiAsset0}';
+    1: Result := '{#UiAsset1}';
+    2: Result := '{#UiAsset2}';
+    3: Result := '{#UiAsset3}';
+    4: Result := '{#UiAsset4}';
+    5: Result := '{#UiAsset5}';
+  end;
+end;
+
+function UiAssetHash(I: Integer): String;
+begin
+  case I of
+    0: Result := '{#GetSHA256OfFile(PayloadDir + "\" + UiAsset0)}';
+    1: Result := '{#GetSHA256OfFile(PayloadDir + "\" + UiAsset1)}';
+    2: Result := '{#GetSHA256OfFile(PayloadDir + "\" + UiAsset2)}';
+    3: Result := '{#GetSHA256OfFile(PayloadDir + "\" + UiAsset3)}';
+    4: Result := '{#GetSHA256OfFile(PayloadDir + "\" + UiAsset4)}';
+    5: Result := '{#GetSHA256OfFile(PayloadDir + "\" + UiAsset5)}';
+  end;
+end;
+
+function EntryCount(const Dir: String): Integer;
+var
+  FindRec: TFindRec;
+begin
+  Result := 0;
+  if FindFirst(Dir + '\*', FindRec) then begin
+    try
+      repeat
+        if (FindRec.Name <> '.') and (FindRec.Name <> '..') then
+          Result := Result + 1;
+      until not FindNext(FindRec);
+    finally
+      FindClose(FindRec);
+    end;
+  end;
+end;
+
+function UiAssetsValid(const Dir: String): Boolean;
+var
+  I: Integer;
+begin
+  Result := (EntryCount(Dir + '\ui-assets') = 1) and
+    (EntryCount(Dir + '\ui-assets\images') = 2) and
+    (EntryCount(Dir + '\ui-assets\images\skin') = 1) and
+    (EntryCount(Dir + '\ui-assets\images\skin\classic') = 5);
+  for I := 0 to 5 do
+    Result := Result and HashMatches(Dir + '\' + UiAssetPath(I), UiAssetHash(I));
+end;
+
+{ A release directory matches the exact payload and its embedded SHA-256 values. }
 function ReleaseDirectoryValid(const Dir: String): Boolean;
 var
   FindRec: TFindRec;
@@ -411,6 +477,9 @@ begin
     try
       repeat
         if (FindRec.Name = '.') or (FindRec.Name = '..') then
+          Continue;
+        if (FindRec.Name = 'ui-assets') and
+           ((FindRec.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0) then
           Continue;
         if ((FindRec.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0) or
            ((FindRec.Name <> 'oteryn-client.exe') and (FindRec.Name <> 'client.env') and
@@ -427,7 +496,7 @@ begin
   Result := Result and (Files = 3) and
     HashMatches(Dir + '\oteryn-client.exe', ClientExeSha256) and
     HashMatches(Dir + '\client.env', ClientEnvSha256) and
-    HashMatches(Dir + '\packages.json', PackagesSha256);
+    HashMatches(Dir + '\packages.json', PackagesSha256) and UiAssetsValid(Dir);
   if not Result then
     Log('Release directory does not match the payload: ' + Dir);
 end;
@@ -486,6 +555,7 @@ end;
 function StageRelease(const Staging: String): String;
 var
   Names: TArrayOfString;
+  TemporaryName, Target: String;
   I: Integer;
 begin
   Result := '';
@@ -502,6 +572,17 @@ begin
     if not CopyFile(ExpandConstant('{tmp}\') + Names[I], Staging + '\' + Names[I], True) or
        not FlushFile(Staging + '\' + Names[I]) then begin
       Result := 'cannot write ' + Staging + '\' + Names[I];
+      Exit;
+    end;
+  end;
+  for I := 0 to 5 do begin
+    TemporaryName := 'oteryn-ui-' + IntToStr(I) + '.png';
+    Target := Staging + '\' + UiAssetPath(I);
+    ExtractTemporaryFile(TemporaryName);
+    if not ForceDirectories(ExtractFileDir(Target)) or
+       not CopyFile(ExpandConstant('{tmp}\') + TemporaryName, Target, True) or
+       not FlushFile(Target) then begin
+      Result := 'cannot write ' + Target;
       Exit;
     end;
   end;

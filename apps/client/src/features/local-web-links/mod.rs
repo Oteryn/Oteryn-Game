@@ -34,18 +34,26 @@ pub const fn language_segment(language: Language) -> &'static str {
 /// `{platform}/{lang}/{path}`, or `None` when the base is not an http(s) URL with a host.
 #[must_use]
 pub fn url(platform_url: &str, link: WebLink, language: Language) -> Option<String> {
-    let base = platform_url.trim().trim_end_matches('/');
-    let host = base
+    destination_url(
+        platform_url,
+        &format!("{}/{}", language_segment(language), link.path()),
+    )
+}
+
+pub(crate) fn destination_url(platform_url: &str, path: &str) -> Option<String> {
+    let raw = platform_url.trim();
+    let host = raw
         .strip_prefix("https://")
-        .or_else(|| base.strip_prefix("http://"))?;
+        .or_else(|| raw.strip_prefix("http://"))?;
     if host.is_empty() || host.starts_with('/') || host.contains(char::is_whitespace) {
         return None;
     }
-    Some(format!(
-        "{base}/{}/{}",
-        language_segment(language),
-        link.path()
-    ))
+    let mut base = url::Url::parse(raw).ok()?;
+    base.host_str()?;
+    base.set_query(None);
+    base.set_fragment(None);
+    base.set_path(&format!("{}/", base.path().trim_end_matches('/')));
+    base.join(path).ok().map(Into::into)
 }
 
 /// Opens `link` in the system browser; `false` when the URL is invalid or the opener failed.

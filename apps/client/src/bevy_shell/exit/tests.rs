@@ -277,3 +277,31 @@ fn confirmed_quit_releases_the_pending_selector_callback_without_a_server() -> T
     assert_eq!(exits(&mut app), 1);
     Ok(())
 }
+
+#[test]
+fn normal_exit_waits_for_a_queued_preference_replacement() -> TestResult {
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("preferences.json");
+    let backup = path.with_extension("backup.json");
+    let saved = crate::play::ReferencePreferences {
+        audio_device: "Restored on exit".into(),
+        ..Default::default()
+    };
+    crate::play::PreferenceStore::export_to(&saved, &backup)?;
+    let (mut app, window) = app(false)?;
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.settings = crate::play::SettingsState::new(Some(path.clone()));
+        owner.settings.preferences.miscellaneous.confirm_exit = false;
+        owner.settings.use_background_preferences();
+        owner.settings.restore_backup()?;
+        assert!(owner.settings.preference_save_pending());
+    }
+    close(&mut app, window);
+    assert_eq!(exits(&mut app), 1);
+    assert_eq!(
+        crate::play::PreferenceStore::read_transfer(&path)?.audio_device,
+        saved.audio_device
+    );
+    Ok(())
+}

@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "fc84a163207949f3e207c7114c8d818ee7bc2d3c"
+APPROVED = "5e2c741146222fee5877e902c0053705afbcc562"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -280,7 +280,10 @@ def _world_bundle_queue_canaries(original: str, core) -> None:
     assert namespace["world_bundle"] == "true"
 
     job = core.indented_yaml_mapping_block(original, "world_bundle", 2)
-    assert "    if: needs.candidate.outputs.world_bundle != 'false'\n" in job
+    assert "    if: needs.candidate.outputs.world_bundle != 'false' || needs.candidate.outputs.rust == 'true' || needs.candidate.outputs.server_qualification != 'false'\n" in job
+    assert "        if: needs.candidate.outputs.world_bundle != 'false'\n" in job
+    assert 'prebuilt.py build world-compiler "$RUNNER_TEMP/world-compiler-build"' in job
+    assert 'pin-check . "$RUNNER_TEMP/world-bundle"' in job
     assert "ref: ${{ github.event.merge_group.head_sha || github.sha }}" in job
     gate = core.indented_yaml_mapping_block(original, "game_gate", 2)
     assert "world_bundle, rust_linux" in gate
@@ -391,9 +394,11 @@ def main() -> int:
         ("rust_windows", "if: needs.candidate.outputs.windows == 'true'"),
         ("rust_supply_chain", "if: needs.candidate.outputs.rust == 'true'"),
         ("node_boot_plan", "if: needs.candidate.outputs.server_qualification != 'false'"),
-        ("node_boot_shard", "if: needs.candidate.outputs.server_qualification != 'false'"),
+        ("node_boot_platform_build", "if: needs.candidate.outputs.server_qualification != 'false'"),
+        ("server_seam_build", "if: needs.candidate.outputs.server_qualification != 'false'"),
+        ("node_boot_shard", "!cancelled() && needs.candidate.outputs.server_qualification != 'false'"),
         ("node_boot", "if: always() && needs.candidate.outputs.server_qualification != 'false'"),
-        ("server_seam", "if: needs.candidate.outputs.server_qualification != 'false'"),
+        ("server_seam", "!cancelled() && needs.candidate.outputs.server_qualification != 'false'"),
     ):
         block = core.indented_yaml_mapping_block(original, job, 2)
         assert block is not None and condition in block, (job, condition)

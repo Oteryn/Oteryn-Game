@@ -176,12 +176,39 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         session: crate::foundation::GameSessionId,
     ) -> Result<Option<super::character_progression::CurrentCharacterGameplayFence>> {
+        self.read_gameplay_fence(authority, session, false, true).await
+    }
+
+    /// Current session and Character revision for advisory projections.
+    pub async fn observe_current_gameplay_fence(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        session: crate::foundation::GameSessionId,
+        reconnectable: bool,
+    ) -> Result<Option<super::character_progression::CurrentCharacterGameplayFence>> {
+        self.read_gameplay_fence(authority, session, true, reconnectable).await
+    }
+
+    async fn read_gameplay_fence(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        session: crate::foundation::GameSessionId,
+        observation: bool,
+        reconnectable: bool,
+    ) -> Result<Option<super::character_progression::CurrentCharacterGameplayFence>> {
         let recovery = authority.record_for(self)?;
         let store = super::fresh_admission::FreshAdmissionStore::from_root(self.clone());
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            super::db::lock_admission_relations(&mut tx).await?;
+            let mut tx = if observation {
+                let mut tx = super::db::begin_observation_transaction(holder, deadline).await?;
+                observe_recovery_fence(&mut tx, &recovery).await?;
+                tx
+            } else {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                super::db::lock_admission_relations(&mut tx).await?;
+                tx
+            };
             let current = match store.current_session_in_transaction(&mut tx, session).await {
                 Ok(current) => current,
                 Err(DurabilityError::Unavailable) => {
@@ -195,7 +222,9 @@ impl DurabilityRoot {
                 }
                 Err(error) => return Err(error),
             };
-            if current.session_state() == crate::foundation::GameSessionState::Terminal {
+            if current.session_state() == crate::foundation::GameSessionState::Terminal
+                || (!reconnectable && current.session_state() != crate::foundation::GameSessionState::Active)
+            {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(None));
             }
@@ -568,13 +597,32 @@ pub(super) async fn assert_recovery_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &CharacterRecoveryFenceV1,
 ) -> std::result::Result<(), DurabilityError> {
+    check_recovery_fence(tx, record, true).await
+}
+
+/// Snapshot comparison for advisory reads only; this never authorizes a mutation.
+pub(super) async fn observe_recovery_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: &CharacterRecoveryFenceV1,
+) -> std::result::Result<(), DurabilityError> {
+    check_recovery_fence(tx, record, false).await
+}
+
+async fn check_recovery_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: &CharacterRecoveryFenceV1,
+    lock: bool,
+) -> std::result::Result<(), DurabilityError> {
     // A row lock alone cannot fence an append-only successor: a SELECT queued
     // behind reconciliation can retain a snapshot containing only its predecessor.
     // The shared transaction gate precedes the SELECT and stays held through commit.
-    sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:character-recovery-admission', 0))")
-        .execute(&mut **tx)
-        .await?;
+    if lock {
+        sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:character-recovery-admission', 0))")
+            .execute(&mut **tx)
+            .await?;
+    }
     let sql = "SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_digest, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR SHARE";
+    let sql = if lock { sql } else { sql.trim_end_matches(" FOR SHARE") };
     let row = sqlx::query(sql)
         .fetch_optional(&mut **tx)
         .await?
