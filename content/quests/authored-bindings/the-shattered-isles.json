@@ -155,6 +155,11 @@
               "reply": [
                 "A parrot took my ring. Look for its perch and bring a rake."
               ],
+              "minimum_level": 20,
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
               "sources": [
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:61-70"
               ]
@@ -455,6 +460,12 @@
               "next_topic": 0,
               "storage": [
                 {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/default_start",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
+                },
+                {
                   "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/shipwrecked",
                   "minimum": 0,
                   "maximum": 0,
@@ -470,13 +481,6 @@
               ],
               "sources": [
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:65-90"
-              ],
-              "requires": [
-                {
-                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_meriana",
-                  "minimum": 1,
-                  "maximum": 1
-                }
               ]
             }
           }
@@ -770,7 +774,53 @@
                   "maximum": 3
                 }
               ]
-            }
+            },
+            "alternatives": [
+              {
+                "key": "oteryn:quest-reward/shattered-isles/poem-purchase-replacement",
+                "quest": "oteryn:quest.the_shattered_isles_quest",
+                "npc": "oteryn:npc.elvith",
+                "keywords": [
+                  "love poem"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/poem_purchased",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 1,
+                    "preserve": true
+                  }
+                ],
+                "take": [],
+                "give": {
+                  "item": "oteryn:item.tibia.i6119",
+                  "count": 1
+                },
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Here is the love poem."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elvith.lua:81-94"
+                ],
+                "fee": {
+                  "gold": 200,
+                  "include_bank": true
+                },
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+                    "minimum": 3,
+                    "maximum": 3
+                  }
+                ],
+                "repeatable": true
+              }
+            ]
           }
         },
         {

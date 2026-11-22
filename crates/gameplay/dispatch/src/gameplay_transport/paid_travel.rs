@@ -167,8 +167,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     command.command_id,
                 );
                 if storm[0] & 7 == 0 {
-                    let destination = &mut prompt.route.route.destination;
+                    // Tibia's Goroma passage starts at level 20. Apply the
+                    // quest's Premium gate only to the shipwreck branch.
+                    let mut wreck_route = prompt.route.clone();
+                    wreck_route.route.min_level = Some(20);
+                    wreck_route.route.premium = true;
+                    let destination = &mut wreck_route.route.destination;
                     (destination.x, destination.y, destination.floor) = (32161, 32558, 6);
+                    let Ok(Some(current)) = self.current_quest_fence(session).await else {
+                        return refusal(intent, TravelRefusal::StaleQuote);
+                    };
+                    if current.item_fence() != fence {
+                        return refusal(intent, TravelRefusal::StaleQuote);
+                    }
+                    match self
+                        .root
+                        .quote_npc_travel(
+                            self.character,
+                            self.holder,
+                            current,
+                            wreck_route.clone(),
+                            &self.premium_coordinator,
+                        )
+                        .await
+                    {
+                        Ok(Ok(_)) => prompt.route = wreck_route,
+                        Ok(Err(
+                            TravelRefusal::UnavailableRoute | TravelRefusal::PremiumRequired,
+                        )) => {}
+                        Ok(Err(cause)) => return refusal(intent, cause),
+                        Err(_) => {
+                            return npc_command::NpcTalkOutcome {
+                                unknown: true,
+                                ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+                            };
+                        }
+                    }
                 }
             }
             prompt

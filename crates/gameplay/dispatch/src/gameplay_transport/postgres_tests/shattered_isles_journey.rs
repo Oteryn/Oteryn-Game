@@ -247,8 +247,6 @@ async fn scenario(admin: String) -> TestResult {
         .chat
         .admit(session, "Fixture Hero", owner.owner_now());
     owner.states.chat.set_npc_service(session);
-    super::qengine_outfit_stories_fixtures::earn_level(&owner, &admitted, &authority, 20).await?;
-    Box::pin(owner.refresh_level_up_vitals(deps.actor, session)).await;
     let mut journey = Journey {
         owner: &mut owner,
         admitted: &mut admitted,
@@ -257,6 +255,22 @@ async fn scenario(admin: String) -> TestResult {
         deps: &deps,
         journal_index,
     };
+    let eleonore = journey.contact("eleonore").await?;
+    assert_eq!(
+        journey.talk(eleonore, "ring").await?,
+        NpcIntentDisposition::Rejected
+    );
+    assert_eq!(journey.track("the_governor_daughter").await?, None);
+    journey.supply(3035, 10, 100).await?;
+    journey.confirm_storm_roll(false).await?;
+    super::qengine_outfit_stories_fixtures::earn_level(
+        journey.owner,
+        journey.admitted,
+        &authority,
+        20,
+    )
+    .await?;
+    Box::pin(journey.owner.refresh_level_up_vitals(deps.actor, session)).await;
     journey.run().await?;
     drop(owner);
     drop(authority);
@@ -324,6 +338,7 @@ impl Journey<'_, '_, '_, '_> {
         {
             self.supply(id, count, u64::try_from(index)? + 1).await?;
         }
+        self.repair_ship_before_meriana().await?;
         self.mission("eleonore", "ring", "the_governor_daughter", 1, (6093, 0))
             .await?;
         self.use_at((32421, 32770, 1), 2, Some(3452)).await?;
@@ -341,21 +356,6 @@ impl Journey<'_, '_, '_, '_> {
         self.passage("captain_waverider", "peg leg", (32346, 32625, 7))
             .await?;
 
-        self.shipwreck().await?;
-        self.mission("jack_fate_goroma", "sail", "shipwrecked", 1, (5901, 29))
-            .await?;
-        let jack = self.contact("jack_fate_goroma").await?;
-        assert_eq!(
-            self.talk(jack, "sail").await?,
-            NpcIntentDisposition::Rejected
-        );
-        self.expect("shipwrecked", 1, (5901, 29)).await?;
-        self.pick_up_wood().await?;
-        self.expect("shipwrecked", 1, (5901, 31)).await?;
-        self.mission("jack_fate_goroma", "sail", "access_to_goroma", 1, (5901, 1))
-            .await?;
-        self.passage("jack_fate_goroma", "liberty bay", (32285, 32892, 6))
-            .await?;
         self.passage("jack_fate", "goroma", (32161, 32558, 6))
             .await?;
         self.use_at((32093, 32574, 8), 1, None).await?;
@@ -387,7 +387,9 @@ impl Journey<'_, '_, '_, '_> {
             .await?;
         self.mission("elvith", "love poem", "poem_purchased", 1, (6119, 1))
             .await?;
-        self.mission("ocelus", "love poem", "adjinn_in_love", 4, (6119, 0))
+        self.mission("elvith", "love poem", "poem_purchased", 1, (6119, 2))
+            .await?;
+        self.mission("ocelus", "love poem", "adjinn_in_love", 4, (6119, 1))
             .await?;
         self.mission("marina", "date", "access_to_laguna_island", 1, (6119, 0))
             .await?;
@@ -395,7 +397,7 @@ impl Journey<'_, '_, '_, '_> {
         super::annihilator_route_fixtures::step(self.owner, self.admitted, StepDirection::North)
             .await?;
         self.arrived((32359, 32901, 7)).await?;
-        self.expect("access_to_laguna_island", 1, (6119, 0)).await?;
+        self.expect("access_to_laguna_island", 1, (6119, 1)).await?;
 
         self.mission("raymond_striker", "mission", "rays_mission2", 1, (5467, 1))
             .await?;
@@ -442,6 +444,28 @@ impl Journey<'_, '_, '_, '_> {
         );
         self.terminal().await?;
         self.journal().await
+    }
+
+    async fn repair_ship_before_meriana(&mut self) -> TestResult {
+        assert_eq!(self.track("access_to_meriana").await?, None);
+        self.confirm_storm_roll(true).await?;
+        self.mission("jack_fate_goroma", "sail", "shipwrecked", 1, (5901, 29))
+            .await?;
+        assert_eq!(self.track("default_start").await?, Some(1));
+        let jack = self.contact("jack_fate_goroma").await?;
+        assert_eq!(
+            self.talk(jack, "sail").await?,
+            NpcIntentDisposition::Rejected
+        );
+        self.expect("shipwrecked", 1, (5901, 29)).await?;
+        self.pick_up_wood().await?;
+        self.expect("shipwrecked", 1, (5901, 31)).await?;
+        self.mission("jack_fate_goroma", "sail", "access_to_goroma", 1, (5901, 1))
+            .await?;
+        self.passage("jack_fate_goroma", "liberty bay", (32285, 32892, 6))
+            .await?;
+        assert_eq!(self.track("access_to_meriana").await?, None);
+        Ok(())
     }
 
     // Place the fixture within reach of widely separated contacts. Passage commands
@@ -574,7 +598,7 @@ impl Journey<'_, '_, '_, '_> {
         }
     }
 
-    async fn shipwreck(&mut self) -> TestResult {
+    async fn confirm_storm_roll(&mut self, expect_wreck: bool) -> TestResult {
         self.wait_for_passage().await?;
         let jack = self.contact("jack_fate").await?;
         // Select a command that rolls the storm, so the production one-in-eight
@@ -603,9 +627,12 @@ impl Journey<'_, '_, '_, '_> {
         assert_eq!(self.talk(jack, "yes").await?, NpcIntentDisposition::Ok);
         self.arrived((before.x, before.y, before.floor)).await?;
         assert_eq!(self.talk(jack, "yes").await?, NpcIntentDisposition::Ok);
-        self.arrived_at_goroma().await?;
+        if expect_wreck {
+            self.arrived_at_goroma().await?;
+        } else {
+            self.arrived((32310, 32210, 6)).await?;
+        }
         assert_eq!(self.track("shipwrecked").await?, None);
-        assert_eq!(carried(self.h, 5901).await?, 29);
         Ok(())
     }
 

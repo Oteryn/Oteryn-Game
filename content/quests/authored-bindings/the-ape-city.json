@@ -542,7 +542,7 @@
                   "minimum": 10,
                   "maximum": 15,
                   "set": 11,
-                  "set_if": 10
+                  "at_least": true
                 }
               ],
               "requires_world_admission": true,
@@ -879,8 +879,9 @@
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/stage",
                   "minimum": 11,
-                  "maximum": 11,
-                  "set": 12
+                  "maximum": 15,
+                  "set": 12,
+                  "at_least": true
                 },
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/amphora-1",
@@ -968,7 +969,7 @@
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/stage",
                   "minimum": 12,
-                  "maximum": 12,
+                  "maximum": 15,
                   "set": 12,
                   "preserve": true
                 },
@@ -1026,7 +1027,7 @@
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/stage",
                   "minimum": 12,
-                  "maximum": 12,
+                  "maximum": 15,
                   "set": 12,
                   "preserve": true
                 },
@@ -1084,7 +1085,7 @@
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/stage",
                   "minimum": 12,
-                  "maximum": 12,
+                  "maximum": 15,
                   "set": 12,
                   "preserve": true
                 },
@@ -1142,7 +1143,7 @@
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/stage",
                   "minimum": 12,
-                  "maximum": 12,
+                  "maximum": 15,
                   "set": 12,
                   "preserve": true
                 },
@@ -1200,7 +1201,7 @@
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/stage",
                   "minimum": 12,
-                  "maximum": 12,
+                  "maximum": 15,
                   "set": 12,
                   "preserve": true
                 },
@@ -1258,7 +1259,7 @@
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/stage",
                   "minimum": 12,
-                  "maximum": 12,
+                  "maximum": 15,
                   "set": 12,
                   "preserve": true
                 },
@@ -1326,8 +1327,9 @@
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/stage",
                   "minimum": 12,
-                  "maximum": 12,
-                  "set": 13
+                  "maximum": 15,
+                  "set": 13,
+                  "at_least": true
                 },
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/lever-1",

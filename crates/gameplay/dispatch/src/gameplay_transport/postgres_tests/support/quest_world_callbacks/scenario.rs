@@ -26,7 +26,9 @@ fn scenario_case(
     let explorer = name == super::super::explorer_society_journey::NAME;
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
-    let frontier = name == super::super::new_frontier_journey::NAME;
+    use super::super::new_frontier_journey;
+    let recover_bait = name == new_frontier_journey::BAIT_RECOVERY;
+    let frontier = name == new_frontier_journey::NAME || recover_bait;
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -1905,8 +1907,7 @@ fn scenario_case(
                 "source eligibility uses the actual durable starting level"
             );
         }
-        if explorer
-            || name == "nx6-wayfarer"
+        if name == "nx6-wayfarer"
             || qm03
             || m07_too_hot
             || mead
@@ -2848,7 +2849,7 @@ fn scenario_case(
             ))
             .await?;
         } else if frontier {
-            Box::pin(super::super::new_frontier_journey::exercise(&mut owner, &mut admitted, &h)).await?;
+            Box::pin(new_frontier_journey::exercise(&mut owner, &mut admitted, &h, recover_bait)).await?;
         } else if name == "authored-secret-library" {
             Box::pin(super::super::questpc8_secret_library_fixtures::exercise(
                 &mut owner,

@@ -21,6 +21,7 @@ use oteryn_protocol_oteryn::world_spatial::StepDirection;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 pub(super) const NAME: &str = "authored-new-frontier";
+pub(super) const BAIT_RECOVERY: &str = "authored-new-frontier-bait-recovery";
 const QUEST: &str = "oteryn:quest.the_new_frontier_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/";
 const BOSS: &str = "oteryn:creature.shard_of_corruption";
@@ -58,6 +59,17 @@ fn new_frontier_full_settlement_journey_earns_rewards() -> TestResult {
     };
     drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run(NAME, || scenario(NAME, SCOUT, false))
+}
+
+#[test]
+fn new_frontier_melfar_replaces_bait_consumed_at_the_southern_tree() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run(BAIT_RECOVERY, || {
+        scenario(BAIT_RECOVERY, SCOUT, false)
+    })
 }
 
 async fn track(h: &Harness, suffix: &str) -> TestResult<i64> {
@@ -211,6 +223,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     a: &mut AdmittedSession,
     h: &Harness,
+    recover_bait: bool,
 ) -> TestResult {
     use NpcIntentDisposition::{Ok as Spoken, Rejected};
     use UseDisposition::{Committed, Rejected as UseRejected};
@@ -275,6 +288,37 @@ pub(super) async fn exercise(
     travel_to(owner, a, CONTACTS[1].2).await?;
     say(owner, a, melfar, &["hi", "mission", "yes"], Spoken).await?;
     state(h, 5, ("mission02_1", 2), 1).await?;
+    if recover_bait {
+        bait_tree(owner, a, TREES[2], Committed).await?;
+        state(h, 5, ("mission02/beaver3", 1), 0).await?;
+        let fence = owner
+            .current_quest_fence(a.game_session_id)
+            .await
+            .map_err(debug)?
+            .ok_or("bait purchase fence")?;
+        super::quest_world_callbacks_fixtures::input_item(
+            owner,
+            fence.item_fence(),
+            &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                position: CONTACTS[1].2,
+                item: "oteryn:item.tibia.i3035".into(),
+                count: 1,
+            },
+            90_010,
+            true,
+        )
+        .await?;
+        travel_to(owner, a, CONTACTS[1].2).await?;
+        say(owner, a, melfar, &["hi", "flask", "yes"], Spoken).await?;
+        state(h, 5, ("mission02_1", 2), 1).await?;
+        assert_eq!(carried(h, 3035).await?, 0);
+        for tree in [TREES[0], TREES[1]] {
+            bait_tree(owner, a, tree, Committed).await?;
+        }
+        travel_to(owner, a, CONTACTS[1].2).await?;
+        say(owner, a, melfar, &["hi", "mission"], Spoken).await?;
+        return state(h, 6, ("mission02_1", 3), 1).await;
+    }
     for (n, p) in TREES.into_iter().enumerate() {
         bait_tree(owner, a, p, Committed).await?;
         state(
@@ -307,6 +351,13 @@ pub(super) async fn exercise(
     say(owner, a, ongulf, &["hi", "mission"], Spoken).await?;
     state(h, 11, ("mission04", 1), 0).await?;
     travel_to(owner, a, MINE_PLATFORM).await?;
+    use_object(owner, a, pos(33056, 31527, 12), 2, Committed).await?;
+    at(owner, a, MINE_EXIT).await?;
+    use_object(owner, a, pos(33064, 31489, 15), 2, Committed).await?;
+    use_object(owner, a, pos(33064, 31489, 15), 2, Committed).await?;
+    at(owner, a, MINE_PLATFORM).await?;
+    state(h, 11, ("mine_leader", 0), 0).await?;
+    use_object(owner, a, pos(33056, 31527, 12), 2, Committed).await?;
     use_object(owner, a, pos(33056, 31527, 12), 2, Committed).await?;
     at(owner, a, MINE_EXIT).await?;
     travel_to(

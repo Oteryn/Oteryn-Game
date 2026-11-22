@@ -448,6 +448,95 @@
           }
         },
         {
+          "key": "bait-replacement-offer",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/bait-replacement-offer",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.melfar",
+              "keywords": [
+                "buy flask",
+                "flask"
+              ],
+              "topic": 0,
+              "next_topic": 2,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 5,
+                  "preserve": true
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Do you want to buy a Flask with Beaver Bait for 100 gold coins?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/melfar.lua:125-129"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "bait-replacement",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/bait-replacement",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.melfar",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 2,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 5,
+                  "preserve": true
+                }
+              ],
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i9843",
+                "count": 1
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Here you go."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/melfar.lua:115-123"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "You don't have enough gold coins."
+              ],
+              "fee": {
+                "gold": 100,
+                "include_bank": true
+              },
+              "repeatable": true
+            }
+          }
+        },
+        {
           "key": "bait-tree-1",
           "completes": false,
           "trigger": {
@@ -1090,9 +1179,10 @@
               "storage": [
                 {
                   "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
-                  "minimum": 12,
-                  "maximum": 12,
-                  "set": 12
+                  "minimum": 11,
+                  "maximum": 18,
+                  "set": 11,
+                  "preserve": true
                 }
               ],
               "offerings": [],
@@ -1137,9 +1227,10 @@
               "storage": [
                 {
                   "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
-                  "minimum": 12,
-                  "maximum": 12,
-                  "set": 12
+                  "minimum": 11,
+                  "maximum": 18,
+                  "set": 11,
+                  "preserve": true
                 }
               ],
               "offerings": [],

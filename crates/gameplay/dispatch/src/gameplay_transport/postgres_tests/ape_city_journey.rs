@@ -11,7 +11,7 @@ use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use crate::map::overlay::TilePos;
-use oteryn_gameplay_quests::quest::world_callbacks::Position;
+use oteryn_gameplay_quests::quest::{loader::load_embedded_quest_state, world_callbacks::{self, Position}};
 use oteryn_protocol_oteryn::npc_service::{
     COMMAND_TYPE_NPC_TALK_INTENT, NpcIntentDisposition, NpcTalkIntent, decode_npc_intent_result,
     encode_npc_talk_intent,
@@ -26,7 +26,7 @@ const QUEST: &str = "oteryn:quest.the_ape_city_quest";
 const NPC: &str = "oteryn:npc.hairycles";
 const TRACK: &str = "oteryn:quest-progress/chosen/ape-city/";
 const CONTACT: TilePos = tile(32826, 32574, -6);
-const START: TilePos = tile(32825, 32574, -6);
+const START: TilePos = tile(32826, 32575, -6);
 const BANANA: (TilePos, u8) = (tile(31983, 32193, -5), 2);
 const MOSS: (TilePos, u8) = (tile(32782, 32910, -8), 1);
 const PARCHMENT: (TilePos, u8) = (tile(32935, 32886, -7), 1);
@@ -53,6 +53,16 @@ const LEVERS: [(TilePos, u8); 6] = [
 
 const fn tile(x: u16, y: u16, floor: i8) -> TilePos {
     TilePos { x, y, floor }
+}
+
+#[test]
+fn ape_city_world_admission_loads_banuta_routes() -> TestResult {
+    let state = load_embedded_quest_state("content-1").map_err(debug)?;
+    let callbacks = world_callbacks::load_for(state.catalogue())?;
+    assert!(callbacks
+        .iter()
+        .any(|callback| callback.key == "oteryn:quest-callback/authored-ape-city-deeper-banuta"));
+    Ok(())
 }
 
 #[test]
@@ -214,7 +224,7 @@ async fn scenario(admin: String) -> TestResult {
     owner.active_generation = Some(generation);
     owner.movement_cells = (&cells).into();
     owner.premium_coordinator = Some(&premium);
-    let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+    let lowered = load_embedded_quest_state("content-1")
         .map_err(debug)?;
     let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
     let quest_index = u32::try_from(
@@ -506,6 +516,21 @@ impl Journey<'_, '_, '_, '_> {
         Ok(())
     }
 
+    async fn reopen_catacombs_gate_after_timeout(&mut self) -> TestResult {
+        self.owner.clock_origin -= std::time::Duration::from_secs(11);
+        let map = self.owner.bundle_map().ok_or("journey World")?;
+        assert!(map.facts.expire_movement_items(self.owner.owner_now().get()) > 0);
+        self.use_object(GATE, UseDisposition::Committed).await?;
+        self.owner.clock_origin -= std::time::Duration::from_secs(600);
+        let map = self.owner.bundle_map().ok_or("journey World")?;
+        assert!(map.facts.expire_movement_items(self.owner.owner_now().get()) > 0);
+        for lever in LEVERS {
+            self.use_object(lever, UseDisposition::Committed).await?;
+        }
+        self.use_object(GATE, UseDisposition::Committed).await?;
+        self.check(13, [0, 1, 0, 0, 1]).await
+    }
+
     async fn exercise(&mut self) -> TestResult {
         use UseDisposition::{Committed, Rejected};
         self.check(0, [0; 5]).await?;
@@ -541,6 +566,8 @@ impl Journey<'_, '_, '_, '_> {
         }
         self.enter(DEEPEST, tile(32885, 32632, -11)).await?;
         self.check(12, [0, 1, 0, 0, 1]).await?;
+        self.enter(DEEPEST, tile(32885, 32632, -11)).await?;
+        self.check(12, [0, 1, 0, 0, 1]).await?;
         self.use_object(GATE, Rejected).await?;
         self.check(12, [0, 1, 0, 0, 1]).await?;
         for (index, lever) in LEVERS.into_iter().enumerate() {
@@ -550,6 +577,7 @@ impl Journey<'_, '_, '_, '_> {
         }
         self.use_object(GATE, Committed).await?;
         self.check(13, [0, 1, 0, 0, 1]).await?;
+        self.reopen_catacombs_gate_after_timeout().await?;
         let passage = tile(32864, 32556, -11);
         self.enter(passage, passage).await?;
         self.check(13, [0, 1, 0, 0, 1]).await?;

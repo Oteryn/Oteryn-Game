@@ -22,7 +22,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 pub(super) const NAME: &str = "authored-explorer-society";
-pub(super) const START: Position = position(32672, 32730, -7);
+pub(super) const START: Position = position(32671, 32729, -7);
 const QUEST: &str = "oteryn:quest.the_explorer_society_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u7_6/explorer_society/";
 const ANGUS: Position = position(32670, 32730, -7);
@@ -165,7 +165,7 @@ fn talk_payload(npc_actor: EntityRef, text: &str) -> TestResult<Vec<u8>> {
         npc_actor,
         text: text.into(),
     })
-    .map_err(|e| debug(e).into())
+    .map_err(debug)
 }
 
 fn allow_next_action(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
@@ -191,7 +191,7 @@ async fn talk(
         talk_payload(npc, words)?,
     )
     .await?;
-    Ok(decode_npc_intent_result(&reply).map_err(debug)?)
+    decode_npc_intent_result(&reply).map_err(debug)
 }
 
 async fn focus(
@@ -276,7 +276,7 @@ async fn map_use(
         payload,
     )
     .await?;
-    Ok(decode_use_result(&result).map_err(debug)?)
+    decode_use_result(&result).map_err(debug)
 }
 
 async fn tool_use(
@@ -552,7 +552,7 @@ pub(super) async fn exercise(
         )
         .ok_or("Explorer route capabilities")?;
 
-    let angus_side = position(32671, 32730, -7);
+    let angus_side = position(32670, 32729, -7);
     let uzgod_side = position(32664, 31893, -9);
     let max_side = position(32297, 32895, -6);
     let angus = npc(owner, "oteryn:npc.angus").await?;
@@ -563,6 +563,13 @@ pub(super) async fn exercise(
         talk(owner, session, angus, "hi").await?,
         NpcIntentDisposition::Ok
     );
+
+    assert_eq!(
+        talk(owner, session, angus, "join").await?,
+        NpcIntentDisposition::Rejected
+    );
+    state(h, 0, None, &[]).await?;
+    owner.admit_premium(id(40), session.game_session_id);
 
     let joining = "joining_the_explorers";
     let ice = "the_ice_delivery";
