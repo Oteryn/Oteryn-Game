@@ -4,6 +4,8 @@ use crate::charm_wire::{
     read_bytes, read_uint32, read_varint, set_once,
 };
 
+use crate::item_view::ItemHandle;
+
 pub const CAPABILITY_QUICK_LOOT_V1: u32 = 98;
 pub const COMMAND_TYPE_QUICK_LOOT: u32 = 114;
 pub const MAX_QUICK_LOOT_REQUEST_BYTES: usize = 64;
@@ -47,14 +49,26 @@ pub enum QuickLootFilterMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct QuickLootRequest {
     pub action: QuickLootAction,
+    /// Click uses a spatial item handle encoded by [`encode_target_handle`].
     pub corpse: Option<[u8; 16]>,
     pub category: Option<QuickLootCategory>,
     pub recipient: Option<QuickLootRecipient>,
+    /// Explicit assignment uses a visible inventory handle encoded by [`encode_target_handle`].
     pub recipient_id: Option<[u8; 16]>,
     pub fallback_to_main: bool,
     pub filter_mode: Option<QuickLootFilterMode>,
     pub filter_definition_ref: Option<u32>,
 }
+/// Quick Loot targets keep their 16-byte wire fields. A session ItemHandle is
+/// the big-endian unsigned value, zero-extended to the field width.
+pub const fn encode_target_handle(handle: ItemHandle) -> [u8; 16] {
+    (handle.get() as u128).to_be_bytes()
+}
+
+pub fn decode_target_handle(bytes: [u8; 16]) -> Option<ItemHandle> {
+    ItemHandle::new(u64::try_from(u128::from_be_bytes(bytes)).ok()?)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct QuickLootItemResult {
     pub item: [u8; 16],
