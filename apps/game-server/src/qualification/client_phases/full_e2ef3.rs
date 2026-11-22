@@ -6,6 +6,9 @@ use super::*;
 use oteryn_protocol_oteryn::{container_tree as tree, inspection as inspect};
 use std::collections::BTreeMap;
 
+#[path = "full_e2ef3_e2ei-c.rs"]
+mod e2ei_c;
+
 struct Row {
     id: &'static str,
     source: &'static str,
@@ -301,6 +304,9 @@ pub(super) async fn run(
         Err(error) => verdict::classify(error.as_ref()),
     };
     for row in ROWS {
+        if matches!(row.id, "I06" | "I07") {
+            continue;
+        }
         if observations.is_ok() && ((row.id == "I08" && primal) || (row.id == "I13" && covet)) {
             evidence(&format!(
                 "e2e_all scenario={}.full status=PASS seconds={:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities",
@@ -320,5 +326,5 @@ pub(super) async fn run(
             &cause,
         );
     }
-    observations
+    e2ei_c::run(observations, clients).await
 }
