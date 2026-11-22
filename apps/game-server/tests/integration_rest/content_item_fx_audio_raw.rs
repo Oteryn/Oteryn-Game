@@ -99,6 +99,11 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
         1,
         "one separately qualified Thaian source batch"
     );
+    let crystal = batches
+        .iter()
+        .filter(|batch| batch.batch_id == "crystal-spawn-delta-creatures-201189f8-r1")
+        .collect::<Vec<_>>();
+    assert_eq!(crystal.len(), 1, "one Crystal spawn creature source batch");
     let cyclopedia = batches
         .iter()
         .filter(|batch| batch.batch_id == "cyclopedia-creatures-crystal-201189f-r1")
@@ -115,9 +120,15 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
         ))
     );
     assert_eq!(
-        batches.len() - cake.len() - thaian.len() - cyclopedia.len(),
+        batches.len() - cake.len() - thaian.len() - crystal.len() - cyclopedia.len(),
         34,
         "all historical source batches retained"
+    );
+    assert_eq!(
+        crystal[0].source_artifact_sha256,
+        world_project_sha256(include_bytes!(
+            "../../../../imports/crystalserver/spawn-delta-creatures-201189f8.json"
+        ))
     );
     let cake = cake[0];
     assert_eq!(cake.source_repository, "zimbadev/crystalserver");

@@ -881,6 +881,9 @@ def main(*, items_only: bool = False) -> int:
                     "--refresh-item-keys"], cwd=ROOT, check=True)
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
+    # The model hashes the spawn corpus, so compile it against the new Creature shards first.
+    subprocess.run([sys.executable, str(ROOT / "tools/world-bundle-compiler/convert_spawns.py")],
+                   cwd=ROOT, check=True)
     import m42_cooking_canonical
     m42_cooking_canonical.refresh(ROOT)
     import prey_difficulty

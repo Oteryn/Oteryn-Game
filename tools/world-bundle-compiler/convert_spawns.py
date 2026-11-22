@@ -20,6 +20,7 @@ import json
 import re
 import sys
 import xml.etree.ElementTree as ET
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,6 +30,8 @@ IMPORT = ROOT / "imports/crystalserver/summer-update"
 XML = IMPORT / "raw/data-global/world/world-monster.xml"
 HELD = IMPORT / "map-content-linking/spawns/held-groups.json"
 HELD_SHA256 = "8a666c3d409edda5ac5996d6dec64cce24b30d5f43c75aa9a1175f1d07297c57"
+DELTA = IMPORT.parent / "spawn-delta-201189f8.json"
+DELTA_SHARD = "spawns-crystal-201189f8.json"
 BOSSES = Path(__file__).with_name("boss-spawns.json")
 BOSS_CHANCES = Path(__file__).with_name("held-boss-chances.json")
 FRAME = "global-target-2026-09-27"
@@ -114,6 +117,95 @@ def dump(value) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+
+# These points require the donor's shared Cobra Flask spawn effect or faction
+# targeting between world actors. Keep their exact positions in the capture.
+DELTA_HELD = {
+    "cobra assassin", "cobra scout", "quara kindler", "rootthing conservator",
+}
+DELTA_FIXED_BOSSES = {"adlerauge", "clavius", "gorga", "michael the stalwart"}
+
+
+
+def verify_delta_capture(baseline_xml, donor_xml):
+    """Reproduce the retained point IDs from the two exact pinned XML files."""
+    capture = json.loads(DELTA.read_bytes())
+    for raw, pin in [(baseline_xml, capture["baseline"]), (donor_xml, capture["source"])]:
+        if hashlib.sha256(raw).hexdigest() != pin["sha256"]:
+            sys.exit("Crystal spawn delta verification requires the pinned XML revisions")
+
+    def groups(raw):
+        for ordinal, group in enumerate(ET.fromstring(raw)):
+            cx, cy, cz = (int(group.get(key)) for key in ("centerx", "centery", "centerz"))
+            points = []
+            for point_id, point in enumerate(group):
+                positions = [cx + int(point.get("x")), cy + int(point.get("y")), int(point.get("z", cz))]
+                points.append({"point": point_id, "name": point.get("name").lower(),
+                               "cell": positions, "respawn_s": int(point.get("spawntime")),
+                               "direction": int(point.get("direction", 0))})
+            yield {"group": ordinal, "centre": [cx, cy, cz], "radius": int(group.get("radius")), "points": points}
+
+    def identity(point):
+        return point["name"], tuple(point["cell"])
+
+    remaining = Counter(identity(point) for group in groups(baseline_xml) for point in group["points"])
+    difference = []
+    for group in groups(donor_xml):
+        added = []
+        for point in group["points"]:
+            key = identity(point)
+            if remaining[key]:
+                remaining[key] -= 1
+            else:
+                added.append(point)
+        if added:
+            difference.append({**group, "points": added})
+    if difference != capture["groups"]:
+        sys.exit("retained Crystal spawn delta differs from the pinned XML comparison")
+
+def crystal_delta(known):
+    raw = DELTA.read_bytes()
+    capture = json.loads(raw)
+    records = []
+    for group in capture["groups"]:
+        cx, cy, cz = group["centre"]
+        key = f"oteryn:spawn.crystal_201189f8.g{group['group']:05d}"
+        points = []
+        for row in group["points"]:
+            name = row["name"]
+            if name in DELTA_HELD:
+                continue
+            creature = f"oteryn:creature.{slug(name)}"
+            if creature not in known:
+                sys.exit(f"{key}: `{name}` is not an admitted creature definition")
+            x, y, z = row["cell"]
+            if z != cz or not (0 <= x <= 0xFFFF and 0 <= y <= 0xFFFF):
+                sys.exit(f"{key}: point ({x}, {y}, {z}) is off the source")
+            seconds = row["respawn_s"]
+            point = {
+                "cell": {"floor": z, "x": x, "y": y},
+                "creature": creature,
+                "direction": DIRECTIONS[str(row["direction"])],
+            }
+            if name in DELTA_FIXED_BOSSES:
+                point["boss_policy"] = {"respawn": {"min_s": seconds, "max_s": seconds}}
+            else:
+                point["respawn_ms"] = seconds * 1000
+            points.append(point)
+        if points:
+            records.append({"declaration": {
+                "centre": {"floor": cz, "x": cx, "y": cy},
+                "identity": {"key": key, "revision": "definition-r1"},
+                "points": points,
+            }})
+    provenance = {
+        "path": DELTA.relative_to(ROOT).as_posix(),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "record_count": len(records),
+        "source": capture["source"],
+    }
+    return records, provenance
+
 def convert(xml: bytes) -> dict[str, str]:
     if hashlib.sha256(xml).hexdigest() != SOURCE["files"][0]["sha256"]:
         sys.exit("the spawn XML is not the pinned file")
@@ -123,6 +215,14 @@ def convert(xml: bytes) -> dict[str, str]:
     held_records = json.loads(held_bytes)["records"]
     held = {r["source_group_ordinal"] for r in held_records}
     known, seen, records = creature_keys(), {}, []
+    delta, delta_source = crystal_delta(known)
+    # Crystal replaced each of these occupants in place. Keeping the old Deer
+    # would give the activation owner two home spawns for the same cell.
+    stag_replacements = {
+        (point["cell"]["x"], point["cell"]["y"], point["cell"]["floor"])
+        for record in delta for point in record["declaration"]["points"]
+        if point["creature"] == "oteryn:creature.stag"
+    }
     boss_keys = set()
     for path in sorted(CREATURES.glob("creatures-*.json")):
         for record in json.loads(path.read_text())["records"]:
@@ -213,12 +313,30 @@ def convert(xml: bytes) -> dict[str, str]:
         sys.exit("Ancient Tombs source spawns are incomplete")
     records.extend(scheduled_bosses)
     records.extend(pharaohs[key] for key in sorted(pharaohs))
-    files, shards = {}, []
+    files, shards, retained_records = {}, [], []
     for start in range(0, len(records), SHARD_SIZE):
         part = records[start : start + SHARD_SIZE]
         name = f"spawns-{start:05d}-{start + len(part) - 1:05d}.json"
+        # Preserve the pinned Summer shard boundaries used by other authors.
+        kept = []
+        for record in part:
+            declaration = record["declaration"]
+            points = []
+            for point in declaration["points"]:
+                cell = point["cell"]
+                position = (cell["x"], cell["y"], cell["floor"])
+                if point["creature"] == "oteryn:creature.deer" and position in stag_replacements:
+                    stag_replacements.remove(position)
+                    continue
+                points.append(point)
+            if points:
+                declaration["points"] = points
+                kept.append(record)
+        retained_records.extend(kept)
         shards.append(f"content/world/spawns/{name}")
-        files[name] = dump({"coordinate_frame": FRAME, "family": "Spawn.Source", "records": part})
+        files[name] = dump({"coordinate_frame": FRAME, "family": "Spawn.Source", "records": kept})
+    if stag_replacements:
+        sys.exit("Crystal Stag replacements did not match their pinned Deer cells")
     bosses_bytes = BOSSES.read_bytes()
     bosses = json.loads(bosses_bytes)
     if bosses["family"] != "Spawn.Source" or bosses["coordinate_frame"] != FRAME:
@@ -233,7 +351,10 @@ def convert(xml: bytes) -> dict[str, str]:
     boss_name = "spawns-boss-spawn1.json"
     files[boss_name] = dump(bosses)
     shards.append(f"content/world/spawns/{boss_name}")
-    all_records = records + bosses["records"]
+    files[DELTA_SHARD] = dump({"family": "Spawn.Source", "coordinate_frame": FRAME,
+                               "records": delta})
+    shards.append(f"content/world/spawns/{DELTA_SHARD}")
+    all_records = retained_records + bosses["records"] + delta
     files["index.json"] = dump(
         {
             "coordinate_frame": FRAME,
@@ -260,7 +381,7 @@ def convert(xml: bytes) -> dict[str, str]:
                                     "record_count": len(bosses["records"])},
                                    {"path": "tools/world-bundle-compiler/held-boss-chances.json",
                                     "sha256": hashlib.sha256(chances_bytes).hexdigest(),
-                                    "record_count": len(chances)}],
+                                    "record_count": len(chances)}, delta_source],
         }
     )
     return {name: text + "\n" for name, text in files.items()}
@@ -270,8 +391,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--xml", default=XML, type=Path)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--verify-delta-xml", type=Path)
     args = parser.parse_args()
-    files = convert(args.xml.read_bytes())
+    baseline = args.xml.read_bytes()
+    if args.verify_delta_xml:
+        verify_delta_capture(baseline, args.verify_delta_xml.read_bytes())
+    files = convert(baseline)
     if args.check:
         have = {p.name: p.read_text() for p in OUT.glob("*.json")}
         if have != files:

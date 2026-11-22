@@ -1043,9 +1043,14 @@ fn canonicalize_existing_world(
     source: &Path,
     output: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let current = npc_catalogue_preproduction_limits();
     let filesystem = ProjectFilesystemLimits {
-        project: reconciled_limits(),
-        ..npc_catalogue_preproduction_limits()
+        project: ProjectEvidenceLimits {
+            max_reference_records: current.project.max_reference_records,
+            max_import_records: current.project.max_import_records,
+            ..reconciled_limits()
+        },
+        ..current
     };
     let captured = capture_world_project(
         source.parent().ok_or("canonical source parent missing")?,

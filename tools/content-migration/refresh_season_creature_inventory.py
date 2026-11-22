@@ -73,10 +73,39 @@ def validate_inventory(root, rows, native, schedules):
     extra_native += nrwicked_native
     extra_schedules += nrwicked_schedules
     additions, added_schedules, _, _ = cyclopedia_inventory(root, rows, native)
-    if (len(rows) - 1 - additions != 1863 + 1 or len(native) != len(rows) + extra_native
-            or schedules - 1 - added_schedules != 7201 + 4 + extra_schedules):
+    from crystal_spawn_creatures import PACKET as DELTA_PACKET, stage as stage_delta
+    delta = stage_delta(root, json.loads((root / DELTA_PACKET).read_bytes()))
+    crystal_keys = {key for family, key in delta.records if family == 'Creature'}
+    crystal_rows = {row['definition']['identity']['key']: row for row in rows
+                    if row['definition']['identity']['key'] in crystal_keys}
+    crystal_native = {row['profile']['target']['key']: row for row in native
+                      if row['profile']['target']['key'] in crystal_keys}
+    if crystal_rows.keys() != crystal_keys or crystal_native.keys() != crystal_keys:
+        raise ValueError('Crystal placement Creature inventory is incomplete')
+    crystal_schedules = 0
+    crystal_attacks = Counter()
+    for creature in crystal_keys:
+        definition = delta.records['Creature', creature]
+        authoring = cake.source_profile(delta.profiles['Creature', creature])['data']
+        for field in ('abilities', 'resistances'):
+            if authoring['profile'].get(field) == []:
+                del authoring['profile'][field]
+        authoring['profile']['details'].setdefault('reference_level', None)
+        behavior = delta.profiles['Behavior', definition['behavior']['key']]
+        if (crystal_rows[creature]['definition'] != definition
+                or crystal_rows[creature]['authoring'] != authoring
+                or crystal_native[creature]['profile']['data'] != authoring
+                or crystal_native[creature]['behavior'] != behavior):
+            raise ValueError('Crystal placement Creature inventory changed: ' + creature)
+        schedule = behavior['data']['profile']
+        crystal_schedules += sum(len(schedule.get(key, [])) for key in ('attacks', 'defenses'))
+        for attack in schedule.get('attacks', []):
+            ability = delta.profiles['Ability', attack['ability']['key']]
+            crystal_attacks[ability['data']['profile']['details']['kind']] += 1
+    if (len(rows) - 1 - additions - len(crystal_keys) != 1863 + 1 or len(native) != len(rows) + extra_native
+            or schedules - 1 - added_schedules - crystal_schedules != 7201 + 4 + extra_schedules):
         raise ValueError('Non-seasonal canonical inventory changed; review its source first')
-    return 1
+    return 1, crystal_attacks
 
 
 def generated(root):
@@ -103,7 +132,7 @@ def generated(root):
         raise ValueError('Cake source schedule inventory')
     schedules = sum(len(row['behavior']['data']['profile'].get(key, []))
                     for row in native for key in ('attacks', 'defenses'))
-    thaian_melee = validate_inventory(root, rows, native, schedules)
+    thaian_melee, crystal_attacks = validate_inventory(root, rows, native, schedules)
     _, _, cyclopedia_melee, cyclopedia_spells = cyclopedia_inventory(root, rows, native)
     from engenc_elemental_profiles import inventory_extension as elemental_inventory
     elemental_native, _ = elemental_inventory(native)
@@ -131,9 +160,9 @@ def generated(root):
     # Keep the pre-existing unsupported set at116: no new source gap is admitted.
     path = 'crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane.rs'
     replace(path, r'\("melee:Ok\(\(\)\)", [0-9_]+\)',
-            f'("melee:Ok(())", {1689 + 1 + thaian_melee + cyclopedia_melee})')
+            f'("melee:Ok(())", {1689 + 1 + thaian_melee + cyclopedia_melee + crystal_attacks["Melee"]})')
     replace(path, r'\("spell:Ok\(\(\)\)", [0-9_]+\)',
-            f'("spell:Ok(())", {4198 + len(behavior["attacks"]) - 1 + cyclopedia_spells})')
+            f'("spell:Ok(())", {4198 + len(behavior["attacks"]) - 1 + cyclopedia_spells + crystal_attacks["Spell"]})')
     if '("spell:Err(UnsupportedShape)", 116)' not in result[path]:
         raise ValueError('Existing native source gap pin changed')
 
@@ -163,7 +192,9 @@ def generated(root):
         raise ValueError('Regenerate the source-qualified raid index first')
     raids = json.loads(outputs[raid_catalogue.CATALOGUE])['records']
     active = sum(row['active'] for row in raids)
-    if len(raids) != 239 + 1 or active != 136 + 1:
+    gorga, = [row for row in raids if row['key'] == 'raid:porthope.gorga']
+    # Crystal 201189f8 port_hope/gorga.xml:4 gains its exact Creature binding.
+    if not gorga['active'] or len(raids) != 239 + 1 or active != 136 + 1 + 1:
         raise ValueError('Non-seasonal raid inventory changed; review its source first')
     path = 'crates/gameplay/encounter-rules/src/raid/catalogue.rs'
     replace(path, r'assert_eq!\(catalogue.records\(\).len\(\), [0-9_]+\);',

@@ -119,6 +119,8 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-schema/world-object-authoring/crystal_delta_ground.py", "--check"],
+    ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
@@ -834,6 +836,9 @@ def main() -> int:
     questpc7_thaian_authoring.install(ROOT)
     from buddel_travel import install_buddel
     install_buddel(ROOT, WORLD)
+    from crystal_spawn_creatures import install as install_crystal_spawn_creatures
+    install_crystal_spawn_creatures(ROOT, WORLD)
+    refresh_source_cohort_extent()
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()
@@ -848,6 +853,7 @@ def main() -> int:
                  "build_srx3_omrafir_attacks.py", "build_srx3_w01_prepare_death.py"):
         run(["python3", native + name])
     run(["python3", native + "build_srx3_soul_war_death_events.py", "--refresh-native-pin"])
+    run(["python3", "tools/content-schema/world-object-authoring/crystal_delta_ground.py"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
