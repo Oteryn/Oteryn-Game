@@ -243,6 +243,17 @@ async fn player_credit_scenario(admin: String, local_final_blow: bool) -> TestRe
     assert_eq!(rows[0].occurrence, *death.occurrence.as_bytes());
     assert_eq!(rows[0].victim, id(101));
     assert_eq!(rows[0].final_blow, local_final_blow);
+    let late_credit = sqlx::query(
+        "INSERT INTO game_character_player_kill_credits
+           (character_id, death_occurrence_id, committed_at, final_blow)
+         SELECT character_id, death_occurrence_id, committed_at, false
+         FROM game_character_death_receipts WHERE death_occurrence_id=encode($1,'hex')::uuid",
+    )
+    .bind(death.occurrence.as_bytes().as_slice())
+    .execute(&h.pool)
+    .await;
+    assert!(matches!(late_credit, Err(error)
+        if error.as_database_error().and_then(|error| error.code()).as_deref() == Some("23514")));
     drop(owner);
     drop(authority);
     drop(seal);

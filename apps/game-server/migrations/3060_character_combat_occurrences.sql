@@ -18,3 +18,14 @@ CREATE INDEX game_character_player_kill_credits_death
 REVOKE ALL ON game_character_player_kill_credits FROM PUBLIC;
 GRANT SELECT, INSERT ON game_character_player_kill_credits TO oteryn_game_runtime;
 GRANT SELECT ON game_character_player_kill_credits TO oteryn_game_control;
+
+-- Use the same transaction gate and immutability as the death's killer facts.
+CREATE TRIGGER player_kill_credit_insert
+    BEFORE INSERT ON game_character_player_kill_credits
+    FOR EACH ROW EXECUTE FUNCTION game_public_death_capture_insert_guard();
+CREATE TRIGGER player_kill_credit_immutable
+    BEFORE UPDATE OR DELETE ON game_character_player_kill_credits
+    FOR EACH ROW EXECUTE FUNCTION game_public_death_capture_immutable();
+CREATE TRIGGER player_kill_credit_no_truncate
+    BEFORE TRUNCATE ON game_character_player_kill_credits
+    EXECUTE FUNCTION game_public_death_capture_immutable();
