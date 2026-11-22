@@ -297,6 +297,122 @@
       ]
     },
     {
+      "key": "oteryn:quest-npc/postman/kevin/bones_prompt",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "Do you bring all bones for our officers' safety fund at once?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:86"
+      ],
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 13
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/bones_complete",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "You have collected all the 20 bones needed. Excellent! Now let's talk about further missions if you are interested."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:228"
+      ],
+      "topics": [
+        13
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item_total",
+          "items": [
+            "oteryn:item.tibia.i3115",
+            "oteryn:item.tibia.i3116"
+          ],
+          "minimum": 20
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_all_items",
+          "items": [
+            "oteryn:item.tibia.i3115",
+            "oteryn:item.tibia.i3116"
+          ]
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/kevin/bones_missing",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "You don't have it..."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:233"
+      ],
+      "topics": [
+        13
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
       "key": "oteryn:quest-npc/postman/kevin/present_report",
       "quest": "oteryn:quest.the_postman_missions_quest",
       "npc": "oteryn:npc.kevin",
@@ -3386,6 +3502,231 @@
       "inventory_failure_reply": [
         "We cannot make the exchange right now."
       ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/noodles/sniff_1",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.noodles",
+      "trigger": "say",
+      "keywords": [
+        "banana skin"
+      ],
+      "reply": [
+        "<sniff><sniff>"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/noodles.lua:66"
+      ],
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 7
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3104",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/noodles/like_1",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.noodles",
+      "trigger": "say",
+      "keywords": [
+        "like"
+      ],
+      "reply": [
+        "Woof!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/noodles.lua:88"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 8
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/noodles/sniff_2",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.noodles",
+      "trigger": "say",
+      "keywords": [
+        "dirty fur"
+      ],
+      "reply": [
+        "<sniff><sniff>"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/noodles.lua:73"
+      ],
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 8
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3105",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/noodles/like_2",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.noodles",
+      "trigger": "say",
+      "keywords": [
+        "like"
+      ],
+      "reply": [
+        "Woof!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/noodles.lua:92"
+      ],
+      "topics": [
+        2
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 9
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/noodles/sniff_3",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.noodles",
+      "trigger": "say",
+      "keywords": [
+        "mouldy cheese"
+      ],
+      "reply": [
+        "<sniff><sniff>"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/noodles.lua:80"
+      ],
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 9
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3120",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/noodles/like_3",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.noodles",
+      "trigger": "say",
+      "keywords": [
+        "like"
+      ],
+      "reply": [
+        "Meeep! Grrrrr! <spits>"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/noodles.lua:96"
+      ],
+      "topics": [
+        3
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
+          "value": 10
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
     }
   ],
   "source_files": [
@@ -3448,6 +3789,11 @@
       "path": "data-global/npc/ninos.lua",
       "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
       "sha256": "c4f5d4de63577e1c48efcd9683ad86cd2c9790fa4ca0687a38a70c98032adc72"
+    },
+    {
+      "path": "data-global/npc/noodles.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "963276766d4a122f8fa4514e064174da4b11f401448cc56395e1034330e3d287"
     },
     {
       "path": "data-global/npc/queen_eloise.lua",

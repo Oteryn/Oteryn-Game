@@ -700,10 +700,11 @@ impl NpcConversations {
             position: there,
             entry,
         }];
+        let female = chat.female_npc_speaker(session);
         let Some((reply, had, engaged)) = chat.converse(session, |engaged| {
             let prior = *engaged;
             let had = prior.is_some();
-            let reply = talk(at, &text, &npcs, engaged);
+            let reply = talk(at, &text, &npcs, engaged, female);
             if reply.is_none() {
                 // Only the NPC this command names was offered to the rule, so a command it does not
                 // answer must not end a conversation held with another NPC.

@@ -76,6 +76,7 @@ struct ChatSession {
     walked_away: Vec<String>,
     /// The session selected capability 3: NPCs answer its `say` (NPC-CMD-1a).
     npc_service: bool,
+    female_npc_speaker: bool,
     /// Historical local rule fixture; production capability80 uses private_world.
     #[cfg(test)]
     channels: private_channel::PrivateChannels,
@@ -207,6 +208,7 @@ impl ChatRuntime {
                 joined: 0,
                 walked_away: Vec::new(),
                 npc_service: false,
+                female_npc_speaker: false,
                 #[cfg(test)]
                 channels: private_channel::PrivateChannels::default(),
                 public_rooms: public_channels::PublicRoomState::default(),
@@ -215,6 +217,7 @@ impl ChatRuntime {
             entry.name = name.to_owned();
             entry.mount_sounds = false;
             entry.character = character;
+            entry.female_npc_speaker = false;
             entry.egress.clear();
             entry.echoes.clear();
             entry.engaged = None;
@@ -376,6 +379,22 @@ impl ChatRuntime {
             entry.engaged = None;
             entry.walked_away.clear();
         }
+    }
+
+    pub(super) fn set_female_npc_speaker(&self, session: GameSessionId, female: bool) {
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(entry) = sessions.get_mut(&session)
+        {
+            entry.female_npc_speaker = female;
+        }
+    }
+
+    pub(super) fn female_npc_speaker(&self, session: GameSessionId) -> bool {
+        self.sessions.lock().ok().is_some_and(|sessions| {
+            sessions
+                .get(&session)
+                .is_some_and(|entry| entry.female_npc_speaker)
+        })
     }
 
     /// The actual chat owner's engagement generation. Display-only binding data; this does
@@ -977,7 +996,13 @@ fn npc_answer(
         return;
     }
     let prior = speaking.engaged;
-    let Some(mut reply) = talk(at, text, &npcs, &mut speaking.engaged) else {
+    let Some(mut reply) = talk(
+        at,
+        text,
+        &npcs,
+        &mut speaking.engaged,
+        speaking.female_npc_speaker,
+    ) else {
         return;
     };
     if prior != Some(reply.id)

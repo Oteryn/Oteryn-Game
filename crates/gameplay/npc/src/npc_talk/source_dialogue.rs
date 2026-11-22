@@ -16,8 +16,19 @@ pub(super) struct Dialogue {
     pub(super) walkaway: Option<String>,
     pub(super) greetings: Option<Vec<String>>,
     pub(super) farewells: Option<Vec<String>>,
+    pub(super) focus_greet: Option<FocusReply>,
+    pub(super) focus_farewell: Option<FocusReply>,
     #[serde(default)]
     pub(super) keywords: Vec<ProjectV2DialogueKeyword>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub(super) struct FocusReply {
+    pub(super) triggers: Vec<String>,
+    pub(super) reply: String,
+    #[serde(default)]
+    pub(super) female_only: bool,
 }
 
 pub(super) fn catalogue() -> &'static BTreeMap<String, Dialogue> {

@@ -456,3 +456,68 @@ fn source_callback_lore_and_passage_replies() -> Result<(), String> {
     assert!(differences.is_empty(), "{}", differences.join("\n"));
     Ok(())
 }
+
+#[test]
+fn elf_focus_words_open_and_close_the_production_conversation() -> Result<(), String> {
+    let book = book()?;
+    let position = ChatPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    for key in ["oteryn:npc.edala", "oteryn:npc.maealil"] {
+        let entry = book.get(key).ok_or(key)?;
+        let npcs = [TalkNpc {
+            id: 1,
+            position,
+            entry,
+        }];
+        let mut focus = None;
+        assert!(
+            talk(position, "ashari", &npcs, &mut focus).is_some(),
+            "{key}"
+        );
+        assert_eq!(focus, Some(1), "{key}");
+        assert!(
+            talk(position, "asgha thrazi", &npcs, &mut focus).is_some(),
+            "{key}"
+        );
+        assert_eq!(focus, None, "{key}");
+    }
+    Ok(())
+}
+
+#[test]
+fn dixi_uses_source_focus_replies() -> Result<(), String> {
+    let book = book()?;
+    let position = ChatPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    let entry = book.get("oteryn:npc.dixi").ok_or("Dixi")?;
+    let npcs = [TalkNpc {
+        id: 1,
+        position,
+        entry,
+    }];
+    let mut focus = None;
+    let _ = talk(position, "hello", &npcs, &mut focus).ok_or("Dixi greeting")?;
+    let reply = talk(position, "farewell", &npcs, &mut focus).ok_or("Dixi farewell")?;
+    assert_eq!(reply.text, "Good bye, Sir.");
+    assert_eq!(focus, None);
+    let source = source_dialogue::catalogue()
+        .get("oteryn:npc.dixi")
+        .ok_or("Dixi source")?;
+    for (word, variant) in [
+        ("hello", source.focus_greet.as_ref()),
+        ("farewell", source.focus_farewell.as_ref()),
+    ] {
+        let expected = variant.ok_or("missing female focus reply")?;
+        let reply = talk_with_speaker(position, word, &npcs, &mut focus, true)
+            .ok_or("Dixi female focus reply")?;
+        assert_eq!(reply.text, expected.reply);
+    }
+    assert_eq!(focus, None);
+    Ok(())
+}

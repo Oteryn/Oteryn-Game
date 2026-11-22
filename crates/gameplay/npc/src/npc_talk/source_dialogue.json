@@ -722,11 +722,13 @@
     ]
   },
   "oteryn:npc.dixi": {
+    "focus_greet": {"triggers": ["hi", "hello"], "reply": "Good day, Ma'am. How may I help you, |PLAYERNAME|? If you like to see my offers, simply ask me for a trade!", "female_only": true},
+    "focus_farewell": {"triggers": ["bye", "farewell"], "reply": "Good bye, Ma'am.", "female_only": true},
     "walkaway": "Um yeah, good day.",
     "greet": [
       "Greetings, |PLAYERNAME|."
     ],
-    "farewell": "Good bye, |PLAYERNAME|.",
+    "farewell": "Good bye, Sir.",
     "keywords": [
       {"key": "name", "triggers": ["name"], "reply": ["I'm Dixi."]},
       {"key": "citizen", "triggers": ["citizen"], "reply": ["<giggles> I love gossiping - err, I mean providing valuable information of course, just tell me a name! <winks>"]},
@@ -787,6 +789,8 @@
     ]
   },
   "oteryn:npc.edala": {
+    "focus_greet": {"triggers": ["ashari"], "reply": "Greetings, |PLAYERNAME|."},
+    "focus_farewell": {"triggers": ["asgha thrazi"], "reply": "Asha Thrazi, |PLAYERNAME|."},
     "farewell": "Asha Thrazi, |PLAYERNAME|!",
     "walkaway": "Asha Thrazi, |PLAYERNAME|!",
     "keywords": [
@@ -1476,6 +1480,8 @@
     "walkaway": "Be careful on your journeys."
   },
   "oteryn:npc.maealil": {
+    "focus_greet": {"triggers": ["ashari"], "reply": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free."},
+    "focus_farewell": {"triggers": ["asgha thrazi"], "reply": "May the gods bless you, |PLAYERNAME|!"},
     "greet": [
       "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free."
     ],

@@ -32,6 +32,14 @@ impl NpcRuleCatalog {
                         op: NpcComparison::Ge | NpcComparison::Lt,
                     } => {
                         keys.insert(item.clone());
+                        // An item can qualify a topic without being consumed.
+                        items |= npc == "oteryn:npc.noodles";
+                    }
+                    NpcRuleGuard::ItemTotal {
+                        items: ingredients, ..
+                    } => {
+                        keys.extend(ingredients.iter().cloned());
+                        items = true;
                     }
                     _ => return None,
                 }
@@ -56,6 +64,10 @@ impl NpcRuleCatalog {
                         optional: false,
                     } => {
                         keys.insert(item.clone());
+                        items = true;
+                    }
+                    NpcRuleEffect::TakeAllItems { items: ingredients } => {
+                        keys.extend(ingredients.iter().cloned());
                         items = true;
                     }
                     NpcRuleEffect::GiveItem {

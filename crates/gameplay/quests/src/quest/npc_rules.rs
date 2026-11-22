@@ -144,6 +144,10 @@ pub enum NpcRuleGuard {
         #[serde(default)]
         op: NpcComparison,
     },
+    ItemTotal {
+        items: [String; 2],
+        minimum: u32,
+    },
     Money {
         amount: u64,
         #[serde(default)]
@@ -219,6 +223,9 @@ pub enum NpcRuleEffect {
         /// call consumes nothing when the complete requested count is absent.
         #[serde(default)]
         optional: bool,
+    },
+    TakeAllItems {
+        items: [String; 2],
     },
     GiveItem {
         item: String,

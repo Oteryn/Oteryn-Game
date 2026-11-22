@@ -214,6 +214,8 @@ pub struct NpcTalkEntry {
     greeting_reply: String,
     greeting_continuation: Vec<String>,
     farewell_reply: String,
+    focus_greet: Option<source_dialogue::FocusReply>,
+    focus_farewell: Option<source_dialogue::FocusReply>,
     source_name_templates: bool,
     source_walkaway: Option<String>,
     /// The service lines, joined; `None` when the NPC has no service.
@@ -241,6 +243,8 @@ impl NpcTalkEntry {
             .iter()
             .any(|greeting| contains_words(&said, &words(greeting)))
             || self.is_farewell(&said)
+            || focus_reply(self.focus_greet.as_ref(), &said, false).is_some()
+            || focus_reply(self.focus_farewell.as_ref(), &said, false).is_some()
             || says_any(&said, &TRADE_WORDS)
             || self.dialogue_keyword(text, &said).is_some()
     }
@@ -342,6 +346,8 @@ impl NpcTalkEntry {
             greeting_continuation: Vec::new(),
             greeting_reply: format!("Greetings, I am {name}."),
             farewell_reply: "Farewell.".to_owned(),
+            focus_greet: None,
+            focus_farewell: None,
             source_name_templates: false,
             source_walkaway: None,
             topic_reply: topic.map(str::to_owned),
@@ -944,6 +950,9 @@ impl NpcTalkBook {
                     greeting_reply,
                     greeting_continuation,
                     farewell_reply,
+                    focus_greet: source_dialogue.and_then(|source| source.focus_greet.clone()),
+                    focus_farewell: source_dialogue
+                        .and_then(|source| source.focus_farewell.clone()),
                     source_name_templates: source_dialogue.is_some()
                         || bank
                         || literal_contacts::greeting(&reference.key).is_some()
@@ -1107,6 +1116,17 @@ pub fn talk<K: Copy + PartialEq>(
     npcs: &[TalkNpc<'_, K>],
     engaged: &mut Option<K>,
 ) -> Option<NpcReply<K>> {
+    talk_with_speaker(speaker, text, npcs, engaged, false)
+}
+
+/// Applies the same conversation rules with the admitted speaker's creation sex.
+pub fn talk_with_speaker<K: Copy + PartialEq>(
+    speaker: ChatPosition,
+    text: &str,
+    npcs: &[TalkNpc<'_, K>],
+    engaged: &mut Option<K>,
+    female: bool,
+) -> Option<NpcReply<K>> {
     let said = words(text);
     if let Some(current) = *engaged {
         let here = npcs.iter().find(|npc| {
@@ -1117,7 +1137,7 @@ pub fn talk<K: Copy + PartialEq>(
         });
         let Some(npc) = here else {
             *engaged = None;
-            return start(speaker, text, npcs, engaged);
+            return start(speaker, text, &said, npcs, engaged, female);
         };
         if let Some(keyword) = npc.entry.dialogue_keyword(text, &said) {
             return Some(NpcReply {
@@ -1126,11 +1146,13 @@ pub fn talk<K: Copy + PartialEq>(
                 continuation: keyword.reply[1..].to_vec(),
             });
         }
-        if npc.entry.is_farewell(&said) {
+        let farewell = focus_reply(npc.entry.focus_farewell.as_ref(), &said, female)
+            .or_else(|| npc.entry.is_farewell(&said).then_some(npc.entry.farewell()));
+        if let Some(farewell) = farewell {
             *engaged = None;
             return Some(NpcReply {
                 id: npc.id,
-                text: npc.entry.farewell_reply.clone(),
+                text: farewell.to_owned(),
                 continuation: Vec::new(),
             });
         }
@@ -1147,30 +1169,63 @@ pub fn talk<K: Copy + PartialEq>(
         }
         // NPC-REGREET-1 (Canary npc_handler.lua `greet`): the NPC already talking to the speaker
         // does not greet it again; a greeting that reaches another NPC still starts there.
-        return start(speaker, text, npcs, engaged).filter(|reply| reply.id != current);
+        return start(speaker, text, &said, npcs, engaged, female)
+            .filter(|reply| reply.id != current);
     }
-    start(speaker, text, npcs, engaged)
+    start(speaker, text, &said, npcs, engaged, female)
+}
+
+fn focus_reply<'a>(
+    variant: Option<&'a source_dialogue::FocusReply>,
+    said: &[String],
+    female: bool,
+) -> Option<&'a str> {
+    let variant = variant?;
+    ((!variant.female_only || female)
+        && variant
+            .triggers
+            .iter()
+            .any(|trigger| contains_words(said, &words(trigger))))
+    .then_some(variant.reply.as_str())
 }
 
 fn start<K: Copy + PartialEq>(
     speaker: ChatPosition,
     text: &str,
+    said: &[String],
     npcs: &[TalkNpc<'_, K>],
     engaged: &mut Option<K>,
+    female: bool,
 ) -> Option<NpcReply<K>> {
-    let greeting: Vec<GreetingNpc<'_>> = npcs
+    let greeting: Vec<_> = npcs
         .iter()
         .enumerate()
-        .map(|(index, npc)| GreetingNpc {
-            actor_id: index as u64,
-            position: npc.position,
-            greetings: &npc.entry.greetings,
-            talk_range: DEFAULT_TALK_RANGE,
+        .flat_map(|(index, npc)| {
+            let candidate = |greetings| GreetingNpc {
+                actor_id: index as u64,
+                position: npc.position,
+                greetings,
+                talk_range: DEFAULT_TALK_RANGE,
+            };
+            let alternate = npc
+                .entry
+                .focus_greet
+                .as_ref()
+                .filter(|variant| !variant.female_only || female)
+                .map(|variant| candidate(variant.triggers.as_slice()));
+            std::iter::once(candidate(npc.entry.greetings.as_slice())).chain(alternate)
         })
         .collect();
     let index = usize::try_from(greeted_npc(speaker, text, &greeting)?).ok()?;
     let npc = npcs.get(index)?;
     *engaged = Some(npc.id);
+    if let Some(reply) = focus_reply(npc.entry.focus_greet.as_ref(), said, female) {
+        return Some(NpcReply {
+            id: npc.id,
+            text: reply.to_owned(),
+            continuation: Vec::new(),
+        });
+    }
     Some(NpcReply {
         id: npc.id,
         text: npc.entry.greeting_reply.clone(),

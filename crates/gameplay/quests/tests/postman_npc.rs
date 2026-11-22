@@ -184,3 +184,255 @@ fn postman_peer_conversations_write_the_source_mission_stages() -> Result<(), St
     }
     Ok(())
 }
+
+#[test]
+fn postman_world_tasks_have_admitted_stage_writers() -> Result<(), String> {
+    use oteryn_gameplay_quests::quest::{QuestRefusal, world_callbacks};
+    let native =
+        loader::load_embedded_quest_state("postman-world").map_err(|e| format!("{e:?}"))?;
+    let catalogue = native.catalogue();
+    let callbacks = world_callbacks::load_for(catalogue)?;
+    // The production loader produced this hash before the new writers were admitted.
+    let previous = [
+        0x9f, 0x64, 0x52, 0x8b, 0x3c, 0x6c, 0x06, 0xaf, 0xa5, 0xc5, 0x6d, 0x2c, 0x83, 0xf7, 0x6c,
+        0x34, 0xe1, 0x98, 0x45, 0x1f, 0x4f, 0x03, 0x78, 0x69, 0x8c, 0x78, 0x87, 0x02, 0xdf, 0x5f,
+        0x83, 0x68,
+    ];
+    assert!(
+        oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+            catalogue,
+            "oteryn:quest.the_postman_missions_quest",
+            &previous,
+        )
+        .is_some()
+    );
+    let cases = [
+        ("folda-mailbox", "mission02", 1, 2, None),
+        (
+            "dermot-present",
+            "mission05",
+            1,
+            2,
+            Some("oteryn:item.tibia.i3218"),
+        ),
+        (
+            "waldo-posthorn",
+            "mission08",
+            1,
+            2,
+            Some("oteryn:item.tibia.i3219"),
+        ),
+        (
+            "santa-letterbag",
+            "mission09",
+            1,
+            2,
+            Some("oteryn:item.tibia.i3217"),
+        ),
+        ("letterbag-delivery", "mission09", 2, 3, None),
+    ];
+    let missing: Vec<_> = cases
+        .iter()
+        .filter_map(|(name, ..)| {
+            let key = format!("oteryn:quest-callback/postman-{name}");
+            (!callbacks.iter().any(|callback| callback.key == key)).then_some(name)
+        })
+        .collect();
+    assert!(missing.is_empty(), "missing world transitions: {missing:?}");
+    for (name, mission, before, after, reward) in cases {
+        let key = format!("oteryn:quest-callback/postman-{name}");
+        let callback = callbacks
+            .iter()
+            .find(|callback| callback.key == key)
+            .ok_or(&key)?;
+        assert!(callback.requires_world_admission, "{key}");
+        assert!(callback.selector.native.is_some(), "{key}");
+        assert_eq!(
+            callback
+                .item_reward()
+                .as_ref()
+                .map(|reward| reward.item.as_str()),
+            reward,
+            "{key}"
+        );
+        let transition = catalogue.transition(&key).ok_or(&key)?;
+        let track = format!("oteryn:quest-progress/quest/u7_24/the_postman_missions/{mission}");
+        let result =
+            |stage| catalogue.evaluate(transition, &BTreeMap::from([(track.clone(), stage)]), 0);
+        assert_eq!(
+            result(before - 1),
+            Err(QuestRefusal::StageMismatch),
+            "{key}"
+        );
+        let changes = result(before).map_err(|e| format!("{key}: {e:?}"))?;
+        assert_eq!(changes[0].after, after, "{key}");
+        assert_eq!(result(after), Err(QuestRefusal::StageMismatch), "{key}");
+    }
+    Ok(())
+}
+
+#[test]
+fn postman_noodles_trials_require_the_source_items() -> Result<(), String> {
+    let native =
+        loader::load_embedded_quest_state("postman-noodles").map_err(|e| format!("{e:?}"))?;
+    let npc = "oteryn:npc.noodles";
+    let catalogue = NpcRuleCatalog::runtime()
+        .and_then(|source| source.admitted_for_npc(npc, native.catalogue()))
+        .map_err(|e| e.to_string())?
+        .ok_or("Noodles has no admitted programme")?;
+    let track = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06";
+    for (stage, item, message) in [
+        (7, 3104, "banana skin"),
+        (8, 3105, "dirty fur"),
+        (9, 3120, "mouldy cheese"),
+    ] {
+        let tracks = BTreeMap::from([(track.into(), stage)]);
+        let mut inventory = NpcInventorySnapshot::default();
+        let plan = |inventory: &NpcInventorySnapshot, topic, message| {
+            let input = NpcRuleInput {
+                npc,
+                trigger: NpcRuleTrigger::Say,
+                message,
+                player_name: None,
+                topic,
+                tracks: &tracks,
+                inventory,
+                now_epoch_seconds: 0,
+                calendar_month: 1,
+                premium_current: false,
+                level: 0,
+                vocation: "",
+                sex: 0,
+                outfits: &BTreeMap::new(),
+            };
+            catalogue
+                .plan_item_exchange(&input)
+                .map_err(|e| e.to_string())
+        };
+        assert!(plan(&NpcInventorySnapshot::default(), 0, message)?.is_none());
+        inventory.items.insert(
+            NpcItemKey {
+                item: format!("oteryn:item.tibia.i{item}"),
+                subtype: None,
+            },
+            1,
+        );
+        let sniff = plan(&inventory, 0, message)?.ok_or("missing sniff reply")?;
+        assert!(sniff.track_changes.is_empty());
+        let liked = plan(&inventory, sniff.next_topic, "like")?.ok_or("missing trial outcome")?;
+        assert_eq!(liked.track_changes[0].after, stage + 1);
+        assert_eq!(liked.inventory_after, inventory);
+    }
+    Ok(())
+}
+
+#[test]
+fn postman_kevin_bones_hand_in_combines_both_source_items() -> Result<(), String> {
+    let native =
+        loader::load_embedded_quest_state("postman-bones").map_err(|e| format!("{e:?}"))?;
+    let npc = "oteryn:npc.kevin";
+    let catalogue = NpcRuleCatalog::runtime()
+        .and_then(|source| source.admitted_for_npc(npc, native.catalogue()))
+        .map_err(|e| e.to_string())?
+        .ok_or("Kevin has no admitted programme")?;
+    let track = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04";
+    let tracks = BTreeMap::from([
+        (track.into(), 1),
+        (
+            "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01".into(),
+            6,
+        ),
+        (
+            "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission03".into(),
+            3,
+        ),
+        (
+            "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank".into(),
+            1,
+        ),
+    ]);
+    let plan = |message, topic, first, second| {
+        let item = |id| NpcItemKey {
+            item: format!("oteryn:item.tibia.i{id}"),
+            subtype: None,
+        };
+        let inventory = NpcInventorySnapshot {
+            items: BTreeMap::from([(item(3115), first), (item(3116), second)]),
+            ..Default::default()
+        };
+        catalogue
+            .plan_item_exchange(&NpcRuleInput {
+                npc,
+                trigger: NpcRuleTrigger::Say,
+                message,
+                player_name: None,
+                topic,
+                tracks: &tracks,
+                inventory: &inventory,
+                now_epoch_seconds: 0,
+                calendar_month: 1,
+                premium_current: false,
+                level: 0,
+                vocation: "",
+                sex: 0,
+                outfits: &BTreeMap::new(),
+            })
+            .map_err(|e| e.to_string())
+    };
+    let prompt = plan("mission", 0, 9, 10)?.ok_or("missing bone hand-in prompt")?;
+    let refused = plan("yes", prompt.next_topic, 9, 10)?.ok_or("missing bone refusal")?;
+    assert!(refused.track_changes.is_empty());
+    assert_eq!(refused.next_topic, 0);
+    for (first, second) in [(0, 20), (20, 0), (12, 9)] {
+        let handed_in =
+            plan("yes", prompt.next_topic, first, second)?.ok_or("missing bone hand-in")?;
+        assert_eq!(handed_in.track_changes[0].after, 2);
+        assert!(
+            handed_in
+                .inventory_after
+                .items
+                .values()
+                .all(|count| *count == 0)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn postman_partial_lokur_refuses_before_the_paid_olrik_measurement() -> Result<(), String> {
+    let native =
+        loader::load_embedded_quest_state("postman-lokur").map_err(|e| format!("{e:?}"))?;
+    let npc = "oteryn:npc.lokur";
+    let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
+    let catalogue = source
+        .admitted_for_npc(npc, native.catalogue())
+        .map_err(|e| e.to_string())?
+        .ok_or("Lokur has no admitted programme")?;
+    let track = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07";
+    let plan = |stage| {
+        catalogue
+            .plan_storage(&NpcRuleInput {
+                npc,
+                trigger: NpcRuleTrigger::Say,
+                message: "measurements",
+                player_name: None,
+                topic: 0,
+                tracks: &BTreeMap::from([(track.into(), stage)]),
+                inventory: &NpcInventorySnapshot::default(),
+                now_epoch_seconds: 0,
+                calendar_month: 1,
+                premium_current: false,
+                level: 0,
+                vocation: "",
+                sex: 0,
+                outfits: &BTreeMap::new(),
+            })
+            .map_err(|e| e.to_string())
+    };
+    assert!(plan(5)?.is_none());
+    assert_eq!(
+        plan(6)?.ok_or("Lokur at stage 6")?.track_changes[0].after,
+        7
+    );
+    Ok(())
+}

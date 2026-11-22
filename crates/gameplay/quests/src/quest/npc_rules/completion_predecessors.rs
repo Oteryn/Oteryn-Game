@@ -63,6 +63,15 @@ pub(super) fn register(
     // Measured on the complete deployed catalogue at 871c1dec7. Each new
     // branch uses existing tracks, so absent values retain their original defaults.
     for (quest, hash) in [
+        // Measured through the production loader at 35d65457d.
+        (
+            "oteryn:quest.the_postman_missions_quest",
+            [
+                0x9f, 0x64, 0x52, 0x8b, 0x3c, 0x6c, 0x06, 0xaf, 0xa5, 0xc5, 0x6d, 0x2c, 0x83, 0xf7,
+                0x6c, 0x34, 0xe1, 0x98, 0x45, 0x1f, 0x4f, 0x03, 0x78, 0x69, 0x8c, 0x78, 0x87, 0x02,
+                0xdf, 0x5f, 0x83, 0x68,
+            ],
+        ),
         (
             "oteryn:quest.children_of_the_revolution_quest",
             [
