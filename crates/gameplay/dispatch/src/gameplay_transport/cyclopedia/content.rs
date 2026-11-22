@@ -1,6 +1,8 @@
 //! W12: discovery membership and POI candidates come from admitted native subarea masks.
 use super::*;
 
+const ROOKGAARD_SUBAREA: u32 = 317;
+
 pub(in crate::gameplay_transport) struct AdmittedArea {
     pub digest: [u8; 32],
     pub pool: Vec<Point>,
@@ -78,7 +80,10 @@ pub(super) fn admit_at(
         .filter_map(|a| a.parent.map(|parent| (parent, a.id)))
         .collect();
     let mut pool = Vec::new();
-    'candidates: for run in table.runs.iter().filter(|run| run.subarea == subarea) {
+    // Crystal 201189f8 restricts Rookgaard POIs to z=7 and z=8. Bundle floors negate z.
+    'candidates: for run in table.runs.iter().filter(|run| {
+        run.subarea == subarea && (subarea != ROOKGAARD_SUBAREA || matches!(run.floor, -8 | -7))
+    }) {
         for x in run.begin..run.end {
             if pool.len() == sampling.pool_limit {
                 break 'candidates;
