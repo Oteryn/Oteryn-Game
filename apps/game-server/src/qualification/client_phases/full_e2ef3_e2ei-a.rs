@@ -10,6 +10,10 @@ use oteryn_protocol_oteryn::{
 };
 use std::num::NonZeroU32;
 
+const I01: &str = "I01";
+const I16: &str = "I16";
+pub(super) const COVERED_ROWS: &[&str] = &[I01, I16];
+
 fn world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -113,7 +117,7 @@ pub(super) async fn run(
         Ok(world) => inventory_journey(&mut client, clients, world, &mut step).await,
         Err(error) => Err(error.to_string().into()),
     };
-    report("I01", step, started, &result);
+    report(I01, step, started, &result);
 
     let mut step = "inspect-applied-imbuement";
     let started = std::time::Instant::now();
@@ -121,7 +125,7 @@ pub(super) async fn run(
         Ok(world) => imbuement_journey(&mut client, clients, world, &mut step).await,
         Err(error) => Err(error.to_string().into()),
     };
-    report("I16", step, started, &result);
+    report(I16, step, started, &result);
     if let Ok(world) = world
         && let Err(error) = return_to_town(&mut client, world).await
     {

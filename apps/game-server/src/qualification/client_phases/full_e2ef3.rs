@@ -9,11 +9,14 @@ use std::collections::BTreeMap;
 #[path = "full_e2ef3_e2ei-a.rs"]
 mod e2ei_a;
 
+#[path = "full_e2ef3_e2ei-c.rs"]
+mod e2ei_c;
+
 #[path = "full_e2ef3_e2ei-b.rs"]
 mod full_e2ef3_e2ei_b;
 
-#[path = "full_e2ef3_e2ei-c.rs"]
-mod e2ei_c;
+#[path = "full_e2ef3_e2ei-d.rs"]
+mod full_e2ef3_e2ei_d;
 
 struct Row {
     id: &'static str,
@@ -24,9 +27,34 @@ struct Row {
 // Keep the audit's sub-actions explicit, including the durability assertions.
 const ROWS: &[Row] = &[
     Row {
+        id: "I01",
+        source: "crates/gameplay/dispatch/src/gameplay_transport/loop_move.rs:3",
+        missing: "ground-inventory,nested-move,split-stack,merge-stack,capacity-refusal,relogin-quantities",
+    },
+    Row {
+        id: "I04",
+        source: "crates/protocol-oteryn/src/mail.rs:14",
+        missing: "write-read-rewritable,text-limit,write-once-transform,rewrite-refusal,relogin-text-transform",
+    },
+    Row {
+        id: "I06",
+        source: "crates/gameplay/dispatch/src/gameplay_transport/corpse_decay.rs:7",
+        missing: "kill,leave-loot,observe-decay,retired-loot-unavailable,relogin-retirement",
+    },
+    Row {
+        id: "I07",
+        source: "crates/protocol-oteryn/src/quick_loot.rs:48",
+        missing: "manual-click,loot-all,accept-skip-filters,category-routing,gold-pouch,quiver-ammunition,relogin-policy-custody",
+    },
+    Row {
         id: "I08",
         source: "crates/gameplay/dispatch/src/gameplay_transport/reward_bag_use.rs:16",
         missing: "obtain-primal-bag,use-consumes-one,pinned-pool-reward,relogin-reward",
+    },
+    Row {
+        id: "I09",
+        source: "crates/gameplay/dispatch/src/gameplay_transport/item_transform.rs:16",
+        missing: "approach-unbound-nonhouse-furniture,use-rotate,assert-definition-and-collision",
     },
     Row {
         id: "I12",
@@ -42,6 +70,11 @@ const ROWS: &[Row] = &[
         id: "I15",
         source: "crates/gameplay/dispatch/src/gameplay_transport/timed_item_clock.rs:49",
         missing: "obtain-energy-ring,equip,damage-mana-at-two-to-one,health-spill,unequip-pause,expiry,relogin-timer",
+    },
+    Row {
+        id: "I16",
+        source: "crates/gameplay/dispatch/src/gameplay_transport/inspection.rs:644",
+        missing: "inspect-applied-imbuement,assert-family-tier-time-and-weight,relogin-imbuement",
     },
 ];
 
@@ -256,7 +289,7 @@ pub(super) async fn run(
         }
         for scenario in ["I01.root-view-relogin", "I16.starter-weight-relogin"] {
             evidence(&format!(
-                "e2e_all scenario={scenario} status=PASS seconds={:.3}",
+                "E2EF3_OBSERVATION scenario={scenario} status=PASS seconds={:.3}",
                 started.elapsed().as_secs_f64()
             ));
         }
@@ -267,15 +300,7 @@ pub(super) async fn run(
         Ok(_) => verdict::Cause::Assertion,
         Err(error) => verdict::classify(error.as_ref()),
     };
-    for row in ROWS {
-        if observations.is_ok() && ((row.id == "I08" && primal) || (row.id == "I13" && covet)) {
-            evidence(&format!(
-                "e2e_all scenario={}.full status=PASS seconds={:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities",
-                row.id,
-                started.elapsed().as_secs_f64()
-            ));
-            continue;
-        }
+    for row in generic_rows() {
         result(
             row,
             started.elapsed().as_secs_f64(),
@@ -287,7 +312,34 @@ pub(super) async fn run(
             &cause,
         );
     }
+    let starter_observed = observations.is_ok();
     let client = e2ei_a::run(client, clients).await;
     let client = full_e2ef3_e2ei_b::run(observations.map(|()| client), clients).await;
-    e2ei_c::run(client, clients).await
+    let client = e2ei_c::run(client, clients).await;
+    full_e2ef3_e2ei_d::run(client, clients, primal, covet, starter_observed, started).await
+}
+
+const MODULE_ROWS: &[&[&str]] = &[
+    e2ei_a::COVERED_ROWS,
+    full_e2ef3_e2ei_b::COVERED_ROWS,
+    e2ei_c::COVERED_ROWS,
+    full_e2ef3_e2ei_d::COVERED_ROWS,
+];
+
+fn generic_rows() -> impl Iterator<Item = &'static Row> {
+    ROWS.iter().filter(|row| {
+        !MODULE_ROWS.iter().any(|ids| ids.contains(&row.id))
+    })
+}
+
+#[test]
+fn full_e2ef3_reports_each_row_once() {
+    let mut covered: Vec<_> = MODULE_ROWS.iter().flat_map(|ids| ids.iter().copied())
+        .chain(generic_rows().map(|row| row.id))
+        .collect();
+    covered.sort_unstable();
+    let mut expected: Vec<_> = ROWS.iter().map(|row| row.id).collect();
+    expected.sort_unstable();
+    assert!(covered.windows(2).all(|pair| pair[0] != pair[1]));
+    assert_eq!(covered, expected);
 }

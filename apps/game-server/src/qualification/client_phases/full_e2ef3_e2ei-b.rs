@@ -8,6 +8,10 @@ use oteryn_protocol_oteryn::world_object::{
 use oteryn_protocol_oteryn::{item_inscription as inscription, mail};
 use std::num::{NonZeroU32, NonZeroU64};
 
+const I04: &str = "I04";
+const I09: &str = "I09";
+pub(super) const COVERED_ROWS: &[&str] = &[I04, I09];
+
 const CHAIR: TilePos = TilePos {
     x: 32355,
     y: 32206,
@@ -70,8 +74,8 @@ pub(super) async fn run(
             Ok(client) => client,
             Err(error) => {
                 for (row, action) in [
-                    ("I04", "write-once-transform"),
-                    ("I09", "approach-unbound-nonhouse-furniture"),
+                    (I04, "write-once-transform"),
+                    (I09, "approach-unbound-nonhouse-furniture"),
                 ] {
                     report(row, started, action, Some(error.as_ref()));
                 }
@@ -90,9 +94,9 @@ pub(super) async fn run(
     let world = match world {
         Ok(world) => world,
         Err(error) => {
-            report("I04", started, "write-once-transform", Some(error.as_ref()));
+            report(I04, started, "write-once-transform", Some(error.as_ref()));
             report(
-                "I09",
+                I09,
                 started,
                 "approach-unbound-nonhouse-furniture",
                 Some(error.as_ref()),
@@ -103,7 +107,7 @@ pub(super) async fn run(
     let mut action = "approach-unbound-nonhouse-furniture";
     let result = furniture(&mut client, world, &mut action).await;
     report(
-        "I09",
+        I09,
         started,
         action,
         result.as_ref().err().map(Box::as_ref),
@@ -114,7 +118,7 @@ pub(super) async fn run(
     let mut logged_out = false;
     let result = documents(&mut client, clients, world, &mut action, &mut logged_out).await;
     report(
-        "I04",
+        I04,
         started,
         action,
         result.as_ref().err().map(Box::as_ref),

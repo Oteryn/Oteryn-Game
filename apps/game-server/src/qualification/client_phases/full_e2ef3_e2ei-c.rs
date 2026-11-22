@@ -10,6 +10,10 @@ use oteryn_protocol_oteryn::{
 };
 use tokio::time::Instant;
 
+const I06: &str = "I06";
+const I07: &str = "I07";
+pub(super) const COVERED_ROWS: &[&str] = &[I06, I07];
+
 const WOLF_TILE: TilePos = TilePos {
     x: 32427,
     y: 32158,
@@ -899,7 +903,7 @@ fn result(row: &str, started: Instant, pass: &str, gap: Option<(&str, &str, &ver
 fn setup_failure(started: Instant, error: &(dyn std::error::Error + 'static)) {
     let cause = verdict::classify(error);
     let observed = error.to_string();
-    for (row, step) in [("I06", "kill"), ("I07", "manual-click")] {
+    for (row, step) in [(I06, "kill"), (I07, "manual-click")] {
         result(row, started, "", Some((step, &observed, &cause)));
     }
 }
@@ -948,14 +952,14 @@ pub(super) async fn run(
     let mut step = "kill";
     match decay(&mut client, clients, &hunt, &mut step, town).await {
         Ok(()) => result(
-            "I06",
+            I06,
             started,
             "rat-kill-untouched-loot-decay-stale-use-move-fresh-absence",
             None,
         ),
         Err(error) => {
             result(
-                "I06",
+                I06,
                 started,
                 "",
                 Some((step, &error.to_string(), &verdict::classify(error.as_ref()))),
@@ -998,7 +1002,7 @@ pub(super) async fn run(
         name: "quick-loot-client-corpse-uuid".into(),
     };
     result(
-        "I07",
+        I07,
         started,
         "",
         Some(("manual-click", &observed, &cause)),
