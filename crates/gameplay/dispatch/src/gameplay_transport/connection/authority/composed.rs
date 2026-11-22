@@ -599,6 +599,30 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         outcome
     }
 
+    async fn take_party_membership_notices(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Vec<crate::durability::world_party::MembershipNotice> {
+        let fence = {
+            let Ok(runtime) = self.runtime.try_lock() else {
+                return Vec::new();
+            };
+            party_command::party_notice_fence(&admitted, &runtime)
+        };
+        let Some((fence, house)) = fence else {
+            return Vec::new();
+        };
+        self.root
+            .with_periodic_lock_budget(self.root.take_party_membership_notices(
+                self.character,
+                self.holder,
+                fence,
+                house,
+            ))
+            .await
+            .unwrap_or_default()
+    }
+
     fn server_save_countdown(
         &self,
     ) -> Option<crate::gameplay_transport::server_save_countdown::DueServerSaveCountdown> {
@@ -611,9 +635,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     fn server_messages_joined(&self, admitted: AdmittedSession) -> bool {
         !raid_notices::selected(admitted)
-            || self.states.server_messages.join(
+            || self.states.server_messages.join_selected(
                 admitted.game_session_id,
                 admitted.continuity.connection_generation,
+                admitted.continuity.selected_capabilities.contains(
+                    oteryn_protocol_oteryn::zones_nologout::CAPABILITY_SERVER_MESSAGE_CATEGORY_V1,
+                ),
             )
     }
 
@@ -631,11 +658,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     fn take_server_notice(
         &self,
         admitted: AdmittedSession,
-    ) -> Option<oteryn_protocol_oteryn::zones_nologout::ServerMessage> {
+    ) -> Option<oteryn_protocol_oteryn::zones_nologout::ServerNotification> {
         if !raid_notices::selected(admitted) {
             return None;
         }
-        self.states.server_messages.take(
+        self.states.server_messages.take_notification(
             admitted.game_session_id,
             admitted.continuity.connection_generation,
         )

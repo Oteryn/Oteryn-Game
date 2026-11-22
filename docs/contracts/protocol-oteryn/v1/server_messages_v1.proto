@@ -1,14 +1,27 @@
 // ZONES-NOLOGOUT-1: capability 92, domain 57. Reuses TutorialNoticeV1 status_text bytes.
 // Snapshot: empty=1 or the once-per-login configured MOTD (status_text).
-// Delta: exactly one status_text, raid warning or raid advance.
+// Delta: exactly one status_text, warning or advance. Capability 575 adds the optional
+// category after the text field. Omission means default. Legacy peers receive identical
+// bytes. Category does not change presentation kind or sequencing. Snapshots omit it.
+// Staff broadcasts are GLOBAL and raid announcements are RAID. Clients selecting
+// both 75 and 575 receive SYSTEM text alongside the structured save countdown.
+// Clients may use the structured countdown for timing and the text for display.
 // Text is 1..=255 UTF-8 bytes; message is at most 260 bytes. No hint IDs.
 syntax = "proto3";
 package oteryn.protocol.v1.server_messages;
 message ServerMessageV1 {
+  enum Category {
+    DEFAULT = 0;
+    GLOBAL = 1;
+    RAID = 2;
+    SYSTEM = 3;
+    TEAM_FINDER = 4;
+  }
   oneof message {
     uint32 empty = 1; // Exactly 1; snapshot only.
     string status_text = 2;
     string warning = 3; // Crystal MESSAGE_GAME_HIGHLIGHT raid announcement.
     string advance = 4; // Crystal MESSAGE_EVENT_ADVANCE, including XML type=event.
   }
+  Category category = 5;
 }

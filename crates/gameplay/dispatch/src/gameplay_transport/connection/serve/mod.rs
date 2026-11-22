@@ -21,6 +21,7 @@ mod idle;
 mod inbound;
 mod integrity;
 mod inventory_capacity;
+mod party_membership;
 mod party_skull;
 mod player_trade;
 mod poll;
