@@ -10,9 +10,8 @@
 //!    Harmony delta back to zero. Send it once more at zero as the refusal/zero-charge path and
 //!    require the server reply and unchanged Harmony/mana (the current owner deliberately accepts
 //!    this recorded Global-unverified path, so either disposition is recorded rather than faked).
-//! 5. Send the native Battle Instinct status query and require a canonical server snapshot; send a
-//!    malformed query and require rejection. A starter who has no player-earned Wheel allocation
-//!    must report inactive rather than receive a test-only perk.
+//! 5. Query Battle Instinct and check malformed refusal. The pinned perk is Knight-only, so
+//!    this Monk journey reports the missing separate Knight allocation and activation.
 //! 6. Logout, freshly admit the same character, and re-check the durable Monk vocation by casting
 //!    the Monk-only builder again; require its reply, mana delta, Harmony delta, and Serene state.
 
@@ -112,14 +111,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xcb)
         .await
         .map_err(|error| admission_error("initial-admission", error))?;
-    if let Err(error) = choose_monk(&mut client, world, &bytes).await {
-        verdict::record_error(error.as_ref());
-        row.fail("player-monk-choice", error);
-        battle_queries(row, &mut client).await;
-        logout(&mut client, world).await?;
-        return Ok(());
+    let (vocation, level) = admitted_vocation(&mut client).await?;
+    match monk_path(vocation, level) {
+        Some(false) => {
+            choose_monk(&mut client, world, &bytes).await
+                .map_err(|error| verdict::context(format!("step=player-monk-choice observed={error}"), error))?;
+            row.pass("player-monk-choice", "Oressa-confirmed");
+        }
+        Some(true) => row.fail("player-monk-choice", "already-Monk; need=first-vocation-transition; continuing Monk gameplay"),
+        None => {
+            row.fail("player-monk-choice", format!("vocation-id={vocation} level={level}; need=unassigned-level-8-character-for-Oressa-or-admitted-Monk-for-Harmony"));
+            battle_queries(row, &mut client).await;
+            logout(&mut client, world).await?;
+            return Ok(());
+        }
     }
-    row.pass("player-monk-choice", "Oressa-confirmed");
 
     if client.actor_vitals().is_some_and(|v| v.serene) {
         row.pass("solo-serene", client.actor_vitals());
@@ -312,8 +318,7 @@ async fn battle_queries(row: &mut Row, client: &mut DevClientSession) {
     use oteryn_protocol_oteryn::battle_instinct_status as wire;
     match client.session_mut().gated_command(wire::CAPABILITY_BATTLE_INSTINCT_STATUS_V1, wire::COMMAND_TYPE_BATTLE_INSTINCT_STATUS_QUERY, &[]).await {
         Ok(reply) if reply.status == CommandStatus::Accepted => match wire::BattleInstinctStatus::decode(&reply.payload) {
-            Some(status) if status.active => row.pass("battle-instinct-snapshot", status),
-            Some(status) => row.fail("battle-instinct-snapshot", format!("decoded={status:?}; need=earned-Wheel-allocation-with-active-battle_instinct")),
+            Some(status) => row.fail("battle-instinct-snapshot", battle_instinct_gap(status.active)),
             None => row.fail("battle-instinct-snapshot", format!("reply={reply:?} malformed status payload")),
         },
         Ok(reply) => row.fail("battle-instinct-snapshot", format!("reply={reply:?}")), Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("battle-instinct-snapshot", error) },
@@ -428,9 +433,50 @@ fn gap(action: &str, failures: &[String]) -> String {
         .map_or_else(|| format!("C11_GAP step={action} unproven"), |failure| format!("C11_GAP {failure}"))
 }
 
+async fn admitted_vocation(client: &mut DevClientSession) -> TestResult<(u8, u32)> {
+    use oteryn_protocol_oteryn::cyclopedia_character as wire;
+    let reply = client.session_mut().gated_command(wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+        wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, &[1, 0, 0, 1]).await?;
+    if reply.status != CommandStatus::Accepted || reply.payload.first() != Some(&1) {
+        return Err(format!("step=player-monk-choice observed={reply:?} need=admitted-vocation-and-level").into());
+    }
+    let vocation = general_stats::validate(&reply.payload, general_stats::selected(client))?
+        .ok_or("step=player-monk-choice observed=vocation-extension-missing")?;
+    Ok((vocation, u32::from_le_bytes(reply.payload[9..13].try_into()?)))
+}
+
+fn monk_path(vocation: u8, level: u32) -> Option<bool> {
+    use oteryn_protocol_oteryn::cyclopedia_character::vocation_id;
+    if Some(vocation) == vocation_id("monk") || Some(vocation) == vocation_id("exalted_monk") {
+        Some(true)
+    } else if Some(vocation) == vocation_id("none") && level >= 8 {
+        Some(false)
+    } else {
+        None
+    }
+}
+
+// The pinned Wheel catalog places this conviction on the Knight graph only.
+// Neither a starter snapshot nor a Monk execution can prove player acquisition.
+fn battle_instinct_gap(active: bool) -> String {
+    format!("active={active}; need=separate-eligible-Knight-and-inactive-to-active-committed-Wheel-allocation")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn independent_review_c11_rejects_unproven_evidence() {
+        assert_eq!(monk_path(4, 8), None);
+        assert_eq!(monk_path(1, 7), None);
+        assert_eq!(monk_path(1, 8), Some(false));
+        assert_eq!(monk_path(10, 1), Some(true));
+        for active in [false, true] {
+            assert!(battle_instinct_gap(active).contains("need=separate-eligible-Knight-and-inactive-to-active-committed-Wheel-allocation"));
+        }
+    }
+
 
     #[test]
     fn gap_reports_the_observed_blocker_for_its_action() {

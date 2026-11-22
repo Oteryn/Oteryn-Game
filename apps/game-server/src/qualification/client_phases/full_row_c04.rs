@@ -264,7 +264,18 @@ async fn journey(
         })
     });
     let (trigger, peer) = pair.ok_or("secondary-group: no eligible affordable spell pair with distinct primary groups and a shared secondary group")?;
-    let trigger = wait_ready(&mut client, trigger).await?;
+    // The only earlier successful cast here was the ordinary spell. Wait out
+    // its spell and every group timer before attempting the isolated pair.
+    let previous = book.indexed(ordinary).ok_or("ordinary spell missing")?;
+    let required = Duration::from_micros(previous.groups.iter()
+        .map(|group| group.cooldown_micros)
+        .fold(previous.cooldown_micros, u64::max));
+    let started = tokio::time::Instant::now();
+    while !cooldowns_elapsed(started.elapsed(), required) {
+        client.service_liveness(Duration::from_millis(25)).await?;
+        client.take_events();
+    }
+    let trigger = cast(&mut client, trigger).await?;
     if trigger.status != CommandStatus::Accepted || trigger.disposition != SpellCastDisposition::Cast {
         return Err(format!("secondary-group: trigger could not cast {trigger:?}").into());
     }
@@ -423,9 +434,18 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     row.finish(result);
 }
 
+fn cooldowns_elapsed(elapsed: Duration, required: Duration) -> bool { elapsed >= required }
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn independent_review_c04_rejects_unproven_evidence() {
+        assert!(!cooldowns_elapsed(Duration::from_millis(1), Duration::from_secs(2)));
+        assert!(cooldowns_elapsed(Duration::from_secs(2), Duration::from_secs(2)));
+    }
+
     #[test]
     fn refusal_requires_rejected_status_and_no_debit() {
         let denied = SpellCastDisposition::Rejected;

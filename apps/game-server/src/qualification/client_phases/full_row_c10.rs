@@ -198,23 +198,92 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let basis = spatial_basis::current(&mut client)?;
     let position = basis.position(bed);
     let map = client.session_mut().world_map_snapshot().ok_or("step=bed-sleep observed=no-live-world-map")?;
-    let handle = map.tiles.iter().find(|entry| entry.position == position)
-        .and_then(|entry| entry.items.iter().find_map(|item| {
-            if item.definition == MapDefinition::Item(definition) && let MapOrigin::Handle(handle) = item.origin {
-                Some(handle)
-            } else {
-                None
-            }
-        })).ok_or_else(|| format!("step=bed-sleep observed=no-live-bed-handle position={position:?} need=MapBase-bed-handle"))?;
-    let before_rest = client.actor_vitals().copied().ok_or("step=bed-sleep observed=no-vitals")?;
-    let reply = bed_command(&mut client, handle).await?;
-    if reply != UseDisposition::OfflineTraining {
-        return Err(format!("step=bed-sleep position={position:?} observed={reply:?} need=premium-and-house-bed-access").into());
+    let origin = map.tiles.iter().find(|entry| entry.position == position)
+        .and_then(|entry| entry.items.iter().find(|item| item.definition == MapDefinition::Item(definition)))
+        .map(|item| item.origin)
+        .ok_or("step=bed-sleep observed=no-live-bed-map-item")?;
+    let mut before_rest = client.actor_vitals().copied().ok_or("step=bed-sleep observed=no-vitals")?;
+    if before_rest.health == before_rest.max_health && before_rest.mana == before_rest.max_mana {
+        let index = NonZeroU32::new(spell.cast_index).ok_or("step=rest-deficit observed=zero-spell-index")?;
+        let cast = client.cast_spell(index, SpellTarget::None, false).await?;
+        let paid = cast.actor_vitals_delta.as_ref().map(|delta| delta.value)
+            .filter(|after| cast.status == CommandStatus::Accepted
+                && cast.disposition == SpellCastDisposition::Cast && after.mana < before_rest.mana)
+            .ok_or_else(|| format!("step=rest-deficit observed={cast:?} need=ordinary-mana-debit-before-bed"))?;
+        before_rest = paid;
     }
-    row.pass("bed-sleep", (position, reply));
+    client.take_events();
+    sleep_at_bed(&mut client, bed, map.header.bundle_digest, origin).await?;
+    if client.take_events().into_iter().any(|event| matches!(event,
+        SessionEvent::ActorVitals(delta) if delta.value != before_rest
+    )) {
+        return Err("step=saved-rest observed=vitals-changed-before-terminal-bed-ack need=known-saved-vitals".into());
+    }
+    row.pass("bed-sleep", position);
     let prior = client.join_snapshot().game_session_id;
     drop(client);
-    fresh_admission(row, clients, prior, regenerated, before_rest).await
+    let started = tokio::time::Instant::now();
+    let wake = started + Duration::from_secs(31);
+    verdict::Harness::global().bounded_wait(wake, "saved-rest");
+    tokio::time::sleep_until(wake).await;
+    fresh_admission(row, clients, prior, before_rest, started).await
+}
+
+fn fixed_bed_target(
+    bed: TilePos,
+    digest: [u8; 32],
+    ordinal: u8,
+    object_revision: u64,
+) -> TestResult<oteryn_protocol_oteryn::world_object::WorldObjectTarget> {
+    let key = crate::map::view::placement_key(bed, ordinal).ok_or("step=bed-sleep observed=invalid-bed-ordinal")?;
+    let mut placement = digest.to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    Ok(oteryn_protocol_oteryn::world_object::WorldObjectTarget { placement, expected_revision: object_revision })
+}
+
+async fn sleep_at_bed(client: &mut DevClientSession, bed: TilePos, digest: [u8; 32], origin: MapOrigin) -> TestResult {
+    use oteryn_protocol_oteryn::server_modal as modal;
+    match origin {
+        MapOrigin::Handle(handle) => {
+            let reply = bed_command(client, handle).await?;
+            if reply != UseDisposition::OfflineTraining {
+                return Err(format!("step=bed-sleep observed={reply:?} need=OfflineTraining").into());
+            }
+        }
+        MapOrigin::BaseOrdinal { ordinal, object_revision } => {
+            let target = fixed_bed_target(bed, digest, ordinal, object_revision)?;
+            let opt_in = client.session_mut().gated_command(modal::CAPABILITY_SERVER_MODAL_V1,
+                modal::COMMAND_TYPE_SERVER_MODAL_QUERY, modal::QUERY_WITH_TERMINAL_REPLY).await?;
+            if opt_in.status != CommandStatus::Accepted || modal::Reply::decode(&opt_in.payload) != Ok(modal::Reply::None) {
+                return Err(format!("step=bed-modal-opt-in observed={opt_in:?} need=empty-accepted-modal-query").into());
+            }
+            let used = client.use_object(&target.placement, target.expected_revision).await?;
+            if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::BedChooseSkill {
+                return Err(format!("step=bed-use observed={used:?} need=BedChooseSkill").into());
+            }
+            let query = client.session_mut().gated_command(modal::CAPABILITY_SERVER_MODAL_V1,
+                modal::COMMAND_TYPE_SERVER_MODAL_QUERY, &[]).await?;
+            let Ok(modal::Reply::Dialog(dialog)) = modal::Reply::decode(&query.payload) else {
+                return Err(format!("step=bed-modal observed={query:?} need=Choose-a-Skill-dialog").into());
+            };
+            if query.status != CommandStatus::Accepted || dialog.title != "Choose a Skill"
+                || !dialog.buttons.iter().any(|(id, _)| *id == 1)
+                || !dialog.choices.iter().any(|(id, _)| *id == 6)
+            {
+                return Err(format!("step=bed-modal observed={dialog:?} need=magic-training-choice").into());
+            }
+            let answer = modal::Answer { dialog_id: dialog.id, button_id: 1, choice_id: Some(6) };
+            let reply = client.session_mut().gated_command(modal::CAPABILITY_SERVER_MODAL_V1,
+                modal::COMMAND_TYPE_SERVER_MODAL_ANSWER, &answer.encode()?).await?;
+            if reply.status != CommandStatus::Accepted
+                || modal::Reply::decode(&reply.payload) != Ok(modal::Reply::AnsweredAndLoggedOut(answer))
+            {
+                return Err(format!("step=bed-modal-answer observed={reply:?} need=AnsweredAndLoggedOut").into());
+            }
+        }
+        MapOrigin::DisplayOnly => return Err("step=bed-sleep observed=display-only-bed need=usable-native-map-target".into()),
+    }
+    Ok(())
 }
 
 fn soul_window_target<'a>(
@@ -319,21 +388,50 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     Ok((u64::from_le_bytes(reply.payload[1..9].try_into()?), u32::from_le_bytes(reply.payload[9..13].try_into()?)))
 }
 
-async fn fresh_admission(row: &mut Row, clients: &SeamClients<'_>, prior: crate::foundation::GameSessionId, soul: u32, before: oteryn_protocol_oteryn::actor_spell::ActorVitals) -> TestResult {
+async fn fresh_admission(row: &mut Row, clients: &SeamClients<'_>, prior: crate::foundation::GameSessionId, before: oteryn_protocol_oteryn::actor_spell::ActorVitals, started: tokio::time::Instant) -> TestResult {
+    let elapsed = started.elapsed();
     let client = connect_world(clients, 0xcb)
         .await
         .map_err(|error| admission_error("fresh-admission", error))?;
     let after = client.actor_vitals().ok_or("step saved rest: fresh-admission vitals absent")?;
-    if client.join_snapshot().game_session_id == prior || after.soul < soul || after.health < before.health || after.mana < before.mana {
-        return Err(format!("step saved rest: prior={prior:?} admitted={:?} before={before:?} after={after:?}", client.join_snapshot().game_session_id).into());
+    if client.join_snapshot().game_session_id == prior || after.soul != before.soul
+        || after.health < before.health || after.mana < before.mana
+        || !(rest_credited(elapsed, before.health, after.health, before.max_health)
+            || rest_credited(elapsed, before.mana, after.mana, before.max_mana))
+    {
+        return Err(format!("step=saved-rest elapsed={elapsed:?} need=positive-offline-credit prior={prior:?} admitted={:?} before={before:?} after={after:?}", client.join_snapshot().game_session_id).into());
     }
     row.pass("fresh-admission-saved-rest", after);
     Ok(())
 }
 
+fn rest_credited(elapsed: Duration, before: u32, after: u32, maximum: u32) -> bool {
+    elapsed >= Duration::from_secs(30) && before < maximum && after > before && after <= maximum
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn authored_bed_uses_bundle_ordinal_and_live_revision() -> TestResult {
+        let bed = TilePos { x: 32311, y: 32804, floor: -7 };
+        let target = fixed_bed_target(bed, [7; 32], 1, 23)?;
+        assert_eq!(&target.placement[..32], &[7; 32]);
+        assert_eq!(&target.placement[32..], &crate::map::view::placement_key(bed, 1)
+            .ok_or("test placement")?.to_be_bytes());
+        assert_eq!(target.expected_revision, 23);
+        Ok(())
+    }
+
+    #[test]
+    fn independent_review_c10_rejects_unproven_evidence() {
+        assert!(!rest_credited(Duration::from_secs(31), 30, 30, 50));
+        assert!(!rest_credited(Duration::from_secs(29), 30, 31, 50));
+        assert!(!rest_credited(Duration::from_secs(31), 50, 50, 50));
+        assert!(rest_credited(Duration::from_secs(31), 30, 31, 50));
+    }
+
     #[test]
     fn soul_spell_needs_both_live_resource_pools() {
         let entry = spell_wire::SpellCatalogEntry {

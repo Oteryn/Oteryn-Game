@@ -102,7 +102,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let (direction, target_tile) = adjacent(world, from).ok_or("step=field-cast observed=no-adjacent-target need=walkable-target")?;
     let target = actor_position(target_tile);
-    let health_before = client.actor_vitals().ok_or("step=field-step observed=no-vitals need=vitals-frame")?.health;
+    let map = client.session_mut().world_map_snapshot().ok_or("step=field-site observed=no-live-map")?;
+    if map.tiles.iter().find(|tile| tile.position == target).is_none_or(|tile| tile.more || tile.items.len() != 1) {
+        return Err("step=field-site observed=nonempty-target-stack need=bare-ground-before-placement".into());
+    }
     client.take_events();
     let (disposition, cast_sequence) = use_rune(&mut client, reference, target).await?;
     if disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
@@ -112,11 +115,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     inventory_count(&mut client, reference, before_count - 1).await?;
     check("attack-rune", placed);
 
+    use oteryn_protocol_oteryn::condition_status as condition;
+    let conditions = client.session_mut().gated_command(
+        condition::CAPABILITY_CONDITION_STATUS_V1, condition::COMMAND_TYPE_CONDITION_STATUS_QUERY, &[],
+    ).await?;
+    if conditions.status != CommandStatus::Accepted
+        || condition::ConditionStatus::decode(&conditions.payload).is_none_or(|status| !status.conditions.is_empty())
+        || !field_site_isolated(&client, target)
+    {
+        return Err("step=field-step observed=unisolated-site need=no-other-actors-or-active-conditions".into());
+    }
+    let health_before = client.actor_vitals().ok_or("step=field-step observed=no-vitals need=vitals-frame")?.health;
+    client.take_events();
     let step = client.step_retrying(direction).await?;
     if step.disposition != StepDisposition::Moved || tile(client.world_spatial().actor_position)? != target_tile {
         return Err(format!("step=field-step observed={step:?} need=Moved-position-delta").into());
     }
-    let damaged = wait_health_below(&mut client, health_before).await?;
+    let damaged = wait_health_below(&mut client, health_before, target, step.result_server_sequence).await?;
     check("field-contact-damage", damaged);
     let expired = field_frame(&mut client, target, field, false, placed, Duration::from_secs(75)).await?;
     check("field-expiry", expired);
@@ -227,9 +242,51 @@ async fn inventory_count(client: &mut DevClientSession, reference: std::num::Non
     loop { for event in client.take_events() { if let SessionEvent::Inventory(delta) = event && quantity(client, reference)? == expected { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step=inventory-delta observed={} need={expected}", quantity(client, reference)?).into()); } client.service_liveness(Duration::from_millis(20)).await?; }
 }
 async fn later_frame(client: &mut DevClientSession) -> TestResult { client.service_liveness(Duration::from_millis(100)).await.map_err(Into::into) }
-async fn wait_health_below(client: &mut DevClientSession, before: u32) -> TestResult<u64> {
+fn field_actor_interferes(
+    entry: &oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity,
+    own_identity: &[u8; 16],
+    at: ActorPosition,
+) -> bool {
+    entry.entity.identity != *own_identity
+        && matches!(entry.kind, oteryn_dev_client::EntityKind::Creature | oteryn_dev_client::EntityKind::Player)
+        && entry.position.floor == at.floor
+        && entry.position.x.abs_diff(at.x).max(entry.position.y.abs_diff(at.y)) <= 8
+}
+
+fn field_site_isolated(client: &DevClientSession, at: ActorPosition) -> bool {
+    client.world_entities().is_some_and(|entities| {
+        entities.iter().all(|entry| !field_actor_interferes(entry, entities.own_identity(), at))
+    })
+}
+
+async fn wait_health_below(client: &mut DevClientSession, before: u32, at: ActorPosition, step_sequence: u64) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop { for event in client.take_events() { if let SessionEvent::ActorVitals(delta) = event && delta.value.health < before { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step=field-step observed=health:{} need=health-below:{before}", client.actor_vitals().map_or(0, |v| v.health)).into()); } client.service_liveness(Duration::from_millis(20)).await?; }
+    loop {
+        let isolated = field_site_isolated(client, at) && client.world_spatial().actor_position == at;
+        if !isolated {
+            return Err("step=field-step observed=other-actor-or-movement need=isolated-field-contact".into());
+        }
+        let own_identity = *client.world_entities().ok_or("step=field-step observed=no-spatial-entities")?.own_identity();
+        let events = client.take_events();
+        if events.iter().any(|event| match event {
+            SessionEvent::WorldSpatialEntities(delta) => delta.value.enter.iter().chain(&delta.value.update)
+                .any(|entry| field_actor_interferes(entry, &own_identity, at)),
+            _ => false,
+        }) {
+            return Err("step=field-step observed=other-actor-entered-observation need=isolated-field-contact".into());
+        }
+        for event in events {
+            if let SessionEvent::ActorVitals(delta) = event
+                && field_damage_evidence(before, delta.value.health, isolated, delta.server_sequence, step_sequence)
+            {
+                return Ok(delta.server_sequence);
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=field-step observed=no-post-step-health-debit need=isolated-field-contact-damage".into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
 }
 async fn field_frame(client: &mut DevClientSession, at: ActorPosition, reference: std::num::NonZeroU32, present: bool, after: u64, wait: Duration) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + wait;
@@ -242,9 +299,21 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     loop { let reply = client.session_mut().logout().await?; if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Ok(()); } else if tokio::time::Instant::now() >= deadline { return Err(format!("step=logout observed={:?} need=Accepted", reply.result).into()); } client.service_liveness(Duration::from_millis(250)).await?; }
 }
 
+fn field_damage_evidence(before: u32, after: u32, isolated: bool, sequence: u64, step_sequence: u64) -> bool {
+    isolated && sequence > step_sequence && after < before
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn independent_review_c07_rejects_unproven_evidence() {
+        assert!(!field_damage_evidence(100, 95, false, 11, 10));
+        assert!(!field_damage_evidence(100, 95, true, 9, 10));
+        assert!(field_damage_evidence(100, 95, true, 11, 10));
+    }
+
     #[test]
     fn budget_pays_for_both_runes_and_refuses_overflow() -> TestResult {
         assert_eq!(rune_budget(28)?, 56);
