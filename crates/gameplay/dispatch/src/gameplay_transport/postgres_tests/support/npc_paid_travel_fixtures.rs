@@ -129,7 +129,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
             base_room,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;
-        // One player, the original three NPCs and ten S10T captains.
+        // One player plus each NPC placed by this scenario.
         let mut runtime = crate::foundation::ChannelRuntimeV1::from_committed_assignment(
             world,
             dependencies.admitted.channel_id,
@@ -138,7 +138,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
             1,
             1,
             "runtime-scope-assignment:1",
-            14,
+            4 + S10T_CAPTAINS.len(),
             channel_pin,
         )
         .map_err(debug)?;
@@ -287,8 +287,8 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                                     key: format!("oteryn:npc.{key}"),
                                     placements: vec![NpcPlacement {
                                         floor: -i8::try_from(spot.floor)?,
-                                        x: u16::try_from(spot.x + i32::try_from(index % 5)? - 2)?,
-                                        y: u16::try_from(spot.y + i32::try_from(index / 5)? + 1)?,
+                                        x: u16::try_from(spot.x + i32::try_from(index % 7)? - 3)?,
+                                        y: u16::try_from(spot.y + i32::try_from(index / 7)? + 1)?,
                                         direction: MovementFacing::South,
                                     }],
                                 });
@@ -904,8 +904,9 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                 sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts")
                     .fetch_one(&h.pool)
                     .await?;
+            let request = if *captain == "eremo" { "pemaret" } else { destination };
             assert!(
-                line(&talk(&owner, &dependencies, npc, command_id + 2, destination).await?)
+                line(&talk(&owner, &dependencies, npc, command_id + 2, request).await?)
                     .contains(&format!("{fare} gold"))
             );
             let fence = owner
@@ -1212,14 +1213,23 @@ pub(super) fn travel_world(
 const S10T_CAPTAINS: &[&str] = &[
     "captain_fearless",
     "captain_greyhound",
+    "captain_jack",
     "captain_jack_rat",
     "captain_max",
     "captain_seahorse",
     "captain_sinbeard",
     "captain_waverider",
     "charles",
+    "eremo",
+    "ferryman_kamil",
+    "ferryman_kamil_meluna",
+    "harlow_vengoth",
+    "hawkhurst",
+    "hawkhurst_ingol",
     "jack_fate",
     "karith",
+    "kendra",
+    "tonar",
 ];
 
 type Passage = (&'static str, &'static str, i64, (i32, i32, i16));
@@ -1237,6 +1247,15 @@ const S10T_PASSAGES: &[Passage] = &[
     ("captain_waverider", "peg leg", 50, (32346, 32625, 7)),
     ("captain_waverider", "passage", 200, (32131, 32913, 7)),
     ("captain_jack_rat", "safe", 0, (33839, 31222, 5)),
+    ("captain_jack", "tibia", 0, (32204, 31756, 6)),
+    ("eremo", "cormaya", 0, (33288, 31956, 6)),
+    ("ferryman_kamil", "meluna", 0, (32088, 32470, 7)),
+    ("ferryman_kamil_meluna", "fibula", 0, (32153, 32457, 7)),
+    ("harlow_vengoth", "yalahar", 0, (32837, 31366, 7)),
+    ("hawkhurst", "passage", 400, (33710, 32602, 6)),
+    ("hawkhurst_ingol", "passage", 400, (33356, 31983, 7)),
+    ("kendra", "thais", 180, (32259, 32262, 7)),
+    ("tonar", "passage", 0, (33070, 32916, 7)),
 ];
 
 async fn gold(h: &Harness) -> TestResult<i64> {

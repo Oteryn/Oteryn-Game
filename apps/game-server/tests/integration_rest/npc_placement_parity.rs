@@ -321,8 +321,13 @@ fn a_written_placement_is_a_cell_the_booted_world_lets_a_creature_enter() -> Tes
 fn crystal_npc_services_use_their_source_placement_cells() -> TestResult {
     let root = root();
     let mut families = repository_families()?;
+    let mut declarations = Vec::new();
     for shard in shards(&root, "content/world/npc-placements")? {
         families.add_npc_placements(&shard)?;
+        let shard: Value = serde_json::from_slice(&shard)?;
+        for row in shard["records"].as_array().ok_or("placement records")? {
+            declarations.push(row["declaration"].clone());
+        }
     }
     let admitted: BTreeSet<_> = admitted_npcs(&families).into_iter().collect();
     for (npc, x, y, z) in [
@@ -351,16 +356,34 @@ fn crystal_npc_services_use_their_source_placement_cells() -> TestResult {
     ] {
         let key = format!("oteryn:npc.{npc}");
         assert!(admitted.contains(key.as_str()), "{key}");
+        let cell = match npc {
+            "ferryman_kamil_meluna" => (32088, 32469, 7),
+            "hawkhurst_ingol" => (33711, 32602, 6),
+            _ => (x, y, z),
+        };
         let placement = families
             .npc_placements
             .iter()
-            .find(|placement| placement.npc == key && placement.cell == (x, y, z))
-            .ok_or_else(|| format!("missing source cell for {key}"))?;
-        assert_eq!(
-            families.npc_block_solid_contacts.contains(&placement.key),
-            npc == "ferryman_kamil_meluna",
+            .find(|placement| placement.npc == key && placement.cell == cell)
+            .ok_or_else(|| format!("missing published cell for {key}"))?;
+        assert!(
+            !families.npc_block_solid_contacts.contains(&placement.key),
             "{key}"
         );
+        if cell != (x, y, z) {
+            let row = declarations
+                .iter()
+                .find(|row| row["identity"]["key"] == placement.key)
+                .ok_or("adjusted dock declaration")?;
+            let provenance = row["provenance"].as_array().ok_or("placement provenance")?;
+            assert!(
+                provenance.iter().any(|proof| {
+                    proof["basis"] == "CHOSEN_OTERYN_APPROXIMATION"
+                        && proof["source_cell"] == serde_json::json!({"x": x, "y": y, "floor": z})
+                }),
+                "{key}"
+            );
+        }
     }
     Ok(())
 }

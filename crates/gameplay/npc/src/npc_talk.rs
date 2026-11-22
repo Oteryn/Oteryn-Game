@@ -12,6 +12,9 @@ mod dark_trails;
 mod isle_of_evil;
 mod literal_contacts;
 mod questpc7_reward_bounds;
+mod source_dialogue;
+#[cfg(test)]
+mod source_dialogue_tests;
 mod world_change_journals;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
@@ -206,7 +209,9 @@ pub struct NpcTalkEntry {
     admitted_dialogue: bool,
     dialogue_keywords: Vec<crate::content::ProjectV2DialogueKeyword>,
     greetings: Vec<String>,
+    farewells: Vec<String>,
     greeting_reply: String,
+    greeting_continuation: Vec<String>,
     farewell_reply: String,
     source_name_templates: bool,
     source_walkaway: Option<String>,
@@ -234,7 +239,7 @@ impl NpcTalkEntry {
         self.greetings
             .iter()
             .any(|greeting| contains_words(&said, &words(greeting)))
-            || says_any(&said, &FAREWELLS)
+            || self.is_farewell(&said)
             || says_any(&said, &TRADE_WORDS)
             || self.dialogue_keyword(&said).is_some()
     }
@@ -253,6 +258,12 @@ impl NpcTalkEntry {
             dialogue_triggers_match(&said, &keyword.triggers)
                 && !asks_to_trade_for(npc_key, &trigger.join(" "))
         })
+    }
+
+    fn is_farewell(&self, said: &[String]) -> bool {
+        self.farewells
+            .iter()
+            .any(|word| contains_words(said, &words(word)))
     }
 
     fn dialogue_keyword(
@@ -294,6 +305,8 @@ impl NpcTalkEntry {
             admitted_dialogue: false,
             dialogue_keywords: Vec::new(),
             greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+            farewells: FAREWELLS.iter().map(|word| (*word).to_owned()).collect(),
+            greeting_continuation: Vec::new(),
             greeting_reply: format!("Greetings, I am {name}."),
             farewell_reply: "Farewell.".to_owned(),
             source_name_templates: false,
@@ -418,13 +431,18 @@ impl NpcTalkBook {
                 YASIR_JOB,
                 YASIR_NAME,
                 YASIR_PASSAGE,
-                literal_contacts::REVISION_MATERIAL,
+                format_args!(
+                    "{}\0{}",
+                    literal_contacts::REVISION_MATERIAL,
+                    source_dialogue::SOURCE
+                ),
             )),
             ..Self::default()
         };
         for (reference, npc) in model.npcs() {
             book.display_names
                 .insert(reference.key.clone(), npc.name.clone());
+            let source_dialogue = source_dialogue::catalogue().get(&reference.key);
             let dark_messages = dark_trails::messages(&reference.key);
             let isle_messages = isle_of_evil::messages(&reference.key);
             let reward_messages = reward_messages(&reference.key);
@@ -487,7 +505,7 @@ impl NpcTalkBook {
                     | "oteryn:npc.zethra"
             );
             let mut journal_fallback = false;
-            let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if native_quest
+            let messages = if native_quest
                 && matches!(
                     reference.key.as_str(),
                     "oteryn:npc.strange_pipe"
@@ -825,9 +843,45 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if source_dialogue.is_some() {
+                (
+                    "Greetings, |PLAYERNAME|.".into(),
+                    "Good bye, |PLAYERNAME|.".into(),
+                    None,
+                    Vec::new(),
+                )
             } else {
                 continue;
             };
+            let (mut greeting_reply, mut farewell_reply, topic_reply, mut dialogue_keywords) =
+                messages;
+            let mut greeting_continuation = Vec::new();
+            if let Some(source) = source_dialogue {
+                // The dispatcher can replace a greeting using the player's native
+                // quest state. Keep its existing fallback for native quest speakers.
+                if !native_quest
+                    && crate::quest_greetings::get(&reference.key).is_none()
+                    && reward_messages.is_none()
+                    && let Some((line, remaining)) =
+                        source.greet.as_deref().and_then(<[_]>::split_first)
+                {
+                    greeting_reply.clone_from(line);
+                    greeting_continuation = remaining.to_vec();
+                }
+                if let Some(line) = &source.farewell {
+                    farewell_reply.clone_from(line);
+                }
+                // Source order determines precedence. Published non-overlapping
+                // keywords retain their existing fallback behaviour.
+                let mut keywords = source.keywords.clone();
+                keywords.extend(dialogue_keywords.into_iter().filter(|keyword| {
+                    !source
+                        .keywords
+                        .iter()
+                        .any(|source| source.triggers == keyword.triggers)
+                }));
+                dialogue_keywords = keywords;
+            }
             book.npcs.insert(
                 reference.key.clone(),
                 NpcTalkEntry {
@@ -844,10 +898,21 @@ impl NpcTalkBook {
                         .iter()
                         .filter_map(|reference| model.services().get(reference))
                         .any(|service| service.bank),
-                    greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+                    greetings: source_dialogue
+                        .and_then(|source| source.greetings.clone())
+                        .unwrap_or_else(|| {
+                            GREETINGS.iter().map(|word| (*word).to_owned()).collect()
+                        }),
+                    farewells: source_dialogue
+                        .and_then(|source| source.farewells.clone())
+                        .unwrap_or_else(|| {
+                            FAREWELLS.iter().map(|word| (*word).to_owned()).collect()
+                        }),
                     greeting_reply,
+                    greeting_continuation,
                     farewell_reply,
-                    source_name_templates: bank
+                    source_name_templates: source_dialogue.is_some()
+                        || bank
                         || literal_contacts::greeting(&reference.key).is_some()
                         || reference.key == "oteryn:npc.lynda"
                         || matches!(reference.key.as_str(), YASIR | OROCKLE | DEEP_SEAS_GUARDIAN)
@@ -863,7 +928,11 @@ impl NpcTalkBook {
                         || quest_merchant::contains(&reference.key)
                         || native_npcs.contains(&reference.key.as_str())
                         || journal_fallback,
-                    source_walkaway: if dark_messages.is_some() {
+                    source_walkaway: if let Some(line) =
+                        source_dialogue.and_then(|source| source.walkaway.clone())
+                    {
+                        Some(line)
+                    } else if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
                     } else if reference.key == MORDECAI {
                         npc.bank_dialogue
@@ -964,6 +1033,15 @@ pub struct TalkNpc<'a, K> {
 pub struct NpcReply<K> {
     pub id: K,
     pub text: String,
+    pub continuation: Vec<String>,
+}
+
+impl<K> NpcReply<K> {
+    pub fn into_lines(self) -> impl Iterator<Item = String> {
+        std::iter::once(self.text)
+            .chain(self.continuation)
+            .filter(|line| !line.is_empty())
+    }
 }
 
 /// Words that open the trade window (Canary modules.lua `FOCUS_TRADE_MESSAGE`).
@@ -1011,13 +1089,15 @@ pub fn talk<K: Copy + PartialEq>(
             return Some(NpcReply {
                 id: npc.id,
                 text: keyword.reply[0].clone(),
+                continuation: keyword.reply[1..].to_vec(),
             });
         }
-        if says_any(&said, &FAREWELLS) {
+        if npc.entry.is_farewell(&said) {
             *engaged = None;
             return Some(NpcReply {
                 id: npc.id,
                 text: npc.entry.farewell_reply.clone(),
+                continuation: Vec::new(),
             });
         }
         if says_any(&said, &TOPICS) && !npc.entry.admitted_dialogue {
@@ -1028,6 +1108,7 @@ pub fn talk<K: Copy + PartialEq>(
             return Some(NpcReply {
                 id: npc.id,
                 text: line,
+                continuation: Vec::new(),
             });
         }
         // NPC-REGREET-1 (Canary npc_handler.lua `greet`): the NPC already talking to the speaker
@@ -1059,6 +1140,7 @@ fn start<K: Copy + PartialEq>(
     Some(NpcReply {
         id: npc.id,
         text: npc.entry.greeting_reply.clone(),
+        continuation: npc.entry.greeting_continuation.clone(),
     })
 }
 
@@ -1125,10 +1207,7 @@ mod tests {
                 .get(&key)
                 .ok_or_else(|| format!("missing reward conversation {key}"))?;
             assert!(!entry.greeting_reply.is_empty());
-            assert!(
-                entry.dialogue_keywords.is_empty(),
-                "no scripted reward branch opens through talk rules"
-            );
+            source_dialogue_tests::assert_reward_lore(name, entry);
         }
         assert!(!reward_callback_npc("oteryn:npc.unqualified"));
         Ok(())
@@ -1161,10 +1240,7 @@ mod tests {
                 .get(&key)
                 .ok_or_else(|| format!("missing reward conversation {key}"))?;
             assert!(!entry.greeting_reply.is_empty());
-            assert!(
-                entry.dialogue_keywords.is_empty(),
-                "no scripted reward branch opens through talk rules"
-            );
+            source_dialogue_tests::assert_reward_lore(name, entry);
         }
         assert!(
             book.get("oteryn:npc.zoltan")
@@ -1257,7 +1333,7 @@ mod tests {
         let sam = book
             .get("oteryn:npc.sam")
             .ok_or("qualified Sam reward NPC")?;
-        assert!(sam.dialogue_keywords.is_empty());
+        source_dialogue_tests::assert_reward_lore("sam", sam);
         assert!(
             model
                 .npcs()
@@ -1303,7 +1379,7 @@ mod tests {
         let sam = book
             .get("oteryn:npc.sam")
             .ok_or("qualified Sam reward NPC")?;
-        assert!(sam.dialogue_keywords.is_empty());
+        source_dialogue_tests::assert_reward_lore("sam", sam);
         assert!(
             model
                 .npcs()

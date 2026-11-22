@@ -965,9 +965,9 @@ fn npc_answer(
             return;
         };
         reply.text = greeting.to_owned();
+        reply.continuation.clear();
     }
-    reply.text =
-        oteryn_gameplay_npc::quest_greetings::render_player_name(&reply.text, &speaking.name);
+    let name = speaking.name.clone();
     if speaking.engaged.is_some_and(|npc| prior != Some(npc))
         && crowded(sessions, session, reply.id)
     {
@@ -988,24 +988,28 @@ fn npc_answer(
     else {
         return;
     };
-    let Ok(line) = ChatText::parse(&reply.text) else {
-        return;
-    };
     let npc_speaker = ChatSpeaker {
         identity: actor.placement_identity(),
         generation: *generation,
     };
-    for (listener, heard) in local_listeners(SpeechMode::Say, *position, listeners.iter().copied())
-    {
-        if let Some(entry_of) = sessions.get_mut(&listener) {
-            entry_of.egress.push(local_line(
-                npc_speaker,
-                &entry.name,
-                SpeechMode::Say,
-                &line,
-                *position,
-                heard,
-            ));
+    for raw in reply.into_lines() {
+        let raw = oteryn_gameplay_npc::quest_greetings::render_player_name(&raw, &name);
+        let Ok(line) = ChatText::parse(&raw) else {
+            continue;
+        };
+        for (listener, heard) in
+            local_listeners(SpeechMode::Say, *position, listeners.iter().copied())
+        {
+            if let Some(entry_of) = sessions.get_mut(&listener) {
+                entry_of.egress.push(local_line(
+                    npc_speaker,
+                    &entry.name,
+                    SpeechMode::Say,
+                    &line,
+                    *position,
+                    heard,
+                ));
+            }
         }
     }
 }

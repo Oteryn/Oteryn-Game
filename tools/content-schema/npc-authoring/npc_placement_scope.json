@@ -224,7 +224,6 @@
   },
   "block_solid_contacts": [
     "oteryn:npc.bron",
-    "oteryn:npc.ferryman_kamil_meluna",
     "oteryn:npc.gnommander",
     "oteryn:npc.zarifan"
   ],
@@ -245,6 +244,32 @@
         "z": 2
       },
       "reason": "M01c collector route: original source cell contains BlockSolid item 3667; chosen adjacent native ground retains the donor position as provenance."
+    },
+    "oteryn:npc.ferryman_kamil_meluna": {
+      "source": {
+        "x": 32088,
+        "y": 32468,
+        "z": 7
+      },
+      "target": {
+        "x": 32088,
+        "y": 32469,
+        "z": 7
+      },
+      "reason": "Crystal's Meluna mooring has a solid object on Kamil's spawn. The next protected dock tile toward the arrival is clear."
+    },
+    "oteryn:npc.hawkhurst_ingol": {
+      "source": {
+        "x": 33710,
+        "y": 32602,
+        "z": 6
+      },
+      "target": {
+        "x": 33711,
+        "y": 32602,
+        "z": 6
+      },
+      "reason": "Crystal's Ingol contact shares the Cormaya ferry arrival. Use the adjacent protected deck tile so the incoming ferry keeps its source destination."
     },
     "oteryn:npc.humphrey": {
       "source": {

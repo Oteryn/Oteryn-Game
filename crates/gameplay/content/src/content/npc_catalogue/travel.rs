@@ -1,6 +1,8 @@
 //! Paid travel corrections and qualified additions to admitted captain services.
 //! `travel_routes.json` projects source-correction-check and admission-evidence in
 //! docs/reference/content-prep/travel-content-1, plus native S10S/S10T captain additions.
+//! Crystal 201189f8 NPC scripts supply the Cormaya return, Nostalgia return,
+//! Meluna ferry, Vengoth return, Ingol ferries and Oskayaat passage.
 //! Unmapped custom/quest guards stay held.
 use super::NpcServiceModel;
 use crate::content::{ProjectV2DefinitionRef, ProjectV2TravelRoute};
@@ -41,6 +43,8 @@ pub struct TravelRoute {
 struct Correction {
     key: String,
     keyword: String,
+    #[serde(default)]
+    aliases: Vec<String>,
     price: u64,
     premium: bool,
     x: i32,
@@ -76,13 +80,9 @@ pub fn revision_material() -> &'static str {
     include_str!("travel_routes.json")
 }
 
-pub fn resolve(
-    model: &NpcServiceModel,
-    npc_key: &str,
-    services: &[ProjectV2DefinitionRef],
-) -> Vec<TravelRoute> {
+fn corrections() -> &'static [Correction] {
     static CORRECTIONS: OnceLock<Vec<Correction>> = OnceLock::new();
-    let corrections = CORRECTIONS.get_or_init(|| {
+    CORRECTIONS.get_or_init(|| {
         let Ok(mut historical) = serde_json::from_str::<Vec<Correction>>(revision_material())
         else {
             return Vec::new();
@@ -93,7 +93,29 @@ pub fn resolve(
         historical.retain(|row| !helpers.iter().any(|helper| helper.key == row.key));
         historical.extend(helpers);
         historical
-    });
+    })
+}
+
+impl TravelRoute {
+    /// Existing routes retain both their spoken destination and their route key.
+    pub fn matches_keyword(&self, text: &str) -> bool {
+        text == self.keyword
+            || text == self.route.key.replace('_', " ")
+            || corrections().iter().any(|row| {
+                !row.aliases.is_empty()
+                    && row.key.split_once('/')
+                        == Some((self.service.as_str(), self.route.key.as_str()))
+                    && row.aliases.iter().any(|alias| alias == text)
+            })
+    }
+}
+
+pub fn resolve(
+    model: &NpcServiceModel,
+    npc_key: &str,
+    services: &[ProjectV2DefinitionRef],
+) -> Vec<TravelRoute> {
+    let corrections = corrections();
     let native_service = format!(
         "oteryn:service.travel.{}",
         npc_key.trim_start_matches("oteryn:npc.")
@@ -304,12 +326,12 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 234);
+        assert_eq!(corrections.len(), 235);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys.len(), 234);
+        assert_eq!(keys.len(), 235);
         let dalbrect = corrections
             .iter()
             .find(|row| row.key == "oteryn:service.travel.dalbrect/isle_of_kings")
@@ -339,7 +361,13 @@ mod tests {
                 keyword => keyword,
             };
             assert_eq!(row.keyword, keyword);
-            assert_eq!(serde_json::json!(row.price), source["selected_fare"]);
+            // Crystal harlow_vengoth.lua:53-55 supplies a free return.
+            let price = if row.key == "oteryn:service.travel.harlow_vengoth/yalahar" {
+                serde_json::json!(0)
+            } else {
+                source["selected_fare"].clone()
+            };
+            assert_eq!(serde_json::json!(row.price), price);
             assert_eq!(serde_json::json!(row.premium), source["selected_premium"]);
             assert_eq!(serde_json::json!(row.x), source["destination"]["x"]);
             assert_eq!(serde_json::json!(row.y), source["destination"]["y"]);
@@ -352,7 +380,18 @@ mod tests {
             if facts["quest_requirements"]["value"] != serde_json::json!([])
                 || !facts["travel_guard_conditions"]["value"].is_null()
             {
-                assert!(row.held, "{}", row.key);
+                // Each of these scripts registers an unconditional travel confirmation.
+                let crystal_qualified = matches!(
+                    row.key.as_str(),
+                    "oteryn:service.travel.captain_jack/tibia"
+                        | "oteryn:service.travel.ferryman_kamil/meluna"
+                        | "oteryn:service.travel.ferryman_kamil_meluna/fibula"
+                        | "oteryn:service.travel.harlow_vengoth/yalahar"
+                        | "oteryn:service.travel.hawkhurst/passage"
+                        | "oteryn:service.travel.hawkhurst_ingol/passage"
+                        | "oteryn:service.travel.tonar/passage"
+                );
+                assert_eq!(row.held, !crystal_qualified, "{}", row.key);
             }
         }
         Ok(())

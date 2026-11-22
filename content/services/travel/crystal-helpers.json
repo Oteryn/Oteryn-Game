@@ -16,6 +16,7 @@
   {
     "key": "oteryn:service.travel.eremo/cormaya",
     "keyword": "cormaya",
+    "aliases": ["back", "passage", "pemaret"],
     "price": 0,
     "premium": false,
     "x": 33288,

@@ -617,7 +617,7 @@
     "y": 31756,
     "floor": 6,
     "postman": false,
-    "held": true,
+    "held": false,
     "carpet": false
   },
   {
@@ -1232,6 +1232,24 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.eremo/cormaya",
+    "keyword": "cormaya",
+    "price": 0,
+    "premium": false,
+    "x": 33288,
+    "y": 31956,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "aliases": [
+      "back",
+      "passage",
+      "pemaret"
+    ]
+  },
+  {
     "key": "oteryn:service.travel.ferryman_kamil/meluna",
     "keyword": "meluna",
     "price": 0,
@@ -1240,7 +1258,7 @@
     "y": 32470,
     "floor": 7,
     "postman": false,
-    "held": true,
+    "held": false,
     "carpet": false
   },
   {
@@ -1252,7 +1270,7 @@
     "y": 32457,
     "floor": 7,
     "postman": false,
-    "held": true,
+    "held": false,
     "carpet": false
   },
   {
@@ -1366,13 +1384,13 @@
   {
     "key": "oteryn:service.travel.harlow_vengoth/yalahar",
     "keyword": "yalahar",
-    "price": 50,
+    "price": 0,
     "premium": false,
     "x": 32837,
     "y": 31366,
     "floor": 7,
     "postman": false,
-    "held": true,
+    "held": false,
     "carpet": false
   },
   {
@@ -1384,7 +1402,7 @@
     "y": 32602,
     "floor": 6,
     "postman": false,
-    "held": true,
+    "held": false,
     "carpet": false
   },
   {
@@ -1396,7 +1414,7 @@
     "y": 31983,
     "floor": 7,
     "postman": false,
-    "held": true,
+    "held": false,
     "carpet": false
   },
   {
@@ -1848,7 +1866,7 @@
     "y": 32262,
     "floor": 7,
     "postman": true,
-    "held": true,
+    "held": false,
     "carpet": false
   },
   {
@@ -2609,7 +2627,7 @@
     "y": 32916,
     "floor": 7,
     "postman": true,
-    "held": true,
+    "held": false,
     "carpet": false
   },
   {

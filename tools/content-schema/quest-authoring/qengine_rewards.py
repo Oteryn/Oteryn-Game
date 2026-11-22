@@ -1158,6 +1158,7 @@ def build():
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
     shops = questl2_ready.djinn.shops(inputs, PIN)
     shops.append(json.loads((ROOT / 'tools/content-schema/quest-authoring/cael-shop.json').read_bytes()))
+    shops.sort(key=lambda shop: shop['npc'])
     generated['content/quests/shared-quest-shops.json'] = encoded({'schema': 1, 'shops': shops})
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))
     access = load_module('qengine_l1_access', 'tools/content-schema/quest-authoring/qengine_access.py')

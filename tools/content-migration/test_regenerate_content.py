@@ -450,14 +450,20 @@ def test_source_cohort_includes_installed_successors() -> None:
         pass
 
     def measure():
-        assert installed == [rc.ROOT], "measure only the complete installed World"
+        assert installed == [
+            ("thaian", rc.ROOT),
+            ("buddel", rc.ROOT, rc.WORLD),
+            ("crystal-trade", rc.ROOT, rc.WORLD),
+        ], "measure only the complete installed World"
         raise Measured
 
     with patch.object(sys, "argv", ["regenerate_content.py"]), \
             patch.object(rc, "run"), \
             patch.object(rc, "refresh_quest_callback_proof"), \
             patch.object(rc, "materialize_world"), \
-            patch("questpc7_thaian_authoring.install", side_effect=installed.append), \
+            patch("questpc7_thaian_authoring.install", side_effect=lambda root: installed.append(("thaian", root))), \
+            patch("buddel_travel.install_buddel", side_effect=lambda *args: installed.append(("buddel", *args))), \
+            patch("crystal_npc_trade.install_crystal_npc_trade", side_effect=lambda *args: installed.append(("crystal-trade", *args))), \
             patch.object(rc, "canonicalize_world"), \
             patch.object(rc, "refresh_source_cohort_extent", side_effect=measure):
         try:
@@ -521,6 +527,7 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
                 patch.object(rc, "materialize_world", side_effect=lambda: events.append(("materialize-world",))), \
                 patch("questpc7_thaian_authoring.install", side_effect=lambda _: record(("install-thaian",))), \
                 patch("buddel_travel.install_buddel", side_effect=lambda *_: record(("install-buddel",))), \
+                patch("crystal_npc_trade.install_crystal_npc_trade", side_effect=lambda *_: record(("install-crystal-trade",))), \
                 patch.object(rc, "canonicalize_world", side_effect=lambda: record(("canonicalize-world",))), \
                 patch.object(rc, "refresh_source_cohort_extent", side_effect=lambda: record(("source-cohort",))), \
                 patch.object(rc, "repin_rust_inventory", side_effect=lambda: record(("repin-world",))), \
@@ -536,7 +543,7 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
 
 def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them() -> None:
     ordered = [
-        ("materialize-world",), ("install-thaian",), ("install-buddel",),
+        ("materialize-world",), ("install-thaian",), ("install-buddel",), ("install-crystal-trade",),
         ("canonicalize-world",), ("source-cohort",), ("repin-world",),
         ("python3", "tools/content-migration/world_project_v2_to_tree.py"),
     ]
@@ -557,7 +564,7 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
         assert error.cmd == ["canonicalize-world"]
     else:
         raise AssertionError("canonical rewrite refusal must stop generation")
-    assert not any(command in refused for command in ordered[4:]), refused
+    assert not any(command in refused for command in ordered[5:]), refused
 
 
 def test_world_canonicalizer_copies_only_a_complete_document_inventory() -> None:
