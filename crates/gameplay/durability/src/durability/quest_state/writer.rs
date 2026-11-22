@@ -1299,7 +1299,7 @@ impl DurabilityRoot {
                         lock_receipt_key(&mut tx, character, &request).await?;
                     }
                     // The MINT cause precedes the Character root, matching the item owner.
-                    if reward_callback.as_ref().is_some_and(|c|c.give.is_some())
+                    if reward_callback.as_ref().is_some_and(|c|c.give.is_some() || c.weighted_exchange.is_some())
                         && let QuestCause::Command(command) | QuestCause::Use(command)=request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }
@@ -1329,8 +1329,18 @@ impl DurabilityRoot {
                     let Some(transition) = catalogue.transition(&request.transition_key) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
+                    let weighted_event = reward_callback.as_ref()
+                        .and_then(|callback| callback.weighted_exchange.as_ref())
+                        .and_then(|exchange| exchange.world_change.as_deref());
+                    if weighted_event.is_some() && weighted_event != transition.world_change.as_deref() {
+                        return Ok(Err(CharacterProgressionError::InvalidInput));
+                    }
                     if unavailable_personal_event(transition, request.cause, context.is_some(), callback.as_ref(),
-                        matches!(native.as_ref(), Some(super::native_observation::NativeQuestObservation::Death(_)))) {
+                        matches!(native.as_ref(), Some(super::native_observation::NativeQuestObservation::Death(_))))
+                        && !reward_callback.as_ref().is_some_and(
+                            oteryn_gameplay_quests::quest::authored_bindings::bored_witch_exchange
+                        )
+                    {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::NotSupported)));
                     }
                     let arena = if transition.quest == oteryn_gameplay_quests::quest::arena_completion::QUEST && transition.completes {
@@ -1521,6 +1531,23 @@ impl DurabilityRoot {
                             super::super::world_event::change_active(&mut tx, fence.runtime_scope.world_id(), change).await?
                         };
                         if !active {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
+                    // The Character root lock serializes competing commands. An exact
+                    // replay returned above even if this World occurrence has since ended.
+                    if weighted_event.is_some() {
+                        let Some(epoch) = &save_event_epoch else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        let claimed: bool = sqlx::query_scalar(
+                            "SELECT EXISTS(SELECT 1 FROM game_character_event_quest_progress \
+                             WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric \
+                               AND character_id=encode($3,'hex')::uuid AND quest_key=$4 AND transition_key=$5)")
+                            .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                            .bind(epoch).bind(id).bind(&transition.quest).bind(&transition.key)
+                            .fetch_one(&mut *tx).await?;
+                        if claimed {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }

@@ -10,8 +10,8 @@ pub mod hits;
 mod imported_recipe;
 mod occurrence;
 pub use occurrence::{
-    Occurrence, PersonalEventProfile, counter_canonical_quest, counter_helper_quest,
-    personal_event_offered, personal_event_profile,
+    Occurrence, PersonalEventProfile, bored_witch_exchange, counter_canonical_quest,
+    counter_helper_quest, personal_event_offered, personal_event_profile,
 };
 mod npc_keys;
 pub use npc_keys::native_dialogue_npcs;
@@ -220,6 +220,14 @@ impl Bindings {
                                 .state_ops
                                 .iter()
                                 .any(|op| !state_operations::valid(quest, op))
+                            || callback.weighted_exchange.as_ref().is_some_and(|exchange| {
+                                exchange.world_change.is_some()
+                                    && (stage.completes
+                                        || quest.occurrence.as_ref().is_some_and(|occurrence| {
+                                            Some(occurrence.gate())
+                                                != exchange.world_change.as_deref()
+                                        }))
+                            })
                             || callback.storage.is_empty()
                             || callback.storage.iter().any(|s| {
                                 s.increment

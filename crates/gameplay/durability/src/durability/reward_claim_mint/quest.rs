@@ -464,6 +464,25 @@ pub(crate) async fn apply(
             .await?,
         );
     }
+    // Historical quest receipts return before apply. Roll after the carried
+    // payment succeeds, within the transaction that commits both MINT and Quest.
+    let weighted = if let Some(exchange) = &callback.weighted_exchange {
+        let draw: i64 = sqlx::query_scalar("SELECT random(1::bigint, $1::bigint)")
+            .bind(exchange.total_weight())
+            .fetch_one(&mut **tx)
+            .await?;
+        let outcome = exchange.outcome(draw).ok_or(DurabilityError::InvalidStoredState)?;
+        let mut selected = callback.clone();
+        selected.give = Some(outcome.give.clone());
+        selected.weighted_exchange = None;
+        // The event ledger owns eligibility. The existing paid exchange MINT
+        // still needs a fresh per-command claim when a new event can pay again.
+        selected.repeatable = exchange.world_change.is_some();
+        Some((selected, serde_json::json!({"draw": draw, "reply": outcome.reply})))
+    } else {
+        None
+    };
+    let callback = weighted.as_ref().map_or(callback, |(selected, _)| selected);
     // A historical quest receipt returns before this transaction reaches the
     // draw. A failed mint rolls back consumption, progress and the whole draw.
     let (reward, percentile) = if callback.weighted_rewards.is_empty() {
@@ -519,6 +538,11 @@ pub(crate) async fn apply(
     }
     let mut plan = oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if let Some((_, outcome)) = &weighted {
+        plan.as_object_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .insert("weighted_outcome".into(), outcome.clone());
+    }
     if let Some(percentile) = percentile {
         // Bind the exact minted bundle, its draw and the authored alternatives
         // in the same receipt. The receipt guard checks the bundle in plan.give.
