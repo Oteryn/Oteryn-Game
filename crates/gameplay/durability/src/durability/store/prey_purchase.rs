@@ -168,7 +168,7 @@ impl DurabilityRoot {
     }
 }
 
-fn definitive_refusal(bytes: &[u8]) -> bool {
+pub(super) fn definitive_refusal(bytes: &[u8]) -> bool {
     let Ok(value) = serde_json::from_slice::<serde_json::Value>(bytes) else {
         return false;
     };

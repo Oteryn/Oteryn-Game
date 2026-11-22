@@ -11,6 +11,7 @@ mod hireling_reservation;
 mod outbox;
 mod prey_expansion;
 mod prey_purchase;
+mod prey_wildcards;
 mod purchase;
 mod purchase_history;
 mod storage;
@@ -22,6 +23,7 @@ pub use hireling_model::{
     canonical_hireling_name,
 };
 pub(crate) use prey_expansion::write_prey_expansion_receipt;
+pub use prey_wildcards::{StorePreyDelivery, StorePreyPack};
 pub use purchase_history::{StorePurchaseHistoryEntry, StorePurchaseHistoryRow};
 pub use storage::{PurchaseRequestState, StoreDurabilityError};
 mod popularity;

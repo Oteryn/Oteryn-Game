@@ -28,9 +28,12 @@ mod catalogue;
 mod browse;
 #[path = "store/prey_retry.rs"]
 mod prey_retry;
+#[path = "store/services.rs"]
+mod services;
 #[path = "store/hireling.rs"]
 mod hireling;
-use catalogue::{RuntimeCatalogue, currency_text};
+pub(super) use catalogue::RuntimeCatalogue;
+use catalogue::currency_text;
 
 /// The node's Platform Store client; `None` refuses every purchase as disabled.
 pub type StorePlatform = Arc<tokio::sync::Mutex<StoreClient>>;
@@ -144,6 +147,27 @@ macro_rules! composed_methods {
 }
 pub(super) use composed_methods;
 
+// Shared command handler. The caller resolves the product's admitted catalogue.
+pub(super) async fn execute_with_catalogue<'a>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+    find: impl FnOnce(&str) -> Option<&'a RuntimeCatalogue>,
+) -> (CommandStatus, Vec<u8>) {
+    let Ok((request, customization)) = wire::decode_purchase_request_with_hireling(payload) else {
+        return REJECTED;
+    };
+    let Some(catalogue) = find(&request.offer_key) else {
+        return REJECTED;
+    };
+    let Some(result) = purchase(owner, admitted, catalogue, command_id, request, customization).await
+    else {
+        return REJECTED;
+    };
+    wire::encode_purchase_result(&result).map_or(REJECTED, |bytes| (CommandStatus::Accepted, bytes))
+}
+
 const REJECTED: (CommandStatus, Vec<u8>) = (CommandStatus::Rejected, Vec::new());
 
 pub(super) async fn execute(
@@ -185,15 +209,7 @@ pub(super) async fn execute(
             wire::encode_catalogue_page(&page)
         }
         wire::COMMAND_TYPE_STORE_PURCHASE => {
-            let Ok((request,customization)) = wire::decode_purchase_request_with_hireling(payload) else {
-                return REJECTED;
-            };
-            let Some(catalogue)=catalogue_for_key(&request.offer_key) else {return REJECTED};
-            let Some(result) = purchase(owner, admitted, catalogue, command_id, request,customization).await
-            else {
-                return REJECTED;
-            };
-            wire::encode_purchase_result(&result)
+            return execute_with_catalogue(owner, admitted, command_id, payload, catalogue_for_key).await;
         }
         wire::COMMAND_TYPE_STORE_HISTORY_PAGE => {
             let Ok(request) = wire::decode_coin_history_request(payload) else { return REJECTED; };
@@ -459,6 +475,7 @@ async fn purchase_retained_or_new(
         &catalogue.rules.offer(&binding.offer_key)?.delivery,
         rules::DeliveryKind::Unlock { unlock_key } if unlock_key == catalogue::CHARM_EXPANSION_UNLOCK
     );
+    let service = catalogue.service(&binding.offer_key);
     let hireling_purchase=hireling_action.as_ref().map(|action|HirelingStorePurchase {purchase_request_id:request.purchase_request_id,origin_channel:*admitted.channel_id.as_bytes(),action:action.clone()});
     let request_state=if let Some(action)=hireling_action {
         let current=gameplay_fence(owner,admitted).await?;
@@ -466,6 +483,12 @@ async fn purchase_retained_or_new(
             owner.active_generation.and_then(|g|g.native_gameplay()).map(|native|super::item_ref_admission::NativeInboxItemWeights(native,owner.premium_coordinator))
         } else {None};
         let Some(state)=owner.root.reserve_hireling_store_purchase(owner.character,owner.holder,journal.clone(),action,current,*admitted.channel_id.as_bytes(),weights.as_ref().map(|w|w as &dyn crate::durability::item_transfer::ItemWeightLookup)).await.ok()? else {
+            return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
+        };
+        state
+    } else if let Some(service) = service {
+        let fence = gameplay_fence(owner, admitted).await?;
+        let Some(state) = services::reserve(owner, fence, journal.clone(), service).await.ok()? else {
             return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
         };
         state
@@ -526,7 +549,9 @@ async fn purchase_retained_or_new(
     let answer: RetainedAnswer = serde_json::from_slice(&saved).ok()?;
     let code = answer.code()?;
     if code != wire::StorePurchaseCode::Accepted {
-        if cosmetic.is_some() {
+        if let Some(service) = service {
+            services::release(owner, journal, service).await.ok()?;
+        } else if cosmetic.is_some() {
             owner.root.release_store_cosmetic(journal).await.ok()?;
         } else if prey_expansion {
             owner.root.release_refused_prey_expansion_purchase(owner.character, journal).await.ok()?;
@@ -534,6 +559,15 @@ async fn purchase_retained_or_new(
             owner.root.release_refused_charm_expansion_purchase(owner.character, journal).await.ok()?;
         }
         return Some(refusal(code));
+    }
+    if let Some(service) = service {
+        let (order_id, operation_id) = prey_retry::delivery_ids(&answer)?;
+        services::deliver(owner, &platform, admitted, &binding, journal, service, (order_id, operation_id)).await?;
+        return Some(wire::StorePurchaseResult {
+            code,
+            order_id: Some(order_id),
+            operation_id: Some(operation_id),
+        });
     }
     if prey_expansion || charm_expansion {
         // This permanent product has exactly one effect; reject a malformed retained
