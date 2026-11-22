@@ -229,9 +229,16 @@ fn alt_arrows_on_visible_minimap_do_not_step_or_cancel_walking()
     use oteryn_input_actions::{KeyCode, Modifier};
     let mut host = HostOwner::new(None)?;
     assert!(host.settings.preferences.panel_visible("minimap"));
-    let view = PlayView::new(TileCoord::new(100, 100), -3, &[])?;
+    let mut view = PlayView::new(TileCoord::new(100, 100), -3, &[])?;
     let (link, mut commands, outbox) = play_channel();
     outbox.bevy_target_walk_selected();
+    view.primary_click(TileCoord::new(98, 100), &link)?;
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::TargetWalk(_)
+    ));
+    let goal = link.target_walk_state().goal.ok_or("active walk goal")?;
     install(&mut host, view, link);
     for code in [
         KeyCode::ARROW_RIGHT,
@@ -251,6 +258,7 @@ fn alt_arrows_on_visible_minimap_do_not_step_or_cancel_walking()
         let play = host.play.as_mut().ok_or("play")?;
         play.view.tick(&play.link).map_err(|e| format!("{e:?}"))?;
         assert!(commands.try_recv().is_err());
+        assert_eq!(play.link.target_walk_state().goal, Some(goal));
     }
     Ok(())
 }

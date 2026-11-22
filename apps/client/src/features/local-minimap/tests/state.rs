@@ -416,12 +416,21 @@ fn while_writer_is_held(
 ) -> Result<Minimap, Box<dyn std::error::Error>> {
     let release = hold_background_save(&mut map);
     let (finished, observed) = std::sync::mpsc::channel();
-    std::thread::spawn(move || {
+    let worker = std::thread::spawn(move || {
         let result = operation(&mut map);
         let _ = finished.send((map, result));
     });
-    let (map, result) = observed.recv_timeout(Duration::from_secs(2))?;
+    let deadline = Instant::now() + Duration::from_secs(2);
+    let returned = observed.recv_timeout(deadline.saturating_duration_since(Instant::now()));
     release.send(()).map_err(|()| "save worker dropped")?;
+    while !worker.is_finished() {
+        if Instant::now() >= deadline {
+            return Err("minimap observation worker stalled".into());
+        }
+        std::thread::yield_now();
+    }
+    worker.join().map_err(|_| "minimap observation")?;
+    let (map, result) = returned?;
     result?;
     Ok(map)
 }

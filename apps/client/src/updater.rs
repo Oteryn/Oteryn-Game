@@ -8,7 +8,10 @@ pub use login::login_update_requested;
 pub(crate) use login::start_login_update;
 use oteryn_platform_client::native_login::ReleaseIdentity;
 use oteryn_platform_client::updates::{UpdateClient, UpdateConfig, UpdateError};
-use std::path::Path;
+use std::{
+    io::{self, Read},
+    path::Path,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Action {
@@ -25,6 +28,21 @@ pub fn pinned_root(channel: &str) -> &'static [u8] {
     }
 }
 const MAX_SLOT_LENGTH: usize = 64;
+
+pub(crate) fn read_release_pointer(directory: &Path) -> io::Result<String> {
+    const MAX_POINTER_BYTES: u64 = 1024;
+    let mut current = String::new();
+    std::fs::File::open(directory.join("current.txt"))?
+        .take(MAX_POINTER_BYTES + 1)
+        .read_to_string(&mut current)?;
+    if current.len() as u64 > MAX_POINTER_BYTES {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "release pointer is too large",
+        ));
+    }
+    Ok(current)
+}
 
 /// A release slot may name an opaque Platform release or a manual installer release.
 pub fn release_directory(value: &str) -> bool {
@@ -104,7 +122,7 @@ async fn maintain_release(
     if let Some((refused, minimum)) = gate {
         update.require_login_update(minimum, refused)?;
     }
-    let current = std::fs::read_to_string(directory.join("current.txt")).unwrap_or_default();
+    let current = read_release_pointer(directory).unwrap_or_default();
     if action == Action::Check {
         return Ok(format!(
             "Version: {}\nRelease: {}\nUpdate: {}\nInstalled: {}",
@@ -196,3 +214,14 @@ pub fn requested(
 
 #[cfg(test)]
 mod install_tests;
+
+#[cfg(test)]
+#[test]
+fn oversized_release_pointer_is_rejected() -> io::Result<()> {
+    let root = tempfile::tempdir()?;
+    std::fs::write(root.path().join("current.txt"), vec![b' '; 1025])?;
+    assert!(
+        matches!(read_release_pointer(root.path()), Err(error) if error.kind() == io::ErrorKind::InvalidData)
+    );
+    Ok(())
+}

@@ -447,3 +447,51 @@ fn store_get_coins_opens_the_account_catalogue_for_the_admitted_character() -> R
         Ok(())
     })
 }
+
+#[test]
+fn native_admission_wires_store_checkout_to_the_selected_character() -> ResultTest {
+    use crate::{
+        account_services::test_server::{CHARACTER, MockPlatform, coins::PACKAGE, test_thread},
+        native_entry::test_support::Stack,
+    };
+    use std::time::{Duration, Instant};
+
+    test_thread(|| {
+        let stack = Stack::start_two_channels()?;
+        let mock = MockPlatform::start()?;
+        let mut app = App::new();
+        crate::bevy_shell::account_services::install(&mut app);
+        let (mut app, _, _) = fixture_in(app, 250)?;
+        let mut config = stack.config();
+        config.platform_url.clone_from(&mock.base);
+        app.world().non_send::<HostOwner>().services.configure(&mut config);
+
+        let client = crate::ClientBootstrap::new()?.with_native_login(config);
+        let admitted = client.request_gameplay_entry()?;
+        assert_eq!(admitted.character_id(), CHARACTER);
+        let (view, link) = client.start_play(admitted)?;
+        assert!(Snapshot::read(&link).coin_checkout);
+        assert!(link.open_coin_checkout());
+        app.world_mut().non_send_mut::<HostOwner>().play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let package = format!("coin.package.{PACKAGE}");
+        loop {
+            app.update();
+            let world = app.world_mut();
+            if world.query::<&Name>().iter(world).any(|name| name.as_str() == package) {
+                break;
+            }
+            if Instant::now() >= deadline {
+                return Err("admitted Store launcher did not open the coin catalogue".into());
+            }
+            std::thread::yield_now();
+        }
+        let request = format!("GET /api/v1/native-account/coin-purchases/catalogue?character_id={CHARACTER} ");
+        assert!(mock.authority.lock().map_err(|_| "authority")?.requests.iter().any(|line| line.starts_with(&request)));
+        drop(app);
+        client.shutdown();
+        stack.finish();
+        Ok(())
+    })
+}
