@@ -88,3 +88,7 @@ message BestiaryCatalogueCardV1 {
 // Unselected 609 is refused on ff 04. All existing selectors are unchanged.
 // Reference: Crystal 201189f8 protocolgame.cpp sends item IDs for visible
 // Bestiary drops and accepts item IDs for its Quick Loot black/whitelist.
+
+// Capability 613 command 6389 uses the seven-byte ff 01 catalogue request and
+// adds a bounded per-card Animus XP prefix to the legacy catalogue reply.
+// See animus-mastery-v1.md#bestiary-xp-bonus. Command 84 keeps its wire format.

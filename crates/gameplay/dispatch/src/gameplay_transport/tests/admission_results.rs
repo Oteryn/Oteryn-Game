@@ -358,6 +358,7 @@ fn account_achievements_reply_encodes_or_fails_closed() -> Result<(), Box<dyn Er
             .collect()
     };
     let request = |page| AccountAchievementsRequest {
+        completion: oteryn_protocol_oteryn::account_achievements::AchievementCompletion::Completed,
         account_id: [0x11; 16],
         page,
         game_session_id: [0x22; 16],

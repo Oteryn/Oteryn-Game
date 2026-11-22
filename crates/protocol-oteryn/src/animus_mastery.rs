@@ -2,6 +2,9 @@
 
 pub const CAPABILITY_ANIMUS_MASTERY_V1: u32 = 168;
 pub const COMMAND_TYPE_ANIMUS_MASTERY_QUERY: u32 = 232;
+pub const CAPABILITY_ANIMUS_MASTERY_XP_V1: u32 = 613;
+pub const COMMAND_TYPE_ANIMUS_MASTERY_XP_QUERY: u32 = 6388;
+pub const MAX_ANIMUS_XP_REPLY_BYTES: usize = 2 + MAX_ANIMUS_REPLY_BYTES;
 pub const MAX_ANIMUS_QUERY_BYTES: usize = 4;
 pub const MAX_ANIMUS_REPLY_BYTES: usize = 8_192;
 /// 50 keys of at most 160 bytes plus their length bytes fit the 8192-byte reply bound.
@@ -63,6 +66,27 @@ pub fn decode_page(payload: &[u8]) -> Option<AnimusMasteries> {
         rest = &tail[usize::from(len)..];
     }
     rest.is_empty().then_some(AnimusMasteries { total, keys })
+}
+
+/// The leading basis-point value applies to each mastered species in the page.
+pub fn encode_xp_page(bonus: u16, total: u16, keys: &[String]) -> Option<Vec<u8>> {
+    if !valid_xp_bonus(bonus) || (bonus == 0) != (total == 0) {
+        return None;
+    }
+    let mut out = bonus.to_le_bytes().to_vec();
+    out.extend(encode_page(total, keys)?);
+    Some(out)
+}
+
+pub fn decode_xp_page(payload: &[u8]) -> Option<(u16, AnimusMasteries)> {
+    let (bonus, payload) = payload.split_first_chunk::<2>()?;
+    let bonus = u16::from_le_bytes(*bonus);
+    let page = decode_page(payload)?;
+    (valid_xp_bonus(bonus) && (bonus == 0) == (page.total == 0)).then_some((bonus, page))
+}
+
+pub(crate) fn valid_xp_bonus(bonus: u16) -> bool {
+    bonus == 0 || ((200..=400).contains(&bonus) && bonus.is_multiple_of(10))
 }
 
 pub fn decode_query(payload: &[u8]) -> Option<AnimusPage> {

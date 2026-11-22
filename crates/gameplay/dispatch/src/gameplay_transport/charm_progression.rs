@@ -160,6 +160,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         kind: u32,
         payload: &[u8],
     ) -> GuildReply {
+        if kind == wire::catalogue::COMMAND_TYPE_BESTIARY_ANIMUS_XP_QUERY {
+            if CommandId::new(id).is_err() || payload.len() != 7 || !payload.starts_with(&[255, 1]) {
+                return GuildReply::Rejected;
+            }
+            return catalogue::dispatch(self, admitted, payload, true).await;
+        }
         if kind != wire::COMMAND_TYPE_CHARM_PROGRESSION
             || !admitted
                 .continuity
@@ -177,7 +183,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if CommandId::new(id).is_err() {
                 return GuildReply::Rejected;
             }
-            return catalogue::dispatch(self, admitted, payload).await;
+            return catalogue::dispatch(self, admitted, payload, false).await;
         }
         let Ok(action) = wire::decode_charm_progression_request(payload) else {
             return GuildReply::Rejected;
