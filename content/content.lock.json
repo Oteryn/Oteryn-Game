@@ -37,7 +37,7 @@
     "Service.Blessing": 10,
     "Service.Promotion": 7,
     "Service.Trade": 324,
-    "Service.Travel": 56,
+    "Service.Travel": 57,
     "StarterKit": 1,
     "item_conversion": 130
   },
@@ -47,7 +47,7 @@
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "1ece240aac647f149c1755b206b88444d2bad224",
+    "declarations": "eccb941ee5334dd5423e5de7699c6388108bcb68",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "d6633ab6d1335663d3b6bc4929225b3adbcbff2c",
     "reference": "e8c4487697f321137afbd4b4962a7d0e202a4331",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "cf1c68ed839d99ace5e91cf4540f538def3e09270c80251f90b3dfbf644ba18d"
+          "sha256": "47e9d5b54eb9cc3de65a88bc53e178ba36da10dffa4a5d1f0f4643a678908c36"
         },
         {
           "creates_canonical_identities": false,

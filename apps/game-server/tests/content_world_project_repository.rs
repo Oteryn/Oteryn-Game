@@ -18,12 +18,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         418,
-        "ad92c30bfaf73b71a2e6d610aab77244a4259414105755ac64f0904224522037",
+        "f531f82a5f7352a12ef6070c5e1c1c16acb0259d0d432e68864ce948ecbcd15b",
     ),
     (
         "definitions/declarations.json",
-        27_791_890,
-        "30a352cc063db8c456a612fc6986005c2c7f77cd834c3fe7b8572be409fb901b",
+        27_760_785,
+        "7e290b771aa69d2d7f4ae70a2b7e40a7ebbff06f8afa3cab1e3e6d6e62c96b47",
     ),
     (
         "definitions/reference.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1957,
-        "bf7983a6165218a50808fac4f7651e5f29d74035b48de3eca72e283ec5e8161d",
+        "13b5b70d473b1be794045234dabcf60cbf78974dd9f1c9527b69133621a654bc",
     ),
     (
         "presentations/bindings.json",
@@ -48,7 +48,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         408,
-        "5616e2c64a011b2c6026deddb3535196272d6c7c45023b9874cce6ce0e78ffe0",
+        "9025eb3943522af3380c32524eb19d76e8257527755304a3e101096d61fe99c4",
     ),
     (
         "provenance/imports.json",
@@ -143,7 +143,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "97ca9534afa9bbcfdf33459519707dafdbe2579eb23ce10deb3a44a6ea3ef495";
+const TREE_SHA256: &str = "c9c082fe0655d425a53391448a11ac167e4d38997e7579550059825711af4ce6";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -161,7 +161,8 @@ const NPCS: usize = 1282;
 const NPC_RECORDS: usize = 2_564;
 // Includes BANK-3's Henricus blessing Service.
 // S10 adds one bank, three promotion and six blessing Service declarations.
-const NPC_DECLARATIONS: usize = 2517;
+// N3 adds Buddel’s travel Service.
+const NPC_DECLARATIONS: usize = 2518;
 const NPC_DIALOGUES: usize = 836;
 const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).

@@ -98,6 +98,22 @@ async fn quote(
             return Ok(Err(TravelRefusal::UnavailableRoute));
         }
     }
+    for requirement in &route.route.required_quest_tracks {
+        let permitted: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks
+              WHERE character_id=encode($1,'hex')::uuid AND track_key=$2
+                AND value >= $3 AND ($4::bigint IS NULL OR value <= $4))",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(&requirement.track)
+        .bind(requirement.minimum)
+        .bind(requirement.maximum)
+        .fetch_one(&mut ***tx)
+        .await?;
+        if !permitted {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
+    }
     if let Some(track) = &route.quest_clear_gate
         && !clear_gate::permitted(tx, fence.character_id, track).await?
     {
@@ -227,6 +243,19 @@ impl DurabilityRoot {
             if route.yalahar_gate { hash.update(b"yalahar-searoutes-gate:v1"); }
             if let Some(town) = &route.yalahar_town_gate { hash.update(town.as_bytes()); }
             if let Some(track) = &route.quest_gate { hash.update(track.as_bytes()); }
+            if !route.route.required_quest_tracks.is_empty() {
+                hash.update(b"quest-access:v1");
+                hash.update((route.route.required_quest_tracks.len() as u64).to_be_bytes());
+                for requirement in &route.route.required_quest_tracks {
+                    hash.update((requirement.track.len() as u64).to_be_bytes());
+                    hash.update(requirement.track.as_bytes());
+                    hash.update(requirement.minimum.to_be_bytes());
+                    hash.update([u8::from(requirement.maximum.is_some())]);
+                    if let Some(maximum) = requirement.maximum {
+                        hash.update(maximum.to_be_bytes());
+                    }
+                }
+            }
             if let Some(track) = &route.quest_clear_gate { clear_gate::bind(&mut hash, track); }
             if let Some(requirement) = &route.ticket { ticket::bind(&mut hash, requirement); }
             // None preserves existing v1 receipts; Some binds both port and selection group.

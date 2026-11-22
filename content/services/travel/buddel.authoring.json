@@ -1,0 +1,83 @@
+{
+  "npc": "oteryn:npc.buddel",
+  "service": "oteryn:service.travel.buddel",
+  "donor": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/buddel.lua:53-126",
+  "routes": [
+    {
+      "key": "camp",
+      "destination": {
+        "coordinate_frame": "global-target-2026-09-27",
+        "x": 32021,
+        "y": 31294,
+        "floor": 7
+      },
+      "price": 50,
+      "premium": false,
+      "required_quest_tracks": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 8,
+          "maximum": 8
+        }
+      ]
+    },
+    {
+      "key": "helheim",
+      "destination": {
+        "coordinate_frame": "global-target-2026-09-27",
+        "x": 32462,
+        "y": 31174,
+        "floor": 7
+      },
+      "price": 50,
+      "premium": false,
+      "required_quest_tracks": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 8,
+          "maximum": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 30
+        }
+      ]
+    },
+    {
+      "key": "okolnir",
+      "destination": {
+        "coordinate_frame": "global-target-2026-09-27",
+        "x": 32225,
+        "y": 31381,
+        "floor": 7
+      },
+      "price": 50,
+      "premium": false,
+      "required_quest_tracks": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 8,
+          "maximum": 8
+        }
+      ]
+    },
+    {
+      "key": "tyrsung",
+      "destination": {
+        "coordinate_frame": "global-target-2026-09-27",
+        "x": 32333,
+        "y": 31227,
+        "floor": 7
+      },
+      "price": 50,
+      "premium": false,
+      "required_quest_tracks": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 8,
+          "maximum": 8
+        }
+      ]
+    }
+  ]
+}

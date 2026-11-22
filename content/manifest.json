@@ -96,7 +96,7 @@
     },
     "Service.Travel": {
       "index": "content/services/travel/index.json",
-      "records": 56
+      "records": 57
     },
     "StarterKit": {
       "index": "content/starter/index.json",
@@ -766,7 +766,7 @@
       "path": "content/services/travel/index.json"
     },
     {
-      "path": "content/services/travel/travel-00000-00055.json"
+      "path": "content/services/travel/travel-00000-00056.json"
     },
     {
       "path": "content/spells.manifest.json"
@@ -981,7 +981,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "cf1c68ed839d99ace5e91cf4540f538def3e09270c80251f90b3dfbf644ba18d"
+          "sha256": "47e9d5b54eb9cc3de65a88bc53e178ba36da10dffa4a5d1f0f4643a678908c36"
         },
         {
           "creates_canonical_identities": false,

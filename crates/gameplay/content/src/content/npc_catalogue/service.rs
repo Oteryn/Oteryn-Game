@@ -184,8 +184,7 @@ pub struct NpcServiceEntry {
     pub bank: bool,
     pub offers: Vec<ProjectV2ServiceOffer>,
     pub held_offers: Vec<NpcHeldOffer>,
-    /// Every route loads (the source has no gate field); the destination stays in the source
-    /// frame.
+    /// Route declarations and their destination coordinates in the source frame.
     pub routes: Vec<ProjectV2TravelRoute>,
 }
 
