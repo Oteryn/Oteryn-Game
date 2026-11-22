@@ -325,13 +325,14 @@ def source_speed_pin(source, qengine):
     marker = '("qengine-reward-item-profiles.json",'
     if marker not in source:
         return source
-    pick = 'oteryn:item.tibia.i3456'
-    unknown = {row['production_definition']['production_key']
-               for row in qengine['records']
-               if row['attributes'].get('speed_bonus') is None}
-    if unknown != {pick} or any(row['attributes'].get('speed_bonus') not in (None, 0)
-                               for row in qengine['records']):
-        raise ValueError('QENGINE speed proof must retain only the existing unknown-speed pick')
+    # The Pigeon Trophy and Jade Amulet retain their existing unknown speed.
+    # The Shrunken Head Necklace's pinned XML explicitly supplies speed 10.
+    expected = {f'oteryn:item.tibia.i{item}': speed for item, speed in
+                {3456: None, 31266: None, 31268: None, 19357: 10}.items()}
+    observed = {row['production_definition']['production_key']: row['attributes'].get('speed_bonus')
+                for row in qengine['records'] if row['attributes'].get('speed_bonus') != 0}
+    if observed != expected:
+        raise ValueError('QENGINE exact source speed facts differ')
     source = re.sub(r'\("qengine-reward-item-profiles.json", [\d_]+\)',
                     f'("qengine-reward-item-profiles.json", {len(keys(qengine))})', source)
     start = source.index('        for source in records {', source.index(marker))
@@ -345,13 +346,13 @@ def source_speed_pin(source, qengine):
                 .iter()
                 .find(|row| row.production_definition.production_key == key)
                 .ok_or_else(|| format!("missing source-qualified SEASON profile {key}"))?;
-            if path == "qengine-reward-item-profiles.json" && key == "oteryn:item.tibia.i3456" {
-                assert!(source["attributes"]["speed_bonus"].is_null(), "source speed {path}:{key}");
-                assert_eq!(actual.attributes.speed_bonus, None, "{path}:{key}");
+            let expected = if path == "qengine-reward-item-profiles.json" {
+                expected_qengine_reward_speed(key)
             } else {
-                assert_eq!(source["attributes"]["speed_bonus"], serde_json::json!(0), "source speed {path}:{key}");
-                assert_eq!(actual.attributes.speed_bonus, Some(0), "{path}:{key}");
-            }
+                Some(0)
+            };
+            assert_eq!(source["attributes"]["speed_bonus"], serde_json::json!(expected), "source speed {path}:{key}");
+            assert_eq!(actual.attributes.speed_bonus, expected, "{path}:{key}");
             assert!(actual.admission.materializable, "{path}:{key}");
         }
     }''' + source[end:]

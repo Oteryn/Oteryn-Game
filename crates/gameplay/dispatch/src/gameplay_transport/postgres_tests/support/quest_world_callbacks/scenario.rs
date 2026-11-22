@@ -79,7 +79,8 @@ fn scenario_case(
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let pinned_qc_world = name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
-    let native_crop = pinned_qc_world
+    let hot_cuisine_books = name == "m42-hot-cookbooks";
+    let native_crop = hot_cuisine_books || pinned_qc_world
         || m03_use
         || qd_world
         || engenc_asura
@@ -116,7 +117,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if hot_cuisine_books {
+        Position { x: 33066, y: 32529, floor: -5 }
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -395,6 +398,8 @@ fn scenario_case(
         callback("questpc7-heart-entry")?
     } else if name == "qengine-rewards-grimvale-story" {
         callback("questpc7-grimvale-entry")?
+    } else if hot_cuisine_books {
+        callback("hot-cuisine-cookbook-1")?
     } else if name == "questpc7-grave" {
         callback("questpc7-grave-entry")?
     } else if name == "questpc7-ferumbras" {
@@ -1036,7 +1041,15 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if pinned_qc_world {
+        let world = if hot_cuisine_books {
+            use crate::map::overlay::TilePos;
+            super::super::source_world_crop::world(
+                TilePos { x: 33064, y: 32529, floor: -5 },
+                TilePos { x: 33066, y: 32531, floor: -5 },
+                TilePos { x: start.x, y: start.y, floor: start.floor },
+                generation.native_gameplay().ok_or("native cookbook policies")?,
+            )?
+        } else if pinned_qc_world {
             super::super::qc_pinned_world::world(
                 generation
                     .native_gameplay()
@@ -2669,6 +2682,8 @@ fn scenario_case(
             super::super::questpc7_hydra_fixtures::replenishment(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hoist-story" {
             super::super::questpc7_hoist_story_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if hot_cuisine_books {
+            super::super::m42_hot_cuisine_fixtures::exercise_books(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-tokens" {
             super::super::questpc7_tokens_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name.starts_with("questpc7-hidden-") {

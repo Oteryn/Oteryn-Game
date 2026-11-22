@@ -111,7 +111,8 @@
       },
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:adc2c94f87069ea0e8b23691691213423401e9380a53abbaa7245678a8505459",
-        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072"
+        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072",
+        "tools/content-schema/quest-authoring/samples/wiki-source-all373/source-specs-373.json:149279"
       ]
     },
     {
