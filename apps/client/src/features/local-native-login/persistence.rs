@@ -27,32 +27,40 @@ impl LoginSettings {
         let _lock = crate::atomic_file::lock(path).map_err(|_| Self::save_error())?;
         self.validate()?;
         let error = Self::save_error;
-        let settings = match std::fs::read(path) {
+        let active = match std::fs::read(path) {
             Ok(bytes) => match serde_json::from_slice::<Self>(&bytes) {
-                Ok(active) => {
-                    let submitted = self.values();
-                    let disk = active.values();
-                    Self::from_stored_values(std::array::from_fn(|i| {
-                        if edited[i]
-                            || (env_fallback[i]
-                                && (disk[i].is_empty()
-                                    || Self::validate_field(i, disk[i]).is_err()))
-                        {
-                            submitted[i]
-                        } else {
-                            disk[i]
-                        }
-                        .to_owned()
-                    }))
-                }
+                Ok(active) => Some(active),
                 Err(_) => {
                     crate::atomic_file::preserve_malformed(path).map_err(|_| error())?;
-                    self.clone()
+                    None
                 }
             },
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => self.clone(),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
             Err(_) => return Err(error()),
         };
+        let submitted = self.values();
+        let settings = Self::from_stored_values(std::array::from_fn(|i| {
+            let disk = active.as_ref().map(|saved| saved.values()[i]);
+            if edited[i] {
+                return submitted[i].to_owned();
+            }
+            if env_fallback[i] && matches!(i, 3 | 4) {
+                return disk
+                    .filter(|value| Self::validate_field(i, value).is_ok())
+                    .unwrap_or_default()
+                    .to_owned();
+            }
+            match disk {
+                Some(value)
+                    if !env_fallback[i]
+                        || (!value.is_empty() && Self::validate_field(i, value).is_ok()) =>
+                {
+                    value
+                }
+                _ => submitted[i],
+            }
+            .to_owned()
+        }));
         settings.validate()?;
         let bytes = serde_json::to_vec_pretty(&settings).map_err(|_| error())?;
         crate::atomic_file::replace(path, &bytes, true).map_err(|_| Self::save_error())
