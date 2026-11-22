@@ -19,7 +19,7 @@ use oteryn_protocol_oteryn::{
 };
 
 #[path = "world_event/reset_fixture.rs"]
-mod event_fixture;
+pub(super) mod event_fixture;
 
 pub(super) fn scenario_with_consumers(epochs: u64, consumers: bool) -> TestResult {
     scenario_run(epochs, None, consumers, None)
