@@ -644,6 +644,21 @@ def native_loot_yield_facts(ref: dict, profile: dict) -> dict | None:
     return fact
 
 
+
+def loot_item_profiles(profile_raw: bytes, updates_raw: bytes | None = None) -> dict:
+    """Resolve the same Item record revisions that the manifest loader uses."""
+    document = json.loads(profile_raw)
+    if updates_raw is None:
+        return document
+    updates = json.loads(updates_raw)
+    if updates.get('base_sha256') != digest(profile_raw):
+        raise ValueError('Loot Item updates do not match the native Item provider')
+    by_key = {row['production_definition']['production_key']: row for row in document['records']}
+    by_key.update((row['production_definition']['production_key'], row) for row in updates['records'])
+    document['records'] = list(by_key.values())
+    return document
+
+
 def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIONS,
                 loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS,
                 native_item_profiles: dict | None = None) -> bytes:
@@ -667,6 +682,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             tables[definition['identity']['key']] = definition
     facts = item_facts(item_definitions)
     quest_yields = set()
+    cloot3_creatures = set()
     # Repository-authored Quest rules bind the complete canonical dataset.
     if (creature_definitions.resolve() == CREATURE_DEFINITIONS.resolve()
             and loot_definitions.resolve() == LOOT_DEFINITIONS.resolve()
@@ -680,12 +696,31 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         quest_yields = protected_loot_yields.ITEMS
         import quest_loot_profiles
         quest_loot_profiles.apply_loot_facts(facts, ROOT, creatures, tables)
+        import cloot3_item_profiles
+        cloot3_creatures = cloot3_item_profiles.creatures(ROOT)
+        # The retained WorldObject i51302 has no corresponding drop in these
+        # exact Crystal Lua tables or their TibiaWiki loot lists.
+        for creature in ('ratmiral_blackwhiskers', 'tentugly_s_head', 'the_dread_maiden'):
+            key = f'oteryn:loot.creature.{creature}'
+            table = tables[key]
+            invalid = cloot3_item_profiles.item_ref(cloot3_item_profiles.INVALID_WORLD_REF)
+            table['entries'] = [entry for entry in table['entries'] if entry['item'] != invalid]
+        # Crystal names the ice cube in Thawing Dragon Lord and resolves the
+        # same ambiguous name to portable i7441 in Moonsnow Magnolia. Tibia
+        # confirms i7441 for the Thawing Dragon Lord drop.
+        thawing = tables['oteryn:loot.creature.thawing_dragon_lord']
+        for entry in thawing['entries']:
+            if entry['item'] == cloot3_item_profiles.item_ref(cloot3_item_profiles.ICE_CUBE_VISUAL):
+                entry['item'] = cloot3_item_profiles.item_ref(cloot3_item_profiles.PORTABLE_ICE_CUBE)
     bindings, named, used = {}, {}, {}
     corpse_refs, yield_keys, corpse_tables = {}, set(), {}
     reward_boss_corpses = set()
     profile_path = item_definitions / 'spell-native-profiles.json'
     if native_item_profiles is None:
-        _, native_profiles = read(profile_path) if profile_path.exists() else (b'', {'records': []})
+        updates = profile_path.with_name('srx1-item-updates.json')
+        native_profiles = (loot_item_profiles(profile_path.read_bytes(),
+                                              updates.read_bytes() if updates.exists() else None)
+                           if profile_path.exists() else {'records': []})
     else:
         native_profiles = native_item_profiles
     native_by_key = {}
@@ -773,6 +808,10 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     for key, corpses in corpse_tables.items():
         if corpses & qualified_corpses:
             admit_yields(used[key]['entries'])
+    for creature in sorted(cloot3_creatures):
+        binding = bindings.get(creature)
+        if binding is not None and binding['loot'] is not None:
+            admit_yields(used[binding['loot']['key']]['entries'])
     # FORGECREATURE: this resource is added by the live fiend's death classification,
     # rather than by every creature's static loot table. Preserve core admission facts.
     sliver = facts.get('oteryn:item.tibia.i37109')

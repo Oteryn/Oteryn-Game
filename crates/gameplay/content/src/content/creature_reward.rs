@@ -1448,6 +1448,88 @@ mod protected_loot_tests {
     }
 
     #[test]
+    fn slice_three_tables_load_every_qualified_yield() -> Result<(), Box<dyn std::error::Error>> {
+        fn missing_yields<'a>(
+            entries: &'a [SectionLootEntry],
+            admitted: &HashSet<&SectionRef>,
+            missing: &mut Vec<&'a str>,
+        ) {
+            for entry in entries {
+                if !admitted.contains(&entry.item) {
+                    missing.push(&entry.item.key);
+                }
+                missing_yields(&entry.children, admitted, missing);
+            }
+        }
+
+        let (creatures, _) = documents()?;
+        let section = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let bindings: HashMap<_, _> = section
+            .creature_loot
+            .iter()
+            .map(|row| (row.creature.key.as_str(), row.loot.as_ref()))
+            .collect();
+        let tables: HashMap<_, _> = section
+            .tables
+            .iter()
+            .map(|table| (&table.identity, table.entries.as_slice()))
+            .collect();
+        let admitted = section
+            .items
+            .iter()
+            .filter(|fact| fact.materializable)
+            .map(|fact| &fact.item)
+            .collect();
+        let mut missing = Vec::new();
+        let mut incomplete_tables = Vec::new();
+        let creatures = include_str!(
+            "../../../../../tools/content-schema/native-gameplay/cloot3-creatures.txt"
+        );
+        assert_eq!(creatures.lines().count(), 321);
+        for creature in creatures.lines() {
+            let table = bindings
+                .get(creature)
+                .and_then(|table| *table)
+                .ok_or_else(|| format!("missing loot binding for {creature}"))?;
+            let entries = tables
+                .get(table)
+                .ok_or_else(|| format!("missing table for {creature}"))?;
+            let previous = missing.len();
+            missing_yields(entries, &admitted, &mut missing);
+            if missing.len() != previous {
+                incomplete_tables.push(creature);
+            }
+        }
+        // Zamulosh's exact stone wall is immovable and requires a settlement
+        // destination the carried-loot loader does not support.
+        assert_eq!(missing, ["oteryn:item.tibia.i22555"]);
+        assert_eq!(incomplete_tables, ["oteryn:creature.zamulosh"]);
+        for creature in [
+            "oteryn:creature.ratmiral_blackwhiskers",
+            "oteryn:creature.tentugly_s_head",
+            "oteryn:creature.the_dread_maiden",
+        ] {
+            let reference = bindings[creature].ok_or("missing boss loot binding")?;
+            assert!(
+                tables[reference]
+                    .iter()
+                    .all(|entry| entry.item.key != "oteryn:item.tibia.i51302")
+            );
+        }
+        let thawing = bindings["oteryn:creature.thawing_dragon_lord"]
+            .ok_or("missing Thawing Dragon Lord binding")?;
+        assert!(tables[thawing].iter().any(|entry| {
+            entry.item.key == "oteryn:item.tibia.i7441"
+                && entry.probability_ppm == Some(55_600)
+                && (entry.min_count, entry.max_count) == (1, 1)
+        }));
+        Ok(())
+    }
+
+    #[test]
     fn arbaziloth_loads_admitted_crystal_loot() -> Result<(), Box<dyn std::error::Error>> {
         let (creatures, _) = documents()?;
         let loot = LootTablesSection::decode(

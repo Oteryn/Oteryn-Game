@@ -104,8 +104,12 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
     # rather than a previous generation's on-disk Creature binding census.
     from cake_native_successor import loot_successor
     loot_path = REPOSITORY_PINS['loot_tables']
-    generated[loot_path] = loot_successor(root, json.loads(generated[spell_import.PROVIDER_DESTINATIONS['creature_profiles']]),
-                                        json.loads(generated[spell_import.PROVIDER_DESTINATIONS['item_profiles']]))
+    from build_full_spell_artifact import loot_item_profiles
+    from srx1_profile_updates import PATH as ITEM_UPDATES
+    items = loot_item_profiles(generated[spell_import.PROVIDER_DESTINATIONS['item_profiles']],
+                               generated.get(ITEM_UPDATES))
+    generated[loot_path] = loot_successor(
+        root, json.loads(generated[spell_import.PROVIDER_DESTINATIONS['creature_profiles']]), items)
     for key, path in REPOSITORY_PINS.items():
         manifest[key] = {
             "path": Path(os.path.relpath(path, "content")).as_posix(),
@@ -717,6 +721,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     admit_dream_courts_supplies(root, items)
     import protected_loot_yields
     protected_loot_yields.admit(root, items, provider_order)
+    import cloot3_item_profiles
+    cloot3_item_profiles.complete_records(root, items["records"], provider_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
