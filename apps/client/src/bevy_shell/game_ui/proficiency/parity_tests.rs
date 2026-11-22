@@ -103,11 +103,27 @@ fn equipped_weapon_hud_opens_live_track_and_flags_an_unspent_perk() -> Result {
         .world_mut()
         .query_filtered::<&Node, With<crate::bevy_shell::ui::toolbar::grid::UnusedPerk>>();
     assert_eq!(badges.single(app.world())?.display, Display::Flex);
+    assert!(
+        app.world_mut()
+            .query::<(&Name, &Node)>()
+            .iter(app.world())
+            .any(
+                |(name, node)| name.as_str() == "Progress to next weapon level"
+                    && node.width == percent(0.)
+            )
+    );
     let button = app
         .world()
         .get::<ChildOf>(entity)
         .ok_or("HUD track")?
         .parent();
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .weapon_proficiency_request(Intent::Browse);
     app.world_mut().trigger(Activate { entity: button });
     let panel = app
         .world()
@@ -119,6 +135,17 @@ fn equipped_weapon_hud_opens_live_track_and_flags_an_unspent_perk() -> Result {
         .weapon_proficiency_panel();
     assert!(panel.open);
     assert_eq!(panel.weapon, 258);
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Close))?;
+    crate::play::PlayLink::bevy_items_fixture(
+        &outbox,
+        Some(CharacterInventory::default()),
+        None,
+        false,
+        true,
+    );
+    app.update();
+    assert_eq!(badges.single(app.world())?.display, Display::Flex);
     Ok(())
 }
 
@@ -135,6 +162,20 @@ fn weapon_filters_use_inspected_requirements_and_keep_catalogue_identity() -> Re
         .ok_or("play")?
         .link;
     link.bevy_item_details_selected(true);
+    use oteryn_client_runtime::cyclopedia_character::{GeneralStats, TabExtension, TabView};
+    outbox.bevy_cyclopedia_initialize(true, true, false);
+    link.cyclopedia_character_request(oteryn_client_ui::cyclopedia_character::Intent::Tab);
+    outbox.bevy_cyclopedia_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload: TabView::GeneralStats(GeneralStats::default())
+            .encode_extended(&TabExtension {
+                vocation_id: Some(3),
+                deaths: None,
+            })
+            .map_err(|e| format!("{e:?}"))?,
+    });
     for (definition, kind, level) in [(258, "sword, two-handed", "25"), (259, "axe", "45")] {
         assert!(link.inspect(Request::Catalogue(definition)));
         link.bevy_item_details_response(&GatedCommandResult {
@@ -185,6 +226,12 @@ fn weapon_filters_use_inspected_requirements_and_keep_catalogue_identity() -> Re
             })
             .collect()
     };
+    press(&mut app, "Usable by my vocation")?;
+    assert!(
+        rows(&mut app).is_empty(),
+        "unrestricted melee catalogue entries use the Knight class fallback"
+    );
+    press(&mut app, "All vocations")?;
     press(&mut app, "Usable at my level")?;
     assert_eq!(rows(&mut app), [0]);
     press(&mut app, "Weapons: All")?;

@@ -17,6 +17,7 @@ pub(super) struct Filters {
     hands: usize,
     attempted: std::collections::BTreeSet<u32>,
     pub rows: Vec<usize>,
+    character_refresh: Option<std::time::Instant>,
 }
 const CLASSES: [&str; 7] = ["All", "Sword", "Axe", "Club", "Distance", "Wand", "Fist"];
 const HANDS: [&str; 3] = ["All", "One", "Two"];
@@ -63,6 +64,15 @@ impl Filters {
         } else {
             let details = link.inspection_panel();
             let (level, vocation) = link.weapon_filter_character();
+            let now = std::time::Instant::now();
+            if ((self.level && level.is_none()) || (self.vocation && vocation.is_none()))
+                && self.character_refresh.is_none_or(|last| {
+                    now.saturating_duration_since(last) >= std::time::Duration::from_secs(10)
+                })
+            {
+                link.refresh_skills_character();
+                self.character_refresh = Some(now);
+            }
             let mut next = None;
             let rows = catalogue
                 .entries
@@ -128,15 +138,23 @@ impl Filters {
         }
         !self.vocation
             || vocation.is_some_and(|voc| {
-                attr("Professions").is_none_or(|value| {
-                    value.split(',').any(|v| {
-                        voc.eq_ignore_ascii_case(v.trim())
-                            || voc
-                                .split_whitespace()
-                                .last()
-                                .is_some_and(|base| base.eq_ignore_ascii_case(v.trim()))
-                    })
-                })
+                let base = voc.split_whitespace().last().unwrap_or(voc);
+                let canonical = |name: &str| name.to_ascii_lowercase().replace([' ', '_', '-'], "");
+                if let Some(restrictions) = attr("Professions") {
+                    return restrictions.split(',').any(|allowed| {
+                        let key = canonical(allowed.trim());
+                        key == canonical(voc) || key == canonical(base)
+                    });
+                }
+                match weapon.and_then(|v| v.split(',').next()).map(str::trim) {
+                    Some("axe" | "sword" | "club") => base.eq_ignore_ascii_case("Knight"),
+                    Some("wand") => {
+                        base.eq_ignore_ascii_case("Druid") || base.eq_ignore_ascii_case("Sorcerer")
+                    }
+                    Some("fist") => base.eq_ignore_ascii_case("Monk"),
+                    Some("distance") => base.eq_ignore_ascii_case("Paladin"),
+                    _ => true,
+                }
             })
     }
 }

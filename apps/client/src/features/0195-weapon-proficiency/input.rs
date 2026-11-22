@@ -69,7 +69,7 @@ impl PlayLink {
             .catalogue
             .as_ref()
             .and_then(|page| page.entries.iter().position(|e| e.definition == definition));
-        if panel.selected && row.is_some_and(|r| panel.select_weapon(r)) {
+        if panel.selected && row.is_some_and(|r| panel.select_equipped_weapon(r)) {
             panel.open = true;
             drop(mailbox);
             self.weapon_proficiency_request(Intent::State);

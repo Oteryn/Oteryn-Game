@@ -65,6 +65,7 @@ pub(super) fn render(
     key: Key,
     panel: &WheelPanel,
     fields: &[String; 2],
+    level: Option<u32>,
 ) {
     if let Some(content) = widgets.content.take() {
         commands.entity(content).despawn();
@@ -92,13 +93,24 @@ pub(super) fn render(
     );
     let metadata = diagram::metadata(panel);
     if let Some(reply) = metadata {
+        let ring = level
+            .map(|v| v.saturating_sub(50))
+            .filter(|points| *points <= reply.unlock_points)
+            .map_or_else(
+                || format!("Level, achievements and scrolls: {}", reply.unlock_points),
+                |points| {
+                    format!(
+                        "Level points: {points}   Achievements and scrolls: {}",
+                        reply.unlock_points - points
+                    )
+                },
+            );
         label(
             commands,
             skins,
             content,
             format!(
-                "Level, achievements and scrolls: {}   Gem grade bonuses: {}",
-                reply.unlock_points,
+                "{ring}   Gem grade bonuses: {}",
                 reply.available.saturating_sub(reply.unlock_points)
             ),
         );

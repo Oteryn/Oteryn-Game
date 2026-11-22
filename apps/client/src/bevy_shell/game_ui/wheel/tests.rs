@@ -671,6 +671,21 @@ fn wheel_opens_installed_gem_and_its_workshop_modifier() -> TestResult {
             }],
         }],
     });
+    let mut waiting = p.clone();
+    waiting.gems.pending = Some(wire::Request {
+        nonce: 5,
+        revision: 3,
+    });
+    let (mut waiting_app, _commands, _) = fixture(waiting)?;
+    activate_caption(&mut waiting_app, "Inspect gem in vessel 2")?;
+    assert!(
+        !waiting_app
+            .world_mut()
+            .query::<&Text>()
+            .iter(waiting_app.world())
+            .any(|t| t.0 == "Back to Wheel"),
+        "a pending request cannot open the wrong gem"
+    );
     let (mut app, _commands, _) = fixture(p)?;
     activate_caption(&mut app, "Inspect gem in vessel 2")?;
     assert_eq!(panel(&app)?.gem, Some([1; 16]));
@@ -694,6 +709,10 @@ fn wheel_opens_installed_gem_and_its_workshop_modifier() -> TestResult {
         .editor_mut()
         .set_text("unknown modifier");
     activate_caption(&mut app, "Apply modifier search")?;
+    assert!(
+        panel(&app)?.gem.is_none(),
+        "detail selection must follow filtered rows"
+    );
     assert!(
         !app.world_mut()
             .query::<&Text>()
@@ -752,12 +771,56 @@ fn wheel_vessel_preset_restores_numbered_slot_through_replace_command() -> TestR
 fn wheel_reports_gem_points_separately_from_ring_unlock_points() -> TestResult {
     let mut p = model();
     p.diagram.reply.as_mut().ok_or("reply")?.available = 105;
-    let (mut app, _, _) = fixture(p)?;
+    let (mut app, _, outbox) = fixture(p)?;
+    outbox.bevy_hud_skills_fixture()?;
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0.contains("Level points: 0")
+                && t.0.contains("Achievements and scrolls: 100"))
+    );
     assert!(
         app.world_mut()
             .query::<&Text>()
             .iter(app.world())
             .any(|t| t.0.contains("Gem grade bonuses: 5"))
+    );
+    Ok(())
+}
+
+#[test]
+fn loading_a_saved_empty_legacy_vessel_clears_only_the_draft() -> TestResult {
+    let mut p = model();
+    let code = p.named_build_code();
+    p.preset_book.insert("Empty vessels", &code)?;
+    p.vessels[1] = Some([5; 16]);
+    p.confirmed_wheel.as_mut().ok_or("wheel")?.vessels = Some(p.vessels);
+    p.diagram.reply.as_mut().ok_or("diagram")?.request.vessels = p.vessels;
+    p.confirmed_atelier
+        .as_mut()
+        .ok_or("atelier")?
+        .gems
+        .push(atelier::GemView {
+            id: [5; 16],
+            domain: 1,
+            quality: 0,
+            vessel: true,
+            locked: false,
+            modifiers: vec![1],
+        });
+    let (mut app, _commands, _) = fixture(p)?;
+    activate_caption(&mut app, "Empty vessels")?;
+    let result = panel(&app)?;
+    assert_eq!(result.vessels, [None; 4]);
+    assert_eq!(
+        result
+            .confirmed_wheel
+            .ok_or("wheel")?
+            .vessels
+            .ok_or("vessels")?[1],
+        Some([5; 16])
     );
     Ok(())
 }

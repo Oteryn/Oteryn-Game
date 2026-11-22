@@ -6,6 +6,8 @@ use oteryn_client_ui::weapon_proficiency::{mastery_target, progress_level, progr
 
 #[derive(Component)]
 struct Track(u64, u32);
+#[derive(Component)]
+struct TrackFill;
 use crate::bevy_shell::ui::toolbar::grid::UnusedPerk as Unused;
 
 pub(super) fn install(app: &mut App) {
@@ -18,7 +20,8 @@ fn project(
     bar: Option<Res<StatusBar>>,
     skin: Res<Skins>,
     mut tracks: Query<(Entity, &mut Track)>,
-    mut badges: Query<&mut Node, With<Unused>>,
+    mut badges: Query<&mut Node, (With<Unused>, Without<TrackFill>)>,
+    mut fills: Query<&mut Node, With<TrackFill>>,
     mut captions: Query<&mut Text>,
     children: Query<&Children>,
 ) {
@@ -27,6 +30,7 @@ fn project(
         .play
         .as_ref()
         .filter(|_| owner.phase == Phase::Playing);
+    let mut unused = false;
     let track = play.and_then(|play| {
         let slots = play.link.equipment_slots();
         use oteryn_client_ui::equipment::{EquipmentSlot as E, ItemMoveDestination as D};
@@ -40,10 +44,19 @@ fn project(
         if !panel.selected {
             return None;
         }
-        if !panel.open && hands.clone().next().is_some() {
+        if !panel.open {
             play.link.weapon_proficiency_tick(std::time::Instant::now());
         }
         let page = panel.catalogue?;
+        unused = !panel.open
+            && page.entries.iter().any(|entry| {
+                entry.definition != 0
+                    && entry
+                        .levels
+                        .iter()
+                        .take(progress_level(entry))
+                        .any(|level| level.selected.is_none())
+            });
         let entry = hands
             .filter_map(|hand| {
                 page.entries
@@ -51,11 +64,6 @@ fn project(
                     .find(|e| e.definition == hand.item_definition_ref.get())
             })
             .next()?;
-        let unused = entry
-            .levels
-            .iter()
-            .take(progress_level(entry))
-            .any(|level| level.selected.is_none());
         Some((
             entry.definition,
             format!(
@@ -65,23 +73,22 @@ fn project(
                 mastery_target(entry),
                 progress_percent(entry)
             ),
-            unused,
+            next_level_percent(entry),
         ))
     });
     for mut node in &mut badges {
-        node.display = if track.as_ref().is_some_and(|(_, _, unused)| *unused) {
-            Display::Flex
-        } else {
-            Display::None
-        };
+        node.display = if unused { Display::Flex } else { Display::None };
     }
-    let Some((definition, label, _)) = track else {
+    let Some((definition, label, progress)) = track else {
         for (entity, _) in &mut tracks {
             commands.entity(entity).despawn();
         }
         return;
     };
     if let Ok((entity, mut saved)) = tracks.single_mut() {
+        for mut fill in &mut fills {
+            fill.width = percent(progress as f32);
+        }
         *saved = Track(owner.generation(), definition);
         if let Ok(children) = children.get(entity)
             && let Some(child) = children.first()
@@ -104,9 +111,38 @@ fn project(
                 skin.font.clone(),
             ))
             .id();
-        commands.entity(button).add_child(text);
+        let fill = commands
+            .spawn((
+                TrackFill,
+                Name::new("Progress to next weapon level"),
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: px(0.),
+                    bottom: px(0.),
+                    height: px(3.),
+                    width: percent(progress as f32),
+                    ..default()
+                },
+                BackgroundColor(Color::srgb(0.2, 0.6, 0.3)),
+                bevy::picking::Pickable::IGNORE,
+            ))
+            .id();
+        commands.entity(button).add_children(&[text, fill]);
         commands.entity(bar.0).add_child(button);
     }
+}
+fn next_level_percent(
+    entry: &oteryn_client_runtime::weapon_proficiency::ProficiencyCatalogueEntry,
+) -> u32 {
+    let mut previous = 0;
+    for &threshold in entry.thresholds.iter().take(entry.levels.len() + 2) {
+        if entry.experience < threshold {
+            return ((u64::from(entry.experience - previous) * 100)
+                / u64::from(threshold - previous)) as u32;
+        }
+        previous = threshold;
+    }
+    100
 }
 fn open(event: On<Activate>, owner: NonSend<HostOwner>, guard: ModalGuard, tracks: Query<&Track>) {
     let Some(play) = &owner.play else { return };

@@ -66,16 +66,14 @@ fn submit_panel(
             1 => {
                 let code = panel
                     .preset_book
-                    .0
-                    .get(panel.preset_fields[0].trim())
-                    .ok_or(tr!("Select a saved preset name"))?
-                    .clone();
+                    .named_code(panel.preset_fields[0].trim())
+                    .ok_or(tr!("Select a saved preset name"))?;
                 panel.load_named_build(&code)?;
                 panel.diagram.reset_requested = false;
             }
             2 => {
                 let book = update_book(path, |book| {
-                    if book.0.remove(panel.preset_fields[0].trim()).is_none() {
+                    if book.remove(panel.preset_fields[0].trim()).is_none() {
                         return Err(tr!("Select a saved preset name"));
                     }
                     Ok(())
@@ -107,10 +105,7 @@ fn submit_panel(
                     if name != selected && book.0.contains_key(name) {
                         return Err("A preset with that name already exists");
                     }
-                    let code = book
-                        .0
-                        .remove(selected)
-                        .ok_or("Select a saved preset name")?;
+                    let code = book.remove(selected).ok_or("Select a saved preset name")?;
                     book.insert(name, &code)?;
                     Ok(())
                 })?;
@@ -160,8 +155,7 @@ fn update_book(
         Ok(book) => book,
     };
     edit(&mut book)?;
-    let bytes = serde_json::to_vec_pretty(&serde_json::json!({"version": 1, "presets": book.0}))
-        .map_err(|_| error())?;
+    let bytes = book.encoded()?;
     crate::atomic_file::replace(path, &bytes, true).map_err(|_| error())?;
     Ok(book)
 }

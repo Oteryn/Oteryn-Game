@@ -6,7 +6,11 @@ const MAX_PRESETS: usize = 32;
 const MAX_FILE: u64 = 32768;
 const MAX_CODE: usize = 256;
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct PresetBook(pub BTreeMap<String, String>);
+pub struct PresetBook(
+    pub BTreeMap<String, String>,
+    std::collections::BTreeSet<String>,
+);
+const EMPTY_VESSELS: &str = "#-,-,-,-";
 fn decode(code: &str) -> Result<[u16; 36], &'static str> {
     if code.len() > MAX_CODE {
         return Err(tr!("Build code is too long"));
@@ -70,7 +74,12 @@ impl WheelPanel {
             };
             code.push_str("#v2:");
             board.slots.iter().map(|s| s.gem).collect::<Vec<_>>()
-        } else if self.vessels.iter().any(Option::is_some) {
+        } else if self
+            .confirmed_wheel
+            .as_ref()
+            .is_some_and(|w| w.vessels.is_some())
+            || self.vessels.iter().any(Option::is_some)
+        {
             code.push('#');
             self.vessels.to_vec()
         } else {
@@ -149,6 +158,31 @@ impl WheelPanel {
     }
 }
 impl PresetBook {
+    /// Older point-only records leave vessels alone. New empty builds explicitly clear them.
+    pub fn named_code(&self, name: &str) -> Option<String> {
+        let mut code = self.0.get(name)?.clone();
+        if self.1.contains(name) {
+            code.push_str(EMPTY_VESSELS)
+        }
+        Some(code)
+    }
+    pub fn remove(&mut self, name: &str) -> Option<String> {
+        let code = self.named_code(name)?;
+        self.0.remove(name);
+        self.1.remove(name);
+        Some(code)
+    }
+    pub fn encoded(&self) -> Result<Vec<u8>, &'static str> {
+        let mut entries = BTreeMap::new();
+        for name in self.0.keys() {
+            let code = self.named_code(name).ok_or(tr!("Invalid preset code"))?;
+            decode(named_parts(&code)?.0)?;
+            entries.insert(name, code);
+        }
+        serde_json::to_vec_pretty(&serde_json::json!({"version":1,"presets":entries}))
+            .map_err(|_| tr!("Cannot encode presets"))
+    }
+
     pub fn insert(&mut self, name: &str, code: &str) -> Result<(), &'static str> {
         let name = name.trim();
         if name.is_empty() || name.len() > 64 || name.chars().any(char::is_control) {
@@ -158,7 +192,13 @@ impl PresetBook {
             return Err(tr!("At most 32 presets"));
         }
         decode(named_parts(code)?.0)?;
-        self.0.insert(name.into(), code.into());
+        if let Some(points) = code.strip_suffix(EMPTY_VESSELS) {
+            self.1.insert(name.into());
+            self.0.insert(name.into(), points.into());
+        } else {
+            self.1.remove(name);
+            self.0.insert(name.into(), code.into());
+        }
         Ok(())
     }
     pub fn load(path: &Path) -> Result<Self, &'static str> {
@@ -200,8 +240,7 @@ impl PresetBook {
         for (name, code) in &self.0 {
             validated.insert(name, code)?;
         }
-        let bytes = serde_json::to_vec_pretty(&serde_json::json!({"version":1,"presets":self.0}))
-            .map_err(|_| tr!("Cannot encode presets"))?;
+        let bytes = self.encoded()?;
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(|_| tr!("Cannot create preset directory"))?;
         }

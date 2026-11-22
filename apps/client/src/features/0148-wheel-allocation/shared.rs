@@ -202,7 +202,7 @@ impl PlayLink {
                 if !editable(&m.wheel) {
                     return false;
                 }
-                let Some(code) = m.wheel.preset_book.0.get(&name).cloned() else {
+                let Some(code) = m.wheel.preset_book.named_code(&name) else {
                     return false;
                 };
                 if let Err(reason) = m.wheel.load_named_build(&code) {

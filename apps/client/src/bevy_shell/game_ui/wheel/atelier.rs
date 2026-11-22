@@ -118,6 +118,14 @@ fn button(
         ))
         .observe(activate)
         .id();
+    if matches!(kind, Kind::OpenGem { .. })
+        && (expected.pending.is_some()
+            || expected.gems.pending.is_some()
+            || expected.gems.review.is_some()
+            || expected.retry.is_some())
+    {
+        commands.entity(e).insert(bevy::ui::InteractionDisabled);
+    }
     text(commands, skin, e, label);
     commands.entity(parent).add_child(e);
 }
@@ -149,6 +157,9 @@ fn activate(
             if let Kind::OpenGem { revision, id } = action.kind {
                 play.link
                     .gem_control_bound(&action.expected, Some(GemControl::Gem { revision, id }));
+                if play.link.wheel_panel().gem != Some(id) {
+                    return;
+                }
             }
             state.open = true;
             state.query.clear();
@@ -201,11 +212,36 @@ fn activate(
         }
         _ => {}
     }
+    if state.open
+        && matches!(
+            action.kind,
+            Kind::FilterText | Kind::FilterQuality | Kind::FilterLocked
+        )
+    {
+        let panel = &action.expected;
+        let search = state.query.to_lowercase();
+        if panel
+            .selected_gem()
+            .is_none_or(|gem| !state.shows_gem(panel, gem, &search))
+            && let Some(atelier) = &panel.confirmed_atelier
+        {
+            let selection = atelier
+                .gems
+                .iter()
+                .find(|gem| state.shows_gem(panel, gem, &search))
+                .map_or(GemControl::ClearSelection, |gem| GemControl::Gem {
+                    revision: atelier.revision,
+                    id: gem.id,
+                });
+            play.link.gem_control_bound(panel, Some(selection));
+        }
+    }
 }
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
     skin: Res<Skins>,
+    fields: Query<&bevy::text::EditableText, With<ModifierSearch>>,
     mut state: ResMut<State>,
 ) {
     let panel = owner.play.as_ref().map(|p| p.link.wheel_panel());
@@ -274,7 +310,11 @@ fn project(
             .spawn((
                 ModifierSearch,
                 bevy::ui_widgets::TextInput,
-                bevy::text::EditableText::new(&state.query),
+                bevy::text::EditableText::new(
+                    fields
+                        .single()
+                        .map_or_else(|_| state.query.clone(), |f| f.value().to_string()),
+                ),
                 source::font(skin.font.clone(), false),
                 TextColor(source::TEXT_COLOR),
                 bevy::text::TextCursorStyle::default(),
@@ -442,7 +482,7 @@ fn project(
                     | GemControl::Socket
             ) && panel
                 .selected_gem()
-                .is_some_and(|gem| !state.shows_gem(&panel, gem, &search))
+                .is_none_or(|gem| !state.shows_gem(&panel, gem, &search))
             {
                 continue;
             }
