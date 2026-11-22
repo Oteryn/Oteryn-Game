@@ -80,13 +80,42 @@ impl Outbox {
 }
 
 pub(in crate::play) fn reduce(
-    panel: &mut oteryn_client_ui::quest_log::QuestPanel,
+    mailbox: &mut crate::play::mailbox::Mailbox,
     deltas: Vec<QuestUpdate>,
 ) {
+    let panel = &mut mailbox.quest;
     for delta in deltas {
+        #[cfg(bevy_shell)]
+        let prior = matches!(&delta, QuestUpdate::Delta(_)).then(|| {
+            (
+                panel
+                    .state
+                    .list
+                    .iter()
+                    .map(|q| (q.quest_index, q.completed))
+                    .collect::<std::collections::BTreeMap<_, _>>(),
+                matches!(
+                    panel.state.log.view,
+                    Some(oteryn_client_runtime::quest_log::QuestLogView::List(_))
+                ) || !panel.state.list.is_empty(),
+            )
+        });
         if let Err(refusal) = panel.state.apply_update(&delta) {
             panel.state.refusal = Some(refusal);
             continue;
+        }
+        #[cfg(bevy_shell)]
+        if let Some((prior, known_list)) = prior {
+            for entry in &panel.state.list {
+                let label = match prior.get(&entry.quest_index) {
+                    Some(false) if entry.completed => "Quest completed",
+                    None if known_list && !entry.completed => "Quest started",
+                    _ => continue,
+                };
+                mailbox
+                    .achievement_banners
+                    .push_back(format!("{label}: {}", panel.title(entry.quest_index)));
+            }
         }
         if matches!(&delta, QuestUpdate::Snapshot(_)) {
             panel.tracker.reconcile();

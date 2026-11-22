@@ -85,6 +85,14 @@ impl Mailbox {
         self.dialogue_events(&events);
         self.npc_shop_events(&events);
         for event in &events {
+            if let SessionEvent::ServerSaveCountdown(delta) = event {
+                let duration =
+                    std::time::Duration::from_secs(u64::from(delta.value.minutes_remaining) * 60);
+                self.reward_reset = received_at
+                    .into_std()
+                    .checked_add(duration)
+                    .map(|deadline| (delta.value.ending_epoch, deadline));
+            }
             if let SessionEvent::GatedSnapshotReplaced(delta) = event
                 && delta.value.domain_id == 1
             {
@@ -130,7 +138,7 @@ impl Mailbox {
                 .apply(oteryn_client_runtime::tutorial_notices::Notice::ServerSave { minutes });
         }
         let deltas = std::mem::take(&mut self.pushed.quests);
-        super::super::feature_0016_quest_log::protocol::reduce(&mut self.quest, deltas);
+        super::super::feature_0016_quest_log::protocol::reduce(self, deltas);
         super::super::feature_0240_chat_party_room::protocol::reset_if_replaced(self);
         for line in std::mem::take(&mut self.pushed.chat_lines) {
             oteryn_client_ui::party::push_feedback(&mut self.party, &line);
