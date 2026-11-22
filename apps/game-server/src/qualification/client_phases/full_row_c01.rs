@@ -189,7 +189,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    let mut client = connect_world(clients, 0xc1).await?;
+    let mut client = connect_world(clients, 0xc1)
+        .await
+        .map_err(|error| admission_error("initial-admission", error))?;
     let definitions = provisioning::item_index()?;
     for (id, slot) in MELEE_KIT {
         let key = format!("oteryn:item.tibia.i{id}");
@@ -274,7 +276,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step=relog observed=logout-refused".into());
     }
     drop(client);
-    let mut fresh = connect_world(clients, 0xc2).await?;
+    let mut fresh = connect_world(clients, 0xc2)
+        .await
+        .map_err(|error| admission_error("fresh-admission", error))?;
     let durable_xp = progress(&mut fresh).await?;
     let durable_loot = inventory_signature(&fresh)?;
     if fresh.join_snapshot().game_session_id == old_session || durable_xp != after_xp || durable_loot != after_loot {
@@ -285,9 +289,29 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     Err("step=armor-defence observed=unlabelled-hp-deltas need=server-attributed-block-or-armor-reduction".into())
 }
 
+pub(super) fn admission_error(
+    stage: &str,
+    error: Box<dyn std::error::Error>,
+) -> Box<dyn std::error::Error> {
+    verdict::context(format!("step={stage} observed={error}"), error)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn admission_gap_preserves_stage_and_error_source() -> TestResult {
+        let source = "server closed the connection with E1200 (trace 01a2045f48737c4783bf7260050e72b6)";
+        for stage in ["initial-admission", "fresh-admission", "target-admission"] {
+            let error = admission_error(stage, std::io::Error::other(source).into());
+            assert_eq!(error.to_string(), format!("step={stage} observed={source}"));
+            let cause = error.source().ok_or("missing original error")?;
+            assert!(cause.is::<std::io::Error>());
+            assert_eq!(cause.to_string(), source);
+        }
+        Ok(())
+    }
+
     #[test]
     fn melee_kit_contains_distinct_hand_and_body_items() -> TestResult {
         let definitions = provisioning::item_index()?;

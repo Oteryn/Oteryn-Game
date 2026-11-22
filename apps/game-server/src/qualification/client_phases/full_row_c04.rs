@@ -15,6 +15,7 @@
 //!    remain paid, fear to be absent, and a post-cooldown cast to work. Cooldowns and conditions
 //!    are temporal rather than durable; the durable re-check is the committed mana state.
 
+use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
@@ -44,7 +45,12 @@ impl Row {
 
     fn finish(mut self, result: TestResult) {
         if let Err(error) = result {
-            self.failure = Some(format!("step={} observed={error}", self.completed + 1));
+            let detail = error.to_string();
+            self.failure = Some(if detail.starts_with("step=") {
+                detail
+            } else {
+                format!("step={} observed={detail}", self.completed + 1)
+            });
         }
         if let Some(failure) = &self.failure {
             evidence(&format!(
@@ -67,7 +73,7 @@ impl Row {
     }
 }
 
-fn evidence_token(value: &str) -> String {
+pub(super) fn evidence_token(value: &str) -> String {
     value
         .chars()
         .map(|c| {
@@ -173,7 +179,9 @@ async fn journey(
     let book = spell_book()?;
     let ordinary = index(&book, "exevo infir flam hur")?;
     let primary_peer = index(&book, "exori infir vis")?;
-    let mut client = connect_world(clients, 0xc4).await?;
+    let mut client = connect_world(clients, 0xc4)
+        .await
+        .map_err(|error| admission_error("initial-admission", error))?;
 
     let pz_path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| tile.protection_zone())
@@ -368,7 +376,9 @@ async fn journey(
     {
         return Err("LOGOUT refused after cast lifecycle".into());
     }
-    let mut fresh = connect_world(clients, 0xc5).await?;
+    let mut fresh = connect_world(clients, 0xc5)
+        .await
+        .map_err(|error| admission_error("fresh-admission", error))?;
     if mana(&fresh)? != durable_mana
         || conditions(&mut fresh)
             .await?

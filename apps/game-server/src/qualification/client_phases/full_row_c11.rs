@@ -16,6 +16,7 @@
 //! 6. Logout, freshly admit the same character, and re-check the durable Monk vocation by casting
 //!    the Monk-only builder again; require its reply, mana delta, Harmony delta, and Serene state.
 
+use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use std::collections::BTreeSet;
@@ -59,7 +60,11 @@ impl Row {
         evidence(&format!("C11_CHECK {action} FAIL {error}"));
         self.failures.push(error);
     }
-    fn finish(self) {
+    fn finish(mut self, terminal: Option<String>) {
+        if let Some(detail) = terminal {
+            evidence(&format!("C11_GAP {detail}"));
+            self.failures.push(detail);
+        }
         for action in ACTIONS {
             if !self.passed.contains(action) {
                 evidence(&gap(action, &self.failures));
@@ -81,12 +86,17 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    match verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(&mut row, clients))).await {
-        Ok(Ok(())) => {}
-        Ok(Err(error)) => row.fail("fresh-admission-monk", error),
-        Err(_) => row.fail("fresh-admission-monk", "journey-timeout"),
-    }
-    row.finish();
+    let terminal = match verdict::indexed_timeout(
+        Duration::from_secs(300), verdict::observe(journey(&mut row, clients)),
+    ).await {
+        Ok(Ok(())) => None,
+        Ok(Err(error)) => {
+            let detail = error.to_string();
+            Some(if detail.starts_with("step=") { detail } else { format!("step=journey observed={detail}") })
+        }
+        Err(_) => Some("step=journey observed=timeout".into()),
+    };
+    row.finish(terminal);
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -99,7 +109,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let mut client = connect_world(clients, 0xcb).await?;
+    let mut client = connect_world(clients, 0xcb)
+        .await
+        .map_err(|error| admission_error("initial-admission", error))?;
     if let Err(error) = choose_monk(&mut client, world, &bytes).await {
         verdict::record_error(error.as_ref());
         row.fail("player-monk-choice", error);
@@ -162,7 +174,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let prior = client.join_snapshot().game_session_id;
     logout(&mut client, world).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xcc).await?;
+    let mut fresh = connect_world(clients, 0xcc)
+        .await
+        .map_err(|error| admission_error("fresh-admission-monk", error))?;
     if fresh.join_snapshot().game_session_id == prior {
         return Err("fresh Monk admission reused the prior game session".into());
     }

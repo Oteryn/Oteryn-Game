@@ -18,6 +18,7 @@
 //!    the retained position, and the remaining rune count. This re-checks the
 //!    durable payment/custody state; the expired field must not reappear.
 
+use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
@@ -53,7 +54,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc7).await?;
+    let mut client = connect_world(clients, 0xc7)
+        .await
+        .map_err(|error| admission_error("initial-admission", error))?;
     let reference = provisioning::item_reference(&provisioning::item_index()?, RUNE_ID)?;
     let field = provisioning::item_reference(&provisioning::item_index()?, FIELD_ID)?;
     let purchase_sequence = acquire(&mut client, world, &metadata.npcs, reference).await?;
@@ -132,7 +135,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let retained_position = client.world_spatial().actor_position;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xc8).await?;
+    let mut fresh = connect_world(clients, 0xc8)
+        .await
+        .map_err(|error| admission_error("fresh-admission", error))?;
     if fresh.join_snapshot().game_session_id == old_session
         || fresh.world_spatial().actor_position != retained_position
         || quantity(&fresh, reference)? != before_count - 1

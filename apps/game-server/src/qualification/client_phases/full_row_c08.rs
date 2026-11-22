@@ -10,6 +10,7 @@
 //! 5. Return to the poison spider, acquire another delayed poison delta, request logout (first
 //!    refusal may be `InFight`), retry until accepted, then make a fresh admission; expect a new
 //!    game-session id, an authoritative active poison icon, and resumed damage out of combat.
+use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
@@ -30,7 +31,12 @@ impl Row {
     }
     fn finish(self, result: &TestResult) {
         if let Err(error) = result {
-            evidence(&format!("C08_GAP step={} observed={error}", self.step));
+            let detail = error.to_string();
+            if detail.starts_with("step=") {
+                evidence(&format!("C08_GAP {detail}"));
+            } else {
+                evidence(&format!("C08_GAP step={} observed={detail}", self.step));
+            }
         }
         evidence(&format!(
             "e2e_all scenario=C08.full status={} seconds={:.3}",
@@ -155,7 +161,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc8).await?;
+    let mut client = connect_world(clients, 0xc8)
+        .await
+        .map_err(|error| admission_error("initial-admission", error))?;
     travel_to_spawn(
         &mut client,
         world,
@@ -256,7 +264,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         client.take_events();
     }
     drop(client);
-    let mut client = connect_world(clients, 0xc9).await?;
+    let mut client = connect_world(clients, 0xc9)
+        .await
+        .map_err(|error| admission_error("fresh-admission", error))?;
     if client.join_snapshot().game_session_id == old_session {
         return Err("step persistence: fresh admission reused game session".into());
     }

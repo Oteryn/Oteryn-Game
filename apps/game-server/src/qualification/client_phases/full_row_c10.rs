@@ -17,6 +17,7 @@
 //! 6. Freshly admit the character after saved rest and require a new game session,
 //!    retained soul, and nondecreasing saved health/mana (food-funded rest is
 //!    settled by the server owner exactly once).
+use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
@@ -133,7 +134,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let generation = load_world_generation(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let world = &generation.bundle;
-    let mut client = connect_world(clients, 0xca).await?;
+    let mut client = connect_world(clients, 0xca)
+        .await
+        .map_err(|error| admission_error("initial-admission", error))?;
     let spell = soul_spell(&mut client).await?;
     let before = client.actor_vitals().copied().ok_or("step soul debit: vitals absent")?;
     let cast = client.cast_spell(NonZeroU32::new(spell.cast_index).ok_or("step soul debit: zero cast index")?, SpellTarget::None, false).await?;
@@ -317,7 +320,9 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
 }
 
 async fn fresh_admission(row: &mut Row, clients: &SeamClients<'_>, prior: crate::foundation::GameSessionId, soul: u32, before: oteryn_protocol_oteryn::actor_spell::ActorVitals) -> TestResult {
-    let client = connect_world(clients, 0xcb).await?;
+    let client = connect_world(clients, 0xcb)
+        .await
+        .map_err(|error| admission_error("fresh-admission", error))?;
     let after = client.actor_vitals().ok_or("step saved rest: fresh-admission vitals absent")?;
     if client.join_snapshot().game_session_id == prior || after.soul < soul || after.health < before.health || after.mana < before.mana {
         return Err(format!("step saved rest: prior={prior:?} admitted={:?} before={before:?} after={after:?}", client.join_snapshot().game_session_id).into());

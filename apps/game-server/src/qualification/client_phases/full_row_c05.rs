@@ -12,6 +12,7 @@
 //!    and no mana/state cost.
 //! 5. Log the target out, freshly admit it with a different game session, list the
 //!    durable setting, and re-cast to prove denial and no-cost refusal survived.
+use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, ChatSpeechMode, DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::exiva;
@@ -32,7 +33,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         "SEAM_EVIDENCE e2e_all scenario=C05.full status={} seconds={:.3} evidence={}",
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64(),
-        if result.is_ok() { "observed-all-required-actions" } else { "observed-runtime-failure-see-C05_GAP" },
+        result.as_ref().err().map_or_else(
+            || "observed-all-required-actions".to_owned(),
+            |error| super::full_row_c04::evidence_token(&error.to_string()),
+        ),
     ));
 }
 
@@ -78,8 +82,12 @@ async fn cast(client: &mut DevClientSession, target: &str) -> TestResult<(oteryn
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut caster = connect_character(clients, 0xc5, 0).await?;
-    let mut target = connect_character(clients, 0xc6, 1).await?;
+    let mut caster = connect_character(clients, 0xc5, 0)
+        .await
+        .map_err(|error| admission_error("caster-admission", error))?;
+    let mut target = connect_character(clients, 0xc6, 1)
+        .await
+        .map_err(|error| admission_error("target-admission", error))?;
     let target_name = own_name(&target)?;
     if setting(&mut target, &[0, 1]).await? != [1] { return Err("allow step missing committed [1] reply".into()); }
     let list = exiva::PlayerList::decode(&setting(&mut target, &[5]).await?).ok_or("allow step invalid settings list")?;
@@ -124,7 +132,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let old_session = target.join_snapshot().game_session_id;
     if target.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Err("fresh-admission step logout refused".into()); }
     drop(target);
-    let mut target = connect_character(clients, 0xc7, 1).await?;
+    let mut target = connect_character(clients, 0xc7, 1)
+        .await
+        .map_err(|error| admission_error("target-readmission", error))?;
     if target.join_snapshot().game_session_id == old_session { return Err("fresh-admission step reused game session".into()); }
     let list = exiva::PlayerList::decode(&setting(&mut target, &[5]).await?).ok_or("fresh-admission step invalid settings list")?;
     if list.modes != 0 { return Err(format!("fresh-admission step observed modes={}", list.modes).into()); }
