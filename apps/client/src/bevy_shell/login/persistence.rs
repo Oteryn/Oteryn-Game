@@ -3,6 +3,7 @@ use std::ffi::OsString;
 
 pub(super) struct PendingSave {
     task: bevy_tasks::Task<Result<LoginSettings, String>>,
+    path: PathBuf,
     visible: LoginSettings,
     revision: u64,
     assets: Option<OsString>,
@@ -38,21 +39,27 @@ impl LoginState {
             return;
         }
         let edited = visible.clone();
-        let before = self.baseline.clone();
+        let mut before = self.baseline.clone();
+        let save_path = path.clone();
         let previous = self.saving.take();
         let task = bevy_tasks::IoTaskPool::get_or_init(|| {
             bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
         })
         .spawn(async move {
             // A cancelled submission may still own or be waiting for the file lock.
-            if let Some(previous) = previous {
-                let _ = previous.task.await;
+            if let Some(previous) = previous
+                && previous.task.await.is_ok()
+                && previous.path == path
+            {
+                // The previous form records our edits, excluding concurrent disk-only changes.
+                before = previous.visible;
             }
             let lock = crate::atomic_file::lock(&path).map_err(|_| LoginSettings::save_error())?;
             edited.save_edits(&path, &before, lock)
         });
         self.saving = Some(PendingSave {
             task,
+            path: save_path,
             visible,
             revision: self.revision,
             assets: None,
@@ -65,6 +72,9 @@ impl LoginState {
     ) -> Option<(crate::NativeLoginConfig, Option<OsString>)> {
         let saved = bevy_tasks::futures::check_ready(&mut self.saving.as_mut()?.task)?;
         let save = self.saving.take()?;
+        if saved.is_ok() && self.path.as_ref() == Some(&save.path) {
+            self.baseline = save.visible.clone();
+        }
         if self.revision != save.revision || !self.visible || self.form.settings != save.visible {
             return None;
         }
@@ -97,7 +107,6 @@ impl LoginState {
             self.form.feedback(error);
             return None;
         }
-        self.baseline = self.form.settings.clone();
         self.form.submit().ok()
     }
 }
