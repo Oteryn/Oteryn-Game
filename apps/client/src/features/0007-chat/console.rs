@@ -253,7 +253,7 @@ fn open_export(path: &Path, append: bool) -> std::io::Result<std::fs::File> {
     let file = options.open(path)?;
     #[cfg(unix)]
     {
-        use std::os::unix::fs::MetadataExt;
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
         let metadata = file.metadata()?;
         if !metadata.is_file()
             || metadata.uid() != rustix::process::geteuid().as_raw()
@@ -261,6 +261,7 @@ fn open_export(path: &Path, append: bool) -> std::io::Result<std::fs::File> {
         {
             return Err(std::io::ErrorKind::PermissionDenied.into());
         }
+        file.set_permissions(std::fs::Permissions::from_mode(0o600))?;
     }
     Ok(file)
 }

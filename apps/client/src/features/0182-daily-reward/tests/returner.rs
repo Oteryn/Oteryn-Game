@@ -106,7 +106,7 @@ async fn play_entry_queries_returner_entitlement_without_opening_daily_wall() ->
     assert!(!panel.open);
     assert_eq!(panel.returner_notified, Some(id));
     drop(link);
-    task.await?;
+    tokio::time::timeout(Duration::from_secs(2), task).await??;
     Ok(())
 }
 
