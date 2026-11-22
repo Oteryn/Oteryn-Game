@@ -483,6 +483,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     mining_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import imbuement_item_profiles
     imbuement_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import crystal_raid_items
+    crystal_raid_items.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+                             NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import item_transform_profiles
     item_transform_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import reward_bag_profiles

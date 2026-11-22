@@ -1,35 +1,35 @@
 {
   "admission_main": "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c",
   "authoring_profile_counts": {
-    "Ability": 7396,
-    "Behavior": 3147,
-    "Creature": 1865,
-    "Effect": 5800,
+    "Ability": 7406,
+    "Behavior": 3153,
+    "Creature": 1871,
+    "Effect": 5806,
     "Encounter": 108,
-    "Formula": 6129,
+    "Formula": 6137,
     "Loot": 40,
-    "Presentation": 3147
+    "Presentation": 3153
   },
   "editor_entry_counts": {
     "Item": 165,
     "Mount": 252
   },
   "family_counts": {
-    "Ability": 7396,
-    "Behavior": 3147,
+    "Ability": 7406,
+    "Behavior": 3153,
     "Charm": 25,
-    "Creature": 1865,
+    "Creature": 1871,
     "Dialogue": 836,
     "Document": 1609,
-    "Effect": 5800,
+    "Effect": 5806,
     "Encounter": 108,
     "Encounter.Raid": 240,
-    "Formula": 6129,
+    "Formula": 6137,
     "Item": 34122,
-    "Loot": 1292,
+    "Loot": 1295,
     "Mount": 252,
     "NPC": 1282,
-    "Presentation": 3147,
+    "Presentation": 3153,
     "Proficiency": 443,
     "Quest": 352,
     "RewardClaim": 345,
@@ -47,11 +47,11 @@
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "eccb941ee5334dd5423e5de7699c6388108bcb68",
+    "declarations": "c19947efdbb62bedb716c218134643284175916b",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "d6633ab6d1335663d3b6bc4929225b3adbcbff2c",
-    "reference": "e8c4487697f321137afbd4b4962a7d0e202a4331",
-    "sources": "2cf0e78314dfab9278d37c5bb45e73d155c09eec"
+    "imports": "0046e37b4fde0ef4c238fc21185a5c9e63cc50d5",
+    "reference": "8837791119cb8a1432edf76aa9e884a332bb300c",
+    "sources": "c548af71a049744c09477682b1b360e1f7d2f674"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "ruleset_counts": {
@@ -89,7 +89,7 @@
   },
   "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
   "source_binding_counts": {
-    "Creature": 1865,
+    "Creature": 1871,
     "Encounter": 108,
     "Item": 476,
     "Mount": 252,
@@ -155,7 +155,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/spell-native-profiles.json",
-          "record_count": 1875,
+          "record_count": 1881,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "47e9d5b54eb9cc3de65a88bc53e178ba36da10dffa4a5d1f0f4643a678908c36"
+          "sha256": "828c3e21d9e172948b4c4030ff566f7b101a6ed21bde6fd4a4803e0d61486a60"
         },
         {
           "creates_canonical_identities": false,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6576,
+          "record_count": 6585,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "a5db7fd03aff178fe60ffbe4de19feb0a97b6ee535fe2537bbae854d660d4ed6"
+          "sha256": "135c22ad505425712b1c6495ab98894e733fa1cbb9dc15f4273805377f6db965"
         },
         {
           "creates_canonical_identities": false,
@@ -262,7 +262,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/definitions/spell-native-profiles.json",
-          "record_count": 1873,
+          "record_count": 1879,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
@@ -270,7 +270,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#PresentationProfilesDocument"
           },
-          "sha256": "1277964c2242c40d86a5b9648e423daa8212c6fc1819f2cacf82d14a2b0b57db"
+          "sha256": "3080667ea76cba87d22bb58e9de79a0c78d0234c0f4baea3781326f00498dacd"
         },
         {
           "creates_canonical_identities": false,

@@ -559,7 +559,7 @@ mod tests {
         // plus Crystal a_piece_of_cake_config.lua:394-400's seasonal raid.
         // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
         assert_eq!(catalogue.records().len(), 240);
-        assert_eq!(catalogue.active().count(), 137);
+        assert_eq!(catalogue.active().count(), 163);
         for record in catalogue.records() {
             if record.active {
                 record.select([7; 32], [9; 16])?.definition.validate()?;
@@ -567,6 +567,94 @@ mod tests {
                 assert!(!record.inactive_reasons.is_empty());
                 assert!(record.select([7; 32], [9; 16]).is_err());
             }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_xml_raids_are_selectable_with_donor_clocks() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let catalogue = RaidCatalogue::embedded()?;
+        let keys = [
+            "raid:abdendriel.chayenne",
+            "raid:abdendriel.dragons",
+            "raid:abdendriel.warwolves",
+            "raid:ankrahmun.cobras",
+            "raid:ankrahmun.gargoyles",
+            "raid:ankrahmun.nomads",
+            "raid:ankrahmun.terramites",
+            "raid:carlin.amazons",
+            "raid:carlin.lesserundeads",
+            "raid:carlin.trolls",
+            "raid:carlin.undeads",
+            "raid:farmine.blightfather",
+            "raid:farmine.zulazzathecorruptor",
+            "raid:kazordoon.goblins",
+            "raid:libertybay.quaras",
+            "raid:oramond.ravenger",
+            "raid:porthope.gorga",
+            "raid:porthope.serpentspawns",
+            "raid:svargrond.barbarianssvargrond1",
+            "raid:svargrond.ghazbaran",
+            "raid:thais.orcs",
+            "raid:venore.hunters",
+            "raid:venore.orcsambackpack",
+            "raid:venore.the_old_widow",
+        ];
+        for key in keys {
+            let raid = catalogue.get(&ProductionKey::new(key)?).ok_or(key)?;
+            assert!(
+                matches!(raid.schedule, CatalogueSchedule::LegacyXml { .. }),
+                "{key}"
+            );
+            assert!(raid.active, "{key}: {:?}", raid.inactive_reasons);
+            raid.select([1; 32], [2; 16])?.definition.validate()?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn halloween_raids_use_the_archived_reset_window_and_cells()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let catalogue = RaidCatalogue::embedded()?;
+        for (key, last_day, interval, cells) in [
+            (
+                "kazordoon_raids.the_halloween_hare",
+                (10, 31),
+                86_400_000,
+                &[(32624, 32018)][..],
+            ),
+            (
+                "northern_darama_raids.the_mutated_pumpkin",
+                (11, 2),
+                14_400_000,
+                &[(33115, 32398), (33095, 32381), (33092, 32418)][..],
+            ),
+        ] {
+            let key = ProductionKey::new(&format!("oteryn:raid.{key}"))?;
+            let raid = catalogue.get(&key).ok_or("Halloween raid")?;
+            let CatalogueSchedule::Calendar {
+                window: Some(window),
+                interval_ms,
+                repeat,
+            } = raid.schedule
+            else {
+                return Err("Halloween calendar window".into());
+            };
+            assert_eq!((window.start_month, window.start_day), (10, 31));
+            assert_eq!((window.end_month, window.end_day), last_day);
+            assert_eq!(interval_ms, Some(interval));
+            assert!(repeat);
+            assert_eq!(raid.variants.len(), cells.len());
+            for (variant, &(x, y)) in raid.variants.iter().zip(cells) {
+                let area = &variant.waves[0].entries[0].area;
+                assert_eq!((area.from.x, area.from.y, area.from.floor), (x, y, 7));
+                assert_eq!((area.to.x, area.to.y, area.to.floor), (x, y, 7));
+            }
+            let selected = raid.select([1; 32], [2; 16])?;
+            assert_eq!(selected.definition.announcements.len(), 1);
+            assert_eq!(selected.definition.waves.len(), 1);
+            assert_eq!(selected.definition.waves[0].entries[0].count, 1);
         }
         Ok(())
     }
@@ -703,12 +791,8 @@ mod tests {
         let trolls = catalogue
             .get(&ProductionKey::new("raid:carlin.trolls")?)
             .ok_or("trolls")?;
-        // Global count evidence conflicts with this source, so production
-        // admission is blocked. Its donor event ordering still proves the pure
-        // planner must retain broadcasts that follow the final spawn.
-        assert!(!trolls.active);
-        assert!(trolls.select([1; 32], [1; 16]).is_err());
-        let definition = trolls.realize(0, None)?.definition;
+        // Crystal orders the last announcement after the spawn at the same raw delay.
+        let definition = trolls.select([1; 32], [1; 16])?.definition;
         let mut cursor = RaidRunCursor::default();
         let mut last_announcement = None;
         let mut complete = None;

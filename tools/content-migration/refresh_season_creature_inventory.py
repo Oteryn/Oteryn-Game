@@ -7,6 +7,7 @@ import re
 
 import cake_native_successor as cake
 import raid_catalogue
+from crystal_spawn_creatures import KEYS as CRYSTAL_SPAWN_KEYS
 from world_project_v2_to_tree import CREATURE_FAMILIES, git_blob_sha
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -67,8 +68,13 @@ def validate_inventory(root, rows, native, schedules):
     elemental_native, elemental_schedules = elemental_inventory(native)
     extra_native += elemental_native
     extra_schedules += elemental_schedules
-    if (len(rows) - 1 != 1863 + 1 or len(native) != len(rows) + extra_native
-            or schedules - 1 != 7201 + 4 + extra_schedules):
+    spawn_bodies = [row for row in native if row['profile']['target']['key'] in CRYSTAL_SPAWN_KEYS]
+    spawn_schedules = sum(len(row['behavior']['data']['profile'].get(field, []))
+                          for row in spawn_bodies for field in ('attacks', 'defenses'))
+    if ({row['profile']['target']['key'] for row in spawn_bodies} != CRYSTAL_SPAWN_KEYS
+            or spawn_schedules != 10
+            or len(rows) - 1 - len(spawn_bodies) != 1863 + 1 or len(native) != len(rows) + extra_native
+            or schedules - 1 - spawn_schedules != 7201 + 4 + extra_schedules):
         raise ValueError('Non-seasonal canonical inventory changed; review its source first')
     return 1
 
@@ -120,13 +126,13 @@ def generated(root):
     replace('crates/gameplay/content/src/content/native_gameplay.rs',
             r'assert_eq!\(\(create, remove\), \([0-9_]+, [0-9_]+\)\);',
             f'assert_eq!((create, remove), ({62 + elemental_native}, 20));')
-    # Crystal cake_golem.lua:77-81 adds one melee and two native spell slots.
-    # Keep the pre-existing unsupported set at116: no new source gap is admitted.
+    # Cake contributes one melee and two spell attacks. The two Crystal raid
+    # bodies contribute one melee each and six spells across both bodies.
     path = 'crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane.rs'
     replace(path, r'\("melee:Ok\(\(\)\)", [0-9_]+\)',
-            f'("melee:Ok(())", {1689 + 1 + thaian_melee})')
+            f'("melee:Ok(())", {1689 + 1 + thaian_melee + 2})')
     replace(path, r'\("spell:Ok\(\(\)\)", [0-9_]+\)',
-            f'("spell:Ok(())", {4198 + len(behavior["attacks"]) - 1})')
+            f'("spell:Ok(())", {4198 + len(behavior["attacks"]) - 1 + 6})')
     if '("spell:Err(UnsupportedShape)", 116)' not in result[path]:
         raise ValueError('Existing native source gap pin changed')
 
@@ -156,7 +162,9 @@ def generated(root):
         raise ValueError('Regenerate the source-qualified raid index first')
     raids = json.loads(outputs[raid_catalogue.CATALOGUE])['records']
     active = sum(row['active'] for row in raids)
-    if len(raids) != 239 + 1 or active != 136 + 1:
+    additions = raid_catalogue.CRYSTAL_XML_PARITY | raid_catalogue.HALLOWEEN.keys()
+    activated = {row['key'] for row in raids if row['active']}
+    if len(raids) != 239 + 1 or not additions <= activated or active - len(additions) != 136 + 1:
         raise ValueError('Non-seasonal raid inventory changed; review its source first')
     path = 'crates/gameplay/encounter-rules/src/raid/catalogue.rs'
     replace(path, r'assert_eq!\(catalogue.records\(\).len\(\), [0-9_]+\);',

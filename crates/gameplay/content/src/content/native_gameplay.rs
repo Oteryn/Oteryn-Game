@@ -2214,6 +2214,95 @@ mod tests {
     };
     use serde_json::Value;
     #[test]
+    fn crystal_delta_creatures_activate_with_native_policies_and_reward_rows()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::{
+            ProjectV2RangedWeapon, ReferenceAmmoType, ReferenceItemField, ReferenceItemTarget,
+            ReferenceMilliseconds,
+        };
+
+        let world = test_source(1)?.world_id;
+        let supplied = NativeGameplayInput::from_manifest(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json"),
+        )?;
+        let (controller, _) = test_support::try_activate_input(world, &supplied)?;
+        let active = controller
+            .active()
+            .ok_or_else(|| invalid("Crystal delta active content"))?;
+        let native = active
+            .native_gameplay()
+            .ok_or_else(|| invalid("Crystal delta native content"))?;
+        for name in [
+            "common_beetle",
+            "cublarc_the_plunderer",
+            "gorga",
+            "grove_guardian",
+            "herd_weevil",
+            "rootthing_cocoon",
+        ] {
+            let key = format!("oteryn:creature.{name}");
+            assert!(native.creature_profile_fingerprint(&key).is_some(), "{key}");
+        }
+        for name in ["cublarc_the_plunderer", "gorga"] {
+            let key = format!("oteryn:creature.{name}");
+            assert!(native.reward_table().row(&key).is_ok(), "{key}");
+        }
+        for chain in [[9607, 9608, 9609, 9610], [10337, 10334, 10335, 10332]] {
+            for (index, (number, duration_ms)) in chain
+                .iter()
+                .zip([10_000, 300_000, 300_000, 60_000])
+                .enumerate()
+            {
+                let key = format!("oteryn:item.tibia.i{number}");
+                let item = native
+                    .item_policy(&key, "definition-r1")
+                    .ok_or_else(|| invalid("Crystal raid corpse policy"))?;
+                let ReferenceItemField::Known(temporal) = &item.record().semantics.temporal else {
+                    return Err(invalid("Crystal raid corpse decay").into());
+                };
+                assert_eq!(
+                    temporal.duration,
+                    ReferenceItemField::Known(ReferenceMilliseconds(duration_ms))
+                );
+                let target =
+                    chain
+                        .get(index + 1)
+                        .map_or(ReferenceItemField::NotApplicable, |next| {
+                            ReferenceItemField::Known(ReferenceItemTarget {
+                                key: format!("oteryn:item.tibia.i{next}"),
+                                revision: "definition-r1".to_owned(),
+                            })
+                        });
+                assert_eq!(temporal.decay_target, target);
+            }
+        }
+        let bow = native
+            .item_policy("oteryn:item.tibia.i8029", "definition-r1")
+            .ok_or_else(|| invalid("Crystal raid loot weapon policy"))?;
+        assert_eq!(
+            bow.record().admission.legal_destinations,
+            [
+                NativeItemDestination::CharacterInventory,
+                NativeItemDestination::Ground,
+            ]
+        );
+        assert!(matches!(
+            bow.record().authoring.ranged,
+            Some(ProjectV2RangedWeapon::Distance {
+                range_cells: 6,
+                hit_chance: 3,
+                ammunition: ReferenceAmmoType::Arrow,
+                ..
+            })
+        ));
+        let ReferenceItemField::Known(imbuement) = &bow.record().semantics.imbuement else {
+            return Err(invalid("Silkweaver Bow imbuement policy").into());
+        };
+        assert_eq!(imbuement.slot_count, ReferenceItemField::Known(3));
+        Ok(())
+    }
+
+    #[test]
     fn m25_complete_canonical_item_policies_qualify_before_boss_admission()
     -> Result<(), ContentError> {
         let world = test_source(1)?.world_id;

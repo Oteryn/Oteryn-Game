@@ -127,6 +127,7 @@ CHECKS = (
     ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/arena_completion.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
+    ["python3", "tools/content-schema/world-object-authoring/crystal_spawn_ground.py", "--check"],
     ["python3", "tools/content-schema/world-object-authoring/feroxa_static.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
@@ -141,6 +142,7 @@ CHECKS = (
     ["python3", "tools/content-schema/validate_materialized_game_tree.py"],
     ["python3", "tools/content-schema/test_materialized_authored_props.py"],
     ["python3", "tools/content-census/item_key_references.py"],
+    ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     *(["python3", tool, "content", "--check"] for tool in AUTHORING_TOOLS),
     ["python3", "tools/content-schema/item-authoring/test_engine_items.py"],
     [
@@ -696,27 +698,31 @@ def source_cohort_extent(world: Path) -> dict[str, int | str]:
     }
 
 
-def refresh_source_cohort_extent() -> None:
+def refresh_source_cohort_extent(world: Path = WORLD, root: Path = ROOT) -> None:
     """Keep strict native source bounds and repository fixtures at the exact cohort."""
-    measured = source_cohort_extent(WORLD)
+    measured = source_cohort_extent(world)
     def rewrite(path: Path, pattern: str, replacement: str) -> None:
-        text, count = re.subn(pattern, replacement, path.read_text(encoding="utf-8"))
+        previous = path.read_text(encoding="utf-8")
+        text, count = re.subn(pattern, replacement, previous)
         if count != 1:
             raise SystemExit(f"{path.name}: expected one source-cohort field, found {count}")
-        path.write_text(text, encoding="utf-8", newline="\n")
-    catalogue = ROOT / "crates/gameplay/content/src/content/npc_catalogue.rs"
+        if text != previous:
+            path.write_text(text, encoding="utf-8", newline="\n")
+    pin_test = root / PIN_PATH
+    catalogue = root / "crates/gameplay/content/src/content/npc_catalogue.rs"
     catalogue_text = catalogue.read_text(encoding="utf-8")
     catalogue_text = re.sub(r"\bCW2_B1_FULL_ITEM_FAMILY_COUNT,\s*", "", catalogue_text, count=1)
     catalogue_text = re.sub(r"            // #1807 monster source mechanics.*?            max_import_records: [^\n]+", "            // Generated source-cohort bounds: regenerate_content.py measures the\n            // already admitted normal World package; limit+1 remains rejected.\n            max_reference_records: " + f'{measured["references"]:_},' + "\n            max_import_records: " + f'{measured["sources"]:_},', catalogue_text, count=1, flags=re.S)
-    catalogue.write_text(catalogue_text, encoding="utf-8", newline="\n")
+    if catalogue_text != catalogue.read_text(encoding="utf-8"):
+        catalogue.write_text(catalogue_text, encoding="utf-8", newline="\n")
     rewrite(catalogue, r"max_reference_records: [^,\n]+,", f'max_reference_records: {measured["references"]:_},')
     rewrite(catalogue, r"max_import_records: [^,\n]+,", f'max_import_records: {measured["sources"]:_},')
     for name, key in (("CREATURES", "creatures"), ("CREATURE_RECORDS", "creature_records"), ("CREATURE_PROFILES", "creature_profiles"), ("NPC_RECORDS", "npc_records")):
-        rewrite(PIN_TEST, rf"const {name}: usize = [\d_]+;", f'const {name}: usize = {measured[key]:_};')
-    rewrite(PIN_TEST, r"max_import_records: [^,\n]+,", f'max_import_records: {measured["sources"]:_},')
-    rewrite(PIN_TEST, r"assert_eq!\(project\.imports\(\)\.len\(\), [\d_]+\);", f'assert_eq!(project.imports().len(), {measured["imports"]});')
-    rewrite(PIN_TEST, r"assert_eq!\(v2\.sources\.len\(\), [\d_]+\);", f'assert_eq!(v2.sources.len(), {measured["sources"]});')
-    for path, receiver in ((PIN_TEST, "project"), (ROOT / "apps/game-server/tests/content_npc_catalogue.rs", "catalogue")):
+        rewrite(pin_test, rf"const {name}: usize = [\d_]+;", f'const {name}: usize = {measured[key]:_};')
+    rewrite(pin_test, r"max_import_records: [^,\n]+,", f'max_import_records: {measured["sources"]:_},')
+    rewrite(pin_test, r"assert_eq!\(project\.imports\(\)\.len\(\), [\d_]+\);", f'assert_eq!(project.imports().len(), {measured["imports"]});')
+    rewrite(pin_test, r"assert_eq!\(v2\.sources\.len\(\), [\d_]+\);", f'assert_eq!(v2.sources.len(), {measured["sources"]});')
+    for path, receiver in ((pin_test, "project"), (root / "apps/game-server/tests/content_npc_catalogue.rs", "catalogue")):
         rewrite(path, rf'({receiver}\.project_revision\(\),\s*")[^"]+("\s*\))', rf'\g<1>{measured["project_revision"]}\g<2>')
 
 def unresolved_worktree_paths() -> list[str]:
@@ -848,6 +854,7 @@ def main() -> int:
                  "build_srx3_omrafir_attacks.py", "build_srx3_w01_prepare_death.py"):
         run(["python3", native + name])
     run(["python3", native + "build_srx3_soul_war_death_events.py", "--refresh-native-pin"])
+    run(["python3", "tools/content-schema/world-object-authoring/crystal_spawn_ground.py"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])

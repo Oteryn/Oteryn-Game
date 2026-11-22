@@ -84,7 +84,7 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
     // #2673 adds the drown-protection item batch without reimport states.
     // E06 adds the client market mint and the Crystal market parity batches, without states.
     // This count is refreshed by the normal repin_rust_inventory source tool.
-    assert_eq!(batches.len(), 36);
+    assert_eq!(batches.len(), 37);
     let cake = batches
         .iter()
         .filter(|batch| batch.batch_id == "seasonal-cake-creature-crystal-201189f-r1")
@@ -99,8 +99,13 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
         1,
         "one separately qualified Thaian source batch"
     );
+    let crystal = batches
+        .iter()
+        .filter(|batch| batch.batch_id == "crystal-spawn-creatures-201189f-r1")
+        .collect::<Vec<_>>();
+    assert_eq!(crystal.len(), 1, "one Crystal spawn Creature source batch");
     assert_eq!(
-        batches.len() - cake.len() - thaian.len(),
+        batches.len() - cake.len() - thaian.len() - crystal.len(),
         34,
         "all historical source batches retained"
     );
@@ -145,6 +150,16 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
     );
     assert!(thaian.candidates.is_empty());
     assert!(thaian.reimport_states.is_empty());
+    let crystal = crystal[0];
+    assert_eq!(crystal.source_repository, "zimbadev/crystalserver");
+    assert_eq!(
+        crystal.source_artifact_sha256,
+        world_project_sha256(include_bytes!(
+            "../../../../imports/crystalserver/spawn-delta-creatures-201189f.json"
+        ))
+    );
+    assert!(crystal.candidates.is_empty());
+    assert!(crystal.reimport_states.is_empty());
     assert_eq!(
         batches
             .iter()

@@ -19,7 +19,7 @@ APPEARANCES_SHA256 = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5
 MARKER_NOTE = " Additionally one decision-21 appearance-only Summer ground; total 8613 Terrain records."
 
 
-def outputs(root=ROOT):
+def official_ground_records(ground_speeds, root=ROOT):
     manifest = json.loads(
         (root / "imports/official/client-assets/15.30/manifest.json").read_bytes()
     )
@@ -36,13 +36,11 @@ def outputs(root=ROOT):
     ):
         raise ValueError("official appearances digest")
     appearances = read_appearances(raw)
-    appearance = appearances[IDENTIFIER]
-    if "bank" not in appearance.flags or appearance.speed != 150:
-        raise ValueError("Summer ground differs from the accepted appearance")
     bindings = json.loads(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )
-    if any(row["external_id"] == str(IDENTIFIER) for row in bindings["bindings"]):
+    external_ids = set(map(str, ground_speeds))
+    if any(row["external_id"] in external_ids for row in bindings["bindings"]):
         raise ValueError("appearance-only ground unexpectedly has an Item binding")
     admitted = json.loads(
         (root / "imports/official/appearance-membership/admitted.json").read_bytes()
@@ -60,11 +58,21 @@ def outputs(root=ROOT):
         or membership["appearances_sha256"] != digest
     ):
         raise ValueError("official appearance membership digest")
-    if not any(row[0] == IDENTIFIER for row in members["entries"]):
-        raise ValueError("Summer ground has no official appearance membership")
+    members_by_id = {row[0] for row in members["entries"]}
+    records = []
+    for identifier, speed in sorted(ground_speeds.items()):
+        appearance = appearances[identifier]
+        if identifier not in members_by_id or "bank" not in appearance.flags or appearance.speed != speed:
+            raise ValueError(f"Ground {identifier} differs from the accepted appearance")
+        records.append(ground_record(identifier, appearance, artifact, digest, membership, members))
+    return records
+
+
+def ground_record(identifier, appearance, artifact, digest, membership, members):
+    key = f"oteryn:terrain.tibia.i{identifier}"
     known = lambda value: {"state": "KNOWN", "value": value}
-    record = {
-        "identity": {"family": "Terrain", "key": KEY, "revision": "definition-r1"},
+    return {
+        "identity": {"family": "Terrain", "key": key, "revision": "definition-r1"},
         "kind": known("ground"),
         "walkable": known("unpass" not in appearance.flags),
         "ground_speed": known(appearance.speed),
@@ -81,7 +89,7 @@ def outputs(root=ROOT):
                 ),
             }
         ),
-        "client_projection": known({"appearance_id": IDENTIFIER}),
+        "client_projection": known({"appearance_id": identifier}),
         "provenance": {
             "source": {
                 "engine": "official_client",
@@ -94,7 +102,7 @@ def outputs(root=ROOT):
                 "membership_manifest_sha256": membership["manifest_sha256"],
                 "membership_entries_sha256": members["entries_sha256"],
             },
-            "source_item_id": IDENTIFIER,
+            "source_item_id": identifier,
             "route": {"owner": "Terrain", "reason": "appearance_only_ground"},
             "fields": {
                 field: [f"official_client:{digest}.{flag}"]
@@ -108,6 +116,10 @@ def outputs(root=ROOT):
             },
         },
     }
+
+
+def outputs(root=ROOT):
+    record, = official_ground_records({IDENTIFIER: 150}, root)
     index_path = "content/world/placements/index.json"
     index = json.loads((root / index_path).read_bytes())
     selected = [row for row in index["palette"] if row["source_item_id"] == IDENTIFIER]

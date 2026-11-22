@@ -4,10 +4,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
 import stat
 import subprocess
 import tempfile
+from pathlib import Path
 
 from prebuilt import executable as prebuilt_executable
 
@@ -66,8 +66,11 @@ def complete_world_project(
     canonicalizer_manifest: Path | None = None,
 ) -> dict[str, int | str]:
     from buddel_travel import install_buddel
+    from crystal_spawn_creatures import PATH as SPAWN_PACKET
+    from crystal_spawn_creatures import install as install_spawn_creatures
     from questpc7_thaian_authoring import _install_documents
-    from regenerate_content import source_cohort_extent
+    from questpc7_world_seal import refresh
+    from regenerate_content import refresh_source_cohort_extent, source_cohort_extent
 
     repo_root = repo_root.resolve(strict=True)
     input_root = input_root.absolute()
@@ -93,6 +96,10 @@ def complete_world_project(
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
         _install_documents(repo_root, staging_root)
+        if (repo_root / SPAWN_PACKET).is_file():
+            install_spawn_creatures(repo_root, staging_root)
+            refresh(repo_root, staging_root)
+            refresh_source_cohort_extent(staging_root, repo_root)
         if include_buddel:
             install_buddel(repo_root, staging_root)
         authored_extent = source_cohort_extent(staging_root)

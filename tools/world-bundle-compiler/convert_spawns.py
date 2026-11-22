@@ -114,6 +114,55 @@ def dump(value) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+DELTA = ROOT / "imports/crystalserver/world-monster-delta-201189f.json"
+DELTA_REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
+DELTA_XML_BLOB = "7949251d25d8db8f0b2ca65b67df76ac577a5caf"
+DELTA_XML_SHA256 = "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e"
+DELTA_GROUP_COUNT = 412
+
+
+def crystal_revision_delta(raw: bytes, known: set[str], boss_keys: set[str],
+                           encounter_bound: set[str]) -> tuple[list[dict], list[dict]]:
+    capture = json.loads(raw)
+    if (capture["repository"], capture["path"], capture["revision"], capture["git_blob"],
+            capture["sha256"], capture["predecessor_sha256"]) != (
+                SOURCE["repository"], SOURCE["files"][0]["path"], DELTA_REVISION, DELTA_XML_BLOB,
+                DELTA_XML_SHA256, SOURCE["files"][0]["sha256"]):
+        raise ValueError("Crystal spawn delta source mismatch")
+    groups = capture["groups"]
+    if len(groups) != DELTA_GROUP_COUNT or sum(len(group["points"]) for group in groups) != 700:
+        raise ValueError("Crystal spawn delta capture is incomplete")
+    records, held = [], []
+    for group in groups:
+        ordinal = group["source_group_ordinal"]
+        key = f"oteryn:spawn.crystal_201189f.{ordinal}"
+        cx, cy, cz = group["center"]
+        points = []
+        for row in group["points"]:
+            creature = f"oteryn:creature.{slug(row['name'])}"
+            x, y, z = row["cell"]
+            if z != cz or not (0 <= x <= 0xFFFF and 0 <= y <= 0xFFFF):
+                raise ValueError(f"{key}: point ({x}, {y}, {z}) is off the source")
+            point = {"cell": {"floor": z, "x": x, "y": y}, "creature": creature,
+                     "direction": DIRECTIONS[str(row["direction"])]}
+            seconds = row["respawn_seconds"]
+            if creature not in known or creature in encounter_bound:
+                held.append({"source": key, "source_point_ordinal": row["source_point_ordinal"],
+                             "point": {**point, "respawn_ms": seconds * 1000},
+                             "reason": "unbound-creature" if creature not in known else "encounter-bound"})
+                continue
+            if creature in boss_keys:
+                point["boss_policy"] = {"respawn": {"min_s": seconds, "max_s": seconds}}
+            else:
+                point["respawn_ms"] = seconds * 1000
+            points.append(point)
+        if points:
+            records.append({"declaration": {"centre": {"floor": cz, "x": cx, "y": cy},
+                            "identity": {"key": key, "revision": "definition-r1"},
+                            "points": points}})
+    return records, held
+
+
 def convert(xml: bytes) -> dict[str, str]:
     if hashlib.sha256(xml).hexdigest() != SOURCE["files"][0]["sha256"]:
         sys.exit("the spawn XML is not the pinned file")
@@ -233,7 +282,16 @@ def convert(xml: bytes) -> dict[str, str]:
     boss_name = "spawns-boss-spawn1.json"
     files[boss_name] = dump(bosses)
     shards.append(f"content/world/spawns/{boss_name}")
-    all_records = records + bosses["records"]
+    delta_raw = DELTA.read_bytes()
+    delta, held_delta = crystal_revision_delta(delta_raw, known, boss_keys, encounter_bound)
+    delta_name = "spawns-crystal-201189f.json"
+    files[delta_name] = ('{\n  "coordinate_frame": ' + dump(FRAME)
+                         + ',\n  "family": "Spawn.Source",\n  "records": [\n'
+                         + ',\n'.join("    " + dump(record) for record in delta) + '\n  ]\n}')
+    shards.append(f"content/world/spawns/{delta_name}")
+    files["held-crystal-201189f.json"] = dump({"coordinate_frame": FRAME, "family": "Held.Spawn.Point",
+                                               "records": held_delta})
+    all_records = records + bosses["records"] + delta
     files["index.json"] = dump(
         {
             "coordinate_frame": FRAME,
@@ -248,6 +306,9 @@ def convert(xml: bytes) -> dict[str, str]:
             "held_bosses": {"path": f"content/world/spawns/{held_name}",
                             "point_count": len(held_bosses),
                             "sha256": hashlib.sha256((files[held_name]+"\n").encode()).hexdigest()},
+            "held_crystal_delta": {"path": "content/world/spawns/held-crystal-201189f.json",
+                                   "point_count": len(held_delta),
+                                   "sha256": hashlib.sha256((files["held-crystal-201189f.json"] + "\n").encode()).hexdigest()},
             "population_state": "POPULATED",
             "point_count": sum(len(r["declaration"]["points"]) for r in all_records),
             "record_count": len(all_records),
@@ -260,7 +321,10 @@ def convert(xml: bytes) -> dict[str, str]:
                                     "record_count": len(bosses["records"])},
                                    {"path": "tools/world-bundle-compiler/held-boss-chances.json",
                                     "sha256": hashlib.sha256(chances_bytes).hexdigest(),
-                                    "record_count": len(chances)}],
+                                    "record_count": len(chances)},
+                                   {"path": DELTA.relative_to(ROOT).as_posix(),
+                                    "sha256": hashlib.sha256(delta_raw).hexdigest(),
+                                    "record_count": DELTA_GROUP_COUNT}],
         }
     )
     return {name: text + "\n" for name, text in files.items()}
