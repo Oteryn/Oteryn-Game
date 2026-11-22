@@ -442,6 +442,7 @@ def build():
         library_ready.append(storage(library+name+'/questline',value,value,preserve=True))
     add('l2-battle-mage-base','the_secret_library_quest','dedoras',['check'],library_ready,
         outfit=('battle_mage',0),achievement='oteryn:achievement/battle_mage')
+    battle_mage_completions = []
     library_done=[requirement(library+'library_permission',7)]
     for name,bit,item,count,words in [('book',1,28792,5,['book','books','sturdy books']),('epaulettes',2,28793,20,['epaulettes'])]:
         addon=prefix+'u11_80/battle_mage_outfits/addon'
@@ -453,7 +454,9 @@ def build():
                 requires=library_done+[requirement(other,1) if complete else requirement(other,-1,0)],
                 achievement='oteryn:achievement/exalted_battle_mage' if complete else None)
             if complete:
-                callbacks[-1]['sources'].append('https://tibia.fandom.com/?curid=86073&oldid=847545')
+                completion = callbacks.pop()
+                completion['sources'].append('https://tibia.fandom.com/?curid=86073&oldid=847545')
+                battle_mage_completions.append(completion)
     for word,topic,next_topic in [('addon',0,1),('yes',1,2),('yes',2,3)]:
         offers.append({'npc':'oteryn:npc.dedoras','keywords':[word],'topic':topic,
             'next_topic':next_topic,'storage':[],'requires':library_done,
@@ -1184,6 +1187,8 @@ def build():
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises})
+    battle_mage_document = {'schema':1,'callbacks':sorted(battle_mage_completions,key=lambda c:c['key'])}
+    validate_callbacks(battle_mage_document)
     validate_callbacks({'schema':1,'callbacks':fibula_callbacks})
     validate_callbacks({'schema':1,'callbacks':l13_callbacks})
     validate_callbacks({'schema':1,'callbacks':programme_callbacks})
@@ -1198,6 +1203,7 @@ def build():
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises}),
+            'content/quests/npc-callbacks/battle-mage-completions.json': encoded(battle_mage_document),
             'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'callbacks':fibula_callbacks}),
             'content/quests/npc-callbacks/l13-outfits.json': encoded({'schema':1,'callbacks':l13_callbacks}),
             'content/quests/npc-callbacks/questpc7-programmes.json': encoded({'schema':1,'callbacks':programme_callbacks}),
@@ -1223,7 +1229,7 @@ def build():
         'bags':[{'constant':'QENGINE_GNOMISH_SUPPLY','bag':'oteryn:item.tibia.i15698','playable':True,
             'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
             'rewards':rewards}]})
-    greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
+    greetings = reward_greetings(callbacks + battle_mage_completions + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
     generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))

@@ -82,9 +82,17 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.forgotten_knowledge_quest",
-        hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+        hash(b"41398fdb37dc96a976ab3f0cab20e29ae1a523a88e92f9db249f818de9926572"),
+        &[
+            hash(b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a"),
+            hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+        ],
+    ),
+    (
+        "oteryn:quest.hero_of_rathleton_quest",
+        hash(b"aa258a8f2579bd06ec2a741a1b65ab08918b922f3d952783435d5db01187b89b"),
         &[hash(
-            b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a",
+            b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38",
         )],
     ),
     (
@@ -155,7 +163,15 @@ mod tests {
 
         for &(quest, refreshed, published) in CITATION_REFRESHES {
             assert_eq!(published_hash(quest, refreshed), published, "{quest}");
-            assert_eq!(catalogue.definition_hash(quest), Some(published), "{quest}");
+            if let Some((_, current, previous)) = GAMEPLAY_PREDECESSORS
+                .iter()
+                .find(|(owner, _, _)| *owner == quest)
+            {
+                assert!(previous.contains(&published), "{quest}");
+                assert_eq!(catalogue.definition_hash(quest), Some(*current), "{quest}");
+            } else {
+                assert_eq!(catalogue.definition_hash(quest), Some(published), "{quest}");
+            }
             let mut unrelated_revision = refreshed;
             unrelated_revision[0] ^= 1;
             assert_eq!(

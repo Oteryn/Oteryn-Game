@@ -145,6 +145,49 @@ fn requirements(callback: &RewardCallback) -> TestResult<Vec<Requirement>> {
     )?)
 }
 
+// These are the terminal stages of the other hand-in in each paired source route.
+fn other_outfit_addon(key: &str) -> Option<(&'static str, i64)> {
+    Some(match key.rsplit('/').next()? {
+        "l2-elementalist-cap" => (
+            "oteryn:quest-progress/quest/u9_1/elementalist_outfits/addon2", 1,
+        ),
+        "l2-elementalist-staff" => (
+            "oteryn:quest-progress/quest/u9_1/elementalist_outfits/addon1", 1,
+        ),
+        "pirate-sabre" => (
+            "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon", 2,
+        ),
+        "l4-pirate-hat" => (
+            "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon", 5,
+        ),
+        "l5-oriental-female-comb" => (
+            "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon", 5,
+        ),
+        "l5-oriental-female-blue-cloth" => (
+            "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon", 2,
+        ),
+        "knight-sword" => (
+            "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet", 7,
+        ),
+        "l7-knight-helmet-reward" => (
+            "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_sword", 2,
+        ),
+        "l7-assassin-yarn" => (
+            "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_second_addon", 2,
+        ),
+        "l7-assassin-second" => (
+            "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon", 8,
+        ),
+        "l8-hunter-hat" => (
+            "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove", 1,
+        ),
+        "l8-hunter-gloves" => (
+            "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon", 5,
+        ),
+        _ => return None,
+    })
+}
+
 type Counts = (i64, i64, i64, i64);
 
 type StoryStep = (
@@ -1387,7 +1430,8 @@ pub(super) async fn exercise(
         .filter_map(|(_, _, _, addon)| *addon)
         .fold(0, |mask, addon| mask | addon);
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
-    let mut callbacks = Vec::new();
+    let mut callbacks = Vec::<RewardCallback>::new();
+    let mut outfit_requirements = BTreeMap::new();
     for (suffix, take, present, addon) in steps {
         let batch = if name.starts_with("qengine-rewards-l10-") {
             "l10"
@@ -1408,13 +1452,26 @@ pub(super) async fn exercise(
         } else {
             "l2"
         };
-        let key = if family == "knight" && *suffix == "sword" {
+        let mut key = if family == "knight" && *suffix == "sword" {
             "oteryn:quest-reward/knight-sword".into()
         } else if family == "pirate" && *suffix == "sabre" {
             "oteryn:quest-reward/pirate-sabre".into()
         } else {
             format!("oteryn:quest-reward/{batch}-{family}-{suffix}")
         };
+        if let Some((track, terminal)) = other_outfit_addon(&key) {
+            let completed_other = callbacks.iter().any(|callback| {
+                callback.storage.iter().any(|state| state.track == track && state.set == terminal)
+            });
+            if completed_other {
+                key.push_str("-full-outfit");
+            }
+            outfit_requirements.insert(key.clone(), Requirement {
+                track: track.into(),
+                minimum: if completed_other { terminal } else { -1 },
+                maximum: if completed_other { terminal } else { terminal - 1 },
+            });
+        }
         let callback = all
             .iter()
             .find(|c| c.key == key)
@@ -1554,7 +1611,7 @@ pub(super) async fn exercise(
                 Some("oteryn:achievement/battle_mage")
             );
         }
-        let expected = if family == "battle-mage" && *suffix != "base" {
+        let mut expected = if family == "battle-mage" && *suffix != "base" {
             let completes = *suffix == "epaulettes-complete";
             vec![
                 Requirement {
@@ -1664,6 +1721,9 @@ pub(super) async fn exercise(
         } else {
             vec![]
         };
+        if let Some(requirement) = outfit_requirements.get(&callback.key) {
+            expected.push(requirement.clone());
+        }
         assert_eq!(
             requirements(&callback)?,
             expected,
@@ -1690,7 +1750,9 @@ pub(super) async fn exercise(
     for callback in &callbacks {
         let required = requirements(callback)?;
         if readonly.is_none() {
-            readonly = required.first().cloned();
+            readonly = required.iter()
+                .find(|state| Some(*state) != outfit_requirements.get(&callback.key))
+                .cloned();
         }
         let keys = std::iter::once(callback.key.clone()).chain(
             callback.participants.iter().enumerate().map(|(i, _)| {
@@ -2338,7 +2400,8 @@ pub(super) async fn exercise(
             assert!(result.is_ok(), "native drop extra source hat: {result:?}");
         }
         let required = requirements(callback)?;
-        if !checked_stale && !required.is_empty() {
+        let other_addon = outfit_requirements.get(&callback.key);
+        if !checked_stale && required.iter().any(|state| Some(state) != other_addon) {
             owner
                 .refresh_quest_session(admitted.game_session_id, false)
                 .await;
@@ -2629,7 +2692,7 @@ pub(super) async fn exercise(
             assert_eq!(row, (tracks[&state.track].quest.clone(), state.set));
         }
         for state in &required {
-            if family == "battle-mage" && state.minimum == -1 {
+            if (family == "battle-mage" || Some(state) == other_addon) && state.minimum == -1 {
                 let stored: Option<i64> = sqlx::query_scalar(
                     "SELECT value FROM game_character_quest_tracks
                      WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",

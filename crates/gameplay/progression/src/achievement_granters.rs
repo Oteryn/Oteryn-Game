@@ -42,10 +42,7 @@ pub fn baking(recipe: &str) -> Option<Counted> {
         .strip_prefix("oteryn:item-conversion.bake-")?
         .split_once('-')?;
     match dough {
-        "6276" => Some(Counted {
-            key: "oteryn:achievement/the_cake_s_the_truth",
-            total: 30,
-        }),
+        "6276" => Some(THE_CAKES_THE_TRUTH),
         "8018" => Some(Counted {
             key: "oteryn:achievement/sweet_tooth",
             total: 10,

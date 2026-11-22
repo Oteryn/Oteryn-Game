@@ -119,6 +119,7 @@ pub(super) async fn talk(
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
+    let key = key.strip_suffix("-full-outfit").unwrap_or(key);
     if key.contains("/l2-efreet-") || key.contains("/l2-marid-") {
         return match key.rsplit('/').next().unwrap_or(key) {
             "l2-efreet-thief-report" => &["mission", "yes"],
@@ -669,7 +670,11 @@ pub(super) async fn seed(
     let tracks = callback
         .storage
         .iter()
-        .map(|s| canonical.track(&s.track).cloned().ok_or("track"))
+        .map(|state| state.track.as_str())
+        .chain(callback.requires.iter().map(|state| state.track.as_str()))
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .map(|key| canonical.track(key).cloned().ok_or("track"))
         .collect::<Result<Vec<_>, _>>()?;
     let setup = "oteryn:quest-transition/qengine-rewards-fixture-ready";
     let mut transitions = vec![QuestTransition {
