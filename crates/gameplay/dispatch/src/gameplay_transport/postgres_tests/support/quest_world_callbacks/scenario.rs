@@ -710,6 +710,8 @@ fn scenario_case(
         )?
     } else if name == "authored-tinder-box" {
         super::super::quest_callbacks_fixtures::source_world((32085, 31025, -1), 0, 4285, 0)?
+    } else if name == super::super::serpentine_tower_fixtures::NAME {
+        super::super::serpentine_tower_fixtures::world(&callback)?
     } else if name == "mintwallin-cyclops-scene" {
         super::super::questpc8_native_scenes_fixtures::world()?
     } else if name.starts_with("qengine-rewards-fibula-completion") {
@@ -2903,6 +2905,13 @@ fn scenario_case(
                     &h,
                 ),
             )
+            .await?;
+        } else if name == super::super::serpentine_tower_fixtures::NAME {
+            Box::pin(super::super::serpentine_tower_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &world,
+            ))
             .await?;
         } else if name == "mintwallin-cyclops-scene" {
             Box::pin(super::super::questpc8_native_scenes_fixtures::exercise(

@@ -23,6 +23,7 @@
     "oteryn:npc.avar_tar",
     "oteryn:npc.billy",
     "oteryn:npc.blind_orc",
+    "oteryn:npc.boveas",
     "oteryn:npc.brewster",
     "oteryn:npc.briasol",
     "oteryn:npc.broken_servant_sentry",
@@ -32,6 +33,7 @@
     "oteryn:npc.captain_waverider",
     "oteryn:npc.captain_waverider_island",
     "oteryn:npc.carlos",
+    "oteryn:npc.cerdras",
     "oteryn:npc.charles",
     "oteryn:npc.chip",
     "oteryn:npc.cipfried",
@@ -43,6 +45,7 @@
     "oteryn:npc.dermot",
     "oteryn:npc.dixi",
     "oteryn:npc.domizian",
+    "oteryn:npc.dreadeye",
     "oteryn:npc.duncan",
     "oteryn:npc.edala",
     "oteryn:npc.elane",
@@ -91,6 +94,7 @@
     "oteryn:npc.maris_mistrock",
     "oteryn:npc.mayor_pocaro",
     "oteryn:npc.miles_the_guard",
+    "oteryn:npc.milos",
     "oteryn:npc.minzy",
     "oteryn:npc.miraia",
     "oteryn:npc.mordecai",
@@ -118,10 +122,12 @@
     "oteryn:npc.sam",
     "oteryn:npc.santiago",
     "oteryn:npc.scott_the_scout",
+    "oteryn:npc.scutty",
     "oteryn:npc.seymour",
     "oteryn:npc.sinatuki",
     "oteryn:npc.snake_eye",
     "oteryn:npc.spectulus",
+    "oteryn:npc.telas",
     "oteryn:npc.the_first_dragon",
     "oteryn:npc.the_forgemaster",
     "oteryn:npc.the_oracle",
@@ -202,7 +208,9 @@
   },
   "block_solid_contacts": [
     "oteryn:npc.bron",
+    "oteryn:npc.cerdras",
     "oteryn:npc.gnommander",
+    "oteryn:npc.telas",
     "oteryn:npc.zarifan"
   ],
   "native_contacts": [
@@ -475,6 +483,128 @@
             "x": 31955,
             "y": 31916,
             "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.boveas": {
+      "basis": "Crystal world-npc.xml:3300 places Boveas for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32431,
+            "y": 32090,
+            "z": 15
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.cerdras": {
+      "basis": "Crystal world-npc.xml:634 places Cerdras for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32301,
+            "y": 31815,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.dreadeye": {
+      "basis": "Crystal world-npc.xml:3174 places Dreadeye for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32800,
+            "y": 31572,
+            "z": 14
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.milos": {
+      "basis": "Crystal world-npc.xml:118 places Milos for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33258,
+            "y": 31823,
+            "z": 3
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.scutty": {
+      "basis": "Crystal world-npc.xml:3012 places Scutty for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32574,
+            "y": 31915,
+            "z": 12
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.telas": {
+      "basis": "Crystal world-npc.xml:619, 2913 places Telas for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33276,
+            "y": 31800,
+            "z": 6
+          }
+        },
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33273,
+            "y": 31788,
+            "z": 11
           }
         }
       ],

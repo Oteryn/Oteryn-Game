@@ -11,6 +11,7 @@ import world_region_codec as codec
 
 ROOT = Path(__file__).resolve().parents[3]
 EXPECTED = (
+    ((33152, 32866, 8), 2772, "action", 5633),
     ((32966, 32626, 5), 4634, "action", 50022),
     ((32968, 32630, 7), 1720, "action", 50022),
     ((32968, 32629, 7), 1949, "action", 50022),
@@ -71,7 +72,7 @@ class QuestStartupBindingsTests(unittest.TestCase):
             "data-global/startup/tables/tile.lua": "TileAction = {[50022] = {itemId=4634, itemPos={{x=32966,y=32626,z=5}}}}",
             "data-global/startup/tables/teleport.lua": "TeleportAction = {[50022] = {{itemId=1720,itemPos={{x=32968,y=32630,z=7}}},{itemId=1949,itemPos={{x=32968,y=32629,z=7},{x=32967,y=32630,z=8}}}}} TeleportUnique = {[35020] = {itemId=10840,itemPos={x=33498,y=32613,z=8}}}",
             "data-global/startup/tables/door_level.lua": "LevelDoorAction = {[1070] = {itemId=false,itemPos={{x=33190,y=31684,z=14},{x=33195,y=31684,z=14}}}}",
-            "data-global/startup/tables/lever.lua": "LeverUnique = {[30034] = {itemId=2772,itemPos={x=32573,y=32121,z=7}}}",
+            "data-global/startup/tables/lever.lua": "LeverAction = {[5633] = {itemId=2772,itemPos={{x=33152,y=32866,z=8}}}} LeverUnique = {[30034] = {itemId=2772,itemPos={x=32573,y=32121,z=7}}}",
             "data-global/startup/tables/item.lua": "ItemAction = {[9715] = {itemId=776,itemPos={{x=33290,y=31785,z=13}}}}",
             "data/libs/tables/doors.lua": "LevelDoorTable = {{closedDoor=5102,openDoor=5103}}",
         }
@@ -95,9 +96,15 @@ class QuestStartupBindingsTests(unittest.TestCase):
             ],
         )
 
+    def test_serpentine_lever_has_its_source_action(self):
+        self.assert_native_startup_selectors((((33152, 32866, 8), 2772, "action", 5633),))
+
     def test_native_startup_selectors_match_exact_source_items(self):
+        self.assert_native_startup_selectors(EXPECTED)
+
+    def assert_native_startup_selectors(self, selectors):
         index = json.loads((ROOT / "content/world/placements/index.json").read_bytes())
-        for (x, y, z), appearance, attribute, expected in EXPECTED:
+        for (x, y, z), appearance, attribute, expected in selectors:
             with self.subTest(position=(x, y, z)):
                 raw = (
                     ROOT

@@ -144,6 +144,7 @@ const DOCUMENTS: &[&[u8]] = &[
     include_bytes!(
         "../../../../../content/quests/native-death-bindings/quest-batch3-c-the_primal_ordeal.json"
     ),
+    include_bytes!("../../../../../content/quests/native-death-bindings/secret-service.json"),
 ];
 fn documents() -> Result<Vec<Document>, String> {
     let mut documents: Vec<Document> = DOCUMENTS
@@ -398,6 +399,30 @@ pub fn rule(key: &str) -> Option<&'static Rule> {
 pub fn tracks_creature(creature: &str) -> bool {
     rules().is_ok_and(|rules| rules.iter().any(|rule| rule.creature == creature))
 }
+
+#[cfg(test)]
+#[test]
+fn black_knight_loads_the_avin_damage_objective() -> Result<(), String> {
+    let catalogue = super::loader::load_embedded_quest_state("cq16-test")
+        .map_err(|error| format!("{error:?}"))?;
+    let track = "oteryn:quest-progress/quest/u8_1/secret_service/avinmission04";
+    let transition =
+        "oteryn:quest-transition/quest/u8_1/secret_service/avinmission04/creature_event_1";
+    assert!(catalogue.catalogue().transition(transition).is_some());
+    let binding = rule(transition).ok_or("Black Knight native death binding")?;
+    assert_eq!(binding.creature, "oteryn:creature.black_knight");
+    assert!(!binding.top_damage_only);
+    assert!(binding.recipient([0, 0, -7], true));
+    assert!(!binding.recipient([0, 0, -7], false));
+    for value in [0, 1, 2, 3] {
+        assert_eq!(
+            binding.active(&BTreeMap::from([(track.into(), value)])),
+            value == 1
+        );
+    }
+    Ok(())
+}
+
 pub fn active(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
     rules().map_or_else(
         |_| Vec::new(),

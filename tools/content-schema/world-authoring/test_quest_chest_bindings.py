@@ -13,6 +13,21 @@ import world_region_codec as codec
 
 
 class QuestChestBindings(unittest.TestCase):
+    def test_tyrsung_barrel_publishes_crystal_reward_uid(self):
+        placements = chests.ROOT / chests.INDEX
+        palette = json.loads(placements.read_bytes())["palette"]
+        region = placements.with_name(codec.region_name(8, 126, 122))
+        _, _, _, sectors = codec.decode_region(region.read_bytes())
+        barrels = [
+            (attributes or {}).get("unique")
+            for _, tiles in sectors
+            for x, y, _, _, _, items in tiles
+            if (x, y) == (32431, 31235)
+            for index, depth, attributes in items
+            if depth == 0 and palette[index]["source_item_id"] == 2523
+        ]
+        self.assertEqual(barrels, [6216])
+
     def test_current_committed_corpus_captures_exact_elvenbane_startup_uids(self):
         from pathlib import Path
 
