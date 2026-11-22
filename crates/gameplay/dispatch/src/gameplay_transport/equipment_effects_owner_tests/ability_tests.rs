@@ -281,6 +281,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // W18: the 20 fluid containers 2873..=2877, 2879..=2885, 2893, 2901..=2903 and
     // 3477..=3480 (tools/content-migration/fluid_container_profiles.py). All have speed_bonus=0.
     ("W18-FLUID", 20),
+    // Lazaran's source hand-in uses one pot (3465) with the beer subtype.
+    ("UNNATURAL-POT", 1),
     // M08/M09: the eleven qualified shovel, machete, rod/bait/water and target policies
     // in tool-item-profiles.json. The source importer records speed_bonus=0.
     ("TOOLS-PKG4", 11),
@@ -398,7 +400,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // both pinned appearance banks; no original key is removed or relabeled.
     ("SEASON-W18-HOUSE", 1959),
     // Merged main1ae39c7fb adds53 distinct QENGINE reward identities from
-    // QENGINE2 captures 161 source-qualified Items (qengine_reward_item_profiles.IDS).
+    // QENGINE2 captures 162 source-qualified Items (qengine_reward_item_profiles.IDS).
     // The exact packet carries known speed_bonus=0 except the pick i3456,
     // whose existing UNKNOWN speed is preserved and checked below.
     ("QENGINE-REWARDS", 53),
@@ -424,7 +426,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 adds exactly the 161 independently captured physical quest Items.
+    // QENGINE2 adds exactly the 162 independently captured physical quest Items.
     // In particular the pre-existing pick keeps its unknown equipment speed;
     // custody completion must not replace that owner with a fabricated zero.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -460,10 +462,11 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(added_keys.contains(format!("oteryn:item.tibia.i{id}").as_str()));
     }
     // QENGINE2 identities: generated begin
-    assert_eq!(added_keys.len(), 161);
+    assert_eq!(added_keys.len(), 162);
     assert_eq!(
         added_keys,
         std::collections::BTreeSet::from([
+            "oteryn:item.tibia.i10159",
             "oteryn:item.tibia.i10198",
             "oteryn:item.tibia.i10199",
             "oteryn:item.tibia.i11544",
@@ -792,15 +795,16 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                     | "SRV9-MARRIAGE"
                     | "SRVENC-W02"
                     | "SRVGAP-QUEST-DISGUISE"
+                    | "UNNATURAL-POT"
                     | "W10-PRIMAL"
                     | "WORLDCHG"
             )
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    assert_eq!(later_main_profiles, 2593);
+    assert_eq!(later_main_profiles, 2594);
     const QENGINE2_BASE_PROFILES: usize = 53;
-    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 108);
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 109);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
         + QENGINE2_BASE_PROFILES
@@ -863,7 +867,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
-        ("qengine-reward-item-profiles.json", 161),
+        ("qengine-reward-item-profiles.json", 162),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))

@@ -12,6 +12,7 @@ pub fn fluid_container(key: &str) -> bool {
             | "oteryn:item.tibia.i2877"
             | "oteryn:item.tibia.i2880"
             | "oteryn:item.tibia.i2901"
+            | "oteryn:item.tibia.i3465"
             | "oteryn:item.tibia.i5552"
             | "oteryn:item.tibia.i9232"
     )

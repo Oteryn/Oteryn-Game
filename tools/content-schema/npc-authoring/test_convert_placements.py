@@ -27,6 +27,19 @@ class ConvertPlacementsTest(unittest.TestCase):
             self.assertEqual((cp.OUT / name).read_text(), text, name)
         self.assertEqual({p.name for p in cp.OUT.glob("*.json")}, set(self.files))
 
+    def test_unnatural_selection_contacts_and_suppliers_use_source_cells(self):
+        expected = {
+            'oteryn:npc.boozer': {'x': 32921, 'y': 32068, 'floor': 5},
+            'oteryn:npc.chephan': {'x': 32890, 'y': 32078, 'floor': 6},
+            'oteryn:npc.lazaran': {'x': 32992, 'y': 31471, 'floor': 3},
+            'oteryn:npc.ulala': {'x': 32995, 'y': 31469, 'floor': 1},
+        }
+        actual = [row['declaration'] for row in self.records
+                  if row['declaration']['npc'] in expected]
+        self.assertEqual(len(actual), len(expected))
+        self.assertEqual({row['npc']: row['cell'] for row in actual}, expected)
+        self.assertTrue(all(row['provenance'] for row in actual))
+
     def test_l1_reward_npcs_use_only_the_global_source_cells(self):
         expected = {
             'oteryn:npc.cael': {'x':33028,'y':31513,'floor':10},

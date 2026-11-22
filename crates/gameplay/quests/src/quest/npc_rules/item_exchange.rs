@@ -1,9 +1,16 @@
-//! Closed, reusable storage-and-plain-item source plans. Durable owners supply custody.
+//! Closed, reusable storage-and-carried-item source plans. Durable owners supply custody.
 use super::*;
 use std::collections::BTreeSet;
 
+const FIREWATER_POT: &str = "oteryn:item.tibia.i3465";
+const BEER: u16 = 3;
+
+fn carried_subtype_is_admitted(item: &str, subtype: Option<u16>) -> bool {
+    matches!((item, subtype), (_, None) | (FIREWATER_POT, Some(BEER)))
+}
+
 impl NpcRuleCatalog {
-    /// A source NPC may require eight plain item types and grant twenty types.
+    /// A source NPC may require eight carried item types and grant twenty plain types.
     /// Outfit effects use the shared appearance participant; money and optional removals stay closed.
     pub fn item_exchange_keys(&self, npc: &str) -> Option<Vec<String>> {
         let mut keys = BTreeSet::new();
@@ -28,9 +35,9 @@ impl NpcRuleCatalog {
                     NpcRuleGuard::Item {
                         item,
                         count: 1..=100,
-                        subtype: None,
+                        subtype,
                         op: NpcComparison::Ge | NpcComparison::Lt,
-                    } => {
+                    } if carried_subtype_is_admitted(item, *subtype) => {
                         keys.insert(item.clone());
                     }
                     _ => return None,
@@ -52,9 +59,9 @@ impl NpcRuleCatalog {
                     NpcRuleEffect::TakeItem {
                         item,
                         count: 1..=100,
-                        subtype: None,
+                        subtype,
                         optional: false,
-                    } => {
+                    } if carried_subtype_is_admitted(item, *subtype) => {
                         keys.insert(item.clone());
                         items = true;
                     }
@@ -84,8 +91,12 @@ impl NpcRuleCatalog {
                 .map(|item| {
                     (
                         NpcItemKey {
+                            subtype: if item == FIREWATER_POT {
+                                Some(BEER)
+                            } else {
+                                None
+                            },
                             item,
-                            subtype: None,
                         },
                         100,
                     )

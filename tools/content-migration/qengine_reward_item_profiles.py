@@ -90,6 +90,8 @@ SIDE_IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 
 # Existing Dworc and Merlkin loot yields require portable native custody.
 IDS |= {3348, 3403}
+# Unnatural Selection carries the holy skull from the bone pile through the tour.
+SIDE_IDS |= {10159}
 IDS |= SIDE_IDS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'

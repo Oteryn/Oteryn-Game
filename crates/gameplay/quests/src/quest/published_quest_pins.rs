@@ -68,6 +68,61 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
         hash(b"bf21c8ce62fd697df94d9125c787278372f8869088542a1a718ec7ba814f7dad"),
         hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
     ),
+    (
+        "oteryn:quest.ferumbras_ascension_quest",
+        hash(b"b3003081e17486509d0936fded01e28d3ee21826d2f6ae954d85af706bfedbe5"),
+        hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
+    ),
+    (
+        "oteryn:quest.forgotten_knowledge_quest",
+        hash(b"22d581fef8c6ef520575f60d07d2b25421a015eb948b8a5e283e200dc3c74144"),
+        hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+    ),
+    (
+        "oteryn:quest.formogar_mine_hoist",
+        hash(b"c4d3d48345061f86a3fa850da21ea783579feeed222634ce7f0af9ef70008eae"),
+        hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
+    ),
+    (
+        "oteryn:quest.giant_smithhammer_quest",
+        hash(b"7ffe3d7d8799319feabe86427d78a6958298138bea32b7fcf7ee86037216b23a"),
+        hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
+    ),
+    (
+        "oteryn:quest.goblin_merchant_quest",
+        hash(b"13227b8ab188b9284269c28e8b90ffbed55043ad93bc63d893929f494246210d"),
+        hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
+    ),
+    (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"d668b679c4682ead8c86045ff4978633cd8f88d2b9c943032f801db4f2e160d1"),
+        hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
+    ),
+    (
+        "oteryn:quest.grimvale_quest",
+        hash(b"ec4f6f14cf6b66c0abb0c7409b5c6905583b5924d109604be3ec012bf29e9074"),
+        hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
+    ),
+    (
+        "oteryn:quest.heart_of_destruction_quest",
+        hash(b"3c6fc447fb7bb21fe95c8f43cebe5df14ce5fb9d4f31f4693c46e9b0a28a1433"),
+        hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
+    ),
+    (
+        "oteryn:quest.hero_of_rathleton_quest",
+        hash(b"c9d0570294749056c16acdc65492a979cd3e9c530eabaa106f8c9f6fa65c7030"),
+        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
+    ),
+    (
+        "oteryn:quest.hidden_threats_quest",
+        hash(b"1901dea7fb15a96b9f6a8bd09235d9e7075153db7add7d4e5698c23f87b4f7ac"),
+        hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
+    ),
+    (
+        "oteryn:quest.hydra_egg_quest",
+        hash(b"f370f5a1ac28d4eb2bc84ee61462f0f746838218c52b04659f878b9ab4403f40"),
+        hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
+    ),
 ];
 
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
@@ -100,6 +155,13 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
         hash(b"61034f9e3365c8817d659f8ffa59a0f21e404d2a41dfc6099a48a5cedd71018f"),
         &[hash(
             b"e947f2485cdf2c3094ba301e71369a208d98b017d08aef8e727705a992b6f0be",
+        )],
+    ),
+    (
+        "oteryn:quest.unnatural_selection_quest",
+        hash(b"37474bd102ab6eea26965ca7d5cec03d56e0c30bc3419ea2da4b737a43a5d521"),
+        &[hash(
+            b"6143e0af775791216c91763ca6ad944051c5000aa610ebd1a30b9d2c0d99e7c1",
         )],
     ),
     (

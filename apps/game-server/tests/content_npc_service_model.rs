@@ -64,3 +64,29 @@ fn pinned_catalogue_service_model_counts() {
     ]);
     assert_eq!(counts, expected);
 }
+
+#[test]
+fn firewater_suppliers_sell_the_empty_pot_and_the_exact_beer_subtype() {
+    let model = build().service_model_for_project().expect("service model");
+    for (seller, item, subtype, price) in [
+        ("chephan", "oteryn:item.tibia.i3465", 0, 30),
+        ("boozer", "oteryn:item.tibia.i2880", 3, 2),
+    ] {
+        let key = format!("oteryn:service.trade.{seller}");
+        let (_, service) = model
+            .services()
+            .iter()
+            .find(|(definition, _)| definition.key == key)
+            .expect("supplier trade service");
+        assert!(
+            service.offers.iter().any(|offer| {
+                offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
+                    && offer.item.key == item
+                    && offer.count == Some(1)
+                    && offer.sub_type == Some(subtype)
+                    && offer.unit_price == price
+            }),
+            "{seller} must offer {item} with fluid subtype {subtype}"
+        );
+    }
+}

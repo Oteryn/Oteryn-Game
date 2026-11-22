@@ -1,0 +1,1223 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.unnatural_selection_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1691-1699"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission01",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1691-1699"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission02",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1691-1699"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1691-1699"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission04",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1691-1699"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission05",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1691-1699"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission06",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1691-1699"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 15,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1691-1699"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/greet",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "greet",
+      "reply": [
+        "Welcome. Will you {help} my tribe?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:176"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/ask-to-help",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "help"
+      ],
+      "reply": [
+        "Will you do some work for us?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 11
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:111-113"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/accept-to-help",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        11
+      ],
+      "reply": [
+        "Ask me for a {mission}."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 12
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:163-165"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/skulled-offer",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "topics": [
+        12
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission03",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "A wolf stole our ancestor’s skull. Search the bone piles in the orc fortress. Will you bring it home?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:67-73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/skulled-accept",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission03",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "The tribe is counting on you."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission01",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:115-119"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/skulled-return-offer",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Have you brought our ancestor home?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:75-77"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/skulled-return",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        2
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i10159",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Our ancestor can rest here again."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i10159",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission01",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:120-125"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/skulled-missing",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        2
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Come back when you have the holy skull."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:126-129"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/tour-offer",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "The skull can show us the lands beyond the sea. Will you carry it to the lookouts, beginning at the telescope in Edron?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:78-84"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/tour-accept",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        3
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Take the skull and keep it with you at each lookout."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i10159",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "value": 3
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission02",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:130-135"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/tour-return-offer",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Is the skull ready to come home?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:85-87"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/tour-return",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        4
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission02",
+          "op": "eq",
+          "value": 12
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i10159",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "We will gather to see what you showed our ancestor."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i10159",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "value": 4
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission02",
+          "value": 13
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:136-142"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/tour-incomplete",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        4
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Visit every lookout and bring the skull back with you."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:143-146"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/dance-offer",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Will you help us prepare for the great hunt?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:88-90"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/dance-handoff",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        5
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Speak to Ulala. She knows how to ask the gods for their favour."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "value": 5
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:147-151"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/firewater-open",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 13
+        }
+      ],
+      "reply": [
+        "We will celebrate after the hunt. Bring me a pot filled with beer."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "value": 14
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission06",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:91-99"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/firewater-offer",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 14
+        }
+      ],
+      "reply": [
+        "Have you brought a pot of beer for the feast?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:100-102"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/firewater-turn-in",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        6
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 14
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3465",
+          "count": 1,
+          "subtype": 3,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "There will be beer at the feast. You have earned our tribal crest."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i3465",
+          "count": 1,
+          "subtype": 3
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i10198",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "value": 15
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission06",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "completes": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:152-158"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/lazaran/firewater-missing",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.lazaran",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        6
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 14
+        }
+      ],
+      "reply": [
+        "The feast needs a pot filled with beer."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:159-162"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/ulala/greet",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.ulala",
+      "trigger": "greet",
+      "reply": [
+        "May the spirits guide you. Ask me about your {mission}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:136"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/ulala/dance-offer",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.ulala",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "The hunt needs the blessing of {Krunus}. His altar is on the mountaintop south of our camp."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:60-67"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/ulala/dance-open",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.ulala",
+      "trigger": "say",
+      "keywords": [
+        "krunus"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Dance at his altar. Watch for his sign at each step."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "value": 6
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:109-115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/ulala/dance-incomplete",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.ulala",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "Return when you have finished the dance."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:68-70"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/ulala/bits-open",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.ulala",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "Krunus has accepted your dance. For Pandor, bring five orc teeth, five minotaur leathers, and five lizard leathers."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "value": 8
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission04",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:71-79"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/ulala/bits-offer",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.ulala",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "Do you have all three offerings for Pandor?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:80-82"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/ulala/bits-turn-in",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.ulala",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        2
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 8
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i10196",
+          "count": 5,
+          "op": "ge"
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i5878",
+          "count": 5,
+          "op": "ge"
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i5876",
+          "count": 5,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "I have everything I need to make the offering to Pandor."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i10196",
+          "count": 5
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i5878",
+          "count": 5
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i5876",
+          "count": 5
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "value": 9
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission04",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:117-126"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/ulala/bits-missing",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.ulala",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        2
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "Bring five of each and I can make the offering."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:127-129"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/ulala/ray-open",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.ulala",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "Find Fasuon’s crystal at the top of the mountain and pray there. The path through the mountain is dangerous."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "value": 10
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission05",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:83-91"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/ulala/ray-incomplete",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.ulala",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "reply": [
+        "Pray at Fasuon’s crystal, then return here."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:92-94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/ulala/ray-report",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.ulala",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "reply": [
+        "I saw the light from the peak. Fasuon has given the hunt his blessing."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "value": 12
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission05",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:95-99"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/unnatural_selection/ulala/gods-approval",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "npc": "oteryn:npc.ulala",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "op": "eq",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "I will make the last prayer to Uzroth. Tell Lazaran the gods favour the hunt."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "value": 13
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission06",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:100-107"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/lazaran.lua",
+      "sha256": "d8db5cea049607eba1f6b5dedcbdcc4e048a28c6184ad57dd8e739d96f8f2402",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/ulala.lua",
+      "sha256": "1f66ef3a2a1541e21f95f123f6a8d6a936c67f613f35f6c25d4bfb25f8716c36",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

@@ -318,6 +318,7 @@ fn scenario_case(
                 | "catalogue-npc-xp"
                 | "nx6-wayfarer"
                 | "npc-item-exchanges"
+                | "unnatural-firewater"
                 | "m42-hot-typed"
                 | "m42-hot-final"
                 | "authored-mystery-intro"
@@ -2510,6 +2511,14 @@ fn scenario_case(
             .await?;
         } else if name == "engnpc-m04" {
             Box::pin(super::super::engnpc_m04_completion_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            ))
+            .await?;
+        } else if name == "unnatural-firewater" {
+            Box::pin(super::super::unnatural_selection_fixtures::firewater(
                 &mut owner,
                 &mut admitted,
                 &h,
