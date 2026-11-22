@@ -2082,6 +2082,58 @@ impl BundleFacts {
         pos: TilePos,
         baseline: bool,
     ) -> bool {
+        self.callback_blocked(base, pos, baseline, None)
+    }
+
+    /// Test the current ground and every other placement without the one
+    /// authored House door. A door ACL cannot clear a wall or quest blocker.
+    pub fn house_door_ground_clear(
+        &self,
+        base: &super::super::WorldBase,
+        pos: TilePos,
+        house: u32,
+    ) -> bool {
+        self.house_door_placement(pos, house)
+            .is_some_and(|(key, _)| !self.callback_blocked(base, pos, true, Some(key)))
+    }
+
+    /// Authored-open doors already admit invited guests without a door-list grant.
+    pub fn house_door_is_authored_open(&self, pos: TilePos, house: u32) -> bool {
+        self.house_door_placement(pos, house)
+            .is_some_and(|(_, placement)| {
+                !self.blocks(placement.palette)
+                    && super::super::door_registry::closed_of(u32::from(
+                        self.palette[placement.palette as usize].facts.appearance_id,
+                    ))
+                    .is_some()
+            })
+    }
+
+    fn house_door_placement(&self, pos: TilePos, house: u32) -> Option<(u64, &Placement)> {
+        let door = self.house_door(pos, house)?;
+        let first = placement_key(pos, 0)?;
+        let index = self.placements.partition_point(|(key, _)| *key < first);
+        self.placements[index..]
+            .iter()
+            .take_while(|(key, _)| *key <= first + u64::from(MAX_BASE_ORDINAL))
+            .find_map(|(key, placement)| {
+                (placement.attrs.door.map(u32::from) == Some(door)
+                    && !placement.dropped
+                    && self
+                        .palette
+                        .get(placement.palette as usize)
+                        .is_some_and(|entry| entry.door != PaletteDoor::No))
+                .then_some((*key, placement))
+            })
+    }
+
+    fn callback_blocked(
+        &self,
+        base: &super::super::WorldBase,
+        pos: TilePos,
+        baseline: bool,
+        house_door: Option<u64>,
+    ) -> bool {
         let Ok(rotations) = self.rotations.lock().map(|states| Arc::clone(&states)) else {
             return true;
         };
@@ -2104,7 +2156,8 @@ impl BundleFacts {
         let Some(first) = placement_key(pos, 0) else {
             return true;
         };
-        if states.hidden.range(first..=first + 63).next().is_none()
+        if house_door.is_none()
+            && states.hidden.range(first..=first + 63).next().is_none()
             && states.passable.range(first..=first + 63).next().is_none()
             && rotations.range(first..=first + 63).next().is_none()
         {
@@ -2140,6 +2193,10 @@ impl BundleFacts {
                 blocked |= after_blocked;
                 continue;
             }
+            if house_door == Some(key) {
+                changed = true;
+                continue;
+            }
             let palette = self
                 .placements
                 .binary_search_by_key(&key, |(k, _)| *k)
@@ -2163,7 +2220,12 @@ impl BundleFacts {
             .and_then(|(o, _)| placement_key(pos, o))
             .and_then(|k| states.passable.get(&k).copied())
             .unwrap_or_else(|| tile.walkable());
-        !ground_walkable || if changed { blocked } else { baseline }
+        !ground_walkable
+            || if changed || house_door.is_some() {
+                blocked
+            } else {
+                baseline
+            }
     }
 }
 

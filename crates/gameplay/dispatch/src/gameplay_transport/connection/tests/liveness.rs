@@ -140,6 +140,108 @@ fn a_silent_refused_session_with_an_actor_closes_after_the_bound() -> Result<(),
 }
 
 #[test]
+fn e1200_hold_logs_first_entry_reason_and_last_join_phase() -> Result<(), Box<dyn Error>> {
+    struct NoBaseline;
+    impl FreshAdmissionAuthority for NoBaseline {
+        async fn admit(
+            &self,
+            _: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+    }
+
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .start_paused(true)
+                .build()
+                .map_err(|error| error.to_string())?;
+            for (variant, phase, reason, entry_phase) in [
+                (
+                    FirstEntryOutcome::RefusedStaleAuthority,
+                    "held_unplayable",
+                    "stale_authority",
+                    Some("revalidate_session"),
+                ),
+                (
+                    FirstEntryOutcome::RefusedUnavailable,
+                    "held_unplayable",
+                    "entry_unavailable",
+                    Some("known_spells"),
+                ),
+                (
+                    FirstEntryOutcome::Positioned,
+                    "held_no_baseline",
+                    "baseline_unavailable",
+                    None,
+                ),
+            ] {
+                let admitted = AdmittedSession {
+                    first_entry: variant,
+                    ..positioned().map_err(|error| error.to_string())?
+                };
+                let lines = oteryn_error_codes::capture(|| {
+                    runtime.block_on(with_connection_trace([3; 16], async {
+                        if let Some(entry_phase) = entry_phase {
+                            remember_entry_refusal(admitted.game_session_id, variant, entry_phase);
+                        }
+                        let (mut server, _client) = tokio::io::duplex(4096);
+                        let end =
+                            serve_admitted_actor(&mut server, admitted, &NoBaseline, FAST).await;
+                        assert!(matches!(
+                            end,
+                            ConnectionEnd::AdmittedThenClosed(
+                                _,
+                                FoundationProtocolError::NotSupported
+                            )
+                        ));
+                    }));
+                });
+                let phase_field = format!("phase={phase}");
+                let entry_field = format!("first_entry={variant:?}");
+                let reason_field = format!("reason={reason}");
+                let progress = lines
+                    .iter()
+                    .find(|line| {
+                        let contains =
+                            |field: &str| line.split_whitespace().any(|part| part == field);
+                        contains("event=join_progress")
+                            && contains("level=info")
+                            && contains("module=gameplay_transport")
+                            && contains(&phase_field)
+                            && contains(&entry_field)
+                            && contains(&reason_field)
+                    })
+                    .ok_or_else(|| format!("missing join refusal: {lines:?}"))?;
+                assert_eq!(
+                    progress
+                        .split_whitespace()
+                        .find_map(|field| field.strip_prefix("entry_phase=")),
+                    entry_phase,
+                    "{progress}",
+                );
+                assert!(
+                    lines.iter().any(|line| {
+                        let contains =
+                            |field: &str| line.split_whitespace().any(|part| part == field);
+                        contains("event=serve_end")
+                            && contains("reason=protocol_error")
+                            && contains(&phase_field)
+                    }),
+                    "{lines:?}"
+                );
+            }
+            Ok::<(), String>(())
+        })?
+        .join()
+        .map_err(|_| "E1200 hold diagnostic test panicked")??;
+    Ok(())
+}
+
+#[test]
 fn a_frame_before_the_bound_closes_a_refused_session_with_an_error()
 -> Result<(), Box<dyn Error>> {
     run(async {

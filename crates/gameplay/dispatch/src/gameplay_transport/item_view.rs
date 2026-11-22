@@ -352,6 +352,12 @@ impl ItemHandleTable {
         Some(self.slots[slot as usize].key)
     }
 
+    pub(super) fn resolve_in_view(&self, handle: ItemHandle, view: View) -> Option<ItemKey> {
+        let index = *self.by_handle.get(&handle)?;
+        let slot = self.slots[index as usize];
+        (slot.views & (1 << view as usize) != 0).then_some(slot.key)
+    }
+
     pub fn handle(&self, key: &ItemKey) -> Option<ItemHandle> {
         let slot = *self.by_key.get(key)?;
         Some(self.slots[slot as usize].handle)

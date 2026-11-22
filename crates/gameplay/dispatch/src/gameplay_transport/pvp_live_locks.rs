@@ -151,6 +151,10 @@ pub(in crate::gameplay_transport) struct PvpBlocker<'a> {
     pub blocked: bool,
 }
 impl crate::map::floor::CellBlocker for PvpBlocker<'_> {
+    fn permits_house_door(&self, cell: crate::content::LogicalCell) -> bool {
+        self.inner.permits_house_door(cell)
+    }
+
     fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
         self.inner.blocks(cell)
             || (self.blocked

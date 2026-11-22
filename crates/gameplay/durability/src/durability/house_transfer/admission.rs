@@ -1,12 +1,16 @@
 //! Q16: fresh authenticated admission restores the existing LastPosition through
 //! the native House handoff, with explicit admission provenance (no client command).
 use super::super::character_last_position::load_scoped_last_position;
-use super::super::house_interior::{HouseInteriorSnapshot, load_house_interior_in_transaction};
+use super::super::house_interior::{
+    HouseDoorAccess, HouseInteriorSnapshot, load_house_interior_in_transaction,
+    read_house_door_access,
+};
 use super::*;
 
 #[derive(Debug)]
 pub struct HouseAdmissionRead {
     pub interior: HouseInteriorSnapshot,
+    pub door_access: HouseDoorAccess,
     pub hirelings: Vec<super::super::house_hireling::HirelingSnapshot>,
 }
 
@@ -68,7 +72,7 @@ impl DurabilityRoot {
                 if load_scoped_last_position(&mut tx, request.fence.character_id).await? != Some(saved.clone()) {
                     return Err(DurabilityError::Unavailable);
                 }
-                prepare(&mut tx, &node, &mut request).await?;
+                prepare(&mut tx, &node, &mut request, None).await?;
                 let payload = encode_house_transfer_ack(&request.ack).map_err(|_| DurabilityError::Unavailable)?;
                 // 0703 verifies the committed fresh receipt and exact old LastPosition key
                 // in addition to every original 0215 source/assignment/admission guard.
@@ -93,7 +97,8 @@ impl DurabilityRoot {
                 let interior = load_house_interior_in_transaction(&mut tx, &request.house,
                     request.ack.scope_generation, &node).await.map_err(|_| DurabilityError::Unavailable)?;
                 let hirelings = super::super::house_hireling::read_house_hirelings_in_transaction(&mut tx, &fence).await?;
-                if !validate(HouseAdmissionRead { interior, hirelings }, owner) {
+                let door_access = read_house_door_access(&mut tx, &request.house, &fence).await?;
+                if !validate(HouseAdmissionRead { interior, hirelings, door_access }, owner) {
                     return Err(DurabilityError::Unavailable);
                 }
                 commit_semantic_transaction(tx, deadline).await?;

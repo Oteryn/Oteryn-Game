@@ -520,6 +520,14 @@ fn scenario() -> TestResult {
         );
         // Field 11 carries the qualified Guildhall class (enum value 3).
         assert!(guildhall_page.windows(2).any(|field| field == [88, 3]));
+        let generation = initial.continuity.connection_generation.to_string();
+        let bound_receipts: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_house_management_receipts WHERE connection_generation=$1::text::numeric",
+        )
+        .bind(generation)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(bound_receipts, count);
         verify_guild_acl(&h, &restarted, &mut admitted).await?;
         drop(replayed);
         drop(restarted);
@@ -550,6 +558,15 @@ async fn verify_guild_acl(
     sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,1)")
         .bind(actor.as_slice()).bind(id(90).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
+    verify_guild_rank_write_fence(h).await?;
+
+    let name: String = sqlx::query_scalar(
+        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(actor.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(name, "House Member");
 
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 49, 515])
@@ -636,6 +653,75 @@ async fn guild_house_lists(h: &Harness, actor: [u8; 16]) -> TestResult<Vec<Strin
         .bind(id(42).as_slice()).bind(HOUSE).bind(actor.as_slice()).fetch_all(&h.pool).await?)
 }
 
+#[test]
+fn legacy_guild_rank_writes_still_reach_the_operation_fence_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |_| {
+        let h = Harness::create_with_admission_seed(admin, "legacy_guild_rank", true, false).await?;
+        for statement in [
+            "INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,$2,$3)",
+            "INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,$2,$3)
+             ON CONFLICT(guild_id,level) DO UPDATE SET name=EXCLUDED.name",
+        ] {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *tx)
+                .await?;
+            let error = sqlx::query(statement)
+                .bind(id(90).as_slice())
+                .bind(1_i16)
+                .bind("Leader")
+                .execute(&mut *tx)
+                .await
+                .err()
+                .ok_or("legacy rank write bypassed the Guild operation fence")?;
+            assert_eq!(
+                error.as_database_error().and_then(|error| error.code()).as_deref(),
+                Some("23514")
+            );
+            tx.rollback().await?;
+        }
+        verify_guild_rank_write_fence(&h).await?;
+        h.cleanup().await
+    })
+}
+
+async fn verify_guild_rank_write_fence(h: &Harness) -> TestResult {
+    for (statement, expected) in [
+        (
+            "INSERT INTO game_guild_ranks(guild_id,level,name,house_acl_identity)
+             OVERRIDING SYSTEM VALUE VALUES(encode($1,'hex')::uuid,3,'Forged',1)",
+            "42501",
+        ),
+        (
+            "SELECT game_guild_write_rank(encode($1,'hex')::uuid,3::smallint,'Forged',false)",
+            "23514",
+        ),
+    ] {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        let error = sqlx::query(statement)
+            .bind(id(90).as_slice())
+            .execute(&mut *tx)
+            .await
+            .err()
+            .ok_or("unbound rank write succeeded")?;
+        assert_eq!(
+            error
+                .as_database_error()
+                .and_then(|error| error.code())
+                .as_deref(),
+            Some(expected)
+        );
+        tx.rollback().await?;
+    }
+    Ok(())
+}
+
 async fn verify_guild_acl_write_fence(h: &Harness, admitted: &AdmittedSession) -> TestResult {
     let writable: bool = sqlx::query_scalar(
         "SELECT has_table_privilege('oteryn_game_runtime','game_house_acl_guild_ranks','INSERT,UPDATE,DELETE')",
@@ -653,10 +739,14 @@ async fn verify_guild_acl_write_fence(h: &Harness, admitted: &AdmittedSession) -
         (current, 9, "House ACL lacks current owner receipt"),
     ] {
         let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
         let session = admitted.game_session_id.as_bytes().as_slice();
-        sqlx::query("INSERT INTO game_house_management_receipts(game_session_id,command_id,character_id,world_id,house_key,request_binding,result_revision,action_kind,list_key) VALUES(encode($1,'hex')::uuid,10000,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,decode(repeat('01',32),'hex'),$5,1,'guest')")
+        let stamped: String = sqlx::query_scalar("INSERT INTO game_house_management_receipts(game_session_id,command_id,character_id,world_id,house_key,request_binding,result_revision,action_kind,list_key) VALUES(encode($1,'hex')::uuid,10000,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,decode(repeat('01',32),'hex'),$5,1,'guest') RETURNING connection_generation::text")
             .bind(session).bind(actor.as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(revision)
-            .execute(&mut *tx).await?;
+            .fetch_one(&mut *tx).await?;
+        assert_eq!(stamped, current.to_string());
         let error = sqlx::query("SELECT game_house_management_guild_acl_advance(encode($1,'hex')::uuid,10000,$2::text::numeric,'[]'::jsonb)")
             .bind(session).bind(generation.to_string()).execute(&mut *tx).await
             .expect_err("unfenced House guild ACL");

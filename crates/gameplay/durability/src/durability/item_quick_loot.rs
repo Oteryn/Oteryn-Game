@@ -66,6 +66,28 @@ pub(super) async fn assert_corpse_source(
     }
 }
 
+async fn owned_gold_pouch(
+    tx: &mut Transaction<'_, Postgres>,
+    character: CharacterId,
+    world: [u8; 16],
+) -> LoopResult<[u8; 16]> {
+    let pouches: Vec<String> = sqlx::query_scalar(
+        "SELECT l.item_instance_id::text
+         FROM game_item_character_inbox_locations l JOIN game_item_instances i USING(item_instance_id,world_id)
+         WHERE l.character_id=encode($1,'hex')::uuid AND l.world_id=encode($2,'hex')::uuid
+           AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key='oteryn:item.tibia.i23721'
+         LIMIT 2",
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind(world.as_slice())
+    .fetch_all(&mut **tx)
+    .await?;
+    let [pouch] = pouches.as_slice() else {
+        return refuse(LoopMoveRefusal::Stale);
+    };
+    Ok(uuid_text(pouch)?)
+}
+
 async fn recipient<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
     character: CharacterId,
@@ -173,6 +195,9 @@ impl DurabilityRoot {
                         (Some(QuickLootRecipient::MainContainer), None) => Recipient::MainContainer,
                         (Some(QuickLootRecipient::Container), Some(id)) => Recipient::Container(id),
                         (Some(QuickLootRecipient::GoldPouch), Some(id)) => Recipient::GoldPouch(id),
+                        (Some(QuickLootRecipient::GoldPouch), None) => Recipient::GoldPouch(
+                            owned_gold_pouch(&mut tx, fence.character_id, world).await?
+                        ),
                         _ => return refuse(LoopMoveRefusal::Rejected),
                     };
                     recipient(&mut tx, fence.character_id, world, content, target).await?;
@@ -197,6 +222,9 @@ impl DurabilityRoot {
                 let corpses=sqlx::query("SELECT i.item_instance_id::text,g.spatial_position,(floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000 OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid OR EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)) AS loot_allowed FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_item_mint_receipts r USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=ANY($3) AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY i.item_instance_id LIMIT $6 FOR UPDATE OF i")
                     .bind(world.as_slice()).bind(channel.as_bytes().as_slice()).bind(cells).bind(fence.scope_ownership_generation.get().to_string())
                     .bind(request.corpse.as_ref().map(<[u8;16]>::as_slice)).bind(MAX_NEARBY_CORPSES as i64).bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
+                if request.action == QuickLootAction::Click && corpses.is_empty() {
+                    return refuse(LoopMoveRefusal::Stale);
+                }
                 let mut result=QuickLootResult { items: Vec::new() };
                 for corpse in corpses {
                     let corpse_id=uuid_text(corpse.try_get("item_instance_id")?)?;
