@@ -116,6 +116,17 @@ impl FreshAdmissionAuthority for Channel {
         }
     }
 
+    async fn player_status(
+        &self,
+        _: AdmittedSession,
+        _: EntityRef,
+    ) -> Option<oteryn_protocol_oteryn::zones_nologout::PlayerStatus> {
+        Some(oteryn_protocol_oteryn::zones_nologout::PlayerStatus {
+            presence: oteryn_protocol_oteryn::zones_nologout::PlayerPresence::Away,
+            no_logout: true,
+        })
+    }
+
     async fn observe_visible_entities(&self, actor: ExactActorRef) -> Option<ChannelEntities> {
         let own = actor.placement_identity();
         let mut entities = vec![ChannelEntity {
@@ -268,3 +279,68 @@ fn run(test: impl Future<Output = TestResult>) -> TestResult {
 }
 
 include!("visibility_tests/interest_set.rs");
+
+#[test]
+fn player_status_dispatch_requires_negotiation_and_visible_incarnation()
+-> Result<(), Box<dyn Error + Send + Sync>> {
+    use oteryn_protocol_oteryn::{MessageType, decode_command_result};
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                let mut target = creature([9; 16], at(102, 100), 0);
+                target.kind = VisibleKind::Player;
+                let channel = Channel::new(vec![target]);
+                for (capabilities, incarnation, status, expected) in [
+                    (&[6][..], 1_u64, CommandStatus::Rejected, &[][..]),
+                    (&[6, 600][..], 2, CommandStatus::Rejected, &[][..]),
+                    (&[6, 600][..], 1, CommandStatus::Accepted, &[2, 1][..]),
+                ] {
+                    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+                    let mut admitted = session(&[6], SessionContinuity::FRESH);
+                    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                        super::super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                        capabilities,
+                    )
+                    .ok_or("selected capabilities")?;
+                    let exercise = async {
+                        let mut payload = target.identity.to_vec();
+                        payload.extend_from_slice(&incarnation.to_be_bytes());
+                        let frame = encode_client_command(
+                            1,
+                            &ClientCommandValue {
+                                command_id: 1,
+                                command_type: 6363,
+                                payload: &payload,
+                            },
+                        )?;
+                        client
+                            .write_all(&u32::try_from(frame.len())?.to_be_bytes())
+                            .await?;
+                        client.write_all(&frame).await?;
+                        loop {
+                            let frame = read_one(&mut client).await?;
+                            let envelope = decode_wire_envelope(&frame)?;
+                            if envelope.message_type() == MessageType::CommandResult {
+                                let result = decode_command_result(envelope.payload())?;
+                                assert_eq!((result.status, result.payload), (status, expected));
+                                break;
+                            }
+                        }
+                        client.shutdown().await?;
+                        Ok::<(), Box<dyn Error>>(())
+                    };
+                    let (_, result) = tokio::join!(
+                        serve_admitted(&mut server, admitted, &channel, IDLE_LIVENESS),
+                        exercise
+                    );
+                    result?;
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "player status dispatch thread")??;
+    Ok(())
+}
