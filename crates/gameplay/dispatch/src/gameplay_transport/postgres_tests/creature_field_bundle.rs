@@ -646,7 +646,7 @@ async fn exercise_reserved_source(harness: &Harness) -> TestResult {
                     .map_err(|_| DurabilityError::Unavailable)
             };
             let proof = runtime
-                .test_source_actor_reservation_proof(player, session, id(9))
+                .source_actor_reservation_proof_for_test(player, session, id(9))
                 .map_err(|_| DurabilityError::Unavailable)?;
             let mut held = runtime
                 .prepare_source_actor_reservation(&proof)

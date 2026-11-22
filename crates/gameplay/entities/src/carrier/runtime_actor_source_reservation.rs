@@ -781,7 +781,7 @@ impl ChannelRuntimeV1 {
 struct Proof {
     actor: ExactActorRef,
     session: GameSessionId,
-    position: crate::MovementPositionSnapshot,
+    position: super::MovementPositionSnapshot,
     affected: Vec<ExactActorRef>,
     event: [u8; 16],
 }
@@ -810,10 +810,10 @@ impl SourceActorReservationProof for Proof {
     }
 }
 
-#[cfg(feature = "test-support")]
+#[cfg(any(test, feature = "test-support"))]
 impl ChannelRuntimeV1 {
-    /// Build the owner crate's reservation proof for a test holding only its Player source.
-    pub fn test_source_actor_reservation_proof(
+    /// Captures a Player's position for a commandless source reservation in a test.
+    pub fn source_actor_reservation_proof_for_test(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
