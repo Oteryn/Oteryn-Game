@@ -14,6 +14,7 @@ class M01cKeyDoorPinTests(unittest.TestCase):
         source = TEST.read_text()
         refreshed = pin.refresh(source, packet)
         self.assertIn('("M01C-KEY-DOORS", 2)', refreshed)
+        self.assertIn('("CLASSIC-QUEST-DOORS", 4)', refreshed)
         self.assertEqual(pin.refresh(refreshed, packet), refreshed)
         broken = copy.deepcopy(packet)
         broken['records'].pop()

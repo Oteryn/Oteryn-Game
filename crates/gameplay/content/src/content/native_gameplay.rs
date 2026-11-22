@@ -2277,6 +2277,45 @@ mod tests {
     }
 
     #[test]
+    fn classic_quest_doors_load_their_native_collision_and_classification() {
+        use crate::content::{ReferenceItemField as F, ReferenceItemType};
+
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let generation = controller.active().unwrap();
+        let native = generation.native_gameplay().unwrap();
+        for (id, solid) in [
+            (5106, true),
+            (5107, true),
+            (5108, false),
+            (6251, true),
+            (6252, true),
+            (6253, false),
+            (9565, true),
+            (9566, false),
+        ] {
+            let policy = native.item_policy_for_source_id(id).unwrap();
+            let record = policy.record();
+            assert!(
+                matches!(&record.semantics.classification, F::Known(classification)
+                if classification.item_type == F::Known(ReferenceItemType::Door)),
+                "Item {id}"
+            );
+            assert_eq!(record.attributes.blocks_movement, Some(solid), "Item {id}");
+            assert_eq!(
+                record.attributes.blocks_projectile,
+                Some(solid),
+                "Item {id}"
+            );
+            assert_eq!(
+                record.admission.legal_destinations,
+                [NativeItemDestination::Ground],
+                "Item {id}"
+            );
+        }
+    }
+
+    #[test]
     fn m18_exit_carpet_uses_validated_native_collision_and_ground_custody() {
         // Crystal201189f items.xml:35502-35504 and the pinned appearance's
         // clip/unmove flags: the source timeout exit is carpet17400, not a wall.
