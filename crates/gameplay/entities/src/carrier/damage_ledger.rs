@@ -857,19 +857,28 @@ impl ChannelActorCarrier {
         // Resolve Crystal's onHealthChange callback after replay, from the real HP slot.
         // The receipt retains the original request: retrying at a new HP fraction cannot
         // change the already committed hit or its damage attribution.
-        let effective_damage = if health_change_resolved {
-            // Periodic owner turns have already resolved each tick against its current HP.
-            damage
-        } else {
-            match &self.slots[index] {
-                Slot::CreatureOccupied { spell_combat, .. } => match spell_combat.soulpit {
-                    Some(tag) => {
-                        tag.incoming_health_change(damage, *health, spell_combat.maximum_health)?
+        let (effective_damage, arbaziloth_shields) = match &self.slots[index] {
+            Slot::CreatureOccupied { spell_combat, .. } => {
+                let damage = if health_change_resolved {
+                    // Periodic owner turns have already resolved each tick against its current HP.
+                    damage
+                } else {
+                    match spell_combat.soulpit {
+                        Some(tag) => tag.incoming_health_change(
+                            damage,
+                            *health,
+                            spell_combat.maximum_health,
+                        )?,
+                        None => damage,
                     }
-                    None => damage,
-                },
-                _ => return Err(CarrierError::NotCreature),
+                };
+                let mut shields = spell_combat.arbaziloth_shields;
+                let damage = shields.as_mut().map_or(damage, |shield| {
+                    shield.limit_damage(*health, spell_combat.maximum_health, damage)
+                });
+                (damage, shields)
             }
+            _ => return Err(CarrierError::NotCreature),
         };
         let original_health = *health;
         let mut damage_phase_health = original_health;
@@ -1085,6 +1094,7 @@ impl ChannelActorCarrier {
                 .try_reserve(1)
                 .map_err(|_| CarrierError::CommitAllocationFailed)?;
         }
+        spell_combat.arbaziloth_shields = arbaziloth_shields;
         if let Some(successor) = prepared_w01_conditions {
             committed.conditions = successor;
         }

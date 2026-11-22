@@ -488,33 +488,6 @@ fn reserved_source_scenario() -> TestResult {
     })
 }
 
-/// A commandless owner event holding the live Player source, as a pending
-/// source callback does until its durable outcome is observed.
-struct HeldSource {
-    player: ExactActorRef,
-    session: crate::foundation::GameSessionId,
-}
-impl crate::foundation::source_reservation_seal::Sealed for HeldSource {}
-impl crate::foundation::SourceActorReservationProof for HeldSource {
-    fn owner(&self) -> (ExactActorRef, crate::foundation::GameSessionId) {
-        (self.player, self.session)
-    }
-    fn event_identity(&self) -> [u8; 16] {
-        id(9)
-    }
-    fn source_binding_digest(&self) -> [u8; 32] {
-        [9; 32]
-    }
-    fn affected_actors(&self) -> &[ExactActorRef] {
-        &[]
-    }
-    fn current_for(&self, runtime: &crate::foundation::ChannelRuntimeV1) -> bool {
-        runtime
-            .player_control_facts(self.player, self.session)
-            .is_ok()
-    }
-}
-
 /// The periodic owner refuses a DOT whose live Player source is reserved. That
 /// creature waits for a later pass, the pass still completes for the creature
 /// census-ordered after it, and the deferred DOT ticks once the source is released.
@@ -672,7 +645,9 @@ async fn exercise_reserved_source(harness: &Harness) -> TestResult {
                     })
                     .map_err(|_| DurabilityError::Unavailable)
             };
-            let proof = HeldSource { player, session };
+            let proof = runtime
+                .source_actor_reservation_proof_for_test(player, session, id(9))
+                .map_err(|_| DurabilityError::Unavailable)?;
             let mut held = runtime
                 .prepare_source_actor_reservation(&proof)
                 .map_err(|_| DurabilityError::Unavailable)?;

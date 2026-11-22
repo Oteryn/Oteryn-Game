@@ -680,6 +680,8 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         quest_yields = protected_loot_yields.ITEMS
         import quest_loot_profiles
         quest_loot_profiles.apply_loot_facts(facts, ROOT, creatures, tables)
+        import nrwicked_profiles
+        nrwicked_profiles.bind_hard_loot(ROOT, creatures, definitions, tables)
     bindings, named, used = {}, {}, {}
     corpse_refs, yield_keys, corpse_tables = {}, set(), {}
     reward_boss_corpses = set()
