@@ -504,6 +504,10 @@ class QuestRewards(unittest.TestCase):
 
     def test_l1_handins_preserve_source_crest_identity_and_exclusive_sides(self):
         callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        self.assertEqual(callbacks['l1-yalaharian-sage']['achievement'],
+                         'oteryn:achievement/yalahari_of_wisdom')
+        self.assertEqual(callbacks['l1-yalaharian-villain']['achievement'],
+                         'oteryn:achievement/yalahari_of_power')
         for name,side,bit in [('sage',1,1),('villain',2,2)]:
             c=callbacks['l1-yalaharian-'+name]
             self.assertEqual(c['take'],[])

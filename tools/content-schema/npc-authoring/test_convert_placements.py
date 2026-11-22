@@ -39,6 +39,13 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual({r['npc']:r['cell'] for r in actual},expected)
         self.assertTrue(all(r['provenance'] for r in actual))
 
+    def test_storkus_uses_the_pinned_vampire_hunter_cell(self):
+        rows = [r["declaration"] for r in self.records
+                if r["declaration"]["npc"] == "oteryn:npc.storkus"]
+        self.assertEqual([r["cell"] for r in rows], [{"x": 32589, "y": 31962, "floor": 7}])
+        self.assertEqual(rows[0]["provenance"][0]["revision"],
+                         "201189f871d23597b82caf88fd611454a2ddefb8")
+
     def test_jack_springer_uses_the_pinned_isle_of_the_kings_cell(self):
         rows = [r['declaration'] for r in self.records
                 if r['declaration']['npc'] == 'oteryn:npc.jack_springer']

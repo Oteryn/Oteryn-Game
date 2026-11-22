@@ -570,7 +570,20 @@ mod main_native_contract {
         assert_eq!(baseline.counts(), explicit.counts());
         let before = baseline.catalogue();
         let after = explicit.catalogue();
-        assert_eq!(before.tracks.len(), 2135);
+        assert_eq!(before.tracks.len(), 2137);
+        for (name, max) in [("rank", 6), ("door", 1)] {
+            let key = format!("oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/{name}");
+            assert_eq!(
+                before.tracks.get(&key),
+                Some(&QuestTrack {
+                    key: key.clone(),
+                    quest: "oteryn:quest.vampire_hunter_quest".into(),
+                    initial: 0,
+                    min: 0,
+                    max,
+                })
+            );
+        }
         for pharaoh in ["omruc", "vashresamun"] {
             let key = format!(
                 "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/{pharaoh}_sarcophagus_claim"

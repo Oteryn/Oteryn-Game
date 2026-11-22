@@ -406,11 +406,15 @@ def build():
         path='data-global/npc/'+npc+'.lua'
         lines='244-259' if npc=='palimuth' else '246-252'
         callbacks[-1]['sources']=[f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}']
-    for name,side,bit in [('sage',1,1),('villain',2,2)]:
+    for name,side,bit,achievement,page,revision in [
+        ('sage',1,1,'wisdom',62819,753357),('villain',2,2,'power',62818,753121),
+    ]:
         add('l1-yalaharian-'+name,'in_service_of_yalahar_quest','palimuth',['yes'],
             [storage(yalahar+'questline',54,55),
              storage(yalahar+'side_decision',side,side,preserve=True)],
-            outfit=('yalaharian',bit),topic=6)
+            outfit=('yalaharian',bit),topic=6,
+            achievement='oteryn:achievement/yalahari_of_'+achievement)
+        callbacks[-1]['sources'].append(f'https://tibia.fandom.com/index.php?curid={page}&oldid={revision}')
         # The captured NPC checks possession and retains the original crest.
         callbacks[-1]['present']=[{'item':'oteryn:item.tibia.i9041','count':1}]
         offers.append({'npc':'oteryn:npc.palimuth','keywords':['job','addon'],

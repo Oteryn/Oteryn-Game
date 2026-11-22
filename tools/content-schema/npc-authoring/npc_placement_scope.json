@@ -121,6 +121,7 @@
     "oteryn:npc.sinatuki",
     "oteryn:npc.snake_eye",
     "oteryn:npc.spectulus",
+    "oteryn:npc.storkus",
     "oteryn:npc.the_first_dragon",
     "oteryn:npc.the_forgemaster",
     "oteryn:npc.the_oracle",
@@ -406,6 +407,27 @@
         "path": "data-otservbr-global/scripts/globalevents/spawn/rashid.lua",
         "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
         "sha256": "77c696b75f7027c3f4120e5392874ce0809495c3c425ba4a005bff3521a546b8"
+      }
+    },
+    "oteryn:npc.storkus": {
+      "basis": "Crystal world-npc.xml:1741-1743 places Storkus at the Vampire Hunter contact. The source leaves direction unspecified.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32589,
+            "y": 31962,
+            "z": 7
+          },
+          "spawn_interval_s": 60,
+          "spawn_radius": 1
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
       }
     },
     "oteryn:npc.a_sleeping_dragon": {
