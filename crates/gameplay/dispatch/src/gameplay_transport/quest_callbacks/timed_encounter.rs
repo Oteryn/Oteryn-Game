@@ -1,7 +1,7 @@
 //! Bounded source timers share the Channel source-owner loop and native carrier.
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
-use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
+use crate::foundation::{CharacterLease, RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use crate::map::{
     facts::QuestCallbackProjection,
     view::{EntryFacts, EntrySource, MapFacts},
@@ -9,22 +9,31 @@ use crate::map::{
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(super) const MAX_TIMED_ENCOUNTERS: usize = 64;
+const PERSONAL_EXIT_RETRY_US: u64 = 250_000;
 const MERCHANT_CLEANUP_RETRY_US: u64 = 100_000;
 
 pub(super) struct TimedEncounter {
     callback: Callback,
     key: u64,
-    revision: u64,
+    owner: TimedEncounterOwner,
     content: [u8; 32],
     map: [u8; 32],
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
-    participant: Option<(ExactActorRef, GameSessionId)>,
-    spawn_at: u64,
+    wake_at: u64,
     reset_at: u64,
-    attempted_spawn: bool,
     spawned: Vec<ExactActorRef>,
     merchant_loot: Option<(u64, Vec<(TilePos, u64)>)>,
 }
+
+#[derive(Clone, Copy)]
+enum TimedEncounterOwner {
+    Source {
+        revision: u64,
+        participant: Option<(ExactActorRef, GameSessionId)>,
+    },
+    PersonalExit((ExactActorRef, GameSessionId, CharacterLease)),
+}
+
 impl TimedEncounter {
     pub(super) fn holds_source_key(&self, key: u64) -> bool {
         self.key == key && self.merchant_loot.is_none()
@@ -53,6 +62,50 @@ impl TimedEncounter {
             && requested.room_min.y <= active.room_max.y
     }
 
+    pub(super) fn personal_exit(
+        runtime: &ChannelRuntimeV1,
+        map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        participant: (ExactActorRef, GameSessionId, CharacterLease),
+        deadline: u64,
+    ) -> Self {
+        Self {
+            callback: callback.clone(),
+            key,
+            owner: TimedEncounterOwner::PersonalExit(participant),
+            content: runtime.content_pin().server_artifact_digest(),
+            map: map.overlay.base().digest(),
+            scope: runtime.encounter_owner_scope(),
+            wake_at: deadline,
+            reset_at: deadline,
+            spawned: Vec::new(),
+            merchant_loot: None,
+        }
+    }
+
+    pub(super) fn set_spawned(&mut self, spawned: Vec<ExactActorRef>) {
+        self.spawned = spawned;
+    }
+
+    fn is_current(&self, runtime: &ChannelRuntimeV1, map: &BundleMap, allow_changed_merchant: bool) -> bool {
+        self.scope == runtime.encounter_owner_scope()
+            && self.content == runtime.content_pin().server_artifact_digest()
+            && self.map == map.overlay.base().digest()
+            // A committed personal admission survives changes to the entrance.
+            && match self.owner {
+                TimedEncounterOwner::PersonalExit(_) => true,
+                TimedEncounterOwner::Source { revision, .. } => {
+                    (allow_changed_merchant && self.callback.starts_merchant_wave())
+                        || revision == map.facts.object_revision(self.key)
+                }
+            }
+    }
+
+    pub(super) fn source_key(&self) -> u64 {
+        self.key
+    }
+
     pub(super) fn contains_participant(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -62,14 +115,17 @@ impl TimedEncounter {
         position: MovementLocalPosition,
         now: u64,
     ) -> bool {
-        now < self.reset_at
-            && self.scope == runtime.encounter_owner_scope()
-            && self.content == runtime.content_pin().server_artifact_digest()
-            && self.map == map.overlay.base().digest()
-            && self.revision == map.facts.object_revision(self.key)
-            && self
-                .participant
-                .is_none_or(|participant| participant == (actor, session))
+        let admitted = match self.owner {
+            TimedEncounterOwner::PersonalExit((owner, owner_session, lease)) => {
+                (actor, session) == (owner, owner_session)
+                    && runtime.bound_attacker_lease(actor, session) == Ok(lease)
+            }
+            TimedEncounterOwner::Source { participant, .. } => {
+                now < self.reset_at && participant.is_none_or(|who| who == (actor, session))
+            }
+        };
+        admitted
+            && self.is_current(runtime, map, false)
             && self
                 .callback
                 .effects
@@ -79,13 +135,7 @@ impl TimedEncounter {
     }
 
     pub(super) fn next_due_us(&self) -> u64 {
-        if let Some((deadline, _)) = &self.merchant_loot {
-            *deadline
-        } else if self.attempted_spawn {
-            self.reset_at
-        } else {
-            self.spawn_at
-        }
+        self.merchant_loot.as_ref().map_or(self.wake_at, |(due, _)| *due)
     }
 }
 
@@ -186,14 +236,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         pending.push(TimedEncounter {
             callback: callback.clone(),
             key,
-            revision: next_revision,
+            owner: TimedEncounterOwner::Source {
+                revision: next_revision,
+                participant: personal.then_some((actor, session)),
+            },
             content: runtime.content_pin().server_artifact_digest(),
             map: map.overlay.base().digest(),
             scope: runtime.encounter_owner_scope(),
-            participant: personal.then_some((actor, session)),
-            spawn_at,
+            wake_at: spawn_at,
             reset_at,
-            attempted_spawn: false,
             spawned: Vec::new(),
             merchant_loot: None,
         });
@@ -217,6 +268,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        let mut states = self.states.spell_states.lock().await;
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;
         };
@@ -224,12 +276,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut index = 0;
         while index < pending.len() {
             let memo = &mut pending[index];
-            if memo.content != runtime.content_pin().server_artifact_digest()
-                || memo.map != map.overlay.base().digest()
-                || memo.scope != runtime.encounter_owner_scope()
-                || (!memo.callback.starts_merchant_wave()
-                    && map.facts.object_revision(memo.key) != memo.revision)
-            {
+            if !memo.is_current(&runtime, map, true) {
                 pending.remove(index);
                 continue;
             }
@@ -240,6 +287,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(encounter) = &memo.callback.effects.encounter else {
                 pending.remove(index);
                 continue;
+            };
+            let revision = match memo.owner {
+                TimedEncounterOwner::Source { revision, .. } => revision,
+                TimedEncounterOwner::PersonalExit(participant) => {
+                    let exited = encounter.personal_exit.is_some_and(|exit| {
+                        self.eject_personal_participant(
+                            &mut runtime,
+                            &mut states,
+                            map,
+                            participant,
+                            encounter,
+                            exit.destination,
+                        )
+                    });
+                    if exited {
+                        // Dead defenders and their corpse projections belong to the death owner.
+                        memo.spawned.retain(|actor| {
+                            runtime.contains_live_creature(*actor)
+                                && runtime.remove_encounter_actor(*actor).is_err()
+                        });
+                    }
+                    if exited && memo.spawned.is_empty() {
+                        pending.remove(index);
+                    } else {
+                        // Keep the admission while the exit or exact cleanup is blocked.
+                        memo.wake_at = now.saturating_add(PERSONAL_EXIT_RETRY_US);
+                        index += 1;
+                    }
+                    continue;
+                }
             };
             if let Some((due, loot)) = &mut memo.merchant_loot {
                 let Ok(records) = self.states.quest_callbacks.records.lock() else {
@@ -264,8 +341,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Some((pos, key)) = map.facts.merchant_barricade(memo.key) {
                     if !map.facts.remove_movement_item(pos, key, 3682) {
                         // A reserved entrance can settle before the next cleanup turn.
-                        memo.attempted_spawn = true;
                         memo.reset_at = now.saturating_add(MERCHANT_CLEANUP_RETRY_US);
+                        memo.wake_at = memo.reset_at;
                         index += 1;
                         continue;
                     }
@@ -348,15 +425,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let _ = runtime.remove_encounter_actor(actor);
                     }
                 }
-                if map.facts.apply_quest_callback(
-                    memo.key,
-                    memo.revision,
-                    restore,
-                    &[],
-                    &[],
-                    true,
-                    None,
-                ) {
+                if map
+                    .facts
+                    .apply_quest_callback(memo.key, revision, restore, &[], &[], true, None)
+                {
                     pending.remove(index);
                 } else {
                     index += 1;
@@ -412,10 +484,73 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 memo.spawned = spawned;
             }
-            memo.attempted_spawn = true;
+            memo.wake_at = memo.reset_at;
             index += 1;
         }
         // Death/despawn and source cleanup release only their source-owned ladder.
         super::monsters::settle_authored_monster_puzzles(&runtime, map);
+    }
+
+    fn eject_personal_participant(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+        (actor, session, lease): (ExactActorRef, GameSessionId, CharacterLease),
+        room: &world_callbacks::Encounter,
+        destination: Position,
+    ) -> bool {
+        if states.is_dead(actor) || runtime.player_control_facts(actor, session).is_err() {
+            return true;
+        }
+        let Ok(expected) = runtime.read_actor_position(actor) else {
+            return true;
+        };
+        if !super::encounter::room_contains(room, expected.position()) {
+            return true;
+        }
+        match runtime.bound_attacker_lease(actor, session) {
+            Ok(current) if current != lease => return true,
+            // An exact actor may be temporarily write-fenced during reconnect.
+            Err(_) => return false,
+            Ok(_) => {}
+        }
+        let to = local(destination);
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+            runtime,
+            &self.movement_cells,
+            actor,
+            session,
+            expected,
+            to,
+            &closed,
+        ) else {
+            return false;
+        };
+        if runtime.commit_source_step(proof).is_err() {
+            return false;
+        }
+        let now = self.owner_now().get();
+        states.stage_special_movement_step(
+            runtime,
+            map,
+            actor,
+            session,
+            now,
+            Some(expected.position()),
+            to,
+            None,
+        );
+        states.stage_underwater_step(
+            runtime,
+            actor,
+            session,
+            now,
+            underwater(map, expected.position()),
+            underwater(map, to),
+        );
+        map.facts.emit_movement_effect(tile(destination), 11);
+        true
     }
 }
