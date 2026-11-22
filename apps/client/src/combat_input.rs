@@ -6,6 +6,7 @@ pub use oteryn_client_runtime::combat::{CombatCommand, CombatReport, run_combat}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayCommand {
     HudStamina,
+    SkillsCombat(oteryn_client_runtime::cyclopedia_character::CharacterTab),
     BrowseFieldMove(oteryn_session::ItemMoveIntent),
     /// A depot request and, for a deposit in Manual Sort Mode, its box slot.
     Depot(oteryn_session::DepotIntent, Option<u32>),

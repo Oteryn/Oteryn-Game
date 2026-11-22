@@ -25,6 +25,17 @@ pub struct View {
     fresh_until: Option<Instant>,
 }
 impl View {
+    pub(crate) fn current_premium(&self) -> Option<bool> {
+        let status = self.game_status.as_ref().filter(|_| self.fresh())?;
+        let elapsed = self.requested_at?.elapsed().as_micros();
+        let now = status
+            .observed_at_us
+            .saturating_add(i64::try_from(elapsed).unwrap_or(i64::MAX));
+        Some(
+            status.state == oteryn_client_runtime::premium_overview::State::Active
+                && status.expires_at_us.is_some_and(|expiry| expiry > now),
+        )
+    }
     pub fn fresh(&self) -> bool {
         self.fresh_until.is_some_and(|t| t > Instant::now())
     }

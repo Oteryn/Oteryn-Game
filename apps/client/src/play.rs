@@ -113,6 +113,7 @@ mod mailbox;
 mod refusal_details;
 mod resource_hud;
 pub use hud_layout::{HudAction, HudDock, HudLayout, HudPane, HudPanel};
+pub(crate) use resource_hud::GROUPS as SKILLS_GROUPS;
 mod session_initialize;
 mod session_loop;
 mod session_stepper;

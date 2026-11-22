@@ -116,6 +116,9 @@ pub(super) fn entries() -> impl Iterator<Item = (&'static str, &'static str, Con
 #[derive(Component)]
 pub(in crate::bevy_shell) struct ControlGrid;
 
+#[derive(Component)]
+pub(in crate::bevy_shell) struct UnusedPerk;
+
 /// The art key of a toolbar entry: `control-` and its label in lowercase words.
 pub(in crate::bevy_shell) fn key(label: &str) -> String {
     let words: Vec<String> = label
@@ -186,7 +189,7 @@ pub(in crate::bevy_shell) fn spawn(commands: &mut Commands, skins: &Skins, regio
             },
         ))
         .id();
-    for (label, _, control) in entries() {
+    for (label, id, control) in entries() {
         let button = art::spawn(
             commands,
             &skins.font,
@@ -198,6 +201,26 @@ pub(in crate::bevy_shell) fn spawn(commands: &mut Commands, skins: &Skins, regio
             .entity(button)
             .insert((control, bevy::ui_widgets::Button))
             .observe(activate);
+        if id == "proficiency" {
+            let badge = commands
+                .spawn((
+                    UnusedPerk,
+                    Name::new("Unused weapon perk"),
+                    Text::new("!"),
+                    oteryn_client_ui_bevy::font(skins.font.clone(), true),
+                    TextColor(Color::srgb(1., 0.8, 0.1)),
+                    Node {
+                        display: Display::None,
+                        position_type: PositionType::Absolute,
+                        right: px(0.),
+                        top: px(0.),
+                        ..default()
+                    },
+                    bevy::picking::Pickable::IGNORE,
+                ))
+                .id();
+            commands.entity(button).add_child(badge);
+        }
         commands.entity(grid).add_child(button);
     }
     commands.entity(left).add_children(&[store, grid]);
