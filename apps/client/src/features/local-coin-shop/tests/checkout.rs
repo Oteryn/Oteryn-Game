@@ -294,3 +294,74 @@ fn refreshed_tracked_order_reconciles_paid_and_validates_immutable_binding() -> 
         Ok(())
     })
 }
+
+#[test]
+fn overlapping_purchases_send_one_post_until_response() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let other = mock.token(&client)?;
+        let browser: Browser = Arc::new(|_| true);
+        let cancel = CancellationToken::new();
+        let mut first = View::new(Some(CHARACTER.into()));
+        let purchase = Action::Purchase {
+            package_id: PACKAGE.into(),
+            confirmed: true,
+        };
+        let (ready, received) = tokio::sync::oneshot::channel();
+        let (release, held) = tokio::sync::oneshot::channel();
+        mock.authority
+            .lock()
+            .map_err(|_| "lock")?
+            .hold_coin_response = Some((ready, held));
+        mock.runtime.block_on(async {
+            controller::execute(
+                &mut first,
+                Action::Refresh,
+                &client,
+                &token,
+                &browser,
+                cancel.clone(),
+            )
+            .await;
+            let mut second = first.clone();
+            let submit = controller::execute(
+                &mut first,
+                purchase.clone(),
+                &client,
+                &token,
+                &browser,
+                cancel.clone(),
+            );
+            let overlap = async {
+                received.await?;
+                controller::execute(
+                    &mut second,
+                    purchase.clone(),
+                    &client,
+                    &other,
+                    &browser,
+                    cancel.clone(),
+                )
+                .await;
+                release.send(()).map_err(|_| "response")?;
+                Ok::<_, Box<dyn std::error::Error>>(())
+            };
+            let (_, result) = tokio::join!(submit, overlap);
+            result?;
+            assert!(second.can_purchase(PACKAGE));
+            Ok::<_, Box<dyn std::error::Error>>(())
+        })?;
+        let authority = mock.authority.lock().map_err(|_| "lock")?;
+        assert_eq!(
+            authority
+                .requests
+                .iter()
+                .filter(|r| r.starts_with("POST /api/v1/native-account/coin-purchases/orders "))
+                .count(),
+            1
+        );
+        Ok(())
+    })
+}

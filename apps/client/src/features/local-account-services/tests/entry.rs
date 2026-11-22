@@ -175,7 +175,10 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
                     Action::Back
                 }
                 (false, 2 | 3) => {
-                    assert!(view.pending());
+                    assert!(!view.pending());
+                    if step == 3 {
+                        assert!(view.receipt.as_ref().is_some_and(|r| r.state == oteryn_platform_client::native_login::bazaar::OperationState::Committed));
+                    }
                     assert!(!view.can_retry());
                     assert!(view.pending_id().is_none());
                     let original = original
@@ -220,7 +223,7 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
                     assert!(!view.pending());
                     assert!(!view.can_retry());
                     assert!(
-                        !view.can_purchase(crate::account_services::test_server::coins::PACKAGE)
+                        view.can_purchase(crate::account_services::test_server::coins::PACKAGE)
                     );
                     CoinAction::Back
                 }
@@ -244,7 +247,7 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
             CancellationToken::new(),
         ))?;
         let state = mock.authority.lock().map_err(|_| "lock")?;
-        assert_eq!(state.effects, 0);
+        assert_eq!(state.effects, u32::from(!coins));
         let path = if coins {
             "POST /api/v1/native-account/coin-purchases/orders "
         } else {
@@ -256,7 +259,7 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
                 .iter()
                 .filter(|r| r.starts_with(path))
                 .count(),
-            1
+            if coins { 1 } else { 2 }
         );
         assert_eq!(state.oauth_exchanges, 8);
         Ok(())

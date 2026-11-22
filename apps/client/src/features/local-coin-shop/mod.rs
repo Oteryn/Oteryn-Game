@@ -48,15 +48,14 @@ impl View {
             ..Self::default()
         }
     }
-    pub(crate) fn reopen(&mut self, character_id: Option<String>) {
-        let mut prior = std::mem::take(&mut self.prior);
-        if let Some(request) = self.pending.take() {
-            prior.retain(request.request_id);
-        }
-        *self = Self {
+    pub(crate) fn with_prior(
+        character: Option<String>,
+        prior: crate::account_services::PriorRequests,
+    ) -> Self {
+        Self {
             prior,
-            ..Self::new(character_id)
-        };
+            ..Self::new(character)
+        }
     }
     pub fn pending(&self) -> bool {
         self.pending.is_some()

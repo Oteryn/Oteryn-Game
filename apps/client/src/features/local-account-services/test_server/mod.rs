@@ -35,6 +35,10 @@ pub(crate) struct Authority {
     pub effects: u32,
     pub fail_after_commit: bool,
     pub bazaar_post_failure: Option<u16>,
+    pub hold_coin_response: Option<(
+        tokio::sync::oneshot::Sender<()>,
+        tokio::sync::oneshot::Receiver<()>,
+    )>,
     pub coin_post_failure: Option<u16>,
     pub oauth_exchanges: u32,
     pub pending_first: bool,
