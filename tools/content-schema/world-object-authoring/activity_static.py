@@ -332,7 +332,8 @@ def compose_placement_palette(placement, activity_registry, soulpit_rows, root=R
     selected = [
         row["source_item_id"]
         for row in placement["palette"]
-        if row["source_item_id"] in expected_soulpit and not row.get("scoped_spawn_ground")
+        if row["source_item_id"] in expected_soulpit
+        and not row.get("scoped_spawn_ground")
     ]
     if len(selected) != len(expected_soulpit) or set(selected) != expected_soulpit:
         raise ValueError("SOULPIT_STATIC_PALETTE_SET")

@@ -8,7 +8,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_NAME_PACKET: &[u8] =
     include_bytes!("../../../../../docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json");
 pub const ITEM_NAME_PACKET_SHA256: &str =
-    "1b1703361f64fb7ff2ff7c9551f6c7f84ef55b20f13ed04131af4d648c399641";
+    "719a14a4971b16fd877e3e868e9e1cb7b9603dcd3ce8a514df69666e80d9174a";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,

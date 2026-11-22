@@ -527,9 +527,9 @@ def validate_record(record):
         )
     if "item_pointer" not in record["provenance"]:
         if family == "Terrain":
+            import scoped_spawn_ground
             import spawn_ground
             import spawn_map_ground
-            import scoped_spawn_ground
 
             identifier = record["provenance"]["source_item_id"]
             for identifiers, records in (

@@ -263,7 +263,9 @@ def catalogue_records(family: str, root: Path = ROOT):
             yield int(key[len(prefix) :]), record
 
 
-def catalogue_keys(family: str, root: Path = ROOT, *, scoped: bool = False) -> dict[int, str]:
+def catalogue_keys(
+    family: str, root: Path = ROOT, *, scoped: bool = False
+) -> dict[int, str]:
     """``{Tibia id: palette key}`` of a committed catalogue (``terrain`` or
     ``world_object``). A record whose provenance has an ``item_pointer`` is reached
     through that Item, so its palette key is the pointed Item key (Q1b, as
@@ -276,7 +278,8 @@ def catalogue_keys(family: str, root: Path = ROOT, *, scoped: bool = False) -> d
         if (
             ((r.get("provenance") or {}).get("route") or {}).get("reason")
             == "scoped_spawn_ground"
-        ) == scoped
+        )
+        == scoped
     }
 
 

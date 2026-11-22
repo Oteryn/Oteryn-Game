@@ -22,7 +22,11 @@ NOTE = " Additionally 52 source-qualified spawn grounds bound at the slice 2 cel
 
 
 def captured_grounds(root=ROOT):
-    points = json.loads((root / CAPTURE).read_bytes())["points"]
+    return ground_cells((root / CAPTURE).read_bytes())
+
+
+def ground_cells(raw):
+    points = json.loads(raw)["points"]
     return {tuple(row["cell"]): row["ground"] for row in points if "ground" in row}
 
 
@@ -54,7 +58,9 @@ def catalogue_outputs(marker_raw, root=ROOT):
         marker["notes"] += NOTE
     marker["notes"] = compose_terrain_notes(marker["notes"])
     return {
-        SHARD: canonical({"family": "Terrain", "records": list(records_by_id.values())}),
+        SHARD: canonical(
+            {"family": "Terrain", "records": list(records_by_id.values())}
+        ),
         MARKER: (json.dumps(marker, ensure_ascii=False, indent=2) + "\n").encode(),
     }
 

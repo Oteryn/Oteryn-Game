@@ -956,7 +956,9 @@ def validate(
             }
         )
         if occurrences != Counter(captured_grounds(root).values()):
-            errors.append(f"{INDEX}: scoped spawn ground occurrences differ from the capture")
+            errors.append(
+                f"{INDEX}: scoped spawn ground occurrences differ from the capture"
+            )
     check_teleports(summary, teleports, root, errors)
     if summary.get("totals") != index["totals"]:
         errors.append(f"{SUMMARY}: totals differ from the index")
