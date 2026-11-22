@@ -510,9 +510,15 @@ pub(super) fn talk_book(boot: Option<&NpcBoot>) -> Option<Arc<NpcTalkBook>> {
 
 /// Places the bound NPCs on the Channel once, before its creatures, and logs the outcome.
 /// Returns the number of NPC actors.
-pub(super) fn place(
+#[cfg(test)]
+fn place(runtime: &mut ChannelRuntimeV1, boot: Option<&NpcBoot>) -> Result<usize, BootError> {
+    place_with_daily_variants(runtime, boot, None)
+}
+
+pub(super) fn place_with_daily_variants(
     runtime: &mut ChannelRuntimeV1,
     boot: Option<&NpcBoot>,
+    world: Option<&crate::map::boot::BundleWorld>,
 ) -> Result<usize, BootError> {
     if let Some(catalogue_sha256) = catalogue_sha256(boot) {
         event(&format!(
@@ -538,6 +544,11 @@ pub(super) fn place(
             ..
         }) => {
             let mut table = table.clone();
+            if let Some(world) = world {
+                table
+                    .npcs
+                    .retain(|npc| !world.owns_daily_variant_npc(&npc.key));
+            }
             let unix_ms = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .ok()

@@ -222,6 +222,8 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
                 crate::map::boot::check(bytes.clone(), boot_pins.clone()).map_err(debug)?;
             let checked = if projected_flower {
                 checked.with_daily_map(crate::map::daily::DailyMap {
+                    variants: Default::default(),
+                unavailable_variants: Vec::new(),
                     seed: [0; 32],
                     fungus: false,
                     grimvale_full_moon: false,

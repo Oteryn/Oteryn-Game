@@ -3510,12 +3510,23 @@ pub(crate) async fn realize_bundle_spawns(
             }
         }
     }
-    let realized = realize_activation_paced(runtime, sources, signalled).await?;
+    let variants = daily_world_changes::append_variant_spawns(runtime, world, &mut sources)
+        .map_err(|_| refuse())?;
+    let realized =
+        realize_activation_paced_with_guards(runtime, sources, variants.guards, signalled).await?;
     if realized.is_some() {
         for (source, cohort) in voice_sources {
             runtime
                 .bind_world_spawn_source(source, cohort, 1)
                 .map_err(|_| refuse())?;
+        }
+        if !variants.cohorts.is_empty() {
+            let epoch = world.base().layer_epoch().ok_or_else(refuse)?;
+            for (source, cohort) in variants.cohorts {
+                runtime
+                    .bind_world_spawn_source(source, cohort, epoch)
+                    .map_err(|_| refuse())?;
+            }
         }
     }
     Ok(realized)
@@ -3523,15 +3534,50 @@ pub(crate) async fn realize_bundle_spawns(
 
 /// Realizes `sources` as one activation paced at most one `CREATUREAI0-RL-14` window per
 /// 50 ms owner window (see [`realize_bundle_spawns`]).
+#[cfg(test)]
 async fn realize_activation_paced(
     runtime: &mut ChannelRuntimeV1,
     sources: Vec<crate::map::boot::BundleSpawnFacts>,
     signalled: &CancellationToken,
 ) -> Result<Option<(usize, u64)>, BootError> {
+    realize_activation_paced_with_guards(runtime, sources, Default::default(), signalled).await
+}
+
+async fn realize_activation_paced_with_guards(
+    runtime: &mut ChannelRuntimeV1,
+    sources: Vec<crate::map::boot::BundleSpawnFacts>,
+    mut guards: std::collections::BTreeMap<u16, Vec<daily_world_changes::GuardHome>>,
+    signalled: &CancellationToken,
+) -> Result<Option<(usize, u64)>, BootError> {
+    use oteryn_gameplay_entities::carrier::SpawnDefinition;
     let refuse = || BootError::Readiness("creature spawn realization");
-    runtime
-        .begin_activation_spawn_sources(sources)
-        .map_err(|_| refuse())?;
+    let dormant = guards.len();
+    if guards.is_empty() {
+        runtime
+            .begin_activation_spawn_sources(sources)
+            .map_err(|_| refuse())?;
+    } else {
+        let definitions = sources
+            .into_iter()
+            .enumerate()
+            .map(|(index, source)| {
+                let index = u16::try_from(index)
+                    .map_err(|_| crate::foundation::CarrierError::CapacityExceeded)?;
+                let definition = SpawnDefinition::from_activation_source(source)?;
+                match guards.remove(&index) {
+                    Some(guard_homes) => definition.with_kill_prerequisites(guard_homes),
+                    None => Ok(definition),
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|_| refuse())?;
+        if !guards.is_empty() {
+            return Err(refuse());
+        }
+        runtime
+            .begin_spawn_definitions(definitions)
+            .map_err(|_| refuse())?;
+    }
     let origin = tokio::time::Instant::now();
     let mut windows = 0u64;
     loop {
@@ -3543,7 +3589,10 @@ async fn realize_activation_paced(
             windows += 1;
         }
         if progress.remaining == 0 {
-            return Ok(Some((progress.realized_total, windows)));
+            return Ok(Some((
+                progress.realized_total.saturating_sub(dormant),
+                windows,
+            )));
         }
         let next = (now / SPAWN_ACTIVATION_WINDOW_MICROS)
             .saturating_add(1)

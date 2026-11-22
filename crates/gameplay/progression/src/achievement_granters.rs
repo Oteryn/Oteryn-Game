@@ -10,6 +10,10 @@ pub const CRAFT_SOURCE_KIND: &str = "oteryn:item-craft";
 pub const TRAVEL_SOURCE_KIND: &str = "oteryn:npc-travel";
 pub const TRANSFORM_SOURCE_KIND: &str = "oteryn:consume-transform";
 
+pub const DESERT_FISHER: Counted = Counted {
+    key: "oteryn:achievement/desert_fisher",
+    total: 1,
+};
 pub const HERE_FISHY_FISHY: Counted = Counted {
     key: "oteryn:achievement/here_fishy_fishy",
     total: 250,
@@ -41,6 +45,7 @@ pub const POLISHER: Counted = Counted {
 /// have no inventory yield and therefore advance no Achievement.
 pub fn gathering(tool_key: &str, yield_item: Option<u16>) -> Option<Counted> {
     match (tool_key, yield_item?) {
+        ("oteryn:item.tibia.i3483", 13992) => Some(DESERT_FISHER),
         ("oteryn:item.tibia.i3483" | "oteryn:item.tibia.i9306", 3578) => Some(HERE_FISHY_FISHY),
         ("oteryn:item.tibia.i3483" | "oteryn:item.tibia.i9306", 7158 | 3580 | 7159) => {
             Some(EXQUISITE_TASTE)

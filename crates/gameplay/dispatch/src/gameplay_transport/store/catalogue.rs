@@ -1,5 +1,6 @@
 //! The admitted runtime Store catalogue (`rulesets/economy/store/catalogue.json`, built from the
 //! pinned Canary GameStore catalogue by `tools/content-schema/store-authoring/build_runtime_catalogue.py`).
+pub(super) use crate::durability::store::StoreService;
 use oteryn_gameplay_economy::store as rules;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -26,6 +27,7 @@ struct Offer {
     currency: String,
     item: Option<Item>,
     hireling: Option<HirelingOffer>,
+    service: Option<serde_json::Value>,
     #[serde(default)]
     unlock_key: Option<String>,
     #[serde(default)]
@@ -63,18 +65,19 @@ pub(super) struct HirelingOffer {
     pub(super) source_id: u16,
 }
 
-pub(super) struct RuntimeCatalogue {
-    pub(super) rules: rules::Catalogue,
+pub(in crate::gameplay_transport) struct RuntimeCatalogue {
+    pub(in crate::gameplay_transport) rules: rules::Catalogue,
     titles: BTreeMap<String, String>,
     keys: Vec<String>,
     previews: BTreeMap<String, (u8, String)>,
     item_revisions: BTreeMap<String, String>,
     hirelings: BTreeMap<String, HirelingOffer>,
+    services: BTreeMap<String, StoreService>,
 }
 
 impl RuntimeCatalogue {
     /// `None` for anything but a closed, non-empty v1 document of positive Tibia Coin prices.
-    pub(super) fn from_json(bytes: &[u8]) -> Option<Self> {
+    pub(in crate::gameplay_transport) fn from_json(bytes: &[u8]) -> Option<Self> {
         let mut value: serde_json::Value = serde_json::from_slice(bytes).ok()?;
         let revision = catalogue_revision(&mut value)?;
         let document: Document = serde_json::from_value(value).ok()?;
@@ -86,6 +89,8 @@ impl RuntimeCatalogue {
         let mut previews = BTreeMap::new();
         let mut item_revisions = BTreeMap::new();
         let mut hirelings = BTreeMap::new();
+        let mut services = BTreeMap::new();
+        let mut xp_tiers = std::collections::BTreeSet::new();
         let mut offers = Vec::with_capacity(document.offers.len());
         for offer in document.offers {
             // Owner-priced offers remain unavailable while their price is a placeholder.
@@ -96,7 +101,31 @@ impl RuntimeCatalogue {
             if offer.currency != currency_text(rules::CurrencyKind::TibiaCoin) {
                 return None;
             }
-            let (kind, delivery, eligibility) = if let Some(hireling) = offer.hireling {
+            let (kind, delivery, eligibility) = if let Some(effect) = offer.service {
+                // Services ship independently. Unrecognized effects stay unavailable
+                // while unrelated offers keep their full-document price revision.
+                let Ok(service) = serde_json::from_value::<StoreService>(effect) else {
+                    continue;
+                };
+                if offer.item.is_some()
+                    || offer.unlock_key.is_some()
+                    || offer.hireling.is_some()
+                    || !service.matches_price(price)
+                {
+                    return None;
+                }
+                if let StoreService::XpBoost { tier } = service
+                    && !xp_tiers.insert(tier)
+                {
+                    return None;
+                }
+                services.insert(offer.key.clone(), service);
+                (
+                    rules::OfferKind::Service,
+                    rules::DeliveryKind::Service,
+                    rules::Eligibility::default(),
+                )
+            } else if let Some(hireling) = offer.hireling {
                 let valid = match hireling.effect.as_str() {
                     "hire" => {
                         hireling.source_id == 25440
@@ -139,7 +168,9 @@ impl RuntimeCatalogue {
                         if matches!(
                             unlock_key.as_str(),
                             PREY_EXPANSION_UNLOCK | CHARM_EXPANSION_UNLOCK
-                        ) || crate::content::store_cosmetics::offers().is_some_and(|offers| offers.iter().any(|o| o.unlock_key == *unlock_key)) =>
+                        ) || crate::content::store_cosmetics::offers().is_some_and(
+                            |offers| offers.iter().any(|o| o.unlock_key == *unlock_key),
+                        ) =>
                     {
                         let eligibility = rules::Eligibility {
                             reject_if_unlock_owned: Some(unlock_key.clone()),
@@ -188,6 +219,7 @@ impl RuntimeCatalogue {
             previews,
             item_revisions,
             hirelings,
+            services,
         })
     }
 
@@ -199,6 +231,23 @@ impl RuntimeCatalogue {
     }
     pub(super) fn hireling(&self, offer: &str) -> Option<&HirelingOffer> {
         self.hirelings.get(offer)
+    }
+
+    pub(super) fn service(&self, key: &str) -> Option<StoreService> {
+        self.services.get(key).copied()
+    }
+
+    pub(super) fn has_xp_boost(&self) -> bool {
+        self.services
+            .values()
+            .any(|service| matches!(service, StoreService::XpBoost { .. }))
+    }
+
+    pub(super) fn visible(&self, key: &str, xp_tier: Option<i16>) -> bool {
+        match self.service(key) {
+            Some(StoreService::XpBoost { tier }) => Some(tier) == xp_tier,
+            _ => true,
+        }
     }
 
     pub(super) fn title(&self, offer: &str) -> &str {

@@ -202,6 +202,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let cosmetics = area.cosmetics.filter(|view| {
+            view.source_digest() == runtime.content_pin().server_artifact_digest()
+        });
         drop(runtime);
         let fee = if let Some((gold, platinum, crystal, fallback)) = fee_definitions {
             let backpack = match self
@@ -252,7 +255,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             area: area.area,
             legacy_area: area.legacy_area,
             subarea: area.subarea,
-            subareas: area.subareas,
+            areas: area.areas,
+            cosmetics,
             epoch: self.reset_epoch,
             pool: area.pool,
             at,
@@ -316,6 +320,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return GuildReply::Unavailable;
                 };
                 if discovered_now {
+                    self.states.title_refresh.mark([fence.character_id]);
                     self.states.tutorial_sessions.notice(
                         admitted.game_session_id,
                         oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(

@@ -93,7 +93,7 @@ pub(super) async fn record_reset(
         return Err(DurabilityError::InvalidStoredState);
     }
     capture_calendar(tx, world, epoch, catalogue).await?;
-    changes::record(tx, world, epoch).await?;
+    changes::record(tx, world, epoch, is_new).await?;
     super::world_event_outcomes::capture_reset(tx, world, epoch).await?;
     Ok(())
 }
@@ -188,6 +188,9 @@ impl DurabilityRoot {
             changes.fury_gates = change_active(&mut tx, world, "fury_gates").await?.then_some(changes.fury_exit);
             changes.grimvale_full_moon = change_active(&mut tx, world, "grimvale").await?;
             changes.their_masters_voice = change_active(&mut tx, world, "their_masters_voice").await?;
+            if let Some(day) = changes::load(&mut tx, world, epoch).await? {
+                changes.variants = day.variants;
+            }
             commit_semantic_transaction(tx, deadline).await?;
             Ok(changes)
         })).await

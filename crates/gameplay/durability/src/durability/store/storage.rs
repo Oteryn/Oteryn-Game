@@ -434,6 +434,42 @@ pub(super) async fn write_receipt(
     purchase: Option<&HirelingStorePurchase>,
     native_transaction: Option<[u8; 16]>,
 ) -> Result<DeliveryReceipt, StoreDurabilityError> {
+    insert_receipt(tx, recovery, operation_id, plan, ReceiptPayload {
+        item,
+        purchase_request: purchase.map(|p| p.purchase_request_id),
+        native_transaction,
+        entitlement: None,
+    }).await
+}
+
+pub(super) async fn write_service_receipt(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    operation_id: [u8; 16],
+    plan: &DeliveryIdentity,
+) -> Result<DeliveryReceipt, StoreDurabilityError> {
+    insert_receipt(tx, recovery, operation_id, plan, ReceiptPayload {
+        item: None,
+        purchase_request: None,
+        native_transaction: None,
+        entitlement: Some("store-service"),
+    }).await
+}
+
+struct ReceiptPayload {
+    item: Option<[u8; 16]>,
+    purchase_request: Option<[u8; 16]>,
+    native_transaction: Option<[u8; 16]>,
+    entitlement: Option<&'static str>,
+}
+
+async fn insert_receipt(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    operation_id: [u8; 16],
+    plan: &DeliveryIdentity,
+    payload: ReceiptPayload,
+) -> Result<DeliveryReceipt, StoreDurabilityError> {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
             .fetch_one(&mut **tx)
@@ -452,9 +488,9 @@ pub(super) async fn write_receipt(
     sqlx::query(
         "INSERT INTO store_delivery_receipts \
          (operation_id,account_id,character_id,world_id,fulfilment_unit_id,result,\
-          recovery_generation,decided_at,receipt,item_instance_id,purchase_request_id,native_transaction_id) \
+          recovery_generation,decided_at,receipt,item_instance_id,purchase_request_id,native_transaction_id,entitlement_key) \
          VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-                encode($4,'hex')::uuid,$5,'COMMITTED',$6::text::numeric,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,encode($11,'hex')::uuid)",
+                encode($4,'hex')::uuid,$5,'COMMITTED',$6::text::numeric,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,encode($11,'hex')::uuid,$12)",
     )
     .bind(operation_id.as_slice())
     .bind(plan.account_id.as_slice())
@@ -464,9 +500,10 @@ pub(super) async fn write_receipt(
     .bind(recovery.recovery_generation.to_string())
     .bind(now)
     .bind(bytes)
-    .bind(item.as_ref().map(|id| id.as_slice()))
-    .bind(purchase.map(|p| p.purchase_request_id.as_slice()))
-    .bind(native_transaction.as_ref().map(|id|id.as_slice()))
+    .bind(payload.item.as_ref().map(|id| id.as_slice()))
+    .bind(payload.purchase_request.as_ref().map(|id| id.as_slice()))
+    .bind(payload.native_transaction.as_ref().map(|id| id.as_slice()))
+    .bind(payload.entitlement)
     .execute(&mut **tx)
     .await?;
     sqlx::query("INSERT INTO store_receipt_outbox(operation_id)VALUES(encode($1,'hex')::uuid)")

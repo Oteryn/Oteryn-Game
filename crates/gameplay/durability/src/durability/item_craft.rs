@@ -228,6 +228,14 @@ async fn write_with_skinning<C: ItemLoopContent>(
         return enchanting::write(tx, fence, request, native, content).await;
     }
     let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    use oteryn_gameplay_items::fishing::{DESERT_FISHING_SPENT, DESERT_FISHING_WATER};
+    if let Some(gathering) = &request.gathering
+        && u16::try_from(gathering.mutation.before)
+            .is_ok_and(|id| matches!(id, DESERT_FISHING_WATER | DESERT_FISHING_SPENT))
+        && !super::world_event::changes::variants::desert_fishing_admitted(tx, world, gathering).await?
+    {
+        return Ok(UseDisposition::NothingToUse);
+    }
     // Root serialization precedes all item locks. Only opted-in actions accept nested leaves.
     let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(e.parent_item_instance_id) AS parent,e.placement_ordinal::text AS ordinal,NULL::jsonb AS nested_source FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND e.world_id=i.world_id AND b.world_id=i.world_id FOR UPDATE OF i")
         .bind(request.source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
@@ -290,6 +298,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
     let mut retires_ingredient = false;
     let mut ingredient_debit = 1_u32;
     let mut ingredient_consumed = None;
+    let mut fishing_achievement = None;
     let conversion = if let Some(prepared) = &skinning {
         Some(oteryn_gameplay_items::item_craft::CookingConversion {
             recipe: prepared.conversion.recipe.clone(),
@@ -297,9 +306,8 @@ async fn write_with_skinning<C: ItemLoopContent>(
         })
     } else if let Some(gathering) = &request.gathering {
         let bait = if gathering.mutation.tool_key == "oteryn:item.tibia.i9306"
-            && u16::try_from(gathering.mutation.before).is_ok_and(|target| {
-                oteryn_gameplay_items::fishing::MECHANICAL_FISHING_WATER.contains(&target)
-            }) {
+            && gathering.attempt.yield_item == Some(9307)
+        {
             oteryn_gameplay_items::fishing::NAIL
         } else {
             oteryn_gameplay_items::fishing::WORM
@@ -365,9 +373,42 @@ async fn write_with_skinning<C: ItemLoopContent>(
         {
             return Ok(UseDisposition::StaleState);
         }
-        let outputs = gathering
-            .attempt
-            .yield_item
+        let mut yield_item = gathering.attempt.yield_item;
+        if gathering.mutation.tool_key == "oteryn:item.tibia.i9306" {
+            match (gathering.mutation.before, yield_item) {
+                (12561..=12563, Some(12557)) => {
+                    // Update inside the same transaction as the bait debit, CAS and payout.
+                    let available: bool = sqlx::query_scalar(
+                        "WITH claimed AS (
+                            INSERT INTO game_fishing_shimmer_cooldowns(character_id,available_at)
+                            VALUES(encode($1,'hex')::uuid,clock_timestamp() + interval '20 hours')
+                            ON CONFLICT(character_id) DO UPDATE SET available_at=EXCLUDED.available_at
+                            WHERE game_fishing_shimmer_cooldowns.available_at <= clock_timestamp()
+                            RETURNING 1
+                         ) SELECT EXISTS(SELECT 1 FROM claimed)",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .fetch_one(&mut ***tx)
+                    .await?;
+                    if available {
+                        fishing_achievement = Some(oteryn_gameplay_progression::item_use_achievement::Counted {
+                            key: "oteryn:achievement/biodegradable",
+                            total: 50,
+                        });
+                    } else {
+                        yield_item = Some(3111);
+                    }
+                }
+                (13989, Some(13992)) => {
+                    fishing_achievement = Some(oteryn_gameplay_progression::item_use_achievement::Counted {
+                        key: "oteryn:achievement/desert_fisher",
+                        total: 1,
+                    });
+                }
+                _ => {}
+            }
+        }
+        let outputs = yield_item
             .map(|id| {
                 let record = native.item_policy_for_source_id(u32::from(id))?.record();
                 Some((
@@ -731,19 +772,24 @@ async fn write_with_skinning<C: ItemLoopContent>(
     }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(request.source.as_slice()).bind(occurred).bind(super::item_mint_audit::AUDIT_RETENTION_P90D_MS).bind(&envelope).execute(&mut ***tx).await?;
-    if skinning.is_some() {
+    if conversion.recipe == "oteryn:skinning.crystal" {
         super::stag_beaks::record(tx, fence, &transaction).await?;
     }
     // The successful yield, counter and grant share the craft receipt transaction.
     // Exact replay returned before this writer, so a retry never advances the counter.
     use oteryn_gameplay_progression::achievement_granters;
     let achievement = if let Some(gathering) = &request.gathering {
-        achievement_granters::gathering(&gathering.mutation.tool_key, gathering.attempt.yield_item)
+        // The baitless dirty-water table is a loot conversion, with no fishing progress.
+        if gathering.mutation.before == 12560 && !gathering.attempt.consumes_bait {
+            None
+        } else {
+            achievement_granters::gathering(&gathering.mutation.tool_key, gathering.attempt.yield_item)
+        }
     } else {
         (conversion.recipe == "oteryn:fishing.global.standard")
             .then_some(achievement_granters::HERE_FISHY_FISHY)
     };
-    if let Some(achievement) = achievement {
+    if let Some(achievement) = fishing_achievement.or(achievement) {
         super::account_achievement::add_progress(
             tx,
             fence.character_id,

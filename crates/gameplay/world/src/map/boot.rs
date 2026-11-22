@@ -144,6 +144,7 @@ pub fn native_item_definition(
 pub struct BundleWorld {
     source_bases: Arc<crate::content::QualifiedBundleSourceBases>,
     daily: Option<super::daily::DailyMap>,
+    variants: super::daily::VariantProjection,
     base: Arc<WorldBase>,
     map: Arc<BundleMap>,
     map_revision: String,
@@ -441,6 +442,7 @@ impl CheckedBundle {
         Ok(BundleWorld {
             source_bases: Arc::new(source_bases),
             daily: self.daily,
+            variants: projection.map(|p| p.variants).unwrap_or_default(),
             map: Arc::new(
                 BundleMap {
                     entry_start: self.start,
@@ -542,6 +544,16 @@ fn scan(
             }
         }
         facts.push(manifest, sector, &mut blocked);
+        if let Some(daily) = daily {
+            blocked.extend(sector.tiles.iter().filter_map(|tile| {
+                let at = TilePos {
+                    x: tile.x,
+                    y: tile.y,
+                    floor: sector.floor,
+                };
+                daily.variants.barrier(at).then_some(at)
+            }));
+        }
         spell_tiles.push(manifest, sector, &blocked, item, &masks);
         Ok(())
     };
@@ -567,6 +579,9 @@ fn scan(
         Some(facts) => facts,
         None => BundleFacts::palette(&manifest, item)?,
     };
+    if let Some(daily) = daily {
+        facts.set_daily_variant_passages(daily.variants.passages());
+    }
     facts.finish();
     Ok((facts, blocked, floors))
 }
@@ -667,11 +682,19 @@ impl BundleWorld {
         profile: impl Fn(&str) -> Option<(u64, bool)>,
     ) -> Option<Vec<BundleSpawnFacts>> {
         let mut sources = table_activation_spawns(&self.spawns, &profile)?;
-        if !self.base.active_layers().is_empty() {
+        if !self.base.active_layers().is_empty()
+            || self
+                .daily
+                .as_ref()
+                .is_some_and(|daily| daily.variants.installed())
+        {
             // A layer may replace previously admitted ground. Recheck the composed map
             // before handing ordinary source points to the creature owner.
             for (points, _) in &mut sources {
-                points.retain(|((x, y, z), _, _, _, _)| {
+                points.retain(|(position @ (x, y, z), _, _, _, _)| {
+                    if self.variants.owns_spawn(*position) {
+                        return false;
+                    }
                     let (Ok(x), Ok(y), Ok(floor)) =
                         (u16::try_from(*x), u16::try_from(*y), i8::try_from(-*z))
                     else {
@@ -692,6 +715,20 @@ impl BundleWorld {
             sources.extend(super::daily::grimvale_spawns(self, daily, profile)?);
         }
         Some(sources)
+    }
+
+    pub fn daily_variant_spawns(
+        &self,
+    ) -> impl Iterator<Item = (&str, &[oteryn_gameplay_world_change::variants::Spawn])> {
+        self.variants.spawns()
+    }
+
+    pub fn owns_daily_variant_npc(&self, key: &str) -> bool {
+        self.variants.owns_npc(key)
+    }
+
+    pub fn daily_variant_npcs(&self) -> impl Iterator<Item = (&'static str, (u16, u16, i8))> + '_ {
+        self.variants.npcs()
     }
 
     /// Boss placements are kept separate from ordinary activation/respawn sources.
@@ -1878,6 +1915,8 @@ pub mod tests {
         let world = checked
             .compose_epoch_layers(1, &["fury_gates/thais"], &["fury_gates/thais"])?
             .with_daily_map(super::super::daily::DailyMap {
+                variants: Default::default(),
+                unavailable_variants: Vec::new(),
                 seed: [7; 32],
                 fungus: true,
                 grimvale_full_moon: false,

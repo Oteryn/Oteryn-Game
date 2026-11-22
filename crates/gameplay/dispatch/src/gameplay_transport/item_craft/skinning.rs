@@ -123,7 +123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         let rabbit_knife = oteryn_gameplay_items::fishing::rabbit_skinning_knife(tool_id);
-        if !rabbit_knife && tool_id != 5942 {
+        if !rabbit_knife && !matches!(tool_id, 3483 | 5942 | 9306) {
             return Ok(None);
         }
         let corpse = match target {
@@ -152,7 +152,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         }
         let fresh_rabbit = rabbit_knife && corpse_id == Some(6017);
+        let fishing = corpse_id.is_some_and(|target| fishing::is_fishing_corpse(tool_id, target));
         if !fresh_rabbit
+            && !fishing
             && !corpse_id
                 .and_then(|target| {
                     oteryn_gameplay_items::fishing::corpse_skinning_rule(tool_id, target)

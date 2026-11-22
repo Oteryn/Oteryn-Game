@@ -418,6 +418,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .soulpit_lobby_step(&permit, actor, session, snapshot)
                             .await;
                         let snapshot = self
+                            .daily_variant_step(&permit, actor, session, origin, snapshot)
+                            .await;
+                        let snapshot = self
                             .step_quest_callback(&permit, actor, session, origin, snapshot)
                             .await;
                         let snapshot = self

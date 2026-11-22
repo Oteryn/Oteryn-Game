@@ -64,6 +64,7 @@ pub mod raid_schedule;
 pub mod sanction_record;
 pub mod staff;
 pub mod stag_beaks;
+mod store_hunting_xp;
 pub mod support_intake;
 pub mod task_board;
 pub mod terrain_tool;

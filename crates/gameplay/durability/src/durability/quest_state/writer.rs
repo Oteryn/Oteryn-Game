@@ -1840,21 +1840,18 @@ impl DurabilityRoot {
                         && let super::soul_war_source::SoulWarSourceAction::Step(step)=input.as_ref() {
                         step.observe_spite_clock(stored.get(oteryn_gameplay_quests::quest::soul_war::source_items::SPITE_FIRE).copied().unwrap_or(0),now);
                     }
-                    // M47: historical receipts returned above. Draw only in this fenced
-                    // transaction; the resulting complete snapshot is persisted in its
-                    // existing Quest receipt, atomically with all four source tracks.
-                    let roll = if transition.effects.iter().any(|effect| matches!(
-                        effect.effect,
-                        oteryn_gameplay_quests::quest::QuestEffectKind::Native(
-                            oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead
-                        )
-                    )) && oteryn_gameplay_quests::quest::barbarian_mead::needs_draw(
-                        stored.get(oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0]).copied().unwrap_or(-1),
-                        stored.get(oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[3]).copied().unwrap_or(0),
-                    ) {
-                        let draw: i16 = sqlx::query_scalar("SELECT (1 + floor(random() * 5))::smallint")
-                            .fetch_one(&mut *tx).await?;
-                        Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
+                    // A historical receipt returns above. A fresh random USE records its
+                    // draw in the locked snapshot alongside the source state changes.
+                    let native_rule = transition.effects.iter().find_map(|effect| match effect.effect {
+                        oteryn_gameplay_quests::quest::QuestEffectKind::Native(rule) => Some(rule),
+                        _ => None,
+                    });
+                    let roll = if refusal.is_none() && !xp_full
+                        && let Some(faces) = native_rule.and_then(|rule| rule.draw_faces(&stored))
+                    {
+                        Some(crate::durability::receipt_random::draw(
+                            &mut tx, character, request.cause.key(), "quest-use-outcome", faces,
+                        ).await?)
                     } else { None };
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(

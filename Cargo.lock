@@ -5587,6 +5587,7 @@ dependencies = [
  "oteryn-gameplay-items",
  "oteryn-gameplay-node-files",
  "oteryn-gameplay-quests",
+ "oteryn-gameplay-world-change",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "oteryn-world-bundle",

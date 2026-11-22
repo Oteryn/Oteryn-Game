@@ -29,9 +29,9 @@ impl CanonicalProgress {
             .map_err(|_| DurabilityError::InvalidStoredState)
     }
     fn convert(&mut self, request: &MapRequest) {
-        for (_, id) in &request.subareas {
-            self.subareas.entry(*id).or_insert_with(|| {
-                if self.legacy.discovered {
+        for (parent, id) in request.areas.all_subareas() {
+            self.subareas.entry(id).or_insert_with(|| {
+                if self.legacy.discovered && parent == request.legacy_area {
                     MapProgress {
                         discovered: true,
                         exploration: None,
@@ -46,7 +46,7 @@ impl CanonicalProgress {
                         .cloned();
                     MapProgress {
                         discovered: false,
-                        exploration: if Some(*id) == request.subarea {
+                        exploration: if Some(id) == request.subarea {
                             exploration
                         } else {
                             None
@@ -56,9 +56,25 @@ impl CanonicalProgress {
             });
         }
     }
+
+    pub(super) fn current(&self, subarea: u32) -> Result<&MapProgress, DurabilityError> {
+        self.subareas.get(&subarea).ok_or(DurabilityError::InvalidStoredState)
+    }
+
+    pub(super) fn percentage(&self, request: &MapRequest) -> Result<u8, DurabilityError> {
+        let ids = request.areas.subareas(request.area);
+        if ids.is_empty() {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let done = ids
+            .iter()
+            .filter(|id| self.subareas.get(id).is_some_and(|p| p.discovered))
+            .count();
+        Ok((done * 100 / ids.len()) as u8)
+    }
 }
 
-async fn load_all(
+pub(super) async fn load_all(
     tx: &mut Type2Transaction<'_>,
     fence: &CurrentCharacterGameplayFence,
     request: &MapRequest,
@@ -66,7 +82,11 @@ async fn load_all(
     let row=sqlx::query("SELECT bundle_digest,catalogue_digest,progress::text FROM game_character_cyclopedia WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     match row {
-        None => Ok(CanonicalProgress::default()),
+        None => {
+            let mut progress = CanonicalProgress::default();
+            progress.convert(request);
+            Ok(progress)
+        }
         Some(row) => {
             if !BasicArea::reads_content_digest(&row.try_get::<Vec<u8>, _>("catalogue_digest")?) {
                 return Err(DurabilityError::InvalidStoredState);
@@ -104,44 +124,6 @@ async fn load_all(
             Ok(progress)
         }
     }
-}
-pub(super) async fn load(
-    tx: &mut Type2Transaction<'_>,
-    fence: &CurrentCharacterGameplayFence,
-    request: &MapRequest,
-) -> Result<MapProgress, DurabilityError> {
-    let mut progress = load_all(tx, fence, request).await?;
-    progress.convert(request);
-    Ok(request
-        .subarea
-        .and_then(|id| progress.subareas.remove(&id))
-        .unwrap_or_default())
-}
-pub(super) async fn percentage(
-    tx: &mut Type2Transaction<'_>,
-    fence: &CurrentCharacterGameplayFence,
-    request: &MapRequest,
-    current: &MapProgress,
-) -> Result<u8, DurabilityError> {
-    let mut progress = load_all(tx, fence, request).await?;
-    progress.convert(request);
-    if let Some(id) = request.subarea {
-        progress.subareas.insert(id, current.clone());
-    }
-    let ids: Vec<_> = request
-        .subareas
-        .iter()
-        .filter(|(area, _)| *area == request.area)
-        .map(|(_, id)| *id)
-        .collect();
-    if ids.is_empty() {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    let done = ids
-        .iter()
-        .filter(|id| progress.subareas.get(*id).is_some_and(|p| p.discovered))
-        .count();
-    Ok((done * 100 / ids.len()) as u8)
 }
 // One row per canonical main area; the shared row serializes all Channels of this World.
 pub(super) async fn world(
@@ -191,28 +173,28 @@ pub(super) async fn world(
     Ok((remaining, improved))
 }
 
-#[allow(clippy::too_many_arguments)]
+pub(super) struct Settlement<'a> {
+    pub(super) advanced: bool,
+    pub(super) donation: u64,
+    pub(super) pool_before: u64,
+    pub(super) pool_after: u64,
+    pub(super) result: &'a [u8],
+}
+
 pub(super) async fn save(
     tx: &mut Type2Transaction<'_>,
     fence: &CurrentCharacterGameplayFence,
     request: &MapRequest,
-    progress: &MapProgress,
-    advanced: bool,
-    donation: u64,
-    pool: u64,
-    pool_after: u64,
-    result: &[u8],
+    progress: &CanonicalProgress,
+    settlement: Settlement<'_>,
 ) -> Result<(), DurabilityError> {
+    let Settlement { advanced, donation, pool_before, pool_after, result } = settlement;
     let character = fence.character_id.as_bytes().as_slice();
     sqlx::query("INSERT INTO game_character_cyclopedia_receipts(occurrence,character_id,world_id,command_session_id,command_id,binding,result,fee_transaction_id,donation,pool_before,pool_after,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,area_id,reset_subarea) SELECT encode($1,'hex')::uuid,s.character_id,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,encode($7,'hex')::uuid,$8,$9,$10,s.character_revision,CASE WHEN $11 THEN s.character_revision+1 ELSE NULL END,s.level,s.level,s.total_experience,s.total_experience,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,$13,$14 FROM game_character_progression_state s WHERE s.character_id=encode($12,'hex')::uuid")
-        .bind(request.occurrence.as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(request.binding.as_slice()).bind(result).bind((donation>0).then_some(request.transaction.as_slice())).bind(donation as i64).bind(pool as i64).bind(pool_after as i64).bind(advanced).bind(character).bind(i64::from(request.area)).bind((advanced && request.action == MapAction::Shuffle).then_some(request.subarea.map(i64::from)).flatten()).execute(&mut ***tx).await?;
+        .bind(request.occurrence.as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(request.binding.as_slice()).bind(result).bind((donation>0).then_some(request.transaction.as_slice())).bind(donation as i64).bind(pool_before as i64).bind(pool_after as i64).bind(advanced).bind(character).bind(i64::from(request.area)).bind((advanced && request.action == MapAction::Shuffle).then_some(request.subarea.map(i64::from)).flatten()).execute(&mut ***tx).await?;
     if advanced {
-        let mut all = load_all(tx, fence, request).await?;
-        all.convert(request);
-        let id = request.subarea.ok_or(DurabilityError::InvalidStoredState)?;
-        all.subareas.insert(id, progress.clone());
         let progress =
-            serde_json::to_string(&all).map_err(|_| DurabilityError::InvalidStoredState)?;
+            serde_json::to_string(progress).map_err(|_| DurabilityError::InvalidStoredState)?;
         sqlx::query("INSERT INTO game_character_cyclopedia(character_id,bundle_digest,progress,occurrence,catalogue_digest) VALUES(encode($1,'hex')::uuid,$2,$3::text::jsonb,encode($4,'hex')::uuid,$5) ON CONFLICT(character_id) DO UPDATE SET bundle_digest=EXCLUDED.bundle_digest,progress=EXCLUDED.progress,occurrence=EXCLUDED.occurrence,catalogue_digest=EXCLUDED.catalogue_digest")
             .bind(character).bind(request.bundle.as_slice()).bind(progress).bind(request.occurrence.as_slice()).bind(BasicArea::content_digest().as_slice()).execute(&mut ***tx).await?;
         sqlx::query("UPDATE game_character_roots SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid").bind(character).execute(&mut ***tx).await?;

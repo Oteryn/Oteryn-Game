@@ -191,12 +191,24 @@ pub struct BundleFacts {
     /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
     rotations: Mutex<Arc<RotationStates>>,
     callbacks: Arc<Mutex<Arc<CallbackStates>>>,
+    daily_variant_passages: BTreeSet<(u16, u16, i8)>,
     monster_steps: Mutex<VecDeque<MonsterStep>>,
 }
 
 const AMBIGUOUS: u32 = u32::MAX;
 
 impl BundleFacts {
+    pub(super) fn set_daily_variant_passages(
+        &mut self,
+        positions: impl Iterator<Item = (u16, u16, i8)>,
+    ) {
+        self.daily_variant_passages.extend(positions);
+    }
+
+    pub fn daily_variant_passage(&self, position: (u16, u16, i8)) -> bool {
+        self.daily_variant_passages.contains(&position)
+    }
+
     /// A qualified Source owner may use the same bounded volatile-item model
     /// without inventing a bundle, base tile, durable Item or map placement.
     /// The caller supplies its already resolved immovable native Item facts.
@@ -307,6 +319,7 @@ impl BundleFacts {
             doors: self.doors.activity_copy(inside),
             rotations: Mutex::new(Arc::new(BTreeMap::new())),
             callbacks: Arc::new(Mutex::new(Arc::new(CallbackStates::default()))),
+            daily_variant_passages: BTreeSet::new(),
             monster_steps: Mutex::new(VecDeque::new()),
         }
     }
@@ -422,6 +435,7 @@ impl BundleFacts {
             doors: DoorBook::default(),
             rotations: Mutex::default(),
             callbacks: Arc::default(),
+            daily_variant_passages: BTreeSet::new(),
             monster_steps: Mutex::default(),
         })
     }

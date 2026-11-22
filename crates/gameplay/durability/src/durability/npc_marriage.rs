@@ -349,6 +349,44 @@ impl DurabilityRoot {
     }
 }
 
+/// Meluna admits newlyweds within 24 hours of the celebration (Tibia Fandom archive, Meluna).
+/// The caller holds the fenced Character root lock, which also serializes pair changes.
+pub(super) async fn eligible_for_honeymoon(
+    connection: &mut PgConnection,
+    fence: CurrentCharacterGameplayFence,
+) -> Result<bool, DurabilityError> {
+    const HONEYMOON_WINDOW_MS: i64 = 24 * 60 * 60 * 1_000;
+    let eligible = sqlx::query_scalar(
+        "WITH db_time AS (
+            SELECT floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint AS now_ms
+         )
+         SELECT EXISTS(
+            SELECT 1 FROM game_character_marriages marriage
+            JOIN game_character_marriages spouse
+              ON spouse.character_id = marriage.partner_id
+             AND spouse.partner_id = marriage.character_id
+             AND spouse.last_receipt = marriage.last_receipt
+            JOIN game_character_marriage_receipts wedding
+              ON wedding.purchase_occurrence_id = marriage.last_receipt
+            CROSS JOIN db_time
+            WHERE marriage.character_id = $1 AND marriage.status = 2 AND spouse.status = 2
+              AND wedding.operation = 4 AND wedding.world_id = $2
+              AND ((wedding.character_id, wedding.partner_id) =
+                   (marriage.character_id, marriage.partner_id)
+                OR (wedding.character_id, wedding.partner_id) =
+                   (marriage.partner_id, marriage.character_id))
+              AND wedding.committed_at <= db_time.now_ms
+              AND wedding.committed_at > db_time.now_ms - $3
+         )",
+    )
+    .bind(Uuid::from_bytes(*fence.character_id.as_bytes()))
+    .bind(Uuid::from_bytes(*fence.runtime_scope.world_id().as_bytes()))
+    .bind(HONEYMOON_WINDOW_MS)
+    .fetch_one(connection)
+    .await?;
+    Ok(eligible)
+}
+
 pub(super) async fn verify_integrity(connection: &mut PgConnection) -> Result<(), DurabilityError> {
     let invalid:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_marriages s LEFT JOIN game_character_marriage_receipts r ON r.purchase_occurrence_id=s.last_receipt LEFT JOIN game_character_marriages p ON p.character_id=s.partner_id WHERE r.purchase_occurrence_id IS NULL OR NOT ((r.character_id=s.character_id AND r.actor_after=to_jsonb(s)) OR (r.partner_id=s.character_id AND r.partner_after=to_jsonb(s))) OR (s.status IN(2,3) AND (p.status IS DISTINCT FROM s.status OR p.partner_id IS DISTINCT FROM s.character_id)))")
         .fetch_one(&mut *connection).await?;

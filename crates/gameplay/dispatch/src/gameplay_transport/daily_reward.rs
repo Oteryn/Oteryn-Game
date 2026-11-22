@@ -274,13 +274,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.states
             .resting_areas
             .install(command.game_session_id, actor, view.streak);
+        let at_shrine = opened && reachable;
+        let instant_access = if view.instant_access && !at_shrine {
+            let runtime = self.runtime.lock().await;
+            self.states.spell_states.try_lock().is_ok_and(|states| {
+                runtime.player_control_facts(actor, command.game_session_id)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+                    && !states.is_dead(actor)
+                    && super::item_ref_admission::pinned_index(&runtime, self.active_generation).is_some()
+            })
+        } else {
+            false
+        };
         let Some(_claim) = claim else {
             return wire::DailyRewardWall {
                 lane_day: view.lane_day,
                 streak: view.streak,
                 jokers: view.jokers,
                 claimed: view.receipt.is_some(),
-                claim_enabled: opened && reachable && view.receipt.is_none(),
+                claim_enabled: (at_shrine || instant_access) && view.receipt.is_none(),
             }
             .encode()
             .ok();
@@ -305,9 +317,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 6
             });
         }
-        if !opened || !reachable {
+        use crate::durability::daily_reward_delivery::DailyRewardAccess;
+        let access = if at_shrine {
+            DailyRewardAccess::Shrine
+        } else if instant_access {
+            DailyRewardAccess::StoreToken
+        } else {
             return refusal(4);
-        }
+        };
         {
             let states = self.states.spell_states.lock().await;
             if states.has_pending_spell_commit(actor, command.game_session_id) {
@@ -324,12 +341,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match self
             .root
-            .commit_daily_reward_claim(
+            .commit_daily_reward_claim_from(
                 self.character,
                 self.holder,
                 fence,
                 request,
-                plan,
+                (plan, access),
                 &super::spell_premium_coordinator::DailyRewardPremium(self.premium_coordinator),
             )
             .await
