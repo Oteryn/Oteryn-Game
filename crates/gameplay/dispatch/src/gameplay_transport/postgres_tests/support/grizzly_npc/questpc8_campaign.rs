@@ -164,7 +164,7 @@ pub(super) async fn exercise(
     assert_eq!(after, before);
     assert_eq!(experience(h).await?, before_xp);
     let achievements: Vec<String> = sqlx::query_scalar(
-        "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key LIMIT 4",
+        "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key LIMIT 5",
     )
     .fetch_all(&h.pool)
     .await?;
@@ -172,6 +172,7 @@ pub(super) async fn exercise(
         achievements,
         [
             "oteryn:achievement/blood_red_snapper",
+            "oteryn:achievement/huntsman",
             "oteryn:achievement/one_less",
             "oteryn:achievement/rootless_behaviour"
         ]
