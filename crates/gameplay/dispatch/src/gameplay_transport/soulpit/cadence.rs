@@ -135,6 +135,33 @@ mod tests {
         assert_eq!(start.elapsed(), Duration::from_millis(4));
     }
 
+    #[tokio::test(start_paused = true)]
+    async fn busy_discovery_catches_holder_return_during_first_readiness_sample() {
+        let start = Instant::now();
+        let returned = Notify::new();
+        let sampled = Cell::new(false);
+        wait_for_wake(
+            SoulpitWake::DiscoveryBusy {
+                room_due: None,
+                refused_at: 0,
+            },
+            1_000_000,
+            0,
+            || {
+                if sampled.replace(true) {
+                    return true;
+                }
+                // Publish the return while reporting the stale readiness sample.
+                returned.notify_waiters();
+                false
+            },
+            || returned.notified(),
+        )
+        .await;
+        assert!(sampled.get());
+        assert_eq!(Instant::now(), start);
+    }
+
     #[test]
     fn busy_discovery_retries_once_after_holder_return_or_ready_backoff()
     -> Result<(), Box<dyn std::error::Error>> {
