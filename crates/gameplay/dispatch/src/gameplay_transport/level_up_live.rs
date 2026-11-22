@@ -105,6 +105,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        #[cfg(test)]
+        install_pause::after_spell_reconciliation().await;
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
@@ -130,6 +132,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             *state = next;
         }
         self.states.level_refresh.unmark(character);
+    }
+}
+
+#[cfg(test)]
+pub(super) mod install_pause {
+    use std::cell::RefCell;
+    use std::sync::Arc;
+    use tokio::sync::Notify;
+
+    #[derive(Default)]
+    pub(crate) struct Pause {
+        pub reached: Notify,
+        pub resume: Notify,
+    }
+
+    thread_local! {
+        static PAUSE: RefCell<Option<Arc<Pause>>> = const { RefCell::new(None) };
+    }
+
+    #[allow(
+        dead_code,
+        reason = "the level-up cases are mounted in only one PG shard"
+    )]
+    pub(crate) fn install() -> Arc<Pause> {
+        let pause = Arc::new(Pause::default());
+        PAUSE.set(Some(Arc::clone(&pause)));
+        pause
+    }
+
+    pub(super) async fn after_spell_reconciliation() {
+        if let Some(pause) = PAUSE.take() {
+            pause.reached.notify_one();
+            pause.resume.notified().await;
+        }
     }
 }
 
