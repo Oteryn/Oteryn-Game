@@ -589,6 +589,7 @@ async fn write<C: ItemLoopContent>(
         .and_then(|f| f.container_capacity)
         .unwrap_or(0);
     let capacity = if event_reward
+        || conversion.recipe == "oteryn:dispenser.fill"
         || conversion.recipe == cake::RECIPE
         || conversion.recipe.starts_with("oteryn:novelty-item.")
         || conversion.recipe.starts_with("oteryn:item-cosmetic.")
@@ -976,6 +977,7 @@ async fn persist_action(
     // Afflicted Ground USE leaves the clicked trigger intact and spends all six
     // carried pieces. SQL admits this exact exception with the same owner proofs.
     let dispenser = plan.recipe == "oteryn:dispenser.fill";
+    // An exhausted placed dispenser frees its floor slot before overflow admission.
     if !dispenser || has_overflow {
         for input in &plan.extra_inputs {
             consume_count(

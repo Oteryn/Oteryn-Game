@@ -29,11 +29,12 @@ enum Case {
     GroundLast,
     Nested,
     NestedLast,
+    NestedFlaskOverflow,
 }
 
 impl Case {
-    fn keg(self)->bool {matches!(self,Self::Keg|Self::KegLast|Self::KegMove|Self::KegFull|Self::GroundFull|Self::GroundOverflow|Self::Ground|Self::GroundLast|Self::Nested|Self::NestedLast)}
-    fn last(self)->bool {matches!(self,Self::KegLast|Self::KegFull|Self::GroundFull|Self::GroundOverflow|Self::GroundLast|Self::NestedLast)}
+    fn keg(self)->bool {matches!(self,Self::Keg|Self::KegLast|Self::KegMove|Self::KegFull|Self::GroundFull|Self::GroundOverflow|Self::Ground|Self::GroundLast|Self::Nested|Self::NestedLast|Self::NestedFlaskOverflow)}
+    fn last(self)->bool {matches!(self,Self::KegLast|Self::KegFull|Self::GroundFull|Self::GroundOverflow|Self::GroundLast|Self::NestedLast|Self::NestedFlaskOverflow)}
     fn ground(self)->bool {matches!(self,Self::Ground|Self::GroundLast|Self::GroundFull|Self::GroundOverflow)}
     fn moves(self)->bool {matches!(self,Self::KegMove)}
     fn nested(self)->bool {matches!(self,Self::Nested|Self::NestedLast)}
@@ -52,6 +53,14 @@ fn dispenser_refuses_full_ground_without_spending_flasks_or_charges() -> TestRes
         return Ok(());
     };
     postgres_case(Case::GroundFull, "dispenser_ground_overflow_full")
+}
+
+#[test]
+fn carried_keg_drops_filled_flasks_when_the_nested_source_container_is_full() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    postgres_case(Case::NestedFlaskOverflow, "dispenser_nested_flask_overflow")
 }
 
 #[test]
@@ -241,6 +250,11 @@ fn scenario(case: Case, name: &str) -> TestResult {
 
         let mut entries = vec![(flour, 2), (vessel, 1)];
         if case.nested() {entries.push((bag,1));}
+        if matches!(case, Case::NestedFlaskOverflow) {
+            // The golden backpack has 24 slots. Twenty is the legacy generic
+            // transform limit, and is insufficient to decide whether this parent is full.
+            entries.push(("oteryn:item.tibia.i3253", 1));
+        }
         if case.moves() {entries.push((flour,2));entries.push((bag,1));}
         if matches!(case,Case::KegFull|Case::GroundFull|Case::GroundOverflow) {
             while entries.len()<20 {entries.push(("oteryn:item.tibia.i3031",1));}
@@ -306,13 +320,31 @@ fn scenario(case: Case, name: &str) -> TestResult {
                 sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1000,encode($5,'hex')::uuid)").bind(id(95).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(97).as_slice()).execute(&mut *tx).await?;
             }
             if matches!(case, Case::GroundFull) {
-                let floor = crate::durability::ground_cell_limit::GROUND_CELL_ROOT_LIMIT;
+                let root_limit = crate::durability::ground_cell_limit::GROUND_CELL_ROOT_LIMIT;
                 sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) SELECT game_character_uuid_v7(),encode($1,'hex')::uuid,'Item','oteryn:item.tibia.i3031','definition-r1',1,1,game_character_uuid_v7() FROM generate_series(1,$2)")
-                    .bind(id(42).as_slice()).bind(i32::try_from(floor)?).execute(&mut *tx).await?;
+                    .bind(id(42).as_slice()).bind(i32::try_from(root_limit)?).execute(&mut *tx).await?;
                 let position = [6_i32.to_be_bytes().as_slice(), &0_i32.to_be_bytes(), &(-7_i16).to_be_bytes()].concat();
                 sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) SELECT i.item_instance_id,g.world_id,g.channel_id,g.runtime_scope_ownership_generation,$2,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,nextval('game_item_ground_stack_ordinal_seq') FROM game_item_instances i CROSS JOIN game_item_ground_locations g WHERE g.item_instance_id=encode($1,'hex')::uuid AND i.definition_production_key='oteryn:item.tibia.i3031' AND NOT EXISTS(SELECT FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id)")
                     .bind(id(72).as_slice()).bind(position).execute(&mut *tx).await?;
             }
+            tx.commit().await?;
+        }
+        if matches!(case, Case::NestedFlaskOverflow) {
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(71).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id)
+                VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,game_character_uuid_v7())")
+                .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(id(73).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("WITH added AS (
+                   INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+                   SELECT game_character_uuid_v7(),encode($1,'hex')::uuid,'Item','oteryn:item.tibia.i3031','definition-r1',1,1,game_character_uuid_v7()
+                   FROM generate_series(2,24) RETURNING item_instance_id
+                ) INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id)
+                SELECT item_instance_id,encode($1,'hex')::uuid,encode($2,'hex')::uuid,1+row_number() OVER (ORDER BY item_instance_id),game_character_uuid_v7()
+                FROM added")
+                .bind(id(42).as_slice()).bind(id(73).as_slice()).execute(&mut *tx).await?;
             tx.commit().await?;
         }
         if case.last() {
@@ -331,7 +363,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
             Case::Milk => Some(9_i16),
             Case::Empty | Case::Keg | Case::KegLast | Case::KegMove | Case::KegFull
             | Case::GroundFull | Case::GroundOverflow | Case::Ground | Case::GroundLast | Case::Nested
-            | Case::NestedLast => None,
+            | Case::NestedLast | Case::NestedFlaskOverflow => None,
         };
         let snapshot_subtype = match initial_fluid {
             Some(fluid) => u32::try_from(fluid)?,
@@ -370,7 +402,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
-        let direct=case.ground() || case.nested();
+        let direct=case.ground() || case.nested() || matches!(case, Case::NestedFlaskOverflow);
         let use_command=crate::gameplay_transport::connection::UseCommand{game_session_id:admitted.game_session_id,command_id:1,item_fence:Some(fence)};
         let (continued,result,actual)=if direct {
             let result=owner.use_craft(deps.actor,use_command,intent.clone(),Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(71))),Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(72)))).await.ok_or("dispenser production caller")?;
@@ -392,7 +424,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
             .fetch_one(&harness.pool)
             .await?;
         match case {
-            Case::GroundOverflow => {
+            Case::GroundOverflow | Case::NestedFlaskOverflow => {
                 assert_eq!(result, UseDisposition::Committed);
                 assert_eq!(flour_state, (1, 1));
                 assert_eq!(vessel_state, (2, 0));
@@ -404,6 +436,11 @@ fn scenario(case: Case, name: &str) -> TestResult {
                 let output: (i64, Vec<u8>, i64) = sqlx::query_as("SELECT i.quantity,g.spatial_position,(r.effects->'dispenser'->>'after')::bigint FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) JOIN game_item_consume_transform_records r ON r.transaction_id=i.minted_transaction_id WHERE r.recipe='oteryn:dispenser.fill' AND i.definition_production_key='oteryn:item.tibia.i236' AND i.lifecycle=1")
                     .fetch_one(&harness.pool).await?;
                 assert_eq!(output, (1, position, 0));
+                if matches!(case, Case::NestedFlaskOverflow) {
+                    let occupied: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
+                        .bind(id(73).as_slice()).fetch_one(&harness.pool).await?;
+                    assert_eq!(occupied, 24);
+                }
                 assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_consume_transform_records").fetch_one(&harness.pool).await?, 1);
                 assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_instances").fetch_one(&harness.pool).await?, initial_instances + 1);
                 assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid")
@@ -416,6 +453,25 @@ fn scenario(case: Case, name: &str) -> TestResult {
                 assert_eq!(sqlx::query_as::<_,(i32,String)>("SELECT charges,state_revision::text FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,(1,"1".into()));
                 assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_instances").fetch_one(&harness.pool).await?,initial_instances);
                 assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_timed_state_writes").fetch_one(&harness.pool).await?,0);
+                // Free exactly one seeded tile slot and retry the same command.
+                let mut tx = harness.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                let removed = sqlx::query("WITH removed AS (
+                    DELETE FROM game_item_ground_locations WHERE item_instance_id=(
+                        SELECT g.item_instance_id FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id)
+                        WHERE i.definition_production_key='oteryn:item.tibia.i3031'
+                        ORDER BY g.stack_ordinal LIMIT 1
+                    ) RETURNING item_instance_id
+                ) DELETE FROM game_item_instances i USING removed WHERE i.item_instance_id=removed.item_instance_id")
+                    .execute(&mut *tx).await?;
+                assert_eq!(removed.rows_affected(), 1);
+                tx.commit().await?;
+                let retry = owner.use_craft(deps.actor, use_command, intent.clone(),
+                    Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(71))),
+                    Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(72))),
+                ).await.ok_or("dispenser retry after tile room becomes available")?;
+                assert_eq!(retry.disposition, UseDisposition::Committed);
+                assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_consume_transform_records WHERE recipe='oteryn:dispenser.fill'").fetch_one(&harness.pool).await?,1);
             }
             Case::Keg | Case::KegLast | Case::KegMove | Case::KegFull | Case::Ground | Case::GroundLast | Case::Nested | Case::NestedLast => {
                 assert_eq!(result, UseDisposition::Committed);

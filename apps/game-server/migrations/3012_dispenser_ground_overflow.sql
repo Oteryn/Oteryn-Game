@@ -69,7 +69,10 @@ END $$;
 
 CREATE FUNCTION game_item_dispenser_overflow_complete(r game_item_consume_transform_records)
 RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER AS $$
- SELECT CASE WHEN r.effects ? 'dispenser_house_overflow' THEN EXISTS(
+ SELECT r.created_xact_id=pg_current_xact_id()
+ AND EXISTS(SELECT 1 FROM game_item_consume_transform_records admitted
+   WHERE admitted.transaction_id=r.transaction_id AND admitted=r)
+ AND CASE WHEN r.effects ? 'dispenser_house_overflow' THEN EXISTS(
    SELECT 1 FROM game_item_house_interior_locations h JOIN game_item_house_reclaim_provenance p USING (item_instance_id)
    WHERE h.item_instance_id=(r.outputs->0->>'item')::uuid AND game_item_dispenser_house_overflow_matches(r,h)
      AND p.reclaim_subject_character_id=r.character_id AND p.placement_transaction_id=r.transaction_id
@@ -83,6 +86,18 @@ RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER AS $$
    WHERE n.item_instance_id=(r.outputs->0->>'item')::uuid)
 $$;
 
+-- A dispenser uses the authored parent capacity (the existing row-wide 500
+-- bound still applies). Preserve every other recipe's capacity constraint.
+DO $migration$
+DECLARE prior TEXT;
+BEGIN
+ SELECT pg_get_expr(conbin,conrelid) INTO STRICT prior FROM pg_constraint
+ WHERE conrelid='game_item_consume_transform_records'::regclass
+   AND conname='game_item_consume_transform_parent_capacity_check';
+ ALTER TABLE game_item_consume_transform_records DROP CONSTRAINT game_item_consume_transform_parent_capacity_check;
+ EXECUTE format('ALTER TABLE game_item_consume_transform_records ADD CONSTRAINT game_item_consume_transform_parent_capacity_check CHECK ((%s) OR recipe=''oteryn:dispenser.fill'')',prior);
+END $migration$;
+
 DO $migration$
 DECLARE body TEXT; anchor TEXT; entry INTEGER; signature TEXT;
 BEGIN
@@ -92,12 +107,13 @@ BEGIN
  EXECUTE overlay(body placing $arm$BEGIN
   IF NEW.effects ? 'dispenser_house_overflow' THEN
    IF NEW.source_kind NOT IN (1,4)
+    OR (NEW.outputs->0->>'ordinal') IS NULL
     OR game_item_dispenser_house_overflow_ordinal(NEW) IS DISTINCT FROM (NEW.outputs->0->>'ordinal')::numeric
    THEN RAISE EXCEPTION 'dispenser overflow lacks exact House output proof' USING ERRCODE='23514'; END IF;
   ELSIF NEW.effects ? 'dispenser_ground' THEN
    IF NEW.recipe<>'oteryn:dispenser.fill' OR NEW.source_kind NOT IN (1,4)
     OR jsonb_typeof(NEW.effects->'dispenser_ground') IS DISTINCT FROM 'object'
-    OR NEW.effects->'dispenser'->>'source_kind' NOT IN ('1','3','4')
+    OR coalesce(NEW.effects->'dispenser'->>'source_kind','') NOT IN ('1','3','4')
     OR (NEW.outputs->0->>'ordinal')::bigint IS DISTINCT FROM currval('game_item_ground_stack_ordinal_seq')
     OR NOT EXISTS (
      SELECT 1 FROM game_durability_reconnect_sessions s,
