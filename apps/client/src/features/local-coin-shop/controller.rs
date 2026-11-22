@@ -94,6 +94,7 @@ async fn apply(
                 Err(NativeLoginError::Platform(HttpStatus(404)))
                     if view.post_refusal_status == Some(409) && view.pending() =>
                 {
+                    view.prior.reconcile(&id);
                     clear_refused_order(view);
                     view.feedback = tr!("The server refused the request").into();
                     return Ok(());
@@ -134,9 +135,19 @@ async fn submit(
     let Some(request) = &view.pending else {
         return Ok(());
     };
+    let Some(post) = view.prior.start() else {
+        if !retry {
+            view.confirmed = None;
+            view.pending = None;
+        }
+        view.feedback = tr!("Resolve the pending operation before starting another.").into();
+        return Ok(());
+    };
+    view.prior.retain(request.request_id.clone());
     let result = client
         .create_coin_order(token, request, cancel.clone())
         .await;
+    drop(post);
     // Only a refusal of the initial POST can rule out its effect.
     view.post_refusal_status = match &result {
         Err(NativeLoginError::Platform(HttpStatus(409))) if !retry => Some(409),
@@ -144,6 +155,7 @@ async fn submit(
         _ => None,
     };
     if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {
+        view.prior.reconcile(&request.request_id);
         clear_refused_order(view);
     }
     let order = result?;
@@ -166,7 +178,7 @@ async fn refresh(
 ) -> Result<(), NativeLoginError> {
     view.quote_until.clear();
     let requested_at = Instant::now();
-    let catalogue = client
+    let mut catalogue = client
         .coin_catalogue(token, view.character_id.as_deref(), cancel.clone())
         .await?;
     let mut quote_until: std::collections::BTreeMap<_, _> = catalogue
@@ -179,6 +191,15 @@ async fn refresh(
             )
         })
         .collect();
+    for listed in std::mem::take(&mut catalogue.recent_orders) {
+        let Ok(order) = client
+            .coin_order_status(token, &listed.request_id, cancel.clone())
+            .await
+        else {
+            continue;
+        };
+        catalogue.recent_orders.push(order);
+    }
     if let Some(request_id) = view
         .pending
         .as_ref()
@@ -192,7 +213,8 @@ async fn refresh(
         accept(view, order.clone())?;
     }
     for order in &catalogue.recent_orders {
-        if view.prior.contains(&order.request_id) {
+        if view.order.is_none() && view.pending.is_none() && view.prior.contains(&order.request_id)
+        {
             accept(view, order.clone())?;
         }
     }

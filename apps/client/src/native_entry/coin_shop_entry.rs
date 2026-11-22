@@ -16,21 +16,19 @@ pub(crate) async fn open(
         &config.oauth_client_id,
         config.retry_unit,
     )?;
+    let mut session = config.device_sessions.commerce_session(
+        &config.platform_url,
+        &config.oauth_client_id,
+        Some(character_id.to_owned()),
+    );
     let token = authorize::access_token(&client, config, cancel.clone(), true).await?;
-    let session = config
-        .device_sessions
-        .commerce_session(&config.platform_url, &config.oauth_client_id);
-    let mut session = session.lock().await;
-    let view = session.reopen_coins(Some(character_id.to_owned()));
-    let result = crate::coin_shop::run(
+    crate::coin_shop::run(
         &client,
         &token,
         &config.coin_shop,
         &config.open_browser,
-        view,
+        &mut session.coin,
         cancel,
     )
-    .await;
-    session.reopen();
-    result
+    .await
 }

@@ -29,7 +29,9 @@ pub(super) struct LoginState {
     pub advanced: bool,
     pub revision: u64,
     path: Option<PathBuf>,
-    baseline: LoginSettings,
+    shown_settings: LoginSettings,
+    edited_fields: [bool; 6],
+    env_fallback: [bool; 6],
     pending_submit: Option<submission::Pending>,
     saving: Option<persistence::PendingSave>,
 }
@@ -42,7 +44,9 @@ impl Default for LoginState {
             advanced: false,
             revision: 0,
             path: None,
-            baseline: LoginSettings::default(),
+            shown_settings: LoginSettings::default(),
+            edited_fields: [false; 6],
+            env_fallback: [false; 6],
             pending_submit: None,
             saving: None,
         }
@@ -54,14 +58,28 @@ impl LoginState {
             .as_ref()
             .map_or_else(|| Ok(LoginSettings::default()), |p| LoginSettings::load(p));
         let error = loaded.as_ref().err().cloned();
-        self.baseline = loaded.unwrap_or_default();
-        self.form = LoginForm::new(self.baseline.clone().with_env(lookup));
+        (self.shown_settings, self.env_fallback) =
+            loaded.unwrap_or_default().with_env_fields(lookup);
+        self.form = LoginForm::new(self.shown_settings.clone());
+        self.edited_fields.fill(false);
         if let Some(error) = error {
             self.form.feedback(error);
         }
         self.path = path;
         self.revision = self.revision.saturating_add(1);
     }
+    fn record_edits(&mut self) {
+        // Once edited, a field belongs to this form until reload, even after a revert or failed save.
+        for ((edited, shown), current) in self
+            .edited_fields
+            .iter_mut()
+            .zip(self.shown_settings.values())
+            .zip(self.form.settings.values())
+        {
+            *edited |= shown != current;
+        }
+    }
+
     pub fn show(&mut self) {
         self.visible = true;
         self.revision = self.revision.saturating_add(1);
@@ -525,6 +543,7 @@ pub(super) fn project(
             }
         }
         owner.login.form.settings = LoginSettings::from_values(values);
+        owner.login.record_edits();
     }
 }
 
