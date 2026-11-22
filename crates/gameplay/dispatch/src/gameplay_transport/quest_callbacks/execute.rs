@@ -1302,6 +1302,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && let QuestCause::Use(command) = cause {
                         self.project_mead_blackout(runtime,states,actor,command,&committed.changes,map);
                     }
+                    if fresh
+                        && callback.native_rule == Some(world_callbacks::NativeRule::SeaSerpentTelescope)
+                        && committed.changes.iter().any(|change| {
+                            change.track == oteryn_gameplay_quests::quest::sea_serpent::TRACKS[0]
+                                && (change.before, change.after) == (1, 2)
+                        })
+                    {
+                        // Crystal actions_bait.lua:73; client binding CONST_ME_WATERCREATURE.
+                        map.facts.emit_movement_effect(
+                            tile(world_callbacks::Position { x: 31933, y: 31037, floor: -7 }),
+                            34,
+                        );
+                    }
                     self.apply_committed_quest_copy(session, fresh, committed);
                     if callback.effects.encounter.is_some()
                         && !self.refresh_grizzly_kill_snapshot_in_turn(runtime, session)

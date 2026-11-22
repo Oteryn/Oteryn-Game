@@ -226,7 +226,7 @@ impl DurabilityRoot {
                 Ok(root) => root,
                 Err(error) => return Ok(Err(error)),
             };
-            let arrival = request.arrival;
+            let mut arrival = request.arrival;
             let route = &request.route;
             let key = format!("{}/{}", route.service, route.route.key);
             let destination = &route.route.destination;
@@ -285,13 +285,20 @@ impl DurabilityRoot {
             hash.update(arrival.occurrence.as_bytes());
             hash.update(arrival.world_id.as_bytes());
             let binding = hash.finalize().to_vec();
-            let previous = sqlx::query("SELECT request_binding FROM game_newhaven_travel_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric(20,0)")
+            let previous = sqlx::query("SELECT request_binding, random_destination FROM game_newhaven_travel_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric(20,0)")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).fetch_optional(&mut **tx).await?;
             if let Some(previous)=previous {
                 if previous.try_get::<Option<Vec<u8>>,_>("request_binding")? != Some(binding) {return Ok(Err(CharacterProgressionError::ConflictingOccurrence));}
                 let pending = read_fenced(&mut tx,&recovery,&node,fence).await.map_err(|_| DurabilityError::InvalidStoredState)?;
+                let pending = pending.filter(|row| row.occurrence == arrival.occurrence);
+                if let Some(pending) = pending
+                    && let Some(saved) = previous.try_get::<Option<Vec<i32>>, _>("random_destination")?
+                    && saved != destination_array(pending.destination)
+                {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
                 tx.commit(deadline).await?;
-                return Ok(Ok(Ok(pending.filter(|row| row.occurrence==arrival.occurrence))));
+                return Ok(Ok(Ok(pending)));
             }
             if !permitted {return Ok(Ok(Err(TravelRefusal::PremiumRequired)));}
             let fare = match quote(&mut tx, fence, route).await? {Ok(fare)=>fare,Err(refusal)=>return Ok(Ok(Err(refusal)))};
@@ -307,14 +314,35 @@ impl DurabilityRoot {
                     Err(_) => return Ok(Err(CharacterProgressionError::InvalidInput)),
                 }
             }
-            sqlx::query("INSERT INTO game_newhaven_travel_receipts(character_id,game_session_id,command_id,occurrence_id,route,request_binding,fee_transaction_id,fare_gold_units,base_fare_gold_units,postman_discount_applied) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric(20,0),encode($4,'hex')::uuid,$5,$6,CASE WHEN $7 THEN encode($8,'hex')::uuid END,$9,$10,$11)")
-                .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(arrival.occurrence.as_bytes().as_slice()).bind(key).bind(binding).bind(fare>0).bind(request.fee.transaction_id.as_slice()).bind(i64::try_from(fare).map_err(|_| DurabilityError::InvalidStoredState)?).bind(i64::try_from(route.route.price).map_err(|_| DurabilityError::InvalidStoredState)?).bind(fare<route.route.price).execute(&mut **tx).await?;
+            let draw = if let Some(policy) = route.random_destination() {
+                let draw = crate::durability::receipt_random::draw(
+                    &mut tx,
+                    fence.character_id,
+                    (*request.command.game_session_id().as_bytes(), request.command.command_id().get()),
+                    "npc-travel-destination",
+                    policy.faces,
+                ).await?;
+                if draw == 1 {
+                    let (x, y, floor) = policy.alternate;
+                    arrival.destination = LastPositionCell { x, y, floor };
+                }
+                Some(i16::from(draw))
+            } else {
+                None
+            };
+            let selected = draw.map(|_| destination_array(arrival.destination));
+            sqlx::query("INSERT INTO game_newhaven_travel_receipts(character_id,game_session_id,command_id,occurrence_id,route,request_binding,fee_transaction_id,fare_gold_units,base_fare_gold_units,postman_discount_applied,random_draw,random_destination) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric(20,0),encode($4,'hex')::uuid,$5,$6,CASE WHEN $7 THEN encode($8,'hex')::uuid END,$9,$10,$11,$12,$13)")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(arrival.occurrence.as_bytes().as_slice()).bind(key).bind(binding).bind(fare>0).bind(request.fee.transaction_id.as_slice()).bind(i64::try_from(fare).map_err(|_| DurabilityError::InvalidStoredState)?).bind(i64::try_from(route.route.price).map_err(|_| DurabilityError::InvalidStoredState)?).bind(fare<route.route.price).bind(draw).bind(selected.as_ref().map(|cell| cell.as_slice())).execute(&mut **tx).await?;
             sqlx::query("INSERT INTO game_character_pending_arrivals(character_id,occurrence_id,world_id,tile_x,tile_y,tile_floor) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6)")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(arrival.occurrence.as_bytes().as_slice()).bind(arrival.world_id.as_bytes().as_slice()).bind(arrival.destination.x).bind(arrival.destination.y).bind(arrival.destination.floor).execute(&mut **tx).await?;
             tx.commit(deadline).await?;
             Ok(Ok(Ok(Some(arrival))))
         })).await?
     }
+}
+
+fn destination_array(cell: LastPositionCell) -> [i32; 3] {
+    [cell.x, cell.y, i32::from(cell.floor)]
 }
 
 async fn premium<G: NpcTravelGate>(

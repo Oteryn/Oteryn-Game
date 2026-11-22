@@ -327,27 +327,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent,
         )?;
         let destination = &prompt.route.route.destination;
-        let cell = crate::foundation::MovementLocalPosition {
-            x: destination.x,
-            y: destination.y,
-            floor: destination.floor,
-        };
-        if !super::super::respawn_cell_admissible(
-            self.movement_cells().index(),
-            self.movement_cells().scope(),
-            self.world_id,
-            runtime.content_pin().server_artifact_digest(),
-            &std::collections::BTreeSet::new(),
-            cell,
-        ) || self.bundle_map().is_some_and(|map| {
-            crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
-                x: cell.x,
-                y: cell.y,
-                z: i32::from(cell.floor),
-            })
-            .is_none_or(|tile| map.facts.house_tile(tile) || map.facts.doors().blocks(tile))
-        }) {
-            return None;
+        let normal = (destination.x, destination.y, destination.floor);
+        let alternate = prompt
+            .route
+            .random_destination()
+            .map(|policy| policy.alternate);
+        for (x, y, floor) in std::iter::once(normal).chain(alternate) {
+            let cell = crate::foundation::MovementLocalPosition { x, y, floor };
+            if !super::super::respawn_cell_admissible(
+                self.movement_cells().index(),
+                self.movement_cells().scope(),
+                self.world_id,
+                runtime.content_pin().server_artifact_digest(),
+                &std::collections::BTreeSet::new(),
+                cell,
+            ) || self.bundle_map().is_some_and(|map| {
+                crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
+                    x: cell.x,
+                    y: cell.y,
+                    z: i32::from(cell.floor),
+                })
+                .is_none_or(|tile| map.facts.house_tile(tile) || map.facts.doors().blocks(tile))
+            }) {
+                return None;
+            }
         }
         let (gold, platinum, crystal) = npc_command::bank_coin_definitions(self, &runtime)?;
         let index =
