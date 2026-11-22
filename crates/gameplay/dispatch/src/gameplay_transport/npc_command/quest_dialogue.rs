@@ -337,6 +337,21 @@ pub(super) async fn apply(
     ) else {
         return rejected();
     };
+    let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
+        .ok()
+        .and_then(|callbacks| callbacks.into_iter().find(|c| c.key == transition));
+    let changes_inventory = reward_callback.as_ref().is_some_and(|callback| {
+        !callback.take.is_empty() || callback.give.is_some() || callback.fee.is_some()
+    });
+    let trade_permit = if changes_inventory {
+        // The offer owner and this writer share the lane, including the commit.
+        let Some(permit) = admission.spell_lane_permit().await else {
+            return rejected();
+        };
+        Some(permit)
+    } else {
+        None
+    };
     let mut slot = admission
         .revision_sequencer
         .acquire(item_fence.character_id)
@@ -393,6 +408,14 @@ pub(super) async fn apply(
                 )
             })
     };
+    if trade_permit.is_some()
+        && !admission
+            .states
+            .player_trades
+            .physical_service(command.game_session_id)
+    {
+        return rejected();
+    }
     let request = QuestTransitionRequest {
         transition_key: transition,
         cause: QuestCause::Command(CommandRef::new(command.game_session_id, id)),
@@ -421,13 +444,6 @@ pub(super) async fn apply(
             reply: step.reply.clone(),
         });
     }
-    let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
-        .ok()
-        .and_then(|callbacks| {
-            callbacks
-                .into_iter()
-                .find(|c| c.key == request.transition_key)
-        });
     let value_callback = reward_callback.is_some();
     let fee_payment = if reward_callback.as_ref().is_some_and(|c| c.fee.is_some()) {
         match super::endgame::prepare_reward_fee(admission, command, fence).await {
@@ -481,6 +497,7 @@ pub(super) async fn apply(
         .await
     };
     drop(slot);
+    drop(trade_permit);
     #[cfg(test)]
     if value_callback && let Err(error) = &outcome {
         eprintln!("quest reward commit: {error:?}");

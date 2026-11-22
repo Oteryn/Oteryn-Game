@@ -24,3 +24,8 @@ fn player_trade_postgres_counter_look_and_accept_retain_foreground_priority() ->
 fn player_trade_postgres_frozen_nested_contents_wire_inspection_and_swap() -> TestResult {
     run_scenario_with_read_priority(false, false, false, true, false)
 }
+
+#[test]
+fn npc_fish_hand_in_refuses_a_live_player_trade_offer() -> TestResult {
+    super::player_trade_fixtures::run_quest_hand_in_trade()
+}

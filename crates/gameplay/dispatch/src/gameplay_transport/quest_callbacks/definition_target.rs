@@ -62,6 +62,13 @@ impl GroundUseTurn {
     }
 }
 
+#[derive(Clone)]
+pub(super) struct PendingGroundUse {
+    character: crate::domain::CharacterId,
+    request: QuestTransitionRequest,
+    intent: Vec<u8>,
+}
+
 struct GroundUseGuard<'a, 'r> {
     owner:
         &'a super::super::activity_runtime::SharedOwner<'r, tokio::sync::Mutex<ChannelRuntimeV1>>,
@@ -82,6 +89,63 @@ impl Drop for GroundUseGuard<'_, '_> {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn reconcile_ground_use_receipt(&self, session: GameSessionId) -> bool {
+        let pending = match self.states.quest_callbacks.ground_uses.lock() {
+            Ok(uses) => uses.get(&session).cloned(),
+            Err(_) => return false,
+        };
+        let Some(pending) = pending else {
+            return true;
+        };
+        let QuestCause::Use(command) = pending.request.cause else {
+            return false;
+        };
+        if !self.states.command_ingress.original_terminalized(command) {
+            if !self.states.command_ingress.pending_reconciliation(command) {
+                return false;
+            }
+            let Some(_permit) = self.spell_lane_permit().await else {
+                return false;
+            };
+            let _revision = self.revision_sequencer.acquire(pending.character).await;
+            let disposition = match self
+                .root
+                .reconcile_quest_ground_use(
+                    self.character,
+                    pending.character,
+                    pending.request,
+                    pending.intent,
+                )
+                .await
+            {
+                Ok(Some(true)) => UseDisposition::Committed,
+                Ok(None) => UseDisposition::Rejected,
+                Ok(Some(false)) | Err(_) => return false,
+            };
+            let mut runtime = self.runtime.lock().await;
+            self.states
+                .quest_callbacks
+                .finish_cancelled_ground_uses(&mut runtime);
+            drop(runtime);
+            if self
+                .states
+                .command_ingress
+                .complete_quest_callback(command, disposition)
+                .is_none()
+            {
+                return false;
+            }
+        }
+        self.states
+            .quest_callbacks
+            .ground_uses
+            .lock()
+            .is_ok_and(|mut uses| {
+                uses.remove(&session);
+                true
+            })
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "reuses the carried quest receipt probe and inventory read"
@@ -238,6 +302,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Ok(Some(outcome(UseDisposition::TooFar)));
             }
+            let changes_inventory = callback
+                .item_on_target
+                .as_ref()
+                .is_some_and(|tool| !tool.reusable || !tool.ingredients.is_empty())
+                || !callback.offerings.is_empty()
+                || callback.item_reward().is_some();
+            if changes_inventory
+                && !self
+                    .states
+                    .player_trades
+                    .physical_service(command.game_session_id)
+            {
+                return Ok(Some(UseOutcome::rejected()));
+            }
             let proof = GroundUseProof {
                 actor,
                 command: command_ref,
@@ -282,16 +360,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             cancelled: &self.states.quest_callbacks.ground_use_cleanup,
             turn: Some(turn),
         };
+        let request = QuestTransitionRequest {
+            transition_key: callback.key.clone(),
+            cause: QuestCause::Use(command_ref),
+        };
+        let retained = self.states.command_ingress.pending(command_ref);
+        if retained {
+            let mut ground_uses = self
+                .states
+                .quest_callbacks
+                .ground_uses
+                .lock()
+                .map_err(|_| ())?;
+            let std::collections::hash_map::Entry::Vacant(entry) =
+                ground_uses.entry(command.game_session_id)
+            else {
+                return Err(());
+            };
+            entry.insert(PendingGroundUse {
+                character: current.character_id,
+                request: request.clone(),
+                intent: encoded.to_vec(),
+            });
+        }
         let result = revision
             .commit_world_callback_with_items_selected(
                 self.root,
                 self.character,
                 self.holder,
                 current,
-                QuestTransitionRequest {
-                    transition_key: callback.key.clone(),
-                    cause: QuestCause::Use(command_ref),
-                },
+                request,
                 std::sync::Arc::clone(catalogue),
                 &permit,
                 context,
@@ -331,12 +429,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.refresh_quest_session(command.game_session_id, false)
                 .await;
         }
+        #[cfg(any(test, feature = "test-support"))]
+        if committed
+            && self
+                .states
+                .quest_callbacks
+                .interrupt_ground_use_after_commit
+                .swap(false, std::sync::atomic::Ordering::AcqRel)
+        {
+            return Err(());
+        }
+        let disposition = if committed {
+            UseDisposition::Committed
+        } else {
+            UseDisposition::Rejected
+        };
+        if retained {
+            self.states
+                .command_ingress
+                .complete_item_use(command_ref, disposition)
+                .ok_or(())?;
+            self.states
+                .quest_callbacks
+                .ground_uses
+                .lock()
+                .map_err(|_| ())?
+                .remove(&command.game_session_id);
+        }
         Ok(Some(UseOutcome {
-            disposition: if committed {
-                UseDisposition::Committed
-            } else {
-                UseDisposition::Rejected
-            },
+            disposition,
             ..UseOutcome::rejected()
         }))
     }

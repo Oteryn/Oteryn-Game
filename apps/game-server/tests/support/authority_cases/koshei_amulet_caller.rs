@@ -3,7 +3,12 @@ use crate::bestiary_postgres_harness as fixture;
 use crate::foundation::{
     ChannelContentPin, ChannelRuntimeV1, CharacterId, CharacterLease, GameSessionId, NodeId,
 };
-use fixture::{debug, id};
+use fixture::{Harness, debug, id};
+use composed_test_owner::fresh_fixture;
+
+#[path = "../recovery_source_fixture.rs"]
+mod recovery_source;
+use recovery_source::{RecoverySource, prepare_owned_session};
 use oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::{
     self, AdmittedSession, ComposedTestOwner, ConnectionEnd, ControllerBinding, FirstEntryOutcome,
     FreshAdmissionAuthority, IDLE_LIVENESS, SelectedCapabilities, SessionContinuity,
@@ -45,6 +50,15 @@ const CORPSE: MovementLocalPosition = MovementLocalPosition {
 
 #[test]
 fn koshei_current_ground_handles_real_use_with_refusals_door_and_replay() -> TestResult {
+    koshei_ground_case(false)
+}
+
+#[test]
+fn koshei_ground_use_reconnects_after_commit_without_reply() -> TestResult {
+    koshei_ground_case(true)
+}
+
+fn koshei_ground_case(lose_ack: bool) -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -62,7 +76,7 @@ fn koshei_current_ground_handles_real_use_with_refusals_door_and_replay() -> Tes
                     )
                     .await?;
                     let (login, url) = runtime_login(&h).await?;
-                    let result = exercise(&h, &url, &login).await;
+                    let result = exercise(&h, &url, &login, lose_ack).await;
                     h.cleanup().await?;
                     let mut admin = sqlx::PgConnection::connect(&admin).await?;
                     sqlx::query(sqlx::AssertSqlSafe(format!("DROP ROLE {login}")))
@@ -120,14 +134,26 @@ async fn assert_corpse_migration_reruns(h: &fixture::Harness) -> TestResult {
     .await?;
     let result = sqlx::raw_sql(MIGRATION).execute(&mut *partial).await;
     assert!(matches!(result, Err(sqlx::Error::Database(ref e))
-        if e.message() == "Koshei corpse root already has a source owner"));
+        if e.message() == "Koshei or Arbaziloth corpse root already has a source owner"));
     partial.rollback().await?;
     Ok(())
 }
 
-async fn exercise(h: &fixture::Harness, runtime_url: &str, runtime_login: &str) -> TestResult {
+async fn exercise(
+    h: &fixture::Harness,
+    runtime_url: &str,
+    runtime_login: &str,
+    lose_ack: bool,
+) -> TestResult {
     assert_corpse_migration_reruns(h).await?;
-    super::engnpc2_live_transport::fresh(h).await?;
+    let recovery = if lose_ack {
+        let recovery = RecoverySource::start(h).await?;
+        prepare_owned_session(h).await?;
+        Some(recovery)
+    } else {
+        super::engnpc2_live_transport::fresh(h).await?;
+        None
+    };
     let scope = fixture::fence(1)?.runtime_scope;
     let world = scope.world_id();
     let channel = crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?;
@@ -279,7 +305,7 @@ async fn exercise(h: &fixture::Harness, runtime_url: &str, runtime_login: &str) 
         root: &runtime_root,
         character: &authority,
         holder: &h.node,
-        evidence: &evidence,
+        evidence: recovery.as_ref().map_or(&evidence, |peer| &peer.evidence),
         world_id: world,
         channel_id: channel,
         required_capabilities: composed_test_owner::empty_capabilities(world, channel)?,
@@ -525,11 +551,35 @@ async fn exercise(h: &fixture::Harness, runtime_url: &str, runtime_login: &str) 
     let before = ground_snapshot(h).await?;
     owner.clock_origin -= std::time::Duration::from_secs(2);
     let command = admitted.continuity.next_command_id;
-    let (next, result, actual, feedback) =
-        hand_in_while_peer_uses(&owner, admitted, h, command, &payload, amulet, corpse).await?;
-    admitted = next;
-    assert_eq!(result, UseDisposition::Committed);
-    assert_eq!(feedback, source::callback()?.success_message);
+    let actual = if lose_ack {
+        composed_test_owner::interrupt_ground_use_after_commit(&owner);
+        let (lost, result, actual, _) = framed_attempt(
+            &owner, admitted, command, 2, &payload, (Some(amulet), Some(corpse)), false, true,
+        ).await?;
+        assert!(result.is_empty(), "the client received no command result");
+        assert_eq!(snapshot(h).await?, (1, 0, 1, 1));
+        assert_eq!(
+            owner.lose_control(lost, std::time::Duration::ZERO, None).await,
+            composed_test_owner::ControlLossResult::Recorded
+        );
+        let token = RecoverySource::token(7)?;
+        admitted = owner.resume(composed_test_owner::ResumeAttempt {
+            game_session_id: session,
+            recovery_material: token.as_bytes(),
+            transport: crate::foundation::AuthenticatedTransportRefV1::decode(&[10; 16]).map_err(debug)?,
+            last_applied_server_sequence: 0,
+            supported_capabilities: lost.continuity.selected_capabilities.as_slice(),
+        }).await.map_err(|error| format!("committed ground USE reconnect: {error:?}"))?;
+        assert_eq!(admitted.continuity.next_command_id, command + 1);
+        actual
+    } else {
+        let (next, result, actual, feedback) =
+            hand_in_while_peer_uses(&owner, admitted, h, command, &payload, amulet, corpse).await?;
+        admitted = next;
+        assert_eq!(result, UseDisposition::Committed);
+        assert_eq!(feedback, source::callback()?.success_message);
+        actual
+    };
     assert_eq!(snapshot(h).await?, (1, 0, 1, 1));
     let copy = runtime_root
         .read_character_quest_state(&authority, fence.character_id)
@@ -1293,6 +1343,20 @@ async fn framed(
     handles: (Option<std::num::NonZeroU32>, Option<std::num::NonZeroU32>),
     feedback_expected: bool,
 ) -> TestResult<(AdmittedSession, Vec<u8>, Vec<u8>, Option<String>)> {
+    framed_attempt(owner, admitted, command, command_type, payload, handles, feedback_expected, false).await
+}
+
+#[allow(clippy::too_many_arguments, reason = "shared framed caller with explicit lost-reply fault")]
+async fn framed_attempt(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command: u64,
+    command_type: u32,
+    payload: &[u8],
+    handles: (Option<std::num::NonZeroU32>, Option<std::num::NonZeroU32>),
+    feedback_expected: bool,
+    lose_ack: bool,
+) -> TestResult<(AdmittedSession, Vec<u8>, Vec<u8>, Option<String>)> {
     let (source, target) = handles;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_side = async move {
@@ -1381,6 +1445,13 @@ async fn framed(
         )?;
         client.write_u32(u32::try_from(bytes.len())?).await?;
         client.write_all(&bytes).await?;
+        if lose_ack {
+            while let Ok(frame) = read_frame(&mut client).await {
+                let envelope = crate::foundation::decode_wire_envelope(&frame)?;
+                assert_ne!(envelope.message_type(), crate::foundation::MessageType::CommandResult);
+            }
+            return Ok((Vec::new(), actual, None));
+        }
         let mut result = None;
         let mut feedback = None;
         loop {
@@ -1428,8 +1499,10 @@ async fn framed(
     let exchange = async {
         let (result, end) = tokio::join!(client_side, server_side);
         let (result, actual, feedback) = result?;
-        let ConnectionEnd::AdmittedThenDisconnected(next) = end else {
-            return Err(format!("unexpected server end {end:?}").into());
+        let next = match end {
+            ConnectionEnd::AdmittedThenDisconnected(next) => next,
+            ConnectionEnd::AdmittedThenClosed(next, _) if lose_ack => next,
+            end => return Err(format!("unexpected server end {end:?}").into()),
         };
         Ok::<_, Box<dyn std::error::Error>>((next, result, actual, feedback))
     };

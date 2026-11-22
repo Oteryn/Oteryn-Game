@@ -116,6 +116,11 @@ pub(super) struct PendingCallbacks {
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     encounters: std::sync::Mutex<Vec<encounter::EncounterVisit>>,
     ground_use_cleanup: std::sync::Mutex<Vec<definition_target::GroundUseTurn>>,
+    ground_uses: std::sync::Mutex<
+        std::collections::HashMap<GameSessionId, definition_target::PendingGroundUse>,
+    >,
+    #[cfg(any(test, feature = "test-support"))]
+    pub(super) interrupt_ground_use_after_commit: std::sync::atomic::AtomicBool,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     carrot_refusal:
         std::sync::Mutex<Option<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>>,
@@ -530,6 +535,12 @@ pub(super) fn step_command(
 }
 
 impl PendingCallbacks {
+    pub(super) fn forget_ground_use(&self, session: GameSessionId) {
+        if let Ok(mut uses) = self.ground_uses.lock() {
+            uses.remove(&session);
+        }
+    }
+
     pub(super) fn finish_cancelled_ground_uses(&self, runtime: &mut ChannelRuntimeV1) {
         if let Ok(mut pending) = self.ground_use_cleanup.lock() {
             for turn in pending.drain(..) {
@@ -543,7 +554,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Resolve a closed transport's reserved USE before the session stream can reopen.
     /// Historical receipt recovery does not grant player control or install a projection.
     pub(super) async fn reconcile_quest_callback_receipts(&self, session: GameSessionId) -> bool {
-        if !self.reconcile_soul_war_reward_receipts(session).await {
+        if !self.reconcile_ground_use_receipt(session).await
+            || !self.reconcile_soul_war_reward_receipts(session).await
+        {
             return false;
         }
         let pending = match self.states.quest_callbacks.records.lock() {
@@ -681,7 +694,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) fn has_pending_quest_callback(&self, session: GameSessionId) -> bool {
-        if self.states.grizzly_boss.has_pending(session) {
+        if self.states.grizzly_boss.has_pending(session)
+            || self
+                .states
+                .quest_callbacks
+                .ground_uses
+                .lock()
+                .map_or(true, |uses| uses.contains_key(&session))
+        {
             return true;
         }
         self.states

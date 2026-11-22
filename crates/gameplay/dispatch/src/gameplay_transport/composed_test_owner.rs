@@ -82,10 +82,19 @@ pub use super::character_progression_binding::{
     ProgressionBinding, ProgressionDurable, ProgressionRounds, bind_character_progression,
 };
 pub use super::connection::{
-    AdmittedSession, ConnectionEnd, ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority,
-    IDLE_LIVENESS, SessionContinuity, UseCommand, serve_admitted,
+    AdmittedSession, ConnectionEnd, ControlLossResult, ControllerBinding, FirstEntryOutcome,
+    FreshAdmissionAuthority, IDLE_LIVENESS, ResumeAttempt, SessionContinuity, UseCommand,
+    serve_admitted,
 };
 pub use super::item_view::ItemKey;
+
+pub fn interrupt_ground_use_after_commit(owner: &ComposedFreshAdmission<'_, '_, '_>) {
+    owner
+        .states
+        .quest_callbacks
+        .interrupt_ground_use_after_commit
+        .store(true, std::sync::atomic::Ordering::Release);
+}
 
 pub fn empty_capabilities(
     world: WorldId,
