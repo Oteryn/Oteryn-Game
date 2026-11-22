@@ -5,7 +5,9 @@ use super::{Dependencies, TestResult};
 use crate::domain::soulpit::{EncounterEffect, soulpit_entry_monster_name};
 use crate::durability::soulpit::{SoulpitAction, SoulpitStepRequest};
 use crate::foundation::GameSessionId;
-use crate::gameplay_transport::capabilities::{PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities};
+use crate::gameplay_transport::capabilities::{
+    PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities,
+};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_protocol_oteryn::zones_nologout::{CAPABILITY_ZONES_NOLOGOUT_V1, ServerMessage};
 
@@ -29,13 +31,18 @@ fn scenario(admin: String, replay: bool) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("soulpit-animus-notice", move || {
         run(async move |_| {
             super::reset();
-            let h = Harness::create_with_admission_seed(admin, "soulpit_animus_notice", true, false)
-                .await?;
+            let h =
+                Harness::create_with_admission_seed(admin, "soulpit_animus_notice", true, false)
+                    .await?;
             let evidence = prepare_source(&h).await?;
             let deps = Dependencies::new()?;
             let admitted = admit(&h, &deps, &evidence).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
-            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
             let mut owner = deps.owner(&h, &authority);
             let survivor = admitted.destination;
             let (content, _) =
@@ -109,7 +116,10 @@ fn scenario(admin: String, replay: bool) -> TestResult {
             let mut refused = completion.clone();
             refused.survivors.clear();
             assert!(
-                owner.commit_soulpit_progress(&initial.species, refused).await.is_err()
+                owner
+                    .commit_soulpit_progress(&initial.species, refused)
+                    .await
+                    .is_err()
             );
             assert_eq!(messages.take(session, generation), None);
             assert_eq!(messages.take(bystander, 1), None);
@@ -121,7 +131,9 @@ fn scenario(admin: String, replay: bool) -> TestResult {
             assert!(!committed.replayed);
             assert_eq!(
                 committed.effect,
-                EncounterEffect::Completed { surviving_slots: vec![0] }
+                EncounterEffect::Completed {
+                    surviving_slots: vec![0]
+                }
             );
             let credits: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_soulpit_survival_rewards WHERE occurrence_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND species_key=$3",
@@ -140,7 +152,8 @@ fn scenario(admin: String, replay: bool) -> TestResult {
                 // the queue. It must still be the same authenticated controller.
                 let mut returned = connected;
                 returned.game_session_id = GameSessionId::decode(&id(95)).map_err(debug)?;
-                messages.transfer_connection(connected, returned)
+                messages
+                    .transfer_connection(connected, returned)
                     .map_err(|()| "transfer live server-message recipient")?;
                 assert_eq!(owner.take_server_notice(connected), None);
                 returned
@@ -177,10 +190,16 @@ async fn prepare_completion(
         let monster_ids = [1_u64, 2, 3, 4, 5, 6, 7].map(|slot| Some(u64::from(wave) * 100 + slot));
         let mut actions = vec![
             (SoulpitAction::Advance, start + 4_000_000),
-            (SoulpitAction::Spawned { wave, monster_ids }, start + 4_000_000),
+            (
+                SoulpitAction::Spawned { wave, monster_ids },
+                start + 4_000_000,
+            ),
         ];
         actions.extend(monster_ids.into_iter().flatten().map(|monster_id| {
-            (SoulpitAction::Defeated { wave, monster_id }, start + 4_500_000)
+            (
+                SoulpitAction::Defeated { wave, monster_id },
+                start + 4_500_000,
+            )
         }));
         actions.push((SoulpitAction::Advance, start + 5_000_000));
         let completion = wave == 4;
@@ -192,7 +211,10 @@ async fn prepare_completion(
             if completion && index + 1 == action_count {
                 return Ok(step.clone());
             }
-            let outcome = owner.commit_soulpit_progress(species, step.clone()).await.map_err(debug)?;
+            let outcome = owner
+                .commit_soulpit_progress(species, step.clone())
+                .await
+                .map_err(debug)?;
             assert!(!outcome.replayed);
             step.expected_revision = outcome.revision;
             occurrence += 1;
