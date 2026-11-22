@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 import quest_corpse_profiles as corpse
+from quest_shared_boss_corpses import QUEST_REWARD_BOSSES
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
@@ -25,6 +26,7 @@ def required_items(root, creatures, tables):
     rule_creatures = {objectives[rule['objective']]['creature'] for rule in rules}
     ordinary = json.loads((root / corpse.REQUIREMENTS).read_bytes())['objectives']
     selected = rule_creatures | {objectives[key]['creature'] for key in ordinary}
+    selected |= {'oteryn:creature.' + name for name in QUEST_REWARD_BOSSES}
     native = {row['profile']['target']['key']: row['profile']['target'] for row in creatures['records']}
     definitions = {}
     for path in sorted((root / 'content/creatures/definitions').glob('creatures-*.json')):

@@ -398,6 +398,23 @@ pub(super) async fn exercise(
             "exact token cost {index}"
         );
         super::qengine_voucher_stories_fixtures::mask(owner, admitted, &key, mask).await?;
+        if prefix == "issavi" {
+            let achievements: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements
+                 WHERE achievement_key='oteryn:achievement/citizen_of_issavi'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(achievements, i64::from(mask == 3));
+            let completed: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_character_quest_states
+                 WHERE quest_key='oteryn:quest.authored.citizen_of_issavi_outfits_quest'
+                   AND completed_character_revision IS NOT NULL)",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(completed, mask == 3);
+        }
     }
     let grants: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlock_receipts")
@@ -439,5 +456,37 @@ pub(super) async fn exercise(
         );
         tx.rollback().await?;
     }
+    Ok(())
+}
+
+
+pub(super) async fn assign_cartography(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::m39_bone_journey_fixtures::{carried, grant, stage};
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[3],
+        )
+        .ok_or("Cartography NPC capability")?;
+    let [rotem] =
+        super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.rotem_valos"]).await?;
+    let track = "oteryn:quest-progress/cartography-101/assignment";
+    assert_eq!(stage(h, track).await?, None);
+    assert_eq!(carried(h, 22107).await?, 0);
+    assert_eq!(
+        grant(owner, admitted, rotem, "cartography-101/assign").await?.0,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(stage(h, track).await?, Some(1));
+    assert_eq!(carried(h, 22107).await?, 1);
+    assert_eq!(
+        grant(owner, admitted, rotem, "cartography-101/assign").await?.0,
+        NpcIntentDisposition::Rejected
+    );
+    assert_eq!(carried(h, 22107).await?, 1);
     Ok(())
 }

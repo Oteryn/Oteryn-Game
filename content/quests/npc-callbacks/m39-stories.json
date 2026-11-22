@@ -83,6 +83,111 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/curos.lua:95-101:sha256:6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e"
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/l2-alliance-report-rebel",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The rebels are returning to camp now that their commander is dead."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/curos.lua#L83-L85"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-alliance-start",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "A rebel commander is hiding in the mountains northwest of here. Kill him and return to me."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/curos.lua#L70-L82"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06",
+          "minimum": 5,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-alliance-tower",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The lizards spy on us from a tower in the Dragonblaze Mountains. Enter through their underground fortress and destroy the scrying device."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/curos.lua#L86-L94"
       ]
     },
     {

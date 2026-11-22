@@ -50,3 +50,15 @@ fn engenc_postgres_native_energy_chamber_admission() -> TestResult {
         },
     )
 }
+
+#[test]
+fn engenc_postgres_orchid_death_and_treasure() -> TestResult {
+    run(
+        "engenc-asura-native-orchid",
+        Position {
+            x: 32960,
+            y: 32679,
+            floor: -2,
+        },
+    )
+}

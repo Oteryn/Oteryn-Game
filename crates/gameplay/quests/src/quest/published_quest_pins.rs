@@ -74,6 +74,34 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
 // new rules bound to the new hash. Existing absent-track defaults did not change.
 const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     (
+        "oteryn:quest.an_uneasy_alliance_quest",
+        hash(b"f070da81828f66fd12f5e724544bb8bed5d956eadb6f818154ad3780e74c6839"),
+        &[hash(
+            b"5bd6915a3824b432e3e312bbdca7d301065770ee64cda78a1d1bc925b88732f5",
+        )],
+    ),
+    (
+        "oteryn:quest.authored.asura_palace_quest",
+        hash(b"0f691d31a3840ab4346e9a7b8271a2810458ebb02afcb1f63e7551f9d076a5e0"),
+        &[hash(
+            b"7d2ff46451588dd3ff2352c5db743480e1511730cce8c4ffcdf10f716a1d7caa",
+        )],
+    ),
+    (
+        "oteryn:quest.authored.braindeath_quest",
+        hash(b"8d8ea321374b01ddba4e073076959274c1d7d5bf03bb32d73240a50ec871c227"),
+        &[hash(
+            b"4e9b33f69585e0ce52302cfb0f018fd66c2864a6aec3259b2fc80757cf818940",
+        )],
+    ),
+    (
+        "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
+        hash(b"7a5d8ac354c809d1406bd86f2bb2738764c9d0643a19adfb0cde06f1da329783"),
+        &[hash(
+            b"312cde5287a319cb4039095c61013abaadfa04c2fc34016c634baa4270160222",
+        )],
+    ),
+    (
         "oteryn:quest.ferumbras_ascension_quest",
         hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
         &[hash(
@@ -107,14 +135,16 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
     for &(quest, current, previous) in GAMEPLAY_PREDECESSORS {
         if catalogue.definition_hash(quest) == Some(current) {
-            catalogue
-                .predecessors
-                .entry(quest.into())
-                .or_default()
-                .extend(previous.iter().map(|&hash| NpcDefinitionPredecessor {
+            let accepted = catalogue.predecessors.entry(quest.into()).or_default();
+            for &hash in previous {
+                if accepted.iter().any(|predecessor| predecessor.hash == hash) {
+                    continue;
+                }
+                accepted.push(NpcDefinitionPredecessor {
                     hash,
                     defaults: Default::default(),
-                }));
+                });
+            }
         }
     }
 }

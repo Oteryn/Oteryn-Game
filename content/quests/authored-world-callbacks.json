@@ -94,12 +94,24 @@
           "count": 1,
           "contents": [
             {
-              "item": "oteryn:item.tibia.i239",
-              "count": 2
-            },
-            {
               "item": "oteryn:item.tibia.i3035",
               "count": 13
+            },
+            {
+              "item": "oteryn:item.tibia.i3003",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3457",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i268",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i239",
+              "count": 2
             }
           ]
         }

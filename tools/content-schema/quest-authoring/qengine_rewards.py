@@ -1005,6 +1005,9 @@ def build():
             if bit==2:callback['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
             if carried:callback['carried_item']=f'oteryn:item.tibia.i{item}'
             if label=='issavi':callback['sources'].append('owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each')
+            if label=='issavi' and bit==2:
+                callback.update(achievement='oteryn:achievement/citizen_of_issavi',completes=True)
+                callback['sources'].append('https://tibia.fandom.com/index.php?curid=94999&oldid=875550')
         if not carried:
             for words,before,after in [(['addon'],0,6),(['yes'],6,7),(['yes'],7,8)]:
                 source_offer(npc,words,before,after,[]);offers[-1]['requires']=ready
@@ -1051,7 +1054,7 @@ def build():
     engoutfit_m36.append(add, storage, callbacks, offers, declarations,
         f'crystal:{PIN}:data-global/npc/rock_steady.lua:56-98:sha256:{sha(inputs["data-global/npc/rock_steady.lua"])}')
     qmech_m39.append(add, callbacks, offers, declarations, inputs, PIN)
-    m39_keys = ('l2-cael-tome-', 'l2-zalamon-tome', 'l2-alliance-finish', 'l2-bone-', 'bone-pit-lost-sample')
+    m39_keys = ('l2-cael-tome-', 'l2-zalamon-tome', 'l2-alliance-', 'l2-bone-', 'bone-pit-lost-sample')
     m39_callbacks = [callback for callback in callbacks if callback['key'].split('/')[-1].startswith(m39_keys)]
     callbacks = [callback for callback in callbacks if callback not in m39_callbacks]
     m39_tracks = [track for track in declarations if track['key'].endswith('/corruption_hole')]
