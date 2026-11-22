@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.ahmet",
+      "keywords": ["book"],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 0,
+          "maximum": 16,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "I see: You want me to add an additional story to this book. A legend about how it brings ill luck to kill a white deer. I could do that, yes. It costs 5000 gold, however. Are you still interested?"
+      ]
+    }
+  ]
+}

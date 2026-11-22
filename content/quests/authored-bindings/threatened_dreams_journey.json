@@ -19,21 +19,20 @@
           "trigger": {
             "kind": "npc_dialogue",
             "callback": {
-              "key": "oteryn:quest-reward/threatened-dreams/offer-book-amendment",
+              "key": "oteryn:quest-reward/threatened-dreams/amend-book",
               "quest": "oteryn:quest.threatened_dreams_quest",
               "npc": "oteryn:npc.ahmet",
               "keywords": [
-                "book"
+                "yes"
               ],
-              "topic": 0,
-              "next_topic": 5,
+              "topic": 5,
+              "next_topic": 0,
               "storage": [
                 {
                   "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
                   "minimum": 1,
                   "maximum": 1,
-                  "set": 1,
-                  "preserve": true
+                  "set": 2
                 }
               ],
               "take": [],
@@ -41,7 +40,8 @@
               "outfit": null,
               "achievement": null,
               "reply": [
-                "I can add a legend about the white deer for 5000 gold. Are you interested?"
+                "Well then. Here, take the book, I added the story. Oh, just a piece of advice: Not to inflame prejudice but poachers are of rather simple disposition. I doubt they are ardent readers. ...",
+                "So if you want to make sure they read this anytime soon, perhaps don't hide the book in a shelf or chest. Make sure to place it somewhere where they will find it easily, like very obviously on a table or something."
               ],
               "sources": [
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ahmet.lua:129-176",
@@ -49,55 +49,21 @@
               ],
               "required_claims": [
                 "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission01.poacher_chest"
+              ],
+              "fee": {
+                "gold": 5000,
+                "include_bank": false
+              },
+              "present": [
+                {
+                  "item": "oteryn:item.tibia.i25235",
+                  "count": 1
+                }
+              ],
+              "failure_reply": [
+                "You need 5000 gold and the book with ancient legends."
               ]
-            },
-            "alternatives": [
-              {
-                "key": "oteryn:quest-reward/threatened-dreams/amend-book",
-                "quest": "oteryn:quest.threatened_dreams_quest",
-                "npc": "oteryn:npc.ahmet",
-                "keywords": [
-                  "yes"
-                ],
-                "topic": 5,
-                "next_topic": 0,
-                "storage": [
-                  {
-                    "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
-                    "minimum": 1,
-                    "maximum": 1,
-                    "set": 2
-                  }
-                ],
-                "take": [],
-                "give": null,
-                "outfit": null,
-                "achievement": null,
-                "reply": [
-                  "I added the legend. Set the book on the poachers' table where they can see it."
-                ],
-                "sources": [
-                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ahmet.lua:129-176",
-                  "https://tibia.fandom.com/index.php?curid=81363&oldid=1202454"
-                ],
-                "required_claims": [
-                  "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission01.poacher_chest"
-                ],
-                "fee": {
-                  "gold": 5000,
-                  "include_bank": false
-                },
-                "present": [
-                  {
-                    "item": "oteryn:item.tibia.i25235",
-                    "count": 1
-                  }
-                ],
-                "failure_reply": [
-                  "You need 5000 gold and the book with ancient legends."
-                ]
-              }
-            ]
+            }
           }
         },
         {
