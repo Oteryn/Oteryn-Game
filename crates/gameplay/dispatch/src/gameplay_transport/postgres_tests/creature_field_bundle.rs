@@ -431,6 +431,16 @@ async fn exercise(harness: &Harness, case: FieldCase) -> TestResult {
                     }
                     FieldCase::NoField => {
                         assert_eq!(map.field_read_counts_for_test(), [0, 0, 0]);
+                        let (tx, authority) = map.scope_transaction();
+                        use crate::durability::spell_item_transaction::{
+                            SpellItemError, read_creature_field_positions_in_transaction,
+                        };
+                        assert!(matches!(
+                            read_creature_field_positions_in_transaction(
+                                tx, authority, &vec![vec![0; 10]; 257], &[],
+                            ).await,
+                            Err(SpellItemError::Rejected("creature field candidate read bound")),
+                        ));
                     }
                     FieldCase::Ordinals => {
                         assert_eq!(map.field_read_counts_for_test(), [1, 1, 1]);

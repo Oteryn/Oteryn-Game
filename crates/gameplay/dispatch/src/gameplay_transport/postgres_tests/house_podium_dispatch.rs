@@ -11,14 +11,14 @@ use crate::durability::house_scope_handoff::{
 };
 use crate::durability::runtime_scope_assignment::{ControlActor, OperationKey};
 use crate::foundation::{
-    ChannelContentPin, CharacterId, CharacterLease, MessageType, MovementLocalPosition,
-    decode_wire_envelope,
+    AuthenticatedTransportRefV1, ChannelContentPin, CharacterId, CharacterLease, MessageType,
+    MovementLocalPosition, decode_wire_envelope,
 };
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
-    serve_admitted,
+    AdmittedSession, ConnectionEnd, ControlLossResult, FirstEntryOutcome, FreshAdmissionAuthority,
+    IDLE_LIVENESS, ResumeAttempt, serve_admitted,
 };
 use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
 use oteryn_protocol_oteryn::world_spatial::{
@@ -47,6 +47,7 @@ enum Case {
     Unavailable,
     NoPath,
     DoorAcl,
+    AclSuccessor,
 }
 
 #[test]
@@ -118,6 +119,15 @@ fn house_door_step_respects_guild_rank_acl_postgres() -> TestResult {
     postgres_case("house_door_rank_step", Case::DoorAcl)
 }
 
+#[test]
+fn house_acl_receipt_keeps_original_generation_after_reconnect_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    postgres_case("house_acl_successor_fence", Case::AclSuccessor)
+}
+
 fn postgres_case(name: &'static str, case: Case) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -149,7 +159,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .await
         .map_err(debug)?;
     let base = Dependencies::new()?;
-    let walks = matches!(case, Case::Walk | Case::CancelWalk | Case::DoorAcl);
+    let walks = matches!(
+        case,
+        Case::Walk | Case::CancelWalk | Case::DoorAcl | Case::Unavailable | Case::AclSuccessor
+    );
     let world = if walks {
         super::house_wrap_fixtures::walkable_house_bundle(
             base.admitted.world_id,
@@ -287,11 +300,43 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .ok_or("house podium offer")?;
     let mut body = vec![8, 1, 18, HOUSE.len() as u8];
     body.extend(HOUSE.as_bytes());
+    if matches!(case, Case::DoorAcl) {
+        let mut outside = admitted;
+        let result = exchange(
+            &owner,
+            &mut outside,
+            admitted.continuity.next_command_id,
+            oteryn_protocol_oteryn::house_transfer::COMMAND_TYPE_HOUSE_TRANSFER,
+            &body,
+        )
+        .await?
+        .ok_or("House entry refusal")?;
+        assert_eq!(result.0, CommandStatus::Rejected);
+        admitted = outside;
+        let position = owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(deps.actor)
+            .map_err(debug)?;
+        assert_eq!(
+            position.position(),
+            MovementLocalPosition {
+                x: 32309,
+                y: 32805,
+                floor: 7
+            }
+        );
+        set_door_guild_membership(h, true).await?;
+    }
     let (inside, _) = owner
         .transfer_house(admitted, 2, &body)
         .await
         .ok_or("house transfer outcome")?;
     let mut admitted = inside.ok_or("house transfer admission")?;
+    if matches!(case, Case::AclSuccessor) {
+        return verify_receipt_after_reconnect(h, &owner, admitted).await;
+    }
 
     super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
     let mut tx = h.pool.begin().await?;
@@ -407,6 +452,12 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             ));
             assert!(!result.protocol_error);
             assert!(result.replies.is_empty());
+            let mut resumed = reconnect(&owner, admitted, 93).await?;
+            assert_eq!(resumed.continuity.next_command_id, command + 1);
+            assert_eq!(
+                exchange(&owner, &mut resumed, command, wire::COMMAND_QUERY, payload).await?,
+                Some((CommandStatus::DuplicateReplay, Vec::new()))
+            );
             return Ok(());
         }
         Case::NoPath => {
@@ -596,15 +647,116 @@ async fn verify_house_door_steps(
             .house_actor_state(actor, admitted.game_session_id)
             .map_err(debug)?;
         assert_eq!((state.position.x, state.position.y), (expected_x, 32804));
-        if direction == StepDirection::West && expected_x == 32310 {
-            let mut tx = h.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica")
-                .execute(&mut *tx)
-                .await?;
-            sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,1)")
-                .bind(id(41).as_slice()).bind(id(90).as_slice()).execute(&mut *tx).await?;
-            tx.commit().await?;
+        if expected_x == 32310 {
+            set_door_guild_membership(h, direction == StepDirection::West).await?;
         }
+    }
+    Ok(())
+}
+
+async fn set_door_guild_membership(h: &Harness, member: bool) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let sql = if member {
+        "INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,1)"
+    } else {
+        "DELETE FROM game_guild_members WHERE character_id=encode($1,'hex')::uuid AND guild_id=encode($2,'hex')::uuid"
+    };
+    sqlx::query(sql)
+        .bind(id(41).as_slice())
+        .bind(id(90).as_slice())
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn reconnect(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    lost: AdmittedSession,
+    nonce: u8,
+) -> TestResult<AdmittedSession> {
+    assert_eq!(
+        owner.lose_control(lost, Duration::ZERO, None).await,
+        ControlLossResult::Recorded
+    );
+    let credential = RecoverySource::token(nonce)?;
+    let resumed = owner
+        .resume(ResumeAttempt {
+            game_session_id: lost.game_session_id,
+            recovery_material: credential.as_bytes(),
+            transport: AuthenticatedTransportRefV1::decode(&[nonce; 16]).map_err(debug)?,
+            last_applied_server_sequence: 0,
+            supported_capabilities: lost.continuity.selected_capabilities.as_slice(),
+        })
+        .await
+        .map_err(debug)?;
+    assert_eq!(resumed.game_session_id, lost.game_session_id);
+    assert_eq!(
+        resumed.continuity.connection_generation,
+        lost.continuity.connection_generation + 1
+    );
+    Ok(resumed)
+}
+
+async fn verify_receipt_after_reconnect(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    let session = admitted.game_session_id.as_bytes().as_slice();
+    let original = admitted.continuity.connection_generation;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    let writable: bool = sqlx::query_scalar(
+        "SELECT has_column_privilege(current_user,'game_house_management_receipts','connection_generation','INSERT')",
+    ).fetch_one(&mut *tx).await?;
+    assert!(!writable);
+    let stamped: String = sqlx::query_scalar(
+        "INSERT INTO game_house_management_receipts(game_session_id,command_id,character_id,world_id,house_key,request_binding,result_revision,action_kind,list_key)
+         VALUES(encode($1,'hex')::uuid,10000,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,decode(repeat('01',32),'hex'),2,1,'guest')
+         RETURNING connection_generation::text",
+    )
+    .bind(session).bind(id(41).as_slice()).bind(id(42).as_slice()).bind(HOUSE)
+    .fetch_one(&mut *tx).await?;
+    assert_eq!(stamped, original.to_string());
+    // Exercise the old binary's full insert and four-argument call.
+    sqlx::query("SELECT game_house_management_guild_acl_advance(encode($1,'hex')::uuid,10000,$2::text::numeric,'[]'::jsonb)")
+        .bind(session).bind(&stamped).execute(&mut *tx).await?;
+    tx.commit().await?;
+
+    owner.states.command_ingress.admit(admitted.game_session_id);
+    let successor = reconnect(owner, admitted, 94).await?;
+    let current = successor.continuity.connection_generation.to_string();
+    for legacy in [false, true] {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        let call = if legacy {
+            sqlx::query("SELECT game_house_management_guild_acl_advance(encode($1,'hex')::uuid,10000,$2::text::numeric,'[]'::jsonb)")
+                .bind(session).bind(&current)
+        } else {
+            sqlx::query("SELECT game_house_management_guild_acl_advance(encode($1,'hex')::uuid,10000,'[]'::jsonb)")
+                .bind(session)
+        };
+        let error = call
+            .execute(&mut *tx)
+            .await
+            .expect_err("the successor cannot advance an older receipt");
+        let error = error
+            .as_database_error()
+            .ok_or("expected database refusal")?;
+        assert_eq!(error.code().as_deref(), Some("23514"));
+        assert_eq!(
+            error.message(),
+            "House guild ACL needs its original current session"
+        );
+        tx.rollback().await?;
     }
     Ok(())
 }

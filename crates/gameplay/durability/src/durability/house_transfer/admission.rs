@@ -72,7 +72,7 @@ impl DurabilityRoot {
                 if load_scoped_last_position(&mut tx, request.fence.character_id).await? != Some(saved.clone()) {
                     return Err(DurabilityError::Unavailable);
                 }
-                prepare(&mut tx, &node, &mut request).await?;
+                prepare(&mut tx, &node, &mut request, None).await?;
                 let payload = encode_house_transfer_ack(&request.ack).map_err(|_| DurabilityError::Unavailable)?;
                 // 0703 verifies the committed fresh receipt and exact old LastPosition key
                 // in addition to every original 0215 source/assignment/admission guard.

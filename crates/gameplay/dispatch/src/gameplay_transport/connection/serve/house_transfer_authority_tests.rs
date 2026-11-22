@@ -373,13 +373,22 @@ fn counted_move_checks_trade_reservation_before_reaching_writer() -> Result<(), 
     })
 }
 
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+enum PodiumExit {
+    #[default]
+    Read,
+    Periodic,
+    Projection,
+}
+
 #[derive(Default)]
 struct PendingPodiumAuthority {
     commands: crate::gameplay_transport::session_ingress::SessionCommands,
     query_ready: tokio::sync::Notify,
     periodic_ready: tokio::sync::Notify,
     periodic_continue: tokio::sync::Notify,
-    fail_periodic_write: bool,
+    exit: PodiumExit,
+    projection_read: std::sync::atomic::AtomicBool,
 }
 
 impl FreshAdmissionAuthority for PendingPodiumAuthority {
@@ -406,7 +415,21 @@ impl FreshAdmissionAuthority for PendingPodiumAuthority {
 
     async fn house_podium_approach(&self, _: AdmittedSession, _: [u8; 16]) -> Approach {
         self.query_ready.notify_one();
-        Approach::Walk(vec![StepDirection::East])
+        if self.exit == PodiumExit::Projection {
+            Approach::Ready
+        } else {
+            Approach::Walk(vec![StepDirection::East])
+        }
+    }
+
+    async fn house_podium(
+        &self,
+        _: AdmittedSession,
+        _: crate::gameplay_transport::house_podium::Request,
+    ) -> Option<Vec<u8>> {
+        self.projection_read
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+        None
     }
 
     async fn observe_house_vitals(
@@ -414,7 +437,7 @@ impl FreshAdmissionAuthority for PendingPodiumAuthority {
         _: ExactActorRef,
         _: AdmittedSession,
     ) -> Option<(u64, ActorVitals)> {
-        if !self.fail_periodic_write {
+        if self.exit != PodiumExit::Periodic {
             return None;
         }
         self.periodic_ready.notify_one();
@@ -435,13 +458,17 @@ impl FreshAdmissionAuthority for PendingPodiumAuthority {
 }
 
 #[test]
-fn house_podium_reservation_allows_reconnect_after_read_or_periodic_write_failure()
+fn house_podium_reservation_allows_reconnect_after_read_projection_or_periodic_failure()
 -> Result<(), String> {
     run_command_test(|| async {
         tokio::time::pause();
-        for fail_periodic_write in [false, true] {
+        for exit in [
+            PodiumExit::Read,
+            PodiumExit::Periodic,
+            PodiumExit::Projection,
+        ] {
             let owner = PendingPodiumAuthority {
-                fail_periodic_write,
+                exit,
                 ..Default::default()
             };
             let (mut admitted, _) = command_fixture(&[49, 150, 508])?;
@@ -467,7 +494,7 @@ fn house_podium_reservation_allows_reconnect_after_read_or_periodic_write_failur
                 .map_err(|e| e.to_string())?;
             let client = async {
                 owner.query_ready.notified().await;
-                if fail_periodic_write {
+                if exit == PodiumExit::Periodic {
                     owner.periodic_ready.notified().await;
                 }
                 drop(client);
@@ -498,6 +525,12 @@ fn house_podium_reservation_allows_reconnect_after_read_or_periodic_write_failur
             let ConnectionEnd::AdmittedThenDisconnected(mut ended) = *end else {
                 return Err("unexpected House connection end".into());
             };
+            assert_eq!(
+                owner
+                    .projection_read
+                    .load(std::sync::atomic::Ordering::Relaxed),
+                exit == PodiumExit::Projection,
+            );
             assert_eq!(ended.continuity.next_command_id, 2);
             assert!(owner.commands.resumable(&ended));
             ended.continuity.connection_generation += 1;

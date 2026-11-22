@@ -657,14 +657,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                 ]
             })
             .collect::<Vec<_>>();
-        let Some(positions) =
-            read_creature_field_positions_in_transaction(self.tx, self.authority, &field_keys)
-                .await?
-        else {
-            return Ok(vec![true; creatures.len()]);
-        };
-        let positions: BTreeSet<Vec<u8>> = positions.into_iter().collect();
-        Ok(creatures
+        let cells = creatures
             .iter()
             .map(|visible| {
                 let at = visible.position;
@@ -672,9 +665,32 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                 address[..4].copy_from_slice(&at.x.to_be_bytes());
                 address[4..8].copy_from_slice(&at.y.to_be_bytes());
                 address[8..].copy_from_slice(&at.floor.to_be_bytes());
-                positions.contains(address.as_slice())
-                    || runtime.has_creature_periodic_state(visible.actor)
+                let residual = runtime.has_creature_periodic_state(visible.actor);
+                (address, residual)
             })
+            .collect::<Vec<_>>();
+        let requested = cells
+            .iter()
+            .filter(|(_, residual)| !*residual)
+            .map(|(address, _)| address.to_vec())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        let mut positions = BTreeSet::new();
+        for batch in requested.chunks(256) {
+            positions.extend(
+                read_creature_field_positions_in_transaction(
+                    self.tx,
+                    self.authority,
+                    batch,
+                    &field_keys,
+                )
+                .await?,
+            );
+        }
+        Ok(cells
+            .iter()
+            .map(|(address, residual)| *residual || positions.contains(address.as_slice()))
             .collect())
     }
 

@@ -287,6 +287,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 rest: saved.1,
             },
         };
+        let entrance_door_floor = if intent.exit {
+            None
+        } else {
+            let floor = i8::try_from(position.floor).ok()?;
+            Some(if self.bundle_map().is_some() {
+                floor.checked_neg()?
+            } else {
+                floor
+            })
+        };
         let saved_position = request.last_position;
         let transition = if intent.exit {
             None
@@ -304,6 +314,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.character,
                 self.holder,
                 request,
+                entrance_door_floor,
                 capabilities.current_check(),
             )
             .await;

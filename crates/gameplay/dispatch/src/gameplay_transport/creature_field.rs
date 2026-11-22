@@ -25,7 +25,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut ordered_turns = Vec::new();
         let mut source_players = Vec::new();
 
-        let creatures = runtime.visible_entities().creatures;
+        // The periodic owner refuses encounter-hooked and spell-reserved actors.
+        // Exclude them before asking the map for candidate cells.
+        let mut creatures = runtime.visible_entities().creatures;
+        let hooks = runtime.encounter_hooks();
+        creatures.retain(|visible| {
+            !runtime.actor_spell_reserved(visible.actor)
+                && !hooks.is_some_and(|hooks| hooks.contains(visible.actor))
+        });
         let candidates = map
             .creature_field_candidates(runtime, &creatures)
             .await
@@ -45,16 +52,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(snapshot) = runtime.companion_snapshot(visible.actor) else {
                 continue;
             };
-            // The periodic owner refuses an encounter-hooked actor and one reserved
-            // by a pending spell batch. Leave both untouched for this pass instead
-            // of failing it for every other creature.
-            if runtime.actor_spell_reserved(visible.actor)
-                || runtime
-                    .encounter_hooks()
-                    .is_some_and(|hooks| hooks.contains(visible.actor))
-            {
-                continue;
-            }
             if !candidate {
                 if snapshot.state.conditions.accepts_time(now) {
                     ordered_turns.push((visible.actor, false));

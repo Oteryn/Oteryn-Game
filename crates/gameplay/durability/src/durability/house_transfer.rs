@@ -47,8 +47,12 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         mut request: HouseTransferRequest,
+        entrance_door_floor: Option<i8>,
         capabilities: CurrentCapabilityCheck,
     ) -> Result<(HouseTransferAck, Vec<u8>), DurabilityError> {
+        if request.ack.house.is_some() != entrance_door_floor.is_some() {
+            return Err(DurabilityError::Unavailable);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -63,7 +67,7 @@ impl DurabilityRoot {
                     if !prove_current_incarnation(&mut tx, &node).await? {
                         return Err(DurabilityError::Unavailable);
                     }
-                    prepare(&mut tx, &node, &mut request).await?;
+                    prepare(&mut tx, &node, &mut request, entrance_door_floor).await?;
                     let payload = encode_house_transfer_ack(&request.ack)
                         .map_err(|_| DurabilityError::Unavailable)?;
                     apply(
@@ -88,6 +92,7 @@ async fn prepare(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
     request: &mut HouseTransferRequest,
+    entrance_door_floor: Option<i8>,
 ) -> Result<(), DurabilityError> {
     if request.ack.house.is_none() {
         return Ok(());
@@ -115,6 +120,19 @@ async fn prepare(
     .fetch_one(&mut **tx)
     .await?;
     let acl: String = access.try_get("acl_revision")?;
+    // The access read keeps the named House property locked through handoff.
+    // Saved admission instead validates its arbitrary placement in its native owner.
+    if let Some(floor) = entrance_door_floor {
+        let [x, y, _] = request.ack.position;
+        let x = u16::try_from(x).map_err(|_| DurabilityError::Unavailable)?;
+        let y = u16::try_from(y).map_err(|_| DurabilityError::Unavailable)?;
+        let doors =
+            super::house_interior::read_house_door_access(tx, &request.house, &request.fence)
+                .await?;
+        if !doors.permits(x, y, floor) {
+            return Err(DurabilityError::Unavailable);
+        }
+    }
     let prepared_at: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&mut **tx)

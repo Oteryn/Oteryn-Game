@@ -20,8 +20,8 @@ use crate::foundation::CommandRef;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
-pub mod corpse_target;
 mod corpse_projection;
+pub mod corpse_target;
 
 #[derive(Debug)]
 pub enum SpellItemError {
@@ -1616,7 +1616,12 @@ pub fn decode_tile_rows(
             .try_get::<Vec<Option<bool>>, _>("collision_flags")?
             .try_into()
             .map_err(|_| SpellItemError::Rejected("tile collision flags width"))?;
-        corpse_projection::project_current_corpse_flags(&row, ownership_generation, target, &mut flags)?;
+        corpse_projection::project_current_corpse_flags(
+            &row,
+            ownership_generation,
+            target,
+            &mut flags,
+        )?;
         let blocks_movement = flags[0].ok_or(SpellItemError::Rejected(
             "item has no qualified current movement flags",
         ))?;
@@ -3807,39 +3812,64 @@ pub async fn apply_physical_item_line(
     Ok(())
 }
 
-/// Candidate positions only. The caller still reads the current locked stack and
-/// qualifies the full definition and placement before using a recipe.
+/// Candidate positions only. The locked tile reader still qualifies the full
+/// definition, ordering and provenance before the caller can use a recipe.
 pub async fn read_creature_field_positions_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
+    requested: &[Vec<u8>],
     field_keys: &[&str],
-) -> Result<Option<Vec<Vec<u8>>>> {
-    const MAX_POSITIONS: usize = 4096;
+) -> Result<Vec<Vec<u8>>> {
+    if requested.len() > 256 || requested.iter().any(|position| position.len() != 10) {
+        return Err(SpellItemError::Rejected(
+            "creature field candidate read bound",
+        ));
+    }
     check_scope_transaction(tx, authority).await?;
     let (scope_kind, channel, instance) =
         super::item_mint::ground_scope_columns(authority.runtime_scope());
-    let positions: Vec<Vec<u8>> = sqlx::query_scalar(
-        "SELECT DISTINCT g.spatial_position \
-         FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) \
-         WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$2 \
-           AND g.channel_id IS NOT DISTINCT FROM encode($3,'hex')::uuid \
-           AND g.instance_id IS NOT DISTINCT FROM encode($4,'hex')::uuid \
-           AND i.lifecycle=1 \
-           AND (octet_length(g.spatial_position)<>10 OR i.definition_production_key=ANY($5::text[])) \
-         LIMIT $6",
+    let scope_id = channel
+        .or(instance)
+        .ok_or(SpellItemError::Rejected("creature field scope"))?;
+    // Each branch uses the existing exact-cell index for its scope kind. At
+    // the tile reader's visit limit we defer to that reader rather than infer
+    // absence from an incomplete stack. Opaque placements also fail closed.
+    Ok(sqlx::query_scalar(
+        "WITH opaque AS MATERIALIZED (
+            SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g
+             WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$2
+               AND COALESCE(g.channel_id,g.instance_id)=encode($3,'hex')::uuid
+               AND octet_length(g.spatial_position)<>10) AS present
+         )
+         SELECT cell.position FROM unnest($4::bytea[]) AS cell(position), opaque
+         WHERE opaque.present OR (
+            SELECT count(*)>=501 OR COALESCE(bool_or(field.present),false)
+            FROM LATERAL (
+              (SELECT g.item_instance_id FROM game_item_ground_locations g
+               WHERE $2=1 AND g.scope_kind=1 AND g.world_id=encode($1,'hex')::uuid
+                 AND g.channel_id=encode($3,'hex')::uuid AND g.spatial_position=cell.position
+               LIMIT 501)
+              UNION ALL
+              (SELECT g.item_instance_id FROM game_item_ground_locations g
+               WHERE $2=2 AND g.scope_kind=2 AND g.world_id=encode($1,'hex')::uuid
+                 AND g.instance_id=encode($3,'hex')::uuid AND g.spatial_position=cell.position
+               LIMIT 501)
+            ) stack
+            LEFT JOIN LATERAL (
+              SELECT true AS present FROM game_item_instances i
+              WHERE i.item_instance_id=stack.item_instance_id AND i.lifecycle=1
+                AND i.definition_production_key=ANY($5::text[])
+              LIMIT 1
+            ) field ON true
+         )",
     )
     .bind(authority.world.as_slice())
     .bind(scope_kind)
-    .bind(channel.map(|id| id.to_vec()))
-    .bind(instance.map(|id| id.to_vec()))
+    .bind(scope_id.as_slice())
+    .bind(requested)
     .bind(field_keys)
-    .bind(MAX_POSITIONS as i64 + 1)
     .fetch_all(&mut **tx)
-    .await?;
-    // An opaque placement or a larger result cannot prove absence at any cell.
-    // Preserve the existing per-tile validation path in either case.
-    Ok((positions.len() <= MAX_POSITIONS && positions.iter().all(|at| at.len() == 10))
-        .then_some(positions))
+    .await?)
 }
 
 /// Empty-cell projection for a read-only creature pass holding the scope Item lock.

@@ -669,10 +669,14 @@ async fn verify_guild_acl_write_fence(h: &Harness, admitted: &AdmittedSession) -
         (current, 9, "House ACL lacks current owner receipt"),
     ] {
         let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
         let session = admitted.game_session_id.as_bytes().as_slice();
-        sqlx::query("INSERT INTO game_house_management_receipts(game_session_id,command_id,character_id,world_id,house_key,request_binding,result_revision,action_kind,list_key,connection_generation) VALUES(encode($1,'hex')::uuid,10000,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,decode(repeat('01',32),'hex'),$5,1,'guest',$6::text::numeric)")
-            .bind(session).bind(actor.as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(revision).bind(current.to_string())
-            .execute(&mut *tx).await?;
+        let stamped: String = sqlx::query_scalar("INSERT INTO game_house_management_receipts(game_session_id,command_id,character_id,world_id,house_key,request_binding,result_revision,action_kind,list_key) VALUES(encode($1,'hex')::uuid,10000,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,decode(repeat('01',32),'hex'),$5,1,'guest') RETURNING connection_generation::text")
+            .bind(session).bind(actor.as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(revision)
+            .fetch_one(&mut *tx).await?;
+        assert_eq!(stamped, current.to_string());
         let error = sqlx::query("SELECT game_house_management_guild_acl_advance(encode($1,'hex')::uuid,10000,$2::text::numeric,'[]'::jsonb)")
             .bind(session).bind(generation.to_string()).execute(&mut *tx).await
             .expect_err("unfenced House guild ACL");
