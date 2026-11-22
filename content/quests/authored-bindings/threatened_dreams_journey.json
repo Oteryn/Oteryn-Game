@@ -52,8 +52,7 @@
               "outfit": null,
               "achievement": null,
               "reply": [
-                "Well then. Here, take the book, I added the story. Oh, just a piece of advice: Not to inflame prejudice but poachers are of rather simple disposition. I doubt they are ardent readers. ...",
-                "So if you want to make sure they read this anytime soon, perhaps don't hide the book in a shelf or chest. Make sure to place it somewhere where they will find it easily, like very obviously on a table or something."
+                "I added the legend. Leave the book on the poachers' table where they will see it."
               ],
               "sources": [
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ahmet.lua:129-176",
@@ -122,7 +121,7 @@
               },
               "return_on_failure": false,
               "failure_message": "You are not on that mission.",
-              "success_message": "You are placing the book on the table, hopefully the poachers will discover it soon.",
+              "success_message": "You leave the book where the poachers can find it.",
               "sources": [
                 "oteryn-authored:threatened-dreams/poacher-book",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/action_poacher_book.lua:3-19",
@@ -175,7 +174,7 @@
               },
               "return_on_failure": false,
               "failure_message": "You are not on that mission.",
-              "success_message": "You are placing the book on the table, hopefully the poachers will discover it soon.",
+              "success_message": "You leave the book where the poachers can find it.",
               "sources": [
                 "oteryn-authored:threatened-dreams/poacher-book",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/action_poacher_book.lua:3-19",
