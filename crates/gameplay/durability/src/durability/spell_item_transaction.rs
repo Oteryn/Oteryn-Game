@@ -20,8 +20,8 @@ use crate::foundation::CommandRef;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
-mod corpse_projection;
 pub mod corpse_target;
+mod corpse_projection;
 
 #[derive(Debug)]
 pub enum SpellItemError {
@@ -1616,12 +1616,7 @@ pub fn decode_tile_rows(
             .try_get::<Vec<Option<bool>>, _>("collision_flags")?
             .try_into()
             .map_err(|_| SpellItemError::Rejected("tile collision flags width"))?;
-        corpse_projection::project_current_corpse_flags(
-            &row,
-            ownership_generation,
-            target,
-            &mut flags,
-        )?;
+        corpse_projection::project_current_corpse_flags(&row, ownership_generation, target, &mut flags)?;
         let blocks_movement = flags[0].ok_or(SpellItemError::Rejected(
             "item has no qualified current movement flags",
         ))?;
