@@ -771,9 +771,8 @@ fn source_exact_corpse_capacity(creature: &str, corpse: &SectionRef) -> Option<u
         return None;
     }
     match (creature, corpse.key.as_str()) {
-        ("oteryn:creature.hydra", "oteryn:item.tibia.i6048") => Some(36),
         ("oteryn:creature.glooth_golem", "oteryn:item.tibia.i20972") => Some(38),
-        ("oteryn:creature.werehyaena", "oteryn:item.tibia.i33821") => Some(48),
+        ("oteryn:creature.hydra", "oteryn:item.tibia.i6048") => Some(36),
         ("oteryn:creature.lost_berserker", "oteryn:item.tibia.i16071") => Some(50),
         ("oteryn:creature.lucifuga_aranea", "oteryn:item.tibia.i7344") => Some(52),
         ("oteryn:creature.madareth", "oteryn:item.tibia.i7893") => Some(60),
@@ -789,6 +788,7 @@ fn source_exact_corpse_capacity(creature: &str, corpse: &SectionRef) -> Option<u
         ("oteryn:creature.pirate_marauder", "oteryn:item.tibia.i18202") => Some(50),
         ("oteryn:creature.priestess", "oteryn:item.tibia.i18210") => Some(50),
         ("oteryn:creature.reflection_of_mawhawk", "oteryn:item.tibia.i21004") => Some(50),
+        ("oteryn:creature.werehyaena", "oteryn:item.tibia.i33821") => Some(48),
         _ => None,
     }
 }
@@ -822,60 +822,62 @@ fn crystal_plain_corpses() -> &'static [(String, u32)] {
 fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
     corpse.family == "Item"
         && corpse.revision == "definition-r1"
-        && (FOURTH_QUARTER_PLAIN_CORPSES.get(creature) == Some(&corpse.key) || matches!(
-            (creature, corpse.key.as_str()),
-            (
-                "oteryn:creature.symbol_of_hatred",
-                "oteryn:item.tibia.i33792"
-            ) | ("oteryn:creature.hateful_soul", "oteryn:item.tibia.i33793")
-                | ("oteryn:creature.frostfur", "oteryn:item.tibia.i7349")
-                | ("oteryn:creature.gnorre_chyllson", "oteryn:item.tibia.i7349")
-                | (
-                    "oteryn:creature.grimgor_guteater",
-                    "oteryn:item.tibia.i7349"
-                )
-                | ("oteryn:creature.insect_swarm", "oteryn:item.tibia.i10403")
-                | (
-                    "oteryn:creature.kreebosh_the_exile",
-                    "oteryn:item.tibia.i7349"
-                )
-                | ("oteryn:creature.weeping_soul", "oteryn:item.tibia.i33876")
-                | ("oteryn:creature.poor_soul", "oteryn:item.tibia.i33891")
-                | (
+        && (FOURTH_QUARTER_PLAIN_CORPSES.get(creature) == Some(&corpse.key)
+            || matches!(
+                (creature, corpse.key.as_str()),
+                (
                     "oteryn:creature.aspect_of_power",
                     "oteryn:item.tibia.i33949"
-                )
-                | ("oteryn:creature.lovely_snake", "oteryn:item.tibia.i3998")
-                | ("oteryn:creature.pink_butterfly", "oteryn:item.tibia.i4378")
-                | (
-                    "oteryn:creature.purple_butterfly",
-                    "oteryn:item.tibia.i4992"
-                )
-                | ("oteryn:creature.red_butterfly", "oteryn:item.tibia.i4991")
-                | (
-                    "oteryn:creature.norgle_glacierbeard",
-                    "oteryn:item.tibia.i7349"
-                )
-                | ("oteryn:creature.orcus_the_cruel", "oteryn:item.tibia.i7349")
-                | ("oteryn:creature.rocky", "oteryn:item.tibia.i7349")
-                | ("oteryn:creature.raging_fire", "oteryn:item.tibia.i21815")
-                | (
-                    "oteryn:creature.necromantic_focus",
-                    "oteryn:item.tibia.i33984"
-                )
-        ) || creature
-            .strip_prefix("oteryn:creature.")
-            .is_some_and(|name| {
-                corpse
-                    .key
-                    .strip_prefix("oteryn:item.tibia.i")
-                    .and_then(|id| id.parse::<u32>().ok())
-                    .is_some_and(|id| {
-                        crystal_plain_corpses()
-                            .iter()
-                            .any(|(creature, body)| creature == name && *body == id)
-                    })
-            }))
+                ) | ("oteryn:creature.frostfur", "oteryn:item.tibia.i7349")
+                    | ("oteryn:creature.gnorre_chyllson", "oteryn:item.tibia.i7349")
+                    | (
+                        "oteryn:creature.grimgor_guteater",
+                        "oteryn:item.tibia.i7349"
+                    )
+                    | ("oteryn:creature.hateful_soul", "oteryn:item.tibia.i33793")
+                    | ("oteryn:creature.insect_swarm", "oteryn:item.tibia.i10403")
+                    | (
+                        "oteryn:creature.kreebosh_the_exile",
+                        "oteryn:item.tibia.i7349"
+                    )
+                    | ("oteryn:creature.lovely_snake", "oteryn:item.tibia.i3998")
+                    | (
+                        "oteryn:creature.necromantic_focus",
+                        "oteryn:item.tibia.i33984"
+                    )
+                    | (
+                        "oteryn:creature.norgle_glacierbeard",
+                        "oteryn:item.tibia.i7349"
+                    )
+                    | ("oteryn:creature.orcus_the_cruel", "oteryn:item.tibia.i7349")
+                    | ("oteryn:creature.pink_butterfly", "oteryn:item.tibia.i4378")
+                    | ("oteryn:creature.poor_soul", "oteryn:item.tibia.i33891")
+                    | (
+                        "oteryn:creature.purple_butterfly",
+                        "oteryn:item.tibia.i4992"
+                    )
+                    | ("oteryn:creature.raging_fire", "oteryn:item.tibia.i21815")
+                    | ("oteryn:creature.red_butterfly", "oteryn:item.tibia.i4991")
+                    | ("oteryn:creature.rocky", "oteryn:item.tibia.i7349")
+                    | (
+                        "oteryn:creature.symbol_of_hatred",
+                        "oteryn:item.tibia.i33792"
+                    )
+                    | ("oteryn:creature.weeping_soul", "oteryn:item.tibia.i33876")
+            )
+            || creature
+                .strip_prefix("oteryn:creature.")
+                .is_some_and(|name| {
+                    corpse
+                        .key
+                        .strip_prefix("oteryn:item.tibia.i")
+                        .and_then(|id| id.parse::<u32>().ok())
+                        .is_some_and(|id| {
+                            crystal_plain_corpses()
+                                .iter()
+                                .any(|(creature, body)| creature == name && *body == id)
+                        })
+                }))
 }
 
 fn verified_soul_war_corpses(
@@ -1609,23 +1611,17 @@ mod protected_loot_tests {
                 Err(reason) => return Err(format!("{creature}: {}", reason.as_str()).into()),
             }
         }
+        // Other package cohorts qualify additional required loot. Keep the
+        // exact refusal set for bodies whose protected yields still lack proof.
         assert_eq!(
             protected_loot_refusals,
             [
-                "oteryn:creature.shaper_matriarch",
-                "oteryn:creature.shiversleep",
-                "oteryn:creature.sight_of_surrender",
-                "oteryn:creature.silencer",
-                "oteryn:creature.sineater_inferniarch",
                 "oteryn:creature.sir_leonard",
                 "oteryn:creature.sir_leopold",
-                "oteryn:creature.spellreaper_inferniarch",
-                "oteryn:creature.terrorsleep",
                 "oteryn:creature.the_flaming_orchid",
                 "oteryn:creature.ushuriel",
                 "oteryn:creature.varg",
                 "oteryn:creature.vladrukh",
-                "oteryn:creature.weakened_frazzlemaw",
                 "oteryn:creature.zorvorax",
             ]
         );

@@ -25,7 +25,7 @@ FORMAL = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
 VOCATIONS = ('druid', 'knight', 'monk', 'paladin', 'sorcerer')
 LIMITS = {'catalog': 32 * 1024**2, 'source_selection': 256 * 1024,
           'creature_profiles': 8 * 1024**2, 'presentation_profiles': 8 * 1024**2,
-          # Match existing production MAX_ITEM_PROFILES (native_gameplay.rs:73).
+          # Match production MAX_ITEM_PROFILES in native_gameplay.rs.
           'item_profiles': 16 * 1024**2, 'spell_appearances': 8 * 1024**2,
           'build_training': 8 * 1024**2, 'familiar_config': 4096,
           'familiar_defenses': 32 * 1024, 'wheel_profile': 64 * 1024,
@@ -828,11 +828,41 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     return ('{"schema":"OTERYN_NATIVE_LOOT_TABLES/v1",\n' + body + '}\n').encode('utf-8')
 
 
+def apply_production_loot_overlays(root, generated, profile_path, manifest_path, canonical):
+    """Refine the exact World Change and Quest facts in the native loot closure."""
+    import questpc7_hot_corpse_loot
+    import questpc7_marsh_loot
+    import questpc7_slug_loot
+    import questpc7_smith_corpse_loot
+
+    import world_change_loot_inputs
+
+    for owner in (world_change_loot_inputs, questpc7_marsh_loot, questpc7_slug_loot,
+                  questpc7_smith_corpse_loot, questpc7_hot_corpse_loot):
+        owner.apply(root, generated, profile_path, manifest_path, canonical)
+
+
+def production_loot_tables(creatures: dict) -> bytes:
+    raw = loot_tables(creatures)
+    from import_spell_families import canonical_bytes
+
+    item_path = 'content/items/definitions/spell-native-profiles.json'
+    manifest_path = 'content/spells.manifest.json'
+    loot_path = LOOT_TABLES.relative_to(ROOT).as_posix()
+    generated = {
+        item_path: (ROOT / item_path).read_bytes(),
+        manifest_path: (ROOT / manifest_path).read_bytes(),
+        loot_path: raw,
+    }
+    apply_production_loot_overlays(ROOT, generated, item_path, manifest_path, canonical_bytes)
+    return generated[loot_path]
+
+
 def refresh_loot_tables(output: Path = LOOT_TABLES) -> str:
     """Writes the loot section of the production Creature profiles. It is pinned only beside the
     Item key set (OTNGP08)."""
     _, creatures = read(CREATURE_PROFILES)
-    raw = loot_tables(creatures)
+    raw = production_loot_tables(creatures)
     if len(raw) > LIMITS['loot_tables']:
         raise ValueError('Native input exceeds bounded provider size: loot_tables')
     output.write_bytes(raw)

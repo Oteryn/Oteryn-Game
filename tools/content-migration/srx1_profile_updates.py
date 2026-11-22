@@ -23,6 +23,21 @@ def coalesce_dispenser_top_order(document, source_records, house_overlay):
             document['records'][index] = copy.deepcopy(original[key])
 
 
+def compact_base(base, canonical):
+    # The native reader restores these omitted fields to Unknown or None.
+    limit = 16 * 1024 * 1024
+    if len(base) <= limit:
+        return base
+    document = json.loads(base)
+    from native_profile_composition import compact_item_profile
+
+    document['records'] = [compact_item_profile(row) for row in document['records']]
+    encoded = canonical(document)
+    if len(encoded) > limit:
+        raise ValueError('NATIVE_ITEM_PROFILE_SIZE')
+    return encoded
+
+
 def generate(root, generated, profile_path, manifest_path, order, canonical):
     import dispenser_item_profiles
     import house_decoration_actions
@@ -49,6 +64,8 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
                if original.get(row['production_definition']['production_key']) != row]
     if not updates or len(updates) > 128:
         raise ValueError('SRX1_ITEM_UPDATE_BOUNDS')
+    base = compact_base(base, canonical)
+    generated[profile_path] = base
     data = ('{\n  "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",\n'
             '  "base_sha256": "' + hashlib.sha256(base).hexdigest() + '",\n'
             '  "records": [\n'

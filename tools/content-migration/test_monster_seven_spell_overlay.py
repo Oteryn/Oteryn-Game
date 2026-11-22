@@ -9,6 +9,7 @@ import elephant_corpse_profiles
 import import_spell_families as producer
 import item_detail_source_facts as item_details
 import monster_seven_spell_overlay as overlay
+from native_profile_composition import compact_item_profile
 import register_spell_families as registration
 import soul_war_appearance_profiles as source_appearances
 import qengine_reward_item_profiles as qengine
@@ -129,9 +130,13 @@ class AcceptedOverlayTests(unittest.TestCase):
             key=row['production_definition']['production_key']
             self.assertEqual(by_key[key]['production_definition'],row['production_definition'])
             self.assertEqual(by_key[key]['production_binding'],row['production_binding'])
-            self.assertEqual(by_key[key]['semantics'],row['semantics'])
-            for field,value in row['attributes'].items():
-                self.assertEqual(by_key[key]['attributes'][field],value,(key,field))
+            # The bounded provider can omit decoder defaults.
+            active = compact_item_profile(by_key[key])
+            source = compact_item_profile(row)
+            self.assertEqual(active['semantics'], source['semantics'], key)
+            attributes = {field: value for field, value in active['attributes'].items()
+                          if field in row['attributes']}
+            self.assertEqual(attributes, source['attributes'], key)
         self.assertIn('tools/content-schema/native-gameplay/loot-tables.json',actual)
         self.assertIn('content/items/authored-static-admissions.json',actual)
         for cohort in ('marsh', 'slug'):

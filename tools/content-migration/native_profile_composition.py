@@ -25,6 +25,29 @@ def encode_native_profile(document):
     return (json.dumps(document, ensure_ascii=False, **options) + '\n').encode()
 
 
+def compact_item_profile(row):
+    """Omit only defaults understood by the native Item decoder."""
+    attributes = row.get("attributes")
+    semantics = row.get("semantics")
+    # First-party constructor admission pins the complete raw row.
+    if (not isinstance(attributes, dict) or not isinstance(semantics, dict)
+            or row.get("production_binding", {}).get("source_key") == "oteryn:source.oteryn_authored"):
+        return row
+    optional_attributes = {"always_on_top", "always_on_top_order", "blocks_movement",
+                           "blocks_projectile", "field_condition", "field_replaceable",
+                           "has_height", "immovable_block_solid", "rune_consumption", "speed_bonus"}
+    optional_groups = {"fluid", "imbuement", "protection", "readable_writeable",
+                       "trade_restrictions", "use_transform", "weapon"}
+    return {
+        **row,
+        "attributes": {key: value for key, value in attributes.items()
+                       if (key not in optional_attributes or value is not None)
+                       and (key != "spell_augments" or value != [])},
+        "semantics": {key: value for key, value in semantics.items()
+                      if key not in optional_groups or value != {"state": "UNKNOWN"}},
+    }
+
+
 def merge_fact(existing, source, path):
     if isinstance(source, dict) and source.get('state') == 'UNKNOWN':
         return copy.deepcopy(existing)

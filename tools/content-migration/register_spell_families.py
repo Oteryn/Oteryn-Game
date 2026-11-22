@@ -128,10 +128,6 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
             "sha256": hashlib.sha256(qualified[output]).hexdigest(),
         }
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
-    # The fresh Cake/native closure is pinned before WORLDCHG refines only its
-    # closed source admission facts and re-pins that same final loot document.
-    import world_change_loot_inputs
-    world_change_loot_inputs.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
 
 
 GENERIC_ITEM = 40450
@@ -752,12 +748,14 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
                   if row["production_definition"]["production_key"] in protected_loot_yields.ARBAZILOTH_HARD_ITEMS]
     house_top_order = json.loads((root / house_decoration_actions.PROFILES).read_bytes())
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
-    fourth_quarter_corpses.apply_items(root, items, provider_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
-    ordinary_corpse_slice2.admit_items(root, items, provider_order)
-    # The complete source closure must fit native_gameplay's existing 8 MiB
-    # Item-profile input bound. Only the final active serialization is compact;
-    # record order/values are unchanged and donor captures stay readable.
+    ordinary_ids = set(ordinary_corpse_profiles.read(root, 'item-ids'))
+    ordinary_ids.update(map(int, ordinary_corpse_cohort.packet(root)['items']))
+    ordinary_corpse_slice2.admit_items(root, items, provider_order, ordinary_ids)
+    ordinary_ids.update(int(record['production_binding']['external_id'])
+                        for record in ordinary_corpse_slice2.capture(root)['records'])
+    fourth_quarter_corpses.apply_items(root, items, provider_order, ordinary_ids)
+    # Serialize the combined provider compactly within the native Item input bound.
     generated[item_path] = spell_import.canonical_bytes(items)
     # SRX-1 keeps the historical single-line provider byte-identical. The loader
     # composes only the changed records from a separately pinned small supplement.
@@ -786,16 +784,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
 
     pin_repository_inputs(root, generated)
-    # The pin refresh rebuilds the shared loot closure. Apply every exact
-    # source refinement to that final document, after the final Item overlay.
-    import questpc7_marsh_loot
-    questpc7_marsh_loot.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
-    import questpc7_slug_loot
-    questpc7_slug_loot.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
-    import questpc7_smith_corpse_loot
-    questpc7_smith_corpse_loot.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
-    import questpc7_hot_corpse_loot
-    questpc7_hot_corpse_loot.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
+    from build_full_spell_artifact import apply_production_loot_overlays
+    apply_production_loot_overlays(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                                NATIVE_MANIFEST, spell_import.canonical_bytes)
 
     # The model bootstraps from this same fresh provider without recursively
     # requiring the very Prey results it is about to produce.

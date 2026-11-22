@@ -25,6 +25,8 @@ def extend_references(records, root):
     if hashlib.sha256(raw).hexdigest() != client['manifest_sha256']:
         raise ValueError('ordinary corpse client appearance membership changed')
     appearances = {row[0] for row in json.loads(raw)['entries']}
+    from boss_conditional_item_reference import definition as qualified_reference
+
     for binding in source['creature_bindings'].values():
         key = f"oteryn:item.tibia.i{binding['item']}"
         if binding['item'] not in appearances:
@@ -36,6 +38,8 @@ def extend_references(records, root):
             'materializable': False,
             'stack_class': 'Unknown',
         }
+        if binding['item'] == 35136:
+            definition = qualified_reference(key)
         if key not in existing:
             records.append(definition)
             existing[key] = definition
@@ -63,7 +67,32 @@ def bind_creatures(root, creatures):
             raise ValueError(f'ordinary corpse creature binding changed: {creature}')
 
 
-def admit_items(root, items, order):
+def merge_shared_item(existing, record):
+    """Preserve both captures when they establish the same source Item."""
+    key = record['production_definition']['production_key']
+    for field in ('production_definition', 'production_binding', 'production_binding_qualification'):
+        if existing.get(field) != record.get(field):
+            raise ValueError(f'Conflicting corpse {field}: {key}')
+    admission = record['admission']
+    # Crystal 4024 is both a shared decay stage and a source-portable body.
+    if key == 'oteryn:item.tibia.i4024' and admission['legal_destinations'] == ['Ground']:
+        admission = {**admission, 'legal_destinations': ['CharacterInventory', 'Ground']}
+    if existing['admission'] != admission:
+        raise ValueError(f'Conflicting corpse admission: {key}')
+    for field, value in record['semantics'].items():
+        if value == {'state': 'UNKNOWN'}:
+            continue
+        prior = existing['semantics'].get(field)
+        if prior is None or prior == {'state': 'UNKNOWN'}:
+            existing['semantics'][field] = value
+        elif prior != value:
+            raise ValueError(f'Conflicting corpse {field}: {key}')
+    for field, value in record['attributes'].items():
+        if existing['attributes'].setdefault(field, value) != value:
+            raise ValueError(f'Conflicting corpse {field}: {key}')
+
+
+def admit_items(root, items, order, shared_ids):
     source = capture(root)
     selected = set(source['admissions'].values())
     selected.update(binding['item'] for binding in source['creature_bindings'].values())
@@ -72,11 +101,19 @@ def admit_items(root, items, order):
     if [int(record['production_binding']['external_id']) for record in records] != sorted(selected):
         raise ValueError('ordinary corpse Item capture differs from the selected creatures')
 
-    existing = {row['production_definition']['production_key'] for row in items['records']}
+    existing = {row['production_definition']['production_key']: row for row in items['records']}
     for record in records:
         key = record['production_definition']['production_key']
         if key in existing:
-            raise ValueError(f'ordinary corpse already has native Item custody: {key}')
-        existing.add(key)
-        items['records'].append(record)
+            item = int(record['production_binding']['external_id'])
+            if item not in shared_ids:
+                raise ValueError(f'ordinary corpse already has native Item custody: {key}')
+            if item == 35136:
+                # The shared Tentacle identity also carries the exact slice-2 authorization row.
+                merge_shared_item(record, existing[key])
+                existing[key].update(record)
+            else:
+                merge_shared_item(existing[key], record)
+        else:
+            items['records'].append(record)
     items['records'].sort(key=order)

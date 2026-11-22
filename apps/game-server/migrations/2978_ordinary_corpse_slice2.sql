@@ -1,3 +1,4 @@
+-- Shared source chains and lifetimes are installed by the preceding corpse migrations.
 -- Crystal 201189f8 data/items/items.xml. Extend the installed corpse
 -- registry only. The existing MINT provenance and scheduler own every stage.
 DO $ordinary_corpse_slice2$
@@ -10,41 +11,25 @@ DECLARE
     WHEN 'oteryn:item.tibia.i909' THEN ARRAY[909,910,911,275] -- items.xml:3145,3151,3157,471
     WHEN 'oteryn:item.tibia.i949' THEN ARRAY[949,951,955,956] -- items.xml:3224,3232,3249,3255
     WHEN 'oteryn:item.tibia.i4024' THEN ARRAY[4024,4156,4157] -- items.xml:12110,12786,12792
-    WHEN 'oteryn:item.tibia.i4097' THEN ARRAY[4097,4098,4099] -- items.xml:12473,12478,12483
     WHEN 'oteryn:item.tibia.i4239' THEN ARRAY[4239,4321,4322,4323] -- items.xml:13231,13614,13620,13625
     WHEN 'oteryn:item.tibia.i4240' THEN ARRAY[4240,4241,4242] -- items.xml:13237,13243,13248
     WHEN 'oteryn:item.tibia.i4247' THEN ARRAY[4247,4248,4246] -- items.xml:13261,13266,13256
     WHEN 'oteryn:item.tibia.i5960' THEN ARRAY[5960,3987,3991,3992] -- items.xml:16199,11925,11951,11957
-    WHEN 'oteryn:item.tibia.i5962' THEN ARRAY[5962,3989,4299,4300] -- items.xml:16211,11939,13532,13536
-    WHEN 'oteryn:item.tibia.i5967' THEN ARRAY[5967,4266,4267,4145] -- items.xml:16237,13362,13369,12728
-    WHEN 'oteryn:item.tibia.i5971' THEN ARRAY[5971,4281,4021,4022] -- items.xml:16261,13449,12094,12100
-    WHEN 'oteryn:item.tibia.i5972' THEN ARRAY[5972,4024,4156,4157] -- items.xml:16267,12110,12786,12792
     WHEN 'oteryn:item.tibia.i5976' THEN ARRAY[5976,4034,4035,4036] -- items.xml:16290,12164,12170,12176
     WHEN 'oteryn:item.tibia.i5977' THEN ARRAY[5977,4038,4039,4040] -- items.xml:16295,12182,12188,12193
     WHEN 'oteryn:item.tibia.i5978' THEN ARRAY[5978,4041,4042,4147] -- items.xml:16301,12197,12204,12738
     WHEN 'oteryn:item.tibia.i5980' THEN ARRAY[5980,4045,4046,4147] -- items.xml:16313,12221,12228,12738
-    WHEN 'oteryn:item.tibia.i5984' THEN ARRAY[5984,4062,4063,4064] -- items.xml:16337,12298,12304,12309
     WHEN 'oteryn:item.tibia.i5985' THEN ARRAY[5985,4067,4068,4069] -- items.xml:16343,12322,12328,12334
     WHEN 'oteryn:item.tibia.i5986' THEN ARRAY[5986,4070,4071,4072] -- items.xml:16348,12339,12345,12350
     WHEN 'oteryn:item.tibia.i5991' THEN ARRAY[5991,4086,4087,4088] -- items.xml:16378,12421,12428,12434
-    WHEN 'oteryn:item.tibia.i5994' THEN ARRAY[5994,4095,4096,4088] -- items.xml:16395,12461,12467,12434
-    WHEN 'oteryn:item.tibia.i5998' THEN ARRAY[5998,4109,4110,4111] -- items.xml:16418,12537,12544,12550
     WHEN 'oteryn:item.tibia.i6002' THEN ARRAY[6002,4121,4122,4123] -- items.xml:16442,12604,12611,12617
     WHEN 'oteryn:item.tibia.i6003' THEN ARRAY[6003,4126,4127,4128] -- items.xml:16448,12632,12639,12645
-    WHEN 'oteryn:item.tibia.i6004' THEN ARRAY[6004,4130,4131,4132] -- items.xml:16454,12653,12659,12664
-    WHEN 'oteryn:item.tibia.i6005' THEN ARRAY[6005,4133,4134,4135] -- items.xml:16459,12669,12674,12679
-    WHEN 'oteryn:item.tibia.i6007' THEN ARRAY[6007,4141,4142,4143] -- items.xml:16469,12707,12714,12720
-    WHEN 'oteryn:item.tibia.i6011' THEN ARRAY[6011,4160,4161,4128] -- items.xml:16493,12808,12815,12645
-    WHEN 'oteryn:item.tibia.i6012' THEN ARRAY[6012,4162,4163,4128] -- items.xml:16499,12822,12829,12645
     WHEN 'oteryn:item.tibia.i6013' THEN ARRAY[6013,4164,4165,4143] -- items.xml:16505,12836,12843,12720
     WHEN 'oteryn:item.tibia.i6014' THEN ARRAY[6014,4166,4167,4143] -- items.xml:16511,12849,12856,12720
     WHEN 'oteryn:item.tibia.i6015' THEN ARRAY[6015,4168,4169,4143] -- items.xml:16517,12862,12869,12720
     WHEN 'oteryn:item.tibia.i6016' THEN ARRAY[6016,4170,4171,4172] -- items.xml:16523,12875,12881,12886
-    WHEN 'oteryn:item.tibia.i6021' THEN ARRAY[6021,4185,4186,4187] -- items.xml:16552,12952,12958,12963
-    WHEN 'oteryn:item.tibia.i6023' THEN ARRAY[6023,4191,4192,4193] -- items.xml:16561,12984,12991,12996
     WHEN 'oteryn:item.tibia.i6026' THEN ARRAY[6026,4200,4201,4202] -- items.xml:16578,13032,13039,13045
     WHEN 'oteryn:item.tibia.i6027' THEN ARRAY[6027,4203,4204,4205] -- items.xml:16584,13050,13055,13059
-    WHEN 'oteryn:item.tibia.i6031' THEN ARRAY[6031,4215,4216,4217] -- items.xml:16606,13108,13113,13118
     WHEN 'oteryn:item.tibia.i6032' THEN ARRAY[6032,4218,4219,4220] -- items.xml:16611,13122,13128,13133
     WHEN 'oteryn:item.tibia.i6033' THEN ARRAY[6033,4221,4222,4223] -- items.xml:16617,13137,13143,13148
     WHEN 'oteryn:item.tibia.i6036' THEN ARRAY[6036,4230,4231,4232] -- items.xml:16635,13187,13193,13198
@@ -59,41 +44,26 @@ DECLARE
     WHEN 'oteryn:item.tibia.i6059' THEN ARRAY[6059,4375,4376,4377] -- items.xml:16773,13877,13883,13887
     WHEN 'oteryn:item.tibia.i6060' THEN ARRAY[6060,4385,4386,4387] -- items.xml:16779,13925,13931,13935
     WHEN 'oteryn:item.tibia.i6065' THEN ARRAY[6065,5523,5530,5531] -- items.xml:16809,15168,15209,15214
-    WHEN 'oteryn:item.tibia.i6068' THEN ARRAY[6068,5526,5527] -- items.xml:16827,15186,15194
     WHEN 'oteryn:item.tibia.i6077' THEN ARRAY[6077,5765,5766,5767] -- items.xml:16881,15620,15626,15631
-    WHEN 'oteryn:item.tibia.i6078' THEN ARRAY[6078,5931,5932,5933] -- items.xml:16887,16061,16066,16071
-    WHEN 'oteryn:item.tibia.i6079' THEN ARRAY[6079,5934,5935,5936] -- items.xml:16892,16075,16082,16087
-    WHEN 'oteryn:item.tibia.i6305' THEN ARRAY[6305,6306,6307,6308] -- items.xml:17383,17388,17393,17398
     WHEN 'oteryn:item.tibia.i6311' THEN ARRAY[6311,6312,6313,6314] -- items.xml:17412,17418,17423,17428
     WHEN 'oteryn:item.tibia.i6323' THEN ARRAY[6323,6324,6325,6326] -- items.xml:17471,17476,17481,17486
     WHEN 'oteryn:item.tibia.i6324' THEN ARRAY[6324,6325,6326] -- items.xml:17476,17481,17486
-    WHEN 'oteryn:item.tibia.i6327' THEN ARRAY[6327,6328,6329] -- items.xml:17490,17495,17500
     WHEN 'oteryn:item.tibia.i6331' THEN ARRAY[6331,6332,6333,6334] -- items.xml:17509,17515,17520,17525
     WHEN 'oteryn:item.tibia.i6335' THEN ARRAY[6335,6336,6337,6338] -- items.xml:17529,17535,17540,17545
-    WHEN 'oteryn:item.tibia.i6363' THEN ARRAY[6363,6364,6365,6366] -- items.xml:17670,17676,17682,17686
     WHEN 'oteryn:item.tibia.i6560' THEN ARRAY[6560,4247,4248,4246] -- items.xml:18195,13261,13266,13256
     WHEN 'oteryn:item.tibia.i7091' THEN ARRAY[7091,7092,7093,7094] -- items.xml:18729,18734,18739,18744
-    WHEN 'oteryn:item.tibia.i7256' THEN ARRAY[7256,7257,7258] -- items.xml:18941,18947,18953
-    WHEN 'oteryn:item.tibia.i7282' THEN ARRAY[7282,7283,7284,7285] -- items.xml:18985,18990,18995,19000
     WHEN 'oteryn:item.tibia.i7316' THEN ARRAY[7316,7317,7318,7319] -- items.xml:19046,19052,19058,19063
     WHEN 'oteryn:item.tibia.i7330' THEN ARRAY[7330,7331,7332,7333] -- items.xml:19122,19128,19134,19139
-    WHEN 'oteryn:item.tibia.i7349' THEN ARRAY[7349] -- items.xml:19226
     WHEN 'oteryn:item.tibia.i7538' THEN ARRAY[7538,7539,7540] -- items.xml:20790,20795,20800
     WHEN 'oteryn:item.tibia.i7893' THEN ARRAY[7893] -- items.xml:21281
     WHEN 'oteryn:item.tibia.i8105' THEN ARRAY[8105,8106,8107,8108] -- items.xml:22525,22531,22537,22543
-    WHEN 'oteryn:item.tibia.i8109' THEN ARRAY[8109,8110,8111,8112] -- items.xml:22548,22554,22560,22566
-    WHEN 'oteryn:item.tibia.i8127' THEN ARRAY[8127,8128,8129,8130] -- items.xml:22646,22651,22656,22661
-    WHEN 'oteryn:item.tibia.i8136' THEN ARRAY[8136,8141] -- items.xml:22691,22721
     WHEN 'oteryn:item.tibia.i8137' THEN ARRAY[8137,8140] -- items.xml:22697,22715
-    WHEN 'oteryn:item.tibia.i8138' THEN ARRAY[8138,8139] -- items.xml:22703,22709
-    WHEN 'oteryn:item.tibia.i8953' THEN ARRAY[8953,8954,8955,8956] -- items.xml:23802,23808,23814,23819
     WHEN 'oteryn:item.tibia.i8957' THEN ARRAY[8957,8958,8959,8960] -- items.xml:23823,23828,23833,23838
     WHEN 'oteryn:item.tibia.i9001' THEN ARRAY[9001,9002,9003,9004] -- items.xml:23937,23942,23947,23952
     WHEN 'oteryn:item.tibia.i9009' THEN ARRAY[9009,9010,9011,9012] -- items.xml:23977,23982,23987,23992
     WHEN 'oteryn:item.tibia.i9024' THEN ARRAY[9024,9021,9022,9023] -- items.xml:24082,24067,24072,24077
     WHEN 'oteryn:item.tibia.i9591' THEN ARRAY[9591,8118] -- items.xml:25813,22596
     WHEN 'oteryn:item.tibia.i9607' THEN ARRAY[9607,9608,9609,9610] -- items.xml:25914,25920,25926,25930
-    WHEN 'oteryn:item.tibia.i10221' THEN ARRAY[10221,10222,10223,10224] -- items.xml:26733,26739,26745,26749
     WHEN 'oteryn:item.tibia.i10333' THEN ARRAY[10333,10330,10331,10332] -- items.xml:27062,27045,27052,27057
     WHEN 'oteryn:item.tibia.i10355' THEN ARRAY[10355,10352,10353,10354] -- items.xml:27152,27138,27144,27148
     WHEN 'oteryn:item.tibia.i10359' THEN ARRAY[10359,10356,10357,10358] -- items.xml:27172,27158,27164,27168
@@ -102,7 +72,6 @@ DECLARE
     WHEN 'oteryn:item.tibia.i10371' THEN ARRAY[10371,10368,10369,10370] -- items.xml:27232,27218,27224,27228
     WHEN 'oteryn:item.tibia.i10383' THEN ARRAY[10383,10382] -- items.xml:27244,27239
     WHEN 'oteryn:item.tibia.i10403' THEN ARRAY[10403] -- items.xml:27452
-    WHEN 'oteryn:item.tibia.i10445' THEN ARRAY[10445,10446,10447,10448] -- items.xml:27651,27657,27663,27668
     WHEN 'oteryn:item.tibia.i10458' THEN ARRAY[10458,10459,10460,10461] -- items.xml:27726,27732,27738,27742
     WHEN 'oteryn:item.tibia.i11589' THEN ARRAY[11589] -- items.xml:28732
     WHEN 'oteryn:item.tibia.i11590' THEN ARRAY[11590] -- items.xml:28736
@@ -111,10 +80,7 @@ DECLARE
     WHEN 'oteryn:item.tibia.i12497' THEN ARRAY[12497,12498,12499] -- items.xml:30283,30289,30294
     WHEN 'oteryn:item.tibia.i12500' THEN ARRAY[12500,12501,12502] -- items.xml:30298,30304,30308
     WHEN 'oteryn:item.tibia.i12512' THEN ARRAY[12512,12513,12514,12515] -- items.xml:30344,30349,30354,30359
-    WHEN 'oteryn:item.tibia.i12524' THEN ARRAY[12524,12527,12528,12529] -- items.xml:30396,30414,30420,30425
     WHEN 'oteryn:item.tibia.i12525' THEN ARRAY[12525,12536,12537,12538] -- items.xml:30402,30459,30465,30470
-    WHEN 'oteryn:item.tibia.i12684' THEN ARRAY[12684,12685,12686,12687] -- items.xml:30891,30896,30901,30906
-    WHEN 'oteryn:item.tibia.i12840' THEN ARRAY[12840] -- items.xml:31306
     WHEN 'oteryn:item.tibia.i13787' THEN ARRAY[13787,13794,13795,13796] -- items.xml:31680,31685,31690,31695
     WHEN 'oteryn:item.tibia.i13845' THEN ARRAY[13845,13846,13847,13848] -- items.xml:31753,31758,31763,31768
     WHEN 'oteryn:item.tibia.i13857' THEN ARRAY[13857,13858,13864,13859] -- items.xml:31815,31822,31857,31828
@@ -129,9 +95,7 @@ DECLARE
     WHEN 'oteryn:item.tibia.i16079' THEN ARRAY[16079,16080,16081,16082] -- items.xml:34144,34149,34154,34159
     WHEN 'oteryn:item.tibia.i16083' THEN ARRAY[16083,16084,16085,16086] -- items.xml:34163,34169,34175,34180
     WHEN 'oteryn:item.tibia.i16149' THEN ARRAY[16149,16150,16151,16152] -- items.xml:34658,34663,34668,34673
-    WHEN 'oteryn:item.tibia.i16176' THEN ARRAY[16176,16177,16178,16179] -- items.xml:34848,34853,34858,34863
     WHEN 'oteryn:item.tibia.i17426' THEN ARRAY[17426,17433,17434,17435] -- items.xml:35547,35585,35590,35595
-    WHEN 'oteryn:item.tibia.i17446' THEN ARRAY[17446,17451,17452,17453] -- items.xml:35647,35673,35678,35683
     WHEN 'oteryn:item.tibia.i17449' THEN ARRAY[17449,17450] -- items.xml:35664,35669
     WHEN 'oteryn:item.tibia.i18110' THEN ARRAY[18110,18111,18112,18113] -- items.xml:37130,37136,37142,37148
     WHEN 'oteryn:item.tibia.i18114' THEN ARRAY[18114,18115,18116,18117] -- items.xml:37152,37158,37164,37170
@@ -154,29 +118,22 @@ DECLARE
     WHEN 'oteryn:item.tibia.i19041' THEN ARRAY[19041,19043,19044,19045] -- items.xml:38957,38969,38975,38980
     WHEN 'oteryn:item.tibia.i19042' THEN ARRAY[19042,19046,19047,19048] -- items.xml:38963,38984,38990,38995
     WHEN 'oteryn:item.tibia.i19051' THEN ARRAY[19051,19055,19056,19057] -- items.xml:39009,39028,39033,39038
-    WHEN 'oteryn:item.tibia.i20151' THEN ARRAY[20151,20148,20149,20150] -- items.xml:40769,40753,40760,40765
     WHEN 'oteryn:item.tibia.i20155' THEN ARRAY[20155,20152,20153,20154] -- items.xml:40792,40776,40783,40788
-    WHEN 'oteryn:item.tibia.i20163' THEN ARRAY[20163,20160,20161,20162] -- items.xml:40838,40822,40829,40834
     WHEN 'oteryn:item.tibia.i20228' THEN ARRAY[20228,20229,20230,20231] -- items.xml:41023,41029,41035,41040
     WHEN 'oteryn:item.tibia.i20233' THEN ARRAY[20233,20234,20235,20236] -- items.xml:41044,41050,41056,41061
     WHEN 'oteryn:item.tibia.i20972' THEN ARRAY[20972,20973,20974,20975] -- items.xml:41522,41527,41532,41537
     WHEN 'oteryn:item.tibia.i20988' THEN ARRAY[20988,20989,20990,20991] -- items.xml:41598,41603,41608,41613
-    WHEN 'oteryn:item.tibia.i20996' THEN ARRAY[20996,20997,20998,20999] -- items.xml:41636,41642,41648,41653
-    WHEN 'oteryn:item.tibia.i21004' THEN ARRAY[21004,21005,21006,21007] -- items.xml:41678,41684,41690,41695
     WHEN 'oteryn:item.tibia.i21091' THEN ARRAY[21091,21092,21093,21094] -- items.xml:41724,41730,41737,41743
     WHEN 'oteryn:item.tibia.i21108' THEN ARRAY[21108,21109] -- items.xml:41809,41814
     WHEN 'oteryn:item.tibia.i21882' THEN ARRAY[21882,21884,21885,21886] -- items.xml:43367,43373,43379,43384
     WHEN 'oteryn:item.tibia.i21888' THEN ARRAY[21888,21889,21890,21891] -- items.xml:43388,43394,43400,43405
     WHEN 'oteryn:item.tibia.i21907' THEN ARRAY[21907,21908,21909] -- items.xml:43481,43486,43491
-    WHEN 'oteryn:item.tibia.i21940' THEN ARRAY[21940,21941,21942,21943] -- items.xml:43534,43539,43544,43549
     WHEN 'oteryn:item.tibia.i21983' THEN ARRAY[21983,21984,21985,21986] -- items.xml:43709,43714,43719,43724
     WHEN 'oteryn:item.tibia.i22078' THEN ARRAY[22078,22079,22080] -- items.xml:44064,44069,44074
     WHEN 'oteryn:item.tibia.i22089' THEN ARRAY[22089,22090,22091,22092] -- items.xml:44144,44149,44154,44159
     WHEN 'oteryn:item.tibia.i22780' THEN ARRAY[22780,22781,22782,22783] -- items.xml:45708,45713,45718,45723
     WHEN 'oteryn:item.tibia.i22784' THEN ARRAY[22784,22785,22786] -- items.xml:45727,45732,45737
     WHEN 'oteryn:item.tibia.i23388' THEN ARRAY[23388,23389,23390,23391] -- items.xml:46106,46111,46116,46121
-    WHEN 'oteryn:item.tibia.i23392' THEN ARRAY[23392,23393,23394,23395] -- items.xml:46125,46130,46135,46140
-    WHEN 'oteryn:item.tibia.i25065' THEN ARRAY[25065,25066,25067] -- items.xml:48202,48208,48214
     WHEN 'oteryn:item.tibia.i25185' THEN ARRAY[25185,25189,25190] -- items.xml:48412,48436,48442
     WHEN 'oteryn:item.tibia.i25815' THEN ARRAY[25815,25814,25813,25812] -- items.xml:49357,49351,49345,49341
     WHEN 'oteryn:item.tibia.i26133' THEN ARRAY[26133,26134,26135] -- items.xml:51500,51504,51508
@@ -184,10 +141,8 @@ DECLARE
     WHEN 'oteryn:item.tibia.i27613' THEN ARRAY[27613,27612,27611,27610] -- items.xml:52515,52509,52503,52498
     WHEN 'oteryn:item.tibia.i28586' THEN ARRAY[28586,28585,28584,28583] -- items.xml:53717,53711,53706,53702
     WHEN 'oteryn:item.tibia.i28598' THEN ARRAY[28598,28597,28596,28595] -- items.xml:53760,53754,53749,53745
-    WHEN 'oteryn:item.tibia.i28601' THEN ARRAY[28601,28600,28599] -- items.xml:53775,53770,53766
     WHEN 'oteryn:item.tibia.i28605' THEN ARRAY[28605,28604,28603] -- items.xml:53796,53791,53787
     WHEN 'oteryn:item.tibia.i28613' THEN ARRAY[28613,28612,28611] -- items.xml:53838,53833,53829
-    WHEN 'oteryn:item.tibia.i28621' THEN ARRAY[28621,28620,28619] -- items.xml:53880,53875,53871
     WHEN 'oteryn:item.tibia.i28625' THEN ARRAY[28625,28624,28623] -- items.xml:53901,53896,53892
     WHEN 'oteryn:item.tibia.i28726' THEN ARRAY[28726,28727,28728,28729] -- items.xml:54525,54531,54537,54542
     WHEN 'oteryn:item.tibia.i28733' THEN ARRAY[28733,28732,28731,28730] -- items.xml:54561,54555,54550,54546
@@ -206,14 +161,11 @@ DECLARE
     WHEN 'oteryn:item.tibia.i31307' THEN ARRAY[31307,31308,31309,31310] -- items.xml:58354,58359,58365,58370
     WHEN 'oteryn:item.tibia.i31394' THEN ARRAY[31394,31393,31392,31391] -- items.xml:58622,58616,58611,58607
     WHEN 'oteryn:item.tibia.i31398' THEN ARRAY[31398,31397,31396,31395] -- items.xml:58643,58637,58632,58628
-    WHEN 'oteryn:item.tibia.i31599' THEN ARRAY[31599,31598,31597,31596] -- items.xml:59429,59423,59418,59414
     WHEN 'oteryn:item.tibia.i31611' THEN ARRAY[31611,31610,31609,31608] -- items.xml:59450,59445,59440,59436
     WHEN 'oteryn:item.tibia.i31654' THEN ARRAY[31654,31653,31652,31651] -- items.xml:59687,59681,59676,59672
     WHEN 'oteryn:item.tibia.i31658' THEN ARRAY[31658,31657,31656,31655] -- items.xml:59708,59702,59697,59693
     WHEN 'oteryn:item.tibia.i31662' THEN ARRAY[31662,31661,31660,31659] -- items.xml:59729,59723,59718,59714
     WHEN 'oteryn:item.tibia.i33957' THEN ARRAY[33957,33956,33955,33954] -- items.xml:63725,63720,63715,63711
-    WHEN 'oteryn:item.tibia.i33961' THEN ARRAY[33961,33960,33959,33958] -- items.xml:63744,63739,63734,63730
-    WHEN 'oteryn:item.tibia.i33965' THEN ARRAY[33965,33964,33963,33962] -- items.xml:63763,63758,63753,63749
     WHEN 'oteryn:item.tibia.i34189' THEN ARRAY[34189,34191,34192,34193] -- items.xml:65091,65101,65106,65111
     WHEN 'oteryn:item.tibia.i35358' THEN ARRAY[35358,35359,35360,35361] -- items.xml:66009,66015,66021,66027
     WHEN 'oteryn:item.tibia.i35690' THEN ARRAY[35690,35689,35688,35687] -- items.xml:66464,66458,66452,66447
@@ -263,21 +215,14 @@ DECLARE
     durations CONSTANT TEXT := $durations$
     WHEN p_key='oteryn:item.tibia.i909' THEN ARRAY[10000,900000,600000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i4024' THEN ARRAY[300000,300000,60000]::BIGINT[]
-    WHEN p_key='oteryn:item.tibia.i4097' THEN ARRAY[300000,300000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i4240' THEN ARRAY[1200000,1200000,1200000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i4247' THEN ARRAY[1200000,1200000,1200000]::BIGINT[]
-    WHEN p_key='oteryn:item.tibia.i6068' THEN ARRAY[10000,300000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i6324' THEN ARRAY[300000,300000,60000]::BIGINT[]
-    WHEN p_key='oteryn:item.tibia.i6327' THEN ARRAY[300000,300000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i6335' THEN ARRAY[10000,900000,600000,600000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i6560' THEN ARRAY[180000,1200000,1200000,1200000]::BIGINT[]
-    WHEN p_key='oteryn:item.tibia.i7256' THEN ARRAY[300000,300000,60000]::BIGINT[]
-    WHEN p_key='oteryn:item.tibia.i7349' THEN ARRAY[5000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i7538' THEN ARRAY[300000,300000,0]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i7893' THEN ARRAY[180000]::BIGINT[]
-    WHEN p_key='oteryn:item.tibia.i8136' THEN ARRAY[10000,500000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i8137' THEN ARRAY[10000,500000]::BIGINT[]
-    WHEN p_key='oteryn:item.tibia.i8138' THEN ARRAY[10000,500000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i9591' THEN ARRAY[10000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i10383' THEN ARRAY[10000,500000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i10403' THEN ARRAY[3000]::BIGINT[]
@@ -285,7 +230,6 @@ DECLARE
     WHEN p_key='oteryn:item.tibia.i11590' THEN ARRAY[500000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i12497' THEN ARRAY[300000,300000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i12500' THEN ARRAY[300000,300000,60000]::BIGINT[]
-    WHEN p_key='oteryn:item.tibia.i12840' THEN ARRAY[600000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i13857' THEN ARRAY[10000,300000,60000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i13870' THEN ARRAY[300000,300000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i15988' THEN ARRAY[300000,300000,60000]::BIGINT[]
@@ -300,13 +244,10 @@ DECLARE
     WHEN p_key='oteryn:item.tibia.i21907' THEN ARRAY[10000,300000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i22078' THEN ARRAY[300000,300000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i22784' THEN ARRAY[300000,300000,60000]::BIGINT[]
-    WHEN p_key='oteryn:item.tibia.i25065' THEN ARRAY[10000,500000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i25185' THEN ARRAY[10000,300000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i26133' THEN ARRAY[300000,300000,0]::BIGINT[]
-    WHEN p_key='oteryn:item.tibia.i28601' THEN ARRAY[300000,300000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i28605' THEN ARRAY[300000,300000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i28613' THEN ARRAY[300000,300000,60000]::BIGINT[]
-    WHEN p_key='oteryn:item.tibia.i28621' THEN ARRAY[300000,300000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i28625' THEN ARRAY[300000,300000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i28733' THEN ARRAY[10000,300000,300000,0]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i28770' THEN ARRAY[10000,300000,300000,300000]::BIGINT[]
@@ -314,8 +255,6 @@ DECLARE
     WHEN p_key='oteryn:item.tibia.i28861' THEN ARRAY[300000,300000,300000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i28873' THEN ARRAY[300000,300000,60000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i33957' THEN ARRAY[10000,600000,600000,600000]::BIGINT[]
-    WHEN p_key='oteryn:item.tibia.i33961' THEN ARRAY[10000,600000,600000,600000]::BIGINT[]
-    WHEN p_key='oteryn:item.tibia.i33965' THEN ARRAY[10000,600000,600000,600000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i34189' THEN ARRAY[10000,600000,600000,600000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i35358' THEN ARRAY[10000,300000,300000,300000]::BIGINT[]
     WHEN p_key='oteryn:item.tibia.i35690' THEN ARRAY[10000,300000,300000,300000]::BIGINT[]
@@ -357,14 +296,15 @@ BEGIN
 END $ordinary_corpse_slice2$;
 
 -- Existing non-container source bodies use the same original lethal MINT proof.
--- Crystal 201189f8 items.xml:19226-19229 (ashes) and 27452-27455 (insect swarm).
+-- Migration 2977 already admits the shared ashes. Crystal 201189f8
+-- items.xml:27452-27455 supplies the insect swarm.
 DO $ordinary_plain_bodies$
 DECLARE
-    anchor CONSTANT TEXT := 'IN (''oteryn:item.tibia.i33792''';
+    anchor CONSTANT TEXT := '''oteryn:item.tibia.i33792''';
     body TEXT := pg_get_functiondef('game_item_plain_corpse_source(uuid)'::regprocedure);
 BEGIN
     IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
         RAISE EXCEPTION 'Existing plain corpse registry changed';
     END IF;
-    EXECUTE replace(body,anchor,'IN (''oteryn:item.tibia.i7349'',''oteryn:item.tibia.i10403'',''oteryn:item.tibia.i33792''');
+    EXECUTE replace(body,anchor,'''oteryn:item.tibia.i10403'',' || anchor);
 END $ordinary_plain_bodies$;

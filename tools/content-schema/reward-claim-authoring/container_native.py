@@ -109,7 +109,7 @@ def native_charge_item(item, profile):
                 field in observed and agrees(value, observed[field]) for field, value in accepted.items())
         return accepted == observed
 
-    if (not all(agrees(item['semantics'][field], semantics[field]) for field in
+    if (not all(agrees(item['semantics'][field], semantics.get(field, {'state': 'UNKNOWN'})) for field in
                 ('physical', 'stack', 'container', 'charges', 'fluid', 'temporal', 'weapon'))
             or any(fact({'semantics': semantics}, 'physical', field) is not True
                    for field in ('movable', 'pickupable'))

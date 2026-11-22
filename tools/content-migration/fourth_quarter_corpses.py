@@ -28,10 +28,14 @@ def extend_item_references(root, items):
         raise ValueError('Official Item appearance membership changed')
     official_ids = {row[0] for row in json.loads(raw)['entries']}
     existing = {item['identity']['key']: item for item in items}
+    from boss_conditional_item_reference import definition as qualified_reference
+
     for item in packet['new_item_definitions']:
         identity = item_ref(item)
         definition = dict(identity=identity, kind='Item', client_projection='ClientSafe',
                           materializable=False, stack_class='Unknown')
+        if item == 35136:
+            definition = qualified_reference(identity['key'])
         prior = existing.get(identity['key'])
         if item not in official_ids or (prior is not None and prior != definition):
             raise ValueError(f'Invalid corpse reference {item}')
@@ -40,7 +44,9 @@ def extend_item_references(root, items):
             existing[identity['key']] = definition
 
 
-def apply_items(root, items, provider_order):
+def apply_items(root, items, provider_order, shared_ids):
+    from ordinary_corpse_slice2 import merge_shared_item
+
     # Crystal items.cpp loads the appearance flags before the items.xml
     # overrides. ItemType starts with zero weight and eight container slots.
     packet = source(root)
@@ -53,13 +59,13 @@ def apply_items(root, items, provider_order):
             identity_namespace='ots/item_server_id', external_id=str(item),
             target=item_ref(item), disposition='EXACT')
 
-    item_keys = {row['production_definition']['production_key'] for row in items['records']}
+    existing = {row['production_definition']['production_key']: row for row in items['records']}
     records = []
     for external, facts in packet['items'].items():
         binding = bindings[external]
         reference = item_ref(int(external))
         key = reference['key']
-        if binding['target'] != reference or key in item_keys:
+        if binding['target'] != reference or (key in existing and int(external) not in shared_ids):
             raise ValueError(f'Corpse Item identity already owned or mismatched: {key}')
         capacity = facts['capacity']
         semantics = {
@@ -96,7 +102,12 @@ def apply_items(root, items, provider_order):
         })
     from house_decoration_actions import PROFILES, apply_top_order
     apply_top_order(records, json.loads((root / PROFILES).read_bytes()))
-    items['records'].extend(records)
+    for record in records:
+        key = record['production_definition']['production_key']
+        if key in existing:
+            merge_shared_item(existing[key], record)
+        else:
+            items['records'].append(record)
     items['records'].sort(key=provider_order)
 
 

@@ -89,18 +89,14 @@ pub fn is_envelope(bytes: &[u8]) -> bool {
 const MAX_CATALOG: usize = 32 * 1024 * 1024;
 const MAX_SELECTION: usize = 256 * 1024;
 const MAX_PROFILES: usize = 8 * 1024 * 1024;
-/// The item-profile section alone: the production file passed 8 MiB once the Soulpit
-/// (#2786) and Task Board records were both present (2210 records, 8_742_152 bytes).
-/// MAX_ITEM_RECORDS separately bounds the Item record count.
+/// The Item profile section and composed Item supplements share this byte bound.
 const MAX_ITEM_PROFILES: usize = 16 * 1024 * 1024;
 // W01c: the measured 1,863 canonical attack closures add ~19 MiB to the ~7 MiB
 // serving Creature provider. Keep this bound separate from all other profiles.
 const MAX_CREATURE_PROFILES: usize = 32 * 1024 * 1024;
 const MAX_RECORDS: usize = 4096;
-/// W18's admitted furniture and bed cohorts bring the native Item provider to
-/// 4,956 records. Keep the existing 16 MiB Item byte bound and the other families'
-/// 4,096-record bound; only this source-backed Item cohort needs more entries.
-const MAX_ITEM_RECORDS: usize = 8192;
+/// The combined Crystal corpse source cohorts exceed 8,192 Item records.
+const MAX_ITEM_RECORDS: usize = 8_448;
 const LIMITS: [usize; 5] = [
     super::production::FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES,
     MAX_CATALOG,
@@ -433,6 +429,71 @@ pub struct ItemProfilesDocument {
     pub schema: String,
     pub records: Vec<ItemProfileRecord>,
 }
+fn encode_composed_item_profiles(
+    items: &ItemProfilesDocument,
+    reason: &'static str,
+) -> Result<Vec<u8>, ContentError> {
+    use serde::ser::{Error as _, SerializeSeq};
+
+    struct CompactRecords<'a>(&'a [ItemProfileRecord]);
+    impl Serialize for CompactRecords<'_> {
+        fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            let mut sequence = serializer.serialize_seq(Some(self.0.len()))?;
+            for record in self.0 {
+                // First-party constructor admission verifies the complete row hash.
+                if record.production_binding.source_key == authored_items::SOURCE {
+                    sequence.serialize_element(record)?;
+                    continue;
+                }
+                let mut value = serde_json::to_value(record).map_err(S::Error::custom)?;
+                if let Some(attributes) = value["attributes"].as_object_mut() {
+                    attributes.retain(|_, field| !field.is_null());
+                }
+                if let Some(semantics) = value["semantics"].as_object_mut() {
+                    for group in [
+                        "fluid",
+                        "imbuement",
+                        "protection",
+                        "readable_writeable",
+                        "trade_restrictions",
+                        "use_transform",
+                        "weapon",
+                    ] {
+                        if semantics
+                            .get(group)
+                            .and_then(|field| field["state"].as_str())
+                            == Some("UNKNOWN")
+                        {
+                            semantics.remove(group);
+                        }
+                    }
+                }
+                sequence.serialize_element(&value)?;
+            }
+            sequence.end()
+        }
+    }
+
+    #[derive(Serialize)]
+    struct CompactDocument<'a> {
+        schema: &'a str,
+        records: CompactRecords<'a>,
+    }
+
+    let bytes = serde_json::to_vec(items).map_err(|_| invalid(reason))?;
+    if bytes.len() <= MAX_ITEM_PROFILES {
+        return Ok(bytes);
+    }
+    // Missing fields decode to the same Unknown and None values.
+    // Keep the previous encoding for smaller inputs.
+    drop(bytes);
+    serde_json::to_vec(&CompactDocument {
+        schema: &items.schema,
+        records: CompactRecords(&items.records),
+    })
+    .map_err(|_| invalid(reason))
+}
+
 /// A borrowed member of the actual active artifact; caller JSON is never directly a policy.
 #[derive(Debug, Clone, Copy)]
 pub struct QualifiedItemPolicy<'a> {
@@ -1332,7 +1393,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         }
         // These exact bodies lack a historical XML binding. Their Crystal
         // appearance and the current client object agree on the server Item id.
-        for external_id in [35136, 35384, 35388, 35846, 36929, 44667, 44671, 48406] {
+        for external_id in [35384, 35388, 35846, 36929, 44667, 44671, 48406] {
             let binding = serde_json::from_value(serde_json::json!({
                 "source_key": "oteryn:source.crystalserver",
                 "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
@@ -1441,13 +1502,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 .iter()
                 .find(|record| record.production_binding == binding)
                 .ok_or_else(|| invalid("native ordinary corpse source binding"))?;
-            if admitted
+            let mut expected = record.clone();
+            if binding.external_id == "35136" {
+                // The fourth-quarter capture establishes that the shared
+                // Tentacle body has no temporal policy.
+                if admitted.get(&binding.external_id) != Some(&binding) {
+                    return Err(invalid("native Tentacle corpse exact binding conflict"));
+                }
+                expected.semantics.temporal = super::ReferenceItemField::NotApplicable;
+            } else if admitted
                 .insert(binding.external_id.clone(), binding)
                 .is_some()
             {
                 return Err(invalid("native ordinary corpse exact binding conflict"));
             }
-            source_reward_items.push(record.clone());
+            source_reward_items.push(expected);
         }
         let item_detail_weights: BTreeMap<String, u32> = serde_json::from_slice(include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/item-detail-weight-facts.json"

@@ -58,7 +58,7 @@ pub(super) fn merge(
     if items.records.len() > super::MAX_ITEM_RECORDS {
         return Err(invalid("Item updates combined bounds"));
     }
-    let bytes = serde_json::to_vec(&items).map_err(|_| invalid("Item updates encoding"))?;
+    let bytes = super::encode_composed_item_profiles(&items, "Item updates encoding")?;
     super::bounded(&bytes, super::MAX_ITEM_PROFILES)?;
     Ok(Some(PinnedGameplayBytes {
         sha256: hex(sha256(&bytes)),

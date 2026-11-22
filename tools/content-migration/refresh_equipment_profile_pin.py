@@ -16,6 +16,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from native_profile_composition import compact_item_profile
 import qready1_clock_equipment_pin
 import qready1_cradle_equipment_pin
 import qready1_craft_equipment_pin
@@ -280,7 +281,7 @@ def coowner_equivalent(source, qualified):
                     "spell-p2-r21", "srx3-boss-corpses-crystal-201189f")):
             return False
         normalized["authoring"]["item"] = copy.deepcopy(accepted)
-    return normalized == qualified
+    return qualified == normalized or qualified == compact_item_profile(normalized)
 
 
 def keys(document):
@@ -512,7 +513,8 @@ def regenerate(source, base, updates, qengine, npc, starting=None, srx3=(), coow
         added_keys.update(new)
         for row in document["records"]:
             key = row["production_definition"]["production_key"]
-            if key in new and actual_rows.get(key) != row:
+            actual_row = actual_rows.get(key)
+            if key in new and actual_row != row and actual_row != compact_item_profile(row):
                 diagnostic = {
                     "cohort": name,
                     "key": key,
