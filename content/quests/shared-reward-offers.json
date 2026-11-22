@@ -3610,6 +3610,33 @@
       ]
     },
     {
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "replica rewards",
+        "souvenir"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/tokens/programme",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Each replica costs 20 Silver Raid Tokens. Which would you like?",
+        "{Abacus}, {Assassin Doll}, {Bag of Oriental Spices}, {Bookworm Doll}, {Citizen Doll}, {Crimson Doll}, {Doll of Durin the Almighty}, {Dragon Eye}",
+        "{Dragon Goblet}, {Draken Doll}, {Emblem}, {Encyclopedia}, {Friendship Amulet}, {Frozen Heart}, {Golden Falcon}, {Golden Newspaper}",
+        "{Goromaphone}, {Hand Puppets}, {Imortus}, {Jade Amulet}, {Key of Numerous Locks}, {Little Adventurer Doll}, {Loremaster Doll}, {Lucky Clover Amulet}",
+        "{Mathmaster Shield}, {Medusa Skull}, {Music Box}, {Noble Sword}, {Norseman Doll}, {Old Radio}, {Orc's Jaw Shredder}, {Phoenix Statue}",
+        "{Pigeon Trophy}, {Shield of Destiny}, {Shield of Endless Search}, {The Mexcalibur}, {Tibiora's Box}"
+      ]
+    },
+    {
       "npc": "oteryn:npc.kasmir",
       "keywords": [
         "stake prayer"

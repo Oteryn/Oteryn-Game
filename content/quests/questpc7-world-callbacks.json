@@ -933,10 +933,11 @@
         "premium": true,
         "completed_quests": []
       },
-      "success_message": "You have reached the Hydra nest. Defeat its guardian and recover an egg.",
+      "success_message": "You have reached the Hydra nest. Recover an egg from the northeast nest.",
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072"
+        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072",
+        "tools/content-schema/quest-authoring/samples/wiki-source-all373/source-specs-373.json:149279"
       ]
     },
     {
@@ -963,13 +964,6 @@
           "minimum": 1,
           "maximum": 1,
           "set": 2
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/hydra/kills",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 1,
-          "preserve": true
         }
       ],
       "minimum_level": null,
@@ -994,7 +988,8 @@
       "success_message": "You have recovered an egg from the Hydra nest.",
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072"
+        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072",
+        "tools/content-schema/quest-authoring/samples/wiki-source-all373/source-specs-373.json:149279"
       ],
       "completes": true
     },

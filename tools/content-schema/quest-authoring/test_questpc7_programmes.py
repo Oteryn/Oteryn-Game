@@ -137,6 +137,7 @@ class QuestPc7QuestRewards(unittest.TestCase):
         nest=next(r for r in rows if r['trigger']=='use')
         self.assertTrue(nest['completes'])
         self.assertNotIn('item_reward',nest)
+        self.assertEqual(nest['storage'], [{'track':'oteryn:quest-progress/questpc7/hydra/programme','minimum':1,'maximum':1,'set':2}])
         self.assertEqual(nest['requirements']['owned_items'],[{'item':'oteryn:item.tibia.i4839','count':1,'map_source':(33004<<32)|(32664<<16)|(3<<8)|2}])
         objectives=json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives']
         objective=next(r for r in objectives if r['quest']==nest['quest'])
@@ -159,15 +160,45 @@ class QuestPc7QuestRewards(unittest.TestCase):
         self.assertTrue(chest['storage'][1]['preserve'])
         self.assertEqual(chest['item_reward'],{'item':'oteryn:item.tibia.i3040','count':2,'contents':[],
             'backpack_outputs':[{'item':f'oteryn:item.tibia.i{i}','count':1} for i in (3030,3032,3033)]})
-    def test_selected_jorge_replica_consumes_exact_twenty_and_completes_once(self):
-        rows=[c for c in self.callbacks['callbacks'] if c['key'].startswith('oteryn:quest-reward/questpc7-tokens-')]
-        self.assertEqual(len(rows),3)
-        exchange=next(c for c in rows if c['give'])
-        self.assertEqual(exchange['take'],[{'item':'oteryn:item.tibia.i19083','count':20}])
-        self.assertEqual(exchange['give'],{'item':'oteryn:item.tibia.i19151','count':1,'contents':[]})
-        self.assertEqual(sum(c['completes'] for c in rows),1)
-        self.assertTrue(all(c['npc']=='oteryn:npc.jorge' for c in rows))
-        self.assertEqual([c['storage'][0]['minimum'] for c in rows if c['completes']],[1])
+    def test_jorge_lists_and_sells_all_replicas_for_twenty_tokens(self):
+        rows = [row for row in self.callbacks['callbacks']
+                if row['key'].startswith('oteryn:quest-reward/questpc7-tokens-')]
+        expected_ids = {
+            19151, 28897, 23682, 28895, 43511, 25981, 23679, 22027, 31265,
+            25979, 25980, 23678, 19153, 19156, 28896, 23681, 34210, 23676,
+            23683, 31268, 19152, 37058, 31267, 37059, 25982, 23680, 23677,
+            22028, 19150, 28894, 19155, 22026, 31266, 43517, 37060, 19154, 43510,
+        }
+        expected = {f'oteryn:item.tibia.i{item}' for item in expected_ids}
+        purchases = [row for row in rows if row.get('give')]
+        self.assertEqual(len(purchases), 74)
+        self.assertEqual({row['give']['item'] for row in purchases if row.get('repeatable')}, expected)
+        self.assertEqual({row['give']['item'] for row in purchases if not row.get('repeatable')}, expected)
+        for row in purchases:
+            self.assertEqual(row['take'], [{'item':'oteryn:item.tibia.i19083','count':20}])
+            self.assertEqual(row['give']['count'], 1)
+            self.assertEqual(row['next_topic'], 0)
+        self.assertEqual(sum(row['completes'] for row in rows), 1)
+        self.assertTrue(all(row['npc'] == 'oteryn:npc.jorge' for row in rows))
+
+    def test_hot_cuisine_cookbook_sources_match_the_live_recipe(self):
+        rows = json.loads(self.outputs['content/quests/world-callbacks/hot-cuisine-books.json'])['callbacks']
+        books = {row['item_reward']['item']: row for row in rows
+                 if row['key'].startswith('oteryn:quest-callback/hot-cuisine-cookbook-')}
+        self.assertEqual(set(books), {'oteryn:item.tibia.i9093', 'oteryn:item.tibia.i11541'})
+        for item, y in ((9093, 32531), (11541, 32529)):
+            book = books[f'oteryn:item.tibia.i{item}']
+            self.assertEqual(book['trigger'], 'use')
+            self.assertEqual(book['selector']['position'], {'x':33064,'y':y,'floor':-5})
+            self.assertEqual(book['selector']['appearance'], 2472)
+            self.assertTrue(any(guard['track'].endswith('/cookbook_door') and guard['minimum'] == 1
+                                and guard['preserve'] for guard in book['storage']))
+        second = books['oteryn:item.tibia.i11541']['item_reward']['text']
+        self.assertTrue(second.startswith('Coconut Shrimp Bake\n- 5 vials of coconut milk'))
+        self.assertIn('Sweet Mangonaise Elixir\n- 40 eggs\n- 20 mangoes', second)
+        self.assertNotIn('- 100 eggs', second)
+        self.assertNotIn('- 50 mangoes', second)
+
     def test_hoist_binds_real_native_objects_without_donor_uids(self):
         callbacks=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
         rows=[c for c in callbacks if c['key'].startswith('oteryn:quest-callback/questpc7-hoist-')]

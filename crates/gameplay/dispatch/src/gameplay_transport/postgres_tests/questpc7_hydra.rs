@@ -1,4 +1,4 @@
-//! Native Hydra entry/lethal and personal ordinary-map egg custody.
+//! Native Hydra entry, guardian evasion and personal ordinary-map egg custody.
 
 use super::TestResult;
 

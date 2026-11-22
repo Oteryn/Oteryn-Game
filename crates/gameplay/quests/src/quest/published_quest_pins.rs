@@ -63,11 +63,6 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
         hash(b"5710efb6a47e898a65a81660b74ee74e469d1ea3e4ceb14b5e3a0b5029ed4215"),
         hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
     ),
-    (
-        "oteryn:quest.hydra_egg_quest",
-        hash(b"bf21c8ce62fd697df94d9125c787278372f8869088542a1a718ec7ba814f7dad"),
-        hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
-    ),
 ];
 
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
@@ -85,6 +80,27 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
         hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
         &[hash(
             b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a",
+        )],
+    ),
+    (
+        "oteryn:quest.hot_cuisine_quest",
+        hash(b"dd018f81fad8d5b44cf1731e9fb30e9d352e91f54fc9a1c73537e3e86963dc0d"),
+        &[hash(
+            b"d34cbfa3109adfc1d61e4ad871a88c097329b1510ed414d85dfbe8d590b5f4f2",
+        )],
+    ),
+    (
+        "oteryn:quest.hunting_for_tokens",
+        hash(b"2d9c2d53f7ad233d907fd87905dd9686aa5ba0c7b170e9a365b9ec056cec4a4a"),
+        &[hash(
+            b"f68593b143c5de45970b3a2375e9264d9781bc7968f59cc67c218b4e66cd05b3",
+        )],
+    ),
+    (
+        "oteryn:quest.hydra_egg_quest",
+        hash(b"15124b9f496a291004cc292ffa8768510b821dade83385d1978f45d7b68fa274"),
+        &[hash(
+            b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca",
         )],
     ),
     (

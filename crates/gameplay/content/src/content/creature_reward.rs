@@ -1448,6 +1448,48 @@ mod protected_loot_tests {
     }
 
     #[test]
+    fn active_private_raid_loot_admits_exact_silver_token_drops()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let table = CreatureRewardTable::from_pin(&creatures, Some(&loot));
+        for (creature, corpse, chance) in [
+            ("furyosa", 18118, 450_000),
+            ("hirintror", 7282, 2_000),
+            ("ocyakao", 7320, 2_000),
+            ("the_welter", 18974, 2_000),
+            ("tyrn", 18970, 50_000),
+            ("weakened_shlorg", 18982, 30_000),
+            ("white_pale", 18978, 2_000),
+            ("willi_wasp", 5989, 50_000),
+            ("zushuka", 18265, 920_000),
+        ] {
+            let key = format!("oteryn:creature.{creature}");
+            let row = table
+                .row(&key)
+                .map_err(|reason| format!("{key}: {}", reason.as_str()))?;
+            assert_eq!(
+                row.corpse_item
+                    .as_ref()
+                    .map(|item| item.production_key.as_str()),
+                Some(format!("oteryn:item.tibia.i{corpse}").as_str()),
+            );
+            let tokens: Vec<_> = row
+                .loot_table
+                .entries
+                .iter()
+                .filter(|entry| entry.item.production_key == "oteryn:item.tibia.i19083")
+                .map(|entry| (entry.min_count, entry.max_count, entry.probability_ppm))
+                .collect();
+            assert_eq!(tokens, [(1, 1, Some(chance))], "{key}");
+        }
+        Ok(())
+    }
+
+    #[test]
     fn arbaziloth_loads_admitted_crystal_loot() -> Result<(), Box<dyn std::error::Error>> {
         let (creatures, _) = documents()?;
         let loot = LootTablesSection::decode(

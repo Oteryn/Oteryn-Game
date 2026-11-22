@@ -1135,6 +1135,10 @@ def build():
         'schema':1,'tracks':[],'callbacks':ready_callbacks})
     generated[qmech_m39.SHARD] = encoded({'schema':1,'tracks':m39_tracks,'callbacks':sorted(m39_callbacks,key=lambda callback:callback['key'])})
     generated[qmech_m39.WORLD_SHARD] = encoded(qmech_m39.worlds(inputs))
+    from hot_cuisine_books import build as cookbook_sources
+    generated['content/quests/world-callbacks/hot-cuisine-books.json'] = encoded({
+        'schema': 1, 'callbacks': cookbook_sources(ROOT),
+    })
     # Preserve the source's complete contiguous 1..10001 supply-package table.
     random_path='data-global/scripts/actions/valuables/random_items.lua'
     parser=load_module('qengine_literal_item_tables','tools/content-migration/event_item_actions.py')

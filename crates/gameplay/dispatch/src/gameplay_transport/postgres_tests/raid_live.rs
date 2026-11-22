@@ -52,6 +52,11 @@ fn raids_global_postgres_dracola_death_before_later_wave_e2e() -> TestResult {
 }
 
 #[test]
+fn questpc7_hunting_for_tokens_exchanges_native_raid_loot() -> TestResult {
+    run_case("questpc7_earned_token", "raid:svargrond.zushuka", 1, true)
+}
+
+#[test]
 fn nbhold_raid_discovery_and_execution_survive_changing_publication_postgres() -> TestResult {
     run_case("nbhold_raid_publication", "raid:badger", 100, false)
 }
@@ -66,8 +71,11 @@ fn run_case(name: &'static str, key: &'static str, expected: usize, boss: bool) 
         .spawn(move || {
             let run = || -> TestResult {
                 crate::bestiary_postgres_harness::runtime()?.block_on(async {
-                    let harness =
-                        Harness::create_with_admission_seed(admin, name, false, false).await?;
+                    let harness = if name == "questpc7_earned_token" {
+                        Harness::create_quest_reward(admin, name, true).await?
+                    } else {
+                        Harness::create_with_admission_seed(admin, name, false, false).await?
+                    };
                     let result = scenario(
                         &harness,
                         key,
@@ -141,6 +149,7 @@ async fn scenario(
     let firing = id(91);
     let key = ProductionKey::new(key).map_err(debug)?;
     let phased_boss = key.as_str() == "raid:venore.dracola";
+    let token_raid = key.as_str() == "raid:svargrond.zushuka";
     let flower = key.as_str() == "oteryn:raid.raid.dryad_invasion";
     let catalogue = RaidCatalogue::embedded().map_err(debug)?;
     let selected = catalogue
@@ -184,8 +193,9 @@ async fn scenario(
     } else {
         assert!(selected.definition.announcements.is_empty());
     }
-    let from = (u16::try_from(area.from.x)?, u16::try_from(area.from.y)?);
-    let to = (u16::try_from(area.to.x)?, u16::try_from(area.to.y)?);
+    let margin = i32::from(token_raid);
+    let from = (u16::try_from(area.from.x - margin)?, u16::try_from(area.from.y - margin)?);
+    let to = (u16::try_from(area.to.x + margin)?, u16::try_from(area.to.y + margin)?);
     let native_floor = i8::try_from(area.from.floor.checked_neg().ok_or("native floor")?)?;
     let world = crate::map::spell_tiles::tests::movement_arena::rectangle(from, to, native_floor);
     deps.room = activated.qualified_room().clone();
@@ -214,8 +224,8 @@ async fn scenario(
             world.frame_binding_digest(deps.admitted.world_id),
             world.map_revision_digest(),
             crate::content::NativeEntryStart {
-                x: area.from.x,
-                y: area.from.y,
+                x: i32::from(from.0),
+                y: i32::from(from.1),
                 floor: area.from.floor,
             },
         )
@@ -227,7 +237,7 @@ async fn scenario(
         active.identity().client_artifact_digest(),
         room.frame_binding().digest(),
         room.map_revision_digest(),
-        (area.from.x, area.from.y, area.from.floor),
+        (i32::from(from.0), i32::from(from.1), area.from.floor),
     );
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         deps.admitted.world_id,
@@ -237,7 +247,7 @@ async fn scenario(
         1,
         1,
         "runtime-scope-assignment:1",
-        expected + 1,
+        expected + 1 + usize::from(token_raid),
         pin,
     )
     .map_err(debug)?;
@@ -256,6 +266,9 @@ async fn scenario(
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
     owner.movement_cells = (&cells).into();
+    if token_raid {
+        super::questpc7_tokens_fixtures::prepare_earned_journey(&owner, harness).await?;
+    }
     owner.reset_epoch = 1;
     seed(harness, &owner, &key, &selected, firing, bundle_digest).await?;
     if contention {
@@ -400,6 +413,20 @@ async fn scenario(
         }
         statuses
     };
+    if token_raid {
+        assert_eq!(
+            harness.root.acknowledge_raid_effect(&harness.node, wave.identity, outcomes, now).await?,
+            RaidWrite::Applied,
+        );
+        let RaidSpawnOutcome::Placed(zushuka) = statuses[0].outcome else {
+            return Err("source Zushuka actor".into());
+        };
+        let mut admitted = deps.admitted;
+        admitted.runtime_actor = Some(deps.actor);
+        return super::questpc7_tokens_fixtures::earned_journey(
+            &mut owner, &mut admitted, harness, zushuka,
+        ).await;
+    }
     if flower {
         assert_eq!(
             selected.definition.waves[0].entries[0].creature.as_str(),

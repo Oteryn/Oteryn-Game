@@ -7,7 +7,7 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
     selected.append_friends(root, lane_callbacks, offers, inputs, pin)
     goblin=load_module('questpc7_goblin_programme','tools/content-schema/quest-authoring/questpc7_goblin_programme.py')
     goblin.append(root,lane_callbacks,inputs,pin)
-    selected.append_tokens(root, lane_callbacks, inputs, pin)
+    selected.append_tokens(root, lane_callbacks, offers, inputs)
     selected.append_eligibility_starts(root, lane_callbacks, inputs, pin)
     programmes.append(root, lane_callbacks, inputs, pin)
     formal_worlds = programmes.append_formal(root, lane_callbacks, inputs, pin)

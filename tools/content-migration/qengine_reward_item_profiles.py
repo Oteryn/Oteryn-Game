@@ -88,6 +88,23 @@ STATIC_IDS = {8995, 8996, 9527, 17677, 17679, 17681, 21573, 23163, 32173, 32537}
 SIDE_IDS |= STATIC_IDS | {3114, 3456, 3661, 32197, 32225, 32226, 32227, 32228, 32582, 32583, 32584, 32585, 32602, 32757}
 SIDE_IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 
+# Crystal 201189f Jorge (jorge.lua:60-97) and Jean Pierre's upstairs books.
+COOKBOOK_IDS = {9093, 11541}
+JORGE_REPLICA_IDS = {
+    19150, 19151, 19152, 19153, 19154, 19155, 19156, 22026, 22027, 22028,
+    23676, 23677, 23678, 23679, 23680, 23681, 23682, 23683, 25979, 25980,
+    25981, 25982, 28894, 28895, 28896, 28897, 31265, 31266, 31267, 31268,
+    34210, 37058, 37059, 37060, 43510, 43511, 43517,
+}
+# Source corpse stages for the active Silver Raid Token bosses. The three
+# dead-wasp stages also support carried custody in the pinned appearances.
+RAID_CORPSE_IDS = {5989, *range(7282, 7286), *range(7320, 7324),
+                   *range(18118, 18122), *range(18262, 18266), *range(18970, 18986)}
+WILLI_WASP_DECAY = {4080, 4081, 4082}
+RAID_LOOT_IDS = {6300, 7459, 8044, 19356, 19357, 19361, 19362, 19363,
+                19365, 19366, 19369, 19371, 19391}
+IDS |= COOKBOOK_IDS | JORGE_REPLICA_IDS | RAID_CORPSE_IDS | WILLI_WASP_DECAY | RAID_LOOT_IDS
+
 # Existing Dworc and Merlkin loot yields require portable native custody.
 IDS |= {3348, 3403}
 IDS |= SIDE_IDS
@@ -99,25 +116,35 @@ CLIENT_SHA = '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2'
 CLIENT = f'content/assets/files/appearances-{CLIENT_SHA}.dat'
 
 
+# (Accepted canonical weight, retained source weight).
+CANONICAL_WEIGHTS = {19361: (150, 850), 19371: (1700, 170), 23677: (2700, 200),
+                     32228: (20, 250), 34210: (6660, 6659)}
+
+
 def reconcile_canonical_physical(item_id, definition, record):
-    # Purified Soul: retain the canonical0.20oz value; raw Canary XML says2.50oz.
-    # Admit only this exact reviewed pair, never a general weight override.
-    if item_id != 32228:return
-    known=lambda value:{'state':'KNOWN','value':value}
-    canonical=definition['semantics']['physical']['value']['weight']
-    donor=record['semantics']['physical']['value']['weight']
-    if canonical!=known(20) or donor!=known(250):
-        raise ValueError('QENGINE_PURIFIED_SOUL_WEIGHT_DECISION_DRIFT')
-    record['semantics']['physical']['value']['weight']=canonical.copy()
+    if item_id not in CANONICAL_WEIGHTS:
+        return
+    # Preserve the canonical Item weight across the portable-custody admission.
+    canonical_weight, donor_weight = CANONICAL_WEIGHTS[item_id]
+    known = lambda value: {'state': 'KNOWN', 'value': value}
+    canonical = definition['semantics']['physical']['value']['weight']
+    donor = record['semantics']['physical']['value']['weight']
+    if canonical != known(canonical_weight) or donor != known(donor_weight):
+        raise ValueError(f'QENGINE_REWARD_ITEM_WEIGHT_DECISION_DRIFT:{item_id}')
+    record['semantics']['physical']['value']['weight'] = canonical.copy()
 
 
 def reconcile_active_physical(existing, record):
-    if record['production_definition']['production_key']!='oteryn:item.tibia.i32228':return
+    key = record['production_definition']['production_key']
+    external_id = record['production_binding']['external_id']
+    if not external_id.isdecimal() or int(external_id) not in CANONICAL_WEIGHTS:
+        return
+    canonical_weight, donor_weight = CANONICAL_WEIGHTS[int(external_id)]
     known=lambda value:{'state':'KNOWN','value':value}
     before=existing['semantics']['physical']['value']['weight']
     after=record['semantics']['physical']['value']['weight']
-    if before not in (known(250),known(20)) or after!=known(20):
-        raise ValueError('QENGINE_PURIFIED_SOUL_ACTIVE_WEIGHT_DRIFT')
+    if before not in (known(donor_weight), known(canonical_weight)) or after != known(canonical_weight):
+        raise ValueError(f'QENGINE_REWARD_ITEM_ACTIVE_WEIGHT_DRIFT:{key}')
     existing['semantics']['physical']['value']['weight']=after.copy()
 
 
@@ -191,10 +218,12 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
     admitted={r['production_definition']['production_key']:r for r in
         json.loads((root/PROFILE).read_bytes())['records']}
     records=[]
+    ground_only = STATIC_IDS | CORPSE_IDS | RAID_CORPSE_IDS
+    timed = CORPSE_IDS | RAID_CORPSE_IDS | WILLI_WASP_DECAY | {6300}
     for item_id in sorted(selected):
         node=xml[item_id]
         flower = lion_flower.admitted(item_id, source.attrs(node))
-        if not flower and item_id not in CORPSE_IDS and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
+        if not flower and item_id not in timed and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):
@@ -204,19 +233,31 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
                                          admitted.get(f'oteryn:item.tibia.i{item_id}'))
         definition=definitions[f'oteryn:item.tibia.i{item_id}']
         reconcile_canonical_physical(item_id,definition,record)
+        if item_id == 6300:
+            # The canonical Death Ring has a 450-second equipped budget.
+            record['semantics']['temporal'] = copy.deepcopy(definition['semantics']['temporal'])
+        if item_id in COOKBOOK_IDS:
+            # Crystal's explicit cookbook actions grant read-only text. The
+            # native literal inscription owner measures up to 4000 characters.
+            known = lambda value: {'state': 'KNOWN', 'value': value}
+            record['semantics']['readable_writeable'] = known({
+                'readable': known(True), 'writeable': known(False),
+                'distance_read': known(False), 'max_text_length': known(4000),
+                'write_once_target': {'state': 'UNKNOWN'},
+            })
         if flower:
             record=lion_flower.temporal(record, definition, accepted.known_conflict)
         # These exact Ground-only props and corpse stages have canonical
         # identity-only rows; their physical facts come from the pinned sources.
-        semantics=definition.get('semantics') if item_id in (STATIC_IDS | CORPSE_IDS) else definition['semantics']
-        if item_id in (STATIC_IDS | CORPSE_IDS) and (definition.get('kind')!='Item' or definition['identity']['family']!='Item'):
+        semantics=definition.get('semantics') if item_id in ground_only | WILLI_WASP_DECAY else definition['semantics']
+        if item_id in ground_only | WILLI_WASP_DECAY and (definition.get('kind')!='Item' or definition['identity']['family']!='Item'):
             raise ValueError('QENGINE_REWARD_STATIC_IDENTITY')
         for group in ('physical','stack','container','temporal'):
             if semantics is not None and accepted.known_conflict(semantics[group],record['semantics'][group]):
                 raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+group+':'+str(item_id))
         if definition['stack_class'] not in ('Unknown',record['admission']['stack_class']):
             raise ValueError('QENGINE_REWARD_ITEM_STACK_CONFLICT')
-        expected_destinations=['Ground'] if item_id in (STATIC_IDS | CORPSE_IDS) else ['CharacterInventory','Ground']
+        expected_destinations=['Ground'] if item_id in ground_only else ['CharacterInventory','Ground']
         if record['admission']['legal_destinations']!=expected_destinations:
             raise ValueError('QENGINE_REWARD_ITEM_DESTINATION_DRIFT')
         if item_id in STATIC_IDS and record['admission']['stack_class']!='NonStackable':
@@ -297,6 +338,7 @@ def admit_records(root,generated,profile_path,manifest_path,order,canonical,reco
         known_speed = _admitted_known_speed(record, present.get(key))
         if key in present:
             prior = present[key]
+            reconcile_active_physical(prior, record)
             inert = prior['admission'] == {
                 'materializable': False,
                 'stack_class': record['admission']['stack_class'],
@@ -307,7 +349,6 @@ def admit_records(root,generated,profile_path,manifest_path,order,canonical,reco
                         == record['semantics']):
                 document['records'][document['records'].index(prior)] = record
                 continue
-            reconcile_active_physical(prior, record)
             import questpc7_quest_item_reconcile
             questpc7_quest_item_reconcile.preserve(prior, record)
             import questpc7_physical_custody_join
