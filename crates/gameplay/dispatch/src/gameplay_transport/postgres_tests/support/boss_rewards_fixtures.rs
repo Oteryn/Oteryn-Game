@@ -249,10 +249,11 @@ fn scenario(case: Case) -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice())
             .bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
-        let existing = if matches!(case, Case::Collection) {
-            vec![(gold, 1); 17]
-        } else {
-            vec![]
+        let existing = match case {
+            Case::Collection => vec![(gold, 1); 17],
+            // One free direct slot must accommodate the bag and its complete subtree.
+            Case::NestedCustody => vec![(gold, 1); 19],
+            _ => vec![],
         };
         super::item_look_fixtures::seed_main_backpack(&h, &existing)
             .await
@@ -294,15 +295,7 @@ fn scenario(case: Case) -> TestResult {
             } else {
                 "oteryn:creature.rat"
             };
-            native_death(
-                &h,
-                &owner,
-                &mut admitted,
-                fence,
-                creature,
-                case,
-            )
-            .await?;
+            native_death(&h, &owner, &mut admitted, fence, creature, case).await?;
             eprintln!("BOSS_REWARDS POSTGRES_NATIVE_DEATH_COMPLETED");
             drop(owner);
             drop(authority);
@@ -368,7 +361,8 @@ fn scenario(case: Case) -> TestResult {
                 items: vec![
                     BossRewardItem {
                         definition,
-                        quantity: 1
+                        quantity: 1,
+                        parent_ordinal: None,
                     };
                     item_count
                 ],
