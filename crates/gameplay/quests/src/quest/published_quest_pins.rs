@@ -88,6 +88,13 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
         )],
     ),
     (
+        "oteryn:quest.steal_from_thieves_quest",
+        hash(b"dbbdbf24cc3bcfe2caefed06b1287254d035e4642998150e2bf909bb3784f94d"),
+        &[hash(
+            b"ba0a6aa9a34a16c8e56ae191d6af5fbe3ce07928fafbeb50fffeeaf97b4f2672",
+        )],
+    ),
+    (
         "oteryn:quest.the_ancient_tombs_quest",
         hash(b"5a7765b1239512ce87772a6d2c366b9443cd5596969c7b52ff789d50db0d501a"),
         &[

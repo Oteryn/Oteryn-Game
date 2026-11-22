@@ -556,6 +556,45 @@ mod tests {
     }
 
     #[test]
+    fn quest_gap_loader_billy_pan_exchange() -> Result<(), String> {
+        let loaded = embedded();
+        let offered = super::super::reward_callbacks::offered_for(loaded.catalogue())?;
+        assert!(offered.iter().any(|row| row.npc == "oteryn:npc.billy"
+            && row.key == "oteryn:quest-reward/billy-pan-first"
+            && row.completes));
+        Ok(())
+    }
+
+    #[test]
+    fn quest_gap_loader_lee_delle_studded_legs_exchange() -> Result<(), String> {
+        let loaded = embedded();
+        let offered = super::super::reward_callbacks::offered_for(loaded.catalogue())?;
+        assert!(offered.iter().any(|row| row.npc == "oteryn:npc.lee_delle"
+            && row.key == "oteryn:quest-reward/lee-delle-flower-first"
+            && row.completes));
+        Ok(())
+    }
+
+    #[test]
+    fn quest_gap_loader_ahmet_oasis_box() -> Result<(), String> {
+        let loaded = embedded();
+        let callbacks = super::super::world_callbacks::load_for(loaded.catalogue())?;
+        let chest = callbacks
+            .iter()
+            .find(|row| row.key == "oteryn:quest-callback/qd-steal-from-thieves-oasis-box")
+            .ok_or("oasis box must be in the live callback catalogue")?;
+        assert_eq!(chest.selector.action, Some(19910));
+        assert_eq!(
+            chest
+                .item_reward()
+                .as_ref()
+                .map(|reward| reward.item.as_str()),
+            Some("oteryn:item.tibia.i235")
+        );
+        Ok(())
+    }
+
+    #[test]
     fn runtime_scope_preserves_only_admitted_predecessors() -> Result<(), String> {
         const MARLIN: &str = "oteryn:quest.marlin_trophy_quest";
         const DAWNPORT: &str = "oteryn:quest.dawnport_quest";

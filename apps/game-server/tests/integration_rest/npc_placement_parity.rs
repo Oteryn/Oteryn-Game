@@ -101,6 +101,47 @@ fn the_compiler_admits_exactly_the_npcs_of_the_server_service_model() -> TestRes
     Ok(())
 }
 
+#[test]
+fn quest_contacts_load_from_the_published_placement_shards() -> TestResult {
+    use oteryn_world_bundle_compiler::{compile, source};
+
+    let root = root();
+    let contacts = [
+        ("oteryn:npc.ahmet", (33126, 32810, -6)),
+        ("oteryn:npc.gnomally", (32795, 31746, -10)),
+        ("oteryn:npc.lee_delle", (32024, 32195, -7)),
+    ];
+    let regions = contacts.map(|(_, (x, y, _))| (x / 256, y / 256));
+    let project = source::project_regions(&root, &regions)?;
+    let (registry, palette) = source::registry(&root, &project)?;
+    let input = Input {
+        regions: &project.regions,
+        palette: &palette,
+        identity: identity(),
+        world: source::world_extent(&root)?,
+        build_class: BuildClass::NonProduction,
+        draft_areas: Vec::new(),
+        families: &project.families,
+    };
+    let (spawns, _) = compile::realize_spawns(&input, &registry)?;
+    let (table, report) = compile::realize_npcs(&input, &registry, &spawns)?;
+    for (key, expected) in contacts {
+        let npc = table
+            .npcs
+            .iter()
+            .find(|npc| npc.key == key)
+            .ok_or_else(|| {
+                format!(
+                    "{key} missing from the bundle NPC table, held: {:?}",
+                    report.held.iter().find(|entry| entry.npc == key)
+                )
+            })?;
+        let cells: Vec<_> = npc.placements.iter().map(|p| (p.x, p.y, p.floor)).collect();
+        assert_eq!(cells, [expected], "{key} must load at the donor cell");
+    }
+    Ok(())
+}
+
 const PALETTE: [&str; 5] = [
     "terrain:grass",
     "terrain:lava",

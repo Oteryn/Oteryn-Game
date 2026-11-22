@@ -1026,11 +1026,8 @@ pub(super) async fn exercise(
         ))
         .await;
     }
-    if name == "qengine-rewards-qd-steal-from-thieves" {
-        return Box::pin(super::qd_steal_from_thieves_fixtures::exercise(
-            owner, admitted, h, authority,
-        ))
-        .await;
+    if name.starts_with("qengine-rewards-rookgaard-") {
+        return Box::pin(super::rookgaard_exchanges_fixtures::exercise(owner, admitted, h, name)).await;
     }
     if name.starts_with("qengine-rewards-qnpcfx-koshei") {
         return Box::pin(super::qnpcfx_koshei_fixtures::exercise(

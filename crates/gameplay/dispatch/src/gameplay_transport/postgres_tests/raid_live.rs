@@ -98,8 +98,15 @@ async fn seed(
     firing: [u8; 16],
     digest: [u8; 32],
 ) -> TestResult {
-    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,'raid-test-map',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(0),'1970-01')")
-        .bind(owner.world_id.as_bytes().as_slice()).bind(digest.as_slice()).execute(&harness.pool).await?;
+    let content = owner.runtime.lock().await.content_pin().clone();
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,'raid-test-map',$3,$4,$5,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(0),'1970-01')")
+        .bind(owner.world_id.as_bytes().as_slice())
+        .bind(digest.as_slice())
+        .bind(content.server_artifact_digest().as_slice())
+        .bind(content.client_artifact_digest().as_slice())
+        .bind(content.frame_binding_digest().as_slice())
+        .execute(&harness.pool)
+        .await?;
     sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)")
         .bind(owner.world_id.as_bytes().as_slice())
         .execute(&harness.pool)
@@ -495,21 +502,130 @@ async fn scenario(
             RaidWrite::Applied
         );
     }
+    let credited = if key.as_str() == "raid:porthope.stampede" {
+        let mut admitted = deps.admitted;
+        owner.admit_progression_session(&mut admitted).await;
+        assert!(
+            owner.progression_binding(admitted.game_session_id).is_some(),
+            "the credited raider has a bound progression profile"
+        );
+        let fence = owner
+            .current_quest_fence(deps.admitted.game_session_id)
+            .await
+            .map_err(debug)?
+            .ok_or("Stampede reward fence")?;
+        let character =
+            crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?;
+        deps.runtime
+            .lock()
+            .await
+            .bind_attacker_lease(
+                deps.actor,
+                fence.game_session_id,
+                crate::foundation::CharacterLease::new(character, fence.character_lease_generation)
+                    .map_err(debug)?,
+            )
+            .map_err(debug)?;
+        deps.initialize(&owner).await;
+        let frame_binding = deps.runtime.lock().await.content_pin().frame_binding_digest();
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
+            .bind(owner.world_id.as_bytes().as_slice())
+            .bind(owner.channel_id.as_bytes().as_slice())
+            .execute(&harness.pool)
+            .await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
+            .bind(owner.world_id.as_bytes().as_slice())
+            .bind(owner.channel_id.as_bytes().as_slice())
+            .bind(digest.as_slice())
+            .bind(active.identity().client_artifact_digest().as_slice())
+            .bind(frame_binding.as_slice())
+            .execute(&harness.pool)
+            .await?;
+        let queue = owner.states.attack.lock().await.kills().clone();
+        Some((fence, character, queue))
+    } else {
+        None
+    };
     // The existing test-only damage writer commits through real HP/actor state;
     // no fabricated database death or administrative despawn substitutes for it.
     let mut deaths = Vec::with_capacity(statuses.len());
-    {
+    for (index, status) in statuses.iter().enumerate() {
+        let RaidSpawnOutcome::Placed(actor) = status.outcome else {
+            return Err("placed actor".into());
+        };
         let mut runtime = deps.runtime.lock().await;
-        for status in &statuses {
-            let RaidSpawnOutcome::Placed(actor) = status.outcome else {
-                return Err("placed actor".into());
+        let health = runtime
+            .companion_snapshot(actor)
+            .map_err(debug)?
+            .maximum_health;
+        if let Some((fence, character, queue)) = credited.as_ref().filter(|_| index < 6) {
+            use crate::gameplay_transport::kill_reward::{
+                DrainOutcome, KillSink, record_creature_kill,
             };
-            let health = runtime
-                .companion_snapshot(actor)
-                .map_err(debug)?
-                .maximum_health;
-            // The carrier rejects an unsequenced occurrence containing a NUL byte, so the raw
-            // big-endian index (e.g. [0, 0]) cannot name the hit; use a NUL-free text identity.
+            let command = crate::foundation::CommandRef::new(
+                fence.game_session_id,
+                crate::foundation::CommandId::new(100 + u64::try_from(index)?).map_err(debug)?,
+            );
+            let observed = owner.owner_now();
+            let at = observed.get() / 1000;
+            runtime
+                .borrow_exact_actor_commit_at(at)
+                .commit_damage_for_bound_attacker(
+                    actor,
+                    deps.actor,
+                    command,
+                    0,
+                    crate::foundation::OwnerDamageCommand {
+                        target: b"oteryn:creature.terrified_elephant",
+                        occurrence: b"stampede",
+                        binding: b"stampede-credit",
+                        damage: health,
+                    },
+                )
+                .map_err(debug)?;
+            record_creature_kill(
+                &mut runtime,
+                KillSink {
+                    prey: None,
+                    activity: &[],
+                    queue,
+                    rewards: native.reward_table(),
+                    charms: None,
+                },
+                actor,
+                crate::combat::CapturedRewardPrincipal {
+                    character: *character,
+                    lease_generation: fence.character_lease_generation,
+                    session: fence.game_session_id,
+                    actor: deps.actor,
+                },
+                at,
+                Some(observed),
+            );
+            assert!(queue.has_session(fence.game_session_id));
+            assert!(!runtime.contains_live_creature(actor));
+            drop(runtime);
+            assert_eq!(
+                owner.drain_kill_rewards(fence.game_session_id).await,
+                DrainOutcome::Drained
+            );
+            let (kills, awards): (i64, i64) = sqlx::query_as(
+                "SELECT progress.kill_count,
+                        (SELECT count(*) FROM game_account_achievements
+                         WHERE account_id=root.account_id
+                           AND achievement_key='oteryn:achievement/trail_of_the_ape_god')
+                 FROM game_character_roots root
+                 JOIN game_character_bestiary_progress progress USING (character_id)
+                 WHERE root.character_id=encode($1,'hex')::uuid
+                   AND progress.race_key='oteryn:creature.terrified_elephant'",
+            )
+            .bind(character.as_bytes().as_slice())
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(kills, i64::try_from(index)? + 1);
+            assert_eq!(awards, i64::from(index >= 4));
+        } else {
+            // The carrier rejects an unsequenced occurrence containing a NUL byte.
             let occurrence = format!(
                 "raid-live-death:{}:{}:{}",
                 status.identity.wave, status.identity.entry, status.identity.index
@@ -518,12 +634,12 @@ async fn scenario(
                 .commit_monster_lab_damage(actor, occurrence.as_bytes(), health)
                 .map_err(debug)?;
             assert!(!runtime.contains_live_creature(actor));
-            deaths.push(RaidCreatureIdentity {
-                wave: status.identity.wave,
-                entry: status.identity.entry,
-                index: status.identity.index,
-            });
         }
+        deaths.push(RaidCreatureIdentity {
+            wave: status.identity.wave,
+            entry: status.identity.entry,
+            index: status.identity.index,
+        });
     }
     if boss {
         // Sugar dies before its wave ACK; Dracola dies after ACK, while a
