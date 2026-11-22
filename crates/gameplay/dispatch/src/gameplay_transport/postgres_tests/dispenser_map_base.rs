@@ -191,7 +191,7 @@ async fn scenario(admin: String) -> TestResult {
     .await?;
     assert_eq!(charges, 998);
     let cask_id: [u8; 16] = cask.as_slice().try_into()?;
-    let ground = crate::gameplay_transport::loop_move::loop_ground(&owner, &base, Some(index))
+    let ground = crate::gameplay_transport::loop_move::loop_ground(&owner, map.base(), Some(index))
         .await
         .ok_or("cask Ground projection")?;
     assert_eq!(
@@ -266,7 +266,7 @@ async fn scenario(admin: String) -> TestResult {
          FROM game_item_consume_transform_records WHERE recipe='oteryn:dispenser.fill' ORDER BY command_id",
     ).fetch_all(&harness.pool).await?;
     assert_eq!(receipts, [(2, 1000, 998), (1, 1, 0)]);
-    let ground = crate::gameplay_transport::loop_move::loop_ground(&owner, &base, Some(index))
+    let ground = crate::gameplay_transport::loop_move::loop_ground(&owner, map.base(), Some(index))
         .await
         .ok_or("depleted cask Ground projection")?;
     assert!(ground.overlay().ground_entry(&cask_id).is_none());
