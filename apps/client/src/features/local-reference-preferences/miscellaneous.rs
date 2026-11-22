@@ -90,7 +90,30 @@ impl MiscellaneousPreferences {
 
     #[cfg(any(bevy_shell, test))]
     pub(crate) fn disable_remember_device_at(path: &std::path::Path) -> std::io::Result<()> {
-        let _lock = crate::atomic_file::wait_for_lock(path)?;
+        match crate::atomic_file::try_lock(path) {
+            Ok(_lock) => Self::publish_opt_out(path),
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                // The device revocation is already durable. Retry the sidecar independently
+                // so neither picker dismissal nor joining the forget worker waits for it.
+                let path = path.to_owned();
+                std::thread::Builder::new()
+                    .name("picker-opt-out".into())
+                    .spawn(move || {
+                        let result =
+                            crate::atomic_file::lock_for(&path, std::time::Duration::from_secs(30))
+                                .and_then(|_lock| Self::publish_opt_out(&path));
+                        if let Err(error) = result {
+                            eprintln!("Could not save the remember-device choice: {error}");
+                        }
+                    })?;
+                Ok(())
+            }
+            Err(error) => Err(error),
+        }
+    }
+
+    #[cfg(any(bevy_shell, test))]
+    fn publish_opt_out(path: &std::path::Path) -> std::io::Result<()> {
         let before = Self {
             remember_device: true,
             ..Self::default()

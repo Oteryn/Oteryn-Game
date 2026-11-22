@@ -361,3 +361,39 @@ fn regression_pending_sign_out_holds_admission() -> crate::account_services::tes
 {
     check_pending_admission(true)
 }
+
+#[cfg(test)]
+#[test]
+fn picker_and_shutdown_finish_with_session_lock_held() -> Result<(), Box<dyn std::error::Error>> {
+    use std::time::{Duration, Instant};
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("preferences.json");
+    let mut config =
+        Reentry::device_test_config(fixture.path().join("device"), "https://localhost:1")?;
+    config.preference_path = Some(path.clone());
+    let mut owner = HostOwner::new(Some(path.clone()))?;
+    assert!(owner.entry.as_mut().ok_or("entry")?.configure(config));
+    let held = crate::atomic_file::lock(&path.with_extension("session-options.json"))?;
+    let (release, wait) = std::sync::mpsc::channel::<()>();
+    let unlock = std::thread::spawn(move || {
+        let _ = wait.recv_timeout(Duration::from_secs(5));
+        drop(held);
+    });
+    let start = Instant::now();
+    owner.cancel_picker(1);
+    owner.finish_forget_intent();
+    owner.close();
+    drop(owner);
+    assert!(start.elapsed() < Duration::from_secs(3));
+    drop(release);
+    unlock.join().map_err(|_| "lock holder panicked")?;
+    let deadline = Instant::now() + Duration::from_secs(2);
+    let sidecar = path.with_extension("session-options.json");
+    while !crate::play::MiscellaneousPreferences::read(&sidecar)
+        .is_ok_and(|options| !options.remember_device)
+    {
+        assert!(Instant::now() < deadline, "opt-out retry did not persist");
+        std::thread::yield_now();
+    }
+    Ok(())
+}

@@ -520,6 +520,14 @@ fn c2d_picker_cancel_persists_opt_out_after_lock_timeout() -> TestResult {
         GameplayEntryError::Rejected(PublicClass::RetryLogin)
     );
     unlock.join().map_err(|_| "lock holder panicked")?;
+    let deadline = std::time::Instant::now() + Duration::from_secs(2);
+    while MiscellaneousPreferences::read(&sidecar)?.remember_device {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "opt-out retry timed out"
+        );
+        std::thread::yield_now();
+    }
     assert!(!MiscellaneousPreferences::read(&sidecar)?.remember_device);
     stack.finish();
     Ok(())

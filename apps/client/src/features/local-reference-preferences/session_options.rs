@@ -29,7 +29,7 @@ impl SettingsState {
                     Some(previous) => previous.await,
                     None => Ok(()),
                 };
-                let current = crate::atomic_file::wait_for_lock(&path)
+                let current = crate::atomic_file::lock(&path)
                     .and_then(|lock| disable_remember_device_locked(&path, &baseline, lock))
                     .map_err(|error| error.to_string());
                 earlier.and(current)

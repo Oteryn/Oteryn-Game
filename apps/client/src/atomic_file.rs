@@ -61,8 +61,12 @@ fn staged_file(path: &Path, bytes: &[u8], sync: bool) -> io::Result<tempfile::Na
 
 // Lock a separate inode, since publishing the data file replaces its inode.
 pub(crate) fn lock(path: &Path) -> io::Result<File> {
+    lock_for(path, std::time::Duration::from_secs(1))
+}
+
+pub(crate) fn lock_for(path: &Path, timeout: std::time::Duration) -> io::Result<File> {
     let file = open_lock(path)?;
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
+    let deadline = std::time::Instant::now() + timeout;
     loop {
         match file.try_lock() {
             Ok(()) => return Ok(file),
@@ -84,13 +88,6 @@ pub(crate) fn lock(path: &Path) -> io::Result<File> {
 pub(crate) fn try_lock(path: &Path) -> io::Result<File> {
     let file = open_lock(path)?;
     file.try_lock().map_err(io::Error::from)?;
-    Ok(file)
-}
-
-#[cfg(any(bevy_shell, test))]
-pub(crate) fn wait_for_lock(path: &Path) -> io::Result<File> {
-    let file = open_lock(path)?;
-    file.lock()?;
     Ok(file)
 }
 

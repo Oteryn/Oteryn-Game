@@ -24,7 +24,7 @@ impl PreferenceStore {
         let mut active = match Self::read_or_default(path) {
             Err(error) if recover_malformed && error.kind() == io::ErrorKind::InvalidData => {
                 crate::atomic_file::preserve_malformed(path)?;
-                ReferencePreferences::default()
+                before.clone()
             }
             result => result?,
         };
@@ -101,9 +101,12 @@ impl PreferenceStore {
         if let Some(backup) = backup {
             match order {
                 BackupOrder::BackupFirst => {
-                    if !retained {
-                        crate::atomic_file::replace(&slot, &backup, true)?;
-                    }
+                    let destination = if retained {
+                        path.with_added_extension("recovery")
+                    } else {
+                        slot
+                    };
+                    crate::atomic_file::publish_durable(&destination, &backup)?;
                 }
                 BackupOrder::ActiveFirst => {
                     let staging = path.with_added_extension("pending-backup");
@@ -118,9 +121,8 @@ impl PreferenceStore {
                     return Ok(replacement);
                 }
             }
-            sync_parent(path)?;
         }
-        crate::atomic_file::replace(path, &bytes, true)?;
+        crate::atomic_file::publish_durable(path, &bytes)?;
         Ok(replacement)
     }
 
@@ -301,9 +303,14 @@ fn pending_promotion_allows_later_settings_writes() -> io::Result<()> {
     assert_eq!(PreferenceStore::read_transfer(&path)?.ui_scale, 140);
     let import = root.path().join("import.json");
     PreferenceStore::export_to(&active, &import)?;
+    let recovery = path.with_added_extension("recovery");
+    let before_import = std::fs::read(&path)?;
     state.import_from(&import)?;
+    assert_eq!(std::fs::read(&recovery)?, before_import);
     assert_eq!(PreferenceStore::read_transfer(&path)?.ui_scale, 125);
+    let before_reset = std::fs::read(&path)?;
     state.reset_defaults()?;
+    assert_eq!(std::fs::read(&recovery)?, before_reset);
     assert_eq!(
         PreferenceStore::read_transfer(&path)?.ui_scale,
         ReferencePreferences::default().ui_scale
@@ -319,5 +326,27 @@ fn pending_promotion_allows_later_settings_writes() -> io::Result<()> {
         std::fs::read(PreferenceStore::load(path)?.backup_path())?,
         before_restore
     );
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn apply_after_corruption_preserves_loaded_fields() -> io::Result<()> {
+    let root = tempfile::tempdir()?;
+    let path = root.path().join("preferences.json");
+    let loaded = ReferencePreferences {
+        ui_scale: 125,
+        ..Default::default()
+    };
+    PreferenceStore::export_to(&loaded, &path)?;
+    let mut state = super::super::SettingsState::new(Some(path.clone()));
+    std::fs::write(&path, b"{")?;
+    let mut edited = state.preferences.clone();
+    edited.hud_mana = false;
+    state.apply(edited);
+    let saved = PreferenceStore::read_transfer(&path)?;
+    assert_eq!(saved.ui_scale, 125);
+    assert!(!saved.hud_mana);
+    assert_eq!(std::fs::read(path.with_added_extension("malformed"))?, b"{");
     Ok(())
 }
