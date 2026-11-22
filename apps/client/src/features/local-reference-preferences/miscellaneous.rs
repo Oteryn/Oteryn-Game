@@ -1,5 +1,6 @@
 //! Local confirmations and session choices; Platform retains all session authority.
 use serde::{Deserialize, Serialize};
+use std::{io, path::Path};
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct MiscellaneousPreferences {
@@ -30,6 +31,21 @@ impl MiscellaneousPreferences {
             .unwrap_or_default()
     }
     pub fn read(path: &std::path::Path) -> std::io::Result<Self> {
+        if path.with_added_extension("opt-out").try_exists()? {
+            match crate::atomic_file::try_lock(path) {
+                Ok(_lock) => Self::replay_opt_out(path)?,
+                Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
+                    let mut options = Self::read_sidecar(path)?;
+                    options.remember_device = false;
+                    return Ok(options);
+                }
+                Err(error) => return Err(error),
+            }
+        }
+        Self::read_sidecar(path)
+    }
+
+    fn read_sidecar(path: &Path) -> io::Result<Self> {
         use std::io::Read;
         let mut bytes = Vec::new();
         std::fs::File::open(path)?
@@ -46,6 +62,7 @@ impl MiscellaneousPreferences {
     }
     pub fn save(&self, path: &std::path::Path) -> std::io::Result<()> {
         let _lock = crate::atomic_file::lock(path)?;
+        Self::replay_opt_out(path)?;
         self.publish(path)
     }
 
@@ -54,15 +71,8 @@ impl MiscellaneousPreferences {
         before: Self,
         path: &std::path::Path,
     ) -> std::io::Result<()> {
-        use std::io::ErrorKind;
-        let mut active = match Self::read(path) {
-            Err(error) if error.kind() == ErrorKind::NotFound => Self::default(),
-            Err(error) if error.kind() == ErrorKind::InvalidData => {
-                crate::atomic_file::preserve_malformed(path)?;
-                Self::default()
-            }
-            result => result?,
-        };
+        Self::replay_opt_out(path)?;
+        let mut active = Self::read_for_edit(path)?;
         let Self {
             stay_logged_in,
             remember_device,
@@ -90,39 +100,50 @@ impl MiscellaneousPreferences {
 
     #[cfg(any(bevy_shell, test))]
     pub(crate) fn disable_remember_device_at(path: &std::path::Path) -> std::io::Result<()> {
+        Self::record_opt_out(path)?;
+        Self::try_replay_opt_out(path)
+    }
+
+    #[cfg(any(bevy_shell, test))]
+    pub(super) fn record_opt_out(path: &Path) -> io::Result<()> {
+        crate::atomic_file::publish_durable(&path.with_added_extension("opt-out"), b"false")
+    }
+
+    #[cfg(any(bevy_shell, test))]
+    pub(super) fn try_replay_opt_out(path: &Path) -> io::Result<()> {
         match crate::atomic_file::try_lock(path) {
-            Ok(_lock) => Self::publish_opt_out(path),
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                // The device revocation is already durable. Retry the sidecar independently
-                // so neither picker dismissal nor joining the forget worker waits for it.
-                let path = path.to_owned();
-                std::thread::Builder::new()
-                    .name("picker-opt-out".into())
-                    .spawn(move || {
-                        let result =
-                            crate::atomic_file::lock_for(&path, std::time::Duration::from_secs(30))
-                                .and_then(|_lock| Self::publish_opt_out(&path));
-                        if let Err(error) = result {
-                            eprintln!("Could not save the remember-device choice: {error}");
-                        }
-                    })?;
-                Ok(())
-            }
+            Ok(_lock) => Self::replay_opt_out(path),
+            Err(error) if error.kind() == io::ErrorKind::WouldBlock => Ok(()),
             Err(error) => Err(error),
         }
     }
 
-    #[cfg(any(bevy_shell, test))]
-    fn publish_opt_out(path: &std::path::Path) -> std::io::Result<()> {
-        let before = Self {
-            remember_device: true,
-            ..Self::default()
-        };
-        Self::default().publish_edits(before, path)
+    // The caller holds the publication lock. Keep the intent until the merged
+    // sidecar is durable, so an interrupted replay can safely run again.
+    fn replay_opt_out(path: &Path) -> io::Result<()> {
+        let pending = path.with_added_extension("opt-out");
+        if pending.try_exists()? {
+            let mut options = Self::read_for_edit(path)?;
+            options.remember_device = false;
+            options.publish(path)?;
+            std::fs::remove_file(pending)?;
+        }
+        Ok(())
+    }
+
+    fn read_for_edit(path: &Path) -> io::Result<Self> {
+        match Self::read_sidecar(path) {
+            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Self::default()),
+            Err(error) if error.kind() == io::ErrorKind::InvalidData => {
+                crate::atomic_file::preserve_malformed(path)?;
+                Ok(Self::default())
+            }
+            result => result,
+        }
     }
 
     fn publish(&self, path: &std::path::Path) -> std::io::Result<()> {
-        crate::atomic_file::replace(path, &serde_json::to_vec(self)?, true)
+        crate::atomic_file::publish_durable(path, &serde_json::to_vec(self)?)
     }
 }
 impl super::SettingsState {

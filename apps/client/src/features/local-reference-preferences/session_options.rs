@@ -9,15 +9,16 @@ type SessionBaseline = Mutex<MiscellaneousPreferences>;
 
 impl SettingsState {
     #[cfg(bevy_shell)]
-    pub(crate) fn disable_remember_device(&mut self) {
+    pub(crate) fn disable_remember_device(&mut self) -> Result<(), String> {
         use std::sync::atomic::Ordering;
 
         self.preferences.miscellaneous.remember_device = false;
         self.remember_epoch.fetch_add(1, Ordering::AcqRel);
         let Some(base) = &self.base_path else {
-            return;
+            return Ok(());
         };
         let path = base.with_extension("session-options.json");
+        MiscellaneousPreferences::record_opt_out(&path).map_err(|error| error.to_string())?;
         let baseline = self.session_baseline.clone();
         let previous = self.session_save.take();
         self.session_save = Some(
@@ -29,12 +30,19 @@ impl SettingsState {
                     Some(previous) => previous.await,
                     None => Ok(()),
                 };
-                let current = crate::atomic_file::lock(&path)
-                    .and_then(|lock| disable_remember_device_locked(&path, &baseline, lock))
-                    .map_err(|error| error.to_string());
+                let current = MiscellaneousPreferences::try_replay_opt_out(&path)
+                    .map_err(|error| error.to_string())
+                    .and_then(|()| {
+                        baseline
+                            .lock()
+                            .map_err(|error| error.to_string())?
+                            .remember_device = false;
+                        Ok(())
+                    });
                 earlier.and(current)
             }),
         );
+        Ok(())
     }
 
     pub(super) fn persist_preferences(
@@ -88,28 +96,6 @@ impl SettingsState {
             .map_err(|error| error.to_string())?;
         save_options(&self.session_baseline, options, &path, || true)
     }
-}
-
-#[cfg(bevy_shell)]
-fn disable_remember_device_locked(
-    path: &Path,
-    baseline: &SessionBaseline,
-    _lock: std::fs::File,
-) -> std::io::Result<()> {
-    let mut baseline = baseline
-        .lock()
-        .map_err(|error| std::io::Error::other(error.to_string()))?;
-    let before = MiscellaneousPreferences {
-        remember_device: true,
-        ..*baseline
-    };
-    let after = MiscellaneousPreferences {
-        remember_device: false,
-        ..*baseline
-    };
-    after.publish_edits(before, path)?;
-    *baseline = after;
-    Ok(())
 }
 
 fn save_options(
