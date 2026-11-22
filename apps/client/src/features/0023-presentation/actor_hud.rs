@@ -63,6 +63,7 @@ pub(super) fn draw(
     own: TileCoord,
     entities: &[WorldSpatialEntity],
     icons: &[PartyIcon],
+    summons: &std::collections::BTreeMap<EntityRef, EntityRef>,
     emblems: &[GuildEmblem],
     options: Options,
 ) -> Result<Vec<std::ops::Range<usize>>, BatchError> {
@@ -146,6 +147,17 @@ pub(super) fn draw(
                 scale,
             )?;
         }
+        if marks && let Some(master) = summons.get(&entity.entity) {
+            let color = if Some(*master) == options.own { PresentationColor::LightGreen } else { PresentationColor::Red };
+            // Summon emblem, aligned after the guild mark.
+            for (row, bits) in [0b01110_u8, 0b10000, 0b01110, 0b00001, 0b01110].into_iter().enumerate() {
+                for col in 0..5 {
+                    if bits & (16 >> col) != 0 {
+                        pixel(batch, view, atlas, [x + (44.0 + col as f32 * 2.0) * scale, y + row as f32 * 2.0 * scale], [2.0 * scale; 2], color)?;
+                    }
+                }
+            }
+        }
         if options.npc && entity.kind == EntityKind::Npc {
             for (row, bits) in [7_u8, 5, 7, 2].into_iter().enumerate() {
                 for col in 0..3 {
@@ -209,7 +221,7 @@ mod health_tests {
                 detail: EntityDetail::Actor { direction: oteryn_session::StepDirection::South, appearance_ref: 1, health_percent: health },
             };
             let mut batch = SpriteBatch::new();
-            draw(&mut batch, &view, world.atlas(), TileCoord::new(0,0), &[entity], &[], &[], Options::new(&preferences, 0, None, std::time::Duration::ZERO, false, None))?;
+            draw(&mut batch, &view, world.atlas(), TileCoord::new(0,0), &[entity], &[], &Default::default(), &[], Options::new(&preferences, 0, None, std::time::Duration::ZERO, false, None))?;
             let mut expected = SpriteBatch::new();
             super::super::pixel_rgb(&mut expected, &view, world.atlas(), [0.0;2], [1.0;2], [0;3])?;
             assert_eq!(batch.instances().first().map(|q| q.uv), expected.instances().first().map(|q| q.uv));

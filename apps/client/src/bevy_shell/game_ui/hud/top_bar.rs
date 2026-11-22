@@ -15,6 +15,13 @@ pub(super) struct LevelText;
 #[derive(Component)]
 pub(super) struct XpFill;
 
+#[derive(Component, Clone, Copy)]
+pub(super) enum Part {
+    Vitals,
+    Track,
+    Experience,
+}
+
 /// Line heights of the large style (about 27 px for the two lines).
 const VITAL_HEIGHT: f32 = 14.;
 const XP_LINE: f32 = 13.;
@@ -42,6 +49,7 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
         .id();
     let vitals = commands
         .spawn((
+            Part::Vitals,
             Name::new("Status bar vitals"),
             Node {
                 width: percent(100.),
@@ -56,6 +64,7 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
     ] {
         let track = commands
             .spawn((
+                Part::Track,
                 Node {
                     width: percent(50.),
                     height: percent(100.),
@@ -93,6 +102,7 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
     }
     let experience = commands
         .spawn((
+            Part::Experience,
             Name::new("Status bar experience"),
             Node {
                 width: percent(100.),
@@ -229,6 +239,69 @@ pub(super) fn project(
         });
         if node.width != width {
             node.width = width;
+        }
+    }
+}
+
+pub(super) fn layout(
+    mut commands: Commands,
+    owner: NonSend<HostOwner>,
+    status: Option<Res<super::super::StatusBar>>,
+    regions: Res<super::super::GameRegions>,
+    (parents, children): (Query<&ChildOf>, Query<&Children>),
+    mut regions_nodes: Query<&mut Node, Without<Part>>,
+    mut parts: Query<(&Part, &mut Node)>,
+) {
+    use crate::play::StatusBarStyle;
+    let Some(status) = status else { return };
+    let prefs = &owner.settings.preferences;
+    if let Ok(mut node) = regions_nodes.get_mut(status.0) {
+        node.display = if prefs.status_panel_visible {
+            Display::Flex
+        } else {
+            Display::None
+        };
+    }
+    if let (Ok(parent), Ok(row)) = (parents.get(status.0), parents.get(regions.world))
+        && let Ok(items) = children.get(parent.parent())
+        && let (Some(bar), Some(map)) = (
+            items.iter().position(|e| e == status.0),
+            items.iter().position(|e| e == row.parent()),
+        )
+        && (bar > map) != prefs.status_bar_bottom
+    {
+        commands
+            .entity(parent.parent())
+            .insert_children(map, &[status.0]);
+    }
+    let style = prefs.status_bar_style;
+    let parallel = style == StatusBarStyle::Parallel;
+    let height = match style {
+        StatusBarStyle::Compact => 10.,
+        StatusBarStyle::Default => 12.,
+        StatusBarStyle::Large | StatusBarStyle::Parallel => VITAL_HEIGHT,
+    };
+    for (part, mut node) in &mut parts {
+        match part {
+            Part::Vitals => {
+                node.flex_direction = if parallel {
+                    FlexDirection::Column
+                } else {
+                    FlexDirection::Row
+                };
+                node.height = px(if parallel { 2. * height } else { height });
+            }
+            Part::Track => {
+                node.width = percent(if parallel { 100. } else { 50. });
+                node.height = px(height);
+            }
+            Part::Experience => {
+                node.display = if style == StatusBarStyle::Compact {
+                    Display::None
+                } else {
+                    Display::Flex
+                }
+            }
         }
     }
 }

@@ -5,7 +5,7 @@ pub use super::feature_local_reference_preferences::settings::{
     HoverTooltip, MiscellaneousPreferences, MousePreset, MovementKeys, ObjectTarget,
     PerformancePacer, PerformanceSettings, PreferenceBinding, PreferenceInput, PreferenceStore,
     ReferencePreferences, RotationModifier, SHORTCUTS, ScreenshotPreferences, SettingsPage,
-    SettingsState, ShortcutEdit, TooltipTarget, UtilityAction, WINDOW_ACTIONS,
+    SettingsState, ShortcutEdit, StatusBarStyle, TooltipTarget, UtilityAction, WINDOW_ACTIONS,
     default_custom_hotkeys, fit_ui_scale, help, help_text, preference_bindings, rescale_ui_rect,
     scale_ui_rect, screenshot,
 };

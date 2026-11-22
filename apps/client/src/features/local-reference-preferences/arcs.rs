@@ -7,6 +7,9 @@ pub struct ArcPreferences {
     pub mana: bool,
     pub distance: u16,
     pub size: u16,
+    pub experience: bool,
+    pub skill: bool,
+    pub tracked_skill: u8,
     pub opacity: u8,
 }
 impl Default for ArcPreferences {
@@ -16,6 +19,9 @@ impl Default for ArcPreferences {
             mana: false,
             distance: 20,
             size: 60,
+            experience: false,
+            skill: false,
+            tracked_skill: 0,
             opacity: 85,
         }
     }
@@ -37,7 +43,10 @@ pub struct ArcLayout {
 }
 impl ArcPreferences {
     pub fn valid(self) -> bool {
-        self.distance <= 120 && (20..=120).contains(&self.size) && self.opacity <= 100
+        self.tracked_skill < 8
+            && self.distance <= 120
+            && (20..=120).contains(&self.size)
+            && self.opacity <= 100
     }
     pub fn layout(
         self,
