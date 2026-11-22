@@ -120,6 +120,13 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
         )],
     ),
     (
+        "oteryn:quest.steal_from_thieves_quest",
+        hash(b"dbbdbf24cc3bcfe2caefed06b1287254d035e4642998150e2bf909bb3784f94d"),
+        &[hash(
+            b"ba0a6aa9a34a16c8e56ae191d6af5fbe3ce07928fafbeb50fffeeaf97b4f2672",
+        )],
+    ),
+    (
         "oteryn:quest.hot_cuisine_quest",
         hash(b"dd018f81fad8d5b44cf1731e9fb30e9d352e91f54fc9a1c73537e3e86963dc0d"),
         &[hash(

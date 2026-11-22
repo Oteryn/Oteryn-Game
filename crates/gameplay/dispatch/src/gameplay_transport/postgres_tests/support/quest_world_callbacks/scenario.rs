@@ -1614,7 +1614,7 @@ fn scenario_case(
             || name.contains("l6-beggar-")
             || name == "npcfix-m38-mistrock"
             || name == "qengine-rewards-m01a-sven"
-            || name == "qengine-rewards-qd-steal-from-thieves"
+            || name == super::super::qd_world_fixtures::AHMET
             || (qm03 && name.ends_with("-premium"))
             || name.contains("l7-knight-")
             || name.contains("l8-")
@@ -1909,6 +1909,7 @@ fn scenario_case(
             || m44_lions
             || m07_realm
             || name == "npcfix-m38-mistrock"
+            || name == super::super::qd_world_fixtures::AHMET
         {
             owner.admit_premium(id(40), admitted.game_session_id);
         }

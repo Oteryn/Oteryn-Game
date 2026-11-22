@@ -544,7 +544,22 @@ def selections(root=ROOT):
             "claims": ["oteryn:reward-claim.kv.panpipe"],
         }
         sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
-    return {"unique": bindings, "action": doors, "teleport": returns}, sources
+    # The source OTBM box is plain. Crystal registers this USE action in Lua.
+    path = "content/quests/world-callbacks/qd-steal-from-thieves.json"
+    raw = (root / path).read_bytes()
+    [callback] = json.loads(raw)["callbacks"]
+    selector = callback["selector"]
+    cell = selector["position"]
+    position = (cell["x"], cell["y"], -cell["floor"])
+    if position in bindings or position in doors or position in returns:
+        raise ValueError("STEAL_FROM_THIEVES_BOX_CONFLICT")
+    doors[position] = {
+        "position": list(position),
+        "appearance": selector["appearance"],
+        "action": selector["action"],
+    }
+    world_use = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
+    return {"unique": bindings, "action": doors, "teleport": returns}, sources, (position, world_use)
 
 
 def overlay_region(raw, palette, bindings, attribute="unique"):
@@ -604,7 +619,7 @@ def overlay_region(raw, palette, bindings, attribute="unique"):
 
 
 def overlay_outputs(outputs, root=ROOT, require_all=False):
-    selections_by_attribute, sources = selections(root)
+    selections_by_attribute, sources, (world_use_cell, world_use) = selections(root)
     index = json.loads(outputs[INDEX])
     imported, byte_delta = 0, 0
     added = {attribute: 0 for attribute in selections_by_attribute}
@@ -636,7 +651,15 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
         regions[path]["sha256"] = hashlib.sha256(raw).hexdigest()
     if require_all and imported != len(bindings):
         raise ValueError("QUEST_CHEST_INCOMPLETE_OVERLAY")
-    index["source"]["quest_chests"] = {"captures": sources, "imported": imported}
+    x, y, z = world_use_cell
+    world_use_region = f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"
+    world_use_imported = int(world_use_region in paths)
+    index["source"]["quest_chests"] = {
+        "captures": sources,
+        "imported": imported - world_use_imported,
+    }
+    if world_use_imported:
+        index["source"]["quest_world_uses"] = {"captures": [world_use], "imported": world_use_imported}
     outputs[INDEX] = canonical(index)
     summary = json.loads(outputs[SUMMARY])
     summary["source"] = index["source"]
@@ -703,7 +726,7 @@ def apply_return_transitions(returns, check):
 
 
 def apply(check):
-    selected, _ = selections()
+    selected, _, _ = selections()
     bindings = {p: row for rows in selected.values() for p, row in rows.items()}
     paths = {INDEX, SUMMARY} | {
         f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"
