@@ -13,7 +13,8 @@ CREATE TABLE game_store_service_purchases (
         OR (kind='XP_BOOST' AND amount BETWEEN 1 AND 5 AND reset_epoch IS NOT NULL AND cardinality(blessing_keys)=0)
         OR (kind='BLESSINGS' AND amount IN (1,5) AND reset_epoch IS NULL
             AND cardinality(blessing_keys) IN (1,8) AND array_position(blessing_keys,NULL) IS NULL)
-        OR (kind IN ('WEEKLY_TASK_EXPANSION','INSTANT_REWARD_ACCESS') AND amount=1 AND reset_epoch IS NULL AND cardinality(blessing_keys)=0)),
+        OR (kind IN ('WEEKLY_TASK_EXPANSION','INSTANT_REWARD_ACCESS') AND amount=1 AND reset_epoch IS NULL AND cardinality(blessing_keys)=0)
+        OR (kind='PREMIUM_TIME' AND amount IN (30,90,180,360) AND reset_epoch IS NULL AND cardinality(blessing_keys)=0)),
     operation_id UUID UNIQUE REFERENCES store_delivery_receipts(operation_id)
 );
 CREATE INDEX game_store_service_purchases_account_world

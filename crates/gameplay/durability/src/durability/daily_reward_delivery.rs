@@ -124,7 +124,15 @@ impl DurabilityRoot {
         plan: DailyRewardDeliveryPlan,
         gate: &G,
     ) -> Result<DailyRewardClaimOutcome, DailyRewardClaimError> {
-        self.commit_daily_reward_claim_from(authority, node, fence, request, (plan, DailyRewardAccess::Shrine), gate).await
+        self.commit_daily_reward_claim_from(
+            authority,
+            node,
+            fence,
+            request,
+            (plan, DailyRewardAccess::Shrine),
+            gate,
+        )
+        .await
     }
 
     pub async fn commit_daily_reward_claim_from<G: DailyRewardPremiumGate>(
@@ -256,7 +264,13 @@ async fn apply<G: DailyRewardPremiumGate>(
         .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
         .bind(request.transaction_id.as_slice()).execute(&mut ***tx).await?;
     if matches!(access, DailyRewardAccess::StoreToken)
-        && !super::store::reward_access::consume(tx, fence.character_id.as_bytes(), world.as_bytes(), &request.transaction_id).await?
+        && !super::store::reward_access::consume(
+            tx,
+            fence.character_id.as_bytes(),
+            world.as_bytes(),
+            &request.transaction_id,
+        )
+        .await?
     {
         return Err(DailyRewardClaimError::InvalidRequest);
     }

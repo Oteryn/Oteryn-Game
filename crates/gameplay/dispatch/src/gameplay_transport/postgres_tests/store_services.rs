@@ -77,6 +77,17 @@ fn store_reward_access_is_spent_once_by_a_daily_claim_away_from_the_shrine() -> 
     })
 }
 
+#[test]
+fn store_premium_time_registers_exact_platform_days_and_replays_without_regranting() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-premium-time", || {
+        scenario(Scenario::Premium)
+    })
+}
+
 enum Scenario {
     Wildcards,
     XpBoost,
@@ -84,6 +95,7 @@ enum Scenario {
     Rollback,
     Weekly,
     RewardAccess,
+    Premium,
 }
 
 fn scenario(scenario: Scenario) -> TestResult {
@@ -156,6 +168,8 @@ fn scenario(scenario: Scenario) -> TestResult {
         admitted.controller = Some(controller);
         let ledger = Arc::new(Mutex::new(Ledger {
             balance: 800,
+            premium_days: matches!(scenario, Scenario::Premium).then_some(30),
+            service_grants: true,
             world: uuid(admitted.world_id.as_bytes()),
             ..Ledger::default()
         }));
@@ -188,6 +202,10 @@ fn scenario(scenario: Scenario) -> TestResult {
                 reward_access(&h, &owner, admitted).await?;
                 vec![100]
             }
+            Scenario::Premium => {
+                premium(&h, &owner, admitted).await?;
+                vec![250]
+            }
         };
         assert_eq!(ledger.lock().map_err(|_| "ledger poisoned")?.debits, debits);
         drop(owner);
@@ -197,6 +215,7 @@ fn scenario(scenario: Scenario) -> TestResult {
     })
 }
 
+const PREMIUM: &str = "store:premium-30d";
 const ACCESS: &str = "store:instant-reward-access";
 const WEEKLY: &str = "store:permanent-weekly-task-expansion";
 const ALL_BLESSINGS: &str = "store:all-blessings-5";
@@ -231,6 +250,10 @@ fn catalogue() -> TestResult<RuntimeCatalogue> {
             "key":ACCESS, "category":"extras.useful-things", "title":"Instant Reward Access",
             "price":100, "currency":"TIBIA_COIN", "source_line":6546,
             "service":{"kind":"instant_reward_access"}
+        }, {
+            "key":PREMIUM, "category":"premium-time", "title":"30 Days of Premium Time",
+            "price":250, "currency":"TIBIA_COIN", "source_line":65,
+            "service":{"kind":"premium_time","days":30}
         }]
     }))?)
     .ok_or_else(|| "admit Crystal Store service offers".into())
@@ -470,5 +493,26 @@ async fn reward_access(
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(uses, 1);
+    Ok(())
+}
+
+async fn premium(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    let catalogue = catalogue()?;
+    let purchased = buy(owner, admitted, &catalogue, 1, 60, (PREMIUM, 250)).await?;
+    assert_eq!(purchased.code, wire::StorePurchaseCode::Accepted);
+    assert_eq!(
+        buy(owner, admitted, &catalogue, 2, 60, (PREMIUM, 250)).await?,
+        purchased
+    );
+    let registered: (i16,i64,i64) = sqlx::query_as(
+        "SELECT amount,(SELECT count(*) FROM store_receipt_outbox WHERE acknowledged_at IS NOT NULL),
+                (SELECT count(*) FROM game_premium_evidence)
+         FROM game_store_service_purchases WHERE kind='PREMIUM_TIME' AND operation_id IS NOT NULL",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(registered, (30, 1, 0));
     Ok(())
 }

@@ -50,6 +50,7 @@ pub enum StoreService {
     XpBoost { tier: i16 },
     WeeklyTaskExpansion,
     InstantRewardAccess,
+    PremiumTime { days: u16 },
     Blessings { blessing_id: Option<u8>, count: i16 },
 }
 
@@ -59,6 +60,7 @@ impl StoreService {
             Self::PreyWildcards { .. } | Self::WeeklyTaskExpansion | Self::InstantRewardAccess => {
                 price > 0
             }
+            Self::PremiumTime { days } => matches!(days, 30 | 90 | 180 | 360) && price > 0,
             Self::Blessings { blessing_id, count } => {
                 price > 0
                     && matches!(count, 1 | 5)
@@ -84,17 +86,33 @@ impl StoreService {
             Self::Blessings { .. } => "BLESSINGS",
             Self::WeeklyTaskExpansion => "WEEKLY_TASK_EXPANSION",
             Self::InstantRewardAccess => "INSTANT_REWARD_ACCESS",
+            Self::PremiumTime { .. } => "PREMIUM_TIME",
         }
     }
 
-    const fn amount(self) -> i16 {
+    fn amount(self) -> i16 {
         match self {
             Self::PreyWildcards { count } => count.quantity(),
             Self::XpBoost { tier } => tier,
             Self::Blessings { count, .. } => count,
             Self::WeeklyTaskExpansion | Self::InstantRewardAccess => 1,
+            Self::PremiumTime { days } => i16::try_from(days).unwrap_or_default(),
         }
     }
+    pub const fn platform_kind(self) -> &'static str {
+        match self {
+            Self::PremiumTime { .. } => "PREMIUM_TIME",
+            _ => "ITEM",
+        }
+    }
+
+    pub const fn platform_quantity(self) -> u16 {
+        match self {
+            Self::PremiumTime { days } => days,
+            _ => 1,
+        }
+    }
+
     fn blessing_keys(self) -> Result<&'static [&'static str], sqlx::Error> {
         match self {
             Self::Blessings {
@@ -412,7 +430,11 @@ pub(in crate::durability) async fn settle_service(
             )
             .await?
         }
-        StoreService::WeeklyTaskExpansion | StoreService::InstantRewardAccess => {}
+        // The Platform purchase transaction has already granted the days. Its
+        // authenticated intent registers delivery. Game's premium snapshot remains authoritative here.
+        StoreService::WeeklyTaskExpansion
+        | StoreService::InstantRewardAccess
+        | StoreService::PremiumTime { .. } => {}
     }
     Ok(Ok(receipt))
 }
@@ -444,6 +466,11 @@ fn retained_service(kind: &str, amount: i16, keys: &[String]) -> Option<StoreSer
         }
         "INSTANT_REWARD_ACCESS" if keys.is_empty() && amount == 1 => {
             Some(StoreService::InstantRewardAccess)
+        }
+        "PREMIUM_TIME" if keys.is_empty() && matches!(amount, 30 | 90 | 180 | 360) => {
+            Some(StoreService::PremiumTime {
+                days: u16::try_from(amount).ok()?,
+            })
         }
         _ => None,
     }
@@ -549,6 +576,8 @@ async fn reserve(
             }
             None
         }
+        StoreService::PremiumTime { days } if matches!(days, 30 | 90 | 180 | 360) => None,
+        StoreService::PremiumTime { .. } => return Ok(false),
     };
     let inserted = sqlx::query(
         "INSERT INTO game_store_service_purchases(purchase_id,account_id,world_id,character_id,kind,amount,reset_epoch,blessing_keys)

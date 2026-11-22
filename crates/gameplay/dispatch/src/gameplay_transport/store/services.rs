@@ -85,7 +85,8 @@ pub(super) async fn resume_old_quote(
     {
         PurchaseRequestState::Answered(bytes) => bytes,
         PurchaseRequestState::Sent => {
-            let answer = platform_purchase(platform, admitted, &binding).await?;
+            let answer =
+                platform_purchase(platform, admitted, &binding, service.platform_kind()).await?;
             retain_answer(owner, &binding, journal.clone(), answer).await?
         }
     };
@@ -128,8 +129,17 @@ pub(super) async fn deliver(
         .read_intent(OperationKind::Deliver, &uuid_text(&operation_id))
         .await
         .ok()?;
-    if intent.quantity != Some(1)
-        || intent.unit_kind != "ITEM"
+    let (product, grant) = if matches!(service, StoreService::PremiumTime { .. }) {
+        ("oteryn.premium_time", "premium_time")
+    } else {
+        ("oteryn.store.item_grant", binding.offer_key.as_str())
+    };
+    if intent.quantity != Some(service.platform_quantity())
+        || intent.unit_kind != service.platform_kind()
+        || intent.product_id != product
+        || intent.product_version != "1"
+        || intent.grant_key.as_deref() != Some(grant)
+        || intent.grant_revision.as_deref() != Some("1")
         || intent.order_id.as_deref() != Some(uuid_text(&order_id).as_str())
         || intent.account_id != uuid_text(&request.account_id)
         || intent.offer_key.as_deref() != Some(binding.offer_key.as_str())

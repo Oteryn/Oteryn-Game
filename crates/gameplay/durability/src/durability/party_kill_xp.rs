@@ -360,8 +360,13 @@ pub async fn commit_in_transaction<const N: usize>(
             }
         }
         let modifiers = hunting_xp::read_in_transaction(
-            tx, &member.fence, &input.creature, member.premium, member.live_stamina,
-        ).await?;
+            tx,
+            &member.fence,
+            &input.creature,
+            member.premium,
+            member.live_stamina,
+        )
+        .await?;
         let raw = member.request.amount.get();
         let amount = oteryn_gameplay_characters::hunting_experience::hunting_experience(
             raw,

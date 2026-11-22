@@ -525,7 +525,7 @@ async fn purchase_retained_or_new(
             let answer = if reserved {
                 // Every admitted runtime offer uses Platform ITEM grants, including
                 // native permanent unlocks and Hireling service effects.
-                platform_purchase(&platform, admitted, &binding).await?
+                platform_purchase(&platform, admitted, &binding, service.map_or("ITEM", catalogue::StoreService::platform_kind)).await?
             } else {
                 PurchaseResult::OfferUnavailable
             };
@@ -576,6 +576,7 @@ async fn platform_purchase(
     platform: &StorePlatform,
     admitted: AdmittedSession,
     binding: &rules::PurchaseStoreOffer,
+    unit_kind: &str,
 ) -> Option<PurchaseResult> {
     let currency = platform_currency(binding.currency).ok()?;
     purchase_answer(platform.lock().await.purchase(&PurchaseStoreOffer {
@@ -588,7 +589,7 @@ async fn platform_purchase(
         world_id: uuid_text(admitted.world_id.as_bytes()),
         quantity: 1,
         currency: currency.into(),
-    }, "ITEM").await)
+    }, unit_kind).await)
 }
 
 async fn retain_answer(
