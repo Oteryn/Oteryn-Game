@@ -152,6 +152,21 @@ impl PlayLink {
     }
 
     pub fn custom_hotkey_action(&self, _view: &PlayView, action: &CustomAction) -> bool {
+        let dispatched = self.dispatch_custom_action(_view, action);
+        #[cfg(bevy_shell)]
+        if dispatched {
+            let label = match action {
+                CustomAction::ActionBar { slot } => format!("Hotkey: action bar slot {slot}"),
+                CustomAction::Object { definition, .. } => format!("Hotkey: use item {definition}"),
+                CustomAction::PassiveStatus { .. } | CustomAction::Passive { .. } => "Hotkey: track ability".into(),
+                CustomAction::Utility { .. } => "Hotkey: utility action".into(),
+                CustomAction::Text { send, .. } => if *send { "Hotkey: send text" } else { "Hotkey: edit text" }.into(),
+            };
+            lock(&self.mailbox).window_notice(crate::play::feature_local_text_messages::view::NoticeKind::Hotkey, label);
+        }
+        dispatched
+    }
+    fn dispatch_custom_action(&self, _view: &PlayView, action: &CustomAction) -> bool {
         if !action.valid() {
             return false;
         }

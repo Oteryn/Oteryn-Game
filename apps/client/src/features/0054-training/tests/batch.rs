@@ -61,6 +61,8 @@ fn training_batch_completion_requires_the_offline_server_receipt_and_survives_se
                     .await
                     .map_err(|e| e.to_string())?;
                     assert!(completion());
+                    #[cfg(bevy_shell)]
+                    assert!(link.take_window_notice().is_some_and(|notice| notice.text.contains("Offline training selected")));
                     drop(link);
                     task.await.map_err(|e| e.to_string())?;
                     assert!(completion());

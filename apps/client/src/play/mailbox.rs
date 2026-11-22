@@ -151,6 +151,8 @@ pub(super) struct Mailbox {
     pub(super) screen_look: Option<super::feature_local_text_messages::view::LookMessage>,
     #[cfg(bevy_shell)]
     pub(super) look_receipt: u64,
+    #[cfg(bevy_shell)]
+    pub(super) window_notice: Option<super::feature_local_text_messages::view::WindowNotice>,
     pub(super) shared_frontend: bool,
     pub(super) command_latency: Option<(std::time::Instant, std::time::Duration)>,
     /// The admitted session's byte counters; `None` before admission.

@@ -368,3 +368,88 @@ fn otc_textmsg_bevy_areas_clear_on_session_end() -> TestResult {
     assert_eq!(app.world().resource::<ScreenMessages>().last_sequence, None);
     Ok(())
 }
+
+#[test]
+fn general_message_switch_only_hides_game_window_text() -> TestResult {
+    let mut owner = HostOwner::new(None)?;
+    let (link, _commands, outbox) = play_channel();
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    outbox.push(vec![SessionEvent::ServerMessage(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: ServerMessage::StatusText("Confirmed status".into()),
+    })]);
+    view.tick(&link).map_err(|_| "tick")?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.insert_non_send(owner)
+        .init_resource::<Time<Real>>()
+        .init_resource::<ScreenMessages>()
+        .add_systems(Update, project);
+    let text = app
+        .world_mut()
+        .spawn((
+            ScreenArea(Area::Bottom),
+            Text::default(),
+            TextColor::default(),
+        ))
+        .id();
+    for (enabled, expected) in [
+        (true, "Confirmed status"),
+        (false, ""),
+        (true, "Confirmed status"),
+    ] {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let mut options = serde_json::to_value(owner.settings.preferences.game_window)?;
+        options["messages"] = enabled.into();
+        owner.settings.preferences.game_window = serde_json::from_value(options)?;
+        app.update();
+        assert_eq!(app.world().get::<Text>(text).ok_or("text")?.0, expected);
+    }
+    Ok(())
+}
+
+#[test]
+fn private_message_receipt_reaches_game_window_only_when_enabled() -> TestResult {
+    let mut owner = HostOwner::new(None)?;
+    let (link, _commands, outbox) = play_channel();
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let mut app = App::new();
+    app.insert_non_send(owner)
+        .init_resource::<Time<Real>>()
+        .init_resource::<ScreenMessages>()
+        .add_systems(Update, project);
+    let text = app
+        .world_mut()
+        .spawn((ScreenArea(Area::Top), Text::default(), TextColor::default()))
+        .id();
+    for (seq, enabled) in [(1, true), (2, false)] {
+        let mut host = app.world_mut().non_send_mut::<HostOwner>();
+        let mut saved = serde_json::to_value(host.settings.preferences.game_window)?;
+        saved["private_messages"] = enabled.into();
+        host.settings.preferences.game_window = serde_json::from_value(saved)?;
+        outbox.push(vec![SessionEvent::ChatLine(AppliedDelta {
+            server_sequence: seq,
+            base_revision: seq - 1,
+            new_revision: seq,
+            value: oteryn_session::ChatLine::Private {
+                speaker_name: "Bryn".into(),
+                text: "Hello".into(),
+            },
+        })]);
+        app.update();
+        assert_eq!(
+            app.world()
+                .get::<Text>(text)
+                .ok_or("text")?
+                .0
+                .contains("Bryn: Hello"),
+            enabled
+        );
+    }
+    Ok(())
+}

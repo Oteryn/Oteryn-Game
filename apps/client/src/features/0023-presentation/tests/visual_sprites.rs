@@ -455,3 +455,23 @@ fn visible_corpse_sprite_is_painted_only_on_its_own_floor() -> Result<(), Box<dy
     assert!(sprite_count > 0);
     Ok(())
 }
+
+#[test]
+fn hiding_player_spells_preserves_creature_and_global_missiles() -> Result<(), Box<dyn std::error::Error>> {
+    let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
+    let mut preferences = view.preferences().clone();
+    preferences.game_window.other_spells = false;
+    view.set_preferences(preferences)?;
+    let baseline = view.scene().sprites().len();
+    let at = ActorPosition { x: 0, y: 0, floor: 0 };
+    let now = std::time::Instant::now();
+    for source in [PresentationSource::Creatures, PresentationSource::Global] {
+        view.visuals.clear();
+        view.receive_presentation(&[PresentationEventKind::Missile {
+            from: at, to: ActorPosition { x: 1, ..at }, missile_id: 1, source,
+        }], now);
+        view.project_presentation(now)?;
+        assert!(view.scene().sprites().len() > baseline, "{source:?}");
+    }
+    Ok(())
+}

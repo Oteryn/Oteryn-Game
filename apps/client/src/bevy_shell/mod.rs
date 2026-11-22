@@ -27,13 +27,9 @@ pub(crate) use ui::{BuiltInFont, install_font_fallback, ui_font};
 mod updater;
 mod window_drag;
 
-use bevy::{
-    asset::AssetPlugin,
-    image::ImagePlugin,
-    prelude::*,
-    window::{PresentMode, PrimaryWindow, WindowMode},
-};
+use bevy::{asset::AssetPlugin, image::ImagePlugin, prelude::*, window::PrimaryWindow};
 use owner::HostOwner;
+use render_settings::apply_window;
 use std::{ffi::OsString, path::PathBuf};
 
 pub struct Options {
@@ -112,7 +108,8 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
     owner.configure_login(options.login_settings.clone(), |name| {
         std::env::var(name).ok()
     });
-    let plugins = render_settings::plugins(options.smoke);
+    let plugins =
+        render_settings::plugins(options.smoke, owner.settings.preferences.graphics.engine);
     let mut app = build_app(options, owner, plugins);
     // App::run transfers the app into its runner. HostOwner::drop owns shutdown there.
     match app.run() {
@@ -258,7 +255,12 @@ fn project_window(
     owner: NonSend<HostOwner>,
     mut window: Query<&mut Window, With<PrimaryWindow>>,
     mut scale: ResMut<UiScale>,
+    mut sampling: Query<&mut Msaa, With<Camera2d>>,
 ) {
+    let samples = Msaa::from_samples(owner.settings.preferences.graphics.antialiasing.samples());
+    for mut msaa in &mut sampling {
+        msaa.set_if_neq(samples);
+    }
     if let Ok(mut window) = window.single_mut() {
         apply_window(&owner.settings.preferences, &mut window);
     }
@@ -267,25 +269,6 @@ fn project_window(
         scale.0 = next;
     }
 }
-fn apply_window(preferences: &crate::play::ReferencePreferences, window: &mut Window) {
-    let mode = if preferences.graphics.fullscreen {
-        WindowMode::BorderlessFullscreen(bevy::window::MonitorSelection::Current)
-    } else {
-        WindowMode::Windowed
-    };
-    let present = if preferences.graphics.vsync {
-        PresentMode::AutoVsync
-    } else {
-        PresentMode::AutoNoVsync
-    };
-    if window.mode != mode {
-        window.mode = mode;
-    }
-    if window.present_mode != present {
-        window.present_mode = present;
-    }
-}
-
 #[cfg(test)]
 mod layout_tests;
 

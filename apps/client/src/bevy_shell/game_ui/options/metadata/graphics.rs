@@ -11,7 +11,7 @@ fn pacing(p: &mut Preferences, edit: impl FnOnce(&mut PerformanceSettings)) {
     p.frames = performance.into();
     p.performance = performance;
 }
-pub(super) const MAIN: [Row; 11] = [
+pub(super) const MAIN: [Row; 16] = [
     check!(
         "graphics.fullscreen",
         "Show in Fullscreen",
@@ -59,6 +59,56 @@ pub(super) const MAIN: [Row; 11] = [
         u8,
         graphics.separator
     ),
+    check!(
+        "graphics.even_scaling",
+        "Scale Only by Even Multiples",
+        graphics.even_scaling
+    ),
+    number!(
+        "graphics.monitor",
+        "Fullscreen Monitor (0 = current)",
+        0,
+        32,
+        u16,
+        graphics.monitor
+    ),
+    Row {
+        id: "graphics.engine",
+        label: "Rendering Engine (Restart Required)",
+        editor: Editor::Choice {
+            values: &["System Default", "Vulkan"],
+            read: |p| usize::from(p.graphics.engine == oteryn_renderer::GraphicsEngine::Vulkan),
+            write: |p, i| p.graphics.engine = oteryn_renderer::GraphicsEngine::ALL[i],
+        },
+    },
+    Row {
+        id: "graphics.antialiasing",
+        label: "Anti-aliasing",
+        editor: Editor::Choice {
+            values: &["Off", "MSAA 4x"],
+            read: |p| usize::from(p.graphics.antialiasing == oteryn_renderer::Antialiasing::Msaa4),
+            write: |p, i| p.graphics.antialiasing = oteryn_renderer::Antialiasing::ALL[i],
+        },
+    },
+    Row {
+        id: "graphics.limit_enabled",
+        label: "Limit Foreground Frame Rate",
+        editor: Editor::Check {
+            read: |p| p.render_performance().foreground_fps != 0,
+            write: |p, enabled| {
+                let current = p.render_performance().foreground_fps;
+                if current > 0 {
+                    p.graphics.remembered_foreground_fps = current;
+                }
+                let next = if enabled {
+                    p.graphics.remembered_foreground_fps
+                } else {
+                    0
+                };
+                pacing(p, |f| f.foreground_fps = next);
+            },
+        },
+    },
     Row {
         id: "graphics.frame_limit",
         label: "Frame Rate Limit (0 = unlimited)",
@@ -66,7 +116,15 @@ pub(super) const MAIN: [Row; 11] = [
             min: 0,
             max: 500,
             read: |p| p.render_performance().foreground_fps,
-            write: |p, v| pacing(p, |f| f.foreground_fps = v),
+            write: |p, v| {
+                let previous = p.render_performance().foreground_fps;
+                if v > 0 {
+                    p.graphics.remembered_foreground_fps = v;
+                } else if previous > 0 {
+                    p.graphics.remembered_foreground_fps = previous;
+                }
+                pacing(p, |f| f.foreground_fps = v);
+            },
         },
     },
     Row {

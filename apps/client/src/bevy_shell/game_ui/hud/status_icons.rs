@@ -222,11 +222,12 @@ pub(super) fn project(
             });
         }
         next.retain(|icon| {
-            !play
-                .view
-                .preferences()
-                .condition_status_hidden
-                .contains(&icon.key)
+            prefs.conditions_bar_enabled
+                && !play
+                    .view
+                    .preferences()
+                    .condition_status_hidden
+                    .contains(&icon.key)
         });
     } else {
         *refreshed = None;

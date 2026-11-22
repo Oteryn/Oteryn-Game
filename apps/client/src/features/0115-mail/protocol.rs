@@ -179,11 +179,16 @@ impl Outbox {
                     );
                 }
             }
-            54 => super::super::feature_0054_training::protocol::apply(
-                &mut shared.properties.training,
-                command,
-                result,
-            ),
+            54 => {
+                #[cfg(bevy_shell)]
+                let was_confirmed = shared.properties.training.offline_confirmed;
+                super::super::feature_0054_training::protocol::apply(&mut shared.properties.training, command, result);
+                #[cfg(bevy_shell)]
+                if shared.properties.training.offline_confirmed && !was_confirmed {
+                    let feedback = shared.properties.training.feedback.clone();
+                    shared.window_notice(crate::play::feature_local_text_messages::view::NoticeKind::OfflineTraining, feedback);
+                }
+            }
             55 => super::super::feature_0055_guild_bank::protocol::apply(
                 &mut shared.properties.guild_bank,
                 command,

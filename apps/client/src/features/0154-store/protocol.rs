@@ -56,6 +56,8 @@ impl Outbox {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
+        #[cfg(bevy_shell)]
+        mailbox.window_notice(crate::play::feature_local_text_messages::view::NoticeKind::Store, text.clone());
         mailbox.chat.console.notices.push(
             oteryn_client_ui::chat::NoticeClass::Store,
             &text,

@@ -65,6 +65,13 @@ impl LayoutStore {
             window.position = bevy::window::WindowPosition::At(IVec2::new(x, y));
             window.resolution = (width, height).into();
         }
+        if self
+            .layout
+            .bounds("window.maximized")
+            .is_some_and(|bounds| bounds[0] == 1)
+        {
+            window.set_maximized(true);
+        }
         WindowPlugin {
             close_when_requested: false,
             primary_window: Some(window),
@@ -149,7 +156,27 @@ pub(super) fn install(app: &mut App) {
         .init_resource::<Time<Real>>()
         .add_observer(cancel)
         .add_systems(Startup, restore.after(super::setup))
-        .add_systems(Update, (maintain, remember).chain());
+        .add_systems(Update, (maintain, remember).chain())
+        .add_systems(Update, upper_pane_height);
+}
+fn upper_pane_height(
+    owner: Option<NonSend<super::super::owner::HostOwner>>,
+    bar: Option<Res<super::StatusBar>>,
+    mut nodes: Query<&mut Node>,
+) {
+    if let (Some(owner), Some(bar)) = (owner, bar)
+        && let Ok(mut node) = nodes.get_mut(bar.0)
+    {
+        let height = owner.settings.preferences.game_window.upper_pane_height;
+        let height = if height == 0 {
+            Val::Auto
+        } else {
+            px(f32::from(height))
+        };
+        if node.height != height {
+            node.height = height;
+        }
+    }
 }
 /// Applies the remembered console height within the same bounds a drag allows.
 fn restore(store: Res<LayoutStore>, splitters: Query<&Splitter>, mut nodes: Query<&mut Node>) {
@@ -170,7 +197,8 @@ fn remember(
     time: Res<Time<Real>>,
     splitters: Query<&Splitter>,
     nodes: Query<&Node>,
-    windows: Query<&Window, With<PrimaryWindow>>,
+    windows: Query<(Entity, &Window), With<PrimaryWindow>>,
+    _main_thread: bevy::ecs::system::NonSendMarker,
 ) {
     if store.path.is_none() || splitters.iter().any(|splitter| splitter.gesture.is_some()) {
         return;
@@ -186,17 +214,31 @@ fn remember(
         let bounds = [0, 0, 1, size];
         store.remember_bounds(splitter.id, bounds);
     }
-    if let Ok(window) = windows.single()
+    if let Ok((entity, window)) = windows.single()
         && window.mode == WindowMode::Windowed
-        && let WindowPosition::At(position) = window.position
     {
-        let bounds = [
-            position.x,
-            position.y,
-            window.width().round() as i32,
-            window.height().round() as i32,
-        ];
-        store.remember_bounds(WINDOW, bounds);
+        let maximized = bevy::winit::WINIT_WINDOWS.with(|windows| {
+            windows
+                .borrow()
+                .get_window(entity)
+                .map(|native| native.is_maximized())
+        });
+        if let Some(value) = maximized {
+            store.remember_bounds("window.maximized", [i32::from(value), 0, 1, 1]);
+        }
+        if maximized != Some(true)
+            && let WindowPosition::At(position) = window.position
+        {
+            store.remember_bounds(
+                WINDOW,
+                [
+                    position.x,
+                    position.y,
+                    window.width().round() as i32,
+                    window.height().round() as i32,
+                ],
+            );
+        }
     }
     if let Some(result) = store
         .writing

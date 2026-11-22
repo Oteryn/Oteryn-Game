@@ -82,8 +82,25 @@ impl PlayView {
             self.shared_frontend,
             icon_cells,
         );
+        let opponent = self.combat_target.and_then(|target| self.entities.iter().find(|held| held.entity == target && held.position.floor == self.floor));
+        let opponent = opponent.map(|e| (TileCoord::new(e.position.x, e.position.y), self.scene.actor_offset(e.entity)));
         let hit_flash = self.hit_flash;
         let (view, atlas, batch) = self.scene.presentation_base()?;
+        if let Some((tile, offset)) = opponent && view.contains(tile) {
+            let [x, y] = view.tile_to_screen(tile);
+            let [x, y] = [x + offset[0], y + offset[1]];
+            let side = view.tile_px() as f32;
+            if game_window.target_highlight {
+                let first = batch.len();
+                pixel(batch, view, atlas, [x,y], [side,side], PresentationColor::Red)?;
+                batch.lighting.set_opacity(first..batch.len(), 20)?;
+            }
+            if game_window.combat_frames {
+                for (at, size) in [([x,y], [side,2.]), ([x,y+side-2.], [side,2.]), ([x,y], [2.,side]), ([x+side-2.,y], [2.,side])] {
+                    pixel(batch, view, atlas, at, size, PresentationColor::Red)?;
+                }
+            }
+        }
         let resource_start = batch.len();
         let hud_quads = resources::draw(
             batch,
@@ -106,7 +123,7 @@ impl PlayView {
         )?;
         fixed.push(resource_quads);
         let fixed_start = batch.len();
-        if let Some(received) = hit_flash
+        if game_window.attack_animation && let Some(received) = hit_flash
             && oteryn_client_ui::analyser_hit_attribution::hit_flash_visible(
                 now.saturating_duration_since(received),
             )

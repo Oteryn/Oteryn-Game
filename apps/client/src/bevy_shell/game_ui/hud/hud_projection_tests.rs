@@ -403,3 +403,19 @@ fn harmony_stays_visible_when_serene_ends() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn status_bar_visibility_hides_and_restores_top_bar() -> TestResult {
+    let (mut app, _, _) = app()?;
+    app.update();
+    let bar = named(&mut app, "Status bar")?;
+    for (enabled, display) in [(false, Display::None), (true, Display::Flex)] {
+        let mut host = app.world_mut().non_send_mut::<HostOwner>();
+        let mut saved = serde_json::to_value(&host.settings.preferences)?;
+        saved["status_bar_visible"] = enabled.into();
+        host.settings.preferences = serde_json::from_value(saved)?;
+        app.update();
+        assert_eq!(app.world().get::<Node>(bar).ok_or("status bar")?.display, display);
+    }
+    Ok(())
+}

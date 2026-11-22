@@ -6,7 +6,44 @@ pub(crate) struct LookMessage {
 }
 
 #[cfg(bevy_shell)]
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum NoticeKind {
+    Boosted,
+    Hotkey,
+    OfflineTraining,
+    Private,
+    Store,
+}
+#[cfg(bevy_shell)]
+impl NoticeKind {
+    pub(crate) fn visible(self, preferences: &crate::play::ReferencePreferences) -> bool {
+        let p = preferences.game_window;
+        match self {
+            Self::Boosted => p.boosted_messages,
+            Self::Hotkey => p.hotkey_messages,
+            Self::OfflineTraining => p.offline_training_messages,
+            Self::Private => p.private_messages,
+            Self::Store => p.store_messages,
+        }
+    }
+}
+#[cfg(bevy_shell)]
+#[derive(Debug)]
+pub(crate) struct WindowNotice {
+    pub kind: NoticeKind,
+    pub text: String,
+}
+#[cfg(bevy_shell)]
+impl crate::play::mailbox::Mailbox {
+    pub(in crate::play) fn window_notice(&mut self, kind: NoticeKind, text: String) {
+        self.window_notice = Some(WindowNotice { kind, text });
+    }
+}
+#[cfg(bevy_shell)]
 impl crate::play::PlayLink {
+    pub(crate) fn take_window_notice(&self) -> Option<WindowNotice> {
+        crate::play::mailbox::lock(&self.mailbox).window_notice.take()
+    }
     pub(crate) fn look_message(&self) -> Option<LookMessage> {
         crate::play::mailbox::lock(&self.mailbox)
             .screen_look

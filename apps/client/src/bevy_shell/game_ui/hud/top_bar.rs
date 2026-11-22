@@ -9,6 +9,8 @@ use bevy::{prelude::*, ui_widgets::Activate};
 #[derive(Component)]
 pub(super) struct BarText(bool);
 #[derive(Component)]
+pub(super) struct BarRoot;
+#[derive(Component)]
 pub(super) struct BarFill(bool);
 #[derive(Component)]
 pub(super) struct LevelText;
@@ -28,6 +30,7 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
     let font = source::font(skins.font.clone(), true);
     let bar = commands
         .spawn((
+            BarRoot,
             Name::new("Status bar"),
             Node {
                 width: percent(100.),
@@ -187,8 +190,16 @@ fn xp_boost(event: On<Activate>, mut owner: NonSendMut<HostOwner>, modal: ModalG
 pub(super) fn project(
     owner: NonSend<HostOwner>,
     mut texts: Query<(&mut Text, Option<&BarText>), Or<(With<BarText>, With<LevelText>)>>,
+    mut roots: Query<&mut Node, (With<BarRoot>, Without<BarFill>, Without<XpFill>)>,
     mut fills: Query<(&mut Node, Option<&BarFill>), Or<(With<BarFill>, With<XpFill>)>>,
 ) {
+    for mut node in &mut roots {
+        node.display = if owner.settings.preferences.status_bar_visible {
+            Display::Flex
+        } else {
+            Display::None
+        };
+    }
     let Some(play) = &owner.play else { return };
     let vitals = play.link.actor_vitals();
     let value = |mana: bool| {
