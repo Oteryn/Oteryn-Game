@@ -385,36 +385,92 @@ pub(super) async fn earn_level(
 
 /// Historical prerequisite arrangement for the three source fixtures below.
 /// The tested quest action still uses its canonical owner and bound operation.
-pub(super) async fn seed_quest_prerequisites(
+/// Qualify a seeded Character against the active production progression before
+/// the normal session binder reads its durable revisions.
+pub(super) async fn seed_production_progression_context(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
-    values: &[(String, i64)],
-    occurrence: u8,
+    session: crate::foundation::GameSessionId,
 ) -> TestResult {
+    let character = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|_| "seeded character fence")?
+        .ok_or("seeded character")?
+        .character_id;
+    let interpretation = owner
+        .root
+        .read_character_root_interpretation(owner.character, character)
+        .await
+        .map_err(debug)?
+        .ok_or("seeded character interpretation")?;
+    let [profile, ruleset, content, _] = interpretation.revisions();
+    let policy = owner
+        .active_generation
+        .and_then(|generation| generation.progression())
+        .ok_or("production progression")?
+        .policy_for(profile, ruleset, content)
+        .map_err(debug)?;
+    let stored = owner
+        .root
+        .read_character_progression(owner.character, character)
+        .await
+        .map_err(debug)?
+        .ok_or("seeded progression")?;
+    // The generic harness pairs level 50 with 1,000 XP. The native calculator
+    // validates the stored level against its curve before accepting a receipt.
+    let experience = policy
+        .thresholds
+        .iter()
+        .find(|threshold| threshold.level == stored.level)
+        .ok_or("seeded level threshold")?
+        .minimum_experience
+        .get();
+
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let updated = sqlx::query(
+        "UPDATE game_character_progression_state
+         SET simulation_revision=$2, evidence_revision=$3, declaration_revision=$4,
+             policy_revision=$5, reward_revision=$6, total_experience=$10
+         WHERE character_id=encode($1,'hex')::uuid AND profile_revision=$7
+           AND ruleset_revision=$8 AND content_revision=$9
+           AND character_revision=$11::text::numeric AND level=$12",
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind(&policy.context.simulation)
+    .bind(&policy.context.evidence)
+    .bind(&policy.context.declaration)
+    .bind(&policy.policy_revision)
+    .bind(&policy.reward_revision)
+    .bind(profile)
+    .bind(ruleset)
+    .bind(content)
+    .bind(experience)
+    .bind(stored.character_revision.get().to_string())
+    .bind(i64::from(stored.level))
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(updated.rows_affected(), 1);
+    tx.commit().await?;
+    Ok(())
+}
+
+pub(super) async fn seed_quest_revision(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+    occurrence: u8,
+) -> TestResult<(crate::durability::character_progression::CurrentCharacterGameplayFence, u64)> {
     use crate::durability::character_progression::{
         ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
     };
-    let catalogue = owner
-        .quest_catalogue
-        .as_ref()
-        .ok_or("prerequisite catalogue")?;
-    let mut tracks = BTreeMap::new();
-    for (key, value) in values {
-        let track = catalogue.track(key).ok_or("canonical prerequisite track")?;
-        assert!((track.min..=track.max).contains(value));
-        assert!(
-            tracks
-                .insert(key.clone(), (track.quest.clone(), *value))
-                .is_none()
-        );
-    }
-    assert!(!tracks.is_empty());
     let binding = owner
-        .progression_binding(admitted.game_session_id)
+        .progression_binding(session)
         .ok_or("progression")?;
     let fence = owner
-        .current_quest_fence(admitted.game_session_id)
+        .current_quest_fence(session)
         .await
         .map_err(|_| "prerequisite fence")?
         .ok_or("prerequisite fence")?;
@@ -452,6 +508,33 @@ pub(super) async fn seed_quest_prerequisites(
         fence.expected_character_revision.get() + 1
     );
     assert_eq!(receipt.level_after, receipt.level_before);
+    Ok((fence, receipt.committed_character_revision.get()))
+}
+
+pub(super) async fn seed_quest_prerequisites(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    values: &[(String, i64)],
+    occurrence: u8,
+) -> TestResult {
+    let catalogue = owner
+        .quest_catalogue
+        .as_ref()
+        .ok_or("prerequisite catalogue")?;
+    let mut tracks = BTreeMap::new();
+    for (key, value) in values {
+        let track = catalogue.track(key).ok_or("canonical prerequisite track")?;
+        assert!((track.min..=track.max).contains(value));
+        assert!(
+            tracks
+                .insert(key.clone(), (track.quest.clone(), *value))
+                .is_none()
+        );
+    }
+    assert!(!tracks.is_empty());
+    let (fence, revision) =
+        seed_quest_revision(owner, admitted.game_session_id, occurrence).await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -459,7 +542,7 @@ pub(super) async fn seed_quest_prerequisites(
     for (key, (quest, value)) in &tracks {
         let changed = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND character_revision=$5::text::numeric ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value,committed_character_revision=EXCLUDED.committed_character_revision WHERE game_character_quest_tracks.quest_key=EXCLUDED.quest_key")
             .bind(fence.character_id.as_bytes().as_slice()).bind(key).bind(quest).bind(value)
-            .bind(receipt.committed_character_revision.get().to_string())
+            .bind(revision.to_string())
             .execute(&mut *tx).await?;
         assert_eq!(changed.rows_affected(), 1);
     }

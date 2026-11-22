@@ -253,6 +253,35 @@ fn donor_quest_repenters_watering_and_mushrooms_have_independent_reports() -> Re
         .ok_or("water report")?;
     assert!(catalogue.evaluate(water_report, &progress, 100899).is_ok());
     assert!(catalogue.evaluate(water_report, &progress, 100900).is_err());
+    let refill = world
+        .iter()
+        .find(|callback| callback.key.ends_with("repenters-refill-vial"))
+        .ok_or("refill callback")?;
+    assert_eq!(refill.selector, fill.selector);
+    let refill_tool = refill.item_on_target.as_ref().ok_or("filled vial")?;
+    assert_eq!(refill_tool.item, "oteryn:item.tibia.i18992");
+    assert_eq!(
+        refill_tool.replacement.as_deref(),
+        Some(refill_tool.item.as_str())
+    );
+    let refill_transition = catalogue.transition(&refill.key).ok_or("refill")?;
+    assert!(
+        catalogue
+            .evaluate(refill_transition, &progress, 100899)
+            .is_err()
+    );
+    let refreshed = catalogue
+        .evaluate(refill_transition, &progress, 100900)
+        .map_err(|err| format!("{err:?}"))?;
+    let stamp = refreshed
+        .iter()
+        .find(|change| change.track.ends_with("/filled-at"))
+        .ok_or("refill clock")?;
+    assert_eq!((stamp.before, stamp.after), (100000, 100900));
+    let mut refilled = progress.clone();
+    refilled.insert(stamp.track.clone(), stamp.after);
+    assert!(catalogue.evaluate(water_report, &refilled, 101799).is_ok());
+    assert!(catalogue.evaluate(water_report, &refilled, 101800).is_err());
     apply(&report_water.key, &mut progress)?;
 
     apply(&mushroom.key, &mut progress)?;

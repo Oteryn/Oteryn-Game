@@ -1,6 +1,6 @@
 //! Closed carried-tool callbacks routed through the existing World receipt owner.
 use oteryn_gameplay_quests::quest::{
-    targuna_ram,
+    rottin_walls, targuna_ram,
     world_callbacks::{Callback, ItemOnTarget},
 };
 
@@ -17,9 +17,34 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                 .is_some_and(|tool| tool.selected_instance)
                 && matches!(
                     callback.key.as_str(),
-                    "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
+                    "oteryn:quest-callback/authored-repenters-fill-vial"
+                        | "oteryn:quest-callback/authored-repenters-mushroom-01"
+                        | "oteryn:quest-callback/authored-repenters-mushroom-02"
+                        | "oteryn:quest-callback/authored-repenters-mushroom-03"
+                        | "oteryn:quest-callback/authored-repenters-mushroom-04"
+                        | "oteryn:quest-callback/authored-repenters-mushroom-05"
+                        | "oteryn:quest-callback/authored-repenters-mushroom-06"
+                        | "oteryn:quest-callback/authored-repenters-mushroom-07"
+                        | "oteryn:quest-callback/authored-repenters-mushroom-08"
+                        | "oteryn:quest-callback/authored-repenters-mushroom-09"
+                        | "oteryn:quest-callback/authored-repenters-mushroom-10"
+                        | "oteryn:quest-callback/authored-repenters-mushroom-11"
+                        | "oteryn:quest-callback/authored-repenters-mushroom-12"
+                        | "oteryn:quest-callback/authored-repenters-refill-vial"
+                        | "oteryn:quest-callback/authored-venore-machine-1"
+                        | "oteryn:quest-callback/authored-venore-machine-2"
+                        | "oteryn:quest-callback/authored-venore-machine-3"
+                        | "oteryn:quest-callback/authored-venore-machine-4"
+                        | "oteryn:quest-callback/authored-venore-machine-5"
+                        | "oteryn:quest-callback/authored-venore-machine-6"
+                        | "oteryn:quest-callback/authored-venore-machine-7"
+                        | "oteryn:quest-callback/authored-venore-machine-8"
+                        | "oteryn:quest-callback/authored-venore-machine-9"
+                        | "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
                 ))
+            || rottin_walls::accepts(callback)
+            || callback.effects.place_item == Some(12187)
             || matches!(
                 callback.native_rule,
                 Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })
@@ -53,6 +78,28 @@ pub(crate) fn matches_source(
 mod tests {
     use super::*;
     use oteryn_gameplay_quests::quest::{native_rules::NativeRule, world_callbacks};
+
+    #[test]
+    fn authored_daily_task_tools_reach_the_fenced_world_owner() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        for (prefix, expected) in [("authored-venore-machine-", 9), ("authored-repenters-", 14)] {
+            let tools: Vec<_> = callbacks
+                .iter()
+                .filter(|callback| {
+                    callback
+                        .key
+                        .strip_prefix("oteryn:quest-callback/")
+                        .is_some_and(|key| key.starts_with(prefix))
+                })
+                .collect();
+            assert_eq!(tools.len(), expected);
+            for callback in tools {
+                assert!(callback.requires_world_admission);
+                assert!(accepts(callback), "unrouted task tool {}", callback.key);
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn registered_ice_paint_callbacks_reach_the_carried_tool_owner() -> Result<(), String> {
