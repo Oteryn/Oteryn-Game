@@ -1711,7 +1711,7 @@ async fn additional_rows(clients: &SeamClients<'_>) {
     cost.finish(&result);
 }
 
-fn qualification_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
+pub(super) fn qualification_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     load_world(
@@ -2320,9 +2320,19 @@ async fn light_journey(
     clients: &SeamClients<'_>,
 ) -> TestResult {
     let book = native_spell_book()?;
-    let mut fixture = client_row_w20b::connect_caster(clients).await?;
-    logout(&mut fixture).await?;
-    drop(fixture);
+    let required_level = ["utevo lux", "utevo gran lux", "utevo vis lux"]
+        .into_iter()
+        .map(|words| {
+            book.spoken(words)
+                .map(|entry| entry.spell.level)
+                .ok_or("missing authored personal-light spell")
+        })
+        .try_fold(0, |highest, level| level.map(|level| highest.max(level)))?;
+    let mut player =
+        client_row_w20b::connect_player_caster(clients, required_level, Duration::from_secs(150))
+            .await?;
+    logout(&mut player).await?;
+    drop(player);
     *connection = Some(LightClient::connect(clients, 0xe0).await?);
     row.pass("admission");
     for (words, level, mana, seconds, paid, refused, relog, tag, expired) in [
@@ -2374,7 +2384,7 @@ async fn light_journey(
             let spell = book
                 .indexed(index)
                 .ok_or("personal-light compiled index disappeared")?;
-            return Err(format!("prerequisite-blocked:words={words:?};observed={cast:?};detail={:?};required-level={};required-vocations={:?};required-premium={};required-mana={mana};served-mana={};no-player-progression-or-vocation-route-completed", client.refusal, spell.level, spell.vocations, spell.premium, before.mana).into());
+            return Err(format!("prerequisite-blocked:words={words:?};observed={cast:?};detail={:?};required-level={};required-vocations={:?};required-premium={};required-mana={mana};served-mana={};ordinary-player-cast-refused", client.refusal, spell.level, spell.vocations, spell.premium, before.mana).into());
         }
         // Cast results precede their vitals and visibility deltas. Wait for both.
         let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
@@ -3503,7 +3513,7 @@ async fn character_tab(
     }
     Ok(reply.payload)
 }
-async fn player_level(client: &mut DevClientSession) -> TestResult<u32> {
+pub(super) async fn player_level(client: &mut DevClientSession) -> TestResult<u32> {
     let bytes = character_tab(client, character::CharacterTab::GeneralStats).await?;
     let level = u32::from_le_bytes(
         bytes
@@ -3604,23 +3614,37 @@ async fn player_experience(client: &mut DevClientSession) -> TestResult<u64> {
 // no damage/kill, absent spawn, or the bounded XP budget is an explicit prerequisite
 // failure. Only served level frames can end this loop successfully.
 async fn earn_pvp_level(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    acquisition_step("level", earn_pvp_level_inner(client, world)).await
+    acquisition_step(
+        "level",
+        earn_player_level(
+            client,
+            world,
+            oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL,
+            Duration::from_secs(150),
+        ),
+    )
+    .await
 }
 
-async fn earn_pvp_level_inner(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
+pub(super) async fn earn_player_level(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    required_level: u32,
+    budget: Duration,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + budget;
     loop {
         let level = player_level(client).await?;
-        if level >= oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL {
+        if level >= required_level {
             return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("player-level-acquisition-blocked:served-level={level};required=8;ordinary-rat-hunt-budget=150s").into());
+            return Err(format!("player-level-acquisition-blocked:served-level={level};required={required_level};ordinary-rat-hunt-budget={budget:?}").into());
         }
         let hunt = acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await;
         hunt.map_err(|e| {
             format!(
-                "player-level-acquisition-blocked:served-level={level};required=8;ordinary-hunt={e}"
+                "player-level-acquisition-blocked:served-level={level};required={required_level};ordinary-hunt={e}"
             )
         })?;
     }
