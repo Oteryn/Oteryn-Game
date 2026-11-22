@@ -5,6 +5,10 @@
 //! move until the inventory has no room, and what does not fit stays.
 use super::*;
 use crate::domain::premium::PremiumGate;
+use crate::durability::character_stash::{commit_conversion, lock_stash_command};
+use crate::durability::depot_search::{DepotSearchCommand, stash_withdrawal};
+use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
+use oteryn_protocol_oteryn::stash::{StashOutcome, encode_stash_intent};
 
 /// The CHECK bound of a child loop receipt's batch ordinal (migration 0227).
 const RETRIEVE_ITEMS_MAX: i64 = 1280;
@@ -39,6 +43,8 @@ struct Candidate {
     path: Vec<[u8; 16]>,
 }
 
+type RetrievalResult = std::result::Result<DepotSearchRetrieval, LoopMoveRefusal>;
+
 impl DurabilityRoot {
     /// Command 182 retrieval from depot and Inbox custody. Replay returns the stored outcome.
     #[allow(clippy::too_many_arguments)]
@@ -52,41 +58,128 @@ impl DurabilityRoot {
         content: &C,
         client_id: u32,
         all: bool,
-    ) -> std::result::Result<
-        std::result::Result<DepotSearchRetrieval, LoopMoveRefusal>,
-        DurabilityError,
-    > {
+    ) -> std::result::Result<RetrievalResult, DurabilityError> {
+        self.commit_depot_search_at(
+            permit,
+            recovery,
+            node,
+            fence,
+            DepotSearchCommand {
+                command,
+                client_id,
+                all,
+            },
+            (content, None),
+        )
+        .await
+    }
+
+    /// Command 182 with supply-stash custody. Resolve replay and custody under one transaction.
+    pub async fn commit_depot_search_with_stash<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: DepotSearchCommand,
+        (native, content): (&NativeGameplayState, &C),
+    ) -> std::result::Result<RetrievalResult, DurabilityError> {
+        self.commit_depot_search_at(
+            permit,
+            recovery,
+            node,
+            fence,
+            request,
+            (content, Some(native)),
+        )
+        .await
+    }
+
+    async fn commit_depot_search_at<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: DepotSearchCommand,
+        (content, native): (&C, Option<&NativeGameplayState>),
+    ) -> std::result::Result<RetrievalResult, DurabilityError> {
         permit.check_scope(fence.runtime_scope)?;
-        if client_id == 0 {
+        let DepotSearchCommand {
+            command,
+            client_id,
+            all,
+        } = request;
+        if client_id == 0 || command.game_session_id() != fence.game_session_id {
             return Ok(Err(LoopMoveRefusal::Rejected));
         }
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        let mut request = client_id.to_be_bytes().to_vec();
-        request.push(u8::from(all));
+        let canonical = request.canonical_request();
         let key = format!("oteryn:item.tibia.i{client_id}");
-        let mut context = (permit, content);
+        let mut context = (permit, content, native);
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
-            let (permit, content) = *context;
+            let (permit, content, native) = *context;
             let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &record).await?;
             lock_loop_command(&mut tx, command).await?;
-            if let Some(row) = sqlx::query("SELECT character_id::text,request,found,retrieved FROM game_depot_search_retrieve_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
+            if let Some(row) = sqlx::query(
+                "SELECT r.character_id::text,r.request,r.found,r.retrieved,s.action IS NOT NULL AS stash \
+                 FROM game_depot_search_retrieve_receipts r LEFT JOIN game_character_stash_operations s \
+                 USING(game_session_id,command_id,character_id,created_xact_id) \
+                 WHERE r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric",
+            )
                 .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut *tx).await? {
-                if uuid_text(row.try_get("character_id")?)? != *fence.character_id.as_bytes() || row.try_get::<Vec<u8>,_>("request")? != request {
+                if uuid_text(row.try_get("character_id")?)? != *fence.character_id.as_bytes() || row.try_get::<Vec<u8>,_>("request")? != canonical {
                     tx.rollback().await?;
                     return Ok(Err(LoopMoveRefusal::Rejected));
                 }
                 let retrieved = u32::try_from(row.try_get::<i64,_>("retrieved")?).map_err(|_| DurabilityError::InvalidStoredState)?;
                 let found: bool = row.try_get("found")?;
+                let stash: bool = row.try_get("stash")?;
                 super::super::db::commit_semantic_transaction(tx, deadline).await?;
-                return Ok(Ok(if found { DepotSearchRetrieval::Retrieved(retrieved) } else { DepotSearchRetrieval::NotFound }));
+                return Ok(if found {
+                    Ok(DepotSearchRetrieval::Retrieved(retrieved))
+                } else if stash {
+                    Err(LoopMoveRefusal::Rejected)
+                } else {
+                    Ok(DepotSearchRetrieval::NotFound)
+                });
             }
-            let attempt: LoopResult<(bool, u32)> = async {
+            if native.is_some() {
+                lock_stash_command(&mut tx, command).await?;
+                // Historical stash operations lack the wire request. Reject reuse of their
+                // command identity before touching either source.
+                let used: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_character_stash_operations \
+                     WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+                )
+                .bind(command.game_session_id().as_bytes().as_slice())
+                .bind(command.command_id().get().to_string())
+                .fetch_one(&mut *tx).await?;
+                if used {
+                    tx.rollback().await?;
+                    return Ok(Err(LoopMoveRefusal::Rejected));
+                }
+            }
+            let attempt: LoopResult<RetrievalResult> = async {
                 assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await?;
-                let (world, _) = scope_of(&fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
+                let (world, channel) = scope_of(&fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
+                if let Some(native) = native
+                    && let Some((withdrawal, amount)) = stash_withdrawal(&mut tx, fence, request, &key).await?
+                {
+                    let intent = encode_stash_intent(withdrawal.intent)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let receipt = commit_conversion(&mut tx, fence, &withdrawal, &intent, channel, None, (native, content)).await?;
+                    return Ok(match receipt.outcome {
+                        StashOutcome::Committed => Ok(DepotSearchRetrieval::Retrieved(amount)),
+                        StashOutcome::NoRoom | StashOutcome::NoBackpack | StashOutcome::Overweight =>
+                            Ok(DepotSearchRetrieval::Retrieved(0)),
+                        _ => Err(LoopMoveRefusal::Rejected),
+                    });
+                }
                 // Roots in fixed order, then their nested entries; each row carries its ancestry,
                 // so an entry inside an already moved match travels with it, never twice.
                 let rows = sqlx::query(r#"
@@ -133,7 +226,7 @@ impl DurabilityRoot {
                     });
                 }
                 if candidates.is_empty() {
-                    return Ok((false, 0));
+                    return Ok(Ok(DepotSearchRetrieval::NotFound));
                 }
                 let mut moved: Vec<[u8; 16]> = Vec::new();
                 let mut retrieved = 0_u32;
@@ -152,15 +245,21 @@ impl DurabilityRoot {
                         break;
                     }
                 }
-                Ok((true, retrieved))
+                Ok(Ok(DepotSearchRetrieval::Retrieved(retrieved)))
             }.await;
             match attempt {
-                Ok((found, retrieved)) => {
+                Ok(terminal) => {
+                    // A stash refusal uses the same zero amount as a depot miss. Its
+                    // co-committed stash operation distinguishes the two on replay.
+                    let (found, retrieved) = match &terminal {
+                        Ok(DepotSearchRetrieval::Retrieved(amount)) => (true, *amount),
+                        Ok(DepotSearchRetrieval::NotFound) | Err(_) => (false, 0),
+                    };
                     sqlx::query("INSERT INTO game_depot_search_retrieve_receipts(game_session_id,command_id,character_id,request,found,retrieved) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,$5,$6)")
                         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice())
-                        .bind(&request).bind(found).bind(i64::from(retrieved)).execute(&mut *tx).await?;
+                        .bind(canonical.as_slice()).bind(found).bind(i64::from(retrieved)).execute(&mut *tx).await?;
                     super::super::db::commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(if found { DepotSearchRetrieval::Retrieved(retrieved) } else { DepotSearchRetrieval::NotFound }))
+                    Ok(terminal)
                 }
                 Err(error) => { tx.rollback().await?; loop_error(error).map(Err) }
             }
