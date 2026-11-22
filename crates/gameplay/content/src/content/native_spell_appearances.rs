@@ -780,7 +780,7 @@ mod cached_canary_admission_regression_tests {
                 .iter()
                 .filter(|record| !qualified_soul_war_callback(record))
                 .count(),
-            334
+            334 + 1 // Twenty Miles admits the fixed swimming appearance.
         );
         assert_eq!(document.default_source_revision, PIN);
         let cached: Vec<_> = document
@@ -871,7 +871,7 @@ mod project_illusionable_admission_regression_tests {
                 .iter()
                 .filter(|record| !qualified_soul_war_callback(record))
                 .count(),
-            334
+            334 + 1 // Twenty Miles admits the fixed swimming appearance.
         );
         assert_eq!(document.default_source_revision, PIN);
         let added: Vec<_> = document

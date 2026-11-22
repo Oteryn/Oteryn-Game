@@ -69,40 +69,35 @@
                 "https://tibia.fandom.com/index.php?curid=31073&oldid=1050120"
               ],
               "requires_premium": true
-            }
-          }
-        },
-        {
-          "key": "restart-pursuit",
-          "completes": false,
-          "trigger": {
-            "kind": "npc_dialogue",
-            "callback": {
-              "key": "oteryn:quest-reward/authored/top-of-the-city/restart-pursuit",
-              "quest": "oteryn:quest.authored.top_of_the_city_quest",
-              "npc": "oteryn:npc.iriana",
-              "keywords": [
-                "quest"
-              ],
-              "topic": 0,
-              "next_topic": 0,
-              "storage": [
-                { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
-                { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 11, "maximum": 11, "set": 0 }
-              ],
-              "take": [],
-              "give": null,
-              "outfit": null,
-              "achievement": null,
-              "reply": [
-                "You lost the thief? Start again from my roof and follow his trail."
-              ],
-              "sources": [
-                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
-                "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
-              ],
-              "requires_premium": true
-            }
+            },
+            "alternatives": [
+              {
+                "key": "oteryn:quest-reward/authored/top-of-the-city/restart-pursuit",
+                "quest": "oteryn:quest.authored.top_of_the_city_quest",
+                "npc": "oteryn:npc.iriana",
+                "keywords": [
+                  "quest"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  { "track": "oteryn:quest-progress/authored/top-of-the-city/stage", "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
+                  { "track": "oteryn:quest-progress/authored/top-of-the-city/pursuit", "minimum": 11, "maximum": 11, "set": 0 }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "You lost the thief? Start again from my roof and follow his trail."
+                ],
+                "sources": [
+                  "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/44/definition/recipe:sha256:5e42c5103118db5b38307d2da4afa360b2b3f06b5a4dbd57e783d1ad570431fc",
+                  "https://www.tibiawiki.com.br/index.php?title=Top_of_the_City_Quest&oldid=413200"
+                ],
+                "requires_premium": true
+              }
+            ]
           }
         },
         {
