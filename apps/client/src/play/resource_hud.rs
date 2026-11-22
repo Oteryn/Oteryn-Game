@@ -6,6 +6,7 @@ use std::time::{Duration, Instant};
 
 #[path = "skills_stats.rs"]
 mod skills_stats;
+#[cfg(bevy_shell)]
 pub(crate) use skills_stats::GROUPS;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -94,6 +95,7 @@ impl PlayLink {
                 ..Default::default()
             });
     }
+    #[cfg(bevy_shell)]
     pub(crate) fn refresh_skills_character(&self) {
         self.request_hud_stamina();
     }

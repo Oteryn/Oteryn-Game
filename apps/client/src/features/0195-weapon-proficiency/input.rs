@@ -45,6 +45,7 @@ impl PlayLink {
         lock(&self.mailbox).weapon_proficiency.open = true;
         self.weapon_proficiency_request(Intent::State);
     }
+    #[cfg(bevy_shell)]
     pub(crate) fn open_equipped_proficiency(&self, definition: u32) {
         use oteryn_client_runtime::equipment::EquipmentSlot;
         let mut mailbox = lock(&self.mailbox);

@@ -25,6 +25,7 @@ pub struct View {
     fresh_until: Option<Instant>,
 }
 impl View {
+    #[cfg(bevy_shell)]
     pub(crate) fn current_premium(&self) -> Option<bool> {
         let status = self.game_status.as_ref().filter(|_| self.fresh())?;
         let elapsed = self.requested_at?.elapsed().as_micros();

@@ -62,6 +62,7 @@ impl Outbox {
         }
     }
 }
+#[cfg(bevy_shell)]
 impl PlayLink {
     pub(crate) fn skills_group(&self, index: usize, refresh: bool) -> Option<String> {
         let (tab, _) = *GROUPS.get(index)?;
