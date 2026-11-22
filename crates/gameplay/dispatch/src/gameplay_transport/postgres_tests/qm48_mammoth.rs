@@ -19,3 +19,17 @@ fn qm48_mammoth_live_drunk_refusal_expiry_cleanse_commit_replay() -> TestResult 
     );
     result
 }
+
+#[test]
+fn barbarian_test_fills_horn_and_hugs_only_the_stunned_source_bear() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    use super::qm48_mammoth_fixtures::{BARREL, BEAR};
+    super::kill_reward_e2e_fixtures::scenario_thread::run("barbarian-test-horn", || {
+        super::quest_world_callbacks_fixtures::scenario("barbarian-test/fill-horn", BARREL, false)
+    })?;
+    super::kill_reward_e2e_fixtures::scenario_thread::run("barbarian-test-bear", || {
+        super::quest_world_callbacks_fixtures::scenario("barbarian-test/stun-bear", BEAR, false)
+    })
+}

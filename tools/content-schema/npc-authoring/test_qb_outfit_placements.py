@@ -29,6 +29,22 @@ QB_CELLS = {
 
 
 class QbOutfitPlacementTest(unittest.TestCase):
+    def test_beggar_and_barbarian_test_contacts_are_at_donor_cells(self):
+        files = cp.convert()
+        expected = {
+            "oteryn:npc.hugo": {"x": 32950, "y": 32102, "floor": 5},
+            "oteryn:npc.simon_the_beggar": {"x": 32186, "y": 32471, "floor": 7},
+            "oteryn:npc.sven": {"x": 32202, "y": 31153, "floor": 7},
+        }
+        actual = [
+            (p["npc"], p["cell"])
+            for name, text in files.items()
+            if name.startswith("placements-")
+            for row in json.loads(text)["records"]
+            if (p := row["declaration"])["npc"] in expected
+        ]
+        self.assertEqual(sorted(actual), sorted(expected.items()))
+
     def test_hand_ins_are_written_once_at_their_source_cell(self):
         files = cp.convert()
         records = [r["declaration"] for name, text in files.items()

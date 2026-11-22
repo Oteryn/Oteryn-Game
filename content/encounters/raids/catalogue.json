@@ -38284,7 +38284,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z12-x125-y125.b3",
-                        "sha256": "f9e80a77aad8fde3383821069142ad0049e60974e565c86eb18f52732e1ca490"
+                        "sha256": "2a116d3c4b368888f0a999860d839f81aa31c6d64dfa567d6d32770bd271e02e"
                       }
                     ],
                     "to": {
@@ -38698,7 +38698,7 @@
                     "regions": [
                       {
                         "path": "content/world/placements/region-z11-x125-y125.b3",
-                        "sha256": "146d7e371d389f20059ee1843f9e8462658b85cd7f8d534b707ea4786ef6d685"
+                        "sha256": "e8fb5a1463ff48168c5db42dc25385d026c06da202b5404d0fffd4efc2293b51"
                       }
                     ],
                     "to": {

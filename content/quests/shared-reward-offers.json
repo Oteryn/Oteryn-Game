@@ -5626,6 +5626,107 @@
       ]
     },
     {
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "barbarian"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Ask me about the test to become a barbarian."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "mead",
+        "barbarian mead"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring a honeycomb for the mead?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "test"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you willing to take the barbarian test?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "test"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you willing to take the barbarian test?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Can you take ten sips of our mead without passing out?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.the_bone_master",
       "keywords": [
         "advancement",

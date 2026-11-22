@@ -55,6 +55,8 @@ fn scenario_case(
         || m44_amphora
         || m44_flower;
     let qm48 = name == "qm48/mammoth";
+    let barbarian_horn = matches!(name, "barbarian-test/fill-horn" | "barbarian-test/stun-bear");
+    let bear_switch = name == "bear-room-stone-switch";
     let m03_use = name == super::super::qengine_m03_use_fixtures::NAME;
     let qd_world = name.starts_with(super::super::qd_world_fixtures::PREFIX);
     let elemental_pin = name.starts_with("qn1-elemental-");
@@ -106,6 +108,8 @@ fn scenario_case(
         || m03_pits
         || nomads_window
         || qm48
+        || barbarian_horn
+        || bear_switch
         || m01b_explore
         || small_ruby
         || mead
@@ -218,6 +222,10 @@ fn scenario_case(
             x: trigger.x - 1,
             ..trigger
         }
+    } else if bear_switch {
+        Position {x: 32148, y: 32106, floor: -11}
+    } else if barbarian_horn {
+        super::super::qm48_mammoth_fixtures::horn_start(trigger)
     } else if qm48 || m44 {
         Position {
             x: trigger.x,
@@ -1142,6 +1150,11 @@ fn scenario_case(
                 generation.native_gameplay().ok_or("source policies")?,
                 curos,
             )?
+        } else if barbarian_horn {
+            super::super::qm48_mammoth_fixtures::horn_world(
+                generation.native_gameplay().ok_or("native horn policies")?,
+                trigger,
+            )?
         } else if qm48 {
             super::super::qm48_mammoth_fixtures::world(
                 generation.native_gameplay().ok_or("mammoth policies")?,
@@ -1275,7 +1288,14 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if elvenbane {
+        let world = if bear_switch {
+            super::super::source_world_crop::compiled_region(
+                crate::map::overlay::TilePos { x: 32144, y: 32100, floor: -11 },
+                crate::map::overlay::TilePos { x: 32150, y: 32108, floor: -11 },
+                crate::map::overlay::TilePos { x: start.x, y: start.y, floor: start.floor },
+                generation.native_gameplay().ok_or("native bear room")?,
+            )?
+        } else if elvenbane {
             super::super::source_world_crop::compiled_region(
                 crate::map::overlay::TilePos {
                     x: 32584,
@@ -1766,6 +1786,14 @@ fn scenario_case(
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::m44_source_lifecycle_fixtures::catalogue(
                     owner.quest_catalogue.as_ref().ok_or("source catalogue")?,
+                    &callback,
+                )?,
+            ));
+        }
+        if barbarian_horn {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::qm48_mammoth_fixtures::horn_catalogue(
+                    owner.quest_catalogue.as_ref().ok_or("horn catalogue")?,
                     &callback,
                 )?,
             ));
@@ -2287,6 +2315,11 @@ fn scenario_case(
                 &owner,
                 &mut admitted,
                 &h,
+            ))
+            .await?;
+        } else if barbarian_horn {
+            Box::pin(super::super::qm48_mammoth_fixtures::exercise_horn(
+                &owner, &mut admitted, &h, trigger,
             ))
             .await?;
         } else if qm48 {
@@ -3443,6 +3476,12 @@ fn scenario_case(
                 for (n, altar) in callback.offerings.iter().take(3).enumerate() {
                     offering(&owner, fence.item_fence(), altar, u64::try_from(n)? + 1).await?;
                 }
+            }
+            if bear_switch {
+                assert_eq!(world.facts().action_at(key), Some(30006));
+                assert!(!world.enterable(crate::map::overlay::TilePos {
+                    x: 32145, y: 32101, floor: -11,
+                }));
             }
             let result = wire(
                 &owner,

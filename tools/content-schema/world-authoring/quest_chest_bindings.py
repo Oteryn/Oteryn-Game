@@ -133,7 +133,7 @@ def supported_claim(definition):
     native = definition.get("native_contents", {})
     return (
         definition["readiness"] == "ready"
-        or panpipe_key_claim(definition)
+        or supported_source_key_claim(definition)
         or (
             definition.get("definition_profile") == "authored_variant_v1"
             and definition.get("readiness") == "waiting_implementation"
@@ -152,11 +152,15 @@ def supported_claim(definition):
     )
 
 
-def panpipe_key_claim(definition):
+def supported_source_key_claim(definition):
     """Select the existing key-only lowering, with its exact source key number."""
     variant = definition.get("source_variant", {})
+    number = {
+        "oteryn:reward-claim.quest.key.id4055": 4055,
+        "oteryn:reward-claim.quest.key.id4601": 4601,
+    }.get(definition["identity"]["key"])
     return (
-        definition["identity"]["key"] == "oteryn:reward-claim.quest.key.id4055"
+        number is not None
         and definition.get("definition_profile") == "authored_variant_v1"
         and definition.get("readiness") == "waiting_implementation"
         and definition.get("native_admission") == "WAITING_IMPLEMENTATION"
@@ -176,13 +180,13 @@ def panpipe_key_claim(definition):
                 {
                     "item": {
                         "family": "Item",
-                        "key": "oteryn:item.tibia.i2969",
+                        "key": f"oteryn:item.tibia.i{2969 if number == 4055 else 2970}",
                         "revision": "definition-r1",
                     },
                     "count": 1,
                 }
             ],
-            "key_binding": "canary:door-key/4055",
+            "key_binding": f"canary:door-key/{number}",
         }
     )
 
@@ -267,9 +271,10 @@ def capture(source_root, selected, root=ROOT):
                 or setting.get("container") != container_id
             ):
                 raise ValueError("QUEST_CHEST_SOURCE_SELECTOR_OR_REWARD_DRIFT")
-            if panpipe_key_claim(definition) and (
+            key_number = placement["reward"].get("key_binding", "").rsplit("/", 1)[-1]
+            if supported_source_key_claim(definition) and (
                 setting.get("isKey") is not True
-                or setting.get("storage") != {"expr": "Storage.Quest.Key.ID4055"}
+                or setting.get("storage") != {"expr": f"Storage.Quest.Key.ID{key_number}"}
             ):
                 raise ValueError("QUEST_CHEST_SOURCE_KEY_DRIFT")
             rows.append(

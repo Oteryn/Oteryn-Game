@@ -1014,6 +1014,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
+                    // The barrel and bear have separate bare and selected-horn USE routes.
+                    && match c.key.as_str() {
+                        oteryn_gameplay_quests::quest::barbarian_mead::KEY
+                        | "oteryn:quest-callback/barbarian-test/hug-bear" => selected_tool.is_none(),
+                        "oteryn:quest-callback/barbarian-test/fill-horn"
+                        | "oteryn:quest-callback/barbarian-test/stun-bear" => selected_tool.is_some(),
+                        _ => true,
+                    }
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
                     && c.activation.as_ref().is_none_or(|activation| {
