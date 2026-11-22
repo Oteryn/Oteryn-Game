@@ -1127,7 +1127,7 @@ pub(super) async fn wire(
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     let frame = oteryn_protocol_oteryn::encode_client_command(
-        1,
+        admitted.continuity.connection_generation,
         &oteryn_protocol_oteryn::ClientCommandValue {
             command_id: id,
             command_type: kind,

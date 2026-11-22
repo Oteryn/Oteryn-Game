@@ -506,7 +506,7 @@ async fn install_reconnect_conditions(
     Ok(snapshot)
 }
 
-async fn resume_same_session(
+pub(super) async fn resume_same_session(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     source: crate::foundation::GameSessionId,
     token: &str,
