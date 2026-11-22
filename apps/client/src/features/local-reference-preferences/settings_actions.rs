@@ -1,4 +1,4 @@
-use super::super::store::BackupOrder;
+use super::super::store::Replacement;
 use super::*;
 #[cfg(bevy_shell)]
 #[derive(Default)]
@@ -124,38 +124,27 @@ impl SettingsState {
     }
 
     pub fn import_from(&mut self, path: &Path) -> io::Result<()> {
-        let source = path.to_owned();
-        self.replace_saved_from(BackupOrder::BackupFirst, move |_| {
-            PreferenceStore::read_transfer(&source)
-        })
+        self.replace_saved_from(Replacement::Import(path.to_owned()))
     }
 
     pub fn reset_defaults(&mut self) -> io::Result<()> {
-        self.replace_saved_from(BackupOrder::BackupFirst, |_| {
-            Ok(ReferencePreferences::default())
-        })
+        self.replace_saved_from(Replacement::Set(Box::default()))
     }
 
     pub fn restore_backup(&mut self) -> io::Result<()> {
-        self.replace_saved_from(BackupOrder::ActiveFirst, |path| {
-            PreferenceStore::read_transfer(&path.with_extension("backup.json"))
-        })
+        self.replace_saved_from(Replacement::Restore)
     }
 
-    fn replace_saved_from(
-        &mut self,
-        order: BackupOrder,
-        load: impl FnOnce(&Path) -> io::Result<ReferencePreferences> + Send + 'static,
-    ) -> io::Result<()> {
+    fn replace_saved_from(&mut self, source: Replacement) -> io::Result<()> {
         let store = self
             .store
             .as_mut()
             .ok_or_else(|| io::Error::other(tr!("Preference storage is unavailable")))?;
         #[cfg(bevy_shell)]
         if self.background_preferences || store.saving() {
-            return store.replace_in_background(&self.preferences, order, load);
+            return store.replace_in_background(&self.preferences, source);
         }
-        store.replace_from(&self.preferences, order, load)?;
+        store.replace_from(&self.preferences, source)?;
         let mut restored = store.preferences().clone();
         restored.miscellaneous = self.preferences.miscellaneous;
         self.accept_replaced(restored);
