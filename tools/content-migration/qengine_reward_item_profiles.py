@@ -46,6 +46,9 @@ IDS |= {21504, 21505, 21506, 21507, 9106}
 IDS |= {9106}
 # QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.
 IDS |= {27654}
+# Crystal 201189f Spike, Bigfoot and Dangerous Depths daily tools and packages.
+# The retained client/Canary physical rows agree with the donor item weights.
+IDS |= {15703, 15801, 15802, 19204, 19207, 19214, 19216, 19218, 27307, 27308}
 IDS |= qmech_m39.ITEMS
 IDS |= {21504, 21505}
 # Lion trials: exact holy-water vessel plus separately qualified one-hour flower duration.

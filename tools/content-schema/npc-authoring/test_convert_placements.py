@@ -47,6 +47,34 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual(source['revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
         self.assertEqual(source['source_row'], 'data-global/world/world-npc.xml')
 
+    def test_gnome_daily_contacts_use_the_pinned_crystal_cells(self):
+        expected = {
+            'a_dragon_lord': (32273, 32629, 14),
+            'a_drillworm': (32232, 32684, 13),
+            'a_lost_basher': (32171, 32630, 14),
+            'a_lost_thrower': (32306, 32546, 14),
+            'a_vulcongra': (32132, 32562, 13),
+            'commander_stone': (32805, 31798, 10),
+            'gnomargery': (32245, 32600, 14),
+            'gnombold': (32242, 32598, 11),
+            'gnomeral': (32963, 31875, 9),
+            'gnomilly': (32242, 32599, 9),
+            'gnomus': (33753, 32165, 14),
+            'klom_stonecutter': (33773, 32200, 14),
+        }
+        expected = {f'oteryn:npc.{key}': cell for key, cell in expected.items()}
+        rows = [r['declaration'] for r in self.records if r['declaration']['npc'] in expected]
+        self.assertEqual(len(rows), len(expected))
+        for row in rows:
+            self.assertEqual(tuple(row['cell'][part] for part in ('x', 'y', 'floor')),
+                             expected[row['npc']])
+            self.assertEqual(row.get('block_solid_contact', False), row['npc'] in {
+                'oteryn:npc.gnomargery', 'oteryn:npc.gnombold', 'oteryn:npc.gnomilly',
+            })
+            source, = row['provenance']
+            self.assertEqual(source['revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
+            self.assertEqual(source['source_row'], 'data-global/world/world-npc.xml')
+
     def test_m38_swan_keeps_the_exact_stationary_source_anchor(self):
         actual = [r['declaration'] for r in self.records
                   if r['declaration']['npc'] == 'oteryn:npc.a_swan']

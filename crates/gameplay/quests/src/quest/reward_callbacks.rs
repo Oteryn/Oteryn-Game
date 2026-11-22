@@ -490,6 +490,7 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/gnome-dailies.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
@@ -2296,8 +2297,8 @@ mod tests {
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // shared-reward-callbacks.json has 207 existing rows plus the generated
         // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
-        // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1);
+        // The other terms are QuestPC7, other shards, M43 peer, Kingsday and the Matchmaker package.
+        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -3352,6 +3353,41 @@ mod outfit_reward_predecessor_tests {
             );
             assert_eq!(invalid, unchanged, "case {case}");
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod daily_tests {
+    use super::*;
+
+    #[test]
+    fn matchmaker_package_exchanges_the_exact_carried_package() -> Result<(), String> {
+        let loaded = crate::quest::loader::load_embedded_quest_state("ctdaily")
+            .map_err(|error| format!("{error:?}"))?;
+        let callbacks = load_for(loaded.catalogue())?;
+        let package = callbacks
+            .iter()
+            .find(|callback| callback.key == "oteryn:quest-reward/bigfoot-daily/unpack-crystal")
+            .ok_or("Matchmaker package use")?;
+        assert!(package.carried_exchange);
+        assert!(package.per_occurrence_mint);
+        assert_eq!(
+            package.carried_item.as_deref(),
+            Some("oteryn:item.tibia.i15802")
+        );
+        assert_eq!(
+            package.take.as_slice(),
+            &[ItemAmount {
+                item: "oteryn:item.tibia.i15802".into(),
+                count: 1,
+                fluid_subtype: None
+            }]
+        );
+        assert_eq!(
+            package.give.as_ref().map(|reward| reward.item.as_str()),
+            Some("oteryn:item.tibia.i15801")
+        );
         Ok(())
     }
 }
