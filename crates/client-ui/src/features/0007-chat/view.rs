@@ -180,7 +180,16 @@ fn tab_text(
                     .metadata
                     .name(panel.console.display, speaker_name);
                 if presentation.mode_labels {
-                    let _ = writeln!(text, "[{room:?}] {name}: {message}");
+                    let _ = write!(text, "[{room:?}] ");
+                }
+                // Guild Leaders relays a server-formatted label together with the
+                // canonical speaker used by moderation and level lookup.
+                if *room == oteryn_client_runtime::chat_public_channels::ChatRoom::GuildLeaders
+                    && let Some(label_and_text) = message
+                        .strip_prefix(speaker_name.as_str())
+                        .filter(|suffix| suffix.starts_with(" ["))
+                {
+                    let _ = writeln!(text, "{name}{label_and_text}");
                 } else {
                     let _ = writeln!(text, "{name}: {message}");
                 }
@@ -405,4 +414,35 @@ pub(super) fn entry_text(entry: &ChannelEntry, console: &super::Console) -> Stri
 pub fn write_log(panel: &ChatPanel, writer: &mut impl std::io::Write) -> std::io::Result<()> {
     writer.write_all(panel_text(panel).as_bytes())?;
     writer.flush()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_client_runtime::chat_public_channels::ChatRoom;
+
+    #[test]
+    fn guild_leaders_transcript_displays_the_trusted_speaker_label_once() {
+        let mut panel = ChatPanel::default();
+        let room = ChatRoom::GuildLeaders;
+        panel.console.current = Some(crate::chat::ChannelTab::Room(room));
+        panel.console.metadata.levels.insert("Alice".to_owned(), 42);
+        for mode_labels in [false, true] {
+            panel.console.presentation.mode_labels = mode_labels;
+            let room_label = if mode_labels { "[GuildLeaders] " } else { "" };
+            for levels in [false, true] {
+                panel.console.display.levels = levels;
+                let level = if levels { " [current level 42]" } else { "" };
+                for label in ["[Owls]", "[Staff]", "[Staff][Owls]"] {
+                    panel.lines = vec![ChatLine::Room {
+                        room,
+                        speaker_name: "Alice".to_owned(),
+                        text: format!("Alice {label}: Alice: Hello"),
+                    }];
+                    let expected = format!("{room_label}Alice{level} {label}: Alice: Hello");
+                    assert!(panel_text(&panel).lines().any(|line| line == expected));
+                }
+            }
+        }
+    }
 }

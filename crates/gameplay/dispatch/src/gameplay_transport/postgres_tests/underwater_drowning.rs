@@ -21,7 +21,7 @@ const DROME_DRUNK_KEY: &str = "drome.drunk";
 fn fixm10_swimming_and_map_traps_postgres() -> TestResult {
     on_thread(|| {
         scenario(None, false)?;
-        scenario_in_world(None, false, false)
+        scenario_in_world(None, false, false, false)
     })
 }
 
@@ -58,6 +58,14 @@ fn underwater_drowning_postgres_refused_quest_step_restores_water_state() -> Tes
 #[test]
 fn underwater_drowning_postgres_portal_landings_enter_and_leave_water() -> TestResult {
     on_thread(|| scenario(None, true))
+}
+
+#[test]
+fn underwater_postgres_first_entry_rebuilds_drowning_on_the_saved_cell() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_thread(|| scenario_in_world(None, false, true, true))
 }
 
 fn on_thread(scenario: fn() -> TestResult) -> TestResult {
@@ -300,13 +308,14 @@ async fn install(
 }
 
 fn scenario(callback: Option<(u16, u16, bool)>, portals: bool) -> TestResult {
-    scenario_in_world(callback, portals, true)
+    scenario_in_world(callback, portals, true, false)
 }
 
 fn scenario_in_world(
     callback: Option<(u16, u16, bool)>,
     portals: bool,
     optional: bool,
+    saved_underwater: bool,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let result = run(async |admin| {
@@ -315,7 +324,7 @@ fn scenario_in_world(
         eprintln!(
             "POSTGRES_STARTED PAR-M10 callback={callback:?} portals={portals} optional={optional}"
         );
-        prepare_current_session(&h).await?;
+        let entry = prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -391,14 +400,39 @@ fn scenario_in_world(
                 .ok_or("qualified underwater bundle room")?,
         );
         let mut owner = deps.owner(&h, &authority);
-        owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
-        deps.initialize(&owner).await;
-        deps.runtime
-            .lock()
-            .await
-            .initialize_first_entry_position(deps.actor)
-            .map_err(debug)?;
+        let (actor, session) = (deps.actor, deps.admitted.game_session_id);
+        if saved_underwater {
+            sqlx::query(
+                "INSERT INTO game_character_last_positions
+                    (character_id,world_id,tile_x,tile_y,tile_floor,coordinate_frame_digest,
+                     map_revision_digest,server_artifact_digest,character_lease_generation,write_sequence)
+                 SELECT character_id,world_id,2,0,7,$2,$3,$4,character_lease_generation-1,1
+                 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid",
+            )
+            .bind(session.as_bytes().as_slice())
+            .bind(map.frame_binding_digest(world).as_slice())
+            .bind(map.map_revision_digest().as_slice())
+            .bind(active.identity().server_artifact_digest().as_slice())
+            .execute(&h.pool)
+            .await?;
+            let (outcome, _, _) = Box::pin(owner.initialize_first_entry(
+                &entry, session, entry.operation().authorization.transport, actor,
+            )).await;
+            assert_eq!(
+                outcome, crate::gameplay_transport::connection::FirstEntryOutcome::Positioned,
+            );
+            assert_eq!(
+                deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+                MovementLocalPosition { x: 2, y: 0, floor: 7 },
+            );
+            assert!(drowning(&owner, actor, session).await?, "first entry must reapply the tile's drowning");
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
+        owner.active_generation = Some(active);
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
             .bind(id(41).as_slice()).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
@@ -408,7 +442,12 @@ fn scenario_in_world(
             .bind(id(42).as_slice()).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',$2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'fixm10-fixture')")
             .bind(id(42).as_slice()).bind(if optional { 1_i16 } else { 2_i16 }).execute(&h.pool).await?;
-        let (actor, session) = (deps.actor, deps.admitted.game_session_id);
+        deps.initialize(&owner).await;
+        deps.runtime
+            .lock()
+            .await
+            .initialize_first_entry_position(deps.actor)
+            .map_err(debug)?;
         let mover = (deps.admitted, actor, session);
         if portals {
             install(&owner, actor, session, false).await?;

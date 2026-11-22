@@ -11,10 +11,12 @@ struct SavedConditions {
 
 impl<S> ConditionInstance<S> {
     fn persistent_at(&self, now: u64) -> Option<ConditionInstance<String>> {
-        // Spatial effects are rebuilt by the map. A DOT with no end timestamp
-        // is finite when it has a remaining damage budget.
+        // A field without lineage or an end time is spatial (for example,
+        // underwater ground). A timed one-shot effect such as the Weeping
+        // outfit keeps its remaining duration after the item that granted it is gone.
         let environment = self.provenance.source_kind == ConditionSourceKind::Field
-            && self.provenance.lineage.is_none();
+            && self.provenance.lineage.is_none()
+            && self.ends_at.is_none();
         if environment
             || self.definition.permanent_outfit
             || self

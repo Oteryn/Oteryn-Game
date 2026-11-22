@@ -26,7 +26,7 @@ fn native_finite_condition_postgres_relogin_preserves_remaining_ticks() -> TestR
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    on_thread(admin, false)
+    on_thread(admin, false, false)
 }
 
 #[test]
@@ -34,10 +34,20 @@ fn native_condition_postgres_terminal_save_excludes_environment_and_stale_lease(
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    on_thread(admin, true)
+    on_thread(admin, true, false)
 }
 
-fn on_thread(admin: String, with_environment: bool) -> TestResult {
+#[test]
+fn weeping_outfit_postgres_relogin_preserves_its_remaining_protection() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_thread(admin, false, true)
+}
+
+const WEEPING_OUTFIT: &str = "srx3:soul-war:weeping-outfit";
+
+fn on_thread(admin: String, with_environment: bool, with_weeping: bool) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
@@ -50,7 +60,7 @@ fn on_thread(admin: String, with_environment: bool) -> TestResult {
                     false,
                 ))?;
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    rt.block_on(scenario(&h, with_environment))
+                    rt.block_on(scenario(&h, with_environment, with_weeping))
                 }));
                 let cleanup = rt.block_on(h.cleanup());
                 match result {
@@ -79,7 +89,7 @@ impl ConnectionIdentifiers for FreshIds {
     }
 }
 
-async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
+async fn scenario(h: &Harness, with_environment: bool, with_weeping: bool) -> TestResult {
     let recovery = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -129,7 +139,7 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
             )
             .ok_or("fixture spell state")?;
     }
-    let applied_at = install_conditions(&owner, &deps, with_environment).await?;
+    let applied_at = install_conditions(&owner, &deps, with_environment, with_weeping).await?;
     owner.clock_origin -= Duration::from_millis(750);
     let _clock = owner.freeze_owner_clock_for_test();
     let elapsed_at_save = owner.owner_now().get() - applied_at;
@@ -156,10 +166,14 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
     }
     assert_eq!(
         rows.len(),
-        1,
-        "terminal release saves the eligible native condition"
+        1 + usize::from(with_weeping),
+        "terminal release saves every eligible condition"
     );
-    let ends_in = rows[0]["ends_at"].as_u64().ok_or("remaining duration")?;
+    let ends_in = rows
+        .iter()
+        .find(|row| row["definition"]["key"] == "fixture:c08.native.regeneration")
+        .and_then(|row| row["ends_at"].as_u64())
+        .ok_or("remaining regeneration duration")?;
     assert_eq!(ends_in, DURATION_US - elapsed_at_save);
 
     let fresh_deps = Dependencies::new()?;
@@ -210,6 +224,18 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
             .owned_conditions()
             .clone()
     };
+    if with_weeping {
+        let outfit = restored
+            .get(ConflictKey::Outfit)
+            .ok_or("restored Weeping outfit")?;
+        assert_eq!(outfit.definition().key(), WEEPING_OUTFIT);
+        assert_eq!(restored.outfit_at(outfit.started_at()), Some(286));
+        assert!(outfit.provenance().is_unattributed());
+        let remaining = 14_000_000 - elapsed_at_save;
+        let expires = outfit.started_at() + remaining;
+        assert!(restored.active_at(ConflictKey::Outfit, expires - 1).is_some());
+        assert!(restored.active_at(ConflictKey::Outfit, expires).is_none());
+    }
     verify_restored_phase(restored, ends_in)?;
 
     if with_environment {
@@ -243,6 +269,7 @@ async fn install_conditions(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     deps: &Dependencies,
     with_environment: bool,
+    with_weeping: bool,
 ) -> TestResult<u64> {
     let session = deps.admitted.game_session_id;
     let mut runtime = deps.runtime.lock().await;
@@ -313,6 +340,31 @@ async fn install_conditions(
         .map_err(debug)?;
         state
             .apply_batch_conditions(&before, &next)
+            .map_err(debug)?;
+    }
+    if with_weeping {
+        let mut states = owner.states.spell_states.try_lock().map_err(debug)?;
+        let player = states
+            .get_mut(&runtime, deps.actor, session)
+            .ok_or("source spell state")?;
+        let definition = ConditionDefinition::new(
+            WEEPING_OUTFIT,
+            1,
+            ConditionValues::Outfit {
+                look_type: 286,
+                duration_ms: 14_000,
+            },
+        )
+        .ok_or("Weeping outfit definition")?;
+        player
+            .conditions
+            .apply(
+                &definition,
+                Some("source:weeping-soul-step".into()),
+                ConditionSourceKind::Field,
+                &[],
+                &facts,
+            )
             .map_err(debug)?;
     }
     Ok(now.get())

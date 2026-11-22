@@ -326,20 +326,20 @@ async fn return_shared_soulpit<'a, 'f, 's>(
         .activity_runtimes
         .get(binding.scope, binding.generation.get())
         .ok_or(())?;
-    super::owner_runtime::leave_registered(
-        &admission,
-        &registered,
-        super::runtime::SoulpitActivityBinding {
-            handoff_id: binding.handoff_id,
-            scope: binding.scope,
-            generation: binding.generation,
-        },
-        &members,
-        member.slot,
-        admission.owner_now().get(),
-    )
-    .await
-    .map_err(|_| ())?;
+    admission
+        .runtime_view(&registered)
+        .leave_soulpit(
+            super::runtime::SoulpitActivityBinding {
+                handoff_id: binding.handoff_id,
+                scope: binding.scope,
+                generation: binding.generation,
+            },
+            &members,
+            *member,
+            admission.owner_now().get(),
+        )
+        .await
+        .map_err(|_| ())?;
     match admission
         .return_native_activity(admitted, command_id, ActivityReturnReason::Exit)
         .await?
