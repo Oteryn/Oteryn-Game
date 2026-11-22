@@ -53,7 +53,8 @@ pub struct QuickLootRequest {
     pub corpse: Option<[u8; 16]>,
     pub category: Option<QuickLootCategory>,
     pub recipient: Option<QuickLootRecipient>,
-    /// Explicit assignment uses a visible inventory handle encoded by [`encode_target_handle`].
+    /// A targeted assignment uses a visible handle encoded by [`encode_target_handle`].
+    /// Without a target, Gold Pouch selects the character's sole native Inbox pouch.
     pub recipient_id: Option<[u8; 16]>,
     pub fallback_to_main: bool,
     pub filter_mode: Option<QuickLootFilterMode>,
@@ -162,9 +163,12 @@ fn validate_request(r: &QuickLootRequest) -> WireResult<()> {
         }
         QuickLootAction::Assign => {
             r.corpse.is_none()
-                && r.recipient.is_some()
-                && r.recipient_id.is_some()
-                    == !matches!(r.recipient, Some(QuickLootRecipient::MainContainer))
+                && match r.recipient {
+                    Some(QuickLootRecipient::MainContainer) => r.recipient_id.is_none(),
+                    Some(QuickLootRecipient::Container) => r.recipient_id.is_some(),
+                    Some(QuickLootRecipient::GoldPouch) => true,
+                    None => false,
+                }
         }
         QuickLootAction::FilterAdd
         | QuickLootAction::FilterRemove

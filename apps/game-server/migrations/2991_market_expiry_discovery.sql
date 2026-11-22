@@ -1,13 +1,15 @@
--- The scheduler holds the returned books until its settlement transaction ends.
--- LockRows skips busy books before Limit counts eligible offers.
-CREATE FUNCTION game_market_lock_job_candidates(p_world UUID)
-RETURNS SETOF UUID
+-- Hold only the book of the job about to be settled.
+-- LockRows skips busy books before Limit chooses the next eligible offer.
+CREATE FUNCTION game_market_lock_job_candidate(p_world UUID, p_after UUID)
+RETURNS UUID
 LANGUAGE sql VOLATILE SECURITY DEFINER AS $$
     SELECT o.offer_id
     FROM game_market_offers o
     JOIN game_market_books book USING (world_id, definition_key)
     LEFT JOIN game_account_bank_balances b ON b.account_id=o.account_id AND b.world_id=o.world_id
+    LEFT JOIN game_market_offers prior ON prior.offer_id=p_after AND prior.world_id=p_world
     WHERE o.world_id=p_world
+      AND (p_after IS NULL OR (o.expires_at_us,o.offer_id)>(prior.expires_at_us,prior.offer_id))
       AND (
         (o.state=1 AND (o.matching_pending
           OR o.expires_at_us<=floor(extract(epoch FROM statement_timestamp())*1000000)::bigint))
@@ -20,16 +22,16 @@ LANGUAGE sql VOLATILE SECURITY DEFINER AS $$
         )))
       )
     ORDER BY o.expires_at_us,o.offer_id
-    LIMIT 100
+    LIMIT 1
     FOR UPDATE OF book SKIP LOCKED
 $$;
 
 DO $$ BEGIN
     EXECUTE format(
-        'ALTER FUNCTION game_market_lock_job_candidates(UUID) SET search_path=pg_catalog,%I,pg_temp',
+        'ALTER FUNCTION game_market_lock_job_candidate(UUID,UUID) SET search_path=pg_catalog,%I,pg_temp',
         current_schema()
     );
 END $$;
-REVOKE ALL ON FUNCTION game_market_lock_job_candidates(UUID) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION game_market_lock_job_candidates(UUID) TO oteryn_game_runtime;
-GRANT EXECUTE ON FUNCTION game_market_lock_job_candidates(UUID) TO oteryn_game_control;
+REVOKE ALL ON FUNCTION game_market_lock_job_candidate(UUID,UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_market_lock_job_candidate(UUID,UUID) TO oteryn_game_runtime;
+GRANT EXECUTE ON FUNCTION game_market_lock_job_candidate(UUID,UUID) TO oteryn_game_control;

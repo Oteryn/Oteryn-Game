@@ -11,6 +11,7 @@ use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use oteryn_protocol_oteryn::market::{self as wire, MarketReply, MarketRequest};
 use prost::Message;
 use sha2::{Digest, Sha256};
+use sqlx::Acquire;
 
 impl DurabilityRoot {
     /// Recovery, full current session/lease/node fence, then the sole SQL owner.
@@ -188,7 +189,15 @@ async fn advance_jobs(
     tx: &mut Transaction<'_, Postgres>,
     world: crate::foundation::WorldId,
 ) -> Result<bool> {
-    for offer in lock_job_candidates(tx, world).await? {
+    let mut after = None;
+    for _ in 0..100 {
+        // Release the book when a stale candidate does no work.
+        let mut job = tx.begin().await?;
+        let Some(offer) = lock_job_candidate(&mut job, world, after).await? else {
+            job.rollback().await?;
+            break;
+        };
+        after = Some(offer);
         // A fresh statement observes the offer and clock after discovery acquired the book.
         let snapshot = "SELECT state,remaining,held_credit_gold::text,matching_pending,
                                (SELECT count(*) FROM game_item_market_escrow_locations e WHERE e.offer_id=o.offer_id),
@@ -198,19 +207,20 @@ async fn advance_jobs(
         let before: Option<(i16, i32, String, bool, i64, bool)> = sqlx::query_as(snapshot)
             .bind(world.as_bytes().as_slice())
             .bind(offer.as_bytes().as_slice())
-            .fetch_optional(&mut **tx)
+            .fetch_optional(&mut *job)
             .await?;
         let Some((state, remaining, held_gold, pending, escrow_count, expired)) = before else {
+            job.rollback().await?;
             continue;
         };
 
         if state == 1 && expired {
-            expire_offer(tx, world, offer).await?;
+            expire_offer(&mut job, world, offer).await?;
         } else if state == 1 && pending {
             sqlx::query("SELECT game_market_match(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
                 .bind(world.as_bytes().as_slice())
                 .bind(offer.as_bytes().as_slice())
-                .execute(&mut **tx)
+                .execute(&mut *job)
                 .await?;
         } else if state == 5 {
             sqlx::query(
@@ -218,22 +228,25 @@ async fn advance_jobs(
             )
             .bind(world.as_bytes().as_slice())
             .bind(offer.as_bytes().as_slice())
-            .execute(&mut **tx)
+            .execute(&mut *job)
             .await?;
         } else {
+            job.rollback().await?;
             continue;
         }
         let (after_state, after_remaining, after_held, after_pending, after_escrow, _):
             (i16, i32, String, bool, i64, bool) = sqlx::query_as(snapshot)
                 .bind(world.as_bytes().as_slice())
                 .bind(offer.as_bytes().as_slice())
-                .fetch_one(&mut **tx)
+                .fetch_one(&mut *job)
                 .await?;
         if (state, remaining, held_gold, pending, escrow_count)
             != (after_state, after_remaining, after_held, after_pending, after_escrow)
         {
+            job.commit().await?;
             return Ok(true);
         }
+        job.rollback().await?;
     }
     Ok(false)
 }

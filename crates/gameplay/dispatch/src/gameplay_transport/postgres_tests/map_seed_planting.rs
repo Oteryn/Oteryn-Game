@@ -372,16 +372,29 @@ fn scenario(case: Case) -> TestResult {
                 admitted = next;
                 command_id += 1;
             }
-            let (_, result, actual) = drop_exchange(&owner, admitted, command_id, None, seed_ref, count, false).await?;
+            let (next, result, actual) = drop_exchange(&owner, admitted, command_id, None, seed_ref, count, false).await?;
             assert_eq!(result, Some(ItemMoveOutcome::Moved));
             if pickup_wins {
+                // A wire reconnect preserves the authoritative command stream.
+                let (_, replay, _) = drop_exchange(&owner, next, command_id, Some(actual), seed_ref, count, false).await?;
+                assert_eq!(replay, Some(ItemMoveOutcome::Moved));
                 drop(owner);
                 owner = deps.owner(&harness, &authority);
                 owner.active_generation = Some(active);
                 owner.movement_cells = (&cells).into();
                 deps.initialize(&owner).await;
-                let (_, replay, _) = drop_exchange(&owner, admitted, command_id, Some(actual), seed_ref, count, false).await?;
-                assert_eq!(replay, Some(ItemMoveOutcome::Moved));
+                // The replacement owner can independently recover the durable MOVE receipt.
+                assert!(matches!(
+                    owner.committed_loop_move(
+                        deps.actor,
+                        crate::gameplay_transport::connection::UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id,
+                            item_fence: Some(fence),
+                        },
+                    ).await,
+                    Some(crate::gameplay_transport::item_move::LoopMoveReplay::Moved)
+                ));
             }
             let pot: (String, i64, bool) = sqlx::query_as("SELECT definition_production_key,quantity,EXISTS(SELECT 1 FROM game_item_ground_locations g WHERE g.item_instance_id=i.item_instance_id AND g.spatial_position=$2) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
                 .bind(minted.item_instance_id.as_slice()).bind(ground.pickup_cell(&minted.item_instance_id).ok_or("pot cell")?)

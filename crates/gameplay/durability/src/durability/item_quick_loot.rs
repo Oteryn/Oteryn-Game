@@ -104,6 +104,30 @@ async fn recipient<C: ItemLoopContent>(
     Ok(LoopDestination::Container(id))
 }
 
+// The native pouch stays in the character's Inbox, outside the carried item view.
+async fn inbox_gold_pouch(
+    tx: &mut Transaction<'_, Postgres>,
+    character: CharacterId,
+    world: [u8; 16],
+) -> LoopResult<[u8; 16]> {
+    let matches: Vec<String> = sqlx::query_scalar(
+        "SELECT i.item_instance_id::text
+         FROM game_item_character_inbox_locations l JOIN game_item_instances i USING(item_instance_id,world_id)
+         WHERE l.character_id=encode($1,'hex')::uuid AND l.world_id=encode($2,'hex')::uuid
+           AND i.lifecycle=1 AND i.definition_family='Item'
+           AND i.definition_production_key='oteryn:item.tibia.i23721'
+         ORDER BY l.ordinal LIMIT 2",
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind(world.as_slice())
+    .fetch_all(&mut **tx)
+    .await?;
+    let [id] = matches.as_slice() else {
+        return refuse(LoopMoveRefusal::Stale);
+    };
+    Ok(uuid_text(id)?)
+}
+
 impl DurabilityRoot {
     /// Command 114: replay, settings and all accepted transfers share one fenced item transaction.
     #[allow(clippy::too_many_arguments)]
@@ -173,6 +197,9 @@ impl DurabilityRoot {
                         (Some(QuickLootRecipient::MainContainer), None) => Recipient::MainContainer,
                         (Some(QuickLootRecipient::Container), Some(id)) => Recipient::Container(id),
                         (Some(QuickLootRecipient::GoldPouch), Some(id)) => Recipient::GoldPouch(id),
+                        (Some(QuickLootRecipient::GoldPouch), None) => {
+                            Recipient::GoldPouch(inbox_gold_pouch(&mut tx, fence.character_id, world).await?)
+                        }
                         _ => return refuse(LoopMoveRefusal::Rejected),
                     };
                     recipient(&mut tx, fence.character_id, world, content, target).await?;

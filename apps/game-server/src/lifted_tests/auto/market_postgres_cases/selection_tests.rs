@@ -112,14 +112,20 @@ fn market_native_expiry_candidates_bound_order_world_and_recheck() -> TestResult
             .await?;
         }
         let mut discovery = h.pool.begin().await?;
-        let rows = lock_job_candidates(&mut discovery, crate::foundation::WorldId::decode(&id(WORLD))?).await?;
-        assert_eq!(rows.len(), 100);
-        assert_eq!(rows[0], MarketOfferId::new(id(1))?);
-        assert_eq!(rows[99], MarketOfferId::new(id(100))?);
+        let world = crate::foundation::WorldId::decode(&id(WORLD))?;
+        let mut after = None;
+        for n in 1..=100 {
+            after = lock_job_candidate(&mut discovery, world, after).await?;
+            assert_eq!(after, Some(MarketOfferId::new(id(n))?));
+        }
         assert!(
-            lock_job_candidates(&mut discovery, crate::foundation::WorldId::decode(&id(111))?)
-                .await?
-                .is_empty()
+            lock_job_candidate(
+                &mut discovery,
+                crate::foundation::WorldId::decode(&id(111))?,
+                None,
+            )
+            .await?
+            .is_none()
         );
         discovery.rollback().await?;
         // A concurrent completed atomic writer may end a discovered row. Selection re-reads it;
@@ -128,9 +134,35 @@ fn market_native_expiry_candidates_bound_order_world_and_recheck() -> TestResult
         let mut tx = h.pool.begin().await?;
         let key = offer(1, Side::Buy, 40, time).book();
         let mut book = lock_book(&mut tx, key).await?;
-        assert!(book.plan_end(rows[0], EndReason::Expire).await.is_err());
-        assert!(book.plan_end(rows[1], EndReason::Expire).await?.is_some());
+        assert!(book.plan_end(MarketOfferId::new(id(1))?, EndReason::Expire).await.is_err());
+        assert!(book.plan_end(MarketOfferId::new(id(2))?, EndReason::Expire).await?.is_some());
         tx.rollback().await?;
+        Ok(())
+    })
+}
+
+#[test]
+fn market_expiry_discovery_leaves_later_books_available_to_writers() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_expiry_case(admin, "market_expiry_book_scope", async |h| {
+        let time = now(h).await? - LIFETIME_US - 10_000;
+        let first = offer(60, Side::Buy, 40, time);
+        let mut later = offer(61, Side::Buy, 70, time + 1);
+        later.definition = definition("oteryn:content.item.bowl", "r1")?;
+        seed(h, &first).await?;
+        seed(h, &later).await?;
+
+        let mut discovery = h.pool.begin().await?;
+        let world = crate::foundation::WorldId::decode(&id(WORLD))?;
+        let candidate = lock_job_candidate(&mut discovery, world, None).await?;
+        assert_eq!(candidate, Some(first.id));
+        let mut writer = h.pool.begin().await?;
+        assert!(try_lock_job_book(&mut writer, later.book()).await?.is_some());
+        assert!(try_lock_job_book(&mut writer, first.book()).await?.is_none());
+        writer.rollback().await?;
+        discovery.rollback().await?;
         Ok(())
     })
 }

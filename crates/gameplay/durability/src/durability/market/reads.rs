@@ -144,22 +144,21 @@ pub async fn book_page(
     Ok(BookPage { offers, next })
 }
 
-/// Take the book locks for bounded Market job discovery. Re-read each offer
-/// under its book lock before deciding whether it can settle.
-pub async fn lock_job_candidates(
+/// Lock the next Market job's book, skipping books in use by another transaction.
+pub async fn lock_job_candidate(
     tx: &mut Transaction<'_, Postgres>,
     world: crate::foundation::WorldId,
-) -> Result<Vec<MarketOfferId>> {
-    let offers: Vec<String> = sqlx::query_scalar(
-        "SELECT offer_id::text
-         FROM game_market_lock_job_candidates(encode($1,'hex')::uuid)
-         WITH ORDINALITY AS candidate(offer_id, ordinal) ORDER BY ordinal",
+    after: Option<MarketOfferId>,
+) -> Result<Option<MarketOfferId>> {
+    let offer: Option<String> = sqlx::query_scalar(
+        "SELECT game_market_lock_job_candidate(encode($1,'hex')::uuid,encode($2,'hex')::uuid)::text",
     )
     .bind(world.as_bytes().as_slice())
-    .fetch_all(&mut **tx)
+    .bind(after.as_ref().map(|offer| offer.as_bytes().as_slice()))
+    .fetch_one(&mut **tx)
     .await?;
-    offers
-        .iter()
+    offer
+        .as_deref()
         .map(|offer| MarketOfferId::new(uuid_text(offer)?))
-        .collect()
+        .transpose()
 }
