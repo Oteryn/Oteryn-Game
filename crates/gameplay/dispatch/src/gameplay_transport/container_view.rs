@@ -112,7 +112,9 @@ impl OpenView {
                 &self.entries[start..end]
             }
             None => {
-                let (offset, width) = self.page.unwrap_or((0, self.capacity));
+                let Some((offset, width)) = self.page else {
+                    return &self.entries;
+                };
                 let start = usize::from(offset);
                 let end = (start + usize::from(width)).min(self.entries.len());
                 &self.entries[start..end]

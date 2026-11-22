@@ -929,6 +929,7 @@ mod connection {
                         let (_, frames) = serve(&authority, session(&caps)?, &frames).await?;
                         let mut response = None;
                         let mut page = None;
+                        let mut before_seek = None;
                         for bytes in &frames {
                             let envelope = decode_wire_envelope(bytes)?;
                             if envelope.message_type() == MessageType::CommandResult {
@@ -939,10 +940,9 @@ mod connection {
                             } else if envelope.message_type() == MessageType::StateDelta {
                                 let delta = decode_state_delta(envelope.payload())?;
                                 if delta.domain_id == 14 {
-                                    page = Some(
-                                        decode_container_views(delta.payload)
-                                            .map_err(|e| format!("{e:?}"))?,
-                                    );
+                                    let decoded = decode_container_views(delta.payload)
+                                        .map_err(|e| format!("{e:?}"))?;
+                                    before_seek = page.replace(decoded);
                                 }
                             }
                         }
@@ -951,7 +951,8 @@ mod connection {
                         if selected {
                             assert_eq!(status, CommandStatus::Accepted);
                             assert_eq!(payload, &[2, 0, 4, 0, 2]);
-                            assert_eq!(last.entries.len(), 2);
+                            let original = before_seek.ok_or("initial full container")?;
+                            assert_eq!(last.entries, original.views[0].entries[2..]);
                             assert_eq!(authority.container_reads.borrow().len(), 2);
                         } else {
                             assert_eq!(status, CommandStatus::Rejected);
@@ -960,6 +961,29 @@ mod connection {
                             assert_eq!(authority.container_reads.borrow().len(), 1);
                         }
                     }
+                    let overflow = ContainerObservation::Container {
+                        parent: None,
+                        capacity: 1,
+                        entries: vec![item(instance(10)), item(instance(11))],
+                    };
+                    let authority = TreeAuthority::new(vec![Some(overflow)]);
+                    let (view, _) = mirror(true);
+                    let (end, frames) = serve(
+                        &authority,
+                        session(&[4, 6, 12, 14])?,
+                        &[view_command(1, open(handle_of(&view, instance(1))))?],
+                    )
+                    .await?;
+                    ended(end)?;
+                    let last = decode_wire_envelope(frames.last().ok_or("overflow result")?)?;
+                    assert_eq!(last.message_type(), MessageType::CommandResult);
+                    let reply = decode_command_result(last.payload())?;
+                    let outcome =
+                        oteryn_protocol_oteryn::container_tree::decode_container_view_result(
+                            reply.payload,
+                        )
+                        .map_err(|e| format!("{e:?}"))?;
+                    assert_eq!(outcome, ContainerViewOutcome::Stale);
                     Ok(())
                 })
                 .map_err(|e| e.to_string())

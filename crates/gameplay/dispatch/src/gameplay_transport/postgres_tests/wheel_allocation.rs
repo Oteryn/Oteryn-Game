@@ -480,10 +480,13 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                 expected(true, 1, vessels)?, "free accounts cannot change vessels");
             owner.premium_coordinator = Some(&gate);
             let gift_remaining = if matches!(transition, WheelExtensionCase::Gift) {
-                assert_eq!(
-                    send_kind(&owner, &mut admitted, 6378, &id(101)).await?,
-                    (CommandStatus::Rejected, b"Sorry, not possible.".to_vec())
-                );
+                h.seed_pvp_target().await?;
+                for target in [id(101), id(199)] {
+                    assert_eq!(
+                        send_kind(&owner, &mut admitted, 6378, &target).await?,
+                        (CommandStatus::Rejected, b"Sorry, not possible.".to_vec())
+                    );
+                }
                 assert!(owner.load_wheel_gift(deps.actor, session).await);
                 assert!(owner.refresh_wheel_vitals(deps.actor, session).await);
                 let now = owner.owner_now().get();
