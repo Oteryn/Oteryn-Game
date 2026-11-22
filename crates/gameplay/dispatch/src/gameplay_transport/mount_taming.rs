@@ -1,4 +1,5 @@
 //! MOUNTTAME: existing USE -> carried item -> current creature -> fenced durable attempt.
+mod music_box_cues;
 pub(super) mod quest_objects;
 
 use super::{
@@ -491,10 +492,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(Some(receipt)) => {
                 let (_, remove, text) = rule.effects(receipt.outcome).ok_or(reject)?;
                 if remove && let Some((_, target)) = creature_target {
+                    let cues = if receipt.outcome == 0 {
+                        self.bundle_map().and_then(|map| {
+                            music_box_cues::capture(guard.runtime, target, rule)
+                                .map(|speech| (&map.facts, speech))
+                        })
+                    } else {
+                        None
+                    };
                     guard
                         .runtime
                         .remove_mount_taming_subject(target, &rule.creature_key)
                         .map_err(|_| None)?;
+                    if let Some((facts, speech)) = cues {
+                        music_box_cues::publish(facts, speech);
+                    }
                 }
                 guard.uncertain = false;
                 self.states
