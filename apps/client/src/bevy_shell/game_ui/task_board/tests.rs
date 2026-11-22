@@ -703,3 +703,66 @@ fn soulseal_filters_combine_name_and_difficulty() -> Result<(), Box<dyn std::err
     assert!(fights(&mut app).is_empty());
     Ok(())
 }
+
+#[test]
+fn soulseal_search_follows_the_server_cursor_past_nonmatching_entries()
+-> Result<(), Box<dyn std::error::Error>> {
+    use model::task_board::soulpit as wire;
+    let mut p = panel();
+    p.fights.reply = Some(wire::Reply {
+        status: wire::Status::Catalogue,
+        balance: Some(100),
+        authorization: Some([1; 16]),
+        next: Some(1),
+        total: 2,
+        rules: wire::EntryRules {
+            required_level: 8,
+            time_limit_seconds: 600,
+            authorization_ms: 10000,
+        },
+        entries: vec![wire::Fight {
+            race: 1,
+            name: "Rat".into(),
+            stars: 0,
+            cost: 10,
+        }],
+        reason: String::new(),
+    });
+    let (mut app, mut commands, outbox) = extra_fixture(p.clone())?;
+    extra_click(&mut app, |k| matches!(k, Kind::Tab(Tab::Soulseals)))?;
+    let _first = commands.try_recv()?;
+    outbox.bevy_task_board_fixture(p.clone());
+    app.update();
+    let field = app
+        .world_mut()
+        .query_filtered::<Entity, With<SearchField>>()
+        .single(app.world())?;
+    app.world_mut()
+        .entity_mut(field)
+        .insert(bevy::text::EditableText::new("Dragon"));
+    extra_click(&mut app, |k| matches!(k, Kind::Search))?;
+    let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("missing next page".into());
+    };
+    assert_eq!(
+        wire::Request::decode(&command.payload).map_err(|_| "request")?,
+        wire::Request::Catalogue { after: 1 }
+    );
+    let reply = p.fights.reply.as_mut().ok_or("reply")?;
+    reply.entries = vec![wire::Fight {
+        race: 2,
+        name: "Dragon".into(),
+        stars: 3,
+        cost: 40,
+    }];
+    reply.next = None;
+    outbox.bevy_task_board_fixture(p);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0.contains("Dragon · 3 stars"))
+    );
+    Ok(())
+}

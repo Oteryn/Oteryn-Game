@@ -7,7 +7,7 @@ pub struct QuestPanel {
     pub tracker_selection: Option<u32>,
     pub tracker_open: bool,
     pub mission: Option<u32>,
-    pub pinned: std::collections::BTreeSet<u32>,
+    pub pinned: Vec<u32>,
     pub hidden: std::collections::BTreeSet<u32>,
     pub show_hidden: bool,
     pub list_search: String,

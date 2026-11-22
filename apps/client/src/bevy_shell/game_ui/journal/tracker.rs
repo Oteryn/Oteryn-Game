@@ -2,7 +2,10 @@ use super::*;
 use oteryn_client_ui::quest_log::QuestLine;
 
 #[derive(Component)]
-pub(super) struct Window;
+pub(super) struct Window {
+    generation: u64,
+    index: usize,
+}
 #[derive(Clone, Copy, PartialEq)]
 pub(super) enum Control {
     Add,
@@ -19,9 +22,9 @@ pub(super) struct ButtonAction {
 #[derive(Resource, Default)]
 struct Windows {
     generation: Option<u64>,
-    count: usize,
-    painted: usize,
-    lines: Vec<QuestLine>,
+    slots: [bool; 8],
+    lines: Vec<(String, QuestLine)>,
+    full: bool,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<Windows>().add_systems(Update, project);
@@ -31,7 +34,7 @@ fn project(
     owner: NonSend<HostOwner>,
     skins: Res<Skins>,
     mut windows: ResMut<Windows>,
-    roots: Query<Entity, With<Window>>,
+    roots: Query<(Entity, &Window)>,
 ) {
     let active = owner
         .play
@@ -39,46 +42,77 @@ fn project(
         .filter(|p| p.link.quest_tracker_visible());
     let generation = active.map(|_| owner.generation());
     if generation != windows.generation {
-        windows.count = usize::from(active.is_some());
+        windows.slots = [false; 8];
+        windows.slots[0] = active.is_some();
         windows.generation = generation;
     }
     let lines = active
-        .map(|p| p.link.quest_panel().state.log.tracked)
+        .map(|p| {
+            let panel = p.link.quest_panel();
+            oteryn_client_ui::quest_log::tracker_lines(&panel)
+                .into_iter()
+                .map(|line| {
+                    let mut line = line.clone();
+                    if panel.tracker.hide_completed_missions {
+                        line.missions.retain(|m| !m.done);
+                    }
+                    (panel.title(line.quest_index), line)
+                })
+                .collect()
+        })
         .unwrap_or_default();
-    if windows.painted == windows.count && lines == windows.lines {
-        return;
-    }
-    for root in &roots {
-        commands.entity(root).despawn();
+    let full = !windows.slots.contains(&false);
+    let changed = windows.lines != lines || windows.full != full;
+    windows.full = full;
+    let mut mounted = [None; 8];
+    for (entity, window) in &roots {
+        if Some(window.generation) == generation && windows.slots[window.index] {
+            mounted[window.index] = Some(entity);
+        } else {
+            commands.entity(entity).despawn();
+        }
     }
     windows.lines = lines;
-    windows.painted = windows.count;
     let Some(generation) = generation else {
         return;
     };
-    for index in 0..windows.count {
-        let root = commands
-            .spawn((
-                Window,
-                crate::bevy_shell::window_drag::DraggableDialog,
-                GlobalZIndex(110),
-                source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
-                Node {
-                    position_type: PositionType::Absolute,
-                    right: px(10. + (index % 4) as f32 * 32.),
-                    top: px(68. + index as f32 * 32.),
-                    width: px(245.),
-                    max_height: percent(75.),
-                    overflow: Overflow::scroll_y(),
-                    flex_direction: FlexDirection::Column,
-                    padding: px(4.).all(),
-                    ..default()
-                },
-                bevy::ui_widgets::ScrollArea,
-            ))
-            .id();
+    for (index, slot) in windows.slots.iter().enumerate() {
+        if !slot {
+            continue;
+        }
+        let root = if let Some(entity) = mounted[index] {
+            if !changed {
+                continue;
+            }
+            commands.entity(entity).despawn_related::<Children>();
+            entity
+        } else {
+            commands
+                .spawn((
+                    Window { index, generation },
+                    crate::bevy_shell::window_drag::DraggableDialog,
+                    GlobalZIndex(110),
+                    source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
+                    Node {
+                        position_type: PositionType::Absolute,
+                        right: px(10. + (index % 4) as f32 * 32.),
+                        top: px(68. + index as f32 * 32.),
+                        width: px(245.),
+                        max_height: percent(75.),
+                        overflow: Overflow::scroll_y(),
+                        flex_direction: FlexDirection::Column,
+                        padding: UiRect {
+                            top: px(19.),
+                            ..px(4.).all()
+                        },
+                        ..default()
+                    },
+                    bevy::ui_widgets::ScrollArea,
+                ))
+                .id()
+        };
         source::dialog_caption(&mut commands, root, "Quest tracker", skins.font.clone());
-        let mut button = |kind, label: &str| {
+        let button = |commands: &mut Commands, kind, label: &str| {
             let entity = commands
                 .spawn((
                     ButtonAction {
@@ -96,17 +130,31 @@ fn project(
             commands.entity(entity).add_child(text);
             commands.entity(root).add_child(entity);
         };
-        button(Control::Journal, "Open quest journal");
-        if windows.count < 8 {
-            button(Control::Add, "New tracker window");
+        button(&mut commands, Control::Journal, "Open quest journal");
+        if !full {
+            button(&mut commands, Control::Add, "New tracker window");
         }
-        button(Control::Close, "Close tracker");
-        for line in &windows.lines {
+        button(&mut commands, Control::Close, "Close tracker");
+        for (title, line) in &windows.lines {
+            let heading = commands
+                .spawn(source::text(title, source::font(skins.font.clone(), true)))
+                .id();
+            commands.entity(root).add_child(heading);
             for mission in &line.missions {
                 button(
+                    &mut commands,
                     Control::Mission(line.quest_index, mission.mission_index),
                     &mission.name,
                 );
+                if !mission.text.is_empty() {
+                    let description = commands
+                        .spawn(source::text(
+                            &mission.text,
+                            source::font(skins.font.clone(), false),
+                        ))
+                        .id();
+                    commands.entity(root).add_child(description);
+                }
             }
         }
     }
@@ -126,15 +174,19 @@ fn activate(
         || owner.modal_active()
         || action.generation != owner.generation()
         || !play.link.quest_tracker_visible()
-        || action.index >= windows.count
+        || !windows.slots[action.index]
     {
         return;
     }
     match action.kind {
-        Control::Add => windows.count = (windows.count + 1).min(8),
+        Control::Add => {
+            if let Some(slot) = windows.slots.iter_mut().find(|slot| !**slot) {
+                *slot = true;
+            }
+        }
         Control::Close => {
-            windows.count -= 1;
-            if windows.count == 0 {
+            windows.slots[action.index] = false;
+            if !windows.slots.contains(&true) {
                 play.link.quest_close_tracker();
             }
         }

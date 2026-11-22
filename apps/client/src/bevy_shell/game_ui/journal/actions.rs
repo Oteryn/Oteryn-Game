@@ -172,19 +172,7 @@ pub(super) fn perform(
     if action.key.tab == Tab::Quests {
         match action.kind {
             Kind::ClearTracker | Kind::CleanTracker => {
-                if !quest.state.selected || quest.pending_query.is_some() {
-                    return false;
-                }
-                let tracked = &quest.state.log.tracked;
-                let quest_indexes: Vec<_> = tracked
-                    .iter()
-                    .filter(|q| matches!(action.kind, Kind::CleanTracker) && !q.completed)
-                    .map(|q| q.quest_index)
-                    .collect();
-                if quest_indexes.len() == tracked.len() {
-                    return false;
-                }
-                link.quest_request(&QuestLogQuery::Track { quest_indexes });
+                return link.quest_clean_tracker(matches!(action.kind, Kind::CleanTracker));
             }
             Kind::Pin | Kind::HideQuest => {
                 if !link.quest_toggle_mark(matches!(action.kind, Kind::Pin)) {

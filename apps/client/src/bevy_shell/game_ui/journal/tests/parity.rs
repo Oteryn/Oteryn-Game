@@ -59,8 +59,9 @@ fn journal_pin_hide_restore_and_order_quests() -> Result {
     for (kind, expected, hidden) in [
         (Kind::Pin, vec![73, 2], 0),
         (Kind::HideQuest, vec![2], 1),
-        (Kind::ShowHidden, vec![73, 2], 1),
-        (Kind::HideQuest, vec![73, 2], 0),
+        (Kind::ShowHidden, vec![73], 1),
+        (Kind::HideQuest, vec![], 0),
+        (Kind::ShowHidden, vec![73, 2], 0),
         (Kind::Pin, vec![2, 73], 0),
     ] {
         assert!(actions::perform(
@@ -132,6 +133,7 @@ fn independent_tracker_opens_the_clicked_mission_and_adds_a_window() -> Result {
         return Err("line".into());
     };
     snapshot.log.tracked.push(line);
+    let refreshed = snapshot.log.clone();
     outbox.bevy_journal_quest_state(snapshot);
     host.play.as_ref().ok_or("play")?.link.open_quest_tracker();
     let _refresh = commands.try_recv()?;
@@ -156,7 +158,15 @@ fn independent_tracker_opens_the_clicked_mission_and_adds_a_window() -> Result {
         app.update();
         Ok(())
     };
+    let original = app
+        .world_mut()
+        .query_filtered::<Entity, With<tracker::Window>>()
+        .single(app.world())?;
     click(&mut app, tracker::Control::Add)?;
+    assert!(
+        app.world().get::<tracker::Window>(original).is_some(),
+        "adding a window preserves the dragged original"
+    );
     assert_eq!(
         app.world_mut()
             .query::<&tracker::Window>()
@@ -165,6 +175,15 @@ fn independent_tracker_opens_the_clicked_mission_and_adds_a_window() -> Result {
         2
     );
     click(&mut app, tracker::Control::Mission(73, 1))?;
+    outbox.push(vec![oteryn_session::SessionEvent::QuestLog(
+        oteryn_session::AppliedDelta {
+            server_sequence: 2,
+            base_revision: 1,
+            new_revision: 2,
+            value: refreshed,
+        },
+    )]);
+    app.update();
     let panel = app
         .world()
         .non_send::<HostOwner>()
@@ -225,5 +244,66 @@ fn journal_cleanup_preserves_active_tracked_quests() -> Result {
             quest_indexes: vec![73]
         }
     );
+    Ok(())
+}
+
+#[test]
+fn most_recent_pin_stays_first_after_sorting() -> Result {
+    let (mut host, _commands, outbox) = host()?;
+    let mut snapshot = quest_state();
+    let Some(QuestLogView::Line(first)) = snapshot.log.view.clone() else {
+        return Err("line".into());
+    };
+    let second = QuestLine {
+        quest_index: 2,
+        ..first.clone()
+    };
+    snapshot.list.push(QuestListEntry {
+        quest_index: 2,
+        completed: false,
+    });
+    snapshot.log.tracked = vec![first, second];
+    outbox.bevy_journal_quest_state(snapshot);
+    let key = Key {
+        generation: host.generation(),
+        tab: Tab::Quests,
+    };
+    let mut state = State {
+        key: Some(key),
+        ..default()
+    };
+    host.play.as_ref().ok_or("play")?.link.open_quest_tracker();
+    for id in [2, 73] {
+        host.play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .quest_open_tracked_mission(id, 1);
+        assert!(actions::perform(
+            &mut host,
+            &mut state,
+            Action {
+                key,
+                kind: Kind::Pin
+            },
+            &default()
+        ));
+    }
+    for _ in 0..6 {
+        assert!(actions::perform(
+            &mut host,
+            &mut state,
+            Action {
+                key,
+                kind: Kind::Sort
+            },
+            &default()
+        ));
+        let panel = host.play.as_ref().ok_or("play")?.link.quest_panel();
+        assert_eq!(
+            model::quests(&panel, 0, false).rows[0].id,
+            model::RowId::Quest(73)
+        );
+    }
     Ok(())
 }

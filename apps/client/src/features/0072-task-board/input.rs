@@ -133,14 +133,33 @@ impl PlayLink {
 
 impl PlayLink {
     #[cfg(bevy_shell)]
-    pub(crate) fn task_board_action_bound(&self, expected: &oteryn_client_ui::task_board::TaskBoardPanel, intent: oteryn_client_ui::task_board::FullIntent) -> bool {
-        use oteryn_client_ui::task_board::{FullIntent,full_request};
+    pub(crate) fn task_board_action_bound(
+        &self,
+        expected: &oteryn_client_ui::task_board::TaskBoardPanel,
+        intent: oteryn_client_ui::task_board::FullIntent,
+    ) -> bool {
+        use oteryn_client_ui::task_board::{FullIntent, full_request};
         let mut m = lock(&self.mailbox);
-        if m.world_input_blocked() || !m.task_board.open || &m.task_board != expected
-            || !matches!(intent, FullIntent::Preferred(..) | FullIntent::Unwanted(..) | FullIntent::UnlockList | FullIntent::BuyShop(_)) { return false; }
-        let Some(command) = full_request(&mut m.task_board,intent) else { return false; };
+        if m.world_input_blocked()
+            || !m.task_board.open
+            || &m.task_board != expected
+            || !matches!(
+                intent,
+                FullIntent::Preferred(..)
+                    | FullIntent::Unwanted(..)
+                    | FullIntent::UnlockList
+                    | FullIntent::BuyShop(_)
+            )
+        {
+            return false;
+        }
+        let Some(command) = full_request(&mut m.task_board, intent) else {
+            return false;
+        };
         if self.commands.send(PlayCommand::Feature(command)).is_err() {
-            m.task_board.pending = false; m.task_board.feedback = Some("The session has ended"); return false;
+            m.task_board.pending = false;
+            m.task_board.feedback = Some("The session has ended");
+            return false;
         }
         true
     }
@@ -149,15 +168,27 @@ impl PlayLink {
 #[cfg(bevy_shell)]
 impl PlayLink {
     pub(crate) fn task_board_store(&self, expected: &oteryn_client_ui::task_board::TaskBoardPanel) {
-        let mut mailbox=lock(&self.mailbox);
-        if !expected.open || mailbox.task_board != *expected || mailbox.world_input_blocked() || mailbox.store.confirmed_purchase.is_some() {return;}
-        if let Some(command) = oteryn_client_ui::store::browse(&mut mailbox.store,"featured","Task",0,0) {
-            if self.commands.send(PlayCommand::ServerMechanic(command)).is_ok() {
-                mailbox.store.open=true;
-                mailbox.task_board.open=false;
+        let mut mailbox = lock(&self.mailbox);
+        if !expected.open
+            || mailbox.task_board != *expected
+            || mailbox.world_input_blocked()
+            || mailbox.store.confirmed_purchase.is_some()
+        {
+            return;
+        }
+        if let Some(command) =
+            oteryn_client_ui::store::browse(&mut mailbox.store, "featured", "Task", 0, 0)
+        {
+            if self
+                .commands
+                .send(PlayCommand::ServerMechanic(command))
+                .is_ok()
+            {
+                mailbox.store.open = true;
+                mailbox.task_board.open = false;
             } else {
-                mailbox.store.pending=false;
-                mailbox.task_board.feedback=Some("The session has ended");
+                mailbox.store.pending = false;
+                mailbox.task_board.feedback = Some("The session has ended");
             }
         }
     }

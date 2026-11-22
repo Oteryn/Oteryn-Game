@@ -138,7 +138,7 @@ fn intent(panel: &TaskBoardPanel, confirm: &mut bool, kind: &Kind) -> Option<Ful
 #[derive(Component)]
 struct Root;
 #[derive(Component)]
-struct SearchField;
+struct SearchField(Tab);
 #[derive(Component)]
 struct Action {
     generation: u64,
@@ -152,6 +152,8 @@ struct State {
     buy_talisman: bool,
     search: String,
     category: Option<u8>,
+    fight_cursor: u16,
+    restart_fights: bool,
     shop_selection: Option<u16>,
     extra: Option<extras::Action>,
     seen: Option<TaskBoardPanel>,
@@ -169,6 +171,7 @@ fn project(
     skins: Res<Skins>,
     mut state: ResMut<State>,
     roots: Query<Entity, With<Root>>,
+    edits: Query<(&SearchField, &bevy::text::EditableText)>,
 ) {
     let panel = owner
         .play
@@ -178,6 +181,11 @@ fn project(
     if state.seen == panel && state.generation == owner.generation() && !state.dirty {
         return;
     }
+    let draft = edits
+        .single()
+        .ok()
+        .filter(|(field, _)| field.0 == state.tab && owner.generation() == state.generation)
+        .map(|(_, edit)| edit.value().to_string());
     for root in &roots {
         commands.entity(root).despawn();
     }
@@ -197,6 +205,11 @@ fn project(
         .is_some_and(|panel| panel.selected && panel.weekly.is_some())
     {
         state.buy_talisman = false;
+    }
+    if state.tab == Tab::Soulseals
+        && let (Some(panel), Some(play)) = (&panel, &owner.play)
+    {
+        extras::next_matching_page(&play.link, panel, &mut state);
     }
     state.generation = owner.generation();
     state.revision = state.revision.wrapping_add(1);
@@ -293,35 +306,7 @@ fn project(
             Some(Kind::Cancel),
         );
     }
-    if let Some(offer) = state.shop_selection.and_then(|id| {
-        panel
-            .weekly
-            .as_ref()?
-            .shop
-            .iter()
-            .find(|offer| offer.index == id)
-    }) {
-        widget(
-            &mut commands,
-            &skins,
-            frame,
-            &state,
-            &format!(
-                "Confirm purchase of {} for {} points?",
-                model::shop_offer_text(offer, panel.weekly.as_ref().map_or(0, |r| r.points)),
-                offer.price
-            ),
-            Some(Kind::ConfirmShop(offer.index)),
-        );
-        widget(
-            &mut commands,
-            &skins,
-            frame,
-            &state,
-            "Cancel",
-            Some(Kind::Cancel),
-        );
-    }
+    extras::shop_confirmation(&mut commands, &skins, frame, &state, panel);
     if state.buy_talisman && state.tab == Tab::Talisman {
         widget(
             &mut commands,
@@ -356,7 +341,13 @@ fn project(
         "Task Store offers",
         Some(Kind::Store),
     );
-    extras::search_controls(&mut commands, &skins, frame, &state);
+    extras::search_controls(
+        &mut commands,
+        &skins,
+        frame,
+        &state,
+        draft.as_deref().unwrap_or(&state.search),
+    );
     let rows = if matches!(state.tab, Tab::Preferences | Tab::Soulseals) {
         extras::filtered(panel, state.tab, &state.search, state.category)
     } else {
@@ -476,15 +467,20 @@ fn activate(
         Kind::Search => {
             if let Ok(field) = fields.single() {
                 state.search = field.value().to_string();
+                extras::restart_filter(&play.link, &panel, &mut state);
                 state.dirty = true;
             }
         }
         Kind::Category => {
+            if let Ok(field) = fields.single() {
+                state.search = field.value().to_string();
+            }
             state.category = match state.category {
                 None => Some(0),
                 Some(n) if n < 5 => Some(n + 1),
                 _ => None,
             };
+            extras::restart_filter(&play.link, &panel, &mut state);
             state.dirty = true;
         }
         Kind::Buy(index) => {
@@ -521,6 +517,8 @@ fn activate(
             state.tab = tab;
             state.search.clear();
             state.category = None;
+            state.fight_cursor = 0;
+            state.restart_fights = false;
             state.confirm = false;
             state.buy_talisman = false;
             state.dirty = true;
@@ -530,11 +528,17 @@ fn activate(
             state.dirty = true;
         }
         Kind::ConfirmExtra(ref extra) if state.extra.as_ref() == Some(extra) => {
+            if let extras::Action::Page(after) = extra {
+                state.fight_cursor = *after;
+            }
             extras::send(&play.link, &panel, extra);
             state.extra = None;
             state.dirty = true;
         }
-        Kind::Refresh if state.tab == Tab::Soulseals => play.link.soulseal_catalogue_request(0),
+        Kind::Refresh if state.tab == Tab::Soulseals => {
+            state.fight_cursor = 0;
+            play.link.soulseal_catalogue_request(0);
+        }
         Kind::BuyTalisman if panel.selected && !panel.pending && panel.weekly.is_some() => {
             state.extra = None;
             state.buy_talisman = true;

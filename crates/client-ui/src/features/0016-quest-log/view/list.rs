@@ -64,7 +64,7 @@ pub fn quest_rows(panel: &QuestPanel) -> Vec<&QuestListEntry> {
         .state
         .list
         .iter()
-        .filter(|q| panel.show_hidden || !panel.hidden.contains(&q.quest_index))
+        .filter(|q| panel.show_hidden == panel.hidden.contains(&q.quest_index))
         .filter(|q| {
             format!(
                 "quest {} {}",
@@ -88,7 +88,16 @@ pub fn quest_rows(panel: &QuestPanel) -> Vec<&QuestListEntry> {
         QuestSort::ActiveFirst => rows.sort_by_key(|q| (q.completed, q.quest_index)),
         QuestSort::CompletedFirst => rows.sort_by_key(|q| (!q.completed, q.quest_index)),
     }
-    rows.sort_by_key(|q| !panel.pinned.contains(&q.quest_index));
+    if !panel.pinned.is_empty() {
+        let ranks: std::collections::BTreeMap<_, _> = panel
+            .pinned
+            .iter()
+            .copied()
+            .enumerate()
+            .map(|(rank, id)| (id, rank))
+            .collect();
+        rows.sort_by_key(|q| ranks.get(&q.quest_index).copied().unwrap_or(usize::MAX));
+    }
     rows
 }
 /// A click resolves through the last painted ids, then checks the latest server list.
