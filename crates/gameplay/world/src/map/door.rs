@@ -483,23 +483,42 @@ pub struct DoorTileItem<T> {
     pub corpse: bool,
 }
 
-/// Crystal/Canary closing_door.lua: relocate movable non-corpses before closing.
+/// Step-out closing plan for a vacant level or quest doorway.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DoorStepOut<T> {
     Nothing,
     Close {
         item_moves: Vec<(T, TilePos)>,
+        item_retirements: Vec<T>,
         closed_id: u16,
     },
 }
 
-/// Pure player step-out rule. `east_enterable` is the donor's east queryAdd result;
-/// otherwise it chooses south. No creature, including another player, may remain.
+/// Query the east tile first, then the south tile if east cannot be entered.
+pub fn door_step_out_destination(
+    position: TilePos,
+    mut enterable: impl FnMut(TilePos) -> bool,
+) -> Option<TilePos> {
+    position
+        .x
+        .checked_add(1)
+        .map(|x| TilePos { x, ..position })
+        .filter(|&tile| enterable(tile))
+        .or_else(|| {
+            position
+                .y
+                .checked_add(1)
+                .map(|y| TilePos { y, ..position })
+                .filter(|&tile| enterable(tile))
+        })
+}
+
+/// Clear movable non-corpses from a vacant doorway before closing it. A
+/// blocked relocation retires them through the Ground owner.
 pub fn door_step_out<T: Copy>(
     open_id: u16,
-    position: TilePos,
     creature_present: bool,
-    east_enterable: bool,
+    destination: Option<TilePos>,
     items: &[DoorTileItem<T>],
 ) -> DoorStepOut<T> {
     let Some(closed_id) =
@@ -515,20 +534,14 @@ pub fn door_step_out<T: Copy>(
     {
         return DoorStepOut::Nothing;
     }
-    let destination = if east_enterable {
-        position.x.checked_add(1).map(|x| TilePos { x, ..position })
-    } else {
-        position.y.checked_add(1).map(|y| TilePos { y, ..position })
+    let movable = items.iter().filter(|item| item.movable && !item.corpse);
+    let (item_moves, item_retirements) = match destination {
+        Some(to) => (movable.map(|item| (item.item, to)).collect(), Vec::new()),
+        None => (Vec::new(), movable.map(|item| item.item).collect()),
     };
-    let mut item_moves = Vec::new();
-    for item in items.iter().filter(|item| item.movable && !item.corpse) {
-        let Some(to) = destination else {
-            return DoorStepOut::Nothing;
-        };
-        item_moves.push((item.item, to));
-    }
     DoorStepOut::Close {
         item_moves,
+        item_retirements,
         closed_id,
     }
 }
@@ -551,9 +564,10 @@ mod step_out_tests {
             (39352, 39354),
         ] {
             assert_eq!(
-                door_step_out::<u8>(open, AT, false, true, &[]),
+                door_step_out::<u8>(open, false, None, &[]),
                 DoorStepOut::Close {
                     item_moves: vec![],
+                    item_retirements: vec![],
                     closed_id: closed
                 }
             );
@@ -571,9 +585,8 @@ mod step_out_tests {
         assert_eq!(
             door_step_out(
                 5114,
-                AT,
                 true,
-                true,
+                Some(TilePos { x: 7, ..AT }),
                 &[DoorTileItem {
                     item: 1,
                     movable: true,
@@ -588,9 +601,10 @@ mod step_out_tests {
     fn empty_quest_and_level_doors_close() {
         for open in [5114, 5112] {
             assert_eq!(
-                door_step_out::<u8>(open, AT, false, true, &[]),
+                door_step_out::<u8>(open, false, None, &[]),
                 DoorStepOut::Close {
                     item_moves: vec![],
+                    item_retirements: vec![],
                     closed_id: open - 1
                 }
             );
@@ -615,10 +629,12 @@ mod step_out_tests {
             (true, TilePos { x: 7, ..AT }),
             (false, TilePos { y: 8, ..AT }),
         ] {
+            let destination_choice = door_step_out_destination(AT, |tile| east || tile.x == AT.x);
             assert_eq!(
-                door_step_out(5114, AT, false, east, &items),
+                door_step_out(5114, false, destination_choice, &items),
                 DoorStepOut::Close {
                     item_moves: vec![(1, destination), (2, destination)],
+                    item_retirements: vec![],
                     closed_id: 5113
                 }
             );
@@ -630,9 +646,8 @@ mod step_out_tests {
         assert_eq!(
             door_step_out(
                 5114,
-                AT,
                 false,
-                true,
+                None,
                 &[
                     DoorTileItem {
                         item: 1,
@@ -648,6 +663,7 @@ mod step_out_tests {
             ),
             DoorStepOut::Close {
                 item_moves: vec![],
+                item_retirements: vec![],
                 closed_id: 5113
             }
         );
@@ -656,27 +672,16 @@ mod step_out_tests {
     #[test]
     fn ordinary_door_does_not_self_close() {
         assert_eq!(
-            door_step_out::<u8>(1630, AT, false, true, &[]),
+            door_step_out::<u8>(1630, false, None, &[]),
             DoorStepOut::Nothing
         );
     }
 
     #[test]
     fn destination_overflow_never_wraps() {
-        assert_eq!(
-            door_step_out(
-                5114,
-                TilePos { x: u16::MAX, ..AT },
-                false,
-                true,
-                &[DoorTileItem {
-                    item: 1,
-                    movable: true,
-                    corpse: false
-                }]
-            ),
-            DoorStepOut::Nothing
-        );
+        let position = TilePos { x: u16::MAX, ..AT };
+        let destination = door_step_out_destination(position, |tile| tile.y == position.y);
+        assert_eq!(destination, None);
     }
 }
 

@@ -73,13 +73,14 @@ fn i05_crystal_charged_amulet_matches() {
 /// `items.xml:7458-7489`, decayTo 0) are admitted with their active-time budgets and no decay
 /// item. The power, sword, axe and club rings 3050/3091/3092/3093 -> 3087/3094/3095/3096
 /// (1,800 s, Crystal `items.xml:6927-6936`, `:7339-7350`, `:7392-7457`) are admitted too.
-/// Stealth, life and healing rings are pinned below until their invisibility and
-/// regeneration effects are production-ready.
+/// Stealth ring 3049 -> 3086 (600 s, Crystal items.xml:6917-6926,7326-7337) is
+/// admitted. The life and healing rings still require their regeneration budgets.
 #[test]
 fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
     let controller = native();
     let native = native_state(&controller);
     for (base, active, seconds) in [
+        (3049, 3086, 600),
         (3053, 3090, 600),
         (3097, 3099, 3_600),
         (3050, 3087, 1_800),
@@ -105,14 +106,14 @@ fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
         assert!(target.is_none(), "{base}");
     }
 
-    // I05 (2026-10-31): the skill rings left this pin when they were admitted above. These three
-    // active forms stay out: stealth 3049 -> 3086 needs invisibility, life 3052 -> 3089
-    // and healing 3098 -> 3100 need regeneration; neither effect is production-ready.
-    for base in [3049, 3052, 3098] {
+    assert_stealth_ring_invisibility(native);
+
+    // Life 3052 -> 3089 and healing 3098 -> 3100 require item regeneration.
+    for base in [3052, 3098] {
         let definition = typed_of(native, base);
-        // W15b admits the base stealth/life rings as chest rewards and E12 (915cc3787) admits
+        // W15b admits the base life ring as a chest reward and E12 (915cc3787) admits
         // the base healing ring as Trader stock. E12 also closes their equipment path until
-        // invisibility/regeneration are hosted (`unhosted_equipment_effect`, pinned by
+        // regeneration is hosted (`unhosted_equipment_effect`, pinned by
         // `i05_trader_custody_keeps_unhosted_ring_equipment_closed`), so no worn form exists.
         let equipped = definition
             .as_ref()
@@ -126,7 +127,7 @@ fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
             "{base}"
         );
     }
-    for active in [3086, 3089, 3100] {
+    for active in [3089, 3100] {
         assert!(
             native.item_policy(&key(active), "definition-r1").is_none(),
             "{active}"
@@ -143,7 +144,7 @@ fn i05_trader_custody_keeps_unhosted_ring_equipment_closed() {
     let controller = native();
     let native = native_state(&controller);
     let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native);
-    for base in [3049, 3052, 3098] {
+    for base in [3052, 3098] {
         let definition = typed_of(native, base).expect("source Trader identity");
         let physical = crate::gameplay_transport::item_ref_admission::generation_item_facts(
             native,
@@ -169,7 +170,7 @@ fn i05_trader_custody_keeps_unhosted_ring_equipment_closed() {
         );
         assert!(weights.full_timed_values(&definition).is_none(), "{base}");
     }
-    for admitted in [3053, 3097] {
+    for admitted in [3049, 3053, 3097] {
         let definition = typed_of(native, admitted).expect("existing hosted ring");
         assert!(
             weights
@@ -179,4 +180,33 @@ fn i05_trader_custody_keeps_unhosted_ring_equipment_closed() {
         assert!(!weights.is_timed_item(&definition.production_key, &definition.revision_ref));
         assert!(weights.full_timed_values(&definition).is_some());
     }
+}
+
+fn assert_stealth_ring_invisibility(native: &NativeGameplayState) {
+    use crate::durability::character_equipment::{EquipmentSnapshot, EquippedItem};
+    use crate::gameplay_transport::equipment_move::equipment_effects_owner::equipped_invisibility;
+
+    let definition = typed_of(native, 3049).expect("stealth ring");
+    let mut equipment = EquipmentSnapshot {
+        character: [0; 16],
+        character_revision: 1,
+        content_digest: native.source_digest(),
+        revision: 1,
+        combat_mode: None,
+        items: vec![EquippedItem {
+            item_instance_id: [0; 16],
+            slot: 8,
+            definition,
+            quantity: 1,
+            state_revision: 1,
+            tier: 0,
+        }],
+    };
+    // Crystal 201189f8 items.xml:6917-6926,7326-7337 gives invisibility to
+    // the active ring form and decayTo=0 removes it on expiry.
+    assert_eq!(equipped_invisibility(&equipment, native), Some(true));
+    equipment.items[0].slot = 10;
+    assert_eq!(equipped_invisibility(&equipment, native), Some(false));
+    equipment.items.clear();
+    assert_eq!(equipped_invisibility(&equipment, native), Some(false));
 }

@@ -12,6 +12,8 @@ use crate::gameplay_transport::guild_intent::GuildReply;
 use oteryn_protocol_oteryn::CommandStatus;
 #[path = "cyclopedia/atlas.rs"]
 mod atlas;
+#[path = "cyclopedia/poi_floors.rs"]
+mod poi_floors;
 #[path = "cyclopedia/speed.rs"]
 mod speed;
 

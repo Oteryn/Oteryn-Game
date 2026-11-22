@@ -722,7 +722,7 @@ impl ChannelSpellStates {
 
 impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
     /// M06-CLOSE: run while the successful step still owns the Channel lane. The runtime
-    /// census is taken after leaving; durable item moves finish before the door transition.
+    /// census is taken after leaving; durable item cleanup finishes before the door transition.
     pub(super) async fn close_departed_door(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
@@ -731,8 +731,11 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         origin: MovementLocalPosition,
         movement_revision: u64,
     ) {
+        use crate::durability::item_decay_retire::{DoorGroundItem, DoorGroundRetirement};
         use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey, loop_move};
-        use crate::map::door::{DoorStepOut, DoorTileItem, door_step_out};
+        use crate::map::door::{
+            DoorStepOut, DoorTileItem, door_step_out, door_step_out_destination,
+        };
         use crate::map::overlay::AddedItem;
         let (Some(map), Some(position)) = (self.bundle_map(), tile_position(origin)) else {
             return;
@@ -746,7 +749,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             .filter(|(key, facts)| {
                 map.facts.doors().contains(*key)
                     && matches!(
-                        door_step_out::<ItemKey>(facts.appearance_id, position, false, true, &[]),
+                        door_step_out::<ItemKey>(facts.appearance_id, false, None, &[]),
                         DoorStepOut::Close { .. }
                     )
             })
@@ -755,7 +758,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         if doors.is_empty() {
             return;
         }
-        let (index, east_enterable) = {
+        let (index, destination) = {
             let runtime = self.runtime.lock().await;
             if !runtime
                 .player_control_facts(actor, session)
@@ -773,31 +776,36 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             {
                 return;
             }
-            let east = position.x.checked_add(1).map(|x| TilePos { x, ..position });
-            let east_enterable = east.is_some_and(|east| {
+            let destination = door_step_out_destination(position, |tile| {
+                // Crystal probes with the departing creature, including when it
+                // has just arrived on this candidate tile.
+                let cell = MovementLocalPosition {
+                    x: i32::from(tile.x),
+                    y: i32::from(tile.y),
+                    floor: -i16::from(tile.floor),
+                };
                 self.movement_cells()
                     .index()
                     .lookup(
                         self.movement_cells().scope(),
                         crate::content::LogicalCell {
-                            x: i32::from(east.x),
-                            y: i32::from(east.y),
-                            z: -i32::from(east.floor),
+                            x: cell.x,
+                            y: cell.y,
+                            z: i32::from(cell.floor),
                         },
                     )
                     .ok()
                     == Some(crate::content::CollisionClass::Walkable)
-                    && !map.facts.doors().blocks(east)
-                    && !crate::gameplay_transport::map_door::doorway_occupied(
-                        &runtime, actor, at, east,
-                    )
+                    && !map.facts.doors().blocks(tile)
+                    && runtime.position_occupied_by_other(actor, cell) == Ok(false)
+                    && runtime.reserved_into_by_own_pending(actor, cell) == Ok(false)
             });
             (
                 crate::gameplay_transport::item_ref_admission::pinned_index(
                     &runtime,
                     self.active_generation,
                 ),
-                east_enterable,
+                destination,
             )
         };
         let Some(index) = index else {
@@ -832,6 +840,10 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             if map.facts.doors().contains(*key) || !movable(facts) {
                 continue;
             }
+            // The retirement path must preserve authored objects bound to this placement.
+            if destination.is_none() && facts.bound {
+                continue;
+            }
             let Some((_, ordinal)) = crate::map::view::placement_of(*key) else {
                 return;
             };
@@ -864,7 +876,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 };
                 items.push(DoorTileItem {
                     item: ItemKey::Instance(item.item_instance_id),
-                    movable: facts.pickupable && movable(&facts),
+                    movable: movable(&facts) && (destination.is_none() || facts.pickupable),
                     corpse: false,
                 });
             }
@@ -873,19 +885,63 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             let revision = map.facts.doors().revision(key);
             let DoorStepOut::Close {
                 item_moves,
+                item_retirements,
                 closed_id: _,
-            } = door_step_out(facts.appearance_id, position, false, east_enterable, &items)
+            } = door_step_out(facts.appearance_id, false, destination, &items)
             else {
                 continue;
             };
-            let fence = if item_moves.is_empty() {
+            let fence = if item_moves.is_empty() && item_retirements.is_empty() {
                 None
             } else {
-                let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+                match self.current_quest_fence(session).await {
+                    Ok(Some(fence)) => Some(fence.item_fence()),
+                    _ if item_moves.is_empty() => None,
+                    _ => return,
+                }
+            };
+            if let Some(fence) = fence
+                && !item_retirements.is_empty()
+            {
+                let retirements = item_retirements
+                    .into_iter()
+                    .map(|item| match item {
+                        ItemKey::Instance(id) => Some(DoorGroundItem::Instance(id)),
+                        ItemKey::MapBase { placement_key, .. } => {
+                            Some(DoorGroundItem::Authored(placement_key))
+                        }
+                        _ => None,
+                    })
+                    .collect::<Option<Vec<_>>>();
+                let Some(retirements) = retirements else {
                     return;
                 };
-                Some(fence.item_fence())
-            };
+                let request = DoorGroundRetirement {
+                    door_key: key,
+                    bundle_digest: map.overlay.base().digest(),
+                    content_digest: native.source_digest(),
+                    reset_epoch: self.reset_epoch,
+                    items: retirements,
+                };
+                let result = self
+                    .root
+                    .retire_door_ground(permit, self.character, self.holder, fence, request.clone())
+                    .await;
+                if matches!(
+                    result,
+                    Err(crate::durability::DurabilityError::CommitOutcomeUnknown
+                        | crate::durability::DurabilityError::RootUnavailable)
+                ) {
+                    // The same receipt or tombstone resolves a lost commit reply.
+                    let _ = self
+                        .root
+                        .retire_door_ground(permit, self.character, self.holder, fence, request)
+                        .await;
+                }
+                // A storage refusal retains existing custody. Still seal the
+                // protected doorway, subject to the normal live census below.
+                self.states.loop_ground.invalidate();
+            }
             for (item, to) in item_moves {
                 let mut hasher = Sha256::new()
                     .chain_update(b"oteryn:door-step-out:v1")

@@ -4,7 +4,7 @@
 //! `201189f871d23597b82caf88fd611454a2ddefb8` (Canary
 //! `47dfd51f45280a59a1d3e50ba7edd573d7234446` holds the same script) registers StepIn and
 //! StepOut on twelve ground ids. StepIn adds a drown condition unless the head slot holds a
-//! diving helmet; StepOut removes drown. The damage and the interval follow Global, not
+//! diving helmet; StepOut removes drown and haste. The damage and the interval follow Global, not
 //! Crystal: TibiaWiki `Helmet_of_the_Deep` revision 1148766 states "5 times 20 Drowning
 //! damage kicking in after four seconds", and `Drowning` revision 854368 states 20 damage
 //! every 4 seconds. The helmet protection is the equipment `SUPPRESS_DROWN` suppression,
@@ -14,7 +14,9 @@ use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::map::boot::BundleMap;
 use crate::map::overlay::TilePos;
 use crate::map::view::MapFacts;
-use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey, DotElement};
+use oteryn_gameplay_domain::domain::condition::{
+    ConditionType, ConditionValues, ConflictKey, DotElement,
+};
 use oteryn_gameplay_foundation::foundation::condition::{
     ApplicationFacts, ConditionDefinition, ConditionProvenance, ConditionSourceKind,
 };
@@ -86,9 +88,9 @@ pub(in crate::gameplay_transport) fn underwater(
 }
 
 impl ChannelSpellStates {
-    /// One committed step: leaving underwater ground removes drown (Crystal StepOut), entering
-    /// it applies a fresh environment drown (Crystal StepIn). A suppressed (protected) or dead
-    /// character keeps its state. Returns whether the Player state changed.
+    /// One committed step: leaving underwater ground removes drown and positive haste (Crystal
+    /// StepOut), entering it applies a fresh environment drown (Crystal StepIn). Drown suppression
+    /// blocks the application on entry. Returns whether the Player state changed.
     pub(in crate::gameplay_transport) fn stage_underwater_step(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -115,6 +117,17 @@ impl ChannelSpellStates {
         if left {
             next.conditions
                 .dispel_key(ConflictKey::Element(DotElement::Drown));
+            // Haste and paralysis share the speed slot.
+            if next
+                .conditions
+                .get(ConflictKey::Speed)
+                .is_some_and(|speed| {
+                    speed.definition().condition_type() == ConditionType::Haste
+                        && speed.speed_delta() > 0
+                })
+            {
+                next.conditions.dispel_key(ConflictKey::Speed);
+            }
         }
         if entered {
             let root = GameplayDecisionRoot::from_bytes(content);

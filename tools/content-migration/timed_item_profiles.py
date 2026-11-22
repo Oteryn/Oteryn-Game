@@ -17,11 +17,23 @@ from native_profile_composition import encode_native_profile
 # (:7392-7457); each active form lasts 1800 s with stopduration on the base.
 SKILL_RINGS = {3050: 3087, 3091: 3094, 3092: 3095, 3093: 3096}
 
-IDS = {3051, 3053, 3081, 3088, 3090, 3097, 3099, 3549, 6529, 6530} | set(SKILL_RINGS) | set(SKILL_RINGS.values())
+STEALTH_BASE = 'oteryn:item.tibia.i3049'
+STEALTH_ACTIVE = 'oteryn:item.tibia.i3086'
+
+IDS = ({3049, 3051, 3053, 3081, 3086, 3088, 3090, 3097, 3099, 3549, 6529, 6530}
+       | set(SKILL_RINGS) | set(SKILL_RINGS.values()))
 SKILL_RING_KEYS = {f'oteryn:item.tibia.i{i}' for i in set(SKILL_RINGS) | set(SKILL_RINGS.values())}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
+    from hireling_item_profiles import PATH as HIRELING_PROFILES
+
+    # Crystal 201189f8 items.xml:6917-6926 documents the unrestricted ring
+    # slot. Reuse that capture's known level and vocations and keep its
+    # physical, presentation and custody facts when qualifying the base.
+    capture = json.loads((root / HIRELING_PROFILES).read_bytes())
+    stealth = next(row for row in capture['records']
+                   if row['production_definition']['production_key'] == STEALTH_BASE)
     document = json.loads(generated[profile_path])
     bindings = json.loads((root / 'imports/crystalserver/bindings/items.json').read_bytes())['bindings']
     definitions = {}
@@ -39,6 +51,13 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if binding['disposition'] != 'EXACT':
             raise ValueError('TIMED_PROFILE_BINDING')
         semantics = copy.deepcopy(source['semantics'])
+        if key == STEALTH_BASE:
+            if stealth['production_binding'] != binding:
+                raise ValueError('TIMED_STEALTH_PROFILE_BINDING')
+            for group in ('use_transform', 'trade_restrictions'):
+                stealth['semantics'][group] = semantics[group]
+            document['records'].append(stealth)
+            continue
         # TIMEDITEMS2-1: the inactive time ring has no speed ability. The active
         # form carries the admitted +30 modifier and inherits the base wearability.
         # Canary items.xml: 3053 -> 3090, speed=30, duration=600, deequip=3053.
@@ -61,6 +80,21 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                 base = definitions[f'oteryn:item.tibia.i{base_id}']['semantics']
                 for group in ('equipment', 'stack', 'physical'):
                     semantics[group] = copy.deepcopy(base[group])
+        # Crystal 201189f8 items.xml:6917-6926,7326-7337: unrestricted ring
+        # slot, stopduration on the base, invisible=1 on the worn form. The
+        # canonical pair already carries duration, transform and decay facts.
+        if key == STEALTH_ACTIVE:
+            base = definitions[STEALTH_BASE]['semantics']
+            semantics['equipment'] = copy.deepcopy(stealth['semantics']['equipment'])
+            semantics['physical'] = copy.deepcopy(base['physical'])
+            semantics['skill_modifiers'] = {'state': 'KNOWN', 'value': {
+                'modifiers': {'state': 'KNOWN', 'value': [{
+                    'kind': 'INVISIBILITY',
+                    'parameter': {'state': 'KNOWN', 'value': {'kind': 'BOOLEAN', 'value': True}},
+                    'evaluation_phase': {'state': 'UNKNOWN'},
+                    'priority': {'state': 'UNKNOWN'},
+                    'target_domain': {'state': 'UNKNOWN'},
+                }]}}}
         if key == 'oteryn:item.tibia.i3099':
             base = definitions['oteryn:item.tibia.i3097']['semantics']
             for group in ('equipment', 'stack', 'physical'):
@@ -87,7 +121,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         semantics['container'] = {'state': 'NOT_APPLICABLE'}
         semantics['stack'] = {'state': 'KNOWN', 'value': {
             'stackable': {'state': 'KNOWN', 'value': False}, 'stack_max': {'state': 'NOT_APPLICABLE'}}}
-        if key != 'oteryn:item.tibia.i6530':
+        if key not in ('oteryn:item.tibia.i6530', STEALTH_ACTIVE):
             for pattern in semantics['equipment']['value']['patterns']['value']:
                 if key not in ('oteryn:item.tibia.i3051', 'oteryn:item.tibia.i3088'):
                     pattern['vocations'] = {'state': 'KNOWN', 'value': []}
@@ -98,8 +132,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         document['records'].append({
             'authoring': {'item': source['identity']}, 'semantics': semantics,
             'attributes': {'speed_bonus': 30 if key == 'oteryn:item.tibia.i3090' else 0},
-            'admission': {'materializable': True, 'stack_class': 'NonStackable',
-                          'legal_destinations': ['CharacterInventory', 'Ground']},
+            'admission': {'materializable': key != STEALTH_ACTIVE, 'stack_class': 'NonStackable',
+                          'legal_destinations': (['Ground'] if key == STEALTH_ACTIVE
+                                                 else ['CharacterInventory', 'Ground'])},
             'production_definition': {'family': 'Item', 'production_key': key,
                                       'revision_ref': source['identity']['revision']},
             'production_binding': binding, 'production_binding_qualification': None,

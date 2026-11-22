@@ -321,11 +321,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(decided) = self.read_tutorial_admission_position(position_fence).await else {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
-        // P20: Crystal's login check (`login.lua:8-15`) runs before the owner places the actor.
+        // P20: check Crystal's hometown and special-tile rules before the owner places the actor.
         let account = super::super::store::uuid_bytes(&request.binding().account_id);
         phase.set("premium_temple");
+        let on_premium_tile = self.saved_premium_tile(&decided).await;
         let temple = match account {
-            Some(account) => self.premium_ended_temple(account, game_session_id).await,
+            Some(account) => {
+                self.premium_ended_entry_temple(account, game_session_id, on_premium_tile)
+                    .await
+            }
             None => None,
         };
         let relocated = temple.map(|temple| decided.relocated(temple, self.world_id));
@@ -529,7 +533,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         phase.set("premium_relocation");
         if let Some(placed) = relocation
             && !self
-                .commit_premium_ended_relocation(game_session_id, actor, &decided, placed)
+                .commit_premium_ended_relocation(
+                    game_session_id,
+                    actor,
+                    &decided,
+                    placed,
+                    on_premium_tile,
+                )
                 .await
         {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
