@@ -115,7 +115,11 @@ impl Journal {
         Ok(true)
     }
 
-    pub(super) async fn replay(&self, client: &NativeLoginClient) -> Result<(), NativeLoginError> {
+    pub(super) async fn replay(
+        &self,
+        client: &NativeLoginClient,
+        deferred: &[DeviceCredential],
+    ) -> Result<(), NativeLoginError> {
         let pending = self
             .process
             .lock()
@@ -146,6 +150,14 @@ impl Journal {
             let Some(reference) = name.to_str().and_then(|name| name.strip_prefix(PREFIX)) else {
                 continue;
             };
+            // The live attempt retries these under its recovery deadline. After a
+            // restart the in-memory queue is empty and every marker is replayed.
+            if deferred
+                .iter()
+                .any(|credential| credential_reference(credential.expose()) == reference)
+            {
+                continue;
+            }
             let marker = entry.path();
             self.revoke_reference(client, &marker, reference).await?;
         }
@@ -182,13 +194,25 @@ impl Journal {
         client
             .revoke_device(&credential, CancellationToken::new())
             .await?;
-        let _publication = crate::atomic_file::lock(&marker.with_file_name("revocations"))
-            .map_err(|_| storage_error())?;
-        std::fs::remove_file(marker).map_err(|_| storage_error())?;
-        if let Some(folder) = &self.folder {
+        self.discard(&credential)
+    }
+
+    pub(super) fn discard(&self, credential: &DeviceCredential) -> Result<(), NativeLoginError> {
+        let Some(folder) = &self.folder else {
+            return Ok(());
+        };
+        let reference = credential_reference(credential.expose());
+        let marker = folder.join(format!("{PREFIX}{reference}"));
+        let _publication =
+            crate::atomic_file::lock(&folder.join("revocations")).map_err(|_| storage_error())?;
+        if marker.try_exists().map_err(|_| storage_error())? {
+            std::fs::remove_file(marker).map_err(|_| storage_error())?;
             sync_directory(folder)?;
+            (self.resolve)(&reference)
+                .clear()
+                .map_err(|_| storage_error())?;
         }
-        vault.clear().map_err(|_| storage_error())
+        Ok(())
     }
 
     pub(super) fn has_folder(&self) -> bool {

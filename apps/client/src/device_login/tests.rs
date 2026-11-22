@@ -536,3 +536,54 @@ fn device_ticket_falls_back(case: TicketFailure) -> TestResult {
     })
 }
 mod expiry;
+
+#[test]
+fn cancel_during_rotation_replays_family_after_exit() -> TestResult {
+    on_large_stack(|| tokio::runtime::Runtime::new()?.block_on(cancel_blocked_rotation()))
+}
+
+async fn cancel_blocked_rotation() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let vault = Arc::new(MemoryVault::default());
+    let bytes = enrollment_response()?;
+    let family = DeviceSession::from_vault(&bytes, now()?)?.device_credential;
+    vault::Vault::write(vault.as_ref(), &bytes).map_err(std::io::Error::other)?;
+    let login = || manager(vault.clone(), folder.path().to_owned());
+    let (_release, blocked) = tokio::sync::oneshot::channel();
+    let server =
+        Server::start_with_blocked_ack(changed_response(&credential('A'), false)?, blocked).await?;
+    {
+        let first = login();
+        let mut attempt = first
+            .begin(&server.client, options(), CancellationToken::new())
+            .await?
+            .ok_or("attempt")?;
+        let rotation = attempt.characters(&server.client, CancellationToken::new());
+        tokio::pin!(rotation);
+        tokio::select! {
+            _ = &mut rotation => return Err("rotation finished before acknowledgement".into()),
+            result = tokio::time::timeout(Duration::from_secs(2), async {
+                while server.requests.lock().map_err(|_| "requests")?.is_empty() {
+                    tokio::task::yield_now().await;
+                }
+                Ok::<_, &str>(())
+            }) => result??,
+        }
+        first.block_remembered()?;
+    }
+    let restored = Server::start(vec![(200, fixture("revoke-response.json")?)]).await?;
+    let restarted = login();
+    let attempt = restarted
+        .begin(&restored.client, options(), CancellationToken::new())
+        .await?;
+    assert!(!attempt.is_some_and(|attempt| attempt.has_session()));
+    assert!(
+        restored
+            .requests
+            .lock()
+            .map_err(|_| "requests")?
+            .iter()
+            .any(|request| request.contains(family.expose()))
+    );
+    restored.finish().await
+}

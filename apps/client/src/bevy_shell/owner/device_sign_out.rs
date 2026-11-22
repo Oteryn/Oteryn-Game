@@ -90,6 +90,7 @@ impl HostOwner {
                 }
             }) {
             Ok(worker) => {
+                self.selection.pause_responses(true);
                 self.forget_intent = Some(PendingIntent {
                     worker,
                     action,
@@ -122,6 +123,7 @@ impl HostOwner {
                 .worker
                 .join()
                 .unwrap_or_else(|_| Err("Device writer stopped".into()));
+            self.selection.pause_responses(false);
             if let Err(error) = result.and_then(|()| self.settings.disable_remember_device()) {
                 self.forget_failed(intent.action, error);
             } else {
@@ -396,5 +398,60 @@ fn picker_and_shutdown_finish_with_session_lock_held() -> Result<(), Box<dyn std
         assert!(Instant::now() < deadline, "opt-out retry did not persist");
         std::thread::yield_now();
     }
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn cancel_reserves_picker_request_until_worker_finishes() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::character_selection::{CharacterRow, SelectionAction};
+    use oteryn_platform_client::native_login::{CharacterAvailability, OwnerCharacter};
+    let folder = tempfile::tempdir()?;
+    let mut owner = HostOwner::new(None)?;
+    let config = Reentry::device_test_config(folder.path().into(), "https://localhost:1")?;
+    assert!(owner.entry.as_mut().ok_or("entry")?.configure(config));
+    let callback = owner.selector.clone();
+    let selector = std::thread::spawn(move || {
+        let row = CharacterRow {
+            character: OwnerCharacter {
+                character_id: "character".into(),
+                world_id: "world".into(),
+                name: "Knight".into(),
+                availability: CharacterAvailability::Available,
+            },
+            world_name: "World".into(),
+            available: true,
+            channels: vec![],
+        };
+        callback(
+            &[row],
+            "character",
+            oteryn_foundation::CancellationToken::new(),
+        )
+    });
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    while !owner.selection.poll() {
+        assert!(std::time::Instant::now() < deadline);
+        std::thread::yield_now();
+    }
+    let id = owner.selection.pending().ok_or("request")?.id;
+    owner.cancel_picker(id);
+    for action in [
+        SelectionAction::Play {
+            character_id: "character".into(),
+            channel_id: None,
+        },
+        SelectionAction::Create,
+        SelectionAction::AccountServices,
+    ] {
+        assert!(!owner.selection.respond(id, action));
+    }
+    owner.finish_forget_intent();
+    assert_eq!(
+        selector.join().map_err(|_| "selector")?,
+        SelectionAction::Cancel
+    );
+    assert!(owner.play.is_none());
     Ok(())
 }
