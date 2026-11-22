@@ -43,11 +43,11 @@ class QuestRewards(unittest.TestCase):
         outfits={r['key']:r for r in doc['outfits']}
         mappings={r['grant_key']:r for r in doc['grant_mappings']}
         nx5=json.loads((q.ROOT/'tools/content-schema/cosmetics-authoring/nx5-authoring.json').read_bytes())['document']
-        self.assertEqual(len(outfits),131+len(nx5['outfits']))
+        self.assertEqual(len(outfits),137+len(nx5['outfits']))
         for row in nx5['outfits']:
             self.assertEqual(outfits[row['key']],row)
         packet=json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
-        self.assertEqual(len(packet['grants']),202)
+        self.assertEqual(len(packet['grants']),209)
         for grant in packet['grants']:
             mapping=mappings[grant['key']]
             self.assertEqual(mapping['compatible_provenance'],[packet['provenance']])
@@ -66,8 +66,9 @@ class QuestRewards(unittest.TestCase):
         capture=(q.ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes()
         self.assertEqual(admission['source_packet_sha256'],q.sha(capture))
         original=json.loads(capture)
-        self.assertEqual([r['item_id'] for r in packet['rules'] if r['item_id']!=21897], [r['item_id'] for r in original['rules']])
-        self.assertEqual(sum(r['item_id']==21897 for r in packet['rules']),1)
+        additions = [21897, 40578, 44753, 44754, 48514, 48515]
+        self.assertEqual([r['item_id'] for r in packet['rules']],
+                         sorted([r['item_id'] for r in original['rules']] + additions))
         old=next(r for r in original['rules'] if r['mode']=='random_outfit')
         native=next(r for r in packet['rules'] if r['mode']=='random_outfit')
         self.assertEqual(len(native['choices']),len(old['choices']))

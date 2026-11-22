@@ -42,6 +42,8 @@ mod cosmetic_cases;
 mod currency_case;
 #[path = "task_board/depot_case.rs"]
 mod depot_case;
+#[path = "task_board/outfit_catalogues.rs"]
+mod outfit_catalogues;
 #[path = "task_board/progression_case.rs"]
 mod progression_case;
 #[path = "task_board/rollback_cases.rs"]
@@ -211,13 +213,23 @@ fn task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust() -> TestRes
 }
 
 fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) -> TestResult {
-    scenario_with_bootstrap(fault, elite_case_enabled, false)
+    scenario_with_bootstrap(fault, elite_case_enabled, false, false)
 }
 
 #[test]
 fn task_board_control_epoch_initializer_allows_live_query_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-control-epoch", || {
-        scenario_with_bootstrap(None, false, true)
+        scenario_with_bootstrap(None, false, true, false)
+    })
+}
+
+#[test]
+fn coutfit_task_board_production_cosmetics_purchase_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-production-cosmetics", || {
+        scenario_with_bootstrap(None, false, false, true)
     })
 }
 
@@ -226,6 +238,7 @@ fn scenario_with_bootstrap(
     fault: Option<RollbackFault>,
     elite_case_enabled: bool,
     control_epoch_case: bool,
+    production_cosmetics: bool,
 ) -> TestResult {
     run(async move |admin| {
         let tag = fault.map_or("task_board_e2e", RollbackFault::tag);
@@ -240,14 +253,18 @@ fn scenario_with_bootstrap(
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let cosmetics = cosmetic_cases::cosmetics_packet()?;
+        let cosmetics = if production_cosmetics {
+            None
+        } else {
+            Some(cosmetic_cases::cosmetics_packet()?)
+        };
         let (controller, pin) =
             crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(
                 world,
                 Some(include_bytes!(
                     "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
                 )),
-                Some(&cosmetics),
+                cosmetics.as_deref(),
             );
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
@@ -561,6 +578,15 @@ fn scenario_with_bootstrap(
             ],
         )
         .ok_or("selection")?;
+
+        if production_cosmetics {
+            let result = cosmetic_cases::production_case(&owner, &harness, &mut admitted).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return result;
+        }
 
         let legacy = board(&owner, &mut admitted, 0, 0).await?;
         assert!(!legacy.refused);
