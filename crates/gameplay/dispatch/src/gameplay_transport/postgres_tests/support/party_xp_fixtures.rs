@@ -1112,7 +1112,10 @@ async fn scenario(
             let killed = runtime
                 .companion_snapshot_including_dead(creature.actor)
                 .is_ok_and(|snapshot| snapshot.health == 0);
-            assert!(!killed, "a real lethal swing on a corpse-free creature must queue settlement");
+            assert!(
+                !killed,
+                "a real lethal swing on a corpse-free creature must queue settlement"
+            );
         }
         assert!(pass + 1 < REAL_SWING_PASSES, "real swings killed the rat");
         owner.clock_origin = owner
@@ -1263,13 +1266,6 @@ async fn scenario(
         assert_eq!(heads, 0);
         tx.rollback().await?;
         h.root.maintain_ready_once().await?;
-    }
-    if matches!(task_board_case, Case::CorpseFree) {
-        let attack = owner.states.attack.lock().await;
-        let now_ms = crate::gameplay_transport::npc_trade_command::unix_ms_now();
-        let batch = attack.kills().statistics().batch(now_ms, true).ok_or("kill statistics batch")?;
-        assert_eq!(batch.events.len(), 1, "one physical kill without a corpse");
-        assert_eq!(serde_json::to_value(&batch.events[0])?["creature_key"], "oteryn:creature.rat");
     }
     let task_board_entry = if matches!(
         task_board_case,
@@ -1461,12 +1457,24 @@ async fn scenario(
         .fetch_one(&h.pool)
         .await?;
         assert_eq!((base, shared), (5, true));
+        h.root.maintain_ready_once().await?;
+        assert!(owner.flush_daily_kill_statistics().await);
+        let physical: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_statistics_creature_deaths d JOIN game_party_kill_xp_receipts x USING (death_key) WHERE d.creature_key='oteryn:creature.rat'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(physical, 1, "physical statistics use the same death key");
         let (bestiary, mints): (i64, i64) = sqlx::query_as(
             "SELECT (SELECT count(*) FROM game_character_bestiary_kill_receipts WHERE race_key='oteryn:creature.rat'), (SELECT count(*) FROM game_item_mint_receipts)",
         )
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!((bestiary, mints), (1, 0), "Bestiary credit with zero corpse or loot MINTs");
+        assert_eq!(
+            (bestiary, mints),
+            (1, 0),
+            "Bestiary credit with zero corpse or loot MINTs"
+        );
     }
     if matches!(task_board_case, Case::TaskBoardUnbound) {
         let counts: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_character_xp_receipts),(SELECT count(*) FROM game_character_bestiary_kill_receipts)")
