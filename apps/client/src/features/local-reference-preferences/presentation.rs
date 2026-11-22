@@ -5,6 +5,17 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct ConsolePreferences {
+    pub public_rooms: [bool; 8],
+    pub conversations: Vec<String>,
+    pub local_channels: [bool; 3],
+    pub auto_private_tabs: bool,
+    pub join_leave: bool,
+    pub events: bool,
+    pub information: bool,
+    pub levels: bool,
+    pub seconds: bool,
+    pub status: bool,
+    pub timestamps: bool,
     pub visible: [bool; 5],
     pub mode_labels: bool,
     pub dropped: bool,
@@ -14,6 +25,17 @@ pub struct ConsolePreferences {
 impl Default for ConsolePreferences {
     fn default() -> Self {
         Self {
+            public_rooms: [false; 8],
+            conversations: Vec::new(),
+            local_channels: [false; 3],
+            auto_private_tabs: true,
+            join_leave: true,
+            events: true,
+            information: true,
+            levels: false,
+            seconds: false,
+            status: true,
+            timestamps: false,
             visible: [true; 5],
             mode_labels: true,
             dropped: true,

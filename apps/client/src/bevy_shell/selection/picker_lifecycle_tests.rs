@@ -126,6 +126,7 @@ fn picker_is_the_global_character_list_with_columns_scroll_and_outfits()
 -> Result<(), Box<dyn std::error::Error>> {
     let (bridge, callback) = SelectionBridge::new();
     let mut owner = HostOwner::new(None)?;
+    owner.settings.preferences.character_sort_descending = true;
     owner.selection = bridge;
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, AssetPlugin::default()))
@@ -203,6 +204,7 @@ fn picker_is_the_global_character_list_with_columns_scroll_and_outfits()
         .iter()
         .collect::<Vec<_>>();
     assert_eq!(rows.len(), 12);
+    assert!(matches!(app.world().get::<Target>(rows[0]).ok_or("first sorted row")?.choice, Choice::Row(9)));
     assert!(rows.iter().all(|row| {
         app.world()
             .get::<Node>(*row)

@@ -1,5 +1,70 @@
 use super::*;
-pub(super) const MAIN: [Row; 4] = [
+pub(super) const MAIN: [Row; 12] = [
+    check!(
+        "interface.expiry_containers",
+        "Show Expiry in Containers",
+        expiry_containers
+    ),
+    check!(
+        "interface.expiry_inventory",
+        "Show Expiry on Equipped Items",
+        expiry_inventory
+    ),
+    check!(
+        "interface.expiry_unused",
+        "Show Expiry on Unused Items",
+        expiry_unused
+    ),
+    check!(
+        "interface.confirm_copy_link",
+        "Confirm Before Copying Links",
+        confirm_copy_link
+    ),
+    check!(
+        "interface.highlight_mouse_target",
+        "Highlight Object Under Pointer",
+        highlight_mouse_target
+    ),
+    Row {
+        id: "interface.animated_cursor",
+        label: "Animate Game Cursor",
+        editor: Editor::Check {
+            read: |p| p.animated_cursor,
+            write: |p, v| {
+                p.animated_cursor = v;
+                if v {
+                    p.system_cursor = false;
+                }
+            },
+        },
+    },
+    Row {
+        id: "interface.large_cursor",
+        label: "Large Game Cursor",
+        editor: Editor::Check {
+            read: |p| p.large_cursor,
+            write: |p, v| {
+                p.large_cursor = v;
+                if v {
+                    p.system_cursor = false;
+                }
+            },
+        },
+    },
+    Row {
+        id: "interface.system_cursor",
+        label: "Use Operating System Cursor",
+        editor: Editor::Check {
+            read: |p| p.system_cursor,
+            write: |p, v| {
+                p.system_cursor = v;
+                if v {
+                    p.animated_cursor = false;
+                    p.large_cursor = false;
+                }
+            },
+        },
+    },
     check!("interface.tooltips", "Show Tooltips", tooltips_enabled),
     number!(
         "interface.tooltip_delay",
@@ -97,7 +162,27 @@ pub(super) const HUD: [Row; 23] = [
         resource_hud.combo
     ),
 ];
-pub(super) const CONSOLE: [Row; 10] = [
+pub(super) const CONSOLE: [Row; 18] = [
+    check!(
+        "console.auto_private_tabs",
+        "Open Incoming Private Messages in New Tabs",
+        console.auto_private_tabs
+    ),
+    check!(
+        "console.join_leave",
+        "Show Join and Leave Messages",
+        console.join_leave
+    ),
+    check!("console.events", "Show Event Messages", console.events),
+    check!(
+        "console.information",
+        "Show Information Messages",
+        console.information
+    ),
+    check!("console.levels", "Show Speaker Levels", console.levels),
+    check!("console.seconds", "Show Timestamp Seconds", console.seconds),
+    check!("console.status", "Show Own Status Messages", console.status),
+    check!("console.timestamps", "Show Timestamps", console.timestamps),
     check!("console.local", "Show Local Speech", console.visible[0]),
     check!(
         "console.private",

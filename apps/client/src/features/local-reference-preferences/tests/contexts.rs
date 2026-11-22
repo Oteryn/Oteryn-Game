@@ -198,7 +198,11 @@ fn docked_chat_mode_controls_the_real_wasd_route() -> Result<(), Box<dyn std::er
     assert_eq!(first(&mut settings), Some(KeyCode::ARROW_UP));
     link.chat_auto_focus(true);
     assert!(link.preference_chat_open());
-    assert_eq!(first(&mut settings), Some(code), "a clicked Auto input types W");
+    assert_eq!(
+        first(&mut settings),
+        Some(code),
+        "a clicked Auto input types W"
+    );
     link.chat_auto_focus(false);
     assert_eq!(first(&mut settings), Some(KeyCode::ARROW_UP));
     link.chat_console_mode();
@@ -264,5 +268,58 @@ fn chosen_chat_mode_persists_per_character_and_restores_next_session()
     assert_eq!(next.chat_panel().console.mode, ComposerMode::Auto);
     assert!(!next.chat_panel().console.can_send());
     let _ = std::fs::remove_file(&path);
+    Ok(())
+}
+
+#[test]
+fn opened_local_chat_channels_restore_after_restart() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::{ChannelEntry, ChannelTab};
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("channels.json");
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    let (link, _, _) = play_channel();
+    settings.sync_chat_context(&link);
+    for tab in [ChannelTab::Loot, ChannelTab::ServerLog, ChannelTab::Npc] {
+        link.chat_open_entry(&ChannelEntry::Local(tab));
+    }
+    link.chat_close_current();
+    settings.sync_chat_context(&link);
+    let mut restored = crate::play::SettingsState::new(Some(path));
+    let (next, _, _) = play_channel();
+    restored.sync_chat_context(&next);
+    assert_eq!(
+        next.chat_panel().console.channels,
+        vec![ChannelTab::Loot, ChannelTab::ServerLog]
+    );
+    Ok(())
+}
+
+#[test]
+fn saved_channels_request_public_membership_and_restore_conversations()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::ChannelTab;
+    use oteryn_session::{ChatIntent, ChatRoom, ChatRoomSet};
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("channels.json");
+    let (link, _, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    settings.sync_chat_context(&link);
+    let mut rooms = ChatRoomSet::default();
+    rooms.insert(ChatRoom::Help);
+    outbox.chat_public_state(rooms, vec![]);
+    link.chat_open_conversation("Ada");
+    settings.sync_chat_context(&link);
+    let mut restored = crate::play::SettingsState::new(Some(path));
+    let (next, mut commands, next_outbox) = play_channel();
+    next_outbox.chat_initialize(true);
+    restored.sync_chat_context(&next);
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::ChatPublic(ChatIntent::OpenRoom(ChatRoom::Help))
+    ));
+    let channels = next.chat_panel().console.channels;
+    assert!(channels.contains(&ChannelTab::Conversation("Ada".into())));
+    assert!(!channels.contains(&ChannelTab::Room(ChatRoom::Help)));
     Ok(())
 }

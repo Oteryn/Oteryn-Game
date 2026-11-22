@@ -13,11 +13,11 @@ pub use action_bar::ActionBarPreferences;
 #[path = "diagnostics_options.rs"]
 mod diagnostics_options;
 pub use diagnostics_options::DiagnosticsPreferences;
-#[path="miscellaneous.rs"]
+#[path = "miscellaneous.rs"]
 mod miscellaneous;
-pub use miscellaneous::MiscellaneousPreferences;
 use crate::map::World;
 use crate::play::PlayView;
+pub use miscellaneous::MiscellaneousPreferences;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
@@ -39,11 +39,15 @@ pub use frames::{FramePacer, FramePreferences};
 #[path = "performance.rs"]
 mod performance;
 pub use performance::{FramePacer as PerformancePacer, PerformanceSettings};
-#[path = "graphics.rs"]
-mod graphics;
 #[path = "gameplay.rs"]
 mod gameplay;
+#[path = "graphics.rs"]
+mod graphics;
 
+#[path = "custom_actions.rs"]
+mod custom_actions;
+#[path = "custom_dispatch.rs"]
+mod custom_dispatch;
 #[path = "help.rs"]
 pub mod help;
 #[path = "localization.rs"]
@@ -54,20 +58,16 @@ mod minimap_transfer;
 mod presentation;
 #[path = "profile_contexts.rs"]
 mod profile_contexts;
-#[path = "custom_actions.rs"]
-mod custom_actions;
-#[path = "custom_dispatch.rs"]
-mod custom_dispatch;
 #[path = "utility_actions.rs"]
 mod utility_actions;
 pub use custom_actions::{CustomAction, ObjectTarget, default_custom_hotkeys};
 pub use utility_actions::UtilityAction;
 #[path = "profiles.rs"]
 mod profiles;
-#[path = "shortcuts.rs"]
-mod shortcuts;
 #[path = "screenshot.rs"]
 pub mod screenshot;
+#[path = "shortcuts.rs"]
+mod shortcuts;
 
 #[path = "status_order.rs"]
 mod status_order;
@@ -81,8 +81,6 @@ pub use shortcuts::ShortcutEdit;
 mod tooltips;
 #[path = "ui_geometry.rs"]
 mod ui_geometry;
-pub use ui_geometry::{FIXED_PIXEL_FONT_PROPERTY, fit_ui_scale, rescale_ui_rect, scale_ui_rect};
-pub use tooltips::{HoverTooltip, TooltipTarget};
 pub(crate) use bindings::parse_action_chord;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use controls::{ControlPreferences, MousePreset, MovementKeys, RotationModifier};
@@ -91,6 +89,8 @@ pub use profile_contexts::HotkeyProfiles;
 pub use shortcuts::SHORTCUTS;
 pub use store::PreferenceStore;
 pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};
+pub use tooltips::{HoverTooltip, TooltipTarget};
+pub use ui_geometry::{FIXED_PIXEL_FONT_PROPERTY, fit_ui_scale, rescale_ui_rect, scale_ui_rect};
 #[path = "defaults.rs"]
 mod defaults;
 use defaults::*;
@@ -154,6 +154,28 @@ pub struct ReferencePreferences {
     pub chat_mode: Option<ChatMode>,
     #[serde(default)]
     pub manual_hotkey_profile: bool,
+    #[serde(default = "enabled")]
+    pub confirm_store_purchase: bool,
+    #[serde(default = "enabled")]
+    pub confirm_copy_link: bool,
+    #[serde(default)]
+    pub expiry_containers: bool,
+    #[serde(default)]
+    pub expiry_inventory: bool,
+    #[serde(default)]
+    pub expiry_unused: bool,
+    #[serde(default)]
+    pub highlight_mouse_target: bool,
+    #[serde(default)]
+    pub animated_cursor: bool,
+    #[serde(default)]
+    pub large_cursor: bool,
+    #[serde(default = "enabled")]
+    pub system_cursor: bool,
+    #[serde(default)]
+    pub character_sort_column: u8,
+    #[serde(default)]
+    pub character_sort_descending: bool,
     #[serde(default = "default_console_font")]
     pub console_font_px: u16,
     #[serde(default)]
@@ -318,6 +340,17 @@ impl Default for ReferencePreferences {
             chat_context_hotkeys: false,
             chat_mode: None,
             manual_hotkey_profile: false,
+            confirm_store_purchase: true,
+            confirm_copy_link: true,
+            expiry_containers: false,
+            expiry_inventory: false,
+            expiry_unused: false,
+            highlight_mouse_target: false,
+            animated_cursor: false,
+            large_cursor: false,
+            system_cursor: true,
+            character_sort_column: 0,
+            character_sort_descending: false,
             console_font_px: 14,
             compact_status: false,
             status_panel_visible: true,

@@ -55,6 +55,7 @@ struct Target {
 pub(super) struct PickerState {
     request: Option<u64>,
     selected: Option<usize>,
+    order: Vec<usize>,
     channel: Option<usize>,
     /// Show outfits: 66px rows with the outfit column, otherwise 29px rows.
     outfits: bool,
@@ -143,6 +144,19 @@ pub(super) fn project(
     };
     if state.request != Some(request.id) {
         let outfits = state.outfits;
+        let preferences = &owner.settings.preferences;
+        let mut order: Vec<_> = (0..request.rows.len()).collect();
+        order.sort_by_cached_key(|&index| {
+            let row = &request.rows[index];
+            match preferences.character_sort_column {
+                1 => (u8::from(!row.available), String::new()),
+                2 => (0, row.world_name.to_lowercase()),
+                _ => (0, row.character.name.to_lowercase()),
+            }
+        });
+        if preferences.character_sort_descending {
+            order.reverse();
+        }
         *state = PickerState {
             request: Some(request.id),
             selected: request
@@ -150,6 +164,7 @@ pub(super) fn project(
                 .iter()
                 .position(|row| row.available && row.character.character_id == request.preselect)
                 .or_else(|| request.rows.iter().position(|row| row.available)),
+            order,
             outfits,
             reveal_selection: true,
             ..PickerState::default()
@@ -229,7 +244,8 @@ pub(super) fn project(
         state.list = Some(list);
         commands.entity(panel).add_child(list);
         let height = if state.outfits { 66. } else { 29. };
-        for (index, row) in request.rows.iter().enumerate() {
+        for &index in &state.order {
+            let row = &request.rows[index];
             // OwnerCharacter carries no level, vocation or outfit: those cells stay empty.
             let mut cells = Vec::new();
             if state.outfits {

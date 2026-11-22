@@ -28,6 +28,13 @@ pub(in crate::play) struct Panels {
     pub house_furniture_rotation: oteryn_client_ui::house_furniture_rotation::Panel,
     pub house_furniture_wrap: oteryn_client_ui::house_furniture_wrap::Panel,
     pub house_podium: oteryn_client_ui::house_podium::Panel,
+    #[cfg(bevy_shell)]
+    pub expiry_pending: Option<oteryn_session::ItemHandle>,
+    #[cfg(bevy_shell)]
+    pub expiry_reply: Option<(
+        oteryn_session::ItemHandle,
+        Option<oteryn_client_runtime::timed_item::TimedItemResult>,
+    )>,
     pub timed_item: oteryn_client_ui::timed_item::Panel,
     /// The item chosen for the timed item window while a request was pending; targeted on its
     /// reply and inspected by the form's next tick.
@@ -41,9 +48,8 @@ impl Outbox {
         let mut shared = lock(&self.0);
         shared.item_forge.preview.selected = session.feature_selected(152);
         shared.imbue.details_selected = session.feature_selected(447);
-        shared.imbue.success_selected = session.feature_selected(
-            oteryn_session::imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1,
-        );
+        shared.imbue.success_selected = session
+            .feature_selected(oteryn_session::imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1);
         shared
             .properties
             .house
@@ -165,6 +171,28 @@ impl Outbox {
             ),
             39 => {
                 let properties = &mut shared.properties;
+                #[cfg(bevy_shell)]
+                if let Some(target) = properties.expiry_pending
+                    && oteryn_client_runtime::timed_item::decode_timed_item_intent(&command.payload)
+                        .is_ok_and(|intent| {
+                            intent.action == oteryn_client_runtime::timed_item::TimedAction::Inspect
+                                && intent.target == target
+                        })
+                {
+                    properties.expiry_pending = None;
+                    properties.expiry_reply = Some((
+                        target,
+                        accepted(result)
+                            .then(|| {
+                                oteryn_client_runtime::timed_item::decode_timed_item_result(
+                                    &result.payload,
+                                )
+                                .ok()
+                            })
+                            .flatten(),
+                    ));
+                    return;
+                }
                 super::super::feature_0039_timed_item::protocol::apply(
                     &mut properties.timed_item,
                     command,

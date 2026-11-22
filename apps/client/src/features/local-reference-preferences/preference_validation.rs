@@ -104,6 +104,14 @@ impl ReferencePreferences {
         }
         if self.tooltip_delay_ms > 3000
             || self.arc_opacity > 100
+            || self.console.conversations.len() > 128
+            || self
+                .console
+                .conversations
+                .iter()
+                .any(|s| s.trim().is_empty() || s.len() > 120 || s.contains('\0'))
+            || self.gameplay.loot_click > 3
+            || self.character_sort_column > 2
             || !(10..=32).contains(&self.console_font_px)
             || !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
             || self.arc_distance > 80
