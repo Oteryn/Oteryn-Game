@@ -77,7 +77,7 @@ IDS |= {3443}
 IDS |= {21389, 21466}
 # What a Foolish Quest. The Crystal 201189f8 items.xml rows match the pinned
 # XML below for these identities, including the box/crate capacities.
-IDS |= {102, 107, 113, 117, 118, 119, 135, 895, 3135, 3603}
+IDS |= {102, 107, 113, 117, 118, 119, 135, 895, 3135}
 IDS |= questl2_ready.ITEMS
 # Already present in main f5b584ef1's native provider; the existing cohort
 # cardinality includes these six shells, even when a source fact is refined.
