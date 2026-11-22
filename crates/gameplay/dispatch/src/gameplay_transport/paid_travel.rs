@@ -147,7 +147,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Match the complete authored destination, including spaces and apostrophes.
             let Some(route) = routes
                 .into_iter()
-                .find(|route| text == route.keyword || text == route.route.key.replace('_', " "))
+                .find(|route| route.matches_keyword(&text))
             else {
                 return ordinary;
             };

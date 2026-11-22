@@ -729,13 +729,7 @@ impl NpcConversations {
             disposition: Disposition::Ok,
             conversation: Some(NpcConversation {
                 open,
-                // Native conditional greetings may open focus without literal text.
-                // Empty lines are invalid on domain 7; an empty line list is valid.
-                lines: if reply.text.is_empty() {
-                    Vec::new()
-                } else {
-                    vec![reply.text]
-                },
+                lines: reply.into_lines().collect(),
             }),
             window: None,
         }

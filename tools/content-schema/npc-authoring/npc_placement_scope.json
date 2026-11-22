@@ -29,6 +29,7 @@
     "oteryn:npc.bron",
     "oteryn:npc.buddel",
     "oteryn:npc.cael",
+    "oteryn:npc.captain_jack",
     "oteryn:npc.captain_waverider",
     "oteryn:npc.captain_waverider_island",
     "oteryn:npc.carlos",
@@ -50,6 +51,8 @@
     "oteryn:npc.enpa_deia_pema",
     "oteryn:npc.eremo",
     "oteryn:npc.ezebeth",
+    "oteryn:npc.ferryman_kamil",
+    "oteryn:npc.ferryman_kamil_meluna",
     "oteryn:npc.flickering_soul",
     "oteryn:npc.frank_the_plank",
     "oteryn:npc.frodo",
@@ -63,6 +66,9 @@
     "oteryn:npc.guide_tiko",
     "oteryn:npc.habdel",
     "oteryn:npc.hanna",
+    "oteryn:npc.harlow_vengoth",
+    "oteryn:npc.hawkhurst",
+    "oteryn:npc.hawkhurst_ingol",
     "oteryn:npc.henricus",
     "oteryn:npc.hjaern",
     "oteryn:npc.humphrey",
@@ -77,6 +83,7 @@
     "oteryn:npc.jorge",
     "oteryn:npc.kasmir",
     "oteryn:npc.kawill",
+    "oteryn:npc.kendra",
     "oteryn:npc.kepar",
     "oteryn:npc.king_tibianus",
     "oteryn:npc.kulag_the_guard",
@@ -128,6 +135,7 @@
     "oteryn:npc.tibra",
     "oteryn:npc.tim_the_guard",
     "oteryn:npc.tom",
+    "oteryn:npc.tonar",
     "oteryn:npc.trisha",
     "oteryn:npc.tyrias",
     "oteryn:npc.uzgod",
@@ -221,6 +229,32 @@
         "z": 2
       },
       "reason": "M01c collector route: original source cell contains BlockSolid item 3667; chosen adjacent native ground retains the donor position as provenance."
+    },
+    "oteryn:npc.ferryman_kamil_meluna": {
+      "source": {
+        "x": 32088,
+        "y": 32468,
+        "z": 7
+      },
+      "target": {
+        "x": 32088,
+        "y": 32469,
+        "z": 7
+      },
+      "reason": "Crystal's Meluna mooring has a solid object on Kamil's spawn. The next protected dock tile toward the arrival is clear."
+    },
+    "oteryn:npc.hawkhurst_ingol": {
+      "source": {
+        "x": 33710,
+        "y": 32602,
+        "z": 6
+      },
+      "target": {
+        "x": 33711,
+        "y": 32602,
+        "z": 6
+      },
+      "reason": "Crystal's Ingol contact shares the Cormaya ferry arrival. Use the adjacent protected deck tile so the incoming ferry keeps its source destination."
     },
     "oteryn:npc.humphrey": {
       "source": {
