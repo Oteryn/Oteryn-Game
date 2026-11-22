@@ -129,3 +129,63 @@ fn remembered_intent_propagates_durable_rename_failure() -> TestResult {
     assert!(login.block_remembered().is_err());
     Ok(())
 }
+
+#[test]
+fn durable_recovery_deadline_on_replay() -> TestResult {
+    blocked_durable_recovery(false, false)
+}
+
+#[test]
+fn durable_recovery_deadline_on_forget() -> TestResult {
+    blocked_durable_recovery(true, false)
+}
+
+#[test]
+fn durable_recovery_deadline_on_cancel() -> TestResult {
+    blocked_durable_recovery(false, true)
+}
+
+fn blocked_durable_recovery(forget: bool, cancelled: bool) -> TestResult {
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let folder = tempfile::tempdir()?;
+        let login = manager(Arc::new(MemoryVault::default()), folder.path().into());
+        let credential = DeviceCredential::parse(&credential('A'))?;
+        login.journal.stage(&credential)?;
+        if forget {
+            login.block_remembered()?;
+        }
+        let cancel = CancellationToken::new();
+        if cancelled {
+            cancel.cancel();
+        }
+        let (_release, blocked) = tokio::sync::oneshot::channel();
+        let server =
+            Server::start_with_blocked_ack(fixture("revoke-response.json")?, blocked).await?;
+        let result = tokio::time::timeout(
+            Duration::from_millis(2200),
+            login.begin(&server.client, options(), cancel),
+        )
+        .await?;
+        if cancelled {
+            assert!(result.is_err());
+        } else {
+            assert!(result?.is_none());
+        }
+        assert_eq!(server.requests.lock().map_err(|_| "requests")?.len(), 1);
+        let retry = Server::start(vec![(200, fixture("revoke-response.json")?)]).await?;
+        drop(
+            login
+                .begin(&retry.client, options(), CancellationToken::new())
+                .await?,
+        );
+        assert!(
+            retry
+                .requests
+                .lock()
+                .map_err(|_| "requests")?
+                .iter()
+                .any(|request| request.contains(credential.expose()))
+        );
+        retry.finish().await
+    })
+}

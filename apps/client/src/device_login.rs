@@ -82,8 +82,11 @@ impl DeviceLogin {
         if !self.enabled && self.folder.as_ref().is_none_or(|folder| !folder.exists()) {
             return Ok(None);
         }
+        let deadline = tokio::time::Instant::now() + attempt::RECOVERY_REVOCATION_TIMEOUT;
         if cancel.is_cancelled() {
-            return self.cancel_begin(client).await;
+            return tokio::time::timeout_at(deadline, self.cancel_begin(client))
+                .await
+                .unwrap_or_else(|_| Err(storage_error()));
         }
         let Ok(mut state) =
             tokio::time::timeout(CREDENTIAL_LOCK_TIMEOUT, self.state.clone().lock_owned()).await
@@ -94,7 +97,12 @@ impl DeviceLogin {
             return Ok(None);
         };
         let pending = self.revocation_pending()?;
-        if !pending && self.journal.replay(client).await.is_err() {
+        if !pending
+            && !matches!(
+                tokio::time::timeout_at(deadline, self.journal.replay(client)).await,
+                Ok(Ok(()))
+            )
+        {
             return Ok(None);
         }
         let requested = self.forget_requested.load(Ordering::Acquire);
@@ -120,17 +128,15 @@ impl DeviceLogin {
             folder: self.folder.clone(),
             journal: self.journal.clone(),
         };
-        let deadline = tokio::time::Instant::now() + attempt::RECOVERY_REVOCATION_TIMEOUT;
         if forget {
-            if !pending && attempt.state.vault_clear_failed {
-                if attempt.revoke_before_vault_clear(client).await.is_err() {
-                    return Ok(None);
+            let drain = async {
+                if !pending && attempt.state.vault_clear_failed {
+                    attempt.revoke_before_vault_clear(client).await
+                } else {
+                    self.finish_attempt_sign_out(&mut attempt, client).await
                 }
-            } else if self
-                .finish_attempt_sign_out(&mut attempt, client)
-                .await
-                .is_err()
-            {
+            };
+            if !matches!(tokio::time::timeout_at(deadline, drain).await, Ok(Ok(()))) {
                 return Ok(None);
             }
         } else {
