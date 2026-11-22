@@ -176,7 +176,7 @@ impl VariantProjection {
             .any(|npc| npc.key == key)
     }
 
-    pub(crate) fn npcs(&self) -> impl Iterator<Item = (&str, variants::Position)> {
+    pub(crate) fn npcs(&self) -> impl Iterator<Item = (&'static str, variants::Position)> + '_ {
         self.definitions
             .iter()
             .filter_map(|(_, variant)| *variant)

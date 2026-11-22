@@ -727,7 +727,7 @@ impl BundleWorld {
         self.variants.owns_npc(key)
     }
 
-    pub fn daily_variant_npcs(&self) -> impl Iterator<Item = (&str, (u16, u16, i8))> {
+    pub fn daily_variant_npcs(&self) -> impl Iterator<Item = (&'static str, (u16, u16, i8))> + '_ {
         self.variants.npcs()
     }
 

@@ -3,9 +3,10 @@ use oteryn_gameplay_items::fishing::{DESERT_FISHING_SPENT, DESERT_FISHING_WATER,
 
 #[test]
 fn daily_variant_river_fishing_spends_bait_and_replays_the_single_sandfish() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(64 << 20)

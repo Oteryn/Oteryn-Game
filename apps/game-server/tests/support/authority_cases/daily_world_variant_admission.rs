@@ -200,7 +200,9 @@ async fn spider(h: &fixture::Harness) -> fixture::TestResult {
         let mut owner = runtime.borrow_combat_death();
         let receipt = owner.committed_lethal_receipt(actor).map_err(fixture::debug)?;
         owner.project_committed_lethal(receipt).map_err(fixture::debug)?;
-        let death = SpiderDeath::capture(&mut runtime, actor, fence.character_id, epoch)
+        let principal = crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+            .map_err(fixture::debug)?;
+        let death = SpiderDeath::capture(&mut runtime, actor, principal, epoch)
             .ok_or("sealed spider home death")?;
         for _ in 0..2 {
             h.root.record_spider_nest_death(&authority, &h.node, fence.runtime_scope, fence.scope_ownership_generation, death).await?;

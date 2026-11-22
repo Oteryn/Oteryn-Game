@@ -184,13 +184,13 @@ impl DurabilityRoot {
             let bound = occurrence::load(&mut tx, world, epoch).await?;
             if i16::from(bound.month) != month || i16::from(bound.day) != day { return Err(DurabilityError::InvalidStoredState); }
             let mut changes = bound.native;
-            if let Some(day) = changes::load(&mut tx, world, epoch).await? {
-                changes.variants = day.variants;
-            }
             // Same key order as definition and kill writers.
             changes.fury_gates = change_active(&mut tx, world, "fury_gates").await?.then_some(changes.fury_exit);
             changes.grimvale_full_moon = change_active(&mut tx, world, "grimvale").await?;
             changes.their_masters_voice = change_active(&mut tx, world, "their_masters_voice").await?;
+            if let Some(day) = changes::load(&mut tx, world, epoch).await? {
+                changes.variants = day.variants;
+            }
             commit_semantic_transaction(tx, deadline).await?;
             Ok(changes)
         })).await

@@ -144,6 +144,10 @@ fn warpath() -> TestResult {
         let mut owner = runtime.borrow_combat_death();
         let receipt = owner.committed_lethal_receipt(actor).map_err(debug)?;
         owner.project_committed_lethal(receipt).map_err(debug)?;
+        if ordinal == 0 {
+            let replay = owner.committed_lethal_receipt(actor).map_err(debug)?;
+            owner.project_committed_lethal(replay).map_err(debug)?;
+        }
         crate::gameplay_transport::drive_owner_spawns(&mut runtime, ordinal as u64 * 50_000);
         if ordinal < 5 {
             assert!(runtime.pending_respawn(boss).is_none());

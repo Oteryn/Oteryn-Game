@@ -32,8 +32,7 @@ CREATE TABLE game_daily_variant_spider_deaths (
     occurrence BYTEA NOT NULL CHECK (octet_length(occurrence) = 52),
     character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
     PRIMARY KEY (world_id, occurrence),
-    FOREIGN KEY (character_id, world_id, reset_epoch)
-        REFERENCES game_daily_variant_spider_progress(character_id, world_id, reset_epoch)
+    FOREIGN KEY (world_id, reset_epoch) REFERENCES game_world_change_days(world_id, reset_epoch)
 );
 
 REVOKE ALL ON game_daily_variant_warpath, game_daily_variant_spider_progress,

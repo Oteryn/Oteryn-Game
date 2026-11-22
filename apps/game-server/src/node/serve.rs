@@ -3551,6 +3551,7 @@ async fn realize_activation_paced_with_guards(
 ) -> Result<Option<(usize, u64)>, BootError> {
     use oteryn_gameplay_entities::carrier::SpawnDefinition;
     let refuse = || BootError::Readiness("creature spawn realization");
+    let dormant = guards.len();
     if guards.is_empty() {
         runtime
             .begin_activation_spawn_sources(sources)
@@ -3588,7 +3589,10 @@ async fn realize_activation_paced_with_guards(
             windows += 1;
         }
         if progress.remaining == 0 {
-            return Ok(Some((progress.realized_total, windows)));
+            return Ok(Some((
+                progress.realized_total.saturating_sub(dormant),
+                windows,
+            )));
         }
         let next = (now / SPAWN_ACTIVATION_WINDOW_MICROS)
             .saturating_add(1)

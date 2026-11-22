@@ -8,6 +8,7 @@ pub const NAIL: &str = "oteryn:item.tibia.i953";
 pub const DESERT_FISHING_WATER: u16 = 13989;
 pub const DESERT_FISHING_SPENT: u16 = 13988;
 pub const SANDFISH: u16 = 13992;
+/// Crystal 201189f data/items/items.xml:32065–32070.
 pub const DESERT_FISHING_RECOVERY_MS: u32 = 1_200_000;
 
 pub const MECHANICAL_FISHING_WATER: [u16; 13] = [

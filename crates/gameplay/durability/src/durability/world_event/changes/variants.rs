@@ -171,8 +171,8 @@ async fn record_entry(
             previous.is_none_or(|previous| now.saturating_sub(previous) >= WARPATH_COOLDOWN_MS)
         }
         "spider_nest" => {
-            let deaths: i64 = sqlx::query_scalar("SELECT coalesce(sum(deaths),0)::bigint FROM game_daily_variant_spider_progress WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
-                .bind(character).bind(world.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+            let deaths: i64 = sqlx::query_scalar("SELECT coalesce(sum(deaths),0)::bigint FROM game_daily_variant_spider_progress WHERE character_id=encode($1,'hex')::uuid")
+                .bind(character).fetch_one(&mut **tx).await?;
             if deaths >= SPIDER_LIFETIME_KILLS {
                 false
             } else {
@@ -203,12 +203,10 @@ async fn record_spider_death(
     if root.is_none() {
         return Ok(());
     }
-    sqlx::query("INSERT INTO game_daily_variant_spider_progress(world_id,reset_epoch,character_id) VALUES(encode($2,'hex')::uuid,$3::text::numeric,encode($1,'hex')::uuid) ON CONFLICT DO NOTHING")
-        .bind(character).bind(world).bind(&epoch).execute(&mut **tx).await?;
     let first = sqlx::query("INSERT INTO game_daily_variant_spider_deaths(world_id,reset_epoch,occurrence,character_id) VALUES(encode($2,'hex')::uuid,$4::text::numeric,$3,encode($1,'hex')::uuid) ON CONFLICT DO NOTHING")
         .bind(character).bind(world).bind(occurrence).bind(&epoch).execute(&mut **tx).await?.rows_affected() == 1;
     if first {
-        sqlx::query("UPDATE game_daily_variant_spider_progress SET deaths=least(deaths+1,3) WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND reset_epoch=$3::text::numeric")
+        sqlx::query("INSERT INTO game_daily_variant_spider_progress(world_id,reset_epoch,character_id,deaths) VALUES(encode($2,'hex')::uuid,$3::text::numeric,encode($1,'hex')::uuid,1) ON CONFLICT(character_id,world_id,reset_epoch) DO UPDATE SET deaths=least(game_daily_variant_spider_progress.deaths+1,3)")
             .bind(character).bind(world).bind(epoch).execute(&mut **tx).await?;
     }
     Ok(())

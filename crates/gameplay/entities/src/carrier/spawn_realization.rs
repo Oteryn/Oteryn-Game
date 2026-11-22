@@ -345,6 +345,11 @@ fn prepare_spawn_kill_gates(
     if dependency_count > CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX {
         return Err(CarrierError::CapacityExceeded);
     }
+    let required: BTreeSet<_> = definitions
+        .iter()
+        .flat_map(|definition| &definition.kill_prerequisites)
+        .map(|(cell, name)| (*cell, name.as_str()))
+        .collect();
     let mut homes = std::collections::BTreeMap::new();
     for (source, definition) in definitions.iter().enumerate() {
         let source = u16::try_from(source).map_err(|_| CarrierError::CapacityExceeded)?;
@@ -355,11 +360,15 @@ fn prepare_spawn_kill_gates(
             .enumerate()
         {
             let ordinal = u8::try_from(ordinal).map_err(|_| CarrierError::CapacityExceeded)?;
+            let key = (
+                (cell.x, cell.y, cell.floor),
+                point.creature_target_identity.as_str(),
+            );
+            if !required.contains(&key) {
+                continue;
+            }
             homes
-                .entry((
-                    (cell.x, cell.y, cell.floor),
-                    point.creature_target_identity.as_str(),
-                ))
+                .entry(key)
                 .and_modify(|found| *found = None)
                 .or_insert(Some(spawn::SpawnPoint { source, ordinal }));
         }

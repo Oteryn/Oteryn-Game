@@ -133,9 +133,15 @@ pub(super) fn apply(
     .into_iter()
     .filter(|(kind, _, _)| changes.world_counters && counter_admitted(*kind))
     .map(|(_, key, at)| (key, at));
-    let variant_npcs = map
-        .into_iter()
-        .flat_map(crate::map::boot::BundleWorld::daily_variant_npcs);
+    let variant_npcs = map.into_iter().flat_map(|world| {
+        world.daily_variant_npcs().filter(|(_, (x, y, z))| {
+            world.enterable(TilePos {
+                x: *x,
+                y: *y,
+                floor: -*z,
+            })
+        })
+    });
     for (key, (x, y, z)) in changes
         .npcs()
         .chain(trader)
@@ -421,7 +427,7 @@ pub(crate) mod tests {
         assert!(npc_keys(&runtime).is_empty());
     }
 
-    fn physical_bundle() -> crate::map::boot::CheckedBundle {
+    fn physical_bundle(variant_fixtures: bool) -> crate::map::boot::CheckedBundle {
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
         use oteryn_world_bundle::writer::{
             self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -433,7 +439,12 @@ pub(crate) mod tests {
         ))
         .expect("layers");
         let mut appearances: BTreeSet<u16> = (12059..=12065).chain([432, 486]).collect();
-        let grounds: BTreeSet<u16> = (12059..=12065).chain([408, 432, 464, 486, 494]).collect();
+        let mut grounds: BTreeSet<u16> = (12059..=12065).chain([408, 432, 464, 486, 494]).collect();
+        if variant_fixtures {
+            let variant_ground = [231, 352, 4402, 4515, 9524, 9527, 9529];
+            appearances.extend(variant_ground);
+            grounds.extend(variant_ground);
+        }
         for layer in layers["layers"].as_array().expect("layer array") {
             if !layer["key"]
                 .as_str()
@@ -473,6 +484,8 @@ pub(crate) mod tests {
             (33305, 33305, 31847, 31847, -9, 12065),
             (33370, 33370, 31847, 31847, -9, 12065),
             (33306, 33306, 31847, 31847, -8, 12065),
+            // Bibby's authored home keeps its base tile through the daily overlay.
+            (32622, 32622, 31826, 31826, -7, 432),
         ] {
             let index = palette
                 .iter()
@@ -595,7 +608,7 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn boot_physical(changes: &DailyWorldChanges) -> crate::map::boot::BundleWorld {
-        let bundle = physical_bundle();
+        let bundle = physical_bundle(changes.variants.installed());
         let bundle = if changes.variants.installed() {
             bundle
                 .compose_epoch_admitted_layers(changes.reset_epoch, &[], &[])
