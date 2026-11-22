@@ -113,6 +113,23 @@ fn binding(
                 hash.update(member);
             }
         }
+        HouseManagementAction::ReplaceGuildAcl {
+            list,
+            expected_revision,
+            rules,
+        } => {
+            hash.update([4]);
+            hash.update(list.key().ok_or(HouseManagementError::Rejected)?.as_bytes());
+            hash.update(expected_revision.to_be_bytes());
+            for rule in rules {
+                hash.update(
+                    u64::try_from(rule.len())
+                        .map_err(|_| HouseManagementError::Rejected)?
+                        .to_be_bytes(),
+                );
+                hash.update(rule.as_bytes());
+            }
+        }
         HouseManagementAction::MoveOut { due_at_unix_ms } => {
             hash.update([2]);
             hash.update(due_at_unix_ms.to_be_bytes());
@@ -177,6 +194,22 @@ async fn apply(
             )
             .await?
         }
+        HouseManagementAction::ReplaceGuildAcl {
+            list,
+            expected_revision,
+            rules,
+        } => {
+            let current = numeric_u64(&property, "acl_revision")?;
+            acl::replace_guild(
+                tx,
+                fence,
+                request,
+                owner == fence.character_id.as_bytes(),
+                (*list, *expected_revision, current, rules),
+                ownership,
+            )
+            .await?
+        }
         HouseManagementAction::MoveOut { .. } | HouseManagementAction::CancelMoveOut => {
             if owner != fence.character_id.as_bytes() {
                 return Err(HouseManagementError::Rejected);
@@ -185,7 +218,8 @@ async fn apply(
         }
     };
     let (kind, list_key) = match &request.action {
-        HouseManagementAction::ReplaceAcl { list, .. } => (1_i16, list.key()),
+        HouseManagementAction::ReplaceAcl { list, .. }
+        | HouseManagementAction::ReplaceGuildAcl { list, .. } => (1_i16, list.key()),
         HouseManagementAction::MoveOut { .. } => (2, None),
         HouseManagementAction::CancelMoveOut => (3, None),
     };

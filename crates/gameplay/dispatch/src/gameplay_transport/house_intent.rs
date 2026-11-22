@@ -127,6 +127,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
         }
         let action = match intent.action {
+            wire::HouseAction::GuildAcl { subowners, revision, rules } => {
+                HouseManagementAction::ReplaceGuildAcl {
+                    list: if subowners { HouseManagementList::Subowner } else { HouseManagementList::Guest },
+                    expected_revision: revision,
+                    rules,
+                }
+            }
             wire::HouseAction::Acl {
                 subowners,
                 revision,
@@ -216,8 +223,25 @@ pub(super) fn reply(result: Result<u64, HouseManagementError>) -> Option<Vec<u8>
         Err(HouseManagementError::Unavailable(_)) => None,
     }
 }
+pub(super) fn offer_guild_acl(
+    base: &[super::capabilities::OfferedCapability],
+    available: bool,
+) -> Vec<super::capabilities::OfferedCapability> {
+    use super::capabilities::OfferedCapability;
+    let mut offers = base.to_vec();
+    if !available || !offers.iter().any(|offer| offer.id == wire::CAPABILITY_HOUSE_V1) {
+        offers.retain(|offer| offer.id != wire::CAPABILITY_HOUSE_GUILD_ACL_V1);
+    } else if let Err(at) = offers.binary_search_by_key(&wire::CAPABILITY_HOUSE_GUILD_ACL_V1, |offer| offer.id) {
+        offers.insert(at, OfferedCapability { id: wire::CAPABILITY_HOUSE_GUILD_ACL_V1, requires: &[wire::CAPABILITY_HOUSE_V1] });
+    }
+    offers
+}
+
 macro_rules! authority_methods {
     () => {
+        fn house_guild_acl_available(&self) -> bool {
+            false
+        }
         fn house_intent(
             &self,
             _actor: crate::foundation::ExactActorRef,
@@ -250,6 +274,9 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        fn house_guild_acl_available(&self) -> bool {
+            self.bundle_map().is_some()
+        }
         async fn house_intent(
             &self,
             actor: ExactActorRef,

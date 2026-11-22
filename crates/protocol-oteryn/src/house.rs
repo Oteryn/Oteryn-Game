@@ -13,9 +13,11 @@ pub use acl_read::{
 
 pub const CAPABILITY_HOUSE_V1: u32 = 49;
 pub const CAPABILITY_GUILDHALL_V1: u32 = 99;
+pub const CAPABILITY_HOUSE_GUILD_ACL_V1: u32 = 515;
 pub const COMMAND_TYPE_HOUSE_INTENT: u32 = 56;
 pub const COMMAND_TYPE_HOUSE_QUERY: u32 = 57;
 pub const COMMAND_TYPE_GUILDHALL_LEADERSHIP: u32 = 115;
+pub const COMMAND_TYPE_HOUSE_GUILD_ACL: u32 = 6252;
 pub const MAX_INTENT_BYTES: usize = 4168;
 pub const MAX_QUERY_BYTES: usize = 1056;
 pub const MAX_RESULT_BYTES: usize = 32768;
@@ -87,6 +89,11 @@ pub enum HouseAction {
         floor: i8,
         revision: u64,
         members: Vec<[u8; 16]>,
+    },
+    GuildAcl {
+        subowners: bool,
+        revision: u64,
+        rules: Vec<String>,
     },
     Kick([u8; 16]),
     Leave,
@@ -293,6 +300,59 @@ pub fn decode_house_intent(body: &[u8]) -> Result<HouseIntent> {
         action: action.ok_or(Error::Malformed)?,
     })
 }
+/// Command 6252 uses the House target envelope and its own list replacement payload.
+pub fn decode_house_guild_acl(body: &[u8]) -> Result<HouseIntent> {
+    if body.len() > MAX_INTENT_BYTES {
+        return Err(Error::LimitExceeded);
+    }
+    let (mut cursor, mut binding, mut action) = (0, None, None);
+    while cursor < body.len() {
+        let key = read_varint(body, &mut cursor)?;
+        let nested = read_bytes(body, &mut cursor)?;
+        if key == 66 {
+            set_once(&mut binding, target(nested)?)?;
+        } else if key == 34 {
+            let (mut cursor, mut kind, mut revision) = (0, None, None);
+            let mut rules = Vec::new();
+            while cursor < nested.len() {
+                match read_varint(nested, &mut cursor)? {
+                    8 => set_once(&mut kind, read_varint(nested, &mut cursor)?)?,
+                    16 => set_once(&mut revision, read_varint(nested, &mut cursor)?)?,
+                    26 if rules.len() < 100 => {
+                        let line = text(read_bytes(nested, &mut cursor)?)?;
+                        if line.len() > 100 {
+                            return Err(Error::LimitExceeded);
+                        }
+                        rules.push(line);
+                    }
+                    _ => return Err(Error::Malformed),
+                }
+            }
+            let subowners = match kind {
+                Some(1) => false,
+                Some(2) => true,
+                _ => return Err(Error::Malformed),
+            };
+            set_once(
+                &mut action,
+                HouseAction::GuildAcl {
+                    subowners,
+                    revision: revision.ok_or(Error::Malformed)?,
+                    rules,
+                },
+            )?;
+        } else {
+            return Err(Error::Malformed);
+        }
+    }
+    let (world, house) = binding.ok_or(Error::Malformed)?;
+    Ok(HouseIntent {
+        world,
+        house,
+        action: action.ok_or(Error::Malformed)?,
+    })
+}
+
 pub fn decode_house_query(body: &[u8]) -> Result<HouseQuery> {
     if body.len() > MAX_QUERY_BYTES {
         return Err(Error::LimitExceeded);

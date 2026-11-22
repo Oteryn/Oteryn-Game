@@ -40,3 +40,27 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         .await,
     )
 }
+
+pub(in super::super) async fn guild_acl<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    admitted: &AdmittedSession,
+    command: ClientCommandView<'_>,
+) -> Dispatch {
+    use oteryn_protocol_oteryn::house as wire;
+    let rejected = || Dispatch::House(Some(wire::encode_house_result(wire::HouseDisposition::Rejected, 0)));
+    let Ok(intent) = wire::decode_house_guild_acl(command.payload) else {
+        return rejected();
+    };
+    if !admitted.continuity.selected_capabilities.contains(wire::CAPABILITY_GUILDHALL_V1)
+        && transport::house_query::source_house_kind(&intent.house)
+            == Some(transport::house_query::CatalogueKind::Guildhall)
+    {
+        return rejected();
+    }
+    Dispatch::House(authority.house_intent(actor, UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: command.command_id,
+        item_fence: admitted.item_fence,
+    }, intent).await)
+}
