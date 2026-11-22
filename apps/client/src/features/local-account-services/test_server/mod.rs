@@ -27,6 +27,7 @@ pub(crate) struct MockPlatform {
 #[derive(Default)]
 pub(crate) struct Authority {
     pub coins: Option<coins::CoinAuthority>,
+    pub coin_wallets_by_grant: BTreeMap<u32, coins::CoinAuthority>,
     pub premium_reply: Option<serde_json::Value>,
     pub premium_http_status: Option<u16>,
     pub commands: BTreeMap<String, (BazaarRequest, OperationReceipt)>,

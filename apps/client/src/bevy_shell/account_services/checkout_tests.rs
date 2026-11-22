@@ -289,11 +289,33 @@ fn expired_transfer_quote_disables_review_and_prepared_confirmation() -> TestRes
 
 #[test]
 fn unavailable_coin_shop_offers_back_without_refresh() -> TestResult {
-    let (mut app, config) = commerce_app()?;
+    let (app, config) = commerce_app()?;
+    close_unavailable_shop(app, config.coin_shop)
+}
+
+#[test]
+fn stalled_coin_presenter_teardown_reaches_watchdog() -> TestResult {
+    let (app, config) = commerce_app()?;
+    let (release, hold) = std::sync::mpsc::channel::<()>();
+    let hold = std::sync::Mutex::new(hold);
+    let presenter = std::sync::Arc::new(move |view: &crate::coin_shop::View, cancel| {
+        let action = (config.coin_shop)(view, cancel);
+        if let Ok(receiver) = hold.lock() {
+            let _ = receiver.recv_timeout(Duration::from_secs(8));
+        }
+        action
+    });
+    let result = close_unavailable_shop(app, presenter);
+    drop(release);
+    assert!(result.is_err_and(|error| error.to_string().contains("worker did not finish")));
+    Ok(())
+}
+
+fn close_unavailable_shop(mut app: App, presenter: crate::coin_shop::Presenter) -> TestResult {
     let worker = thread::spawn(move || {
         let mut view = crate::coin_shop::View::new(None);
         view.unavailable = true;
-        (config.coin_shop)(&view, CancellationToken::new())
+        presenter(&view, CancellationToken::new())
     });
     wait(&mut app, None)?;
     assert!(
@@ -304,7 +326,7 @@ fn unavailable_coin_shop_offers_back_without_refresh() -> TestResult {
     );
     click(&mut app, Action::Back)?;
     assert!(matches!(
-        worker.join().map_err(|_| "coin presenter")?,
+        finish_worker(worker, "coin presenter")?,
         crate::coin_shop::Action::Back
     ));
     Ok(())
@@ -346,7 +368,7 @@ fn with_coin_offer(
             check(&mut app, shop, &mock)
         })();
         cancel.cancel();
-        worker.join().map_err(|_| "account presenter")??;
+        finish_worker(worker, "account presenter")??;
         result
     })
 }
@@ -471,7 +493,7 @@ fn expired_transfer_offer_disables_review_and_closes_confirmation() -> TestResul
             Ok(())
         })();
         cancel.cancel();
-        worker.join().map_err(|_| "account presenter")??;
+        finish_worker(worker, "account presenter")??;
         result
     })
 }

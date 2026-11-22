@@ -8,11 +8,12 @@ use std::{
     io,
     mem::{size_of, zeroed},
     os::windows::{
-        ffi::OsStrExt,
+        ffi::{OsStrExt, OsStringExt},
+        fs::{MetadataExt, OpenOptionsExt},
         io::{AsRawHandle, FromRawHandle, OwnedHandle},
     },
-    path::Path,
-    ptr::{null, null_mut},
+    path::{Path, PathBuf},
+    ptr::null_mut,
 };
 use windows_sys::Win32::{
     Foundation::{INVALID_HANDLE_VALUE, LocalFree},
@@ -27,10 +28,12 @@ use windows_sys::Win32::{
         WinBuiltinAdministratorsSid, WinLocalSystemSid,
     },
     Storage::FileSystem::{
-        BY_HANDLE_FILE_INFORMATION, CreateFileW, FILE_APPEND_DATA, FILE_ATTRIBUTE_DIRECTORY,
-        FILE_ATTRIBUTE_REPARSE_POINT, FILE_FLAG_OPEN_REPARSE_POINT, FILE_READ_ATTRIBUTES,
-        FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_TYPE_DISK, FILE_WRITE_DATA,
-        GetFileInformationByHandle, GetFileType, OPEN_ALWAYS, READ_CONTROL,
+        BY_HANDLE_FILE_INFORMATION, CREATE_NEW, CreateFileW, DELETE, FILE_APPEND_DATA,
+        FILE_ATTRIBUTE_DIRECTORY, FILE_ATTRIBUTE_REPARSE_POINT, FILE_DISPOSITION_INFO,
+        FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, FILE_LIST_DIRECTORY,
+        FILE_READ_ATTRIBUTES, FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_TYPE_DISK, FILE_WRITE_DATA,
+        FileDispositionInfo, GetFileInformationByHandle, GetFileType, GetFinalPathNameByHandleW,
+        OPEN_EXISTING, READ_CONTROL, SetFileInformationByHandle,
     },
     System::Threading::{GetCurrentProcess, OpenProcessToken},
 };
@@ -100,8 +103,58 @@ fn sid_string(sid: PSID) -> io::Result<String> {
     }
 }
 
+// Hold each checked directory without delete sharing until the final
+// open, so the path cannot be redirected between inspection and creation.
+fn guard_parents(path: &Path) -> io::Result<Vec<File>> {
+    let parents: Vec<_> = path.ancestors().skip(1).collect();
+    parents
+        .into_iter()
+        .rev()
+        .map(|parent| {
+            let directory = File::options()
+                .access_mode(FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES)
+                .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+                .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
+                .open(parent)?;
+            let attributes = directory.metadata()?.file_attributes();
+            if attributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)
+                != FILE_ATTRIBUTE_DIRECTORY
+            {
+                return Err(io::ErrorKind::PermissionDenied.into());
+            }
+            Ok(directory)
+        })
+        .collect()
+}
+
+fn final_path(file: &File) -> io::Result<PathBuf> {
+    let mut buffer = vec![0_u16; 260];
+    loop {
+        // SAFETY: the buffer holds the indicated number of writable UTF-16 units.
+        let len = unsafe {
+            GetFinalPathNameByHandleW(
+                file.as_raw_handle(),
+                buffer.as_mut_ptr(),
+                buffer.len() as u32,
+                0,
+            )
+        } as usize;
+        if len == 0 {
+            return Err(io::Error::last_os_error());
+        }
+        if len < buffer.len() {
+            return Ok(std::ffi::OsString::from_wide(&buffer[..len]).into());
+        }
+        buffer.resize(len, 0);
+    }
+}
+
 fn open_with_descriptor(path: &Path, append: bool, descriptor: &str) -> io::Result<File> {
     let path = std::path::absolute(path)?;
+    let parents = guard_parents(&path)?;
+    let root = path.ancestors().last().ok_or(io::ErrorKind::InvalidInput)?;
+    let expected = final_path(parents.first().ok_or(io::ErrorKind::InvalidInput)?)?
+        .join(path.strip_prefix(root).map_err(io::Error::other)?);
     let mut path: Vec<u16> = path.as_os_str().encode_wide().collect();
     if path.contains(&0) {
         return Err(io::ErrorKind::InvalidInput.into());
@@ -131,19 +184,51 @@ fn open_with_descriptor(path: &Path, append: bool, descriptor: &str) -> io::Resu
         } else {
             FILE_WRITE_DATA
         };
-        let handle = CreateFileW(
-            path.as_ptr(),
-            write | FILE_READ_ATTRIBUTES | READ_CONTROL,
-            FILE_SHARE_READ | FILE_SHARE_WRITE,
-            &attributes,
-            OPEN_ALWAYS,
-            FILE_FLAG_OPEN_REPARSE_POINT,
-            null_mut(),
-        );
-        if handle == INVALID_HANDLE_VALUE {
-            return Err(io::Error::last_os_error());
+        let open = |access, disposition| {
+            CreateFileW(
+                path.as_ptr(),
+                write | FILE_READ_ATTRIBUTES | READ_CONTROL | access,
+                FILE_SHARE_READ | FILE_SHARE_WRITE,
+                &attributes,
+                disposition,
+                FILE_FLAG_OPEN_REPARSE_POINT,
+                null_mut(),
+            )
+        };
+        let mut handle = open(DELETE, CREATE_NEW);
+        let created = handle != INVALID_HANDLE_VALUE;
+        if !created {
+            let error = io::Error::last_os_error();
+            if error.kind() != io::ErrorKind::AlreadyExists {
+                return Err(error);
+            }
+            handle = open(0, OPEN_EXISTING);
+            if handle == INVALID_HANDLE_VALUE {
+                return Err(io::Error::last_os_error());
+            }
         }
-        Ok(File::from_raw_handle(handle))
+        let file = File::from_raw_handle(handle);
+        match final_path(&file) {
+            Ok(actual) if actual == expected => Ok(file),
+            result => {
+                // Delete only our own newly created file, through its open handle.
+                if created {
+                    let disposition = FILE_DISPOSITION_INFO { DeleteFile: true };
+                    if SetFileInformationByHandle(
+                        handle,
+                        FileDispositionInfo,
+                        (&raw const disposition).cast(),
+                        size_of::<FILE_DISPOSITION_INFO>() as u32,
+                    ) == 0
+                    {
+                        return Err(io::Error::last_os_error());
+                    }
+                }
+                Err(result
+                    .err()
+                    .unwrap_or_else(|| io::ErrorKind::PermissionDenied.into()))
+            }
+        }
     }
 }
 
@@ -222,4 +307,23 @@ fn windows_export_creates_private_file_and_refuses_broad_existing_dacl() -> io::
         );
     }
     Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn checked_parent_denies_rename_until_create_finishes() -> io::Result<()> {
+    let root = tempfile::tempdir()?;
+    let parent = root.path().join("parent");
+    let moved = root.path().join("moved");
+    std::fs::create_dir(&parent)?;
+    let guards = guard_parents(&parent.join("export.log"))?;
+    assert_eq!(
+        std::fs::rename(&parent, &moved)
+            .err()
+            .and_then(|error| error.raw_os_error()),
+        Some(32),
+        "checked directory must remain pinned"
+    );
+    drop(guards);
+    std::fs::rename(parent, moved)
 }

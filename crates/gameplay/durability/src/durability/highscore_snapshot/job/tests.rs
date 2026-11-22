@@ -93,3 +93,42 @@ fn only_a_confirmed_success_ends_the_prompt_reset_retry() {
         assert_eq!(retry_soon_after_pass(&outcome, false), ordinary_retry, "{outcome:?}");
     }
 }
+
+#[test]
+fn snapshot_checkout_retries_a_busy_holder_before_the_next_scheduled_pass() -> std::io::Result<()> {
+    use std::cell::Cell;
+
+    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+    let holder_busy = Cell::new(true);
+    let result = runtime.block_on(super::super::issue_snapshot_pass(
+        || {
+            if holder_busy.get() {
+                Err(DurabilityError::RootUnavailable)
+            } else {
+                Ok(42)
+            }
+        },
+        |earliest, latest| {
+            let holder_busy = &holder_busy;
+            async move {
+                assert!(earliest <= latest);
+                assert!(holder_busy.replace(false));
+            }
+        },
+    ));
+    assert!(matches!(result, Ok(42)), "{result:?}");
+    Ok(())
+}
+
+#[test]
+fn snapshot_checkout_preserves_noncontention_errors() -> std::io::Result<()> {
+    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+    let waited = std::cell::Cell::new(false);
+    let result = runtime.block_on(super::super::issue_snapshot_pass(
+        || Err::<(), _>(DurabilityError::InvalidConfiguration),
+        |_, _| async { waited.set(true) },
+    ));
+    assert!(matches!(result, Err(DurabilityError::InvalidConfiguration)));
+    assert!(!waited.get());
+    Ok(())
+}
