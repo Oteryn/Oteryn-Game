@@ -852,8 +852,6 @@ def main() -> int:
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
     run(["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py"])
-    # Callback witnesses add authored props to the native index; rooms must pin that final index.
-    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     for tool in AUTHORING_TOOLS:
         if tool.endswith("/reward_claim_authoring.py"):
             run(["python3", "tools/content-migration/refresh_reward_stack_weight_proof.py"])
@@ -864,11 +862,16 @@ def main() -> int:
     # branch-owned chest transitions in the resulting Claim bodies.
     run(["python3", "tools/content-schema/quest-authoring/quest_tree_authoring.py", "content",
          "--source-packet", "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"])
+    # Callback witnesses pin the final Quest shards and update authored props.
+    # Materialize them before refreshing the room provenance.
+    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_state_lowering.py"])
     run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py", "content"])
     # These standalone compilers consume the final Quest and placement inputs;
     # native qualification and its censuses must see their registered bindings.
     run(["python3", "tools/content-schema/quest-authoring/qengine_access.py"])
+    # M24 pins the candidate's bytes, and the completion matrix reads its receipt.
+    run(["python3", "tools/content-schema/quest-authoring/quest_completion_import.py"])
     run(["python3", "tools/content-schema/quest-authoring/qmech_m24_kill_bindings.py"])
     # Claims above may add complete native container recipes. Rebuild their
     # Item closure only after those final claims exist, before census and pins.
@@ -893,7 +896,7 @@ def main() -> int:
     run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
     for script in (
         "quest_rollout_authoring", "quest_binding_authoring", "quest_completion_matrix",
-        "quest_v2_export", "source_lowered_binding_plan", "quest_completion_import",
+        "quest_v2_export", "source_lowered_binding_plan",
         "collect_claim_candidates", "use_trigger_candidates",
         "quest_explore_area_candidates", "quest_talk_npc_candidates", "quest_native_binding_preflight",
         "quest_reward_only_binding_candidates",

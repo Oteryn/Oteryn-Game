@@ -31,6 +31,10 @@ CANONICAL_CLAIM_KEY = re.compile(r'^oteryn:reward-claim\.[a-z0-9_.-]+$')
 BLIND_ENEMY = 'oteryn:quest.to_blind_the_enemy_quest'
 BLIND_ENEMY_BAGS = (('bp1', 6255), ('bp2', 6256))
 BLIND_ENEMY_CLAIM_SOURCE = 'canary:reward-claim/quest/u8_1/to_blind_the_enemy/'
+EXPLORER_SOCIETY = 'oteryn:quest.the_explorer_society_quest'
+EXPLORER_CLAIM_SOURCE = 'canary:reward-claim/quest/u7_6/explorer_society/'
+NEW_FRONTIER = 'oteryn:quest.the_new_frontier_quest'
+FRONTIER_POTION_SOURCE = 'canary:reward-claim/quest/u8_54/the_new_frontier/reward/potions'
 
 
 def compact(value):
@@ -150,14 +154,20 @@ def reconcile_elvenbane_backpacks(records, claims):
 # chest owner. Keep the immutable variant definitions and resolve the three
 # historical native-lowering holds only while those projections still match.
 EXPLORER_NATIVE_CLAIMS = {
-    'oteryn:reward-claim.quest.u7_6.explorer_society.books.hengis': (6187, 2821, ()),
-    'oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1': (6083, 2853, (3026, 3207)),
-    'oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2': (6084, 2853, (3012, 3097)),
+    'books/hengis': (6187, 2821, ()),
+    'skull_of_ratha/bag1': (6083, 2853, (3026, 3207)),
+    'skull_of_ratha/bag2': (6084, 2853, (3012, 3097)),
 }
 
 
 def explorer_claim_lowered(claim):
-    expected = EXPLORER_NATIVE_CLAIMS.get(claim['identity']['key'])
+    source_key = claim['provenance']['pilot_key']
+    if not source_key.startswith(EXPLORER_CLAIM_SOURCE):
+        return False
+    variant = source_key.removeprefix(EXPLORER_CLAIM_SOURCE)
+    if claim['identity']['key'] != 'oteryn:reward-claim.quest.u7_6.explorer_society.' + variant.replace('/', '.'):
+        return False
+    expected = EXPLORER_NATIVE_CLAIMS.get(variant)
     native = claim.get('native_contents', {})
     placed = native.get('placements', [])
     if (expected is None or claim['data_holds'] or len(placed) != 1
@@ -175,6 +185,16 @@ def explorer_claim_lowered(claim):
             == [(f'oteryn:item.tibia.i{child}', 1) for child in children]
         and (bool(children) or row.get('root_text', '').startswith('Diary of Hengis Wulfson'))
     )
+
+
+def reconcile_explorer_claims(records, claims):
+    resolved = {claim['provenance']['pilot_key'] for claim in claims
+                if claim.get('definition_profile') == 'authored_variant_v1' and explorer_claim_lowered(claim)}
+    quest = next(row['definition'] for row in records
+                 if row['definition']['identity']['key'] == EXPLORER_SOCIETY)
+    quest['missing_data'] = [hold for hold in quest['missing_data']
+                             if not (hold['code'] == 'claim_native_lowering_missing'
+                                     and hold.get('source_key') in resolved)]
 
 
 def build_records(quests, claims, readiness_reports=None, gates=None, gate_checks=None, source_data=None):
@@ -228,8 +248,7 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
                 raise ValueError(f'{key}: committed claim owner does not match source quest: {ref["key"]}')
             canonical.append({'family': 'RewardClaim', **copy.deepcopy(claim['identity'])})
             if claim.get('definition_profile') == 'authored_variant_v1':
-                if not explorer_claim_lowered(claim):
-                    issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
+                issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
                 categories = {hold['category'] for hold in claim['data_holds']}
                 categories.update(claim.get('_source_hold_categories', []))
                 if claim.get('_source_baseline_item_hold'):
@@ -303,6 +322,36 @@ def monk_native_lowering(root):
     }
 
 
+NATIVE_CLAIM_SOURCE_HOLDS = {
+    BLIND_ENEMY: {BLIND_ENEMY_CLAIM_SOURCE + suffix for suffix, _ in BLIND_ENEMY_BAGS},
+    EXPLORER_SOCIETY: {EXPLORER_CLAIM_SOURCE + suffix for suffix in EXPLORER_NATIVE_CLAIMS},
+    NEW_FRONTIER: {FRONTIER_POTION_SOURCE},
+}
+
+
+def restore_source_claim_holds(definition):
+    key = definition['identity']['key']
+    sources = NATIVE_CLAIM_SOURCE_HOLDS.get(key)
+    if sources is None:
+        return
+    holds = definition['missing_data']
+    retained = {row['source_key'] for row in holds if row['code'] == 'claim_native_lowering_missing'}
+    if key == BLIND_ENEMY and 0 < len(retained & sources) < len(sources):
+        raise ValueError('Elvenbane backpack evidence must reconcile both source holds')
+    # Reverse the native projection in the same claim order used by build_records.
+    following_claims = set()
+    for ref in reversed(definition['source_refs']['claims']):
+        source = ref['key']
+        following_claims.add(source)
+        if source not in sources or source in retained:
+            continue
+        index = next((i for i, row in enumerate(holds)
+                      if row.get('source_key') in following_claims
+                      or row['code'] in ('requirement_unknown', 'quest_native_lowering_missing',
+                                         'source_reference_missing')), len(holds))
+        holds.insert(index, {'code': 'claim_native_lowering_missing', 'source_key': source})
+
+
 def source_projection(root, records):
     """Validate and remove only the compiled native annotation from the SOURCE view.
 
@@ -313,15 +362,7 @@ def source_projection(root, records):
     result = copy.deepcopy(records)
     for row in result:
         definition = row['definition']
-        if definition['identity']['key'] == BLIND_ENEMY:
-            original = [{'code': 'claim_native_lowering_missing',
-                         'source_key': BLIND_ENEMY_CLAIM_SOURCE + suffix}
-                        for suffix, _ in BLIND_ENEMY_BAGS]
-            unresolved = [hold for hold in original if hold in definition['missing_data']]
-            if not unresolved:
-                definition['missing_data'].extend(original)
-            elif unresolved != original:
-                raise ValueError('Elvenbane backpack evidence must reconcile both source holds')
+        restore_source_claim_holds(definition)
         if definition['identity']['key'] != 'oteryn:quest.the_way_of_the_monk_quest':
             continue
         original = {'state': 'WAITING_IMPLEMENTATION', 'canonical_progress_refs': [],
@@ -441,13 +482,13 @@ def reconcile_frontier_potion_claim(records, claims):
         'placements': [placement],
     }:
         return
-    owner = 'oteryn:quest.the_new_frontier_quest'
-    source_key = claim['provenance']['pilot_key']
+    if claim['provenance']['pilot_key'] != FRONTIER_POTION_SOURCE:
+        return
     for row in records:
         definition = row['definition']
-        if definition['identity']['key'] == owner:
+        if definition['identity']['key'] == NEW_FRONTIER:
             definition['missing_data'].remove({
-                'code': 'claim_native_lowering_missing', 'source_key': source_key,
+                'code': 'claim_native_lowering_missing', 'source_key': FRONTIER_POTION_SOURCE,
             })
 
 
@@ -514,8 +555,9 @@ def expected_files(root, include_registration=False):
                                 'target_items' not in original.get(stage['key'], {}))
     resolution = enrich([*recipes, {'stages': extra_stages}], index)
     validate_references(records, items)
+    # Reconcile native claim evidence after validating the frozen SOURCE holds.
     reconcile_elvenbane_backpacks(records, claims)
-    # SOURCE recipe validation still sees the historical hold and its frozen digest.
+    reconcile_explorer_claims(records, claims)
     reconcile_frontier_potion_claim(records, claims)
     files, shards = {'content/quests/item-key-resolution.json': compact(resolution)}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
