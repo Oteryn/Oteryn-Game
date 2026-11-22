@@ -135,6 +135,30 @@ mod tests {
         assert_eq!(start.elapsed(), Duration::from_millis(4));
     }
 
+    #[tokio::test(start_paused = true)]
+    async fn busy_discovery_catches_return_during_first_readiness_sample() {
+        let start = Instant::now();
+        let returned = Notify::new();
+        let sampled = Cell::new(false);
+
+        wait_for_discovery_retry(
+            start + Duration::from_micros(2 * READ_RETRY_MICROS),
+            || {
+                if sampled.replace(true) {
+                    return true;
+                }
+                // The holder returns after the first sample saw it busy, before
+                // the notification future is first polled.
+                returned.notify_waiters();
+                false
+            },
+            || returned.notified(),
+        )
+        .await;
+
+        assert_eq!(start.elapsed(), Duration::ZERO);
+    }
+
     #[test]
     fn busy_discovery_retries_once_after_holder_return_or_ready_backoff()
     -> Result<(), Box<dyn std::error::Error>> {

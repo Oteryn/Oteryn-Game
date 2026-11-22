@@ -345,6 +345,19 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
 
     if matches!(case, Case::Unavailable) {
+        // The fixture's root connects as the admin by default. Run the dispatch holder
+        // with the same role whose target lookup permission the outage removes.
+        h.root
+            .try_issue_semantic_pass()?
+            .run(|holder, _| {
+                Box::pin(async move {
+                    sqlx::query("SET ROLE oteryn_game_runtime")
+                        .execute(&mut **holder)
+                        .await?;
+                    Ok(())
+                })
+            })
+            .await?;
         sqlx::query("REVOKE EXECUTE ON FUNCTION game_house_podium_target_fenced(UUID,UUID,NUMERIC,NUMERIC,NUMERIC,UUID,NUMERIC,UUID,TEXT,UUID) FROM oteryn_game_runtime")
             .execute(&h.pool).await?;
     }

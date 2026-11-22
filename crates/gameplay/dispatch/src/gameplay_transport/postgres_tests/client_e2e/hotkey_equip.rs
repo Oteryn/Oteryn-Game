@@ -142,12 +142,21 @@ pub(super) async fn exercise_open_pvp(
     }
     .encode()
     .ok_or("tier-zero axe payload")?;
-    let frames = support::events(
-        owner,
-        admitted,
-        &[(1, wire::COMMAND_TYPE_HOTKEY_EQUIP, payload)],
-    )
+    let commands = [
+        (1, wire::COMMAND_TYPE_HOTKEY_EQUIP, Vec::new()),
+        (2, wire::COMMAND_TYPE_HOTKEY_EQUIP, payload),
+    ];
+    let mut exchange = std::pin::pin!(support::events(owner, admitted, &commands));
+    let mut logs = Vec::new();
+    let frames = std::future::poll_fn(|cx| {
+        let mut result = std::task::Poll::Pending;
+        logs.extend(oteryn_error_codes::capture(|| {
+            result = exchange.as_mut().poll(cx);
+        }));
+        result
+    })
     .await?;
+    let mut rejected = false;
     let mut moved = false;
     let mut published = false;
     for frame in frames {
@@ -155,13 +164,19 @@ pub(super) async fn exercise_open_pvp(
         match envelope.message_type() {
             protocol::MessageType::CommandResult => {
                 let result = protocol::decode_command_result(envelope.payload()).map_err(debug)?;
-                assert_eq!(result.command_id, 1);
                 assert_eq!(result.status, protocol::CommandStatus::Accepted);
-                assert_eq!(
-                    wire::decode_reply(result.payload).map_err(debug)?,
-                    ItemMoveOutcome::Moved
-                );
-                moved = true;
+                let outcome = wire::decode_reply(result.payload).map_err(debug)?;
+                match result.command_id {
+                    1 => {
+                        assert_eq!(outcome, ItemMoveOutcome::Rejected);
+                        rejected = true;
+                    }
+                    2 => {
+                        assert_eq!(outcome, ItemMoveOutcome::Moved);
+                        moved = true;
+                    }
+                    id => return Err(format!("unexpected hotkey command result {id}").into()),
+                }
             }
             protocol::MessageType::StateDelta => {
                 let delta = protocol::decode_state_delta(envelope.payload()).map_err(debug)?;
@@ -182,6 +197,27 @@ pub(super) async fn exercise_open_pvp(
             _ => {}
         }
     }
+    assert!(
+        rejected,
+        "command 348 returned Rejected for malformed payload"
+    );
+    assert!(
+        logs.iter().any(|line| {
+            oteryn_error_codes::parse_line(line).is_ok_and(|line| {
+                line.module == "gameplay_transport"
+                    && line.event == "hotkey_equip_rejected"
+                    && line
+                        .fields
+                        .iter()
+                        .any(|(key, value)| key == "stage" && value == "payload")
+                    && line
+                        .fields
+                        .iter()
+                        .any(|(key, value)| key == "command_id" && value == "1")
+            })
+        }),
+        "missing payload rejection diagnostic"
+    );
     assert!(moved, "command 348 returned Moved");
     assert!(
         published,

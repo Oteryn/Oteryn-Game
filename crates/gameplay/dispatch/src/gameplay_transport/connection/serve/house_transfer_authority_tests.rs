@@ -4,6 +4,7 @@ use std::time::Duration;
 
 struct Authority {
     staff: bool,
+    guard_busy: bool,
     checks: Cell<usize>,
 }
 
@@ -17,6 +18,17 @@ impl FreshAdmissionAuthority for Authority {
 
     async fn house_scope_ack(&self, _: AdmittedSession) -> Result<Option<(u64, Vec<u8>)>, ()> {
         Ok(Some((1, vec![1])))
+    }
+
+    async fn house_transfer_input(
+        &self,
+        _: AdmittedSession,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        if self.guard_busy {
+            self.checks.set(self.checks.get() + 1);
+            return Err(crate::durability::DurabilityError::RootUnavailable);
+        }
+        Ok(())
     }
 
     async fn staff_refresh(&self, _: AdmittedSession) -> bool {
@@ -48,7 +60,7 @@ fn house_idle_rechecks_staff_and_account_closure() -> Result<(), String> {
                 .map_err(|e| e.to_string())?
                 .block_on(async {
                     for staff in [false, true] {
-                        let authority = Authority { staff, checks: Cell::new(0) };
+                        let authority = Authority { staff, guard_busy: false, checks: Cell::new(0) };
                         let id = [1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16];
                         let world_id = WorldId::decode(&id).map_err(|e| format!("{e:?}"))?;
                         let channel_id = ChannelId::decode(&id).map_err(|e| format!("{e:?}"))?;
@@ -223,6 +235,72 @@ where
         .map_err(|e| e.to_string())?
         .join()
         .map_err(|_| "House command test panicked".to_owned())?
+}
+
+#[test]
+fn house_podium_guard_deferral_never_terminalizes_query() -> Result<(), String> {
+    run_command_test(|| async {
+        use tokio::io::AsyncWriteExt;
+        for payload in [&[1; 16][..], &[1; 15][..]] {
+            let (admitted, _) = command_fixture(&[4, 150])?;
+            let authority = Authority {
+                staff: true,
+                guard_busy: true,
+                checks: Cell::new(0),
+            };
+            let (mut server, mut client) = tokio::io::duplex(1 << 16);
+            let frame = oteryn_protocol_oteryn::encode_client_command(
+                admitted.continuity.connection_generation,
+                &oteryn_protocol_oteryn::ClientCommandValue {
+                    command_id: 1,
+                    command_type: COMMAND_QUERY,
+                    payload,
+                },
+            )
+            .map_err(|error| format!("{error:?}"))?;
+            write_frame(&mut client, &frame)
+                .await
+                .map_err(|e| e.to_string())?;
+            client.shutdown().await.map_err(|e| e.to_string())?;
+            let mut messages = None;
+            let mut integrity = integrity::Integrity::default();
+            let end = serve(
+                &mut server,
+                admitted,
+                &authority,
+                &authority,
+                &mut messages,
+                IDLE_LIVENESS,
+                &mut integrity,
+                false,
+            )
+            .await
+            .err()
+            .ok_or("query must end House ingress")?;
+            let expect_close = payload.len() != 16;
+            match *end {
+                ConnectionEnd::AdmittedThenClosed(
+                    _,
+                    FoundationProtocolError::MalformedEnvelope,
+                ) => {
+                    assert!(expect_close);
+                }
+                ConnectionEnd::AdmittedThenDisconnected(_) => assert!(!expect_close),
+                other => return Err(format!("unexpected House ingress end {other:?}")),
+            }
+            drop(server);
+            let mut protocol_error = false;
+            while let Ok(frame) = crate::gameplay_transport::tcp_tls::read_frame(&mut client).await
+            {
+                let envelope = decode_wire_envelope(&frame).map_err(|e| format!("{e:?}"))?;
+                assert_ne!(envelope.message_type(), MessageType::CommandResult);
+                protocol_error |= envelope.message_type() == MessageType::ProtocolError;
+            }
+            assert_eq!(protocol_error, expect_close);
+            assert_eq!(authority.checks.get(), usize::from(!expect_close));
+        }
+        Ok(())
+    })
 }
 
 #[test]

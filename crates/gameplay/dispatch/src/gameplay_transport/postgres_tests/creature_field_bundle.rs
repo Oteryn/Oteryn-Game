@@ -215,6 +215,36 @@ async fn exercise(harness: &Harness) -> TestResult {
                 }
             }
             drop(map);
+            let fresh = actors[0];
+            let conditions = |runtime: &crate::foundation::ChannelRuntimeV1| {
+                runtime
+                    .companion_snapshot(fresh)
+                    .map(|snapshot| snapshot.state.conditions)
+                    .map_err(|_| DurabilityError::Unavailable)
+            };
+            assert!(conditions(runtime)?.instances().is_empty());
+            seed_ground_field(&mut tx, room, runtime, native).await?;
+            let mut map =
+                CurrentMonsterMap::new(&mut tx, &authority, runtime, room, objects, native);
+            owner
+                .tick_creature_fields(
+                    &mut map,
+                    runtime,
+                    states,
+                    native,
+                    3_000_000,
+                    native_health_names,
+                )
+                .await?;
+            assert!(map.validate_transaction(runtime).await);
+            assert!(
+                conditions(runtime)?
+                    .instances()
+                    .iter()
+                    .any(|condition| condition.definition().key() == "native.field.2118"),
+                "the live Ground fire field must install a fresh condition"
+            );
+            drop(map);
             let NativeMovementCollisionIndex::Bundle(index) = room.movement_cells().index() else {
                 return Err(DurabilityError::Unavailable);
             };
@@ -317,6 +347,45 @@ async fn exercise(harness: &Harness) -> TestResult {
     })
     .await
     .map_err(debug)?;
+    Ok(())
+}
+
+async fn seed_ground_field(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    room: &crate::content::QualifiedNativeEntryRoom,
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> Result<(), DurabilityError> {
+    let field = "oteryn:item.tibia.i2118";
+    let target = crate::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
+        room,
+        runtime,
+        at(2),
+    )
+    .map_err(|_| DurabilityError::Unavailable)?;
+    let item = id(120);
+    let mint = id(121);
+    // Stage fixture custody in the same transaction. The spell mint line supplies the
+    // collision facts required by the production Ground projection.
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut **tx)
+        .await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
+        .bind(item.as_slice()).bind(id(42).as_slice()).bind(field).bind(mint.as_slice())
+        .execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_spell_item_lines(transaction_id,ordinal,operation_kind,item_instance_id,definition_family,definition_production_key,definition_revision,quantity_before,quantity_after,state_revision_before,world_id,channel_id,spatial_position,map_revision,content_revision,placement_context,content_generation_digest,blocks_movement,blocks_projectile,immovable_block_solid) VALUES(encode($1,'hex')::uuid,1,1,encode($2,'hex')::uuid,'Item',$3,'definition-r1',0,1,0,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,$8,$9,$10,false,false,false)")
+        .bind(mint.as_slice()).bind(item.as_slice()).bind(field).bind(id(42).as_slice()).bind(id(43).as_slice())
+        .bind(&target.spatial_position).bind(&target.map_revision).bind(&target.content_revision)
+        .bind(&target.placement_context).bind(native.source_digest().as_slice())
+        .execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,$4,$5,$6,$7,$8,1)")
+        .bind(item.as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice())
+        .bind(&target.spatial_position).bind(b"bundle-field".as_slice())
+        .bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context)
+        .execute(&mut **tx).await?;
+    sqlx::query("SET LOCAL session_replication_role = origin")
+        .execute(&mut **tx)
+        .await?;
     Ok(())
 }
 

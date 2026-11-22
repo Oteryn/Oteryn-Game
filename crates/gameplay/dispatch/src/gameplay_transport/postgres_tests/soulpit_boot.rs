@@ -12,6 +12,90 @@ fn soulpit_boot_read_contention_does_not_retire_channel_postgres() -> TestResult
     scenario(true)
 }
 
+#[test]
+fn soulpit_boot_retries_discovery_on_holder_return_before_backoff_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("soulpit-holder-return", move || {
+        run(async |_| {
+            let h =
+                Harness::create_with_admission_seed(admin, "soulpit_holder_return", true, false)
+                    .await?;
+            let result = observe_holder_return(&h).await;
+            let cleanup = h.cleanup().await;
+            result?;
+            cleanup
+        })
+    })
+}
+
+async fn observe_holder_return(h: &Harness) -> TestResult {
+    use std::future::poll_fn;
+    use std::task::Poll;
+    use std::time::Duration;
+
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let deps = Dependencies::new()?;
+    let admission = deps.owner(h, &authority);
+    admission
+        .states
+        .test_owner_time
+        .store(1, std::sync::atomic::Ordering::Relaxed);
+    let held = h.root.try_issue_semantic_pass()?;
+    let stop = oteryn_foundation::CancellationToken::new();
+    let mut cadence = std::pin::pin!(admission.run_soulpits(&stop));
+
+    tokio::time::pause();
+    let before = tokio::time::Instant::now();
+    // One poll gets a real RootUnavailable and parks discovery on its holder wait.
+    assert!(
+        poll_fn(|cx| Poll::Ready(cadence.as_mut().poll(cx)))
+            .await
+            .is_pending()
+    );
+    let release = held.run(|_, _| Box::pin(async { Ok(()) }));
+    tokio::pin!(release);
+    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    // Keep the paused runtime runnable while the real pool finishes returning the holder.
+    poll_fn(|cx| {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "holder return stalled"
+        );
+        let result = release.as_mut().poll(cx);
+        if result.is_pending() {
+            cx.waker().wake_by_ref();
+        }
+        result
+    })
+    .await?;
+    assert!(h.root.background_holder_ready());
+
+    assert!(
+        poll_fn(|cx| Poll::Ready(cadence.as_mut().poll(cx)))
+            .await
+            .is_pending()
+    );
+    assert_eq!(tokio::time::Instant::now(), before);
+    assert!(
+        !h.root.is_ready(),
+        "the next discovery must take the returned holder immediately"
+    );
+    tokio::time::resume();
+    stop.cancel();
+    assert_eq!(
+        cadence.await,
+        crate::monster_owner_cycle::respawn_job::RespawnExit::Shutdown
+    );
+    Ok(())
+}
+
 fn scenario(contended: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         eprintln!("SOULPIT_BOOT_POSTGRES_SKIPPED no_admin_url");

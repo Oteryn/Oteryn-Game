@@ -1,6 +1,7 @@
 //! Decode, reserve and execute one command before producing its ordered output.
 
 use super::*;
+use crate::gameplay_transport::hotkey_equip::RejectionStage;
 use oteryn_protocol_oteryn::chat::{COMMAND_TYPE_CHAT_INTENT, ChatDisposition};
 
 pub(super) struct CommandOutcome {
@@ -103,9 +104,17 @@ where
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Execute) => {}
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
+    let hotkey = command.command_type
+        == oteryn_protocol_oteryn::hotkey_equip::COMMAND_TYPE_HOTKEY_EQUIP
+        && session
+            .selected_capabilities
+            .command_selected(command.command_type);
     // A retained unknown Bank operation must reconcile its original outcome. Rejecting it
     // here could hide committed money work. A replay above always keeps its retained result.
     if limited && !session.reconcile_original_bank {
+        if hotkey {
+            RejectionStage::ActionGate.log(command.command_id);
+        }
         let mut dispatch = integrity::refusal(session, command.command_type);
         session.sequence = session
             .sequence
@@ -270,8 +279,12 @@ where
             .selected_capabilities
             .command_selected(command.command_type)
     {
+        if hotkey {
+            RejectionStage::AuthorityUnavailable.log(command.command_id);
+        }
         Dispatch::Unregistered
     } else if replaced {
+        RejectionStage::ActionGate.log(command.command_id);
         Dispatch::ItemMove(
             oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected,
             Vec::new(),
