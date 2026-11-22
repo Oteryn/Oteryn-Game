@@ -4,7 +4,7 @@
 //! Structural reference: edubart/otclient gameinterface.otui:70-77,
 //! revision dab86e610991092fe8b2471f7de55a7c986b3cd2; implemented with Bevy picking.
 use super::modal::ModalGuard;
-use crate::window_layout::WindowLayout;
+use crate::window_layout::{WINDOW, WINDOW_EXTENT, WindowLayout};
 use bevy::{
     camera::NormalizedRenderTarget,
     picking::{
@@ -16,11 +16,6 @@ use bevy::{
 };
 use std::path::PathBuf;
 
-/// Layout entry of the main window: physical desktop position and logical size.
-const WINDOW: &str = "window.logical";
-// The layout format caps rectangle sizes at 4096 but supports desktop coordinates
-// up to 32768. A point in window-local pixels records the full logical extent.
-const WINDOW_EXTENT: &str = "window.logical.extent";
 /// The local layout file and what it holds; without a path the layout stays transient.
 #[derive(Resource, Default)]
 pub(in crate::bevy_shell) struct LayoutStore {
@@ -79,30 +74,20 @@ impl LayoutStore {
     /// The remembered main window physical desktop position and logical size.
     pub(in crate::bevy_shell) fn window(&self) -> Option<[i32; 4]> {
         // The original key already stored logical dimensions.
-        self.bounds_with_extent(WINDOW, WINDOW_EXTENT)
-            .or_else(|| self.bounds_with_extent("window", "window.extent"))
+        self.layout
+            .bounds_with_extent(WINDOW, WINDOW_EXTENT)
+            .or_else(|| self.layout.bounds_with_extent("window", "window.extent"))
     }
-    fn bounds_with_extent(&self, id: &str, extent: &str) -> Option<[i32; 4]> {
-        let [x, y, width, height] = self.layout.bounds(id)?;
-        if let Some([w, h, 1, 1]) = self.layout.bounds(extent)
-            && w.min(4096) == width
-            && h.min(4096) == height
-        {
-            return Some([x, y, w, h]);
-        }
-        Some([x, y, width, height])
-    }
-
     fn remember_bounds(&mut self, id: &'static str, bounds: [i32; 4]) {
         if self.rejected.get(id) == Some(&bounds) {
             return;
         }
         self.rejected.remove(id);
         let result = if id == WINDOW {
-            if self.bounds_with_extent(WINDOW, WINDOW_EXTENT) == Some(bounds) {
+            if self.layout.bounds_with_extent(WINDOW, WINDOW_EXTENT) == Some(bounds) {
                 return;
             }
-            self.record_window(bounds)
+            self.layout.record_window(bounds)
         } else {
             if self.layout.bounds(id) == Some(bounds) {
                 return;
@@ -120,17 +105,6 @@ impl LayoutStore {
                 leprintln!("Could not save window layout: {error}", error = error);
             }
         }
-    }
-
-    fn record_window(&mut self, bounds: [i32; 4]) -> std::io::Result<()> {
-        let [x, y, width, height] = bounds;
-        let base = [x, y, width.min(4096), height.min(4096)];
-        if base != bounds || self.layout.bounds(WINDOW_EXTENT).is_some() {
-            // Validate the origin before changing the extent of an existing window.
-            WindowLayout::default().record(WINDOW, base)?;
-            self.layout.record(WINDOW_EXTENT, [width, height, 1, 1])?;
-        }
-        self.layout.record(WINDOW, base)
     }
 }
 
