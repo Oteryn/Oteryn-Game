@@ -92,6 +92,22 @@ SIDE_IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 IDS |= {3348, 3403}
 IDS |= SIDE_IDS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
+# Ruprecht's items, existing exchange currencies, and already admitted charged
+# variants retain their native owners. These are the missing portable identities.
+TOKEN_EXCHANGE_ITEMS = {
+    8191, 8192, 16094, 16099, 16101, 16104, 16105, 16106, 16107, 16109,
+    16110, 16111, 16112, 16116, 16153, 16154, 19150, 19152, 19153, 19154,
+    19155, 19156, 22026, 22027, 22028, 23676, 23677, 23678, 23679, 23680,
+    23681, 23682, 23683, 25979, 25980, 25981, 25982, 28894, 28895, 28896,
+    28897, 29428, 29429, 30342, 30344, 30401, 30403, 31265, 31266, 31267,
+    31268, 31557, 31621, 32621, 32636, 34210, 37058, 37059, 37060, 39179,
+    39182, 39185, 39187, 39188, 39233, 39235, 43510, 43511, 43517,
+}
+IDS |= TOKEN_EXCHANGE_ITEMS
+# Retain the canonical, client-sourced weights where the XML disagrees.
+TOKEN_EXCHANGE_WEIGHT_CONFLICTS = {
+    23677: (2700, 200), 32636: (90, 80), 34210: (6660, 6659), 39187: (70, 0),
+}
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
 XML_SHA = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
@@ -194,7 +210,7 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
     for item_id in sorted(selected):
         node=xml[item_id]
         flower = lion_flower.admitted(item_id, source.attrs(node))
-        if not flower and item_id not in CORPSE_IDS and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
+        if not flower and item_id not in CORPSE_IDS | TOKEN_EXCHANGE_ITEMS and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):
@@ -204,6 +220,21 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
                                          admitted.get(f'oteryn:item.tibia.i{item_id}'))
         definition=definitions[f'oteryn:item.tibia.i{item_id}']
         reconcile_canonical_physical(item_id,definition,record)
+        if item_id in TOKEN_EXCHANGE_WEIGHT_CONFLICTS:
+            canonical, donor = TOKEN_EXCHANGE_WEIGHT_CONFLICTS[item_id]
+            current = definition['semantics']['physical']['value']['weight']
+            physical_weight = record['semantics']['physical']['value']['weight']
+            if (current, physical_weight) != (source.K(canonical), source.K(donor)):
+                raise ValueError('TOKEN_EXCHANGE_ITEM_WEIGHT_DRIFT:' + str(item_id))
+            record['semantics']['physical']['value']['weight'] = current.copy()
+        if item_id == 39187:
+            # The donor mints the equipped variant, whose countdown is
+            # suspended when it transforms to 39186 on unequip.
+            temporal = record['semantics']['temporal']['value']
+            if source.attrs(node).get('transformdeequipto') != '39186':
+                raise ValueError('TOKEN_EXCHANGE_ARBOREAL_TRANSFORM_DRIFT')
+            temporal['consumption_mode'] = source.K('AUTHORITATIVE_ACTIVE_TIME_BUDGET')
+            temporal['stop_duration'] = source.K(True)
         if flower:
             record=lion_flower.temporal(record, definition, accepted.known_conflict)
         # These exact Ground-only props and corpse stages have canonical

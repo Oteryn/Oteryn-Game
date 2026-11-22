@@ -21,6 +21,7 @@ import wizard_cosmetics
 import engoutfit_m36
 import qengine_mounts
 import qmech_m39
+import token_exchanges
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -331,7 +332,7 @@ def build():
         return {'track': track, 'minimum': before, 'maximum': before if maximum is None else maximum,
                 'set': after, **({'preserve': True} if preserve else {})}
     def add(name, quest, npc, keywords, states, take=(), give=None, outfit=None, topic=0, next_topic=0,
-            requires=(), present=(), achievement=None, fee=None):
+            requires=(), present=(), achievement=None, fee=None, source=None):
         path = f'data-global/npc/{npc}.lua'
         callbacks.append({'key': 'oteryn:quest-reward/' + name, 'quest': 'oteryn:quest.' + quest,
             'npc': 'oteryn:npc.' + npc, 'keywords': keywords, 'topic': topic, 'next_topic': next_topic,
@@ -340,7 +341,7 @@ def build():
             'outfit': None if outfit is None else {'outfit': 'oteryn:outfit.' + outfit[0], 'addons': outfit[1]},
             'achievement': achievement or ('oteryn:achievement/backpack_tourist' if name == 'sam-backpack' else None),
             'reply': ['Thank you for your help.'],
-            'sources': [f'crystal:{PIN}:{path}:sha256:{sha(inputs[path])}']})
+            'sources': [source or f'crystal:{PIN}:{path}:sha256:{sha(inputs[path])}']})
         if fee is not None:
             callbacks[-1]['fee']=fee
         if requires:
@@ -1090,6 +1091,13 @@ def build():
     fibula_callbacks = []
     load_module('fibula_reward_authoring', 'tools/content-schema/quest-authoring/fibula_rewards.py').append(fibula_callbacks, offers, inputs)
     # Keep every registered document within the runtime's 256-record bound.
+    exchange_start = len(callbacks)
+    exchange_tracks = token_exchanges.append(add, storage, callbacks, offers)
+    exchange_callbacks = [c for c in callbacks[exchange_start:] if c["npc"] != "oteryn:npc.gnomally"]
+    callbacks = callbacks[:exchange_start] + [c for c in callbacks[exchange_start:] if c not in exchange_callbacks]
+    exchange_document = {"schema": 1, "tracks": exchange_tracks,
+                         "callbacks": sorted(exchange_callbacks, key=lambda c: c["key"])}
+    validate_callbacks(exchange_document)
     l13_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith('l13-')]
     callbacks = [c for c in callbacks if c not in l13_callbacks]
     programme_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith('questpc7-')]
@@ -1131,6 +1139,7 @@ def build():
             'content/quests/npc-callbacks/l13-outfits.json': encoded({'schema':1,'callbacks':l13_callbacks}),
             'content/quests/npc-callbacks/questpc7-programmes.json': encoded({'schema':1,'callbacks':programme_callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
+    generated[token_exchanges.SHARD] = encoded(exchange_document)
     generated['content/quests/npc-callbacks/l2-ready-stories.json'] = encoded({
         'schema':1,'tracks':[],'callbacks':ready_callbacks})
     generated[qmech_m39.SHARD] = encoded({'schema':1,'tracks':m39_tracks,'callbacks':sorted(m39_callbacks,key=lambda callback:callback['key'])})
@@ -1152,7 +1161,7 @@ def build():
         'bags':[{'constant':'QENGINE_GNOMISH_SUPPLY','bag':'oteryn:item.tibia.i15698','playable':True,
             'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
             'rewards':rewards}]})
-    greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
+    greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks + exchange_callbacks, inputs)
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
     generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))

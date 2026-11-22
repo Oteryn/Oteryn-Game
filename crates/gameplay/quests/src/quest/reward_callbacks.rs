@@ -381,6 +381,8 @@ impl RewardCallback {
 mod fresh_corpse_tests;
 #[cfg(test)]
 mod ice_paint_tests;
+#[cfg(test)]
+mod token_exchanges_tests;
 
 impl OutfitReward {
     pub fn grant_key(&self, addon: u8) -> String {
@@ -494,6 +496,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
     include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/token-exchanges.json"),
     include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m09-rookie.json"),

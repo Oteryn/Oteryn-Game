@@ -293,6 +293,7 @@ fn scenario_case(
         || name == "questpc7-hydra"
         || name == "questpc7-hoist-story"
         || name == "questpc7-tokens"
+        || name == "token-exchanges"
         || name.starts_with("questpc7-hidden-")
         || name.starts_with("questpc7-outfits-")
         || name == "l1-warmaster-wardrobe"
@@ -1542,7 +1543,7 @@ fn scenario_case(
                 14
             } else if native_story
                 || (native_upper && name.ends_with("-complete"))
-                || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
+                || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped" | "token-exchanges")
             {
                 6
             } else if name == "authored-magic-sword" {
@@ -2668,6 +2669,8 @@ fn scenario_case(
             super::super::questpc7_hydra_fixtures::replenishment(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hoist-story" {
             super::super::questpc7_hoist_story_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "token-exchanges" {
+            super::super::token_exchanges_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-tokens" {
             super::super::questpc7_tokens_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name.starts_with("questpc7-hidden-") {
@@ -3042,7 +3045,7 @@ fn scenario_case(
                 )
                 .await?;
             }
-        } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
+        } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped" | "token-exchanges") {
             if sidec_npc {
                 super::super::npc_program_fixtures::exercise_scoped(
                     &mut owner,

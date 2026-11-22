@@ -27,6 +27,18 @@ class ConvertPlacementsTest(unittest.TestCase):
             self.assertEqual((cp.OUT / name).read_text(), text, name)
         self.assertEqual({p.name for p in cp.OUT.glob("*.json")}, set(self.files))
 
+    def test_token_exchange_npcs_have_their_crystal_source_placements(self):
+        expected = {
+            "oteryn:npc.gnomally": {"x": 32795, "y": 31746, "floor": 10},
+            "oteryn:npc.ruprecht": {"x": 31953, "y": 31718, "floor": 7},
+            "oteryn:npc.storkus": {"x": 32589, "y": 31962, "floor": 7},
+        }
+        actual = [row["declaration"] for row in self.records
+                  if row["declaration"]["npc"] in expected]
+        self.assertEqual(len(actual), len(expected))
+        self.assertEqual({row["npc"]: row["cell"] for row in actual}, expected)
+        self.assertTrue(all(row["direction"] == "north" for row in actual))
+
     def test_l1_reward_npcs_use_only_the_global_source_cells(self):
         expected = {
             'oteryn:npc.cael': {'x':33028,'y':31513,'floor':10},
