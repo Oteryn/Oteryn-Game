@@ -9,6 +9,7 @@ use bevy::{
 use oteryn_client_runtime::depot::ItemEntry;
 use oteryn_client_ui_bevy as source;
 mod capture;
+mod map_picker;
 mod object_picker;
 use capture::capture;
 use object_picker::project as objects;
@@ -90,6 +91,7 @@ struct Editor {
     feedback: String,
     capturing: bool,
     picking: bool,
+    map_pick: bool,
 }
 #[derive(Component)]
 struct Field(usize);
@@ -105,6 +107,7 @@ enum Control {
     New,
     Capture,
     Pick,
+    PickMap,
     Object(ItemEntry),
     Mode,
     Auto,
@@ -116,7 +119,10 @@ enum Control {
 
 pub(super) fn install(app: &mut App) {
     app.add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Update, (capture, project, objects).chain());
+        .add_systems(
+            Update,
+            (capture, project, objects, map_picker::project).chain(),
+        );
 }
 pub(super) fn build(commands: &mut Commands, parent: Entity, skins: &Skins) {
     let root = commands
@@ -129,6 +135,7 @@ pub(super) fn build(commands: &mut Commands, parent: Entity, skins: &Skins) {
                 feedback: String::new(),
                 capturing: false,
                 picking: false,
+                map_pick: false,
             },
             Node {
                 flex_direction: FlexDirection::Column,
@@ -210,6 +217,7 @@ pub(super) fn build(commands: &mut Commands, parent: Entity, skins: &Skins) {
         ("New", Control::New),
         ("Capture key", Control::Capture),
         ("Choose carried object", Control::Pick),
+        ("Choose on map", Control::PickMap),
         ("Action", Control::Mode),
         ("Send automatically", Control::Auto),
         ("Add / Save", Control::Save),
@@ -302,7 +310,9 @@ fn activate(
             editor.picking = false;
             editor.feedback.clear();
             editor.selected = Some(key.clone());
-            values[0] = key.clone();
+            values = [key.clone(), String::new(), String::new(), "0".into()];
+            editor.mode = 0;
+            editor.send = false;
             match a {
                 CustomAction::Text { text, send } => {
                     editor.mode = 0;
@@ -346,6 +356,12 @@ fn activate(
                 "Key capture cancelled"
             }
             .into();
+        }
+        Control::PickMap => {
+            editor.map_pick = owner.play.is_some();
+            editor.picking = false;
+            editor.capturing = false;
+            focus.clear();
         }
         Control::Pick => {
             editor.picking = !editor.picking;
@@ -459,6 +475,7 @@ fn project(
         for mut editor in &mut editors {
             editor.capturing = false;
             editor.picking = false;
+            editor.map_pick = false;
         }
         held.clear();
         return;
@@ -468,6 +485,7 @@ fn project(
         return;
     };
     if editor.generation != owner.generation() {
+        editor.map_pick = false;
         editor.capturing = false;
         editor.picking = false;
     }

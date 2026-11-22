@@ -381,6 +381,7 @@ pub(super) fn container(
         snapshot.generation,
         view,
         snapshot.windows.get(&view.view_id),
+        snapshot.manual_sort,
     );
     let mut entries = view.entries.clone();
     if !snapshot.manual_sort

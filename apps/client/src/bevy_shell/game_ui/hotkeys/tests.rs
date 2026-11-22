@@ -89,6 +89,7 @@ fn editor_app() -> Result<(App, Entity), Box<dyn std::error::Error>> {
             feedback: String::new(),
             capturing: false,
             picking: false,
+            map_pick: false,
         })
         .id();
     for index in 0..4 {
@@ -438,5 +439,78 @@ fn clear_object_keeps_selected_shortcut_in_draft() -> TestResult {
         .get("F9")
         .ok_or("shortcut removed")?;
     assert_ne!(*bound, original);
+    set_value(&mut app, 1, "previous draft");
+    set_value(&mut app, 2, "777");
+    control(&mut app, Control::Select("F9".into()));
+    assert!(value(&mut app, 1).is_empty());
+    assert!(value(&mut app, 2).is_empty());
+    Ok(())
+}
+
+#[test]
+fn map_picker_reads_clicked_world_object_through_overlay() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::{Pointer, PointerClick},
+        pointer::{Location, PointerButton, PointerId},
+    };
+    use oteryn_session::{ActorPosition, EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
+    let (mut app, _) = editor_app()?;
+    let tile = oteryn_renderer::TileCoord::new(100, 100);
+    let view =
+        crate::play::PlayView::new(tile, 7, &[])?.with_entities(vec![WorldSpatialEntity {
+            motion: None,
+            display_name: None,
+            entity: EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            kind: EntityKind::GroundItem,
+            position: ActorPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            detail: EntityDetail::Object {
+                item_definition_ref: 42,
+                quantity: 9,
+                item_handle: Some(7.try_into()?),
+            },
+        }])?;
+    let [x, y] = view.scene().view().tile_to_screen(tile);
+    let (w, h) = view.scene().view().viewport_px();
+    let (link, _, _) = crate::play::play_channel();
+    app.world_mut().non_send_mut::<HostOwner>().play =
+        Some(crate::bevy_shell::owner::ActivePlay { link, view });
+    app.insert_resource(super::super::viewport::WorldViewport {
+        origin: UVec2::ZERO,
+        size: UVec2::new(w, h),
+    })
+    .add_systems(Update, map_picker::project);
+    control(&mut app, Control::PickMap);
+    app.update();
+    let entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<map_picker::Overlay>>()
+        .single(app.world())?;
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: w,
+                    height: h,
+                },
+                position: Vec2::new(x + 16., y + 16.),
+            },
+        ),
+        button: PointerButton::Primary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    assert_eq!(value(&mut app, 2), "42");
+    assert_eq!(value(&mut app, 3), "0");
     Ok(())
 }

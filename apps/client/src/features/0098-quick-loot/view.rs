@@ -60,9 +60,7 @@ impl PlayLink {
                     matches!(entry, Action::Destination {category: assigned, recipient: QuickLootRecipient::MainContainer, ..} if *assigned == category)) {
                     return false;
                 }
-                let backpack = mailbox.inventory.inventory.as_ref().and_then(|inventory| inventory.main_backpack);
-                drop(mailbox);
-                return backpack.is_some_and(|item| self.container_open(item.handle));
+                return self.quick_loot_open_main(&mut mailbox);
             }
             QuickLootControl::Close => {
                 panel.open = false;

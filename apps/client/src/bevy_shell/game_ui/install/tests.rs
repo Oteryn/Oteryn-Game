@@ -232,12 +232,31 @@ fn use_manual_sort_mode_checkbox_in_the_sort_menu_toggles_the_session_mode()
         };
         assert!(selected, "without 510 there is no checkbox");
         assert!(!checked(&mut app, row)?);
+        let live = app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?;
+        live.link.container_sort_edit(3, "1".into());
+        app.update();
         for expected in [true, false] {
             let row = checkbox(&mut app).ok_or("checkbox")?;
             app.world_mut()
                 .trigger(bevy::ui_widgets::Activate { entity: row });
             app.update();
             assert_eq!(active(&app), expected);
+            assert_eq!(
+                app.world()
+                    .non_send::<HostOwner>()
+                    .play
+                    .as_ref()
+                    .ok_or("play")?
+                    .link
+                    .container_sort_panel()
+                    .fields[3],
+                "0"
+            );
             let row = checkbox(&mut app).ok_or("checkbox after toggle")?;
             assert_eq!(checked(&mut app, row)?, expected);
         }

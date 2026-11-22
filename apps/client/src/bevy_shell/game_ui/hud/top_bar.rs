@@ -241,14 +241,15 @@ pub(super) fn project(
 pub(super) fn equipped_weapon(
     owner: NonSend<HostOwner>,
     mut labels: Query<&mut Text, With<WeaponText>>,
+    mut observed: Local<(u64, Option<u32>)>,
 ) {
-    let progress = owner.play.as_ref().and_then(|play| {
-        let (_, progress) = play.link.equipped_weapon_progress()?;
-        if !play.link.weapon_proficiency_is_open() {
-            play.link.weapon_proficiency_tick(std::time::Instant::now());
-        }
-        progress
-    });
+    if observed.0 != owner.generation() {
+        *observed = (owner.generation(), None);
+    }
+    let progress = owner
+        .play
+        .as_ref()
+        .and_then(|play| play.link.equipped_weapon_progress(&mut observed.1));
     for mut label in &mut labels {
         let next = progress.map_or_else(String::new, |value| format!("Proficiency {value}%"));
         if label.0 != next {

@@ -28,7 +28,9 @@ impl PlayLink {
 
     #[cfg(bevy_shell)]
     pub(crate) fn container_move_filtered_bound(
-        &self, source: &ContainerView, destination: &ContainerView,
+        &self,
+        source: &ContainerView,
+        destination: &ContainerView,
         include: impl Fn(&oteryn_session::ItemEntry) -> bool,
     ) -> bool {
         let mut mailbox = lock(&self.mailbox);
@@ -101,10 +103,6 @@ fn begin_for(
         || source.container_handle == destination.container_handle
         || source.entries.is_empty()
         || source.entries.len() > 255
-        || source
-            .entries
-            .iter()
-            .any(|entry| entry.handle == destination.container_handle)
     {
         return false;
     }
@@ -118,7 +116,13 @@ fn begin_for(
             count: None,
         })
         .collect();
-    if requests.is_empty() { return false; }
+    if requests.is_empty()
+        || requests
+            .iter()
+            .any(|request| request.source == destination.container_handle)
+    {
+        return false;
+    }
     if commands
         .send(PlayCommand::MoveContainerContents(requests))
         .is_err()

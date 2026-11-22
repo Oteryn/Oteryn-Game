@@ -77,11 +77,15 @@ pub(super) fn retain(ui: &mut InventoryUi, owner: &HostOwner, views: Option<&Con
         && ui.menu.is_none()
         && ui.prompt.is_none()
         && !play.view.gameplay_input_blocked(&play.link);
+    let manual_sort = play.link.container_manual_sort_active();
     for view in &views.views {
         let window = ui
             .windows
             .entry(view.view_id)
             .or_insert_with(|| Window::new(view));
+        if manual_sort {
+            window.containers_first = false;
+        }
         window.rows = window.rows.clamp(1, view.capacity.div_ceil(4));
         if view.browse.is_some() {
             continue;
@@ -155,6 +159,7 @@ pub(super) fn body(
     generation: u64,
     view: &ContainerView,
     window: Option<&Window>,
+    manual_sort: bool,
 ) -> Entity {
     let fallback = Window::new(view);
     let window = window.unwrap_or(&fallback);
@@ -195,6 +200,9 @@ pub(super) fn body(
                 Kind::MoveNested,
             ),
         ] {
+            if manual_sort && matches!(kind, Kind::ContainersFirst) {
+                continue;
+            }
             action(
                 commands,
                 skins,
@@ -334,7 +342,8 @@ fn activate(
                         .clamp(1, i16::from(view.capacity.div_ceil(4)))
                         as u8;
                 } else if matches!(kind, Kind::ContainersFirst) {
-                    window.containers_first = !window.containers_first;
+                    window.containers_first =
+                        !play.link.container_manual_sort_active() && !window.containers_first;
                 } else if matches!(kind, Kind::MoveNested) {
                     window.move_nested = !window.move_nested;
                 } else {

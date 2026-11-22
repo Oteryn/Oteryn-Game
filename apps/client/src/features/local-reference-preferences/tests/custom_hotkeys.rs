@@ -274,6 +274,14 @@ fn action_bar_and_hotkeys_dispatch_combat_and_chat_shortcuts()
         detail: oteryn_session::EntityDetail::Actor { direction: oteryn_session::StepDirection::South, appearance_ref: 1, health_percent: 100 },
     };
     let b = oteryn_session::WorldSpatialEntity { entity: oteryn_session::EntityRef {identity:[2;16],generation:1}, ..a };
+    // The main battle list defines the cycle even while a filtered secondary list is open.
+    {
+        let mut mailbox = lock(&link.mailbox);
+        let mut secondary = mailbox.battle_lists.preferences[0].clone();
+        secondary.creatures = false;
+        mailbox.battle_lists.preferences.push(secondary);
+        mailbox.battle_lists.active = 1;
+    }
     for kind in ["attack_next", "attack_previous", "toggle_chase", "toggle_chat"] {
         for bar in [false,true] {
             let combat = ActorCombatState { target: Some(a.entity), modes: FightModes::DEFAULT, in_fight: true };

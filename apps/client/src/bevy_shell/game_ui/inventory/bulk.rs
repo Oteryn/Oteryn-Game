@@ -110,17 +110,21 @@ fn open(
     if !views.views.iter().any(|view| view == &button.source) {
         return;
     }
+    let move_nested = ui
+        .windows
+        .get(&button.source.view_id)
+        .is_none_or(|window| window.move_nested);
     let destinations = views
         .views
         .into_iter()
         .filter(|view| {
             view.browse.is_none()
                 && view.container_handle != button.source.container_handle
-                && !button
-                    .source
-                    .entries
-                    .iter()
-                    .any(|item| item.handle == view.container_handle)
+                && !button.source.entries.iter().any(|item| {
+                    item.handle == view.container_handle
+                        && (move_nested
+                            || play.view.scene().container_flag(item.appearance_id) == Some(false))
+                })
         })
         .collect::<Vec<_>>();
     if destinations.is_empty() {
@@ -135,10 +139,7 @@ fn open(
         generation: owner.generation(),
         source: button.source.clone(),
         destinations,
-        move_nested: ui
-            .windows
-            .get(&button.source.view_id)
-            .is_none_or(|window| window.move_nested),
+        move_nested,
     });
 }
 fn choose(
