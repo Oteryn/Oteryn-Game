@@ -250,7 +250,7 @@ async fn exercise(h: &Harness, passage: Passage) -> TestResult {
             assert_eq!(line(&refused), expected);
             assert!(!refused.inventory_changed);
             assert_eq!(travel_writes(h).await?, (0, 0, 0));
-            assert_eq!(cheese_quantity(h).await?, 3);
+            assert_eq!(cheese_quantity(h).await?, 1);
             move_cheese_to_inbox(h).await?;
         }
         Passage::Meluna => {
@@ -289,7 +289,7 @@ async fn exercise(h: &Harness, passage: Passage) -> TestResult {
     );
     assert_eq!(travel_writes(h).await?, (1, i64::from(fare > 0), 0));
     if passage.checks_cheese() {
-        assert_eq!(cheese_quantity(h).await?, 3);
+        assert_eq!(cheese_quantity(h).await?, 1);
     }
     Ok(())
 }
@@ -322,7 +322,7 @@ async fn seed_cheese(h: &Harness) -> TestResult {
         &[
             ("oteryn:item.tibia.i3035", 2),
             ("oteryn:item.tibia.i2854", 1),
-            ("oteryn:item.tibia.i169", 3),
+            ("oteryn:item.tibia.i169", 1),
         ],
     )
     .await?;
