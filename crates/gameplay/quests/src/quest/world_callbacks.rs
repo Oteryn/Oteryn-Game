@@ -773,6 +773,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/threatened-dreams-mosaic-treasure.json"
     ))?);
+    callbacks.extend(parse_with_provenance(
+        include_str!("../../../../../content/quests/world-callbacks/wrath-city.json"),
+        true,
+    )?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::children_puzzle::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
@@ -2634,7 +2638,15 @@ mod tests {
         }) {
             for storage in &callback.storage {
                 if callback.key.starts_with("oteryn:quest-callback/authored-") {
-                    assert!(storage.track.starts_with("oteryn:quest-progress/chosen/"));
+                    let namespace = if callback.key
+                        == "oteryn:quest-callback/authored-wrath-city-feed-prisoners"
+                    {
+                        assert_eq!(callback.quest, "oteryn:quest.wrath_of_the_emperor_quest");
+                        "oteryn:quest-progress/wrath-city/"
+                    } else {
+                        "oteryn:quest-progress/chosen/"
+                    };
+                    assert!(storage.track.starts_with(namespace));
                     assert!(
                         callback
                             .sources

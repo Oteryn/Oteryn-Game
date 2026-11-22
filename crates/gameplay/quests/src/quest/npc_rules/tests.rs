@@ -667,7 +667,7 @@ fn storage_owner_preserves_order_and_rejects_unowned_effects() -> Result<(), Npc
 
 // The accepted source cohorts from both parents retain these exact predecessors.
 // Draconia has no historical definition; Stag and schema2 have separate owners.
-const EXPECTED_LEGACY_QUESTS: [&str; 25] = [
+const EXPECTED_LEGACY_QUESTS: [&str; 27] = [
     "oteryn:quest.a_father_s_burden_quest",
     "oteryn:quest.a_pirates_tail",
     "oteryn:quest.bigfoot_s_burden_quest",
@@ -680,6 +680,7 @@ const EXPECTED_LEGACY_QUESTS: [&str; 25] = [
     "oteryn:quest.hero_of_rathleton_quest",
     "oteryn:quest.hot_cuisine_quest",
     "oteryn:quest.in_service_of_yalahar_quest",
+    "oteryn:quest.killing_in_the_name_of_quest",
     "oteryn:quest.kilmaresh_quest",
     "oteryn:quest.marlin_trophy_quest",
     "oteryn:quest.outfit_and_addon_quests",
@@ -693,6 +694,7 @@ const EXPECTED_LEGACY_QUESTS: [&str; 25] = [
     "oteryn:quest.the_white_raven_monastery_quest",
     "oteryn:quest.tibia_tales",
     "oteryn:quest.tower_defence_quest",
+    "oteryn:quest.wrath_of_the_emperor_quest",
 ];
 
 #[test]
@@ -814,6 +816,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.in_service_of_yalahar_quest",
         "oteryn:quest.marlin_trophy_quest",
         "oteryn:quest.outfit_and_addon_quests",
+        "oteryn:quest.killing_in_the_name_of_quest",
         "oteryn:quest.kilmaresh_quest",
         "oteryn:quest.the_djinn_war_efreet_faction",
         "oteryn:quest.the_djinn_war_marid_faction",
@@ -826,6 +829,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.the_white_raven_monastery_quest",
         "oteryn:quest.tibia_tales",
         "oteryn:quest.tower_defence_quest",
+        "oteryn:quest.wrath_of_the_emperor_quest",
     ]);
     assert_eq!(
         runtime
@@ -1221,7 +1225,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .filter(|program| program.document.schema == 1)
             .count(),
-        28
+        30
     );
     // Canonical main adds the exact source cohort checked above; schema2
     // Mystery has no fabricated legacy definition or absent-value mapping.

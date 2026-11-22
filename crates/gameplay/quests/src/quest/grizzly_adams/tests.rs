@@ -672,8 +672,7 @@ fn grizzly_native_catalogue_keeps_old_keys_and_refuses_contextless_actions() -> 
 }
 
 #[test]
-fn grizzly_real_quest_log_shows_live_counts_and_preserves_other_npc_exclusions()
--> Result<(), String> {
+fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
     use crate::quest::log::{QuestLogFacts, QuestLogState};
     struct Facts(GrizzlyState);
     impl QuestLogFacts for Facts {
@@ -696,29 +695,8 @@ fn grizzly_real_quest_log_shows_live_counts_and_preserves_other_npc_exclusions()
         .ok_or("missing journal")?;
     let quest = &loaded.content.active().quests()[index];
     assert_eq!(quest.start, Some((storage_track(QUEST_LOG_STORAGE), 0)));
-    // The source has 87 missions: W15c admits all 78 Grizzly missions. The nine other
-    // NPCs' journals still lack supported ordered template bindings in the existing loader.
-    assert_eq!(quest.missions.len(), 78);
-    let excluded: std::collections::BTreeSet<_> = loaded
-        .exclusions
-        .iter()
-        .filter(|entry| entry.quest == QUEST)
-        .filter_map(|entry| entry.mission.as_deref())
-        .collect();
-    assert_eq!(
-        excluded,
-        std::collections::BTreeSet::from([
-            "the_marid_green_djinns",
-            "the_efreet_blue_djinns",
-            "meriana_rebels_pirates",
-            "turmoil_of_war",
-            "lugri_necromancers_and_priestesses",
-            "edron_city_trolls",
-            "edron_city_goblins",
-            "edron_city_rotworms",
-            "edron_city_cyclops",
-        ])
-    );
+    assert_eq!(quest.missions.len(), 87);
+    assert!(!loaded.exclusions.iter().any(|entry| entry.quest == QUEST));
     let index = u32::try_from(index).map_err(|error| error.to_string())?;
     assert!(
         loaded
@@ -750,5 +728,304 @@ fn grizzly_real_quest_log_shows_live_counts_and_preserves_other_npc_exclusions()
     assert!(mission.text.contains("1/300"));
     assert!(mission.text.contains("kongra: 1"));
     assert!(!mission.done);
+    Ok(())
+}
+
+#[test]
+fn non_paw_and_fur_tasks_load_with_native_counters_and_journals() -> Result<(), String> {
+    let lowered = crate::quest::loader::load_embedded_quest_state("killing-in-the-name-test")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = lowered.catalogue();
+    let log = crate::quest::log::loader::load_embedded_quest_log(&lowered)?;
+    let journal = log
+        .content
+        .active()
+        .quests()
+        .iter()
+        .find(|quest| quest.key == QUEST)
+        .ok_or("missing Killing in the Name Of journal")?;
+    assert_eq!(journal.missions.len(), 87);
+    let callbacks = crate::quest::reward_callbacks::offered_for(catalogue)?;
+    let rules =
+        crate::quest::npc_rules::NpcRuleCatalog::runtime().map_err(|error| error.to_string())?;
+    for (task, quota, creatures) in [
+        ("trolls", 100, &["troll", "troll_champion"][..]),
+        (
+            "goblins",
+            150,
+            &["goblin", "goblin_scavenger", "goblin_assassin"],
+        ),
+        ("rotworms", 300, &["rotworm", "carrion_worm"]),
+        (
+            "cyclops",
+            500,
+            &["cyclops", "cyclops_drone", "cyclops_smith"],
+        ),
+        ("green-djinns", 500, &["green_djinn", "efreet"]),
+        ("blue-djinns", 500, &["blue_djinn", "marid"]),
+        (
+            "pirates",
+            3000,
+            &[
+                "pirate_marauder",
+                "pirate_cutthroat",
+                "pirate_buccaneer",
+                "pirate_corsair",
+            ],
+        ),
+        (
+            "minotaurs",
+            5000,
+            &[
+                "minotaur",
+                "minotaur_guard",
+                "minotaur_mage",
+                "minotaur_archer",
+            ],
+        ),
+        (
+            "necromancers",
+            4000,
+            &[
+                "necromancer",
+                "priestess",
+                "blood_priest",
+                "blood_hand",
+                "shadow_pupil",
+            ],
+        ),
+    ] {
+        let report_key = format!("oteryn:quest-reward/hunting-tasks/{task}/report");
+        let report = callbacks
+            .iter()
+            .find(|c| c.key == report_key)
+            .ok_or("report callback")?;
+        let programme = rules
+            .admitted_for_npc(&report.npc, catalogue)
+            .map_err(|error| error.to_string())?
+            .ok_or("hunting programme")?;
+        let acceptance_key = format!("oteryn:quest-npc/hunting-tasks/{task}/accept");
+        let acceptance = programme
+            .programs()
+            .iter()
+            .flat_map(|program| &program.document.rules)
+            .find(|rule| rule.key == acceptance_key)
+            .ok_or("acceptance rule")?;
+        let phase = format!("oteryn:quest-progress/hunting-tasks/{task}/phase");
+        let count = format!("oteryn:quest-progress/hunting-tasks/{task}/count");
+        assert!(
+            journal
+                .missions
+                .iter()
+                .any(|mission| mission.track == phase)
+        );
+        assert!(
+            report
+                .storage
+                .iter()
+                .any(|storage| storage.track == count && storage.minimum == quota)
+        );
+        let mut tracks = BTreeMap::from([
+            (
+                "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry".into(),
+                -1,
+            ),
+            (
+                "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03".into(),
+                3,
+            ),
+            (
+                "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03".into(),
+                3,
+            ),
+            (
+                "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4".into(),
+                5,
+            ),
+            (
+                "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest".into(),
+                2,
+            ),
+        ]);
+        if task == "goblins" {
+            tracks.insert("oteryn:quest-progress/hunting-tasks/trolls/phase".into(), 2);
+        }
+        let level = match task {
+            "trolls" | "goblins" => 6,
+            "rotworms" => 20,
+            "cyclops" => 30,
+            "necromancers" => 60,
+            _ => 10,
+        };
+        let input = crate::quest::npc_rules::NpcRuleInput {
+            npc: &report.npc,
+            trigger: crate::quest::npc_rules::NpcRuleTrigger::Say,
+            message: "yes",
+            player_name: None,
+            topic: acceptance.topics.as_ref().ok_or("acceptance topic")?[0],
+            tracks: &tracks,
+            inventory: &Default::default(),
+            now_epoch_seconds: 1_700_000_000,
+            calendar_month: 11,
+            premium_current: true,
+            level,
+            vocation: "oteryn:vocation.knight",
+            sex: 0,
+            outfits: &BTreeMap::new(),
+        };
+        let prefix = format!("oteryn:quest-transition/native-kills/hunting-tasks/{task}/");
+        assert!(
+            !crate::quest::native_kills::active_for(catalogue, &tracks)
+                .iter()
+                .any(|key| key.starts_with(&prefix))
+        );
+        let plan = programme
+            .plan_storage(&input)
+            .map_err(|error| error.to_string())?
+            .ok_or("eligible task refused")?;
+        assert_eq!(plan.selected_rule_keys, [acceptance_key]);
+        assert!(
+            plan.track_changes
+                .iter()
+                .any(|change| change.key == phase && change.after == 1)
+        );
+        tracks.extend(
+            plan.track_changes
+                .into_iter()
+                .map(|change| (change.key, change.after)),
+        );
+        let active = crate::quest::native_kills::active_for(catalogue, &tracks);
+        let report_transition = crate::quest::reward_callbacks::primary_transition(report)?;
+        assert!(matches!(
+            catalogue.evaluate(&report_transition, &tracks, 0),
+            Err(crate::quest::QuestRefusal::StageMismatch)
+        ));
+        tracks.insert(count.clone(), quota - 1);
+        for creature in creatures {
+            let key =
+                format!("oteryn:quest-transition/native-kills/hunting-tasks/{task}/{creature}");
+            assert!(active.contains(&key), "inactive counter {key}");
+            let counter = crate::quest::native_kills::counter_for(catalogue, &key).ok_or(key)?;
+            assert_eq!(counter.creature, format!("oteryn:creature.{creature}"));
+            assert_eq!(counter.maximum, quota);
+            let death = catalogue
+                .transition(counter.transition)
+                .ok_or("death transition")?;
+            let changes = catalogue
+                .evaluate(death, &tracks, 0)
+                .map_err(|refusal| format!("{refusal:?}"))?;
+            assert!(
+                changes
+                    .iter()
+                    .any(|change| change.track == count && change.after == quota)
+            );
+        }
+        tracks.insert(count, quota);
+        let reported = catalogue
+            .evaluate(&report_transition, &tracks, 0)
+            .map_err(|refusal| format!("{refusal:?}"))?;
+        assert!(
+            reported
+                .iter()
+                .any(|change| change.track == phase && change.after == 2)
+        );
+        tracks.insert(phase, 2);
+        assert!(matches!(
+            catalogue.evaluate(&report_transition, &tracks, 0),
+            Err(crate::quest::QuestRefusal::StageMismatch)
+        ));
+    }
+    Ok(())
+}
+
+#[test]
+fn wrath_mission_five_loads_admission_handoff_and_city_routes() -> Result<(), String> {
+    let lowered = crate::quest::loader::load_embedded_quest_state("wrath-city-test")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = lowered.catalogue();
+    let callbacks = crate::quest::reward_callbacks::offered_for(catalogue)?;
+    for action in [
+        "briefing",
+        "supplies-accept",
+        "supplies-report",
+        "zlak-handoff",
+    ] {
+        assert!(
+            callbacks
+                .iter()
+                .any(|c| c.key == format!("oteryn:quest-reward/wrath-city/{action}"))
+        );
+    }
+    let briefing = callbacks
+        .iter()
+        .find(|c| c.key == "oteryn:quest-reward/wrath-city/briefing")
+        .ok_or("briefing")?;
+    assert!(briefing.requires.iter().any(|guard| guard.track
+        == "oteryn:quest-progress/wrath-city/supplies"
+        && guard.minimum == 2
+        && guard.maximum == 2));
+    let gates = crate::quest::npc_rules::NpcRuleCatalog::runtime()
+        .and_then(|rules| rules.admitted_for_npc("oteryn:npc.gate_guardian", catalogue))
+        .map_err(|error| error.to_string())?
+        .ok_or("Gate Guardian programme")?;
+    let questline = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline";
+    let mission = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission05";
+    for (stage, step, can_enter) in [(12, 0, false), (13, 1, true), (22, 2, false)] {
+        let facts = BTreeMap::from([(questline.into(), stage), (mission.into(), step)]);
+        let input = crate::quest::npc_rules::NpcRuleInput {
+            npc: "oteryn:npc.gate_guardian",
+            trigger: crate::quest::npc_rules::NpcRuleTrigger::Say,
+            message: "yes",
+            player_name: None,
+            topic: 1,
+            tracks: &facts,
+            inventory: &Default::default(),
+            now_epoch_seconds: 1_700_000_000,
+            calendar_month: 11,
+            premium_current: true,
+            level: 80,
+            vocation: "oteryn:vocation.knight",
+            sex: 0,
+            outfits: &BTreeMap::new(),
+        };
+        let entry = gates
+            .plan_storage_teleport(&input)
+            .map_err(|error| error.to_string())?;
+        assert_eq!(entry.is_some(), can_enter);
+        if let Some(entry) = entry {
+            assert_eq!(
+                (
+                    entry.destination.x,
+                    entry.destination.y,
+                    entry.destination.floor
+                ),
+                (33114, 31197, -7)
+            );
+            assert!(
+                entry
+                    .source
+                    .track_changes
+                    .iter()
+                    .any(|change| change.key == questline && change.after == 22)
+            );
+        }
+    }
+    let world = crate::quest::world_callbacks::load_for(catalogue)?;
+    for action in [
+        "supply-crate",
+        "supply-fish",
+        "feed-prisoners",
+        "rebel-to-city",
+        "city-to-rebel-north",
+        "city-to-rebel-south",
+    ] {
+        let key = format!("oteryn:quest-callback/authored-wrath-city-{action}");
+        let callback = world.iter().find(|c| c.key == key).ok_or(key)?;
+        assert!(callback.selector.native.is_some());
+        if callback.teleport.is_some() {
+            assert!(callback.is_read_only());
+            assert!(callback.return_on_failure);
+        }
+    }
     Ok(())
 }

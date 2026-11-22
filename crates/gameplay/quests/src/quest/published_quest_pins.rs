@@ -2,6 +2,7 @@
 use super::{NpcDefinitionPredecessor, QuestStateCatalogue};
 
 type DefinitionHash = [u8; 32];
+type PredecessorPin = (&'static str, DefinitionHash, &'static [DefinitionHash]);
 
 const fn hash(hex: &[u8; 64]) -> DefinitionHash {
     const fn digit(byte: u8) -> u8 {
@@ -72,7 +73,7 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
 
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
 // new rules bound to the new hash. Existing absent-track defaults did not change.
-const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
+const GAMEPLAY_PREDECESSORS: &[PredecessorPin] = &[
     (
         "oteryn:quest.ferumbras_ascension_quest",
         hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
@@ -105,7 +106,33 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
 }
 
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
-    for &(quest, current, previous) in GAMEPLAY_PREDECESSORS {
+    retain(catalogue, GAMEPLAY_PREDECESSORS);
+}
+
+pub(super) fn retain_hunt_and_wrath_predecessors(catalogue: &mut QuestStateCatalogue) {
+    // Exact saves from main 3e099164. The new tracks add defaults without
+    // changing any existing track's initial value.
+    const PINS: &[PredecessorPin] = &[
+        (
+            "oteryn:quest.killing_in_the_name_of_quest",
+            hash(b"1a095106102bea045e9f4c7b9af743261e364a83d47fbe438480accfe8918b49"),
+            &[hash(
+                b"eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5",
+            )],
+        ),
+        (
+            "oteryn:quest.wrath_of_the_emperor_quest",
+            hash(b"0a0b59bb1d9cfc9ab1e625e938a14013701fe5da5db048798222d1aaf5fc08bb"),
+            &[hash(
+                b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86",
+            )],
+        ),
+    ];
+    retain(catalogue, PINS);
+}
+
+fn retain(catalogue: &mut QuestStateCatalogue, pins: &[PredecessorPin]) {
+    for &(quest, current, previous) in pins {
         if catalogue.definition_hash(quest) == Some(current) {
             catalogue
                 .predecessors
@@ -123,6 +150,29 @@ pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
 mod tests {
     use super::*;
     use crate::quest::{loader, npc_rules};
+
+    #[test]
+    fn hunting_and_wrath_loaders_accept_published_saves() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        for (quest, predecessor) in [
+            (
+                "oteryn:quest.killing_in_the_name_of_quest",
+                hash(b"eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5"),
+            ),
+            (
+                "oteryn:quest.wrath_of_the_emperor_quest",
+                hash(b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86"),
+            ),
+        ] {
+            assert_ne!(catalogue.definition_hash(quest), Some(predecessor));
+            let defaults = npc_rules::legacy_defaults(catalogue, quest, &predecessor)
+                .ok_or("published predecessor missing")?;
+            assert!(defaults.is_empty());
+        }
+        Ok(())
+    }
 
     #[test]
     fn package_keeps_main_grave_danger_pin() -> Result<(), String> {

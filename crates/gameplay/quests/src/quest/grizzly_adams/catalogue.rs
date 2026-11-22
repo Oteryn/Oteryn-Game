@@ -144,6 +144,9 @@ pub fn journal(
     use crate::quest::log::{
         JournalPiece as P, JournalText as T, QuestJournal as J, QuestLogMission,
     };
+    if let Some(task) = super::regional_tasks::journal(name, source_track) {
+        return Some(task);
+    }
     let track = format!("oteryn:{}", source_track.split_once(':')?.1);
     let content = if track == storage_track(QUEST_LOG_STORAGE) {
         J::Fixed(T::Template(vec![

@@ -350,7 +350,9 @@ pub(super) fn prepare(
     if teleport.as_ref().is_some_and(|p| {
         !matches!(
             p.source.quest.as_str(),
-            "oteryn:quest.the_paradox_tower_quest" | "oteryn:quest.in_service_of_yalahar_quest"
+            "oteryn:quest.the_paradox_tower_quest"
+                | "oteryn:quest.in_service_of_yalahar_quest"
+                | "oteryn:quest.wrath_of_the_emperor_quest"
         )
     }) {
         return Some(Step::Refused);
