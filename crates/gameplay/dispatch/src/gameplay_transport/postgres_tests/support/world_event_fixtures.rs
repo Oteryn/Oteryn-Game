@@ -30,6 +30,33 @@ pub(super) fn scenario_with_native_deaths(epochs: u64, creature: &'static str, a
 }
 
 pub(super) fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_deaths: Option<(&'static str, bool)>) -> TestResult {
+    run_scenario(epochs, seasonal, consumers, native_deaths, None)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum FlowerMonthCheck {
+    Announcement,
+    Replay,
+}
+
+pub(super) fn scenario_with_flower_month(check: FlowerMonthCheck) -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || {
+            run_scenario(2, None, false, None, Some(check)).map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "Flower Month reset query thread panicked")??;
+    Ok(())
+}
+
+fn run_scenario(
+    epochs: u64,
+    seasonal: Option<&str>,
+    consumers: bool,
+    native_deaths: Option<(&'static str, bool)>,
+    flower_month: Option<FlowerMonthCheck>,
+) -> TestResult {
     run(async move |admin| {
         reset();
         let h =
@@ -37,7 +64,10 @@ pub(super) fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool,
         let clock = seasonal.or_else(|| native_deaths.and_then(|(creature, active)| {
             (creature == "werewolf").then_some(if active { "QworldGrimvaleActive" } else { "QworldGrimvaleInactive" })
         }));
-        if clock.is_some() {
+        if flower_month.is_some() {
+            sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=CASE NEW.reset_epoch WHEN 0 THEN TIMESTAMPTZ '2026-06-29 06:00 Europe/Berlin' WHEN 1 THEN TIMESTAMPTZ '2026-06-30 06:00 Europe/Berlin' ELSE TIMESTAMPTZ '2026-07-01 06:00 Europe/Berlin' END; NEW.reset_month=to_char(NEW.activated_at AT TIME ZONE 'Europe/Berlin','YYYY-MM'); RETURN NEW; END $$")
+                .execute(&h.pool).await?;
+        } else if clock.is_some() {
             // Fixture clock set before the real reset writer creates its epoch;
             // admission, publication and mutation guards remain enabled.
             if clock == Some("A Piece of Cake") {
@@ -62,6 +92,8 @@ pub(super) fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool,
                 sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-31 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$")
                     .execute(&h.pool).await?;
             }
+        }
+        if flower_month.is_some() || clock.is_some() {
             sqlx::query("CREATE TRIGGER seasonal_fixture_clock BEFORE INSERT ON game_world_reset_epochs FOR EACH ROW EXECUTE FUNCTION seasonal_fixture_clock()")
                 .execute(&h.pool).await?;
         }
@@ -224,6 +256,40 @@ pub(super) fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool,
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(offered, &[6, 11, 53]).ok_or("capability 53")?;
         let fresh = admitted;
+
+        if let Some(check) = flower_month {
+            // Both decisions came from reset finalization. Move only the active
+            // pointer so the same fenced session can observe both epochs.
+            set_flower_month_test_epoch(&h, world, 1).await?;
+            owner.reset_epoch = 1;
+            assert_eq!(h.root.world_change_calendar(world, 1).await?, (6, 30));
+            let june = exchange(&owner, &mut admitted, &[(1, &[])]).await?;
+            let june_state = flower_month_state(&june)?;
+            assert_eq!(june_state.reset_epoch, 1);
+            assert!(june_state.active);
+            assert!(june_state.announcement.contains("Flower Month"));
+
+            set_flower_month_test_epoch(&h, world, 2).await?;
+            owner.reset_epoch = 2;
+            assert_eq!(h.root.world_change_calendar(world, 2).await?, (7, 1));
+            if check == FlowerMonthCheck::Replay {
+                drop(owner);
+                owner = deps.owner(&h, &authority);
+                owner.active_generation = controller.active();
+                owner.reset_epoch = 2;
+                admitted = fresh;
+                assert_eq!(exchange(&owner, &mut admitted, &[(1, &[])]).await?, june);
+            }
+            let july = exchange(&owner, &mut admitted, &[(2, &[])]).await?;
+            let july_state = flower_month_state(&july)?;
+            assert_eq!(july_state.reset_epoch, 2);
+            assert!(!july_state.announcement.contains("Flower Month"));
+            assert_eq!(receipt_count(&h).await?, 2);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
 
         // Malformed query never reaches storage. A valid query commits its exact result.
         let results = exchange(&owner, &mut admitted, &[(1, &[0]), (2, &[])]).await?;
@@ -436,6 +502,19 @@ pub(super) fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool,
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn set_flower_month_test_epoch(h: &Harness, world: WorldId, epoch: u64) -> TestResult {
+    sqlx::query("UPDATE game_world_reset_active SET reset_epoch=$2::text::numeric WHERE world_id=encode($1,'hex')::uuid")
+        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).execute(&h.pool).await?;
+    Ok(())
+}
+
+fn flower_month_state(results: &[(CommandStatus, Vec<u8>)]) -> TestResult<wire::WorldEventState> {
+    let [(CommandStatus::Accepted, bytes)] = results else {
+        return Err(format!("expected one accepted World Event response, got {results:?}").into());
+    };
+    wire::decode_world_event_state(bytes).map_err(debug)
 }
 
 async fn receipt_count(h: &Harness) -> TestResult<i64> {

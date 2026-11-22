@@ -191,6 +191,19 @@ async fn spawn(
     oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
 )> {
     let mut runtime = owner.runtime.lock().await;
+    spawn_at_health(&mut runtime, actor, key, dx, 100)
+}
+
+fn spawn_at_health(
+    runtime: &mut ChannelRuntimeV1,
+    actor: ExactActorRef,
+    key: &str,
+    dx: i32,
+    maximum_health: i64,
+) -> TestResult<(
+    ExactActorRef,
+    oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+)> {
     let from = runtime
         .read_actor_position(actor)
         .map_err(debug)?
@@ -203,7 +216,7 @@ async fn spawn(
                 floor: from.floor,
             },
             key,
-            100,
+            maximum_health,
         )
         .map_err(debug)?;
     let visible = runtime.visible_entities();

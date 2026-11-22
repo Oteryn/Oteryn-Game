@@ -683,6 +683,26 @@ pub trait FreshAdmissionAuthority {
         async move { Some(self.use_item(actor, command, item).await) }
     }
 
+    /// A carried handle USE can retain its original wire identity after the view refreshes.
+    fn use_item_handle_completion(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        item: ItemKey,
+        _handle: std::num::NonZeroU64,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        self.use_item_completion(actor, command, item)
+    }
+
+    fn replay_stamina_extension_handle(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _handle: std::num::NonZeroU64,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
     /// I10a: a carried fluid container used on a map source or ground tile.
     fn use_fluid_on_map(
         &self,

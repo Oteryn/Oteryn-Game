@@ -83,6 +83,10 @@ pub enum ItemUseKind {
         wire_binding: [u8; 32],
     },
     Concoction,
+    StaminaExtension {
+        wire_binding: [u8; 32],
+        minutes_before: u16,
+    },
     /// W09: the Cube's bounded original USE bytes, retained beside the atomic transform.
     DromeCube {
         wire_binding: [u8; 32],
@@ -113,7 +117,7 @@ impl ItemUseKind {
             Self::ProficiencyOrb => proficiency_orb::ORB_CAUSE,
             Self::RottenEssence => rotten_essence::ESSENCE_CAUSE,
             Self::SoulWarSourceUse { .. } => soul_war_source::SOURCE_USE_CAUSE,
-            Self::Concoction => concoction::CONCOCTION_CAUSE,
+            Self::Concoction | Self::StaminaExtension { .. } => concoction::CONCOCTION_CAUSE,
             Self::DromeCube { .. } => drome_cube::DROME_CUBE_CAUSE,
             Self::HirelingLamp { .. } => super::house_hireling::LAMP_USE_CAUSE,
             Self::HirelingFood { .. } => gourmet::GOURMET_CAUSE,
@@ -245,6 +249,14 @@ impl ItemUseRequest {
         {
             return Err(ItemUseError::InvalidInput);
         }
+        if let ItemUseKind::StaminaExtension { wire_binding, minutes_before } = self.kind
+            && (wire_binding == [0; 32]
+                || u32::from(minutes_before) > oteryn_gameplay_characters::stamina::MAX_STAMINA_MINUTES
+                || self.source_definition.family != "Item"
+                || self.source_definition.production_key != concoction::STAMINA_EXTENSION_KEY)
+        {
+            return Err(ItemUseError::InvalidInput);
+        }
         let flask_valid = match (&self.flask, self.kind) {
             (
                 ItemUseFlaskPlan::None,
@@ -252,6 +264,7 @@ impl ItemUseRequest {
                 | ItemUseKind::Potion
                 | ItemUseKind::MountTaming
                 | ItemUseKind::Concoction
+                | ItemUseKind::StaminaExtension { .. }
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
                 | ItemUseKind::RottenEssence
@@ -265,6 +278,7 @@ impl ItemUseRequest {
                 ItemUseKind::Food
                 | ItemUseKind::MountTaming
                 | ItemUseKind::Concoction
+                | ItemUseKind::StaminaExtension { .. }
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
                 | ItemUseKind::RottenEssence
@@ -357,6 +371,10 @@ impl ItemUseRequest {
         | ItemUseKind::SoulWarSourceUse { wire_binding } = self.kind
         {
             hasher.update(wire_binding);
+        }
+        if let ItemUseKind::StaminaExtension { wire_binding, minutes_before } = self.kind {
+            hasher.update(wire_binding);
+            hasher.update(minutes_before.to_be_bytes());
         }
         hasher.update(self.command_id.to_be_bytes());
         text(&mut hasher, &self.content_revision);
@@ -515,14 +533,17 @@ impl DurabilityRoot {
                         tx.commit(deadline).await?;
                         return Ok(Ok(outcome));
                     }
-                    match replay(&mut tx, &fence, &request).await {
-                        Ok(Some(outcome)) => {
-                            tx.commit(deadline).await?;
-                            return Ok(Ok(outcome));
+                    let stamina_extension = matches!(request.kind, ItemUseKind::StaminaExtension { .. });
+                    if !stamina_extension {
+                        match replay(&mut tx, &fence, &request).await {
+                            Ok(Some(outcome)) => {
+                                tx.commit(deadline).await?;
+                                return Ok(Ok(outcome));
+                            }
+                            Ok(None) => {}
+                            Err(ItemUseError::Unavailable(error)) => return Err(error),
+                            Err(error) => return Ok(Err(error.into())),
                         }
-                        Ok(None) => {}
-                        Err(ItemUseError::Unavailable(error)) => return Err(error),
-                        Err(error) => return Ok(Err(error.into())),
                     }
                     if let Some(content) = *weights {
                         use super::character_equipment::{
@@ -551,16 +572,28 @@ impl DurabilityRoot {
                             }
                         }
                     }
-                    match assert_item_only_fence(&mut tx, &fence, &node).await? {
-                        Ok(root) => {
-                            if root.content_revision != request.content_revision
-                                || root.ruleset_revision != request.ruleset_revision
-                            {
-                                return Ok(Err(ItemUseError::StaleState.into()));
-                            }
-                        }
+                    let root = match assert_item_only_fence(&mut tx, &fence, &node).await? {
+                        Ok(root) => root,
                         Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
                         Err(_) => return Ok(Err(ItemUseError::AuthorityRejected.into())),
+                    };
+                    if root.content_revision != request.content_revision
+                        || root.ruleset_revision != request.ruleset_revision
+                    {
+                        return Ok(Err(ItemUseError::StaleState.into()));
+                    }
+                    // Recheck under the Character root lock before the cooldown can mask
+                    // a concurrent commit of the same retained request.
+                    if stamina_extension {
+                        match replay(&mut tx, &fence, &request).await {
+                            Ok(Some(outcome)) => {
+                                tx.commit(deadline).await?;
+                                return Ok(Ok(outcome));
+                            }
+                            Ok(None) => {}
+                            Err(ItemUseError::Unavailable(error)) => return Err(error),
+                            Err(error) => return Ok(Err(error.into())),
+                        }
                     }
                     if let Some(outcome) = tibiadrome::preserve(&mut tx, &fence, &request)
                         .await
@@ -586,7 +619,7 @@ impl DurabilityRoot {
                             Err(error) => return Ok(Err(error)),
                         }
                     }
-                    if request.kind == ItemUseKind::Concoction {
+                    if matches!(request.kind, ItemUseKind::Concoction | ItemUseKind::StaminaExtension { .. }) {
                         match concoction::admit(&mut tx, &fence, &request).await {
                             Ok(()) => {}
                             Err(ItemUseError::Unavailable(error)) => return Err(error),
@@ -612,6 +645,13 @@ impl DurabilityRoot {
                                 .await
                                 .map(|()| outcome)
                         }
+                        Ok(outcome @ ItemUseOutcome::Written { .. })
+                            if stamina_extension =>
+                        {
+                            concoction::extend_stamina(&mut tx, &node, &fence, &request, root.revision)
+                                .await
+                                .map(|()| outcome)
+                        }
                         result => result,
                     };
                     match written {
@@ -628,6 +668,7 @@ impl DurabilityRoot {
                                 | ItemUseKind::RottenEssence
                                 | ItemUseKind::SoulWarSourceUse { .. }
                                 | ItemUseKind::Concoction
+                                | ItemUseKind::StaminaExtension { .. }
                                 | ItemUseKind::HirelingLamp { .. }
                                 | ItemUseKind::HirelingFood { .. }
                                 | ItemUseKind::DromeCube { .. }

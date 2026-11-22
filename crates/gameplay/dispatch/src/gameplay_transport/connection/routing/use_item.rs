@@ -54,10 +54,6 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         .continuity
         .selected_capabilities
         .contains(CAPABILITY_ITEM_USE_V1)
-        // Cube receipts belong to Channel sessions. A named-House handoff has
-        // its own session and must reach its owner after the shared trade check.
-        && !admitted.item_fence.is_some_and(|fence| matches!(fence.runtime_scope,
-            crate::foundation::RuntimeScopeRefV1::Instance { .. }))
         && let Ok(intent) = &decoded
         && intent.use_with.is_none()
         && intent.use_with_map_item.is_none()
@@ -67,19 +63,33 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
         )
     {
+        let original = UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id: command.command_id,
+            item_fence: admitted.item_fence,
+        };
         let source = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
             _ => None,
         };
-        if let Some(outcome) = tokio::time::timeout(
+        // A successful activation may have consumed the last unit behind the original handle.
+        if let UseTarget::Item(handle) = intent.target
+            && source.is_none()
+            && let Some(outcome) = tokio::time::timeout(
+                std::time::Duration::from_secs(10),
+                authority.replay_stamina_extension_handle(actor, original, handle),
+            ).await.ok()?.ok()?
+        {
+            return Some(Dispatch::Use(outcome));
+        }
+        // Named-House Cube uses must reach their scope owner after the shared trade check.
+        if !admitted.item_fence.is_some_and(|fence| matches!(fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }))
+            && let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_drome_cube(
                 actor,
-                UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command.command_id,
-                    item_fence: admitted.item_fence,
-                },
+                original,
                 intent.clone(),
                 source,
             ),
@@ -528,7 +538,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     (_, Some(key), _) if consumable => {
                         let outcome = tokio::time::timeout(
                             std::time::Duration::from_secs(10),
-                            authority.use_item_completion(
+                            authority.use_item_handle_completion(
                                 actor,
                                 UseCommand {
                                     game_session_id: admitted.game_session_id,
@@ -536,6 +546,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                                     item_fence: admitted.item_fence,
                                 },
                                 key,
+                                handle,
                             ),
                         ).await.ok().flatten()?;
                         if authority.item_use_pending(actor, admitted.game_session_id).await { return None; }

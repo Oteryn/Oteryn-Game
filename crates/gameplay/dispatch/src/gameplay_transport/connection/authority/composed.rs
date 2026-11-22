@@ -1215,30 +1215,36 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         item: item_view::ItemKey,
     ) -> Option<UseOutcome> {
-        if let Some(outcome) = self.use_coin(actor, command, item).await {
-            return outcome;
-        }
-        if let Some(outcome) = self.use_reward_bag(actor, command, item).await {
-            return outcome;
-        }
-        if let Some(outcome) = self.use_lottery_ticket(actor, command, item).await {
-            return outcome;
-        }
-        if let Some(outcome) = self.use_converter_item(actor, command, item).await {
-            return outcome;
-        }
-        if let Some(outcome) = self.use_timed_item(actor, command, item).await {
-            return outcome;
-        }
-        Some(self.use_item(actor, command, item).await)
+        self.complete_carried_use(actor, command, item, None).await
+    }
+
+    async fn use_item_handle_completion(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: item_view::ItemKey,
+        handle: std::num::NonZeroU64,
+    ) -> Option<UseOutcome> {
+        self.complete_carried_use(actor, command, item, Some(handle))
+            .await
+    }
+
+    async fn replay_stamina_extension_handle(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        handle: std::num::NonZeroU64,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.replay_stamina_handle(actor, command, handle).await
     }
 
     async fn item_use_pending(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         let states = self.states.spell_states.lock().await;
-        states
-            .pending_gourmet
-            .iter()
-            .any(|pending| pending.actor == actor && pending.session == session)
+        states.item_uses.stamina_extension_pending(actor, session)
+            || states
+                .pending_gourmet
+                .iter()
+                .any(|pending| pending.actor == actor && pending.session == session)
             || states
                 .pending_hireling_lamps
                 .iter()
@@ -1523,6 +1529,22 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return false;
         }
         record_entry_decision("playable", 1, started.elapsed(), "hireling_ingress");
+        // The connection cannot open while these original commands still hold a reservation.
+        if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            if let Some(actor) = admitted.runtime_actor
+                && !self
+                    .settle_pending_stamina_extension(actor, admitted.game_session_id)
+                    .await
+            {
+                return false;
+            }
+            depot_search::reconcile(self, *admitted).await
+        })
+        .await
+        .unwrap_or(false)
+        {
+            return false;
+        }
         let started = tokio::time::Instant::now();
         let recovered = self
             .states

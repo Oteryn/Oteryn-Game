@@ -61,7 +61,8 @@ impl Concoction {
     }
 
     pub fn from_production_key(key: &str) -> Option<Self> {
-        ALL.into_iter().find(|kind| kind.production_key() == key)
+        let id = key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()?;
+        Self::from_item_id(id).filter(|kind| kind.production_key() == key)
     }
 
     pub const fn item_id(self) -> u32 {

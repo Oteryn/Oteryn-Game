@@ -15,9 +15,10 @@ mod soul_war_source;
 #[path = "item_use_temple_scroll.rs"]
 pub(super) mod temple_scroll;
 
-use std::num::NonZeroU32;
+use std::num::{NonZeroU32, NonZeroU64};
 use std::time::Duration;
 
+use oteryn_gameplay_items::concoctions::Concoction;
 use oteryn_gameplay_items::hotkey_search::HotkeyRefusal;
 
 use oteryn_simulation_determinism::{
@@ -39,6 +40,7 @@ use crate::durability::character_authority::SERVER_BUILD_ID;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::BackpackEntry;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::durability::item_use::concoction::stamina_extension_after;
 use crate::durability::item_use::fluid::{
     ItemFluidChange, ItemFluidOutcome, ItemFluidRequest, ItemFluidSplash,
 };
@@ -84,6 +86,8 @@ struct ItemUseGate {
     last: Option<(u64, UseDisposition)>,
     /// W09: retain a Cube PREPARE across cancellation/unknown COMMIT, never re-plan it.
     cube_pending: Option<Box<drome_cube::PendingCubeUse>>,
+    /// Keep the exact stamina and custody plan until the transaction has a known outcome.
+    stamina_pending: Option<Box<ItemUseRequest>>,
     source_pending: Option<Box<soul_war_source::PendingSourceUse>>,
     source_last: Option<(u64, [u8; 32], UseDisposition)>,
     arbaziloth_rod_last: Option<(u64, [u8; 32], UseDisposition)>,
@@ -127,7 +131,7 @@ impl ItemUseGate {
                 return Err(UseDisposition::Rejected);
             }
             // The concoction cooldown is durable; the writer refuses inside it.
-            ItemUseKind::Concoction => {
+            ItemUseKind::Concoction | ItemUseKind::StaminaExtension { .. } => {
                 self.in_flight_since_ms = Some(now_ms);
                 return Ok(());
             }
@@ -241,6 +245,16 @@ impl ItemUseGates {
         gate.settle(1, UseDisposition::Committed, &[]);
         Some(())
     }
+    pub(super) fn stamina_extension_pending(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        self.0
+            .iter()
+            .any(|(a, s, gate)| *a == actor && *s == session && gate.stamina_pending.is_some())
+    }
+
     pub(in crate::gameplay_transport) fn house_transfer_ready(
         &self,
         actor: ExactActorRef,
@@ -348,13 +362,42 @@ pub(super) fn hireling_refusal(
 enum Effect {
     Food(u16),
     Potion(Vec<ReferencePotionRestore>),
-    /// W22c: the durable effect row is the whole effect; the kill settle reads it.
+    /// Concoction effects settle through their durable activation.
     Concoction,
 }
 
 enum UseSource {
     Handle(ItemKey),
     Definition(NonZeroU32),
+}
+
+fn stamina_handle_binding(handle: NonZeroU64) -> [u8; 32] {
+    Sha256::new()
+        .chain_update(b"oteryn:stamina-extension-use:v1")
+        .chain_update([2])
+        .chain_update(handle.get().to_be_bytes())
+        .finalize()
+        .into()
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static LOSE_STAMINA_ACK: std::cell::Cell<bool>;
+}
+
+impl UseSource {
+    fn stamina_wire_binding(&self) -> Option<[u8; 32]> {
+        let hash = Sha256::new().chain_update(b"oteryn:stamina-extension-use:v1");
+        Some(
+            match self {
+                Self::Handle(ItemKey::Instance(id)) => hash.chain_update([0]).chain_update(id),
+                Self::Definition(id) => hash.chain_update([1]).chain_update(id.get().to_be_bytes()),
+                Self::Handle(_) => return None,
+            }
+            .finalize()
+            .into(),
+        )
+    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -369,7 +412,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         item: ItemKey,
     ) -> UseOutcome {
-        self.use_carried_item(actor, command, UseSource::Handle(item))
+        self.use_carried_item(actor, command, UseSource::Handle(item), None)
             .await
     }
 
@@ -380,7 +423,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         definition: NonZeroU32,
     ) -> UseOutcome {
-        self.use_carried_item(actor, command, UseSource::Definition(definition))
+        self.use_carried_item(actor, command, UseSource::Definition(definition), None)
             .await
     }
 
@@ -408,13 +451,99 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 
+    pub(super) async fn complete_carried_use(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        item: ItemKey,
+        handle: Option<NonZeroU64>,
+    ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_coin(actor, command, item).await {
+            return outcome;
+        }
+        if let Some(outcome) = self.use_reward_bag(actor, command, item).await {
+            return outcome;
+        }
+        if let Some(outcome) = self.use_lottery_ticket(actor, command, item).await {
+            return outcome;
+        }
+        if let Some(outcome) = self.use_converter_item(actor, command, item).await {
+            return outcome;
+        }
+        if let Some(outcome) = self.use_timed_item(actor, command, item).await {
+            return outcome;
+        }
+        Some(
+            self.use_carried_item(actor, command, UseSource::Handle(item), handle)
+                .await,
+        )
+    }
+
+    pub(super) async fn replay_stamina_handle(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        handle: NonZeroU64,
+    ) -> Result<Option<UseOutcome>, ()> {
+        let Some(fence) = command.item_fence else {
+            return Ok(None);
+        };
+        if fence.game_session_id != command.game_session_id {
+            return Ok(None);
+        }
+        let binding = stamina_handle_binding(handle);
+        let _permit = self.spell_lane_permit().await.ok_or(())?;
+        let pending = {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            states
+                .item_uses
+                .gate(&runtime, actor, command.game_session_id)
+                .and_then(|gate| gate.stamina_pending.as_deref())
+                .filter(|request| request.command_id == command.command_id)
+                .cloned()
+        };
+        let disposition = if let Some(request) = pending {
+            if matches!(request.kind, ItemUseKind::StaminaExtension { wire_binding, .. } if wire_binding == binding)
+            {
+                self.finish_stamina_extension(actor, fence, request)
+                    .await
+                    .map_err(|_| ())?
+            } else {
+                UseDisposition::Rejected
+            }
+        } else {
+            match self
+                .root
+                .replay_stamina_extension(
+                    self.character,
+                    self.holder,
+                    fence,
+                    command.command_id,
+                    binding,
+                )
+                .await
+            {
+                Ok(true) => UseDisposition::Committed,
+                Ok(false) => return Ok(None),
+                Err(ItemUseError::Unavailable(_)) => return Err(()),
+                Err(_) => UseDisposition::Rejected,
+            }
+        };
+        Ok(Some(UseOutcome {
+            disposition,
+            ..UseOutcome::rejected()
+        }))
+    }
+
     async fn use_carried_item(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
         source: UseSource,
+        handle: Option<NonZeroU64>,
     ) -> UseOutcome {
-        let disposition = match self.item_use(actor, command, source).await {
+        let disposition = match self.item_use(actor, command, source, handle).await {
             Ok(disposition) | Err(disposition) => disposition,
         };
         UseOutcome {
@@ -431,9 +560,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         source: UseSource,
+        handle: Option<NonZeroU64>,
     ) -> Result<UseDisposition, UseDisposition> {
         let fence = command.item_fence.ok_or(UseDisposition::Rejected)?;
         let session = command.game_session_id;
+        if fence.game_session_id != session {
+            return Err(UseDisposition::Rejected);
+        }
         if !super::hireling::resolve_pending_lamp(self, actor, session).await {
             return Err(UseDisposition::Rejected);
         }
@@ -536,7 +669,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .spell_lane_permit()
             .await
             .ok_or(UseDisposition::Rejected)?;
-        {
+        let wire_binding = handle
+            .map(stamina_handle_binding)
+            .or_else(|| source.stamina_wire_binding());
+        let pending = {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             // A pending spell commit or a durable spell reserving this actor's
@@ -548,8 +684,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Err(UseDisposition::Rejected);
             }
-            let gate = states.item_uses.gate(&runtime, actor, session);
-            gate.ok_or(UseDisposition::Rejected)?
+            states
+                .item_uses
+                .gate(&runtime, actor, session)
+                .ok_or(UseDisposition::Rejected)?
+                .stamina_pending
+                .clone()
+        };
+        if let Some(pending) = pending {
+            let same_command = pending.command_id == command.command_id;
+            if same_command
+                && !matches!(pending.kind,
+                ItemUseKind::StaminaExtension { wire_binding: expected, .. } if wire_binding == Some(expected))
+            {
+                return Err(UseDisposition::Rejected);
+            }
+            let result = self
+                .finish_stamina_extension(actor, fence, *pending)
+                .await?;
+            if same_command {
+                return Ok(result);
+            }
+        }
+        if let Some(binding) = wire_binding
+            && self
+                .root
+                .replay_stamina_extension(
+                    self.character,
+                    self.holder,
+                    fence,
+                    command.command_id,
+                    binding,
+                )
+                .await
+                .map_err(|_| UseDisposition::Rejected)?
+        {
+            return Ok(UseDisposition::Committed);
+        }
+        {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            states
+                .item_uses
+                .gate(&runtime, actor, session)
+                .ok_or(UseDisposition::Rejected)?
                 .admit(command.command_id, self.owner_ms())?;
         }
         let native = self
@@ -641,16 +819,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .drink(actor, &command, fence, source, definition, fluid)
                 .await;
         }
+        let concoction = (entry.item.definition.family == "Item")
+            .then(|| Concoction::from_production_key(&entry.item.definition.production_key))
+            .flatten();
         let (kind, effect, flask) = match record.map(|record| &record.semantics.consumption) {
-            _ if entry.item.definition.production_key
-                == crate::durability::item_use::concoction::WEALTH_DUPLEX_KEY =>
-            {
+            _ if concoction == Some(Concoction::StaminaExtension) => {
+                let binding = wire_binding.ok_or(UseDisposition::NothingToUse)?;
+                if !self
+                    .flush_stamina_for_extension(actor, session, &permit)
+                    .await
+                {
+                    return Err(UseDisposition::Rejected);
+                }
+                let states = self.states.spell_states.lock().await;
+                let minutes_before = states
+                    .stamina_extension_before(actor, session)
+                    .ok_or(UseDisposition::StaleState)?;
                 (
-                    ItemUseKind::Concoction,
+                    ItemUseKind::StaminaExtension {
+                        wire_binding: binding,
+                        minutes_before,
+                    },
                     Effect::Concoction,
                     ItemUseFlaskPlan::None,
                 )
             }
+            _ if concoction == Some(Concoction::WealthDuplex) => (
+                ItemUseKind::Concoction,
+                Effect::Concoction,
+                ItemUseFlaskPlan::None,
+            ),
             None => return Err(UseDisposition::NothingToUse),
             Some(consumption) => match consumption {
                 ReferenceItemField::Known(ReferenceItemConsumption::Food(food))
@@ -723,6 +921,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(UseDisposition::StaleState);
             }
             gate.start(kind, self.owner_ms())?;
+            if let ItemUseKind::StaminaExtension { .. } = kind {
+                // The lane owner retries this exact plan if COMMIT is ambiguous or cancelled.
+                gate.unspendable.push(source);
+                gate.stamina_pending = Some(Box::new(request.clone()));
+            }
+        }
+        if matches!(kind, ItemUseKind::StaminaExtension { .. }) {
+            return self.finish_stamina_extension(actor, fence, request).await;
         }
         let analyser_supply =
             matches!(kind, ItemUseKind::Potion).then(|| request.source_definition.clone());
@@ -974,6 +1180,113 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             ..UseOutcome::rejected()
         })
+    }
+
+    pub(super) async fn settle_pending_stamina_extension(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        if !self
+            .states
+            .spell_states
+            .lock()
+            .await
+            .item_uses
+            .stamina_extension_pending(actor, session)
+        {
+            return true;
+        }
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return false;
+        };
+        let pending = {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            let Some(gate) = states.item_uses.gate(&runtime, actor, session) else {
+                return false;
+            };
+            gate.stamina_pending.clone()
+        };
+        let Some(request) = pending else {
+            return true;
+        };
+        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+            return false;
+        };
+        self.finish_stamina_extension(actor, fence.item_fence(), *request)
+            .await
+            .is_ok()
+    }
+
+    async fn finish_stamina_extension(
+        &self,
+        actor: ExactActorRef,
+        fence: CurrentCharacterItemFence,
+        request: ItemUseRequest,
+    ) -> Result<UseDisposition, UseDisposition> {
+        let ItemUseKind::StaminaExtension { minutes_before, .. } = request.kind else {
+            return Err(UseDisposition::Rejected);
+        };
+        let session = fence.game_session_id;
+        let id = request.command_id;
+        let source = request.source_item_instance_id;
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        slot.observe_loop_training();
+        let commit = self
+            .root
+            .commit_item_use(self.character, self.holder, fence, request);
+        let bound = Duration::from_millis(ITEMUSE0_RL_04_AMBIGUOUS_MS);
+        let result = tokio::time::timeout(bound, commit).await;
+        #[cfg(test)]
+        let result = if matches!(result, Ok(Ok(ItemUseOutcome::Written { .. })))
+            && LOSE_STAMINA_ACK.try_with(|lose| lose.replace(false)) == Ok(true)
+        {
+            Ok(Err(ItemUseError::Unavailable(
+                crate::durability::DurabilityError::CommitOutcomeUnknown,
+            )))
+        } else {
+            result
+        };
+        let disposition = match result {
+            Ok(Ok(_)) => UseDisposition::Committed,
+            Ok(Err(ItemUseError::StaleState)) => UseDisposition::StaleState,
+            Ok(Err(ItemUseError::Cooldown)) => UseDisposition::Exhausted,
+            Ok(Err(ItemUseError::Unavailable(_))) | Err(_) => return Err(UseDisposition::Rejected),
+            Ok(Err(_)) => UseDisposition::Rejected,
+        };
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
+            if let Ok(command) = crate::foundation::CommandId::new(id) {
+                let reference = crate::foundation::CommandRef::new(session, command);
+                if (self.states.command_ingress.pending(reference)
+                    || self.states.command_ingress.reconcilable(reference))
+                    && self
+                        .states
+                        .command_ingress
+                        .complete_item_use(reference, disposition)
+                        .is_none()
+                {
+                    return Err(UseDisposition::Rejected);
+                }
+            }
+            gate.stamina_pending = None;
+            gate.unspendable.retain(|item| *item != source);
+            gate.settle(id, disposition, &[]);
+            // A retained request may be acknowledged by replay. Only its live pending owner
+            // publishes the gain; historical reads on their own never update live stamina.
+            if disposition == UseDisposition::Committed {
+                states.publish_stamina_extension(
+                    &runtime,
+                    actor,
+                    session,
+                    minutes_before,
+                    stamina_extension_after(minutes_before),
+                );
+            }
+        }
+        Ok(disposition)
     }
 
     async fn pour_fluid_between(

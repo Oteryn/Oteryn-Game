@@ -14,6 +14,9 @@
 //!   1 s..1 day (`src/creatures/monsters/spawns/spawn_monster.cpp:443-458`); skill and magic
 //!   tries `data/events/scripts/player.lua:658`.
 //!
+//! - Fast Exercise is a boolean flag from Crystal 201189f8
+//!   `data/json/eventscheduler/events.json:40-46`. Any active Fast Exercise window enables it.
+//!
 //! Crystal reads the host's local clock once at startup. Oteryn reads UTC at each use, as the
 //! Rashid rotation fixes its calendar to UTC (`rashid_schedule.rs`).
 
@@ -27,13 +30,14 @@ pub const NEUTRAL_RATE: u32 = 100;
 const MIN_RESPAWN_MICROS: u64 = 1_000_000;
 const MAX_RESPAWN_MICROS: u64 = 86_400_000_000;
 
-/// The four admitted multipliers, whole percentages.
+/// Whole-percentage event rates and the Fast Exercise cadence flag.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct EventRates {
     pub experience: u32,
     pub loot: u32,
     pub spawn: u32,
     pub skill: u32,
+    pub fast_exercise: bool,
 }
 
 impl Default for EventRates {
@@ -43,6 +47,7 @@ impl Default for EventRates {
             loot: NEUTRAL_RATE,
             spawn: NEUTRAL_RATE,
             skill: NEUTRAL_RATE,
+            fast_exercise: false,
         }
     }
 }
@@ -114,6 +119,8 @@ struct SourceRates {
     lootrate: Option<u32>,
     spawnrate: Option<u32>,
     skillrate: Option<u32>,
+    #[serde(default)]
+    fastexercise: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -177,6 +184,7 @@ impl Schedule {
                     loot: rate(event.ingame.lootrate),
                     spawn: rate(event.ingame.spawnrate),
                     skill: rate(event.ingame.skillrate),
+                    fast_exercise: event.ingame.fastexercise,
                 },
             });
         }
@@ -247,6 +255,7 @@ impl Schedule {
                 loot: compound(active.loot, event.rates.loot),
                 spawn: compound(active.spawn, event.rates.spawn),
                 skill: compound(active.skill, event.rates.skill),
+                fast_exercise: active.fast_exercise || event.rates.fast_exercise,
             })
     }
 }
@@ -260,16 +269,20 @@ pub fn content_schedule() -> &'static Schedule {
 
 /// The rates in force now: the content schedule at the current UTC second.
 pub fn current_rates() -> EventRates {
+    rates_ago(std::time::Duration::ZERO)
+}
+
+/// Evaluate a due tick at its UTC time, using its monotonic age relative to now.
+pub fn rates_ago(age: std::time::Duration) -> EventRates {
     #[cfg(any(test, feature = "test-support"))]
-    if let Some(rates) = test_clock::rates() {
+    if let Some(rates) = test_clock::rates_ago(age) {
         return rates;
     }
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .ok()
-        .and_then(|elapsed| i64::try_from(elapsed.as_secs()).ok())
-        .unwrap_or(0);
-    content_schedule().rates_at(now)
+        .unwrap_or_default();
+    let tick = now.saturating_sub(age);
+    content_schedule().rates_at(i64::try_from(tick.as_secs()).unwrap_or(i64::MAX))
 }
 
 /// Experience, a loot chance or skill tries under `percent` (floor).
@@ -363,12 +376,18 @@ pub mod test_clock {
         Guard(CLOCK.with(|clock| clock.borrow_mut().replace((schedule, unix_seconds))))
     }
 
-    pub(super) fn rates() -> Option<EventRates> {
+    pub(super) fn rates_ago(age: std::time::Duration) -> Option<EventRates> {
+        // The supplied instant is on a whole second. Going back by a fractional
+        // second falls in the preceding second for the inclusive window check.
+        let seconds = age
+            .as_secs()
+            .saturating_add(u64::from(age.subsec_nanos() != 0));
+        let seconds = i64::try_from(seconds).unwrap_or(i64::MAX);
         CLOCK.with(|clock| {
             clock
                 .borrow()
                 .as_ref()
-                .map(|(schedule, now)| schedule.rates_at(*now))
+                .map(|(schedule, now)| schedule.rates_at(now.saturating_sub(seconds)))
         })
     }
 }
@@ -428,6 +447,7 @@ mod tests {
             loot: 150,
             spawn: 200,
             skill: 300,
+            fast_exercise: false,
         };
         assert_eq!(schedule.rates_at(START - 1), EventRates::default());
         assert_eq!(schedule.rates_at(START), active);
@@ -480,10 +500,26 @@ mod tests {
     fn w05d_content_schedule_parses_and_is_neutral_now() {
         let schedule = Schedule::parse(SCHEDULE).expect("content schedule");
         assert_eq!(&schedule, content_schedule());
-        // The donor's two example events (2024, every rate 100) leave every rate neutral.
-        assert_eq!(schedule.events.len(), 2);
+        // The two 2024 example events leave every rate neutral outside Fast Exercise.
+        assert_eq!(schedule.events.len(), 3);
         assert_eq!(schedule.rates_at(1_704_067_200), EventRates::default());
         assert_eq!(current_rates(), EventRates::default());
+    }
+
+    #[test]
+    fn fast_exercise_schedule_is_inclusive_at_both_window_edges() {
+        // Crystal's 2024-11-12 through 2024-11-17 window in the production UTC schedule.
+        let start = 1_731_369_600;
+        let end = 1_731_887_999;
+        let schedule = content_schedule();
+        assert_eq!(schedule.rates_at(start - 1), EventRates::default());
+        let active = EventRates {
+            fast_exercise: true,
+            ..EventRates::default()
+        };
+        assert_eq!(schedule.rates_at(start), active);
+        assert_eq!(schedule.rates_at(end), active);
+        assert_eq!(schedule.rates_at(end + 1), EventRates::default());
     }
 
     #[test]

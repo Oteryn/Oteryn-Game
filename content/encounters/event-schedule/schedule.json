@@ -21,6 +21,14 @@
         "spawnrate": 100,
         "skillrate": 100
       }
+    },
+    {
+      "name": "Fast Exercise",
+      "startdate": "11/12/2024",
+      "enddate": "11/17/2024",
+      "ingame": {
+        "fastexercise": true
+      }
     }
   ],
   "seasonal": [

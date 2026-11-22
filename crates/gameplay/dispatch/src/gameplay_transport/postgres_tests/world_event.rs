@@ -1,7 +1,23 @@
 //! Real reset finalization -> admitted command bytes -> receipt -> result -> restart.
-use super::world_event_fixtures::{scenario_run};
+use super::world_event_fixtures::{FlowerMonthCheck, scenario_run, scenario_with_flower_month};
 
 use super::*;
+
+#[test]
+fn flower_month_world_event_query_reports_committed_june_only() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario_with_flower_month(FlowerMonthCheck::Announcement)
+}
+
+#[test]
+fn flower_month_world_event_query_replays_original_epoch_response() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario_with_flower_month(FlowerMonthCheck::Replay)
+}
 
 #[test]
 fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {

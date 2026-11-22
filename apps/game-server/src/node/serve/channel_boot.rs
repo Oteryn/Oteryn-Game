@@ -357,6 +357,7 @@ pub(super) async fn prepare_channel(
         )
     };
     let mut timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot)
+        .with_bundle_effects(&movement_cells)
         .with_seasonal(npc_boot, &seasonal, |position| {
             bundle.as_ref().is_some_and(|world| {
                 if (position.x, position.y, position.floor) == (33303, 32064, -7) {

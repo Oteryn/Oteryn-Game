@@ -1,43 +1,77 @@
 //! Read side of depot search; existing depot and stash owners retain all write authority.
+use super::character_stash::StashRequest;
+use super::item_transfer::CurrentCharacterItemFence;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
+use crate::foundation::CommandRef;
 use oteryn_protocol_oteryn::depot_search::{SearchResult, TierCount};
-use oteryn_protocol_oteryn::stash::StashRow;
-use sqlx::Row;
+use oteryn_protocol_oteryn::stash::{StashAction, StashIntent};
+use sqlx::{Postgres, Row, Transaction};
+
+#[derive(Clone, Copy)]
+pub struct DepotSearchCommand {
+    pub command: CommandRef,
+    pub client_id: u32,
+    pub all: bool,
+}
+
+impl DepotSearchCommand {
+    pub(super) fn canonical_request(self) -> [u8; 5] {
+        let [a, b, c, d] = self.client_id.to_be_bytes();
+        [a, b, c, d, u8::from(self.all)]
+    }
+}
+
+fn retrieval_amount(available: u32, all: bool) -> Option<u32> {
+    (available > 0).then_some(if all { available } else { 1 })
+}
+
+/// Resolve one deterministic stash revision under the caller's Character root fence.
+pub(super) async fn stash_withdrawal(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: CurrentCharacterItemFence,
+    request: DepotSearchCommand,
+    definition_key: &str,
+) -> Result<Option<(StashRequest, u32)>, DurabilityError> {
+    let row = sqlx::query(
+        "SELECT uuid_send(last_entry_id) AS handle,quantity FROM game_character_stash_balances
+         WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid
+           AND definition_key=$3 AND quantity>0
+         ORDER BY definition_revision COLLATE \"C\" LIMIT 1",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+    .bind(definition_key)
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(row) = row else { return Ok(None) };
+    let available = u32::try_from(row.try_get::<i64, _>("quantity")?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let amount =
+        retrieval_amount(available, request.all).ok_or(DurabilityError::InvalidStoredState)?;
+    let handle = row
+        .try_get::<Vec<u8>, _>("handle")?
+        .try_into()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok(Some((
+        StashRequest {
+            command: request.command,
+            intent: StashIntent {
+                action: StashAction::Withdraw {
+                    row: handle,
+                    amount,
+                },
+                page: 0,
+            },
+            source: None,
+            row_open: true,
+            access_refusal: None,
+        },
+        amount,
+    )))
+}
 
 impl DurabilityRoot {
-    /// Resolve one deterministic stash revision for a depot-search retrieval.
-    /// The returned handle is server-issued and is still revalidated and locked by
-    /// `stash_conversion`; this read never grants mutation authority by itself.
-    pub async fn read_stash_definition(
-        &self,
-        recovery: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
-        character: CharacterId,
-        definition_key: &str,
-    ) -> Result<Option<StashRow>, DurabilityError> {
-        let record = recovery
-            .record_for(self)
-            .map_err(|_| DurabilityError::Unavailable)?;
-        let definition_key = definition_key.to_owned();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-            super::character_authority::assert_recovery_fence(&mut tx, &record).await?;
-            let row = sqlx::query("SELECT uuid_send(b.last_entry_id) AS handle,b.definition_key,b.definition_revision,b.quantity FROM game_character_stash_balances b JOIN game_character_roots r USING(character_id,world_id) WHERE b.character_id=encode($1,'hex')::uuid AND b.definition_key=$2 AND b.quantity>0 AND r.lifecycle=1 ORDER BY b.definition_revision COLLATE \"C\" LIMIT 1")
-                .bind(character.as_bytes().as_slice()).bind(definition_key).fetch_optional(&mut *tx).await?;
-            let row = row.map(|row| -> Result<StashRow, DurabilityError> {
-                Ok(StashRow {
-                    handle: row.try_get::<Vec<u8>, _>("handle")?.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,
-                    definition_key: row.try_get("definition_key")?,
-                    definition_revision: row.try_get("definition_revision")?,
-                    quantity: u32::try_from(row.try_get::<i64, _>("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,
-                    migration_required: false,
-                })
-            }).transpose()?;
-            super::db::commit_semantic_transaction(tx, deadline).await?;
-            Ok(row)
-        })).await
-    }
-
     /// One snapshot of the live Character's World-scoped custody aggregates.
     pub async fn read_depot_search(
         &self,
@@ -171,6 +205,13 @@ fn aggregate_holdings(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retrieval_selects_one_or_the_complete_balance() {
+        assert_eq!(retrieval_amount(62, false), Some(1));
+        assert_eq!(retrieval_amount(62, true), Some(62));
+        assert_eq!(retrieval_amount(0, true), None);
+    }
 
     #[test]
     fn depot_list_combines_chests_stash_inbox_stacks_and_tiers() -> Result<(), DurabilityError> {
