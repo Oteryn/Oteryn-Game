@@ -774,11 +774,21 @@ struct CleanseImmunity {
     until: u64,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct OutfitOverlay {
+    starts_at: u64,
+    ends_at: u64,
+    look_type: u32,
+    appearance: crate::domain::appearance::AppearanceSelection<String>,
+}
+
 /// The per-actor store.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConditionStore<S> {
     /// Sorted by sequence.
     instances: Vec<ConditionInstance<S>>,
+    /// A scripted visual override with its own deadline and no logout persistence.
+    outfit_overlay: Option<Box<OutfitOverlay>>,
     /// At most one immunity per closed conflict key; actor movement retains this same store.
     cleanse_immunities: Vec<CleanseImmunity>,
     /// EQUIP-0 §4: ephemeral equipped suppressions, retained when death clears instances.
@@ -796,6 +806,7 @@ impl<S> Default for ConditionStore<S> {
     fn default() -> Self {
         Self {
             instances: Vec::new(),
+            outfit_overlay: None,
             cleanse_immunities: Vec::new(),
             suppressed: std::collections::BTreeSet::new(),
             next_sequence: 0,
@@ -938,6 +949,7 @@ impl<S: Clone> ConditionStore<S> {
         self.instances
             .iter()
             .filter_map(ConditionInstance::non_ticking_ends_at)
+            .chain(self.outfit_overlay.iter().map(|outfit| outfit.ends_at))
             .chain(
                 self.cleanse_immunities
                     .iter()
@@ -954,7 +966,47 @@ impl<S: Clone> ConditionStore<S> {
             .retain(|instance| instance.non_ticking_ends_at().is_none_or(|end| now < end));
         self.cleanse_immunities
             .retain(|immunity| now < immunity.until);
-        before != (self.instances.len(), self.cleanse_immunities.len())
+        let outfit_expired = self.expire_outfit_overlay(now);
+        outfit_expired || before != (self.instances.len(), self.cleanse_immunities.len())
+    }
+
+    /// Temporarily display a qualified outfit while any underlying condition keeps its timer.
+    pub fn overlay_outfit(
+        &mut self,
+        look_type: u32,
+        appearance: crate::domain::appearance::AppearanceSelection<String>,
+        duration_ms: u32,
+        now: u64,
+    ) -> Result<(), ConditionRefusal> {
+        if look_type == 0
+            || appearance.outfit_key.is_empty()
+            || duration_ms == 0
+            || !self.accepts_time(now)
+        {
+            return Err(ConditionRefusal::ArithmeticBounds);
+        }
+        let ends_at = now
+            .checked_add(u64::from(duration_ms) * MICROS_PER_MS)
+            .ok_or(ConditionRefusal::TimeOverflow)?;
+        self.outfit_overlay = Some(Box::new(OutfitOverlay {
+            starts_at: now,
+            ends_at,
+            look_type,
+            appearance,
+        }));
+        Ok(())
+    }
+
+    fn expire_outfit_overlay(&mut self, now: u64) -> bool {
+        if self
+            .outfit_overlay
+            .as_ref()
+            .is_some_and(|outfit| now >= outfit.ends_at)
+        {
+            self.outfit_overlay = None;
+            return true;
+        }
+        false
     }
 
     /// One application at admission (§3, §3.1, §6.1). The provenance is frozen here (§3.2): the
@@ -1937,6 +1989,7 @@ impl<S: Clone> ConditionStore<S> {
             None => instance.definition.permanent_outfit || instance.remaining_total > 0,
             Some(end) => end > now || instance.next_tick_at.is_some_and(|due| due <= end),
         });
+        self.expire_outfit_overlay(now);
         ticks
     }
 
@@ -1964,6 +2017,7 @@ impl<S: Clone> ConditionStore<S> {
     /// would otherwise be measured against.
     pub fn clear_on_death(&mut self) {
         self.instances.clear();
+        self.outfit_overlay = None;
         self.cleanse_immunities.clear();
         self.pacified_applied_at = None;
     }

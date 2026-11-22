@@ -298,6 +298,7 @@ fn m09_mechanical_sewer_failed_roll_shocks_without_minting_fish() -> TestResult 
     run_sewer_shock(SewerShock {
         admin,
         replay: false,
+        prior_outfit: false,
     })
 }
 
@@ -309,12 +310,26 @@ fn m09_mechanical_sewer_shock_replay_does_not_apply_twice() -> TestResult {
     run_sewer_shock(SewerShock {
         admin,
         replay: true,
+        prior_outfit: false,
+    })
+}
+
+#[test]
+fn m09_mechanical_sewer_shock_overlays_and_restores_active_outfit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_sewer_shock(SewerShock {
+        admin,
+        replay: true,
+        prior_outfit: true,
     })
 }
 
 struct SewerShock {
     admin: String,
     replay: bool,
+    prior_outfit: bool,
 }
 
 fn run_sewer_shock(shock: SewerShock) -> TestResult {
@@ -404,6 +419,7 @@ fn gathering_scenario(
 ) -> TestResult {
     run(async |admin| {
         let replay_shock = shock.as_ref().map(|shock| shock.replay);
+        let prior_outfit = shock.as_ref().is_some_and(|shock| shock.prior_outfit);
         let admin = shock.map_or(admin, |shock| shock.admin);
         let harness =
             Harness::create_with_admission_seed(admin, "m09_gathering", true, false).await?;
@@ -696,6 +712,59 @@ fn gathering_scenario(
         admitted.continuity.item_view.handle_counter = counter;
         let command_id = 1;
         let _clock = replay_shock.map(|_| owner.freeze_owner_clock_for_test());
+        let prior_selection = if prior_outfit {
+            use crate::foundation::{
+                ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
+            };
+            let appearance = native
+                .spell_appearances()
+                .and_then(|index| index.for_creature("oteryn:creature.rat", "definition-r1"))
+                .ok_or("rat appearance")?;
+            let selection = appearance.selection();
+            let definition = ConditionDefinition::new(
+                "fixture.sewer_rat_outfit",
+                1,
+                ConditionValues::Outfit {
+                    look_type: appearance.look_type(),
+                    duration_ms: 60_000,
+                },
+            )
+            .and_then(|definition| definition.with_appearance(selection.clone()))
+            .ok_or("rat outfit definition")?;
+            let runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let player = states
+                .get_mut(&runtime, deps.actor, session)
+                .ok_or("fishing player")?;
+            let base_speed = u16::try_from(player.owned_base_speed())?;
+            player
+                .conditions
+                .apply(
+                    &definition,
+                    None,
+                    ConditionSourceKind::SelfUse,
+                    &[],
+                    &ApplicationFacts {
+                        now: owner.owner_now().get(),
+                        base_speed,
+                        mana_shield_capacity: 0,
+                        target_reentry_protected: false,
+                        source_reentry_protected: false,
+                        target_is_player: true,
+                        decision_root:
+                            &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+                                native.source_digest(),
+                            ),
+                        occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(
+                            [1; 16],
+                        ),
+                    },
+                )
+                .map_err(debug)?;
+            Some((appearance.look_type(), selection))
+        } else {
+            None
+        };
         let read_player = async || -> TestResult<_> {
             let runtime = owner.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
@@ -709,6 +778,8 @@ fn gathering_scenario(
                 conditions.outfit_at(now),
                 conditions.outfit_at(now + 3_999_999),
                 conditions.outfit_at(now + 4_000_000),
+                conditions.appearance_at(now + 4_000_000).cloned(),
+                conditions.outfit_at(now + 60_000_000),
             ))
         };
         let before_shock = if replay_shock.is_some() {
@@ -741,9 +812,23 @@ fn gathering_scenario(
                 .await?;
         assert_eq!(state, committed.then(|| after.map_or(0, i64::from)));
         let map = owner.bundle_map().ok_or("bundle map")?;
-        if let Some((health, _, _, _)) = before_shock {
+        if let Some((health, initial_look, _, _, _, _)) = before_shock {
+            let (restored_look, restored_selection) = prior_selection
+                .map(|(look, selection)| (Some(look), Some(selection)))
+                .unwrap_or_default();
+            assert_eq!(initial_look, restored_look);
             let after_shock = read_player().await?;
-            assert_eq!(after_shock, (health - 35, Some(33), Some(33), None));
+            assert_eq!(
+                after_shock,
+                (
+                    health - 35,
+                    Some(33),
+                    Some(33),
+                    restored_look,
+                    restored_selection,
+                    None
+                )
+            );
             let effects = map.facts.movement_effects_since(0);
             assert_eq!(
                 effects

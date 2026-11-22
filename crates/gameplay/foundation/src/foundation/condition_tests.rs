@@ -1966,6 +1966,65 @@ fn charm_gaps_single_tick_allows_cleanse_before_next_overdue_occurrence() {
 }
 
 #[test]
+fn scripted_outfit_overlay_preserves_the_underlying_condition_and_deadline() {
+    use crate::domain::appearance::AppearanceSelection;
+
+    let mut store = ConditionStore::<String>::new();
+    let appearance = |key: &str| AppearanceSelection {
+        outfit_key: key.to_owned(),
+        colours: [1, 2, 3, 4],
+        addons: 0,
+        mount_key: None,
+    };
+    let prior = appearance("cond.prior");
+    let condition = def(
+        "cond.prior",
+        ConditionValues::Outfit {
+            look_type: 21,
+            duration_ms: 60_000,
+        },
+    )
+    .with_appearance(prior.clone())
+    .expect("qualified prior outfit");
+    store
+        .apply(
+            &condition,
+            None,
+            ConditionSourceKind::SelfUse,
+            &[],
+            &facts(0, &root()),
+        )
+        .expect("apply prior outfit");
+    let original = store.clone();
+    let overlay = appearance("cond.overlay");
+    store
+        .overlay_outfit(33, overlay.clone(), 4_000, MS)
+        .expect("apply overlay");
+    let ends_at = 4_001 * MS;
+    assert_eq!(store.next_non_ticking_expiry(), Some(ends_at));
+    assert_eq!(store.outfit_at(ends_at - 1), Some(33));
+    assert_eq!(store.appearance_at(ends_at - 1), Some(&overlay));
+    assert_eq!(store.outfit_at(ends_at), Some(21));
+    assert_eq!(store.appearance_at(ends_at), Some(&prior));
+    assert_eq!(store.outfit_at(60_000 * MS), None);
+    assert_eq!(
+        store.persistent_snapshot(MS),
+        original.persistent_snapshot(MS)
+    );
+    assert!(
+        !store
+            .expire_non_ticking_checked(ends_at - 1)
+            .expect("before expiry")
+    );
+    assert!(
+        store
+            .expire_non_ticking_checked(ends_at)
+            .expect("at expiry")
+    );
+    assert_eq!(store, original);
+}
+
+#[test]
 fn tick_cleanup_retains_both_permanent_appearances() -> Result<(), String> {
     let root = root();
     let outfits = [
