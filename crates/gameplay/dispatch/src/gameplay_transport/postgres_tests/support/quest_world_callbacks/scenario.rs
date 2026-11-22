@@ -25,6 +25,7 @@ fn scenario_case(
 ) -> TestResult {
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
+    let classic_access = super::super::classic_quest_parity_fixtures::access(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -77,7 +78,7 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let pinned_qc_world = name.starts_with("m09-treasure-")
+    let pinned_qc_world = classic_access.is_some() || name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
     let native_crop = pinned_qc_world
         || m03_use
@@ -116,7 +117,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if let Some(access) = classic_access {
+        access.start
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -411,7 +414,7 @@ fn scenario_case(
         callback("questpc7-formal-display")?
     } else if outfit_world {
         callback(name)?
-    } else if classic_npc {
+    } else if classic_npc || classic_access.is_some() {
         callback("behemoth")?
     } else if rotten_purchase {
         callback("rotten-blood/sacrifice")?
@@ -1036,7 +1039,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if pinned_qc_world {
+        let world = if let Some(access) = classic_access {
+            super::super::qc_pinned_world::crop(
+                generation.native_gameplay().ok_or("native pinned world policies")?,
+                access.start,
+                &[access.source, access.destination],
+            )?
+        } else if pinned_qc_world {
             super::super::qc_pinned_world::world(
                 generation
                     .native_gameplay()
@@ -1394,6 +1403,7 @@ fn scenario_case(
         };
 
         let initial_level: Option<u32> = match name {
+            super::super::classic_quest_parity_fixtures::NPC_CASE => Some(8),
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
             "questpc7-eligibility-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
@@ -1561,7 +1571,7 @@ fn scenario_case(
             } else if name == "authored-torch" {
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
-                13
+                16
             } else if classic_npc || qd_world {
                 5
             } else if monk {
@@ -2731,6 +2741,11 @@ fn scenario_case(
                 &h,
                 &callback,
                 trigger,
+            ))
+            .await?;
+        } else if let Some(access) = classic_access {
+            Box::pin(super::super::classic_quest_parity_fixtures::access_exercise(
+                &mut owner, &mut admitted, &h, access,
             ))
             .await?;
         } else if qengine_reward || shared_rewards {

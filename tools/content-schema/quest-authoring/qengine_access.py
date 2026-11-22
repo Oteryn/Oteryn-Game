@@ -45,6 +45,11 @@ def document():
                          'data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua:3-18',
                          unique=30034, appearance=2772, at=position(32573,32121,7), lever=[2772, 2773], reversible=True,
                          item_cycle=dict(position=position(32566, 32119, 7), remove=1270, create=1025)))
+    for x, appearance in [(32353, 1930), (32354, 1931)]:
+        rows.append(callback(f'scale-armor-well-{x}', 'scale_armor_quest', 'use',
+                             'data-global/scripts/actions/other/down_floor.lua:1-11',
+                             action=102, at=position(x, 32131, 8), appearance=appearance,
+                             teleport=position(x + 1, 32131, 9)))
     for name, at, to, facing, splash in [
         ('cliff', (32966, 32626, 5), (32968, 32626, 5), None, (32968, 32626, 5)),
         ('splash', (32968, 32630, 7), None, None, (32968, 32630, 7)),

@@ -745,6 +745,14 @@ pub(super) fn profile_phases(case: &str) -> impl FnMut(&str) + '_ {
 }
 
 pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
+    execute_in_world(cases, false)
+}
+
+pub(super) fn execute_committed(cases: Vec<CatalogueChest>) -> TestResult {
+    execute_in_world(cases, true)
+}
+
+fn execute_in_world(cases: Vec<CatalogueChest>, committed: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -791,7 +799,7 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
                     }
                 }
                 let started = std::time::Instant::now();
-                super::quest_container_chests_fixtures::catalogue_scenario_in_batch(&case, &activation, &batch)
+                super::quest_container_chests_fixtures::catalogue_scenario_in_batch(&case, &activation, &batch, committed)
                     .map_err(|error| format!("{} {:?}: {error}", case.claim, case.position))?;
                 println!(
                     "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED {} {:?} native_source={} duration={:?}",

@@ -65,7 +65,7 @@ fn definition(key: &str) -> TypedDefinitionRef {
 }
 
 fn scenario(case: Case) -> TestResult {
-    scenario_case(case, None, None, None)
+    scenario_case(case, None, None, None, false)
 }
 
 pub(super) struct CatalogueBatch<'a> {
@@ -83,15 +83,16 @@ pub(super) fn catalogue_scenario(
     chest: &super::quest_catalogue_chests_fixtures::CatalogueChest,
     activation: &super::quest_catalogue_chests_fixtures::CatalogueActivation,
 ) -> TestResult {
-    scenario_case(Case::Catalogue, Some(chest), Some(activation), None)
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), None, false)
 }
 
 pub(super) fn catalogue_scenario_in_batch(
     chest: &super::quest_catalogue_chests_fixtures::CatalogueChest,
     activation: &super::quest_catalogue_chests_fixtures::CatalogueActivation,
     batch: &CatalogueBatch,
+    committed: bool,
 ) -> TestResult {
-    scenario_case(Case::Catalogue, Some(chest), Some(activation), Some(batch))
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), Some(batch), committed)
 }
 
 fn scenario_case(
@@ -99,6 +100,7 @@ fn scenario_case(
     catalogue: Option<&super::quest_catalogue_chests_fixtures::CatalogueChest>,
     activation: Option<&super::quest_catalogue_chests_fixtures::CatalogueActivation>,
     batch: Option<&CatalogueBatch>,
+    committed: bool,
 ) -> TestResult {
     let (claim, chest, unique, root_key, expected) = match case {
         Case::Catalogue => {
@@ -268,7 +270,23 @@ fn scenario_case(
         let pinned_completion_chest = catalogue.is_some_and(|chest| {
             super::qc_pinned_world::COMPLETION_CHEST_UIDS.contains(&chest.unique)
         });
-        let world = if pinned_completion_chest {
+        // Keep the real source obstacles and stand on a clear adjoining tile.
+        let (dx, dy) = match (committed, unique) {
+            (true, 6038 | 6113 | 6155) => (0, 1),
+            (true, 6171 | 6176 | 6178) => (1, 0),
+            _ => (-1, 0),
+        };
+        let (start_x, start_y) = (i32::from(chest.0) + dx, i32::from(chest.1) + dy);
+        let pinned_source = pinned_completion_chest || committed;
+        let world = if committed {
+            use oteryn_gameplay_quests::quest::world_callbacks::Position;
+            let floor = chest.2;
+            super::qc_pinned_world::crop(
+                native,
+                Position { x: u16::try_from(start_x)?, y: u16::try_from(start_y)?, floor },
+                &[Position { x: chest.0, y: chest.1, floor }],
+            )?
+        } else if pinned_completion_chest {
             super::qc_pinned_world::world(native)?
         } else if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
             super::quest_callbacks_fixtures::source_world_choices_with_door(
@@ -382,7 +400,7 @@ fn scenario_case(
                 deps.room.movement_cells()
             })
             .map_err(debug)?;
-        let frame_binding = if pinned_completion_chest {
+        let frame_binding = if pinned_source {
             world.frame_binding_digest(deps.admitted.world_id)
         } else {
             activated_pin.frame_binding().digest()
@@ -395,8 +413,8 @@ fn scenario_case(
             frame_binding,
             world.map_revision_digest(),
             (
-                i32::from(chest.0) - 1,
-                i32::from(chest.1),
+                start_x,
+                start_y,
                 -i16::from(chest.2),
             ),
         );
@@ -420,8 +438,8 @@ fn scenario_case(
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: i32::from(chest.0) - i32::from(!matches!(case, Case::ChoiceDoor)),
-                    y: i32::from(chest.1),
+                    x: if matches!(case, Case::ChoiceDoor) { i32::from(chest.0) } else { start_x },
+                    y: start_y,
                     floor: -i16::from(chest.2),
                 },
             )
@@ -467,7 +485,7 @@ fn scenario_case(
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
         let target_at = |x| -> TestResult<WorldObjectTarget> {
-            let ordinal = if pinned_completion_chest {
+            let ordinal = if pinned_source {
                 let source = catalogue.ok_or("completion chest")?;
                 let tile = world
                     .base()

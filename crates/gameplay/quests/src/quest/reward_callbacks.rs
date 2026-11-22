@@ -490,6 +490,7 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/classic-quests.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
@@ -1537,20 +1538,41 @@ fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
 
 /// Preserve published definition hashes and absent-track values for changed quests.
 pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
-    // Main at 492ca0e6ba, before Package C.
     type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
-    const PREVIOUS: &[DefinitionPin] = &[(
-        "oteryn:quest.treasure_hunt_quest",
-        [
-            0xf5, 0x96, 0x11, 0x56, 0xeb, 0xf0, 0x43, 0x9a, 0x52, 0x2a, 0x95, 0xe0, 0x77, 0x22,
-            0x87, 0x88, 0x67, 0xa3, 0x26, 0x3e, 0x14, 0x0c, 0x11, 0x35, 0x81, 0xdb, 0x8f, 0xa7,
-            0x31, 0x10, 0x9f, 0x22,
-        ],
-        &[
-            ("oteryn:quest-progress/m09/treasure/ingots", -1),
-            ("oteryn:quest-progress/m09/treasure/telescope", -1),
-        ],
-    )];
+    const PREVIOUS: &[DefinitionPin] = &[
+        // Main at 3e09916423, before the Marid source dialogue and purchase.
+        (
+            "oteryn:quest.factions",
+            [
+                0x2b, 0xcb, 0x10, 0x95, 0x3a, 0xe9, 0x88, 0x92, 0x73, 0x76, 0x28, 0x89, 0xd2, 0x24,
+                0xe7, 0xf8, 0xf6, 0xd2, 0xd9, 0x1f, 0xcb, 0x10, 0x0c, 0x6a, 0x74, 0xa0, 0x33, 0x22,
+                0x71, 0x34, 0xc2, 0x10,
+            ],
+            &[],
+        ),
+        (
+            "oteryn:quest.the_djinn_war_marid_faction",
+            [
+                0x78, 0xef, 0x32, 0xdc, 0xb4, 0x25, 0xf4, 0x8e, 0x5d, 0x29, 0xa4, 0x57, 0x3d, 0x01,
+                0xc5, 0xc1, 0xb5, 0xae, 0x7a, 0x1b, 0x82, 0xec, 0x04, 0xf2, 0x9c, 0x0b, 0x7c, 0xf7,
+                0x35, 0x39, 0xdb, 0x3c,
+            ],
+            &[("oteryn:quest-progress/storage/30022", 0)],
+        ),
+        // Main at 492ca0e6ba, before Package C.
+        (
+            "oteryn:quest.treasure_hunt_quest",
+            [
+                0xf5, 0x96, 0x11, 0x56, 0xeb, 0xf0, 0x43, 0x9a, 0x52, 0x2a, 0x95, 0xe0, 0x77, 0x22,
+                0x87, 0x88, 0x67, 0xa3, 0x26, 0x3e, 0x14, 0x0c, 0x11, 0x35, 0x81, 0xdb, 0x8f, 0xa7,
+                0x31, 0x10, 0x9f, 0x22,
+            ],
+            &[
+                ("oteryn:quest-progress/m09/treasure/ingots", -1),
+                ("oteryn:quest-progress/m09/treasure/telescope", -1),
+            ],
+        ),
+    ];
     for &(quest, hash, defaults) in PREVIOUS {
         if active
             .definition_hash(quest)
@@ -2297,7 +2319,7 @@ mod tests {
         // shared-reward-callbacks.json has 207 existing rows plus the generated
         // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
         // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1);
+        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 5);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

@@ -159,7 +159,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        "content/world/placements/index.json:1:sha256:97df30de7e1b99a90421108d290319948e828393c6467dbc4a7e4825dbe8c270",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -229,7 +229,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        "content/world/placements/index.json:1:sha256:97df30de7e1b99a90421108d290319948e828393c6467dbc4a7e4825dbe8c270",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -299,7 +299,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        "content/world/placements/index.json:1:sha256:97df30de7e1b99a90421108d290319948e828393c6467dbc4a7e4825dbe8c270",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -4244,7 +4244,7 @@
       "success_message": "The were-beast leader is defeated.",
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "content/world/placements/region-z09-x129-y124.b3:1:sha256:54c43306cd0fa522c1edc7a359fcee0723cd83930a915f901dd7a0b831cfb1f1",
+        "content/world/placements/region-z09-x129-y124.b3:1:sha256:5b887802fb6c0986801830c793bb937becc5ff066a0493d124eda319c147e613",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
     },
