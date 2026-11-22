@@ -59,7 +59,7 @@ impl Reentry {
             return false;
         }
         if let Some(token) = &self.attempt_cancellation {
-            self.browser_delivery.close();
+            std::mem::take(&mut self.browser_delivery).close();
             token.cancel();
         }
         if let Some(config) = &self.client.native_login {
@@ -114,24 +114,28 @@ impl Reentry {
 
     /// Opens a Platform web page in the system browser; `false` without native login.
     pub fn open_web_link(&self, link: crate::web_links::WebLink) -> bool {
-        self.client
-            .native_login
-            .as_ref()
-            .is_some_and(|config| crate::web_links::open(config, link))
+        self.client.native_login.as_ref().is_some_and(|config| {
+            crate::web_links::open_with(
+                &config.platform_url,
+                &*self.browser_delivery.opener(config),
+                link,
+                oteryn_client_ui::localization::current(),
+            )
+        })
     }
 
     #[cfg(bevy_shell)]
     pub(crate) fn start_web_link(
         &self,
         link: crate::web_links::WebLink,
-    ) -> Option<std::sync::mpsc::Receiver<bool>> {
+    ) -> Option<(CancellationToken, std::sync::mpsc::Receiver<bool>)> {
         let config = self.client.native_login.as_ref()?;
         let url = crate::web_links::url(
             &config.platform_url,
             link,
             oteryn_client_ui::localization::current(),
         )?;
-        let browser = config.scoped_browser(self.client.runtime.cancellation());
+        let browser = self.browser_delivery.opener(config);
         let (sender, result) = std::sync::mpsc::channel();
         std::thread::Builder::new()
             .name("login-web-link".into())
@@ -139,7 +143,7 @@ impl Reentry {
                 let _ = sender.send(browser(&url));
             })
             .ok()?;
-        Some(result)
+        Some((self.browser_delivery.cancellation(), result))
     }
 
     #[cfg(bevy_shell)]
@@ -398,11 +402,54 @@ fn login_web_link_returns_before_browser_delivery() -> Result<(), Box<dyn std::e
         false
     });
     let entry = Reentry::new(ClientBootstrap::new()?.with_native_login(config));
-    let result = entry
+    let (_, result) = entry
         .start_web_link(crate::web_links::WebLink::CookiePolicy)
         .ok_or("start web link")?;
     release.send(())?;
     assert!(!result.recv_timeout(Duration::from_secs(5))?);
     entry.shutdown();
+    Ok(())
+}
+
+#[test]
+fn tearing_down_reentry_returns_while_runtime_browser_callback_is_pending()
+-> Result<(), Box<dyn std::error::Error>> {
+    use std::time::{Duration, Instant};
+    for explicit_shutdown in [false, true] {
+        let folder = tempfile::tempdir()?;
+        let mut config = Reentry::device_test_config(folder.path().into(), "https://localhost:1")?;
+        let (start, started) = mpsc::channel();
+        let (release, resume) = mpsc::channel();
+        let resume = std::sync::Mutex::new(resume);
+        config.open_browser = Arc::new(move |_| {
+            start.send(()).is_ok()
+                && resume
+                    .lock()
+                    .is_ok_and(|rx| rx.recv_timeout(Duration::from_secs(5)).is_ok())
+        });
+        let entry = Reentry::new(ClientBootstrap::new()?.with_native_login(config));
+        let browser = entry
+            .browser_delivery
+            .opener(entry.client.native_login.as_ref().ok_or("config")?);
+        let (send, result) = mpsc::channel();
+        entry
+            .client
+            .runtime
+            .spawn(async move { send.send(browser("pending")) })?;
+        started.recv_timeout(Duration::from_secs(5))?;
+        let start = Instant::now();
+        if explicit_shutdown {
+            entry.shutdown();
+        } else {
+            drop(entry);
+        }
+        assert!(
+            start.elapsed() < Duration::from_millis(100),
+            "teardown took {:?}",
+            start.elapsed()
+        );
+        release.send(())?;
+        assert!(!result.recv_timeout(Duration::from_secs(5))?);
+    }
     Ok(())
 }
