@@ -2348,7 +2348,7 @@ mod tests {
                 "oteryn:quest.the_ice_islands_quest",
                 // M47 counters retain -1; distinct native seals also bind their
                 // separately owned painted-target counter and source callbacks.
-                "299b92c459921a7f30b4128518dc869fc7e7f6de3d50dbcf3be09ee05dcb44c0",
+                "e19d9874e5fbbb7457dac108c15e182a2f8074121797f31ae3ea1c5b8dab1a8c",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",
@@ -2387,9 +2387,8 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing and 31 QB routes. The final two terms are
-        // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12);
+        // Shared includes five numbered-key routes. The Travora document has six ticket routes.
+        assert_eq!(load()?.len(), 238 + 5 + 59 + 125 + 1 + 1 + 13 + 12 + 6);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2429,6 +2428,11 @@ mod tests {
             "oteryn:quest-reward/m36-rock-steady-second",
             "oteryn:quest-reward/m36-rock-steady-start",
             "oteryn:quest-reward/m36-rock-steady-weapon",
+            "oteryn:quest-reward/prisoner-apples",
+            "oteryn:quest-reward/prisoner-key-3666",
+            "oteryn:quest-reward/shirith-key-3033",
+            "oteryn:quest-reward/skjaar-key-3142",
+            "oteryn:quest-reward/skjaar-quiz-donation",
         ];
         let added: BTreeSet<_> = legacy
             .iter()
@@ -2436,7 +2440,7 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 207);
+        assert_eq!(legacy.len(), 207 + 5);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
