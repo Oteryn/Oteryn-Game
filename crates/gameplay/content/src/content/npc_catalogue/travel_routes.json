@@ -1848,7 +1848,7 @@
     "y": 32262,
     "floor": 7,
     "postman": true,
-    "held": true,
+    "held": false,
     "carpet": false
   },
   {
