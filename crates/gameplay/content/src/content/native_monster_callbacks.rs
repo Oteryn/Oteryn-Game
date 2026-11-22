@@ -268,8 +268,11 @@ pub fn qualify_native_callback(
     index: usize,
     list: NativeCallbackList,
 ) -> Result<Option<QualifiedNativeCallback>, NativeCallbackError> {
-    if creature.key == "oteryn:creature.candy_horror" && list == NativeCallbackList::Attack {
-        return stages::qualify_candy_wave(native, creature, index);
+    if creature.key == "oteryn:creature.candy_horror"
+        && list == NativeCallbackList::Attack
+        && let Some(wave) = stages::qualify_candy_wave(native, creature, index)?
+    {
+        return Ok(Some(wave));
     }
     qualify_native_callback_document(native.creature_profiles(), creature, index, list).map(
         |entry| {

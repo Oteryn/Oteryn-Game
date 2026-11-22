@@ -17,12 +17,14 @@ pub(super) fn qualify_candy_wave(
     index: usize,
 ) -> Result<Option<QualifiedNativeCallback>, NativeCallbackError> {
     use NativeCallbackError::InvalidSource;
-    let record = native
+    let Some(record) = native
         .creature_profiles()
         .records
         .iter()
         .find(|record| record.profile.target == *creature)
-        .ok_or(InvalidSource)?;
+    else {
+        return Ok(None);
+    };
     let Data::Behavior(behavior) = &record.behavior.as_ref().ok_or(InvalidSource)?.data else {
         return Err(InvalidSource);
     };

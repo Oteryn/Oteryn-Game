@@ -170,6 +170,11 @@ impl SourcePositionAnchor {
             }
             Ok(position)
         } else {
+            if source.uses_captured_directional_position()
+                && self.position.floor != current.position().floor
+            {
+                return Err(AttackError::OutOfRange);
+            }
             Ok(self.position)
         }
     }

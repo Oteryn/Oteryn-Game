@@ -521,6 +521,12 @@ impl NativeCasts {
                             _ => None,
                         };
                         if let Some(effect) = effect {
+                            use crate::map::facts::CreatureVisualCue;
+                            let capture = if plan.source().uses_captured_directional_position() {
+                                CreatureVisualCue::effect_from_registered_source
+                            } else {
+                                CreatureVisualCue::effect
+                            };
                             // Source Lua sends the tile effect after its
                             // creature loop, even when no player takes damage.
                             let targets = reader
@@ -530,7 +536,7 @@ impl NativeCasts {
                                 .map(|at| (None, at));
                             for (target, at) in targets {
                                 if let Some(cue) = super::visual_position(at).and_then(|position| {
-                                    crate::map::facts::CreatureVisualCue::effect_from_registered_source(
+                                    capture(
                                         runtime,
                                         stamp,
                                         plan.proposal().issuer,

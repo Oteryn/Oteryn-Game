@@ -43,6 +43,7 @@ struct Work {
     cures: Vec<(ExactActorRef, Option<GameSessionId>)>,
     next_cure: usize,
     heals: Vec<(ExactActorRef, String, u64, u64)>,
+    next_heal: usize,
     tiles: Vec<MovementLocalPosition>,
     effect: u16,
 }
@@ -187,9 +188,19 @@ impl NativeAreaDefences {
                 runtime.commit_actor_condition(&plan, at).map_err(|_| ())?;
                 work.next_cure += 1;
             }
-            runtime
-                .commit_source_creature_heal_batch(native.source_digest(), &work.heals)
-                .map_err(|_| ())?;
+            while work.next_heal < work.heals.len() {
+                let end = work
+                    .heals
+                    .len()
+                    .min(work.next_heal + ChannelRuntimeV1::SOURCE_CREATURE_HEAL_BATCH_MAX);
+                runtime
+                    .commit_source_creature_heal_batch(
+                        native.source_digest(),
+                        &work.heals[work.next_heal..end],
+                    )
+                    .map_err(|_| ())?;
+                work.next_heal = end;
+            }
             let binding = runtime.binding();
             for at in work.tiles.iter().copied().filter_map(visual_position) {
                 let facts = &index.map().facts;
@@ -416,7 +427,9 @@ async fn prepare(
         ) as u64;
         heals.push((actor, key, maximum, amount));
     }
-    if heals.len() > 64 {
+    if matches!(targets, HealTargets::Named)
+        && heals.len() > ChannelRuntimeV1::SOURCE_CREATURE_HEAL_BATCH_MAX
+    {
         return Err(());
     }
     let effect = details
@@ -443,6 +456,7 @@ async fn prepare(
         cures,
         next_cure: 0,
         heals,
+        next_heal: 0,
         tiles,
         effect,
     })
