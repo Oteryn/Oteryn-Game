@@ -62,6 +62,7 @@ pub mod quest_world_callback;
 pub mod raid_runner;
 pub mod raid_schedule;
 pub mod sanction_record;
+pub mod server_save_sweep;
 pub mod staff;
 pub mod stag_beaks;
 pub mod support_intake;

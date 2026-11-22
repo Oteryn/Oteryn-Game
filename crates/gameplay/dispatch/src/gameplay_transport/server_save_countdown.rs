@@ -1,9 +1,13 @@
 //! PARITY-EVENT-CALLBACKS-1 (coordinator decision, NIGHT-W1): the server-save countdown.
 //! Canary `global_server_save.lua:29,48` broadcasts once a minute from 5 to 1 minutes before
-//! the server save. The Channel only reads the reset Control publishes; it never triggers,
-//! moves or cancels one. Sessions with capability 75 receive each minute at most once.
+//! the save. Countdown reads and due-save publication have separate authority.
 use super::ComposedFreshAdmission;
+use crate::durability::server_save_sweep::{
+    GroundSweepBinding, GroundSweepFacts, GroundSweepItemFacts, GroundSweepPlacement,
+    GroundSweepPolicy, GroundSweepRoot, GroundSweepTileFacts, ServerSaveCleanup, ServerSaveOwner,
+};
 use crate::durability::world_reset::PlannedWorldReset;
+use crate::map::boot::BundleCollisionIndexExt;
 use oteryn_foundation::CancellationToken;
 use oteryn_protocol_oteryn::server_save_countdown::ServerSaveCountdown;
 
@@ -89,6 +93,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// and is retried; it never stops serving.
     pub(super) async fn run_server_save_countdown(&self, shutdown: &CancellationToken) {
         let mut pass = ServerSaveCountdownPass::default();
+        let mut latest_retirement = None;
+        let enabled = |key| std::env::var(key).is_ok_and(|value| value == "true");
+        let cleanup = ServerSaveCleanup {
+            enabled: enabled("OTERYN_SERVER_SAVE_CLEAN_MAP"),
+            policy: GroundSweepPolicy {
+                clean_protection_zones: enabled("OTERYN_CLEAN_PROTECTION_ZONES"),
+            },
+        };
         loop {
             let Some(read) = super::world_respawns::stopping_first(
                 self.root.planned_world_reset(self.world_id),
@@ -107,6 +119,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ));
                 }
             }
+            let Some(_save) = super::world_respawns::stopping_first(
+                self.advance_server_save(cleanup, &mut latest_retirement),
+                shutdown,
+            )
+            .await
+            else {
+                return;
+            };
             if super::world_respawns::stopping_first(
                 tokio::time::sleep(SERVER_SAVE_COUNTDOWN_POLL),
                 shutdown,
@@ -118,6 +138,156 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
     }
+
+    pub(in crate::gameplay_transport) async fn advance_server_save(
+        &self,
+        cleanup: ServerSaveCleanup,
+        latest_retirement: &mut Option<[u8; 16]>,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        let Some(room) = self.rooms.gate_monster_ai() else {
+            return Ok(());
+        };
+        let (binding, server_digest) = {
+            let runtime = self.runtime.lock().await;
+            let scope = runtime.binding();
+            let pin = runtime.content_pin();
+            if scope.world_id() != self.world_id
+                || scope.channel_id() != Some(self.channel_id)
+                || pin.server_artifact_digest() != room.compiled().server_digest()
+                || pin.map_revision_digest() != room.map_revision_digest()
+                || pin.frame_binding_digest() != room.frame_binding().digest()
+                || room.movement_cells().scope().world_id != self.world_id
+            {
+                return Ok(());
+            }
+            (
+                GroundSweepBinding {
+                    world: self.world_id,
+                    channel: self.channel_id,
+                    generation: scope.scope_generation().get(),
+                    map_revision: revision(pin.map_revision_digest()),
+                    content_revision: revision(pin.server_artifact_digest()),
+                    frame: pin.frame_binding_digest().to_vec(),
+                },
+                pin.server_artifact_digest(),
+            )
+        };
+        let owner = ServerSaveOwner {
+            node: self.holder,
+            epoch: self.reset_epoch,
+            epoch_map_revision: room.movement_cells().scope().map_revision.as_str(),
+            server_digest,
+        };
+        let poll = self
+            .root
+            .publish_due_server_save(&binding, &owner, cleanup)
+            .await?;
+        if poll.latest_retirement.is_some() && poll.latest_retirement != *latest_retirement {
+            self.states.loop_ground.invalidate();
+            *latest_retirement = poll.latest_retirement;
+        }
+        if !poll.needs_pass {
+            return Ok(());
+        }
+        let Some(permit) = self.spell_lane_permit().await else {
+            return Ok(());
+        };
+        let facts = PinnedSweepFacts {
+            binding,
+            room,
+            profiles: room.item_profile_source(),
+            bundle_revision: match room.movement_cells().index() {
+                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
+                    Some(crate::map::overlay::map_revision(
+                        index.map().overlay.base(),
+                    ))
+                }
+                _ => None,
+            },
+        };
+        // Also invalidates if cancellation or a lost COMMIT response interrupts
+        // publication. The next Ground read rebuilds under the cache epoch.
+        let _projection = super::loop_move::GroundChange(Some(&self.states.loop_ground));
+        self.root
+            .run_server_save_sweep(&owner, &permit, &facts)
+            .await
+    }
+}
+
+struct PinnedSweepFacts<'a> {
+    binding: GroundSweepBinding,
+    room: &'a crate::content::QualifiedNativeEntryRoom,
+    profiles: Option<crate::content::native_gameplay::NativeItemProfileSource>,
+    bundle_revision: Option<String>,
+}
+
+impl GroundSweepFacts for PinnedSweepFacts<'_> {
+    fn binding(&self) -> &GroundSweepBinding {
+        &self.binding
+    }
+
+    fn alternate_map_revision(&self) -> Option<&str> {
+        self.bundle_revision.as_deref()
+    }
+
+    fn tile(&self, placement: &GroundSweepPlacement) -> GroundSweepTileFacts {
+        let Ok(cell) = crate::durability::spell_items_abi::decode_ground_cell(&placement.position)
+        else {
+            return GroundSweepTileFacts::default();
+        };
+        let cell = crate::content::LogicalCell {
+            x: cell.x,
+            y: cell.y,
+            z: cell.z,
+        };
+        let cells = self.room.movement_cells();
+        let scope = cells.scope();
+        GroundSweepTileFacts {
+            house: cells
+                .house_tiles()
+                .house_at(scope, cell)
+                .ok()
+                .map(|house| house.is_some()),
+            protection_zone: cells
+                .spell_tiles()
+                .lookup(scope, cell)
+                .ok()
+                .map(|tile| tile.flags().protection_zone),
+        }
+    }
+
+    fn item(&self, root: &GroundSweepRoot) -> GroundSweepItemFacts {
+        use crate::content::ReferenceItemField::Known;
+        let policy = self.profiles.as_ref().and_then(|profiles| {
+            profiles.item_policy(&root.definition_key, &root.definition_revision)
+        });
+        let (removable, pickupable) = match policy
+            .as_ref()
+            .map(|policy| &policy.record().semantics.physical)
+        {
+            Some(Known(physical)) => {
+                let known = |field: &crate::content::ReferenceItemField<bool>| match field {
+                    Known(value) => Some(*value),
+                    _ => None,
+                };
+                (known(&physical.movable), known(&physical.pickupable))
+            }
+            _ => (None, None),
+        };
+        let qualified_absence = root.runtime_without_source_ids.then_some(false);
+        GroundSweepItemFacts {
+            loaded_from_map: qualified_absence,
+            removable,
+            pickupable,
+            has_action_id: qualified_absence,
+            has_unique_id: qualified_absence,
+        }
+    }
+}
+
+fn revision(digest: [u8; 32]) -> String {
+    let encoded: String = digest.iter().map(|byte| format!("{byte:02x}")).collect();
+    format!("sha256:{encoded}")
 }
 
 #[cfg(test)]
