@@ -16,6 +16,7 @@ mod source_speech;
 
 use std::collections::{BTreeMap, HashMap};
 use std::num::NonZeroU64;
+use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
@@ -53,6 +54,41 @@ const fn result(disposition: ChatDisposition) -> ChatIntentResult {
 #[path = "mount_voices.rs"]
 mod mount_voices;
 
+/// The single fresh-login notice survives snapshot resets of ordinary chat lines.
+#[derive(Default)]
+struct ChatSessionEgress {
+    queue: ChatEgress,
+    relocation_notice: Option<ChatLine>,
+}
+
+impl ChatSessionEgress {
+    fn peek(&self) -> Option<&ChatLine> {
+        self.relocation_notice
+            .as_ref()
+            .or_else(|| self.queue.peek())
+    }
+
+    fn next_for_write(&mut self) -> Option<ChatLine> {
+        self.relocation_notice
+            .take()
+            .or_else(|| self.queue.next_for_write())
+    }
+}
+
+impl Deref for ChatSessionEgress {
+    type Target = ChatEgress;
+
+    fn deref(&self) -> &Self::Target {
+        &self.queue
+    }
+}
+
+impl DerefMut for ChatSessionEgress {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.queue
+    }
+}
+
 struct ChatSession {
     last_mount_voice: Option<u64>,
     mount_sounds: bool,
@@ -65,7 +101,7 @@ struct ChatSession {
     /// The rooms the session has open, and the set its client was last told.
     rooms: ChatRoomSet,
     rooms_shown: ChatRoomSet,
-    egress: ChatEgress,
+    egress: ChatSessionEgress,
     /// The NPC this session is in conversation with (NPC-TALK-1).
     engaged: Option<ExactActorRef>,
     /// When the session joined its NPC's customer queue: the newest customer has the highest
@@ -89,6 +125,7 @@ struct ChatSession {
 #[derive(Default)]
 pub struct ChatRuntime {
     sessions: Mutex<HashMap<GameSessionId, ChatSession>>,
+    pending_relocation_notices: Mutex<HashMap<GameSessionId, &'static str>>,
     pub(super) guild: super::guild_chat::GuildChatRuntime,
     pub(super) party: super::guild_chat::GuildChatRuntime,
     pub(super) typing: super::player_typing::TypingRuntime,
@@ -154,7 +191,7 @@ impl ChatRuntime {
             return false;
         }
         if let Some(mut held) = sessions.remove(&source) {
-            held.egress.clear();
+            held.egress = ChatSessionEgress::default();
             held.echoes.clear();
             held.engaged = None;
             held.joined = 0;
@@ -202,7 +239,7 @@ impl ChatRuntime {
                 level: 1,
                 rooms: ChatRoomSet::default(),
                 rooms_shown: ChatRoomSet::default(),
-                egress: ChatEgress::new(),
+                egress: ChatSessionEgress::default(),
                 engaged: None,
                 joined: 0,
                 walked_away: Vec::new(),
@@ -220,6 +257,24 @@ impl ChatRuntime {
             entry.engaged = None;
             entry.walked_away.clear();
             entry.npc_service = false;
+            self.admit_relocation_notice(session, entry);
+        }
+    }
+
+    pub(super) fn stage_relocation_notice(&self, session: GameSessionId, text: &'static str) {
+        if let Ok(mut pending) = self.pending_relocation_notices.lock() {
+            pending.insert(session, text);
+        }
+    }
+
+    fn admit_relocation_notice(&self, session: GameSessionId, entry: &mut ChatSession) {
+        if let Ok(mut pending) = self.pending_relocation_notices.lock()
+            && let Some(text) = pending.remove(&session)
+        {
+            entry.egress.relocation_notice = Some(ChatLine::Private {
+                speaker_name: "Game".into(),
+                text: text.into(),
+            });
         }
     }
 
@@ -363,6 +418,7 @@ impl ChatRuntime {
             entry.engaged = None;
             entry.walked_away.clear();
             entry.npc_service = false;
+            self.admit_relocation_notice(session, entry);
         }
     }
 
@@ -601,6 +657,9 @@ impl ChatRuntime {
         self.forget_private_channels(session);
         if let Ok(mut sessions) = self.sessions.lock() {
             sessions.remove(&session);
+        }
+        if let Ok(mut pending) = self.pending_relocation_notices.lock() {
+            pending.remove(&session);
         }
     }
 
