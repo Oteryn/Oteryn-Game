@@ -2752,6 +2752,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     let mut prepared=match prepared_result{
                         Ok(p)=>p,Err(disposition)=>{
                         Box::pin(refusal_on_live_transaction(&mut tx)).await?;
+                        if disposition == SpellCastDisposition::NotAvailable
+                            && matches!(spell.name.as_str(), "Shield Bash" | "Shield Slam")
+                        {
+                            owner.states.chat.push_party_spell_feedback(
+                                session, "You need to wield a shield to cast this spell.",
+                            );
+                        }
                         #[cfg(test)]
                         eprintln!("SEAM_EVIDENCE native_combat_prepare result={disposition:?} ordinary={}",ordinary_combat::applicable(spell));
                         if let (Some(rune),Some(legacy))=(rune.as_ref(),legacy.as_ref()) {

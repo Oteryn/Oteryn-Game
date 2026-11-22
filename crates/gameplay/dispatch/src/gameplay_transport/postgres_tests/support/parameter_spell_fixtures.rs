@@ -261,17 +261,22 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             crate::durability::character_wheel::WheelCommitOutcome::Committed(_)
         ));
     }
-    let crate::gameplay_transport::spell_character_facts::CastFactsLoad::Ready {
-        facts: cast_facts,
-        ..
-    } = crate::gameplay_transport::spell_character_facts::load_character_cast_facts(
-        &h.root,
-        &authority,
-        current_fence(&owner, session).await?.character_id,
-    )
-    .await
-    else {
-        return Err("durable cast facts unavailable".into());
+    let cast_facts = if case >= 7 {
+        use crate::gameplay_transport::spell_character_facts::{
+            CastFactsLoad, load_character_cast_facts,
+        };
+        let CastFactsLoad::Ready { facts, .. } = load_character_cast_facts(
+            &h.root,
+            &authority,
+            current_fence(&owner, session).await?.character_id,
+        )
+        .await
+        else {
+            return Err("durable cast facts unavailable".into());
+        };
+        Some(facts)
+    } else {
+        None
     };
     let mut augment_target = None;
     {
@@ -364,14 +369,10 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                     &runtime,
                     actor,
                     session,
-                    if case >= 7 {
-                        cast_facts
-                    } else {
-                        crate::spell::cast::CharacterCastFacts {
-                            level: 20,
-                            ..crate::gameplay_transport::actor_spell::tests::FACTS
-                        }
-                    },
+                    cast_facts.unwrap_or(crate::spell::cast::CharacterCastFacts {
+                        level: 20,
+                        ..crate::gameplay_transport::actor_spell::tests::FACTS
+                    }),
                     (if case == 12 { 3 } else { 0 }, 0),
                     owner.owner_now()
                 )

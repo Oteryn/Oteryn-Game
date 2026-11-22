@@ -276,7 +276,6 @@ pub struct PreparedMagnitudeOwner {
     charm_critical: Vec<(ExactActorRef, u16, u16)>,
     pvp_targets: Vec<(ExactActorRef, bool)>,
     delayed_damage_percent: Option<u32>,
-    empowerment_percent: u32,
     /// Position snapshots are captured only for an active adjacency consumer and revalidated.
     wheel_positions: Vec<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
     wheel_link_echo: i64,
@@ -491,7 +490,12 @@ impl PreparedMagnitudeOwner {
                 .ok_or(Error::InvalidCondition)?,
         )
         .ok()
-        .and_then(|percent| percent.checked_add(self.empowerment_percent))
+        .and_then(|percent| {
+            percent.checked_add(
+                self.caster
+                    .divine_empowerment_percent(self.now_ms.saturating_mul(1000)),
+            )
+        })
         .ok_or(Error::InvalidMagnitude)
     }
     /// F's planted raw/late-modifier split. This changes only numerical inputs;
@@ -915,22 +919,6 @@ impl PreparedMagnitudeOwner {
                 }
             }
         }
-        let mut wheel_positions = wheel_positions;
-        let empowerment_percent = if let Ok(position) = runtime.read_actor_position(a.binding.actor)
-        {
-            let percent =
-                caster.divine_empowerment_percent(position.position(), now_ms.saturating_mul(1000));
-            if percent > 0
-                && !wheel_positions
-                    .iter()
-                    .any(|(actor, _)| *actor == a.binding.actor)
-            {
-                wheel_positions.push((a.binding.actor, position));
-            }
-            percent
-        } else {
-            0
-        };
         Ok(Self {
             attributes: original.clone(),
             selected_item_augments: Vec::new(),
@@ -946,7 +934,6 @@ impl PreparedMagnitudeOwner {
             charm_critical: Vec::new(),
             pvp_targets: pvp_targets.to_vec(),
             delayed_damage_percent: None,
-            empowerment_percent,
             wheel_positions,
             wheel_link_echo: 0,
             wheel_census,

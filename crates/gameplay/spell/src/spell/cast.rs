@@ -86,7 +86,10 @@ pub struct CharacterCastFacts {
 struct DivineEmpowerment {
     positions: Vec<crate::spell::chain::TilePosition>,
     expires_micros: u64,
+    interval_micros: u64,
+    next_poll_micros: u64,
     bonus_percent: u32,
+    standing_on_field: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -358,6 +358,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .get_mut(&runtime, actor, session)?
             .expire_owner_premium(now.get())
             .ok()?;
+        if let Ok(position) = runtime.read_actor_position(actor) {
+            states
+                .get_mut(&runtime, actor, session)?
+                .poll_divine_empowerment(position.position(), now.get());
+        }
         let state = states.get(&runtime, actor, session)?;
         if !crate::spell::actor_conditions::has_periodic_damage(state) {
             return states.tick_in_environment(

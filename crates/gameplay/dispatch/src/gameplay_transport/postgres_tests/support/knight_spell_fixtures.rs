@@ -164,13 +164,15 @@ pub(super) async fn cast_case(
         10 | 11 => {
             let damage_percent = |target: ExactActorRef, now| {
                 let snapshot = runtime.companion_snapshot(target).map_err(debug)?;
-                Ok::<_, String>(match snapshot.state.conditions.attributes_at(now) {
-                    Some(crate::domain::condition::ConditionValues::Attributes {
-                        damage_dealt_percent,
-                        ..
-                    }) => damage_dealt_percent,
-                    _ => 100,
-                })
+                Ok::<_, Box<dyn std::error::Error>>(
+                    match snapshot.state.conditions.attributes_at(now) {
+                        Some(crate::domain::condition::ConditionValues::Attributes {
+                            damage_dealt_percent,
+                            ..
+                        }) => damage_dealt_percent,
+                        _ => 100,
+                    },
+                )
             };
             assert_eq!(damage_percent(*first, now)?, 50);
             assert_eq!(
@@ -244,12 +246,12 @@ async fn assert_next_two_bites(
     session: GameSessionId,
     issuer: ExactActorRef,
 ) -> TestResult {
+    use crate::ability::AiAbilityAdapter;
     use crate::ability::creature_bite::{
-        AiAbilityAdapter, CreatureBiteDefinition, CreatureBiteLedger, ReentryProtection,
-        commit_ai_bite,
+        CreatureBiteDefinition, CreatureBiteLedger, ReentryProtection, commit_ai_bite,
     };
+    use crate::foundation::owner_timer::SemanticTimeMicros;
     use crate::gameplay_transport::attack::player_block::PlayerBiteVitals;
-    use oteryn_simulation_determinism::SemanticTimeMicros;
 
     let mut runtime = owner.runtime.lock().await;
     let mut states = owner.states.spell_states.lock().await;
@@ -267,10 +269,10 @@ async fn assert_next_two_bites(
     let mut ledger = CreatureBiteLedger::default();
     let definition = CreatureBiteDefinition::new(2_000_000, 40).ok_or("bite definition")?;
     let revisions = crate::ability::RevisionSet::new(
-        "ruleset:shield-test",
-        "content:shield-test",
-        "world:shield-test",
-        "formula:shield-test",
+        "ruleset:ai-v1",
+        "content:1",
+        "world:ai-v1",
+        "formula:bite-v1",
         "simulation:v1",
     )
     .map_err(debug)?;

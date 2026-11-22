@@ -1172,14 +1172,26 @@ fn prepare_payment(
         positions,
         expires_ms,
         bonus_percent,
+        evaluation_interval_ms,
         ..
     }) = delayed_plan.as_ref()
     {
         let expiry = expires_ms
+            .checked_sub(facts.now_ms)
+            .and_then(|lifetime| lifetime.checked_mul(1000))
+            .and_then(|lifetime| now.get().checked_add(lifetime))
+            .ok_or(SpellCastDisposition::Rejected)?;
+        let interval = evaluation_interval_ms
             .checked_mul(1000)
             .ok_or(SpellCastDisposition::Rejected)?;
-        paid.next
-            .install_divine_empowerment(positions.clone(), expiry, *bonus_percent);
+        paid.next.install_divine_empowerment(
+            positions.clone(),
+            position,
+            expiry,
+            interval,
+            *bonus_percent,
+            now.get(),
+        );
     }
     let Plan::Combat(plan) = &paid.plan else {
         return reject();
