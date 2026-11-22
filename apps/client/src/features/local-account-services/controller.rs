@@ -31,10 +31,10 @@ pub(super) async fn execute(
             .is_some_and(|r| r.state != OperationState::Pending)
     {
         match client
-            .bazaar_page(token, view.selected_view, None, cancel)
+            .bazaar_page(token, view.selected_view, None, cancel.clone())
             .await
         {
-            Ok(page) => view.install_page(page),
+            Ok(page) => view.install_page(page, client, token, cancel).await,
             Err(_) => view.feedback.push_str(tr!(
                 " Balance refresh unavailable; the receipt is retained."
             )),
@@ -56,9 +56,11 @@ async fn apply(
 ) -> Result<(), NativeLoginError> {
     let command = match action {
         Action::Refresh(kind) => {
-            let page = client.bazaar_page(token, kind, None, cancel).await?;
+            let page = client
+                .bazaar_page(token, kind, None, cancel.clone())
+                .await?;
             view.feedback = tr!("Server account data refreshed.").into();
-            view.install_page(page);
+            view.install_page(page, client, token, cancel).await;
             view.selected_view = kind;
             if view.post_refusal_status == Some(403) {
                 view.post_refusal_status = None;
@@ -69,9 +71,9 @@ async fn apply(
             let cursor = view.page.as_ref().and_then(|p| p.next_cursor.as_deref());
             if let Some(cursor) = cursor {
                 let page = client
-                    .bazaar_page(token, view.selected_view, Some(cursor), cancel)
+                    .bazaar_page(token, view.selected_view, Some(cursor), cancel.clone())
                     .await?;
-                view.install_page(page);
+                view.install_page(page, client, token, cancel).await;
             }
             return Ok(());
         }
@@ -172,6 +174,7 @@ async fn apply(
                     Err(NativeLoginError::Platform(HttpStatus(404)))
                         if view.post_refusal_status == Some(409) =>
                     {
+                        view.prior.reconcile(id);
                         view.pending = None;
                         view.post_refusal_status = None;
                         view.quote = None;
@@ -220,13 +223,24 @@ async fn submit(
     let Some(request) = &view.pending else {
         return Ok(());
     };
+    let Some(post) = view.prior.start() else {
+        if !retry {
+            view.pending = None;
+        }
+        view.feedback = tr!("Resolve the pending operation before starting another.").into();
+        return Ok(());
+    };
+    view.prior.retain(request.request_id.clone());
     let result = client.bazaar_command(token, request, cancel).await;
-    // A retry's 403 does not bound the earlier POST. Keep its identity even after status 404.
+    drop(post);
+    // Only a refusal of the initial POST can rule out its effect.
     view.post_refusal_status = match &result {
-        Err(NativeLoginError::Platform(HttpStatus(status @ (403 | 409)))) => Some(*status),
+        Err(NativeLoginError::Platform(HttpStatus(409))) if !retry => Some(409),
+        Err(NativeLoginError::Platform(HttpStatus(403))) => Some(403),
         _ => None,
     };
     if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {
+        view.prior.reconcile(&request.request_id);
         view.pending = None;
         view.quote = None;
         view.post_refusal_status = None;
@@ -264,6 +278,9 @@ pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
         view.unresolved.insert(receipt.request_id.clone());
     } else {
         view.unresolved.remove(&receipt.request_id);
+    }
+    if receipt.state != OperationState::Pending {
+        view.prior.reconcile(&receipt.request_id);
     }
     view.feedback = match receipt.state {
         OperationState::Pending => {

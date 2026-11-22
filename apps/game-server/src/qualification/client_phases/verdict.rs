@@ -1072,6 +1072,28 @@ mod verdict_tests {
     }
 
     #[test]
+    fn c20c_watchdog_allows_bounded_fixture_release_before_admission() -> TestResult {
+        let harness = harness(true, Some(90));
+        paused()?.block_on(async {
+            let row = Row::with_harness(
+                "E2EF6",
+                "C20c",
+                &["adventurer-earned-prerequisites"],
+                harness,
+            );
+            row.watch()
+                .bound(Duration::from_secs(1_500), "journey deadline", async {
+                    let deadline = tokio::time::Instant::now() + Duration::from_secs(160);
+                    harness.bounded_wait(deadline, "fixture-release");
+                    tokio::time::sleep(Duration::from_secs(120)).await;
+                    harness.progress("admission");
+                    Ok(())
+                })
+                .await
+        })
+    }
+
+    #[test]
     fn watchdog_aborts_a_row_without_progress_but_not_a_progressing_one() -> TestResult {
         let harness = harness(true, Some(90));
         paused()?.block_on(async {
