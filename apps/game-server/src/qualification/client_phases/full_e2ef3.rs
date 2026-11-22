@@ -12,6 +12,9 @@ mod e2ei_a;
 #[path = "full_e2ef3_e2ei-b.rs"]
 mod full_e2ef3_e2ei_b;
 
+#[path = "full_e2ef3_e2ei-c.rs"]
+mod e2ei_c;
+
 struct Row {
     id: &'static str,
     source: &'static str,
@@ -20,16 +23,6 @@ struct Row {
 
 // Keep the audit's sub-actions explicit, including the durability assertions.
 const ROWS: &[Row] = &[
-    Row {
-        id: "I06",
-        source: "crates/gameplay/dispatch/src/gameplay_transport/corpse_decay.rs:7",
-        missing: "kill,leave-loot,observe-decay,retired-loot-unavailable,relogin-retirement",
-    },
-    Row {
-        id: "I07",
-        source: "crates/protocol-oteryn/src/quick_loot.rs:48",
-        missing: "manual-click,loot-all,accept-skip-filters,category-routing,gold-pouch,quiver-ammunition,relogin-policy-custody",
-    },
     Row {
         id: "I08",
         source: "crates/gameplay/dispatch/src/gameplay_transport/reward_bag_use.rs:16",
@@ -295,5 +288,6 @@ pub(super) async fn run(
         );
     }
     let client = e2ei_a::run(client, clients).await;
-    full_e2ef3_e2ei_b::run(observations.map(|()| client), clients).await
+    let client = full_e2ef3_e2ei_b::run(observations.map(|()| client), clients).await;
+    e2ei_c::run(client, clients).await
 }
