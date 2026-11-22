@@ -28,6 +28,17 @@ STARTUP_PINS = {
 }
 LEVEL_SHA256 = "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc"
 ITEM_SHA256 = "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+BEREGAR_BOOTS = "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots"
+# Pinned Crystal startup/tables/item.lua:3160-3177,5020-5028.
+BEREGAR_ACTION = {
+    (32611, 31497, 14): (1949, 50092),
+    (32611, 31497, 15): (1949, 50093),
+    (32551, 31379, 15): (8425, 50127),
+}
+BEREGAR_UNIQUE = {
+    (32613, 31386, 14): (8776, 50125),
+    (32598, 31402, 15): (1949, 50127),
+}
 ITEM_ACCESS = {
     "oteryn:reward-claim.kv.naginata": ((32356, 32074, 10), 1791, 40031),
 }
@@ -436,6 +447,13 @@ def selections(root=ROOT):
             "claims": ["oteryn:reward-claim.kv.panpipe"],
         }
         sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
+    if any(row["claim"] == BEREGAR_BOOTS for row in bindings.values()):
+        for attribute, mapping in ((bindings, BEREGAR_UNIQUE), (doors, BEREGAR_ACTION)):
+            for position, (appearance, value) in mapping.items():
+                if position in attribute:
+                    raise ValueError("BEREGAR_SELECTOR_CONFLICT")
+                field = "unique" if attribute is bindings else "action"
+                attribute[position] = {"appearance": appearance, field: value}
     return {"unique": bindings, "action": doors}, sources
 
 

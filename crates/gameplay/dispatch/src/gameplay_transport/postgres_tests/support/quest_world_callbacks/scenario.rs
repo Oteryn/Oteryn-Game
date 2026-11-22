@@ -51,6 +51,7 @@ fn scenario_case(
         name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
     let qm48 = name == "qm48/mammoth";
     let m03_use = name == super::super::qengine_m03_use_fixtures::NAME;
+    let beregar = name == super::super::beregar_journey::NAME;
     let qd_world = name.starts_with(super::super::qd_world_fixtures::PREFIX);
     let elemental_pin = name.starts_with("qn1-elemental-");
     let qm50 = name == "goblin-merchant-elevator-upper";
@@ -82,6 +83,7 @@ fn scenario_case(
     let native_crop = pinned_qc_world
         || m03_use
         || qd_world
+        || beregar
         || engenc_asura
         || m49
         || qm03
@@ -116,7 +118,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if beregar {
+        super::super::beregar_journey::START
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -357,7 +361,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if beregar {
+        super::super::beregar_journey::lift_callback()?
+    } else if m03_use {
         super::super::qengine_m03_use_fixtures::callback()?
     } else if qd_world {
         super::super::qd_world_fixtures::callback(name)?
@@ -1036,7 +1042,9 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if pinned_qc_world {
+        let world = if beregar {
+            super::super::beregar_journey::world(generation.native_gameplay().ok_or("native Beregar")?)?
+        } else if pinned_qc_world {
             super::super::qc_pinned_world::world(
                 generation
                     .native_gameplay()
@@ -1394,6 +1402,7 @@ fn scenario_case(
         };
 
         let initial_level: Option<u32> = match name {
+            super::super::beregar_journey::NAME => Some(100),
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
             "questpc7-eligibility-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
@@ -1562,6 +1571,8 @@ fn scenario_case(
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
                 13
+            } else if beregar {
+                9 // Player, seven source contacts and Pythius.
             } else if classic_npc || qd_world {
                 5
             } else if monk {
@@ -1585,7 +1596,8 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name.starts_with("authored-")
+        let premium = if beregar
+            || name.starts_with("authored-")
             || name == "nx6-wayfarer"
             || name == "m07-carrot-premium"
             || m03_use
@@ -1883,7 +1895,8 @@ fn scenario_case(
                 "source eligibility uses the actual durable starting level"
             );
         }
-        if name == "nx6-wayfarer"
+        if beregar
+            || name == "nx6-wayfarer"
             || qm03
             || m07_too_hot
             || mead
@@ -1899,7 +1912,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_use {
+        if beregar {
+            Box::pin(super::super::beregar_journey::exercise(&mut owner, &mut admitted, &h)).await?;
+        } else if m03_use {
             Box::pin(super::super::qengine_m03_use_fixtures::exercise(
                 &mut owner,
                 &mut admitted,

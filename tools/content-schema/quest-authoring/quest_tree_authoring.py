@@ -103,6 +103,25 @@ def claim_catalogue(root):
     return claims
 
 
+def admitted_beregar_backpack(claim):
+    """Reconcile the exact UID 6283 projection while retaining SOURCE dispositions."""
+    if claim['identity']['key'] != 'oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare':
+        return False
+    native = claim.get('native_contents', {})
+    placements = native.get('placements', [])
+    if (claim['data_holds'] or native.get('schema') != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'
+            or native.get('revision') != '201189f871d23597b82caf88fd611454a2ddefb8'
+            or native.get('source_sha256') != 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757'
+            or len(placements) != 1 or len(claim['placements']) != 1):
+        return False
+    projection, = placements
+    placement, = claim['placements']
+    return (projection['unique_id'] == 6283
+            and {'server': 'crystalserver', 'unique_id': 6283} in placement['source_binding']['legacy_unique_ids']
+            and projection['root'] == placement['reward']['container']
+            and projection['contents'] == placement['reward']['items'])
+
+
 def source_identity(ref):
     return ref['key'], ref['revision']
 
@@ -158,7 +177,8 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
                 raise ValueError(f'{key}: committed claim owner does not match source quest: {ref["key"]}')
             canonical.append({'family': 'RewardClaim', **copy.deepcopy(claim['identity'])})
             if claim.get('definition_profile') == 'authored_variant_v1':
-                issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
+                if not admitted_beregar_backpack(claim):
+                    issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
                 categories = {hold['category'] for hold in claim['data_holds']}
                 categories.update(claim.get('_source_hold_categories', []))
                 if claim.get('_source_baseline_item_hold'):

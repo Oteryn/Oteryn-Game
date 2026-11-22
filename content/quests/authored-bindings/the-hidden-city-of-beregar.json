@@ -1,0 +1,864 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "recipe_sha256": "b5b71e718e0e69ceb1c03c9be819ec1c5b0a27e9caba6ec9d7f3cc6985715b5f",
+      "admission": {
+        "minimum_level": 0,
+        "premium": true,
+        "prerequisites": []
+      },
+      "sources": [
+        "content/quests/definitions/quests-00200-00299.json#/records/25/definition/oteryn_recipe",
+        "https://tibia.fandom.com/wiki/The_Hidden_City_of_Beregar_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/xorlosh.lua:60-84",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nokmir.lua:60-90",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/grombur.lua:60-83",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emperor_rehal.lua:78-112",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/frafnar.lua:61-81",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bolfona.lua:60-73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:52-64"
+      ],
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 6
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/the_good_guard",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_the_rotten",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_portal_open",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_fight",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_defeated",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "lift-down",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/beregar/lift-down",
+              "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32611,
+                  "y": 31497,
+                  "floor": -14
+                },
+                "appearance": 1949,
+                "unique": null,
+                "action": 50092,
+                "native": {
+                  "position": {
+                    "x": 32611,
+                    "y": 31497,
+                    "floor": -14
+                  },
+                  "appearance": 1949,
+                  "ordinal": 4
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": {
+                "x": 32612,
+                "y": 31499,
+                "floor": -15
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2,
+                  "read_only": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:8-34"
+              ]
+            }
+          }
+        },
+        {
+          "key": "lift-up",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/beregar/lift-up",
+              "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32611,
+                  "y": 31497,
+                  "floor": -15
+                },
+                "appearance": 1949,
+                "unique": null,
+                "action": 50093,
+                "native": {
+                  "position": {
+                    "x": 32611,
+                    "y": 31497,
+                    "floor": -15
+                  },
+                  "appearance": 1949,
+                  "ordinal": 4
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": {
+                "x": 32612,
+                "y": 31499,
+                "floor": -14
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2,
+                  "read_only": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:8-34"
+              ]
+            }
+          }
+        },
+        {
+          "key": "reruns-ring",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/beregar/reruns-ring",
+              "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32613,
+                  "y": 31386,
+                  "floor": -14
+                },
+                "appearance": 8776,
+                "unique": 50125,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 32613,
+                    "y": 31386,
+                    "floor": -14
+                  },
+                  "appearance": 8776,
+                  "ordinal": 2
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:149-155"
+              ],
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i8777",
+                  "count": 1,
+                  "contents": []
+                }
+              }
+            }
+          }
+        },
+        {
+          "key": "dungeon-offer",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/beregar/dungeon-offer",
+              "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+              "npc": "oteryn:npc.pythius_the_rotten",
+              "keywords": [
+                "offer"
+              ],
+              "topic": 0,
+              "next_topic": 7102,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/the_good_guard",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "I GRANT YOU ACCESS TO THE DUNGEON IN THE NORTH. YOU'LL FIND SOME OF MY LIVING BROTHERS THERE....BUT.....EVERY TIME YOU WANT TO ENTER YOU HAVE TO GIVE ME SOMETHING PRECIOUS. ALRIGHT?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:52"
+              ],
+              "minimum_level": 100,
+              "requires_premium": true,
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+                  "minimum": 2,
+                  "maximum": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+                  "minimum": 6,
+                  "maximum": 6
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
+                  "minimum": 3,
+                  "maximum": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots",
+                  "minimum": 0,
+                  "maximum": 0
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "dungeon-yes",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/beregar/dungeon-yes",
+              "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+              "npc": "oteryn:npc.pythius_the_rotten",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 7102,
+              "next_topic": 7103,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/the_good_guard",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "AS YOU WISH. WHAT DO YOU HAVE TO OFFER?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:55"
+              ],
+              "minimum_level": 100,
+              "requires_premium": true,
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+                  "minimum": 2,
+                  "maximum": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+                  "minimum": 6,
+                  "maximum": 6
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
+                  "minimum": 3,
+                  "maximum": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots",
+                  "minimum": 0,
+                  "maximum": 0
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "golden-mug",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/beregar/golden-mug",
+              "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+              "npc": "oteryn:npc.pythius_the_rotten",
+              "keywords": [
+                "golden mug"
+              ],
+              "topic": 7103,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/the_good_guard",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i2903",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "I LIKE THAT AND GRANT YOU ACCESS TO THE DUNGEON IN THE NORTH FOR THE NEXT FEW MINUTES. COME BACK ANYTIME AND BRING ME MORE TREASURES."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:56"
+              ],
+              "minimum_level": 100,
+              "requires_premium": true,
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+                  "minimum": 2,
+                  "maximum": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+                  "minimum": 6,
+                  "maximum": 6
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
+                  "minimum": 3,
+                  "maximum": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots",
+                  "minimum": 0,
+                  "maximum": 0
+                }
+              ],
+              "state_ops": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_the_rotten",
+                  "from": {
+                    "kind": "any"
+                  },
+                  "effect": {
+                    "kind": "set_now"
+                  }
+                }
+              ],
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "pythius-dungeon",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/beregar/pythius-dungeon",
+              "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32598,
+                  "y": 31402,
+                  "floor": -15
+                },
+                "appearance": 1949,
+                "unique": 50127,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 32598,
+                    "y": 31402,
+                    "floor": -15
+                  },
+                  "appearance": 1949,
+                  "ordinal": 1
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": {
+                "x": 32601,
+                "y": 31397,
+                "floor": -14
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2,
+                  "read_only": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+                  "minimum": 6,
+                  "maximum": 6,
+                  "set": 6,
+                  "read_only": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 3,
+                  "read_only": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/the_good_guard",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2,
+                  "read_only": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "OFFER ME SOMETHING IF YOU WANT TO PASS!",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_pythius_teleport.lua:3-25"
+              ],
+              "failure_teleport": {
+                "x": 32598,
+                "y": 31406,
+                "floor": -15
+              },
+              "state_ops": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_the_rotten",
+                  "from": {
+                    "kind": "elapsed_less_than",
+                    "seconds": 180
+                  },
+                  "effect": {
+                    "kind": "add",
+                    "value": 0
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "open-pythius-portal",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/beregar/open-pythius-portal",
+              "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32551,
+                  "y": 31379,
+                  "floor": -15
+                },
+                "appearance": 8425,
+                "unique": null,
+                "action": 50127,
+                "native": {
+                  "position": {
+                    "x": 32551,
+                    "y": 31379,
+                    "floor": -15
+                  },
+                  "appearance": 8425,
+                  "ordinal": 2
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_portal_open",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 0,
+                  "read_only": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:796-819"
+              ],
+              "minimum_level": 100,
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i3456",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "target_remove": true,
+                "reusable": true,
+                "selected_instance": true
+              },
+              "effects": {
+                "item_presence": {
+                  "position": {
+                    "x": 32551,
+                    "y": 31376,
+                    "floor": -15
+                  },
+                  "appearance": 1949
+                }
+              }
+            }
+          }
+        },
+        {
+          "key": "fight-pythius",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/beregar/fight-pythius",
+              "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32551,
+                  "y": 31376,
+                  "floor": -15
+                },
+                "appearance": 21477,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 32551,
+                    "y": 31376,
+                    "floor": -15
+                  },
+                  "appearance": 21477,
+                  "ordinal": 0
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_portal_open",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 0
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_fight",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_pythius_boss_teleport.lua:11-42"
+              ],
+              "effects": {
+                "encounter": {
+                  "minimum_level": 100,
+                  "players": [
+                    {
+                      "from": {
+                        "x": 32551,
+                        "y": 31376,
+                        "floor": -15
+                      },
+                      "to": {
+                        "x": 32560,
+                        "y": 31404,
+                        "floor": -15
+                      }
+                    }
+                  ],
+                  "monsters": [
+                    {
+                      "position": {
+                        "x": 32571,
+                        "y": 31406,
+                        "floor": -15
+                      },
+                      "creature": "oteryn:creature.pythius_the_rotten"
+                    }
+                  ],
+                  "room_min": {
+                    "x": 32559,
+                    "y": 31399,
+                    "floor": -15
+                  },
+                  "room_max": {
+                    "x": 32573,
+                    "y": 31413,
+                    "floor": -15
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "key": "defeat-pythius",
+          "completes": false,
+          "trigger": {
+            "kind": "kill",
+            "counter": {
+              "key": "oteryn:quest-transition/native-kills/beregar/pythius",
+              "creature": "oteryn:creature.pythius_the_rotten",
+              "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_defeated",
+              "gate": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_fight",
+              "gate_value": 1,
+              "minimum": 0,
+              "maximum": 1,
+              "death_area": {
+                "minimum": [
+                  32559,
+                  31399,
+                  15
+                ],
+                "maximum": [
+                  32573,
+                  31413,
+                  15
+                ]
+              }
+            }
+          }
+        },
+        {
+          "key": "reward-room",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/beregar/reward-room",
+              "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32560,
+                  "y": 31406,
+                  "floor": -15
+                },
+                "appearance": 1949,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 32560,
+                    "y": 31406,
+                    "floor": -15
+                  },
+                  "appearance": 1949,
+                  "ordinal": 1
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": {
+                "x": 32577,
+                "y": 31403,
+                "floor": -15
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_defeated",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "read_only": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_fight",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/creaturescripts_pythius_the_rotten_kill.lua:2-8"
+              ]
+            }
+          }
+        },
+        {
+          "key": "firewalker-boots",
+          "completes": true,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/beregar/firewalker-boots",
+              "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32582,
+                  "y": 31405,
+                  "floor": -15
+                },
+                "appearance": 2472,
+                "unique": 6284,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 32582,
+                    "y": 31405,
+                    "floor": -15
+                  },
+                  "appearance": 2472,
+                  "ordinal": 2
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_fight",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2,
+                  "read_only": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": "The chest is empty.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2717-2723"
+              ],
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i9019",
+                  "count": 1,
+                  "contents": []
+                }
+              },
+              "success_message": "You have found firewalker boots."
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
