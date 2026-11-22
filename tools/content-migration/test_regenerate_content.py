@@ -450,16 +450,24 @@ def test_source_cohort_includes_installed_successors() -> None:
         pass
 
     def measure():
-        assert installed == [rc.ROOT], "measure only the complete installed World"
+        assert installed == [rc.ROOT, rc.WORLD], (
+            "measure only the complete installed World"
+        )
         raise Measured
 
-    with patch.object(sys, "argv", ["regenerate_content.py"]), \
-            patch.object(rc, "run"), \
-            patch.object(rc, "refresh_quest_callback_proof"), \
-            patch.object(rc, "materialize_world"), \
-            patch("questpc7_thaian_authoring.install", side_effect=installed.append), \
-            patch.object(rc, "canonicalize_world"), \
-            patch.object(rc, "refresh_source_cohort_extent", side_effect=measure):
+    with (
+        patch.object(sys, "argv", ["regenerate_content.py"]),
+        patch.object(rc, "run"),
+        patch.object(rc, "refresh_quest_callback_proof"),
+        patch.object(rc, "materialize_world"),
+        patch("questpc7_thaian_authoring.install", side_effect=installed.append),
+        patch(
+            "buddel_travel.install_buddel",
+            side_effect=lambda _, world: installed.append(world),
+        ),
+        patch.object(rc, "canonicalize_world"),
+        patch.object(rc, "refresh_source_cohort_extent", side_effect=measure),
+    ):
         try:
             rc.main()
         except Measured:
@@ -501,9 +509,10 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
             write(root, tool, "")
         # Seed the committed inputs so the in-process Nomads refresh runs as usual.
         profile = json.loads((rc.ROOT / rc.NOMADS_WINDOW).read_bytes())
+        nomads_map = profile["map"]["path"]
         for path in (
             rc.NOMADS_WINDOW,
-            profile["map"]["path"],
+            nomads_map,
             *(path for path, _ in rc.NOMADS_WINDOW_REPORTS),
         ):
             target = root / path
@@ -538,6 +547,13 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
                 patch.object(subprocess, "run", side_effect=AssertionError("unexpected subprocess")):
             result = rc.main()
             unresolved.assert_called_once_with()
+        digest = hashlib.sha256((root / nomads_map).read_bytes()).hexdigest()
+        assert (
+            json.loads((root / rc.NOMADS_WINDOW).read_bytes())["map"]["sha256"]
+            == digest
+        )
+        for report, label in rc.NOMADS_WINDOW_REPORTS:
+            assert f"{label}: `{digest}`" in (root / report).read_text(encoding="utf-8")
         assert not any(command[0] in {"git", "cargo"} for command in events)
         if not checks:
             assert not any("--check" in command for command in events)
