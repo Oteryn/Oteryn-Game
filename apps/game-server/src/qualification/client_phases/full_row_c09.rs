@@ -123,6 +123,55 @@ async fn wait_quantity(
     }
 }
 
+// The pinned Frodo behavior wanders two tiles from his authored placement.
+const FRODO_WANDER_RADIUS: u16 = 2;
+
+fn meat_seller_at(
+    entity: &oteryn_dev_client::WorldSpatialEntity,
+    placements: &[oteryn_world_bundle::npc::Placement],
+    player: ActorPosition,
+) -> bool {
+    entity.kind == oteryn_dev_client::EntityKind::Npc
+        && entity.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Frodo"))
+        && entity.position.floor == player.floor
+        && entity.position.x.abs_diff(player.x).max(entity.position.y.abs_diff(player.y))
+            <= oteryn_protocol_oteryn::npc_service::TALK_RANGE_TILES
+        && placements.iter().any(|p| {
+            entity.position.floor == -i16::from(p.floor)
+                && entity.position.x.abs_diff(i32::from(p.x)).max(entity.position.y.abs_diff(i32::from(p.y)))
+                    <= u32::from(FRODO_WANDER_RADIUS)
+        })
+}
+
+#[test]
+fn c09_acquires_frodo_after_he_wanders_from_placement() -> TestResult {
+    use oteryn_dev_client::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
+    use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
+    use oteryn_world_bundle::npc::{Direction, Placement};
+
+    let placement = Placement { x: 32358, y: 32209, floor: -7, direction: Direction::North };
+    let player = ActorPosition { x: 32360, y: 32209, floor: 7 };
+    let mut entity = WorldSpatialEntity {
+        motion: None,
+        display_name: Some(EntityDisplayName::new("Frodo").map_err(|_| "Frodo display name")?),
+        kind: EntityKind::Npc,
+        entity: EntityRef { identity: [7; 16], generation: 1 },
+        position: ActorPosition { x: 32356, y: 32209, floor: 7 },
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    };
+    assert!(meat_seller_at(&entity, &[placement], player));
+    entity.position.x -= 1;
+    assert!(!meat_seller_at(&entity, &[placement], player));
+    entity.position.x += 1;
+    entity.display_name = Some(EntityDisplayName::new("Sam").map_err(|_| "Sam display name")?);
+    assert!(!meat_seller_at(&entity, &[placement], player));
+    Ok(())
+}
+
 async fn buy_meat(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -130,60 +179,25 @@ async fn buy_meat(
 ) -> TestResult {
     use oteryn_dev_client::client_runtime::npc_shop as runtime;
     use oteryn_protocol_oteryn::npc_service as wire;
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
-    )?)?;
-    let sellers: BTreeSet<_> = trades["records"]
-        .as_array()
-        .ok_or("trade records absent")?
-        .iter()
-        .filter_map(|record| {
-            let declaration = &record["declaration"];
-            declaration["offers"]
-                .as_array()?
-                .iter()
-                .any(|offer| {
-                    offer["direction"] == "SellToPlayer"
-                        && offer["item"]["key"] == "oteryn:item.tibia.i3577"
-                })
-                .then(|| declaration["identity"]["key"].as_str())
-                .flatten()?
-                .strip_prefix("oteryn:service.trade.")
-                .map(|name| format!("oteryn:npc.{name}"))
-        })
-        .collect();
     let metadata = oteryn_world_bundle::bundle::visit(
         &std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
         |_, _| Ok(()),
     )?;
     let here = tile(client.world_spatial().actor_position)?;
-    let (npc, path) = metadata
-        .npcs
-        .npcs
-        .iter()
-        .filter(|npc| sellers.contains(&npc.key))
-        .filter_map(|npc| {
-            route(world, here, |at| {
-                npc.placements
-                    .iter()
-                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-            })
-            .map(|path| (npc, path))
+    let npc = metadata.npcs.npcs.iter().find(|npc| npc.key == "oteryn:npc.frodo")
+        .ok_or("Frodo absent from compiled World bundle")?;
+    let approach = wire::TALK_RANGE_TILES - u32::from(FRODO_WANDER_RADIUS);
+    let path = route(world, here, |at| {
+        npc.placements.iter().any(|p| {
+            p.floor == at.floor && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
         })
-        .min_by_key(|(_, path)| path.len())
-        .ok_or("no walk route to authored meat seller")?;
+    }).ok_or("no walk route to Frodo within talk range")?;
     walk(client, world, &path).await?;
     let actor = client
         .world_entities()
         .and_then(|entities| {
             entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Npc
-                    && npc.placements.iter().any(|p| {
-                        entity.position.x == i32::from(p.x)
-                            && entity.position.y == i32::from(p.y)
-                            && entity.position.floor == -i16::from(p.floor)
-                    })
+                meat_seller_at(entity, &npc.placements, client.world_spatial().actor_position)
             })
         })
         .map(|entry| entry.entity)
