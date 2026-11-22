@@ -76,7 +76,8 @@ are preserved.
 Capability 588 `MARKET_CATALOGUE_PRESENTATION_V1` requires Market 63 and
 extends the Catalogue request and reply on command 6126. Selected peers may
 supply the optional unsigned byte `filter.forge_tier`, an exact instance tier
-separate from `forge_class`. Omitting it applies no tier filter. Tier zero
+separate from `forge_class`. Omit the field to apply no tier filter. An explicit
+null is malformed. Tier zero
 selects the admitted default-state cohort. Positive tiers return an empty page
 because this Market admits tier zero only, including at settlement. The tier
 byte in Crystal's Market browse is independent of item classification.

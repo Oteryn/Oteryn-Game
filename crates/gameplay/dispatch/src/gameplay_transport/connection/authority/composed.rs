@@ -667,13 +667,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.states.tutorial_sessions.take(session)
     }
 
-    async fn npc_trade(
+    async fn npc_trade_with_delivery(
         &self,
         actor: ExactActorRef,
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+        packed: bool,
     ) -> npc_trade_command::NpcTradeStep {
-        npc_trade_command::npc_trade(self, actor, command, intent).await
+        npc_trade_command::npc_trade(self, actor, command, intent, packed).await
     }
 
     /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18.

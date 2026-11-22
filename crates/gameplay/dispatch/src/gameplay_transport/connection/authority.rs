@@ -1484,9 +1484,19 @@ pub trait FreshAdmissionAuthority {
     /// CommandRef: replay first, then one durable NPC trade.
     fn npc_trade(
         &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+    ) -> impl Future<Output = NpcTradeStep> {
+        self.npc_trade_with_delivery(actor, command, intent, false)
+    }
+
+    fn npc_trade_with_delivery(
+        &self,
         _actor: ExactActorRef,
         _command: UseCommand,
         _intent: oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+        _packed: bool,
     ) -> impl Future<Output = NpcTradeStep> {
         async {
             NpcTradeStep::Refused(

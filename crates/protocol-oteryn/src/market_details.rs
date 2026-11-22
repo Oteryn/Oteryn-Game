@@ -16,9 +16,17 @@ pub struct Filter {
     pub maximum_level: Option<u16>,
     pub forge_class: Option<u8>,
     pub depot_only: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        deserialize_with = "read_tier",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub forge_tier: Option<u8>,
 }
+fn read_tier<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<u8>, D::Error> {
+    u8::deserialize(deserializer).map(Some)
+}
+
 impl Filter {
     pub fn valid(&self) -> bool {
         self.search.len() <= 80

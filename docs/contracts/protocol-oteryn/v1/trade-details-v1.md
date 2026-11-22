@@ -54,3 +54,26 @@ Legacy peers receive the original offers. Decoders reject field 4 without
 selection, duplicate values and IDs outside 1–65535. The trade command,
 counter-offer disclosure and state bounds retain their original semantics.
 [Crystal protocolgame.cpp, 201189f8](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp#L7558-L7594)
+
+Capability 589 `NPC_SHOP_OPTIONS_V1` requires 3 and 4. Command 8 field 7
+requests a packed BUY. Command 97 field 7 requests inclusion of equipped
+items on SELL_ALL and also requires 81. Both tags are optional canonical
+varints of value 1. Omit the tag for a loose purchase or to exclude
+equipped items. Wrong actions, unsupported tags, duplicate tags and other
+values are refused. Legacy command results and inventory encoding still apply.
+
+Packed BUY uses one server-resolved 20-slot Shopping Bag (21411) and charges
+20 gold on top of the quoted total in the same fenced transaction. The
+shop purchase still observes the existing maximum of 20 item stacks.
+Purchased stacks go into the new bag. Its slot, weight and carried-tree
+space are checked together with the goods and payment. SELL_ALL with
+equipment enabled includes matching eligible items from equipment slots as
+well as the existing direct-backpack sale scope. It leaves the main backpack,
+nondefault equipment and containers with contents outside the sale. Existing
+sell-all amount and price ceilings apply to the combined sale. Hireling
+catalogue trades retain their separate custody shapes and refuse these options.
+The receipt binds the option, and replay returns the original committed result.
+
+[Crystal NPC purchase and bag fee](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/functions/creatures/npc/npc_functions.cpp#L593-L666)
+[Crystal equipped-item option](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp#L2250-L2266)
+[Shopping Bag, Tibia Fandom archive](https://tibia.fandom.com/wiki/Shopping_Bag)

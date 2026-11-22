@@ -136,7 +136,7 @@ fn trade_contents_are_negotiated_bounded_and_parent_indexed() -> Result<(), Erro
     ];
     let mut omitted_root_parent = encode_state(&state)?;
     let mut body = Vec::new();
-    push_message_field(&mut body, 1, &offer(root)?);
+    push_message_field(&mut body, 1, &offer(root, false)?);
     push_message_field(&mut body, 3, b"backpack");
     push_message_field(&mut omitted_root_parent, 11, &body);
     assert_eq!(
@@ -185,4 +185,30 @@ fn player_trade_state_rejects_one_byte_above_registered_ceiling() {
     );
     assert_eq!(decode_state_for(&payload, true), Err(Error::LimitExceeded));
     assert_eq!(MAX_CONTENTS_STATE_BYTES, 65_536);
+}
+
+#[test]
+fn player_trade_artwork_requires_selection() -> Result<(), Error> {
+    let mut state = State {
+        own: Some(Offer {
+            definition: 1,
+            count: 1,
+            sub_type: 0,
+            appearance_id: None,
+        }),
+        partner: Some(EntityRef {
+            identity: [1; 16],
+            generation: 7,
+        }),
+        phase: 1,
+        reason: 0,
+        ..State::default()
+    };
+    let legacy = encode_state(&state)?;
+    state.own.as_mut().ok_or(Error::Malformed)?.appearance_id = std::num::NonZeroU16::new(3607);
+    let extended = encode_state_negotiated(&state, false, true)?;
+    assert_eq!(decode_state_negotiated(&extended, false, true)?, state);
+    assert!(decode_state(&extended).is_err());
+    assert_eq!(encode_state(&state)?, legacy);
+    Ok(())
 }

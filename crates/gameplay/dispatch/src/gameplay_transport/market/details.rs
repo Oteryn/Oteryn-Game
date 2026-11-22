@@ -121,12 +121,7 @@ pub(super) async fn project(
                     vocations: None,
                     level: None,
                     forge_class: metadata.and_then(|m| m.forge_class),
-                    appearance: artwork_digest.and_then(|catalogue_digest| {
-                        Some(wire_details::Artwork {
-                            catalogue_digest,
-                            object_appearance_id: super::super::item_ref_admission::native_item_appearance(native, key, revision)?,
-                        })
-                    }),
+                    appearance: None,
                     depot_units: projection.depot.get(key).copied().unwrap_or(0),
                 };
                 if let Some(record) = profiles.get(&(key, revision)) {
@@ -176,6 +171,12 @@ pub(super) async fn project(
                 categories.extend(item.categories.iter().cloned());
                 if filter.matches(&item) {
                     if matched >= page * 32 && items.len() < 33 {
+                        item.appearance = artwork_digest.and_then(|catalogue_digest| {
+                            Some(wire_details::Artwork {
+                                catalogue_digest,
+                                object_appearance_id: super::super::item_ref_admission::native_item_appearance(native, key, revision)?,
+                            })
+                        });
                         items.push(item);
                     }
                     matched = matched.saturating_add(1);

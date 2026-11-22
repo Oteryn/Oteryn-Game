@@ -25,3 +25,23 @@ fn t124_market_buy_sell_tables_have_independent_pages_and_bounded_books() -> Tes
         .map_err(|_| "T124 dual book case thread")??;
     Ok(())
 }
+
+#[test]
+fn market_catalogue_filters_by_forge_tier_through_dispatch() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("market-catalogue-tier", || {
+        use super::market_fixtures::{scenario_with_catalogue_extension, CatalogueExtension};
+        scenario_with_catalogue_extension(false, false, Some(CatalogueExtension::Tier))
+    })
+}
+
+#[test]
+fn market_catalogue_projects_pinned_artwork_through_dispatch() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("market-catalogue-artwork", || {
+        use super::market_fixtures::{scenario_with_catalogue_extension, CatalogueExtension};
+        scenario_with_catalogue_extension(false, false, Some(CatalogueExtension::Artwork))
+    })
+}

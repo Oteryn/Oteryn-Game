@@ -140,8 +140,22 @@ async fn routed_market_payloads(
     Ok(replies)
 }
 
+#[derive(Clone, Copy)]
+pub(super) enum CatalogueExtension {
+    Tier,
+    Artwork,
+}
+
 pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
-    run(async |admin| {
+    scenario_with_catalogue_extension(bounds, population, None)
+}
+
+pub(super) fn scenario_with_catalogue_extension(
+    bounds: bool,
+    population: bool,
+    extension: Option<CatalogueExtension>,
+) -> TestResult {
+    run(async move |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "market_settlement", true, false).await?;
         super::reset();
@@ -1117,48 +1131,66 @@ pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
         };
         assert!(items.iter().any(|item| item.definition == first.definition));
         assert!(items.iter().all(|item| filter.matches(item)));
-        let mut extended = admitted;
-        extended.continuity.selected_capabilities =
-            crate::gameplay_transport::capabilities::SelectedCapabilities::select(
-                owner.offered_capabilities(),
-                &[4, 6, 18, 37, 63, 588],
-            )
-            .ok_or("selected Market catalogue capability")?;
-        let catalogue_by_tier = |tier| {
-            let json = format!(r#"{{"query":"Catalogue","filter":{{"forge_tier":{tier}}},"page":0}}"#);
-            let mut payload = vec![8, 9, 66, u8::try_from(json.len())?];
-            payload.extend(json.as_bytes());
-            Ok::<_, Box<dyn std::error::Error>> (payload)
-        };
-        let next = extended.continuity.next_command_id;
-        let replies = routed_market_payloads(
-            &owner,
-            &mut extended,
-            [(next, catalogue_by_tier(0)?), (next + 1, catalogue_by_tier(1)?)],
-        )
-        .await?;
-        let tier_zero: serde_json::Value = serde_json::from_slice(&replies[0])?;
-        let upgraded: serde_json::Value = serde_json::from_slice(&replies[1])?;
-        assert_eq!(tier_zero["items"][0]["definition"], first.definition);
-        assert_eq!(upgraded["items"], serde_json::json!([]));
-        let rows = tier_zero["items"].as_array().ok_or("tier zero rows")?;
-        let mut checked = 0;
-        for row in rows {
-            let reference = std::num::NonZeroU32::new(u32::try_from(row["definition"].as_u64().ok_or("definition")?)?)
-                .ok_or("nonzero definition")?;
-            let (key, revision) = index.definition_at(reference).ok_or("active definition")?;
-            if let Some(policy) = native.item_policy(key, revision) {
-                let id = policy.record().production_binding.external_id.parse::<u16>()?;
-                assert_eq!(row["appearance"]["object_appearance_id"], id);
-                assert_eq!(row["appearance"]["catalogue_digest"], serde_json::json!(generation.identity().client_artifact_digest()));
-                checked += 1;
+        if let Some(extension) = extension {
+            let next = admitted.continuity.next_command_id;
+            let request = |tier: Option<u8>| -> TestResult<Vec<u8>> {
+                // Emit the new request shape independently of the protocol encoder.
+                let mut filter = serde_json::json!({});
+                if let Some(tier) = tier {
+                    filter["forge_tier"] = tier.into();
+                }
+                let json = serde_json::to_vec(&serde_json::json!({
+                    "query": "Catalogue", "filter": filter, "page": 0,
+                }))?;
+                let mut payload = vec![8, 9, 66, u8::try_from(json.len())?];
+                payload.extend(json);
+                Ok(payload)
+            };
+            let legacy = routed_market_payloads(&owner, &mut admitted, [(next, request(Some(0))?)]).await?;
+            assert_eq!(details::decode_reply(&legacy[0]).map_err(debug)?, Reply::Refused { code: 9 });
+            assert!(first.appearance.is_none());
+            admitted.continuity.selected_capabilities =
+                crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                    owner.offered_capabilities(),
+                    &[4, 6, 18, 37, 63, 588],
+                )
+                .ok_or("selected Market catalogue capability")?;
+            let next = admitted.continuity.next_command_id;
+            match extension {
+                CatalogueExtension::Tier => {
+                    let replies = routed_market_payloads(
+                        &owner,
+                        &mut admitted,
+                        [(next, request(Some(0))?), (next + 1, request(Some(1))?)],
+                    ).await?;
+                    let tier_zero: serde_json::Value = serde_json::from_slice(&replies[0])?;
+                    let upgraded: serde_json::Value = serde_json::from_slice(&replies[1])?;
+                    assert_eq!(tier_zero["items"][0]["definition"], first.definition);
+                    assert_eq!(upgraded["items"], serde_json::json!([]));
+                }
+                CatalogueExtension::Artwork => {
+                    let replies = routed_market_payloads(&owner, &mut admitted, [(next, request(None)?)]).await?;
+                    let Reply::Catalogue { items, .. } =
+                        details::decode_reply(&replies[0]).map_err(debug)?
+                    else {
+                        return Err("artwork catalogue refused".into());
+                    };
+                    let mut checked = 0;
+                    for item in items {
+                        let reference = std::num::NonZeroU32::new(item.definition).ok_or("nonzero definition")?;
+                        let (key, revision) = index.definition_at(reference).ok_or("active definition")?;
+                        if let Some(policy) = native.item_policy(key, revision) {
+                            let id = policy.record().production_binding.external_id.parse::<u16>()?;
+                            let artwork = item.appearance.ok_or("qualified item has no appearance")?;
+                            assert_eq!(artwork.object_appearance_id.get(), id);
+                            assert_eq!(artwork.catalogue_digest, generation.identity().client_artifact_digest());
+                            checked += 1;
+                        }
+                    }
+                    assert!(checked > 0);
+                }
             }
         }
-        assert!(checked > 0);
-        admitted.continuity.next_command_id = extended.continuity.next_command_id;
-        let next = admitted.continuity.next_command_id;
-        let legacy = routed_market_payloads(&owner, &mut admitted, [(next, catalogue_by_tier(0)?)]).await?;
-        assert_eq!(details::decode_reply(&legacy[0]).map_err(debug)?, Reply::Refused { code: 9 });
         let stale = crate::durability::item_transfer::CurrentCharacterItemFence {
             connection_generation: crate::foundation::ConnectionGeneration::new(99)
                 .map_err(debug)?,

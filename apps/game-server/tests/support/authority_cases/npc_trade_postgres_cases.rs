@@ -51,6 +51,8 @@ fn trade(
     unit_price: u64,
 ) -> TestResult<NpcTradeRequest> {
     Ok(NpcTradeRequest {
+        shopping_bag: None,
+        include_equipped: false,
         fluid_subtype: None,
         full_charges: None,
         cause: NpcTradeCause {
