@@ -99,7 +99,10 @@ impl PlayView {
 fn spoken_slot<'a>(
     action: &'a BarAction,
     entries: &'a [oteryn_session::spell_catalog::SpellCatalogEntry],
-) -> Option<(&'a str, &'a str)> {
+) -> Option<(
+    &'a oteryn_session::spell_catalog::SpellCatalogEntry,
+    Option<&'a str>,
+)> {
     let BarAction::Text {
         text,
         send_automatically: true,
@@ -118,17 +121,27 @@ fn spoken_slot<'a>(
                     .is_some_and(|prefix| prefix.eq_ignore_ascii_case(entry.words.as_bytes()))
         })
         .max_by_key(|entry| entry.words.len())?;
+    if text.len() == spell.words.len() {
+        return Some((spell, None));
+    }
+    const PARAMETER_WORDS: &[&str] = include!(concat!(env!("OUT_DIR"), "/spell_parameters.rs"));
+    if !PARAMETER_WORDS
+        .iter()
+        .any(|words| words.eq_ignore_ascii_case(&spell.words))
+    {
+        return None;
+    }
     let rest = text
         .get(spell.words.len()..)?
         .strip_prefix(' ')?
         .trim_matches(' ');
-    let parameter = if let Some(quoted) = rest.strip_prefix('"') {
+    let parameter = if let Some((_, quoted)) = rest.split_once('"') {
         let value = quoted.strip_suffix('"').unwrap_or(quoted);
         (!value.contains('"')).then_some(value)?
     } else {
         (!rest.contains([' ', '"'])).then_some(rest)?
     };
-    (!parameter.is_empty()).then_some((&spell.name, parameter))
+    (!parameter.is_empty()).then_some((spell, Some(parameter)))
 }
 
 fn slot_timer<'a>(
@@ -147,6 +160,10 @@ fn slot_timer<'a>(
             let entry = entries
                 .iter()
                 .find(|entry| entry.rune_item == Some(definition.get()))?;
+            (entry.cast_index, entry.cooldown_groups.as_slice())
+        }
+        Some(action @ BarAction::Text { .. }) => {
+            let (entry, _) = spoken_slot(action, entries)?;
             (entry.cast_index, entry.cooldown_groups.as_slice())
         }
         Some(_) => return None,
@@ -299,10 +316,10 @@ impl crate::play::PlayLink {
                     slot + 1,
                     assignments::slot_label(&mailbox, *slot, action)
                 );
-                if let Some((name, parameter)) =
+                if let Some((spell, Some(parameter))) =
                     spoken_slot(action, mailbox.spell_catalog.catalog.entries())
                 {
-                    *label = format!("{}: {name}", slot + 1);
+                    *label = format!("{}: {}", slot + 1, spell.name);
                     if mailbox.local_preferences.action_bar.show_spell_parameters {
                         label.push('\n');
                         label.push_str(parameter);

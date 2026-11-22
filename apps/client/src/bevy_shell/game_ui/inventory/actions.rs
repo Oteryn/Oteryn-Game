@@ -103,17 +103,35 @@ pub(super) fn click(
         }
         ui.menu = Some((*slot, position));
     } else if direct || event.button == PointerButton::Primary && event.count >= 2 {
-        let backpack = owner
-            .play
-            .as_ref()
-            .and_then(|play| play.link.inventory_panel().inventory)
-            .and_then(|inventory| inventory.main_backpack);
-        let control = if slot.item.is_some() && slot.item == backpack {
+        use oteryn_client_ui::world_interaction::menu::Action;
+        let (Some(item), Some(play)) = (slot.current_item(&owner), owner.play.as_ref()) else {
+            return;
+        };
+        let main = play
+            .link
+            .inventory_panel()
+            .inventory
+            .and_then(|inv| inv.main_backpack)
+            .is_some_and(|pack| pack.handle == item.handle);
+        let known_container = direct
+            && play.link.container_panel().views.is_some_and(|set| {
+                set.views
+                    .iter()
+                    .any(|view| view.container_handle == item.handle)
+            });
+        let action = direct
+            .then(|| play.view.scene().smart_item_action(item.appearance_id))
+            .flatten();
+        let control = if main || known_container || action == Some(Action::Open) {
             Control::Open(*slot)
         } else {
             Control::Context(
                 *slot,
-                oteryn_client_ui::world_interaction::menu::Action::Use,
+                if action == Some(Action::UseWith) {
+                    Action::UseWith
+                } else {
+                    Action::Use
+                },
             )
         };
         choose(control, &owner, &mut ui);

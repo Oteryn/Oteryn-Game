@@ -146,6 +146,7 @@ pub(super) struct ConnectionInputs {
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) capture_attackers: std::collections::BTreeSet<Option<oteryn_session::EntityRef>>,
     pub(super) combat_capture: crate::screenshots::CombatCaptureFacts,
     pub(super) connection: ConnectionInputs,
     #[cfg(bevy_shell)]

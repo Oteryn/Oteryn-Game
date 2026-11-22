@@ -173,9 +173,16 @@ fn assigned_incantation_parameters_follow_the_slot_display_setting()
         cooldown_groups: vec![],
         rune_item: None,
     };
+    let plain = oteryn_session::spell_catalog::SpellCatalogEntry {
+        cast_index: 72,
+        name: "Light Healing".into(),
+        words: "exura".into(),
+        ..spell.clone()
+    };
     crate::play::feature_0287_actor_spell_catalog::protocol::bevy_catalog_fixture(
         &outbox,
-        oteryn_session::spell_catalog::encode_catalog(&[spell]).map_err(|e| format!("{e:?}"))?,
+        oteryn_session::spell_catalog::encode_catalog(&[spell, plain])
+            .map_err(|e| format!("{e:?}"))?,
     )?;
     assert!(link.assign_bar_action(
         0,
@@ -184,6 +191,14 @@ fn assigned_incantation_parameters_follow_the_slot_display_setting()
             send_automatically: true
         }
     ));
+    assert!(link.assign_bar_action(
+        1,
+        BarAction::Text {
+            text: "exura Alice".into(),
+            send_automatically: true,
+        }
+    ));
+    assert!(link.spell_slot_labels()[1].contains("exura Alice"));
     app.world_mut()
         .non_send_mut::<HostOwner>()
         .play

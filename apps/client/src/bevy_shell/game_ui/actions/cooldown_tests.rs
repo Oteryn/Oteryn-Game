@@ -174,6 +174,13 @@ fn slot_timer_formats_follow_independent_settings() -> TestResult {
             aim: Default::default(),
         }
     ));
+    assert!(link.assign_bar_action(
+        2,
+        crate::play::BarAction::Text {
+            text: "exura".into(),
+            send_automatically: true
+        }
+    ));
     app.world_mut()
         .non_send_mut::<HostOwner>()
         .play
@@ -218,6 +225,12 @@ fn slot_timer_formats_follow_independent_settings() -> TestResult {
             .link
             .spell_slot_labels();
         assert_eq!(labels[1].contains(" ms"), numbers);
+        assert_eq!(labels[2].contains(" ms"), numbers);
+        let spoken = named(&mut app, "Action slot 3 cooldown").ok_or("spoken spell timer")?;
+        assert_eq!(
+            app.world().get::<Node>(spoken).ok_or("overlay")?.display != Display::None,
+            graphical
+        );
         let saved = named(&mut app, "Action slot 2 cooldown").ok_or("saved slot timer")?;
         assert_eq!(
             app.world()

@@ -48,6 +48,7 @@ fn impact_records_and_incoming_player_hits_drive_independent_capture_choices()
             pvp.clone(),
             damage.clone(),
             heal.clone(),
+            pvp.clone(),
         ]
         .into_iter()
         .enumerate()
@@ -208,6 +209,81 @@ fn unchecking_death_capture_and_applying_prevents_a_death_capture()
         assert!(matches!(
             owner.settings.prepare_screenshots(now, Some(&link)),
             CaptureAction::Idle
+        ));
+    }
+    Ok(())
+}
+
+#[test]
+fn character_impact_records_survive_restart_and_master_cancels_queued_automatic_captures()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::analyser_transport::{AnalyserFact, AnalyserImpact};
+    let root = tempfile::tempdir()?;
+    let base = root.path().join("prefs.json");
+    for (character, healing, expected) in [
+        (1, 100_u32, true),
+        (1, 80, false),
+        (2, 80, true),
+        (1, 101, true),
+    ] {
+        let mut state = crate::play::SettingsState::new(Some(base.clone()));
+        state.select_character(Some([character; 16]));
+        let mut preferences = state.preferences.clone();
+        preferences.screenshots.healing_record = true;
+        preferences.screenshots.automatic_disabled = false;
+        state.apply(preferences);
+        let (link, _commands, outbox) = crate::play::play_channel();
+        let now = std::time::Instant::now();
+        state.prepare_screenshots(now, Some(&link));
+        outbox.push(vec![oteryn_session::SessionEvent::AnalyserFacts(
+            oteryn_session::AppliedDelta {
+                server_sequence: 1,
+                base_revision: 0,
+                new_revision: 1,
+                value: vec![AnalyserFact::Impact(AnalyserImpact::Healing(
+                    healing.try_into()?,
+                ))],
+            },
+        )]);
+        assert_eq!(
+            matches!(
+                state.prepare_screenshots(now, Some(&link)),
+                CaptureAction::Save
+            ),
+            expected
+        );
+        if character == 1 && healing == 80 {
+            outbox.bevy_hud_fixture(&[], None);
+            link.analyser_open();
+            assert!(link.analyser_select("impact"));
+            link.analyser_reset();
+            state.prepare_screenshots(now, Some(&link));
+            outbox.push(vec![oteryn_session::SessionEvent::AnalyserFacts(
+                oteryn_session::AppliedDelta {
+                    server_sequence: 2,
+                    base_revision: 1,
+                    new_revision: 2,
+                    value: vec![AnalyserFact::Impact(AnalyserImpact::Healing(
+                        1_u32.try_into()?,
+                    ))],
+                },
+            )]);
+            assert!(matches!(
+                state.prepare_screenshots(now, Some(&link)),
+                CaptureAction::Save
+            ));
+        }
+        let mut preferences = state.preferences.clone();
+        preferences.screenshots.automatic_disabled = true;
+        state.apply(preferences);
+        assert!(matches!(
+            state.prepare_screenshots(now, Some(&link)),
+            CaptureAction::Idle
+        ));
+        state.request_screenshot();
+        assert!(matches!(
+            state.prepare_screenshots(now, Some(&link)),
+            CaptureAction::Save
         ));
     }
     Ok(())

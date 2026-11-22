@@ -396,7 +396,47 @@ impl SettingsState {
         }
     }
 
+    pub(in crate::play) fn observe_impact_records(
+        &mut self,
+        facts: crate::screenshots::CombatCaptureFacts,
+        previous: crate::screenshots::CombatCaptureFacts,
+    ) -> [bool; 2] {
+        let reset = facts.record_resets != previous.record_resets;
+        let observed = [facts.damage_record, facts.healing_record];
+        let prior = if reset {
+            [0; 2]
+        } else if self.character.is_some() {
+            self.preferences.impact_records
+        } else {
+            [previous.damage_record, previous.healing_record]
+        };
+        let improved = [observed[0] > prior[0], observed[1] > prior[1]];
+        let records = [prior[0].max(observed[0]), prior[1].max(observed[1])];
+        #[cfg(bevy_shell)]
+        if self.preference_transfer_pending() {
+            return [false; 2];
+        }
+        if self.character.is_some() && records != self.preferences.impact_records {
+            self.preferences.impact_records = records;
+            if let Some(store) = &mut self.store {
+                #[cfg(bevy_shell)]
+                let result = if self.background_preferences {
+                    store.apply_in_background(self.preferences.clone())
+                } else {
+                    store.apply(self.preferences.clone())
+                };
+                #[cfg(not(bevy_shell))]
+                let result = store.apply(self.preferences.clone());
+                if let Err(error) = result {
+                    self.feedback = format!("Could not save impact records: {error}");
+                }
+            }
+        }
+        improved
+    }
+
     pub fn apply(&mut self, mut preferences: ReferencePreferences) {
+        preferences.impact_records = self.preferences.impact_records;
         if let Err(error) = preferences.validate() {
             self.feedback = error.to_string();
             return;

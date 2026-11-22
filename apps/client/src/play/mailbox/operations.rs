@@ -197,6 +197,7 @@ impl Outbox {
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
+        mailbox.capture_attackers.clear();
         mailbox.combat_capture = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
@@ -261,6 +262,7 @@ impl Outbox {
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
+        mailbox.capture_attackers.clear();
         mailbox.combat_capture = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
@@ -430,6 +432,7 @@ impl Drop for PlayLink {
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
+        mailbox.capture_attackers.clear();
         mailbox.combat_capture = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();

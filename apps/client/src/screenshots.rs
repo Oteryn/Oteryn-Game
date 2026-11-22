@@ -100,6 +100,7 @@ pub fn save_bmp(path: &Path, width: u32, height: u32, bgra: &[u8], crop: Rect) -
 /// Server-owned observations sampled by the desktop shell. The first sample is a baseline.
 #[derive(Debug, Clone, Copy, Default)]
 pub(crate) struct CombatCaptureFacts {
+    pub record_resets: u64,
     pub damage_record: u32,
     pub healing_record: u32,
     pub player_hits: u64,
@@ -109,11 +110,15 @@ pub(crate) struct CombatCaptureFacts {
     pub low_health_crossings: u64,
 }
 
+const MAX_TRACKED_ATTACKERS: usize = 256;
+
 impl CombatCaptureFacts {
     pub(crate) fn observe(
         &mut self,
         fact: &oteryn_session::analyser_transport::AnalyserFact,
         tracked: &std::collections::BTreeSet<u32>,
+        attackers: &mut std::collections::BTreeSet<Option<oteryn_session::EntityRef>>,
+        attacker: Option<oteryn_session::EntityRef>,
     ) {
         use oteryn_session::analyser_transport::{
             AnalyserDamageSource, AnalyserFact, AnalyserImpact,
@@ -133,7 +138,9 @@ impl CombatCaptureFacts {
                 source: AnalyserDamageSource::Player,
                 ..
             }
-        ) {
+        ) && attackers.len() < MAX_TRACKED_ATTACKERS
+            && attackers.insert(attacker)
+        {
             self.player_hits = self.player_hits.saturating_add(1);
         } else if let AnalyserFact::KillLoot { corpse_items, .. } = fact
             && corpse_items

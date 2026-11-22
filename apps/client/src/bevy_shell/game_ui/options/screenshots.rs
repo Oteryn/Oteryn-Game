@@ -107,7 +107,7 @@ fn open_folder(
     let task = bevy_tasks::IoTaskPool::get().spawn(async move {
         let folder =
             crate::play::screenshot::screenshot_directory(std::path::Path::new(&directory))?;
-        std::fs::create_dir_all(&folder)?;
+        crate::play::screenshot::create_capture_directory(&folder)?;
         let status = crate::bevy_shell::diagnostics::folder_command(&folder)
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::null())
@@ -268,8 +268,8 @@ mod bestiary_tests {
     fn confirmed_bestiary_stage_changes_trigger_only_the_selected_capture()
     -> Result<(), Box<dyn std::error::Error>> {
         for (id, expected) in [
-            ("screenshots.bestiary_unlock", 1),
-            ("screenshots.bestiary_complete", 2),
+            ("screenshots.bestiary_unlock", &[1, 2][..]),
+            ("screenshots.bestiary_complete", &[3][..]),
         ] {
             let mut app = super::super::tests::app(Page::Screenshots, None)?;
             let checkbox = app
@@ -287,12 +287,18 @@ mod bestiary_tests {
             let mut owner = app.world_mut().non_send_mut::<HostOwner>();
             owner.apply(true);
             let start = std::time::Instant::now();
-            for (i, kills) in [0, 10, 30, 30].into_iter().enumerate() {
+            for (i, kills) in [0, 10, 20, 30, 30].into_iter().enumerate() {
                 let now = start + std::time::Duration::from_secs(4 * i as u64);
                 owner.settings.prepare_screenshots(now, Some(&link));
                 let crate::combat_input::PlayCommand::Feature(query) = receiver.try_recv()? else {
                     return Err("missing bestiary request".into());
                 };
+                link.charm_progression_edit(0, "17".into());
+                assert_eq!(
+                    link.charm_progression_panel().fields[0],
+                    "17",
+                    "background capture must not discard a player's edit"
+                );
                 outbox.bevy_bestiary_result(
                     &query,
                     &GatedCommandResult {
@@ -323,7 +329,7 @@ mod bestiary_tests {
                         owner.settings.prepare_screenshots(now, Some(&link)),
                         crate::play::screenshot::CaptureAction::Save
                     ),
-                    i == expected,
+                    expected.contains(&i),
                     "{id} at {kills} kills"
                 );
                 owner.settings.cancel_screenshot();

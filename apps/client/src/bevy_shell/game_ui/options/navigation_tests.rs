@@ -276,3 +276,32 @@ fn open_screenshot_folder_reports_an_unusable_configured_directory()
     );
     Ok(())
 }
+
+#[cfg(unix)]
+#[test]
+fn opening_a_new_screenshot_directory_keeps_it_private() -> Result<(), Box<dyn std::error::Error>> {
+    use std::os::unix::fs::PermissionsExt;
+    let mut app = options_page(Page::Screenshots)?;
+    let fixture = tempfile::tempdir()?;
+    let folder = fixture.path().join("screens");
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .screenshots
+        .directory = folder.to_string_lossy().into_owned();
+    let button = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(e, n)| (n.as_str() == "screenshots.open-folder").then_some(e))
+        .ok_or("open folder")?;
+    app.world_mut().trigger(Activate { entity: button });
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while !folder.exists() && std::time::Instant::now() < deadline {
+        app.update();
+        std::thread::yield_now();
+    }
+    assert_eq!(std::fs::metadata(folder)?.permissions().mode() & 0o077, 0);
+    Ok(())
+}

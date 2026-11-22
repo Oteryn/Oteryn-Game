@@ -50,6 +50,30 @@ pub(in crate::play) fn apply(
     command: &FeatureCommand,
     result: &GatedCommandResult,
 ) {
+    // Requests run in send order. A capture query is enqueued only when the panel
+    // has no outstanding request. Its response leaves subsequent player input alone.
+    if panel.capture_pending
+        && command.kind == wire::COMMAND_TYPE_CHARM_PROGRESSION
+        && matches!(
+            wire::decode_charm_progression_request(&command.payload),
+            Ok(wire::CharmProgressionAction::Query)
+        )
+    {
+        panel.capture_pending = false;
+        if accepted(result)
+            && let Ok(reply) = wire::decode_charm_progression_reply(&result.payload)
+            && reply.outcome == wire::CharmProgressionOutcome::Query
+        {
+            panel.capture_stages = Some(
+                reply
+                    .bestiary
+                    .iter()
+                    .map(|race| (race.race, race.unlocked_stage()))
+                    .collect(),
+            );
+        }
+        return;
+    }
     if super::input::selector::apply(panel, command, result) { return; }
     if super::input::charm_browser::apply(panel, command, result) {
         return;

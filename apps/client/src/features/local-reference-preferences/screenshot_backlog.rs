@@ -16,9 +16,10 @@ pub(in super::super) struct ScreenshotRuntime {
     last_bestiary_query: Option<Instant>,
     previous: Option<Signals>,
     game_only: Option<bool>,
+    automatic_requested: bool,
 }
 struct Signals {
-    bestiary: Option<(usize, usize)>,
+    bestiary: Option<oteryn_client_ui::charm_progression::BestiaryStages>,
     combat: crate::screenshots::CombatCaptureFacts,
     deaths: u64,
     achievement: Option<u32>,
@@ -30,7 +31,7 @@ impl Signals {
         let panel = link.skill_progress_panel();
         let facts = link.screenshot_facts();
         Self {
-            bestiary: bestiary.then(|| link.bestiary_stage_counts()).flatten(),
+            bestiary: bestiary.then(|| link.capture_bestiary_stages()).flatten(),
             combat: link.combat_capture_facts(),
             deaths: facts.deaths,
             achievement: facts.achievement,
@@ -60,6 +61,7 @@ impl ScreenshotBatch {
 
 impl SettingsState {
     pub fn cancel_screenshot(&mut self) {
+        self.screenshot_runtime.automatic_requested = false;
         self.screenshot_requested = false;
     }
     pub fn reset_screenshot_session(&mut self) {
@@ -100,15 +102,33 @@ impl SettingsState {
 
     pub(crate) fn prepare_screenshots(&mut self, now: Instant, link: Option<&PlayLink>) -> CaptureAction {
         let preferences = self.preferences.screenshots.effective();
+        let signals = link.map(|link| {
+            Signals::read(
+                link,
+                !preferences.automatic_disabled
+                    && (preferences.bestiary_complete || preferences.bestiary_unlock),
+            )
+        });
+        let records = signals.as_ref().map_or([false; 2], |s| {
+            let old = self
+                .screenshot_runtime
+                .previous
+                .as_ref()
+                .map(|p| p.combat)
+                .unwrap_or_default();
+            self.observe_impact_records(s.combat, old)
+        });
         let runtime = &mut self.screenshot_runtime;
+        if preferences.automatic_disabled {
+            runtime.automatic_requested = false;
+        }
         if link.is_none() || runtime.game_only != Some(preferences.game_only) {
             *runtime = ScreenshotRuntime::default();
             runtime.game_only = Some(preferences.game_only);
         }
-        if let Some(link) = link {
+        if let (Some(link), Some(signals)) = (link, signals) {
             let bestiary = !preferences.automatic_disabled
                 && (preferences.bestiary_complete || preferences.bestiary_unlock);
-            let signals = Signals::read(link, bestiary);
             if bestiary
                 && runtime
                     .last_bestiary_query
@@ -133,16 +153,27 @@ impl SettingsState {
                     .achievement
                     .zip(signals.achievement)
                     .is_some_and(|(old, new)| new > old);
-                self.screenshot_requested |= (preferences.on_death && death)
+                runtime.automatic_requested |= (preferences.on_death && death)
                     || (preferences.on_level && level)
                     || (preferences.on_skill && skill)
                     || (preferences.on_achievement && achievement)
                     || previous
                         .bestiary
-                        .zip(signals.bestiary)
-                        .is_some_and(|(old, new)| {
-                            preferences.bestiary_unlock && new.0 > old.0
-                                || preferences.bestiary_complete && new.1 > old.1
+                        .as_ref()
+                        .zip(signals.bestiary.as_ref())
+                        .is_some_and(|(old, current)| {
+                            !Arc::ptr_eq(old, current)
+                                && current.iter().any(|(race, stage)| {
+                                    let last = old
+                                        .binary_search_by_key(race, |(id, _)| *id)
+                                        .map_or(0, |index| old[index].1);
+                                    *stage > last
+                                        && if *stage == 3 {
+                                            preferences.bestiary_complete
+                                        } else {
+                                            preferences.bestiary_unlock
+                                        }
+                                })
                         })
                     || (preferences.boss_defeat
                         && signals.combat.boss_defeats > previous.combat.boss_defeats)
@@ -150,10 +181,8 @@ impl SettingsState {
                         && signals.combat.reward_collections > previous.combat.reward_collections)
                     || (preferences.tracked_loot
                         && signals.combat.tracked_loot > previous.combat.tracked_loot)
-                    || (preferences.damage_record
-                        && signals.combat.damage_record > previous.combat.damage_record)
-                    || (preferences.healing_record
-                        && signals.combat.healing_record > previous.combat.healing_record)
+                    || (preferences.damage_record && records[0])
+                    || (preferences.healing_record && records[1])
                     || (preferences.pvp_attack
                         && signals.combat.player_hits > previous.combat.player_hits)
                     || (preferences.low_health
@@ -181,7 +210,7 @@ impl SettingsState {
         {
             runtime.frames.pop_front();
         }
-        if self.screenshot_requested {
+        if self.screenshot_requested || runtime.automatic_requested {
             CaptureAction::Save
         } else if link.is_some()
             && limit > 0
@@ -230,7 +259,7 @@ impl SettingsState {
         directory: String,
     ) -> (ScreenshotBatch, bool) {
         self.screenshot_runtime.last_frame = Some(now);
-        let consumed = !self.screenshot_requested;
+        let consumed = !self.screenshot_requested && !self.screenshot_runtime.automatic_requested;
         let frames = if consumed {
             std::mem::take(&mut self.screenshot_runtime.frames)
         } else {

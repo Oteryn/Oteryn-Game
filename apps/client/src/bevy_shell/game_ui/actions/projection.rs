@@ -160,7 +160,22 @@ pub(super) fn project(
             owner.settings.preferences.bar_actions.0.get(&slot.0),
             Some(crate::play::BarAction::Use { .. } | crate::play::BarAction::Equip { .. })
         );
-        let value = if object { "Object" } else { value };
+        let object_caption;
+        let value = if object {
+            object_caption = value
+                .lines()
+                .find(|line| {
+                    line.strip_suffix(" ms")
+                        .is_some_and(|ms| ms.parse::<u64>().is_ok())
+                })
+                .map_or_else(
+                    || "Object".to_owned(),
+                    |cooldown| format!("Object\n{cooldown}"),
+                );
+            &object_caption
+        } else {
+            value
+        };
         let compact = value
             .lines()
             .map(|line| line.chars().take(6).collect::<String>())

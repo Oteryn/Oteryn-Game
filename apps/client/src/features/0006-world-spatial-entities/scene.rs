@@ -5,13 +5,9 @@ use oteryn_session::{EntityDetail, VisibleAppearance};
 impl Scene {
     #[cfg(bevy_shell)]
     pub(crate) fn smart_item_action(
-        &mut self,
+        &self,
         id: u16,
     ) -> Option<oteryn_client_ui::world_interaction::menu::Action> {
-        self.cache.begin(
-            self.world.atlas(),
-            std::env::var_os(crate::map::ASSET_DIR_ENV).map(std::path::PathBuf::from),
-        );
         self.cache.smart_item_action(id)
     }
     pub(crate) fn item_multi_use(&mut self, id: u16) -> bool {

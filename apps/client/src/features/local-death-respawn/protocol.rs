@@ -86,6 +86,7 @@ impl Mailbox {
         if vitals.max_health > 0 {
             let dead = vitals.health == 0;
             if dead && !self.death.dead {
+                self.capture_attackers.clear();
                 self.death.deaths = self.death.deaths.saturating_add(1);
                 self.death.receipt_before =
                     self.death.protection.as_ref().map(|value| value.occurrence);

@@ -28,9 +28,15 @@ impl PlayLink {
         mailbox.analyser.open = !mailbox.analyser.open_tools.is_empty();
     }
     pub fn analyser_reset(&self) {
-        let panel = &mut lock(&self.mailbox).analyser;
-        if panel.selected && panel.open {
-            oteryn_client_ui::analyser::protocol::reset_tool(panel);
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.analyser.selected && mailbox.analyser.open {
+            if mailbox.analyser.tool == oteryn_client_ui::analyser::Tool::Impact {
+                let records = &mut mailbox.combat_capture;
+                records.record_resets = records.record_resets.saturating_add(1);
+                records.damage_record = 0;
+                records.healing_record = 0;
+            }
+            oteryn_client_ui::analyser::protocol::reset_tool(&mut mailbox.analyser);
         }
     }
 
