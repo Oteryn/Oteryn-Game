@@ -97,6 +97,9 @@ STATIC_IDS = MERCHANT_SCENERY | {8995, 8996, 9527, 17677, 17679, 17681, 21573, 2
 SIDE_IDS |= STATIC_IDS | {3114, 3456, 3661, 32197, 32225, 32226, 32227, 32228, 32582, 32583, 32584, 32585, 32602, 32757}
 SIDE_IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 
+# Wrath Mission 5 provisions use the matching Crystal and Canary physical facts.
+IDS |= {10218, 10247}
+
 # Existing Dworc and Merlkin loot yields require portable native custody.
 IDS |= {3348, 3403}
 IDS |= SIDE_IDS
@@ -109,14 +112,16 @@ CLIENT = f'content/assets/files/appearances-{CLIENT_SHA}.dat'
 
 
 def reconcile_canonical_physical(item_id, definition, record):
-    # Purified Soul: retain the canonical0.20oz value; raw Canary XML says2.50oz.
-    # Admit only this exact reviewed pair, never a general weight override.
-    if item_id != 32228:return
+    # Keep the existing canonical weights for these exact donor discrepancies.
+    weights = {10218: (510, 509), 10247: (8000, 7500), 32228: (20, 250)}
+    if item_id not in weights:
+        return
+    canonical_weight, donor_weight = weights[item_id]
     known=lambda value:{'state':'KNOWN','value':value}
     canonical=definition['semantics']['physical']['value']['weight']
     donor=record['semantics']['physical']['value']['weight']
-    if canonical!=known(20) or donor!=known(250):
-        raise ValueError('QENGINE_PURIFIED_SOUL_WEIGHT_DECISION_DRIFT')
+    if canonical!=known(canonical_weight) or donor!=known(donor_weight):
+        raise ValueError(f'QENGINE_REWARD_ITEM_WEIGHT_DECISION_DRIFT:{item_id}')
     record['semantics']['physical']['value']['weight']=canonical.copy()
 
 

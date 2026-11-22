@@ -548,9 +548,11 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../../content/quests/npc-callbacks/gnome-dailies.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/hunting-tasks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/wrath-city.json"),
     include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
     include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
@@ -2387,9 +2389,9 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing and 31 QB routes. The final three terms cover
-        // Rottin Wood, the Forgemaster's access and claim routes, and the Matchmaker package.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12 + 1);
+        // Shared covers 207 existing and 31 QB routes. Additional shards include
+        // Rottin Wood, the Forgemaster, Matchmaker, nine hunting reports and four Wrath routes.
+        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12 + 1 + 9 + 4);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

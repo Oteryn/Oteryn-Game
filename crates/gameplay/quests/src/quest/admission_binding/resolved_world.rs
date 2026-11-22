@@ -86,10 +86,10 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
-        // The published 1,012 callbacks gain 128 gnome daily bindings.
-        assert_eq!(base.len(), 1_140);
+        // The published 1,012 callbacks gain 128 gnome daily and six Wrath bindings.
+        assert_eq!(base.len(), 1_146);
         assert_eq!(bindings.world_callbacks().count(), 31);
-        assert_eq!(callbacks.len(), 1_171);
+        assert_eq!(callbacks.len(), 1_177);
         assert!(callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS);
         let expected: BTreeSet<_> = base
             .iter()

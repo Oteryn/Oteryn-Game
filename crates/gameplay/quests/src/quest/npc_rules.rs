@@ -516,6 +516,8 @@ impl NpcRuleCatalog {
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gnomus.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-oldrak.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-henricus.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/hunting-tasks.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/wrath-city.json"),
                 ])?;
                 catalogue.programs.extend(supplemental.programs);
                 validate::catalogue(&catalogue)?;
@@ -536,6 +538,10 @@ impl NpcRuleCatalog {
                             == Some("oteryn:quest-npc-program.m41_kilmaresh_finale")
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.citizen-source-sagas")
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.hunting-tasks")
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.wrath-city")
                         || matches!(
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"

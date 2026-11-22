@@ -468,6 +468,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         std::collections::BTreeSet::from([
             "oteryn:item.tibia.i10198",
             "oteryn:item.tibia.i10199",
+            "oteryn:item.tibia.i10218",
+            "oteryn:item.tibia.i10247",
             "oteryn:item.tibia.i11544",
             "oteryn:item.tibia.i11545",
             "oteryn:item.tibia.i11546",
