@@ -1,6 +1,6 @@
 //! Paid travel corrections and qualified additions to admitted captain services.
 //! `travel_routes.json` projects source-correction-check and admission-evidence in
-//! docs/reference/content-prep/travel-content-1, plus native S10S/S10T captain additions.
+//! docs/reference/content-prep/travel-content-1, plus qualified native captain additions.
 //! Unmapped custom/quest guards stay held.
 use super::NpcServiceModel;
 use crate::content::{ProjectV2DefinitionRef, ProjectV2TravelRoute};
@@ -290,12 +290,12 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 234);
+        assert_eq!(corrections.len(), 246);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys.len(), 234);
+        assert_eq!(keys.len(), 246);
         let dalbrect = corrections
             .iter()
             .find(|row| row.key == "oteryn:service.travel.dalbrect/isle_of_kings")
@@ -544,7 +544,15 @@ mod tests {
             .filter(|row| row.key.starts_with("oteryn:service.travel.karith/"))
         {
             assert!(!row.postman);
-            assert!(row.yalahar_town_gate.is_some());
+            if row.key == "oteryn:service.travel.karith/travora" {
+                assert!(row.yalahar_town_gate.is_none());
+                assert_eq!(
+                    row.ticket.as_ref().map(|ticket| ticket.valid_for_seconds),
+                    Some(86400)
+                );
+            } else {
+                assert!(row.yalahar_town_gate.is_some());
+            }
         }
         // These donor routes cannot be safely offered with the currently admitted owners.
         for key in [
