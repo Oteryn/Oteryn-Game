@@ -589,6 +589,7 @@ fn scenario(case: Case) -> TestResult {
             .await
             .map_err(|error| format!("W03 expiry scenario: {error}"))?,
             Case::NativeDeath
+            | Case::NestedCustody
             | Case::AtomicDeathFault
             | Case::ProductionNativeDeath
             | Case::LargePrivateCorpse
