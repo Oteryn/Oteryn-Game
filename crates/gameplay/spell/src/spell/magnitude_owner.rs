@@ -1428,90 +1428,83 @@ impl PreparedMagnitudeOwner {
             })
             .transpose()?;
         let damage_dealt = self.damage_dealt_percent()?;
-        if let TargetOwner::Player(target_state) = &target.owner {
-            value = self.player_component(
-                &target,
-                target_state,
-                element,
-                percent(value, damage_dealt)?,
-            )?;
-            if let Some((element, secondary)) = secondary {
-                value = value
-                    .checked_add(self.player_component(
-                        &target,
-                        target_state,
-                        element,
-                        percent(secondary, damage_dealt)?,
-                    )?)
-                    .ok_or(Error::InvalidMagnitude)?;
-            }
+        let finish_component = |value: i64, side_percent: Option<u32>| -> Result<i64, Error> {
             if value == 0 {
                 return Ok(0);
             }
             let bonus = needed(a.source_damage_multiplier_percent)?
                 .checked_add(hit.bonus_percent)
                 .ok_or(Error::InvalidMagnitude)?;
-            value = compound(value, bonus)?
-                .checked_add(i64::from(needed(a.wheel_flat_damage)?))
-                .ok_or(Error::InvalidMagnitude)?;
-            return self.finish_wheel_damage(value, &target);
+            let mut flat = i64::from(needed(a.wheel_flat_damage)?);
+            if let Some(side) = side_percent {
+                flat = signed_round(flat as f64 * f64::from(side) / 100.0)?;
+            }
+            self.finish_wheel_damage(
+                compound(value, bonus)?
+                    .checked_add(flat)
+                    .ok_or(Error::InvalidMagnitude)?,
+                &target,
+            )
+        };
+        if let TargetOwner::Player(target_state) = &target.owner {
+            let finish = |element, value| {
+                finish_component(
+                    self.player_component(
+                        &target,
+                        target_state,
+                        element,
+                        percent(value, damage_dealt)?,
+                    )?,
+                    None,
+                )
+            };
+            let primary = finish(element, value)?;
+            let secondary = secondary
+                .map(|(element, raw)| finish(element, raw))
+                .transpose()?
+                .unwrap_or(0);
+            return primary
+                .checked_add(secondary)
+                .ok_or(Error::InvalidMagnitude);
         }
         let TargetOwner::Creature(creature) = &target.owner else {
             return invalid();
         };
         let policy = &creature.state.policy;
-        *damage_healing = policy
-            .damage_healing(element_key(element), value)
-            .map_err(Error::Owner)?;
-        value =
-            self.creature_component(policy, element, percent(value, damage_dealt)?, armor, draw)?;
-        // Source immunity and armor cannot let Wheel flat damage revive a zero hit.
-        if value > 0 {
-            value = target
-                .native_primary(value.checked_neg().ok_or(Error::InvalidMagnitude)?)?
-                .checked_neg()
-                .ok_or(Error::InvalidMagnitude)?;
-        }
-        if let Some((element, secondary)) = secondary {
-            let healed = policy
-                .damage_healing(element_key(element), secondary)
-                .map_err(Error::Owner)?;
+        let mut finish = |element, raw, primary| {
             *damage_healing = damage_healing
-                .checked_add(healed)
+                .checked_add(
+                    policy
+                        .damage_healing(element_key(element), raw)
+                        .map_err(Error::Owner)?,
+                )
                 .ok_or(Error::InvalidMagnitude)?;
-            value = value
-                .checked_add(self.creature_component(
-                    policy,
-                    element,
-                    percent(secondary, damage_dealt)?,
-                    false,
-                    draw,
-                )?)
-                .ok_or(Error::InvalidMagnitude)?;
-        }
-        if value == 0 {
-            return Ok(0);
-        }
-        value = cruelty_health_component(value, target.cruelty_drain)?;
-        if value == 0 {
-            return Ok(0);
-        }
-        // Wheel uses signed negative C++ damage and compound truncation towards zero.
-        let negative = value.checked_neg().ok_or(Error::InvalidMagnitude)?;
-        let bonus = needed(a.source_damage_multiplier_percent)?
-            .checked_add(hit.bonus_percent)
-            .ok_or(Error::InvalidMagnitude)?;
-        value = compound(negative, bonus)?
-            .checked_neg()
-            .ok_or(Error::InvalidMagnitude)?;
-        let mut flat = i64::from(needed(a.wheel_flat_damage)?);
-        if let Some(side) = hit.side_percent {
-            flat = signed_round(flat as f64 * f64::from(side) / 100.0)?;
-        }
-        self.finish_wheel_damage(
-            value.checked_add(flat).ok_or(Error::InvalidMagnitude)?,
-            &target,
-        )
+            let mut value = self.creature_component(
+                policy,
+                element,
+                percent(raw, damage_dealt)?,
+                primary && armor,
+                draw,
+            )?;
+            if primary && value > 0 {
+                value = target
+                    .native_primary(value.checked_neg().ok_or(Error::InvalidMagnitude)?)?
+                    .checked_neg()
+                    .ok_or(Error::InvalidMagnitude)?;
+            }
+            finish_component(
+                cruelty_health_component(value, target.cruelty_drain)?,
+                hit.side_percent,
+            )
+        };
+        let primary = finish(element, value, true)?;
+        let secondary = secondary
+            .map(|(element, raw)| finish(element, raw, false))
+            .transpose()?
+            .unwrap_or(0);
+        primary
+            .checked_add(secondary)
+            .ok_or(Error::InvalidMagnitude)
     }
 
     fn player_component(

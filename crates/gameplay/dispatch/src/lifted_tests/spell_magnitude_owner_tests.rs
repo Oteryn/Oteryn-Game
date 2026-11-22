@@ -359,6 +359,47 @@ fn crystal_equipment_weapon_skill_hit_uses_intrinsic_element_response() {
 }
 
 #[test]
+fn crystal_equipment_spell_wheel_flat_applies_to_each_surviving_weapon_component() {
+    use crate::content::native_gameplay::{NativeGameplayInput, compile_native_gameplay, decode};
+    use oteryn_gameplay_combat_rules::resolution::swing_weapon;
+
+    let mut f = fixture();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let mut input = NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))
+        .expect("committed native inputs");
+    input.source_world = None;
+    let room = crate::content::qualify_native_entry_room(f.runtime.binding().world_id())
+        .expect("qualified room");
+    let artifact = compile_native_gameplay(room.compiled(), &input).expect("artifact");
+    let native = decode(&artifact.server_artifact).expect("decoded artifact").state;
+    let weapon = swing_weapon(&native, |slot| {
+        (slot == 5).then_some(("oteryn:item.tibia.i49523", "definition-r1"))
+    })
+    .expect("Inferniarch Battleaxe");
+
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        unreachable!();
+    };
+    combat.element = Element::Physical;
+    combat.block_armor = false;
+    combat.hits[0].side_percent = None;
+    combat.hits[0].magnitude = 250;
+    let hit = combat.hits[0].clone();
+    let finish = |f: &Fixture| {
+        let mut owner = qualify(f, &p).expect("real numerical owner");
+        owner.bind_intrinsic_weapon(weapon);
+        owner
+            .finish(&p, &hit, &f.bindings[1], &mut |low, _| low)
+            .expect("split spell")
+    };
+    f.attributes.wheel_flat_damage = Some(0);
+    let base = finish(&f);
+    f.attributes.wheel_flat_damage = Some(11);
+    assert_eq!(finish(&f) - base, 22);
+}
+
+#[test]
 fn wheel_magnitude_known_fields_require_real_observed_wheel_revision_in_baseline() {
     let mut f = fixture();
     f.attributes.policy = MagnitudePolicy::BaselineTest;

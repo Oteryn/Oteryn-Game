@@ -585,6 +585,23 @@ impl ProficiencyAttackEffects {
         Some(())
     }
 
+    pub(super) fn apply(self, base_damage: i64, target_health: u64, target_max_health: u64) -> i64 {
+        if base_damage <= 0 || target_max_health == 0 {
+            return base_damage;
+        }
+        let mut numerator = self.damage_numerator;
+        if u128::from(target_health) * 100 > u128::from(target_max_health) * 95 {
+            numerator = numerator.saturating_add(self.alpha_numerator);
+        }
+        if u128::from(target_health) * 100 < u128::from(target_max_health) * 30 {
+            numerator = numerator.saturating_add(self.omega_numerator);
+        }
+        base_damage
+            .saturating_add(self.flat_attack)
+            .saturating_add(base_damage.saturating_mul(numerator) / self.denominator)
+            .max(0)
+    }
+
     fn valid(self) -> bool {
         self.denominator > 0
             && self.damage_numerator >= 0
@@ -695,28 +712,19 @@ impl WeaponProficiencyDispatch {
         target_health: u64,
         target_max_health: u64,
     ) -> i64 {
-        let Some(track) = self.tracks.get(equipped_weapon_item_key) else {
-            return base_damage;
-        };
-        let effects = track.effects;
+        self.active_attack_effects(equipped_weapon_item_key)
+            .map_or(base_damage, |effects| {
+                effects.apply(base_damage, target_health, target_max_health)
+            })
+    }
+
+    pub(super) fn active_attack_effects(&self, item_key: &str) -> Option<ProficiencyAttackEffects> {
+        let track = self.tracks.get(item_key)?;
         let has_active_selection = track
             .shape
             .active_selections(track.progress, &track.selections)
             .is_ok_and(|selections| !selections.is_empty());
-        if !has_active_selection || !effects.valid() || base_damage <= 0 || target_max_health == 0 {
-            return base_damage;
-        }
-        let mut numerator = effects.damage_numerator;
-        if u128::from(target_health) * 100 > u128::from(target_max_health) * 95 {
-            numerator = numerator.saturating_add(effects.alpha_numerator);
-        }
-        if u128::from(target_health) * 100 < u128::from(target_max_health) * 30 {
-            numerator = numerator.saturating_add(effects.omega_numerator);
-        }
-        base_damage
-            .saturating_add(effects.flat_attack)
-            .saturating_add(base_damage.saturating_mul(numerator) / effects.denominator)
-            .max(0)
+        (has_active_selection && track.effects.valid()).then_some(track.effects)
     }
 }
 

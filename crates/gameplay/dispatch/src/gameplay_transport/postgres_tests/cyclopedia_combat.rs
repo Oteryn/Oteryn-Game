@@ -18,6 +18,9 @@ use sqlx::Row;
 enum ElementalMeleeCase {
     BlockBudget,
     ImmuneTraining,
+    SecondaryImmuneTraining,
+    DamageHealing,
+    ProficiencyAttackPoints,
 }
 
 #[test]
@@ -41,6 +44,21 @@ fn crystal_equipment_zero_primary_spends_creature_block_postgres() -> TestResult
 #[test]
 fn crystal_equipment_immune_melee_awards_no_training_postgres() -> TestResult {
     super::item_look_fixtures::large_stack(|| scenario(Some(ElementalMeleeCase::ImmuneTraining)))
+}
+
+#[test]
+fn crystal_equipment_secondary_immunity_preserves_damage_but_awards_no_tries_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(Some(ElementalMeleeCase::SecondaryImmuneTraining)))
+}
+
+#[test]
+fn crystal_equipment_elemental_melee_heals_mounted_thorn_knight_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(Some(ElementalMeleeCase::DamageHealing)))
+}
+
+#[test]
+fn crystal_equipment_amber_slayer_proficiency_adds_physical_attack_points_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(Some(ElementalMeleeCase::ProficiencyAttackPoints)))
 }
 
 fn scenario(elemental_melee: Option<ElementalMeleeCase>) -> TestResult {
@@ -98,12 +116,17 @@ fn scenario(elemental_melee: Option<ElementalMeleeCase>) -> TestResult {
         native
             .install_companion_policies(&mut runtime)
             .map_err(debug)?;
-        let race = if elemental_melee == Some(ElementalMeleeCase::ImmuneTraining) {
-            "oteryn:creature.percht_minion"
-        } else {
-            "oteryn:creature.rat"
+        let race = match elemental_melee {
+            Some(ElementalMeleeCase::ImmuneTraining) => "oteryn:creature.percht_minion",
+            Some(ElementalMeleeCase::SecondaryImmuneTraining) => "oteryn:creature.elf_overseer",
+            Some(ElementalMeleeCase::DamageHealing) => "oteryn:creature.mounted_thorn_knight",
+            Some(ElementalMeleeCase::ProficiencyAttackPoints) => "oteryn:creature.magma_crystal",
+            _ => "oteryn:creature.rat",
         };
         let policy = runtime.companion_policy(race).map_err(debug)?;
+        if elemental_melee == Some(ElementalMeleeCase::DamageHealing) {
+            assert_eq!(policy.damage_healing("death", 1).map_err(debug)?, 1);
+        }
         if elemental_melee == Some(ElementalMeleeCase::ImmuneTraining) {
             assert!(policy.damage_immunities.iter().any(|key| key == "physical"));
             assert!(policy.damage_immunities.iter().any(|key| key == "death"));
@@ -139,9 +162,15 @@ fn scenario(elemental_melee: Option<ElementalMeleeCase>) -> TestResult {
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         deps.admitted.runtime_actor = Some(deps.actor);
-        seed(&h, elemental_melee.is_some()).await?;
+        seed(&h, elemental_melee).await?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
+        if elemental_melee == Some(ElementalMeleeCase::ProficiencyAttackPoints) {
+            owner.proficiency_catalogue = Some(
+                crate::gameplay_transport::weapon_proficiency::ProductionProficiencyCatalogue::embedded()
+                    .ok_or("proficiency catalogue")?,
+            );
+        }
         deps.initialize(&owner).await;
         let effects = owner
             .read_admission_effects(deps.admitted.game_session_id)
@@ -221,42 +250,117 @@ fn scenario(elemental_melee: Option<ElementalMeleeCase>) -> TestResult {
             "the production weapon refresh persists statistics before the first tab query"
         );
         if let Some(case) = elemental_melee {
-            let immune = case == ElementalMeleeCase::ImmuneTraining;
+            let training_skill = match case {
+                ElementalMeleeCase::ImmuneTraining => Some(oteryn_gameplay_progression::hit_training::SkillFamily::Sword),
+                ElementalMeleeCase::SecondaryImmuneTraining => Some(oteryn_gameplay_progression::hit_training::SkillFamily::Axe),
+                _ => None,
+            };
             use oteryn_gameplay_combat_rules::attack::AttackConstants;
-            use oteryn_gameplay_progression::hit_training::{HitBlock, SkillFamily};
+            use oteryn_gameplay_progression::hit_training::HitBlock;
             let formula = native.training_formula().ok_or("training formula")?;
             let now = owner.owner_now();
+            let starting_health = match case {
+                ElementalMeleeCase::DamageHealing => i64::try_from(maximum_health / 2)?,
+                ElementalMeleeCase::SecondaryImmuneTraining | ElementalMeleeCase::ProficiencyAttackPoints => {
+                    i64::try_from(maximum_health)?
+                }
+                _ => 10_000,
+            };
+            if case == ElementalMeleeCase::ProficiencyAttackPoints {
+                use crate::domain::CharacterRevision;
+                use crate::durability::character_proficiency::{
+                    DurableProficiencyState, StoredProficiencyTrack,
+                };
+                let key = "oteryn:item.tibia.i47368";
+                let catalogue = owner.proficiency_catalogue.as_ref().ok_or("proficiency catalogue")?;
+                let shape = catalogue.empty_track(key).ok_or("Amber Slayer proficiency")?.shape.track_shape();
+                let mut selections = vec![None; usize::from(shape.perk_levels())];
+                selections[5] = Some(0);
+                let stored = StoredProficiencyTrack {
+                    state: DurableProficiencyState::new(
+                        key, "oteryn:proficiency.tibia.p42", "definition-r1",
+                        u64::from(shape.final_progress()), selections,
+                    )?,
+                    committed_character_revision: CharacterRevision::new(1).map_err(debug)?,
+                    last_proficiency_occurrence_id: [0; 16],
+                    modifications: [None, None],
+                };
+                let track = catalogue.live_track(&stored).ok_or("selected attack proficiency")?;
+                assert_eq!(track.effects.flat_attack, 1);
+                owner.states.proficiencies.lock().map_err(|_| "proficiencies")?
+                    .entry(admitted.game_session_id).or_default().install_track(key, track);
+                owner.states.spell_states.lock().await.analyser.snapshot(
+                    deps.actor, admitted.game_session_id, 1, None,
+                ).ok_or("analyser subscription")?;
+            }
             {
                 let mut runtime = deps.runtime.lock().await;
                 let creature = runtime.visible_entities().creatures.first().ok_or("target")?.actor;
-                runtime.set_test_creature_health(creature, 10_000).map_err(debug)?;
+                runtime.set_test_creature_health(creature, starting_health).map_err(debug)?;
                 let mut states = owner.states.spell_states.lock().await;
                 let state = states
                     .get_mut(&runtime, deps.actor, admitted.game_session_id)
                     .ok_or("player state")?;
-                state.facts.level = 330;
+                state.facts.level = match case {
+                    ElementalMeleeCase::SecondaryImmuneTraining | ElementalMeleeCase::ProficiencyAttackPoints => 800,
+                    _ => 330,
+                };
                 state.facts.vocation = crate::spell::Vocation::Knight;
-                if immune {
+                if let Some(skill) = training_skill {
                     let build = crate::durability::character_build::DurableBuildState::new(
-                        "knight", (u16::try_from(state.facts.magic_level)?, 0), [(50, 0); 7],
+                        "knight", (u16::try_from(state.facts.magic_level)?, 0),
+                        [(if case == ElementalMeleeCase::SecondaryImmuneTraining { 100 } else { 50 }, 0); 7],
                     ).map_err(debug)?;
                     state.enable_owned_training(&build, formula).map_err(debug)?;
-                    state.train_skill(SkillFamily::Sword, now.get(), formula, |hits| {
+                    state.train_skill(skill, now.get(), formula, |hits| {
                         hits.melee_hit(HitBlock::Unblocked);
                         0
                     }).map_err(debug)?;
                     assert!(!state.has_training_to_flush());
                 }
             }
-            owner.drain_auto_attacks().await;
+            if case == ElementalMeleeCase::DamageHealing {
+                let interval = AttackConstants::checked_in().ok_or("attack constants")?
+                    .attack_interval_micros();
+                // Pure elemental weapons can roll zero. Give the held lineage distinct swings.
+                for offset in [0, interval, 2 * interval] {
+                    owner.drain_auto_attacks_at(
+                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get() + offset),
+                    ).await;
+                }
+            } else {
+                owner.drain_auto_attacks().await;
+            }
             let runtime = deps.runtime.lock().await;
             let creature = runtime.visible_entities().creatures.first().ok_or("target")?.actor;
             let budget = owner.states.attack.lock().await.test_creature_blocks(creature).ok_or("melee swing reached block settlement")?;
-            if immune {
+            let health = runtime.companion_snapshot(creature).map_err(debug)?.health;
+            if case == ElementalMeleeCase::SecondaryImmuneTraining {
+                assert!(health < starting_health, "the non-immune physical component lands");
+            }
+            if case == ElementalMeleeCase::DamageHealing {
+                assert!(health > starting_health, "the incoming death component heals the creature");
+            }
+            if case == ElementalMeleeCase::ProficiencyAttackPoints {
+                use oteryn_protocol_oteryn::analyser::{AnalyserFact, AnalyserImpact, decode_analyser_facts};
+                use oteryn_protocol_oteryn::damage_element::DamageElement;
+                let states = owner.states.spell_states.lock().await;
+                let batch = states.analyser.next(deps.actor, admitted.game_session_id, 1)
+                    .ok_or("committed damage facts")?;
+                assert!(
+                    decode_analyser_facts(&batch).map_err(debug)?.iter().any(|fact| matches!(
+                        fact,
+                        AnalyserFact::Impact(AnalyserImpact::Damage { element: DamageElement::Physical, value })
+                            if value.get() >= 3
+                    )),
+                    "the physical component starts at the level / 5 minimum",
+                );
+            }
+            if training_skill.is_some() {
                 let states = owner.states.spell_states.lock().await;
                 let state = states.get(&runtime, deps.actor, admitted.game_session_id).ok_or("player state")?;
-                assert!(!state.has_training_to_flush(), "an immune swing awards no sword tries");
-            } else {
+                assert!(!state.has_training_to_flush(), "a final immunity block awards no melee tries");
+            } else if case == ElementalMeleeCase::BlockBudget {
                 let constants = AttackConstants::checked_in().ok_or("attack constants")?;
                 assert_eq!(budget, constants.block.max_blocks - 1);
             }
@@ -490,7 +594,7 @@ fn scenario(elemental_melee: Option<ElementalMeleeCase>) -> TestResult {
     })
 }
 
-async fn seed(h: &Harness, elemental: bool) -> TestResult {
+async fn seed(h: &Harness, elemental: Option<ElementalMeleeCase>) -> TestResult {
     // Only custody/effect provisioning is fixture SQL. Every observed value passes through the
     // native content, equipment and combat owners before the new writer persists it.
     let mut tx = h.pool.begin().await?;
@@ -503,7 +607,7 @@ async fn seed(h: &Harness, elemental: bool) -> TestResult {
         (112_u8, "oteryn:item.tibia.i3264", 6_i16),
         (114, "oteryn:item.tibia.i6529", 4),
     ] {
-        if elemental && slot == 6 {
+        if elemental.is_some() && slot == 6 {
             continue;
         }
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($1,'hex')::uuid)")
@@ -517,9 +621,14 @@ async fn seed(h: &Harness, elemental: bool) -> TestResult {
         .execute(&mut *tx)
         .await?;
     }
-    if elemental {
-        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i47368','definition-r1',1,1,encode($1,'hex')::uuid)")
-            .bind(id(116).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+    if let Some(case) = elemental {
+        let weapon = if case == ElementalMeleeCase::SecondaryImmuneTraining {
+            "oteryn:item.tibia.i49523"
+        } else {
+            "oteryn:item.tibia.i47368"
+        };
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($1,'hex')::uuid)")
+            .bind(id(116).as_slice()).bind(id(42).as_slice()).bind(weapon).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,5,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
             .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(116).as_slice()).execute(&mut *tx).await?;
     }

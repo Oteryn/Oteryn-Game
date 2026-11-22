@@ -42,7 +42,7 @@ pub(super) struct SelectedSwing {
     pub(super) ordinal: u16,
 }
 
-/// A PvP swing the attacker's pass drew, halved, for a player target; its defence is met after
+/// A PvP swing the attacker's pass drew for a player target; its defence is met after
 /// the pass (PVP-DEFENCE-1).
 pub(super) struct PvpSwing {
     pub(super) actor: ExactActorRef,
@@ -52,7 +52,7 @@ pub(super) struct PvpSwing {
     pub(super) target: ExactActorRef,
     pub(super) lineage: CommandRef,
     pub(super) ordinal: u16,
-    pub(super) magnitude: i64,
+    pub(super) magnitude: u32,
     pub(super) black: bool,
     pub(super) revision: &'static str,
     pub(super) weapon: WeaponFacts,
@@ -384,6 +384,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .magic_level
                     .saturating_add(perks.skills[7]);
             }
+            let mut proficiency = selected.weapon.item_key.as_deref().and_then(|key| {
+                self.states
+                    .proficiencies
+                    .lock()
+                    .ok()?
+                    .get(&entry.session)?
+                    .active_attack_effects(key)
+            });
+            let mut pure_elemental_with_attack_points = false;
+            if selected.weapon.ranged.is_none()
+                && let Some(effects) = proficiency.as_mut()
+                && let Ok(points) = u32::try_from(effects.flat_attack)
+                && let SwingWeapon::Melee {
+                    attack,
+                    elemental: Some(_),
+                    ..
+                } = &mut selected.weapon.weapon
+            {
+                // The selected perk belongs to the weapon's physical attack points.
+                effects.flat_attack = 0;
+                pure_elemental_with_attack_points = *attack == 0 && points > 0;
+                *attack = attack.saturating_add(points);
+            }
             if selected.weapon.ranged.is_none()
                 && matches!(selected.weapon.weapon, SwingWeapon::Melee { skill, .. } if (1..=3).contains(&skill.index()))
                 && states
@@ -557,9 +580,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let charm_critical =
                     base_critical != (offence.critical_chance, offence.critical_damage);
-                let Some((mut damage, revision)) =
-                    draw_swing_damage(entry, &runtime, &selected, constants, &root, &offence)
-                else {
+                let Some((mut damage, revision)) = draw_swing_damage(
+                    entry,
+                    &runtime,
+                    &selected,
+                    constants,
+                    &root,
+                    &offence,
+                    pure_elemental_with_attack_points,
+                ) else {
                     continue;
                 };
                 // The drawn primary auto-attack receives one additive shrine multiplier
@@ -598,13 +627,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         100 + state.virtue_party_bonuses(now.get()).auto_attack,
                     )) / 100;
                 }
-                if let Some(item_key) = selected.weapon.item_key.as_deref()
-                    && let Ok(sessions) = self.states.proficiencies.lock()
-                    && let Some(proficiency) = sessions.get(&entry.session)
+                if let Some(proficiency) = proficiency
                     && let Ok(target) = runtime.companion_snapshot(selected.target)
                 {
-                    damage = proficiency.dispatch_attack(
-                        item_key,
+                    damage = proficiency.apply(
                         damage,
                         u64::try_from(target.health).unwrap_or(0),
                         u64::try_from(target.maximum_health).unwrap_or(0),
@@ -709,9 +735,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         entry.clear_target();
                         continue;
                     };
-                    // `Combat::CombatHealthFunc` halves a PvP hit before the target's block meets it;
-                    // PVP-DEFENCE-1 resolves the defence after this pass, where the target's block
-                    // budget is reachable.
+                    // PVP-DEFENCE-1 splits and scales the roll when the target's block budget
+                    // becomes available after this pass.
                     pvp_hits.push(PvpSwing {
                         actor: entry.actor,
                         session: entry.session,
@@ -723,9 +748,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         target,
                         lineage: swing.lineage,
                         ordinal,
-                        magnitude: i64::from(oteryn_gameplay_combat_rules::pvp::pvp_damage(
-                            raw, black,
-                        )),
+                        magnitude: raw,
                         black,
                         revision,
                         weapon: selected.weapon.clone(),
@@ -861,15 +884,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else {
                     None
                 };
-                if let Some((_, _, element)) = melee_components
-                    && physical_immune
-                    && snapshot
+                let secondary_immune = melee_components.is_some_and(|(_, _, element)| {
+                    snapshot
                         .state
                         .policy
                         .damage_immunities
                         .iter()
                         .any(|key| key == ranged::element_key(element))
-                {
+                });
+                if physical_immune && secondary_immune {
                     train_swing(
                         &mut states,
                         &runtime,
@@ -887,6 +910,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && !physical_immune
                     && blocks[index].1.try_block(&constants.block, swing.at);
                 if let Some((physical, elemental, element)) = melee_components {
+                    let Some(healing) = snapshot
+                        .state
+                        .policy
+                        .damage_healing(ranged::element_key(element), elemental)
+                        .ok()
+                        .and_then(|amount| u64::try_from(amount).ok())
+                    else {
+                        continue;
+                    };
+                    // The creature's source heal is a separate HP change before resistance.
+                    if healing > 0
+                        && runtime
+                            .commit_source_creature_heal_batch(
+                                content.source_digest(),
+                                &[(target, race_key.clone(), creature_max_health, healing)],
+                            )
+                            .is_err()
+                    {
+                        continue;
+                    }
                     ranged_magnitude = (|| {
                         let physical = if physical_immune {
                             0
@@ -931,9 +974,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }) else {
                     continue;
                 };
+                // Crystal checks the secondary block last even when physical damage landed.
+                let training_block = if secondary_immune {
+                    HitBlock::Immunity
+                } else {
+                    swing_block(magnitude)
+                };
                 // CREATURE-RESIST-MELEE-1: the creature's mitigation and physical response shape
                 // what passed its defence and armor (`Creature::mitigateDamage`, `Monster::blockHit`).
-                // Training already counted the swing by its block, so it trains by `magnitude`.
                 let landed = if selected.weapon.ranged.is_some() || split_melee {
                     magnitude
                 } else if magnitude > 0 {
@@ -1044,7 +1092,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         content,
                         entry,
                         &selected.weapon,
-                        swing_block(magnitude),
+                        training_block,
                         now,
                         &mut trained,
                     );
@@ -1163,7 +1211,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     content,
                     entry,
                     &selected.weapon,
-                    swing_block(magnitude),
+                    training_block,
                     now,
                     &mut trained,
                 );
@@ -1654,11 +1702,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             formula: content.training_formula(),
             trained: &mut *trained,
         };
-        let Some((physical_raw, secondary_raw, converted_element)) = hit
-            .weapon
-            .weapon
-            .split_damage(hit.magnitude)
-            .and_then(|(p, s, e)| offence.convert_physical(p, s, e))
+        let Some((physical_raw, secondary_raw, converted_element)) =
+            pvp_swing_components(hit.magnitude, hit.black, &offence, |damage| {
+                hit.weapon.weapon.split_damage(damage)
+            })
         else {
             return;
         };
@@ -2130,6 +2177,7 @@ fn draw_swing_damage(
     constants: &AttackConstants,
     root: &GameplayDecisionRoot,
     offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+    pure_elemental_with_attack_points: bool,
 ) -> Option<(i64, &'static str)> {
     let SelectedSwing {
         target,
@@ -2179,9 +2227,11 @@ fn draw_swing_damage(
         shielding_skill: skills.shielding,
         shield_defense: None,
     };
-    let Ok((minimum, maximum)) = formula.bounds(&inputs) else {
-        return None;
-    };
+    let (mut minimum, mut maximum) = formula.bounds(&inputs).ok()?;
+    if pure_elemental_with_attack_points {
+        minimum = i64::from(character_facts.level / 5);
+        maximum = maximum.max(minimum);
+    }
     let damage = swing_draw(
         root,
         entry.actor,
@@ -2267,6 +2317,22 @@ fn settle_kill(
     }
 }
 
+fn pvp_swing_components(
+    damage: u32,
+    black: bool,
+    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+    split: impl FnOnce(i64) -> Option<(i64, i64, crate::content::ProjectV2RangedElement)>,
+) -> Option<(i64, i64, crate::content::ProjectV2RangedElement)> {
+    let (physical, secondary, element) =
+        split(i64::from(damage)).and_then(|(p, s, e)| offence.convert_physical(p, s, e))?;
+    let scale = |value| {
+        u32::try_from(value)
+            .ok()
+            .map(|damage| i64::from(oteryn_gameplay_combat_rules::pvp::pvp_damage(damage, black)))
+    };
+    Some((scale(physical)?, scale(secondary)?, element))
+}
+
 struct RangedPlayerDamage {
     components: crate::spell::cast::WheelAttackComponents,
     protections: std::collections::BTreeMap<
@@ -2309,9 +2375,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let equipment = equipment::read_equipment_in_transaction(&mut tx, &authority).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
             crate::gameplay_transport::equipment_move::equipment_effects_owner::equipment_effects(&equipment, content).ok_or(crate::durability::DurabilityError::Unavailable)
         })).await.ok()?;
-        let (physical, elemental, element) = ranged
-            .split(hit.magnitude)
-            .and_then(|(p, s, e)| offence.convert_physical(p, s, e))?;
+        let (physical, elemental, element) =
+            pvp_swing_components(hit.magnitude, hit.black, offence, |damage| {
+                ranged.split(damage)
+            })?;
         let physical = if physical > 0 {
             oteryn_gameplay_combat_rules::resolution::swing_mitigated(
                 root,
@@ -2606,6 +2673,41 @@ mod tests {
                 talisman.elite("oteryn:creature.cave_rat")
             ),
             [75, 75]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_equipment_pvp_swing_halves_loaded_battleaxe_components_individually()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::ProjectV2RangedElement;
+        use crate::content::native_gameplay::{
+            NativeGameplayInput, compile_native_gameplay, decode,
+        };
+        use oteryn_gameplay_combat_rules::resolution::{
+            equipped_offence::EquippedOffence, swing_weapon,
+        };
+
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let mut input =
+            NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))?;
+        input.source_world = None;
+        let room = crate::content::qualify_native_entry_room(
+            crate::content::native_gameplay_test_world_id()?,
+        )?;
+        let state =
+            decode(&compile_native_gameplay(room.compiled(), &input)?.server_artifact)?.state;
+        let weapon = swing_weapon(&state, |slot| {
+            (slot == 5).then_some(("oteryn:item.tibia.i49523", "definition-r1"))
+        })
+        .ok_or("Inferniarch Battleaxe")?;
+        let (physical, elemental, element) = weapon.split_damage(107).ok_or("weapon components")?;
+        assert_eq!(element, ProjectV2RangedElement::Fire);
+        assert_eq!(
+            super::pvp_swing_components(107, false, &EquippedOffence::default(), |damage| {
+                weapon.split_damage(damage)
+            }),
+            Some((physical / 2, elemental / 2, element)),
         );
         Ok(())
     }
