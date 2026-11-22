@@ -183,32 +183,42 @@ async fn journey(
         .await
         .map_err(|error| admission_error("initial-admission", error))?;
 
+    let ordinary_definition = book.indexed(ordinary).ok_or("Scorch definition missing")?;
+    let shortest = std::iter::once(ordinary_definition.cooldown_micros)
+        .chain(ordinary_definition.groups.iter().map(|group| group.cooldown_micros))
+        .filter(|&micros| micros > 0).min().map(Duration::from_micros)
+        .ok_or("protection-zone-control: no positive Scorch cooldown to distinguish")?;
     let pz_path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| tile.protection_zone())
-    }).ok_or("protection-zone-refusal: no reachable PZ tile")?;
+            && pz_exit(world, at).is_some()
+    }).ok_or("protection-zone-refusal: no reachable PZ boundary with an adjacent non-PZ tile")?;
     walk(&mut client, world, &pz_path).await?;
+    let exit = pz_exit(world, tile(client.world_spatial().actor_position)?)
+        .ok_or("protection-zone-control: boundary exit disappeared")?;
     let before = mana(&client)?;
+    client.take_events();
+    let started = tokio::time::Instant::now();
     let pz = cast(&mut client, ordinary).await?;
     if !refused_without_cost(
         pz.status, pz.disposition, pz.actor_vitals_delta.is_some(), before, mana(&client)?,
     ) {
-        return Err(format!(
-            "PZ CAST expected rejected/rejected/no-delta reply={pz:?} mana={before}->{}",
-            mana(&client)?
-        )
-        .into());
+        return Err(format!("PZ CAST expected rejected/rejected/no-delta reply={pz:?}").into());
     }
-
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-    })
-    .ok_or("no player STEP route out of protection zone")?;
-    walk(&mut client, world, &path).await?;
+    assert_no_pz_cooldown(&mut client)?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let stepped = client.step_retrying(exit).await?;
+    if stepped.disposition != StepDisposition::Moved
+        || stepped.world_spatial_delta.is_none()
+        || Some(tile(client.world_spatial().actor_position)?) != destination(world, from, exit)
+    {
+        return Err(format!("protection-zone-control: immediate exit failed {stepped:?}").into());
+    }
+    assert_no_pz_cooldown(&mut client)?;
     let before = mana(&client)?;
-    let outside = wait_ready(&mut client, ordinary).await?;
+    let outside = cast(&mut client, ordinary).await?;
+    if !pz_control_in_window(started.elapsed(), shortest) {
+        return Err(format!("protection-zone-control: first outside cast exceeded refusal evidence window {shortest:?}").into());
+    }
     if outside.status != CommandStatus::Accepted
         || outside.disposition != SpellCastDisposition::Cast
         || outside.actor_vitals_delta.is_none()
@@ -436,9 +446,35 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
 fn cooldowns_elapsed(elapsed: Duration, required: Duration) -> bool { elapsed >= required }
 
+fn assert_no_pz_cooldown(client: &mut DevClientSession) -> TestResult {
+    if client.take_events().into_iter().any(|event| matches!(event,
+        oteryn_dev_client::SessionEvent::ActorCooldowns(delta)
+            if delta.value.entries.iter().any(|entry| entry.expires_at_ms > delta.value.server_now_ms)
+    )) {
+        return Err("protection-zone-refusal: refused cast published an active cooldown".into());
+    }
+    Ok(())
+}
+
+fn pz_exit(world: &BundleWorld, from: TilePos) -> Option<StepDirection> {
+    [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
+        .into_iter().find(|&direction| destination(world, from, direction).is_some_and(|at| {
+            at.floor == from.floor
+                && world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
+        }))
+}
+
+fn pz_control_in_window(elapsed: Duration, shortest: Duration) -> bool { elapsed < shortest }
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn second_review_c04_rejects_false_evidence() {
+        assert!(pz_control_in_window(Duration::from_millis(199), Duration::from_millis(200)));
+        assert!(!pz_control_in_window(Duration::from_millis(200), Duration::from_millis(200)));
+    }
 
     #[test]
     fn independent_review_c04_rejects_unproven_evidence() {

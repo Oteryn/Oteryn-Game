@@ -9,8 +9,8 @@
 //! 3. Walk to a reachable non-PZ two-tile corridor and send the same USE at its
 //!    adjacent tile. Require `Committed`, a pushed map delta containing field
 //!    item 21465, and the exact one-rune inventory debit.
-//! 4. Send STEP onto that field. Require `Moved`, the position delta, and a
-//!    pushed vitals delta whose health is lower (the field-contact tick).
+//! 4. Send STEP onto that safe field. Require movement and no health debit.
+//!    A damaging-field contact remains a separate required observation.
 //! 5. Wait on native liveness for the server-owned decay and require a pushed
 //!    map delta removing item 21465; step off and back on, requiring movement
 //!    but no further field-contact health loss.
@@ -131,8 +131,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if step.disposition != StepDisposition::Moved || tile(client.world_spatial().actor_position)? != target_tile {
         return Err(format!("step=field-step observed={step:?} need=Moved-position-delta").into());
     }
-    let damaged = wait_health_below(&mut client, health_before, target, step.result_server_sequence).await?;
-    check("field-contact-damage", damaged);
+    observe_safe_contact(&mut client, health_before, target, step.result_server_sequence).await?;
+    let after = client.session_mut().gated_command(
+        condition::CAPABILITY_CONDITION_STATUS_V1, condition::COMMAND_TYPE_CONDITION_STATUS_QUERY, &[],
+    ).await?;
+    if after.status != CommandStatus::Accepted
+        || condition::ConditionStatus::decode(&after.payload).is_none_or(|status| !status.conditions.is_empty())
+        || client.actor_vitals().is_none_or(|vitals| !safe_field_health(health_before, vitals.health))
+    {
+        return Err("step=safe-field-contact observed=condition-or-vital-debit need=harmless-21465".into());
+    }
+    check("safe-field-contact-no-damage", client.last_server_sequence());
     let expired = field_frame(&mut client, target, field, false, placed, Duration::from_secs(75)).await?;
     check("field-expiry", expired);
 
@@ -167,7 +176,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=fresh-admission observed=expired-field-present need=decay-remain-retired".into());
     }
     check("fresh-admission", fresh.last_server_sequence());
-    logout(&mut fresh).await
+    logout(&mut fresh).await?;
+    Err("step=field-contact-damage observed=harmless-21465-on-baseline-world need=separate-damaging-field-and-PvP-eligible-target".into())
 }
 
 fn adjacent(world: &BundleWorld, at: TilePos) -> Option<(StepDirection, TilePos)> {
@@ -259,8 +269,8 @@ fn field_site_isolated(client: &DevClientSession, at: ActorPosition) -> bool {
     })
 }
 
-async fn wait_health_below(client: &mut DevClientSession, before: u32, at: ActorPosition, step_sequence: u64) -> TestResult<u64> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+async fn observe_safe_contact(client: &mut DevClientSession, mut health: u32, at: ActorPosition, step_sequence: u64) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
     loop {
         let isolated = field_site_isolated(client, at) && client.world_spatial().actor_position == at;
         if !isolated {
@@ -277,13 +287,16 @@ async fn wait_health_below(client: &mut DevClientSession, before: u32, at: Actor
         }
         for event in events {
             if let SessionEvent::ActorVitals(delta) = event
-                && field_damage_evidence(before, delta.value.health, isolated, delta.server_sequence, step_sequence)
+                && delta.server_sequence > step_sequence
             {
-                return Ok(delta.server_sequence);
+                if !safe_field_health(health, delta.value.health) {
+                    return Err("step=safe-field-contact observed=health-debit need=harmless-21465".into());
+                }
+                health = delta.value.health;
             }
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("step=field-step observed=no-post-step-health-debit need=isolated-field-contact-damage".into());
+            return Ok(());
         }
         client.service_liveness(Duration::from_millis(20)).await?;
     }
@@ -299,19 +312,16 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     loop { let reply = client.session_mut().logout().await?; if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Ok(()); } else if tokio::time::Instant::now() >= deadline { return Err(format!("step=logout observed={:?} need=Accepted", reply.result).into()); } client.service_liveness(Duration::from_millis(250)).await?; }
 }
 
-fn field_damage_evidence(before: u32, after: u32, isolated: bool, sequence: u64, step_sequence: u64) -> bool {
-    isolated && sequence > step_sequence && after < before
-}
+fn safe_field_health(before: u32, after: u32) -> bool { after >= before }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn independent_review_c07_rejects_unproven_evidence() {
-        assert!(!field_damage_evidence(100, 95, false, 11, 10));
-        assert!(!field_damage_evidence(100, 95, true, 9, 10));
-        assert!(field_damage_evidence(100, 95, true, 11, 10));
+    fn second_review_c07_rejects_false_evidence() {
+        assert!(safe_field_health(100, 100));
+        assert!(!safe_field_health(100, 95));
     }
 
     #[test]

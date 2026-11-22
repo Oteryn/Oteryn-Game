@@ -88,6 +88,10 @@ async fn next_health_change(
 }
 
 async fn poison_status(client: &mut DevClientSession) -> TestResult<bool> {
+    Ok(poison_remaining(client).await?.is_some())
+}
+
+async fn poison_remaining(client: &mut DevClientSession) -> TestResult<Option<i64>> {
     use oteryn_protocol_oteryn::condition_status as wire;
     let reply = client.session_mut().gated_command(
         wire::CAPABILITY_CONDITION_STATUS_V1, wire::COMMAND_TYPE_CONDITION_STATUS_QUERY, &[],
@@ -97,11 +101,11 @@ async fn poison_status(client: &mut DevClientSession) -> TestResult<bool> {
     }
     let status = wire::ConditionStatus::decode(&reply.payload)
         .ok_or("step=poison-status observed=invalid-condition-frame")?;
-    Ok(has_poison(&status))
+    Ok(poison_duration(&status))
 }
 
-fn has_poison(status: &oteryn_protocol_oteryn::condition_status::ConditionStatus) -> bool {
-    status.conditions.iter().any(|condition| condition.icon == 1)
+fn poison_duration(status: &oteryn_protocol_oteryn::condition_status::ConditionStatus) -> Option<i64> {
+    status.conditions.iter().find(|condition| condition.icon == 1).map(|condition| condition.remaining_ms)
 }
 
 async fn poison(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
@@ -205,8 +209,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     let (spell, mana_cost) = antidote(&mut client)?;
     let dispel_site = walk_to_poison_site(&mut client, world, "dispel").await?;
-    if !poison_status(&mut client).await? {
-        return Err("step=dispel observed=poison-expired-before-cast need=live-poison-at-isolated-site".into());
+    let sampled = tokio::time::Instant::now();
+    let remaining = poison_remaining(&mut client).await?
+        .ok_or("step=dispel observed=poison-expired-before-cast need=live-poison-at-isolated-site")?;
+    if !poison_survived_window(remaining, sampled.elapsed()) {
+        return Err("step=dispel observed=poison-near-natural-expiry-before-cast".into());
     }
     let mana = client
         .actor_vitals()
@@ -228,8 +235,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    if poison_status(&mut client).await? {
-        return Err("step=dispel observed=poison-still-active need=poison-removed".into());
+    if poison_status(&mut client).await? || !poison_survived_window(remaining, sampled.elapsed()) {
+        return Err(format!("step=dispel observed=poison-active-or-natural-expiry-possible remaining_ms={remaining} elapsed={:?}", sampled.elapsed()).into());
     }
     loop {
         require_isolated_poison_site(&mut client, dispel_site, "dispel")?;
@@ -359,9 +366,20 @@ fn poison_tick_fact(fact: &oteryn_protocol_oteryn::analyser::AttributedFact) -> 
     })
 }
 
+fn poison_survived_window(remaining: i64, elapsed: Duration) -> bool {
+    remaining == -1 || u64::try_from(remaining).is_ok_and(|ms| elapsed + Duration::from_millis(1) < Duration::from_millis(ms))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn second_review_c08_rejects_false_evidence() {
+        assert!(poison_survived_window(300, Duration::from_millis(100)));
+        assert!(!poison_survived_window(100, Duration::from_millis(100)));
+        assert!(!poison_survived_window(1, Duration::from_millis(20)));
+    }
 
     #[test]
     fn dispel_window_detects_residual_tick_in_first_post_cast_batch() {
@@ -396,8 +414,8 @@ mod tests {
     #[test]
     fn burning_does_not_prove_poison() {
         let mut status = ConditionStatus { conditions: vec![ActiveCondition { icon: 2, sub_id: 0, remaining_ms: 1000 }] };
-        assert!(!has_poison(&status));
+        assert!(poison_duration(&status).is_none());
         status.conditions[0].icon = 1;
-        assert!(has_poison(&status));
+        assert!(poison_duration(&status).is_some());
     }
 }

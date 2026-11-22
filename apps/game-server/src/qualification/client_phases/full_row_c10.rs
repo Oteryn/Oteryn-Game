@@ -11,12 +11,9 @@
 //! 4. Send BED_SLEEP_INTENT with an ordinary carried-item handle; require the
 //!    `NotPossible` refusal and unchanged vitals/custody, proving a non-bed cannot
 //!    enter saved rest.
-//! 5. Find a visible native bed through the admitted item view, walk within reach,
-//!    consume ordinary acquired food if needed, and send BED_SLEEP_INTENT for that
-//!    bed; require the offline-training reply/session close.
-//! 6. Freshly admit the character after saved rest and require a new game session,
-//!    retained soul, and nondecreasing saved health/mana (food-funded rest is
-//!    settled by the server owner exactly once).
+//! 5. Enter the authored House through its transfer command, use the live bed,
+//!    and require the terminal sleep acknowledgement.
+//! 6. Observe exactly one food-funded credit and rule out replay on another admission.
 use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
@@ -182,19 +179,30 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("non-bed-refusal", refusal);
 
-    let (bed, definition, _) = plan_bed(world, tile(client.world_spatial().actor_position)?)?;
+
     let food = full_e2ef7::acquire(&mut client, world, &provisioning::item_index()?, "oteryn:item.tibia.i3577", 1)
         .await.map_err(|error| format!("step=rest-food observed={error} need=earned-edible-food"))?;
+    let BedPlan { bed, definition, house, key, entrance } = plan_bed(world, tile(client.world_spatial().actor_position)?)?;
+    let to_entrance = route(world, tile(client.world_spatial().actor_position)?, |at| at == entrance)
+        .ok_or("step=house-admission observed=no-route-to-catalogue-entrance")?;
+    walk(&mut client, world, &to_entrance).await?;
+    enter_bed_house(&mut client, &key).await?;
+    let from = tile(client.world_spatial().actor_position)?;
+    if !same_house(house, world.facts().house_id(from)) {
+        return Err(format!("step=house-admission house={key} observed=handoff-outside-house at={from:?}").into());
+    }
+    let path = route_avoiding(world, from, |at| {
+        same_house(house, world.facts().house_id(at))
+            && at.floor == bed.floor && u32::from(at.x.abs_diff(bed.x)) + u32::from(at.y.abs_diff(bed.y)) == 1
+    }, |at| same_house(house, world.facts().house_id(at)))
+        .ok_or("step=bed-route observed=no-interior-route-to-authored-bed")?;
+    walk(&mut client, world, &path).await?;
     let handle = client.inventory().and_then(|inventory| inventory.entries.iter()
         .find(|item| item.item_definition_ref == food)).ok_or("step=rest-food observed=no-carried-food-handle")?.handle;
     let used = client.use_item(handle).await?;
     if used.disposition != UseDisposition::Committed {
         return Err(format!("step=rest-food observed={used:?} need=consumed-food").into());
     }
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at.floor == bed.floor && u32::from(at.x.abs_diff(bed.x)) + u32::from(at.y.abs_diff(bed.y)) == 1
-    }).ok_or("step=bed-route observed=no-route-from-food-vendor need=reachable-house-bed")?;
-    walk(&mut client, world, &path).await?;
     let basis = spatial_basis::current(&mut client)?;
     let position = basis.position(bed);
     let map = client.session_mut().world_map_snapshot().ok_or("step=bed-sleep observed=no-live-world-map")?;
@@ -202,17 +210,22 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .and_then(|entry| entry.items.iter().find(|item| item.definition == MapDefinition::Item(definition)))
         .map(|item| item.origin)
         .ok_or("step=bed-sleep observed=no-live-bed-map-item")?;
-    let mut before_rest = client.actor_vitals().copied().ok_or("step=bed-sleep observed=no-vitals")?;
-    if before_rest.health == before_rest.max_health && before_rest.mana == before_rest.max_mana {
+    let before_rest = client.actor_vitals().copied().ok_or("step=bed-sleep observed=no-vitals")?;
+    if !room_to_detect_duplicate(&before_rest) {
         let index = NonZeroU32::new(spell.cast_index).ok_or("step=rest-deficit observed=zero-spell-index")?;
         let cast = client.cast_spell(index, SpellTarget::None, false).await?;
-        let paid = cast.actor_vitals_delta.as_ref().map(|delta| delta.value)
+        cast.actor_vitals_delta.as_ref().map(|delta| delta.value)
             .filter(|after| cast.status == CommandStatus::Accepted
                 && cast.disposition == SpellCastDisposition::Cast && after.mana < before_rest.mana)
             .ok_or_else(|| format!("step=rest-deficit observed={cast:?} need=ordinary-mana-debit-before-bed"))?;
-        before_rest = paid;
+    }
+    let food_ms = rest_food_ms(&mut client).await?;
+    let before_rest = client.actor_vitals().copied().ok_or("step=bed-sleep observed=no-vitals")?;
+    if food_ms < 30_000 || !room_to_detect_duplicate(&before_rest) {
+        return Err(format!("step=saved-rest observed=food-ms-{food_ms} or insufficient-vital-deficit; need=one-food-credit-and-room-to-detect-two").into());
     }
     client.take_events();
+    let before_sleep_command = tokio::time::Instant::now();
     sleep_at_bed(&mut client, bed, map.header.bundle_digest, origin).await?;
     if client.take_events().into_iter().any(|event| matches!(event,
         SessionEvent::ActorVitals(delta) if delta.value != before_rest
@@ -226,7 +239,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let wake = started + Duration::from_secs(31);
     verdict::Harness::global().bounded_wait(wake, "saved-rest");
     tokio::time::sleep_until(wake).await;
-    fresh_admission(row, clients, prior, before_rest, started).await
+    fresh_admission(row, clients, prior, before_rest, before_sleep_command, started).await
 }
 
 fn fixed_bed_target(
@@ -311,7 +324,15 @@ fn soul_window_target<'a>(
     Err(format!("step=kill-window observed=no-reachable-spawn-with-xp-at-least-{level} need=level-appropriate-creature").into())
 }
 
-fn plan_bed(world: &BundleWorld, from: TilePos) -> TestResult<(TilePos, NonZeroU32, Vec<StepDirection>)> {
+struct BedPlan {
+    bed: TilePos,
+    definition: NonZeroU32,
+    house: u32,
+    key: String,
+    entrance: TilePos,
+}
+
+fn plan_bed(world: &BundleWorld, from: TilePos) -> TestResult<BedPlan> {
     use oteryn_gameplay_world::map::view::MapFacts;
 
     let profiles = native_input()?.item_profiles.as_ref().ok_or("step=bed-route observed=no-native-item-profiles")?;
@@ -327,33 +348,86 @@ fn plan_bed(world: &BundleWorld, from: TilePos) -> TestResult<(TilePos, NonZeroU
             definitions.definition_ref("Item", key, definitions.revision(key)?)
         }).collect();
     let facts = world.facts();
-    let houses: BTreeSet<_> = facts.house_ids().collect();
-    let mut sites = std::collections::BTreeMap::new();
-    for bed in houses.into_iter().flat_map(|house| facts.house_tiles(house)) {
-        let Some(stack) = world.base().tile(bed.x, bed.y, bed.floor) else { continue };
-        for (ordinal, (&id, _)) in stack.ids().iter().zip(stack.depths()).filter(|&(_, &depth)| depth == 0).enumerate() {
-            let Ok(ordinal) = u8::try_from(ordinal) else { break };
-            if let Some(entry) = facts.base_entry(bed, ordinal, id)
-                && let MapDefinition::Item(reference) = entry.definition
-                && heads.contains(&reference)
-            {
-                for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
-                    if let (Some(x), Some(y)) = (bed.x.checked_add_signed(dx), bed.y.checked_add_signed(dy)) {
-                        sites.entry(TilePos { x, y, floor: bed.floor }).or_insert((bed, reference));
-                    }
+    let present: BTreeSet<_> = facts.house_ids().collect();
+    let mut closest: Option<(usize, BedPlan)> = None;
+    for (house, key, entrance) in authored_houses()? {
+        if !present.contains(&house) {
+            continue;
+        }
+        let Some(path) = route(world, from, |at| at == entrance) else { continue };
+        if closest.as_ref().is_some_and(|(length, _)| path.len() >= *length) {
+            continue;
+        }
+        for bed in facts.house_tiles(house) {
+            let Some(stack) = world.base().tile(bed.x, bed.y, bed.floor) else { continue };
+            for (ordinal, (&id, _)) in stack.ids().iter().zip(stack.depths()).filter(|&(_, &depth)| depth == 0).enumerate() {
+                let Ok(ordinal) = u8::try_from(ordinal) else { break };
+                if let Some(entry) = facts.base_entry(bed, ordinal, id)
+                    && let MapDefinition::Item(definition) = entry.definition
+                    && heads.contains(&definition)
+                    && [(0, -1), (1, 0), (0, 1), (-1, 0)].into_iter().any(|(dx, dy)| {
+                        bed.x.checked_add_signed(dx).zip(bed.y.checked_add_signed(dy)).is_some_and(|(x, y)| {
+                            let at = TilePos { x, y, floor: bed.floor };
+                            same_house(house, facts.house_id(at)) && world.enterable(at)
+                        })
+                    })
+                {
+                    closest = Some((path.len(), BedPlan { bed, definition, house, key: key.clone(), entrance }));
+                    break;
                 }
             }
         }
     }
-    if sites.is_empty() {
-        return Err("step=bed-route observed=no-authored-house-bed-head need=placed-reciprocal-bed-pair".into());
+    closest.map(|(_, plan)| plan)
+        .ok_or_else(|| "step=house-admission observed=no-reachable-catalogue-entrance-with-interior-bed".into())
+}
+
+type AuthoredHouse = (u32, String, TilePos);
+
+fn authored_houses() -> TestResult<Vec<AuthoredHouse>> {
+    let mut houses = Vec::new();
+    for body in [
+        include_str!("../../../../../content/houses/houses-00000-00499.json"),
+        include_str!("../../../../../content/houses/houses-00500-00994.json"),
+    ] {
+        let value: serde_json::Value = serde_json::from_str(body)?;
+        for row in value["houses"].as_array().ok_or("House catalogue missing houses")? {
+            let Some(id) = row["provenance"]["engine_house"]["house_id"].as_u64() else { continue };
+            let key = row["identity"]["key"].as_str().ok_or("House catalogue missing key")?;
+            let entrance = &row["entrance"];
+            let x = u16::try_from(entrance["x"].as_u64().ok_or("House entrance x")?)?;
+            let y = u16::try_from(entrance["y"].as_u64().ok_or("House entrance y")?)?;
+            let floor = -i8::try_from(entrance["z"].as_i64().ok_or("House entrance z")?)?;
+            houses.push((u32::try_from(id)?, key.to_owned(), TilePos { x, y, floor }));
+        }
     }
-    let path = route(world, from, |at| sites.contains_key(&at))
-        .ok_or("step=bed-route observed=no-walk-route-to-authored-bed need=reachable-house-bed")?;
-    let at = path.iter().try_fold(from, |at, &direction| destination(world, at, direction))
-        .ok_or("step=bed-route observed=invalid-planned-step")?;
-    let &(bed, definition) = sites.get(&at).ok_or("step=bed-route observed=non-bed-route-endpoint")?;
-    Ok((bed, definition, path))
+    Ok(houses)
+}
+
+async fn enter_bed_house(client: &mut DevClientSession, key: &str) -> TestResult {
+    use oteryn_dev_client::client_runtime::house_transfer as wire;
+    let payload = wire::encode_house_transfer_intent(&wire::HouseTransferIntent { exit: false, house: key.to_owned() })
+        .map_err(|error| format!("step=house-admission observed=invalid-transfer-intent:{error:?}"))?;
+    let reply = client.session_mut().gated_command(wire::CAPABILITY_HOUSE_TRANSFER_V1, wire::COMMAND_TYPE_HOUSE_TRANSFER, &payload).await?;
+    if reply.status != CommandStatus::Accepted
+        || !wire::decode_house_transfer_ack(&reply.payload).is_ok_and(|ack| ack.house.as_deref() == Some(key))
+    {
+        return Err(format!("step=house-admission house={key} observed={reply:?} need=legitimate-house-access-and-handoff").into());
+    }
+    Ok(())
+}
+
+async fn rest_food_ms(client: &mut DevClientSession) -> TestResult<i32> {
+    use oteryn_protocol_oteryn::rest_status as wire;
+    let reply = client.session_mut().gated_command(wire::CAPABILITY_REST_STATUS_V1, wire::COMMAND_TYPE_REST_STATUS_QUERY, &[]).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step=saved-rest observed={reply:?} need=authoritative-food-clock").into());
+    }
+    Ok(wire::RestStatus::decode(&reply.payload).ok_or("step=saved-rest observed=invalid-rest-status")?.food_remaining_ms)
+}
+
+fn room_to_detect_duplicate(vitals: &oteryn_protocol_oteryn::actor_spell::ActorVitals) -> bool {
+    vitals.max_health.saturating_sub(vitals.health) >= 2 || vitals.max_mana.saturating_sub(vitals.mana) >= 2
 }
 
 async fn wait_soul(client: &mut DevClientSession, from: u32, wanted: impl Fn(u32) -> bool, step: &str, duration: Duration) -> TestResult<u32> {
@@ -388,30 +462,59 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     Ok((u64::from_le_bytes(reply.payload[1..9].try_into()?), u32::from_le_bytes(reply.payload[9..13].try_into()?)))
 }
 
-async fn fresh_admission(row: &mut Row, clients: &SeamClients<'_>, prior: crate::foundation::GameSessionId, before: oteryn_protocol_oteryn::actor_spell::ActorVitals, started: tokio::time::Instant) -> TestResult {
+async fn fresh_admission(row: &mut Row, clients: &SeamClients<'_>, prior: crate::foundation::GameSessionId, before: oteryn_protocol_oteryn::actor_spell::ActorVitals, before_sleep_command: tokio::time::Instant, started: tokio::time::Instant) -> TestResult {
     let elapsed = started.elapsed();
-    let client = connect_world(clients, 0xcb)
+    let mut client = connect_world(clients, 0xcb)
         .await
         .map_err(|error| admission_error("fresh-admission", error))?;
-    let after = client.actor_vitals().ok_or("step saved rest: fresh-admission vitals absent")?;
-    if client.join_snapshot().game_session_id == prior || after.soul != before.soul
-        || after.health < before.health || after.mana < before.mana
-        || !(rest_credited(elapsed, before.health, after.health, before.max_health)
-            || rest_credited(elapsed, before.mana, after.mana, before.max_mana))
+    let after = client.actor_vitals().copied().ok_or("step=saved-rest observed=no-join-vitals")?;
+    let session = client.join_snapshot().game_session_id;
+    if session == prior || before_sleep_command.elapsed() >= Duration::from_secs(60)
+        || after.soul != before.soul || after.max_health != before.max_health || after.max_mana != before.max_mana
+        || !rest_credited(elapsed, before.health, after.health, before.max_health)
+        || !rest_credited(elapsed, before.mana, after.mana, before.max_mana)
     {
-        return Err(format!("step=saved-rest elapsed={elapsed:?} need=positive-offline-credit prior={prior:?} admitted={:?} before={before:?} after={after:?}", client.join_snapshot().game_session_id).into());
+        return Err(format!("step=saved-rest elapsed={elapsed:?} need=exactly-one-food-credit before={before:?} after={after:?}").into());
+    }
+    let (logout, detail, _, _) = logout_retrying_busy(&mut client).await?;
+    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        || client.take_events().into_iter().any(|event| matches!(event, SessionEvent::ActorVitals(delta) if delta.value != after))
+    {
+        return Err(format!("step=saved-rest-replay observed={detail}; need=logout-without-online-vitals-change").into());
+    }
+    drop(client);
+    let replay = connect_world(clients, 0xcc).await.map_err(|error| admission_error("saved-rest-replay", error))?;
+    if replay.join_snapshot().game_session_id == session
+        || replay.join_snapshot().game_session_id == prior || replay.actor_vitals() != Some(&after)
+    {
+        return Err(format!("step=saved-rest-replay observed={:?} need=unchanged-vitals-in-new-session", replay.actor_vitals()).into());
     }
     row.pass("fresh-admission-saved-rest", after);
     Ok(())
 }
 
 fn rest_credited(elapsed: Duration, before: u32, after: u32, maximum: u32) -> bool {
-    elapsed >= Duration::from_secs(30) && before < maximum && after > before && after <= maximum
+    elapsed >= Duration::from_secs(30) && after == before.saturating_add(1).min(maximum)
 }
+
+fn same_house(expected: u32, found: Option<u32>) -> bool { found == Some(expected) }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn one_food_credit_rejects_duplicate_settlement() {
+        assert!(!rest_credited(Duration::from_secs(31), 30, 32, 50));
+        assert!(rest_credited(Duration::from_secs(31), 30, 31, 50));
+    }
+
+    #[test]
+    fn second_review_c10_rejects_false_evidence() {
+        assert!(same_house(4, Some(4)));
+        assert!(!same_house(4, None));
+        assert!(!same_house(4, Some(5)));
+    }
 
     #[test]
     fn authored_bed_uses_bundle_ordinal_and_live_revision() -> TestResult {
@@ -428,7 +531,7 @@ mod tests {
     fn independent_review_c10_rejects_unproven_evidence() {
         assert!(!rest_credited(Duration::from_secs(31), 30, 30, 50));
         assert!(!rest_credited(Duration::from_secs(29), 30, 31, 50));
-        assert!(!rest_credited(Duration::from_secs(31), 50, 50, 50));
+        assert!(rest_credited(Duration::from_secs(31), 50, 50, 50));
         assert!(rest_credited(Duration::from_secs(31), 30, 31, 50));
     }
 

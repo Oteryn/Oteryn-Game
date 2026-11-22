@@ -152,6 +152,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let spender = async {
         select_melee_target(&mut client, world, &metadata.spawns).await?;
+        require_spender_harmony(&client, 5)?;
         cast(&mut client, &book, "exori infir nia", Some(0)).await
     }.await;
     match spender {
@@ -162,10 +163,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     // The native rules permit a zero-Harmony spender at normal mana cost.
     // Require an actual successful cast with no Harmony change.
     let zero_spender = async {
-        if client.actor_vitals().is_none_or(|vitals| vitals.harmony != 0) {
-            return Err("zero-Harmony spender requires an observed zero starting balance".into());
-        }
         select_melee_target(&mut client, world, &metadata.spawns).await?;
+        require_spender_harmony(&client, 0)?;
         cast(&mut client, &book, "exori infir nia", Some(0)).await
     }.await;
     match zero_spender {
@@ -462,9 +461,27 @@ fn battle_instinct_gap(active: bool) -> String {
     format!("active={active}; need=separate-eligible-Knight-and-inactive-to-active-committed-Wheel-allocation")
 }
 
+fn require_spender_harmony(client: &DevClientSession, expected: u32) -> TestResult {
+    let actual = client.actor_vitals().ok_or("spender pre-cast vitals missing")?.harmony;
+    if !spender_precondition(actual, expected) {
+        return Err(format!("spender pre-cast harmony={actual} need={expected}").into());
+    }
+    Ok(())
+}
+
+fn spender_precondition(actual: u32, expected: u32) -> bool { actual == expected }
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn second_review_c11_rejects_false_evidence() {
+        assert!(spender_precondition(5, 5));
+        assert!(!spender_precondition(0, 5));
+        assert!(!spender_precondition(4, 5));
+        assert!(spender_precondition(0, 0));
+    }
 
     #[test]
     fn independent_review_c11_rejects_unproven_evidence() {

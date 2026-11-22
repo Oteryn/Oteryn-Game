@@ -20,7 +20,7 @@
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
-use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveIntent, ItemMoveDestination, ItemMoveOutcome};
+use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome};
 use std::collections::BTreeSet;
 
 const MELEE_KIT: [(u32, EquipmentSlot); 2] = [
@@ -203,13 +203,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         )) {
             continue;
         }
-        let source = client.inventory().and_then(|inventory| inventory.entries.iter()
-            .find(|entry| entry.item_definition_ref == reference))
-            .ok_or_else(|| format!("step=equipment item={id} observed=no-carried-handle"))?.handle;
-        let outcome = client.move_item(&ItemMoveIntent {
-            source,
-            destination: ItemMoveDestination::Equipment(slot),
-        }).await?;
+        if client.inventory().is_none_or(|inventory| !inventory.entries.iter()
+            .any(|entry| entry.item_definition_ref == reference))
+        {
+            return Err(format!("step=equipment item={id} observed=no-carried-item").into());
+        }
+        let outcome = client.session_mut().equip_item_definition(reference).await?;
         if outcome.status != CommandStatus::Accepted || outcome.outcome != ItemMoveOutcome::Moved {
             return Err(format!("step=equipment item={id} slot={slot:?} observed={outcome:?} need=Moved").into());
         }
