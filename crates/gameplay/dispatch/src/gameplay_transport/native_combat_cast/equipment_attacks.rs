@@ -7,7 +7,7 @@ use crate::content::{
 use crate::spell::native_combat::{AreaPlan, CombatPlan, Element, MagnitudePlan};
 use oteryn_gameplay_spell_rules::native_actor_states::{
     ActorSkill, AttackArea, DamageElement, EquipmentAttackPlan, EquipmentFacts, HandItem, HandKind,
-    equipment_attack,
+    MagnitudeBounds, equipment_attack,
 };
 
 pub(super) fn is_targeted(spell: &SpellDefinition) -> bool {
@@ -54,18 +54,14 @@ pub(super) fn inputs(
             let Field::Known(weapon) = &semantics.weapon else {
                 continue;
             };
-            if !matches!(
-                weapon.weapon_type,
-                Field::Known(
-                    ReferenceWeaponType::Fist
-                        | ReferenceWeaponType::Club
-                        | ReferenceWeaponType::Sword
-                        | ReferenceWeaponType::Axe
-                        | ReferenceWeaponType::Distance
-                )
-            ) {
-                continue;
-            }
+            let skill = match weapon.weapon_type {
+                Field::Known(ReferenceWeaponType::Fist) => ActorSkill::Fist,
+                Field::Known(ReferenceWeaponType::Club) => ActorSkill::Club,
+                Field::Known(ReferenceWeaponType::Sword) => ActorSkill::Sword,
+                Field::Known(ReferenceWeaponType::Axe) => ActorSkill::Axe,
+                Field::Known(ReferenceWeaponType::Distance) => ActorSkill::Distance,
+                _ => continue,
+            };
             let bond = match &semantics.skill_modifiers {
                 Field::Known(modifiers) => match &modifiers.modifiers {
                     Field::Known(modifiers) => modifiers.iter().find_map(|modifier| {
@@ -88,7 +84,7 @@ pub(super) fn inputs(
             };
             // The caster projection already read the selected weapon's effective skill.
             hand = Some(HandItem {
-                kind: HandKind::Weapon(ActorSkill::Fist),
+                kind: HandKind::Weapon(skill),
                 attack: caster.attack_value,
                 defense: 0,
                 bond,
@@ -104,25 +100,135 @@ pub(super) fn inputs(
     } else {
         0
     };
+    let mut effective_skills = BTreeMap::from([(ActorSkill::Shielding, caster.shielding_skill)]);
+    if let Some(HandItem {
+        kind: HandKind::Weapon(skill),
+        ..
+    }) = hand
+    {
+        effective_skills.insert(skill, caster.attack_skill);
+    }
     Ok(EquipmentFacts {
         level: caster.level,
         left: hand,
         right: None,
-        effective_skills: BTreeMap::from([
-            (ActorSkill::Fist, caster.attack_skill),
-            (ActorSkill::Shielding, caster.shielding_skill),
-        ]),
+        effective_skills,
         flurry_enlarged: grade >= 1,
         shield_slam_grade: grade,
         harmony: Some(caster.harmony_multiplier),
     })
 }
 
+pub(super) struct EquipmentCast {
+    pub(super) inputs: EquipmentFacts,
+    pub(super) plan: EquipmentAttackPlan,
+    damage_percent: i64,
+}
+
 pub(super) fn planned(
     parameters: &Value,
     equipment: &EquipmentFacts,
-) -> Result<EquipmentAttackPlan, SpellCastDisposition> {
-    equipment_attack(parameters, equipment).map_err(|_| SpellCastDisposition::Rejected)
+    owned: &OwnedCastFacts,
+    player: &PlayerSpellState,
+    now: SemanticTimeMicros,
+) -> Result<EquipmentCast, SpellCastDisposition> {
+    let mut plan =
+        equipment_attack(parameters, equipment).map_err(|_| SpellCastDisposition::Rejected)?;
+    let power = parameters["base_power"]
+        .as_u64()
+        .ok_or(SpellCastDisposition::Rejected)? as f64;
+    let base = crate::spell::formula::level_base_damage_healing(equipment.level) as f64;
+    let hand = equipment.left;
+    let mut damage_percent = 100;
+    match parameters["spell"].as_str() {
+        Some(name @ ("shield_bash" | "shield_slam")) => {
+            let defense = f64::from(hand.ok_or(SpellCastDisposition::NotAvailable)?.defense);
+            let skill = f64::from(equipment.effective_skills[&ActorSkill::Shielding]);
+            let (min_def, max_def, min_skill, max_skill) = if name == "shield_bash" {
+                (1.5, 2.5, 0.6, 1.0)
+            } else {
+                (1.4, 2.3, 0.55, 0.95)
+            };
+            // Crystal shield_bash.lua and shield_slam.lua formula callbacks.
+            plan.components[0].bounds = damage_bounds(
+                base + power + defense * min_def + skill * min_skill,
+                base + power + defense * max_def + skill * max_skill,
+            )?;
+        }
+        Some(name @ ("flurry_of_blows" | "sweeping_takedown")) => {
+            let (skill, attack) = hand.map_or((0, 7), |item| {
+                let skill = match item.kind {
+                    HandKind::Weapon(skill) => equipment.effective_skills[&skill],
+                    _ => 0,
+                };
+                (skill, item.attack)
+            });
+            let sweeping = name == "sweeping_takedown";
+            // Crystal register_spells.lua: calculateMonkSpellDamage and calculateAttackValue.
+            let weapon = (1.2 * f64::from(attack)).floor() * ((f64::from(skill) + 4.0) / 28.0);
+            let attack_value = base + weapon;
+            let factor = if sweeping { 1.0 } else { 0.6 };
+            let total = power * attack_value / 100.0 + factor * attack_value;
+            let bounds = damage_bounds(total * 0.9, total * 1.1)?;
+            plan.blocked_by_armor = false;
+            if sweeping {
+                // Crystal sweeping_takedown.lua runs two distinct Combat calls with the same formula.
+                plan.components[0].area = directional(&["xxx", "xCx", "x.x"]);
+                plan.components[1].area =
+                    directional(&[".xxx.", "xxxxx", "x...x", "x.c.x", "x...x"]);
+                for component in &mut plan.components {
+                    component.bounds = bounds;
+                }
+                let monk = player.monk.as_ref().ok_or(SpellCastDisposition::Rejected)?;
+                if let Some(exponent) = monk.harmony().checked_sub(1) {
+                    use oteryn_gameplay_spell_rules::native_actor_states::StandardStance;
+                    let virtue = if player.standard_stance() == Some(StandardStance::Harmony) {
+                        if monk.serene() { 6 } else { 3 }
+                    } else {
+                        0
+                    };
+                    let ascetic = if owned.has_current_wheel(now.get()) {
+                        owned
+                            .wheel_stage("ascetic", now.get())
+                            .map_err(|_| SpellCastDisposition::Rejected)?
+                    } else {
+                        0
+                    };
+                    // Crystal combat.cpp: applyImproveMonkAttackSpender scales each rolled hit.
+                    damage_percent += (7 + virtue + i64::from(ascetic)) << exponent;
+                }
+            } else {
+                plan.components[0].bounds = bounds;
+                if equipment.flurry_enlarged {
+                    plan.components[0].area =
+                        directional(&["..x..", ".xxx.", "xxxxx", "xxCxx", "xx.xx"]);
+                }
+            }
+        }
+        _ => return reject(),
+    }
+    Ok(EquipmentCast {
+        inputs: equipment.clone(),
+        plan,
+        damage_percent,
+    })
+}
+
+fn damage_bounds(minimum: f64, maximum: f64) -> Result<MagnitudeBounds, SpellCastDisposition> {
+    if minimum < 0.0 || maximum < minimum || !maximum.is_finite() || maximum > f64::from(i32::MAX) {
+        return reject();
+    }
+    Ok(MagnitudeBounds {
+        minimum: minimum as i64,
+        maximum: maximum as i64,
+    })
+}
+
+fn directional(rows: &[&str]) -> AttackArea {
+    AttackArea::Matrix {
+        rows: rows.iter().map(|row| (*row).to_owned()).collect(),
+        directional: true,
+    }
 }
 
 pub(super) fn footprint(
@@ -157,7 +263,7 @@ fn damage_element(element: DamageElement) -> Element {
 }
 
 pub(super) fn combat(
-    equipment: &EquipmentAttackPlan,
+    equipment: &EquipmentCast,
     facts: &NativeCombatFacts,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<NativeCombatPlan, SpellCastDisposition> {
@@ -165,7 +271,7 @@ pub(super) fn combat(
     let mut tiles = BTreeSet::new();
     let mut geometry = BTreeSet::new();
     let origin = facts.area_origin;
-    for component in &equipment.components {
+    for component in &equipment.plan.components {
         let footprint = footprint(&component.area, origin, facts.direction)?;
         geometry.extend(footprint.iter().copied());
         let valid = |position| {
@@ -190,7 +296,7 @@ pub(super) fn combat(
             {
                 hits.push(MagnitudePlan {
                     target: target.id,
-                    magnitude: amount,
+                    magnitude: amount * equipment.damage_percent / 100,
                     bonus_percent: 0,
                     side_percent: None,
                     delay_ms: 0,
@@ -205,13 +311,13 @@ pub(super) fn combat(
         side_tiles: BTreeSet::new(),
     });
     Ok(NativeCombatPlan::Combat(CombatPlan {
-        element: damage_element(equipment.element),
+        element: damage_element(equipment.plan.element),
         area,
         hits,
         cooldown_ms: None,
         shared_cooldown: None,
         reduce_all_spell_cooldowns_ms: 0,
-        block_armor: equipment.blocked_by_armor,
+        block_armor: equipment.plan.blocked_by_armor,
         use_weapon_charges: false,
         weapon_missile: false,
         dispel_paralysis_targets: Vec::new(),

@@ -1,7 +1,7 @@
 //! Owner qualification, spatial facts, preview and live native combat phases.
 use super::*;
 
-type EquipmentFacts = oteryn_gameplay_spell_rules::native_actor_states::EquipmentFacts;
+use equipment_attacks::EquipmentCast;
 
 struct SpatialPhase {
     position: TilePosition,
@@ -190,7 +190,7 @@ pub async fn prepare_from_owners(
         .transpose()?;
     let equipment_plan = equipment
         .as_ref()
-        .map(|inputs| equipment_attacks::planned(parameters, inputs))
+        .map(|inputs| equipment_attacks::planned(parameters, inputs, owned, before, now))
         .transpose()?;
     let roster = runtime
         .positioned_actor_census()
@@ -271,7 +271,7 @@ pub async fn prepare_from_owners(
         &operational,
         &facts,
         delayed.as_ref(),
-        equipment.as_ref(),
+        equipment_plan.as_ref(),
         &bindings,
         &players,
         training_formula,
@@ -306,7 +306,7 @@ pub async fn prepare_from_owners(
         &operational,
         &facts,
         delayed.as_ref(),
-        equipment.as_ref(),
+        equipment_plan.as_ref(),
         &bindings,
         &players,
         training_formula,
@@ -362,7 +362,7 @@ async fn prepare_spatial(
     intent: &SpellCastIntent,
     aim: Option<super::ordinary_combat::Aim>,
     parameters: &Value,
-    equipment: Option<&oteryn_gameplay_spell_rules::native_actor_states::EquipmentAttackPlan>,
+    equipment: Option<&EquipmentCast>,
     actor: ExactActorRef,
     stage: u8,
     elemental: ElementalStance,
@@ -499,7 +499,7 @@ async fn prepare_spatial(
     };
     let mut candidates = BTreeSet::new();
     if let Some(equipment) = equipment {
-        for component in &equipment.components {
+        for component in &equipment.plan.components {
             candidates.extend(equipment_attacks::footprint(
                 &component.area,
                 origin,
@@ -873,7 +873,7 @@ fn prepare_preview(
     operational: &OperationalCastFacts,
     facts: &NativeCombatFacts,
     delayed: Option<&crate::spell::native_delayed::NativeDelayedFacts>,
-    equipment: Option<&EquipmentFacts>,
+    equipment: Option<&EquipmentCast>,
     bindings: &[LiveActorBinding],
     players: &[(ExactActorRef, &PlayerSpellState)],
     training_formula: &crate::content::training_formula::CompiledTrainingFormula,
@@ -1029,12 +1029,10 @@ fn prepare_preview(
         return reject();
     }
     if let Some(equipment) = equipment {
-        let parameters = &profile.spell()["execution"]["native_behavior"]["parameters"];
-        let attack = equipment_attacks::planned(parameters, equipment)?;
         equipment_attacks::append_shield_conditions(
             runtime,
             &mut preview_lowered,
-            &attack,
+            &equipment.plan,
             &preview_plan,
             bindings,
             now,
@@ -1142,7 +1140,7 @@ fn prepare_payment(
     operational: &OperationalCastFacts,
     facts: &NativeCombatFacts,
     delayed: Option<&crate::spell::native_delayed::NativeDelayedFacts>,
-    equipment: Option<&EquipmentFacts>,
+    equipment: Option<&EquipmentCast>,
     bindings: &[LiveActorBinding],
     players: &[(ExactActorRef, &PlayerSpellState)],
     training_formula: &crate::content::training_formula::CompiledTrainingFormula,
@@ -1250,12 +1248,10 @@ fn prepare_payment(
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
     if let Some(equipment) = equipment {
-        let parameters = &profile.spell()["execution"]["native_behavior"]["parameters"];
-        let attack = equipment_attacks::planned(parameters, equipment)?;
         equipment_attacks::append_shield_conditions(
             runtime,
             &mut lowered,
-            &attack,
+            &equipment.plan,
             plan,
             bindings,
             now,

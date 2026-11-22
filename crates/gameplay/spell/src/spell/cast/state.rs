@@ -29,10 +29,14 @@ impl PlayerSpellState {
         position: crate::foundation::MovementLocalPosition,
         now: u64,
     ) -> u32 {
-        self.divine_empowerment.as_ref()
+        self.divine_empowerment
+            .as_ref()
             .filter(|field| self.health > 0 && now < field.expires_micros)
-            .filter(|field| field.positions.iter().any(|tile|
-                (tile.x, tile.y, tile.floor) == (position.x, position.y, position.floor)))
+            .filter(|field| {
+                field.positions.iter().any(|tile| {
+                    (tile.x, tile.y, tile.floor) == (position.x, position.y, position.floor)
+                })
+            })
             .map_or(0, |field| field.bonus_percent)
     }
 

@@ -107,7 +107,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         cp,
         room.clone(),
         native.spell_book().clone(),
-        if matches!(case, 5..=7 | 9..=13) { 5 } else { 2 },
+        match case {
+            5..=7 => 4,
+            9..=13 => 5,
+            _ => 2,
+        },
     )?;
     deps.combat_room = Some(room);
     use crate::gameplay_transport::spell_premium_coordinator::{
@@ -180,7 +184,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             ExperienceAwardRequest {
                 occurrence: ExperienceRewardOccurrence::from_bytes(id(91)).map_err(debug)?,
                 amount: oteryn_simulation_determinism::ExactI64::new(match case {
-                    13 => 450_000_000,
+                    13 => 30_000_000_000,
                     9..=12 => 6_000_000,
                     7 | 8 => 204_800,
                     _ => 98_800,
@@ -360,11 +364,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                     &runtime,
                     actor,
                     session,
-                    if case >= 9 {
+                    if case >= 7 {
                         cast_facts
                     } else {
                         crate::spell::cast::CharacterCastFacts {
-                            level: if case >= 7 { 25 } else { 20 },
+                            level: 20,
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         }
                     },
@@ -420,7 +424,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .map_err(debug)?;
     }
     if case >= 9 {
-        return super::knight_spells::cast_case(&h, &owner, actor, session, case).await;
+        return super::knight_spell_fixtures::cast_case(&h, &owner, actor, session, case).await;
     }
     if case == 0 || case == 3 {
         allow_location(&owner, target_session, native.source_digest(), case == 0).await?;

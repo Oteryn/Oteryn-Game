@@ -195,8 +195,7 @@ pub(in crate::gameplay_transport) fn combat(
 pub(super) struct PlanFacts<'a> {
     pub(super) combat: &'a NativeCombatFacts,
     pub(super) delayed: Option<&'a NativeDelayedFacts>,
-    pub(super) equipment:
-        Option<&'a oteryn_gameplay_spell_rules::native_actor_states::EquipmentFacts>,
+    pub(super) equipment: Option<&'a equipment_attacks::EquipmentCast>,
 }
 
 pub(super) fn paid(
@@ -215,7 +214,7 @@ pub(super) fn paid(
     SpellCastDisposition,
 > {
     let input = if let Some(equipment) = facts.equipment {
-        Facts::Equipment(equipment)
+        Facts::Equipment(&equipment.inputs)
     } else {
         facts
             .delayed
@@ -230,12 +229,9 @@ pub(super) fn paid(
         draw,
         caster,
     )?;
-    if let Plan::Equipment(equipment) = &paid.plan {
-        paid.plan = Plan::Combat(Box::new(equipment_attacks::combat(
-            equipment,
-            facts.combat,
-            draw,
-        )?));
+    if let (Some(equipment), Plan::Equipment(_)) = (facts.equipment, &paid.plan) {
+        let plan = equipment_attacks::combat(equipment, facts.combat, draw)?;
+        paid.plan = Plan::Combat(Box::new(plan));
         return Ok((paid, None));
     }
     if !matches!(paid.plan, Plan::Delayed(_)) {

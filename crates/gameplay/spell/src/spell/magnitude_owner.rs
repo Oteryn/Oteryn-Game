@@ -490,7 +490,8 @@ impl PreparedMagnitudeOwner {
                 )
                 .ok_or(Error::InvalidCondition)?,
         )
-        .ok().and_then(|percent| percent.checked_add(self.empowerment_percent))
+        .ok()
+        .and_then(|percent| percent.checked_add(self.empowerment_percent))
         .ok_or(Error::InvalidMagnitude)
     }
     /// F's planted raw/late-modifier split. This changes only numerical inputs;
@@ -915,9 +916,15 @@ impl PreparedMagnitudeOwner {
             }
         }
         let mut wheel_positions = wheel_positions;
-        let empowerment_percent = if let Ok(position) = runtime.read_actor_position(a.binding.actor) {
-            let percent = caster.divine_empowerment_percent(position.position(), now_ms.saturating_mul(1000));
-            if percent > 0 && !wheel_positions.iter().any(|(actor, _)| *actor == a.binding.actor) {
+        let empowerment_percent = if let Ok(position) = runtime.read_actor_position(a.binding.actor)
+        {
+            let percent =
+                caster.divine_empowerment_percent(position.position(), now_ms.saturating_mul(1000));
+            if percent > 0
+                && !wheel_positions
+                    .iter()
+                    .any(|(actor, _)| *actor == a.binding.actor)
+            {
                 wheel_positions.push((a.binding.actor, position));
             }
             percent
