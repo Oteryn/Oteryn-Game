@@ -1829,6 +1829,12 @@ impl DurabilityRoot {
         self.pool.num_idle() > 0
     }
 
+    /// A readiness hint for a background retry outside its previous operation grant.
+    /// The checkout still arbitrates priority and readiness together.
+    pub fn background_holder_ready(&self) -> bool {
+        self.is_ready() && self.holder_priority.background_can_attempt(Instant::now())
+    }
+
     /// Waits for the retry of a step that found the holder busy (NODEBOOT-1). The retry starts
     /// as soon as the holder is returned to idle, but not before `earliest`, and no later than
     /// `latest`. A holder idle already means the step failed for another reason: the retry then
