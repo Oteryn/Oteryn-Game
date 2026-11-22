@@ -1,0 +1,18 @@
+[
+  {
+    "mechanic": "0590-player-trade-artwork",
+    "kind": "handlers",
+    "id": "0590-player-trade-artwork-negotiation",
+    "status": "unsupported",
+    "commands": [],
+    "direction": "bidirectional",
+    "reason": "The client lane wires this negotiated extension into its existing trade panel.",
+    "not_applicable": {
+      "state": "The existing trade state remains the owner.",
+      "protocol": "The capability extends the existing trade protocol.",
+      "view": "The existing trade panel owns presentation.",
+      "input": "The existing trade panel owns input.",
+      "settings": "The extension has no application setting."
+    }
+  }
+]

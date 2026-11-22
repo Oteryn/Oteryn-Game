@@ -70,3 +70,23 @@ identity. The catalogue has its own named item table and filter controls. Browsi
 an item requests fresh 30-day completed prices; loaded-page quote summaries remain
 separately labelled. Existing create, accept, cancel, paging and history callers
 are preserved.
+
+## Catalogue presentation extension
+
+Capability 588 `MARKET_CATALOGUE_PRESENTATION_V1` requires Market 63 and
+extends the Catalogue request and reply on command 6126. Selected peers may
+supply the optional unsigned byte `filter.forge_tier`, an exact instance tier
+separate from `forge_class`. Omit the field to apply no tier filter. An explicit
+null is malformed. Tier zero
+selects the admitted default-state cohort. Positive tiers return an empty page
+because this Market admits tier zero only, including at settlement. The tier
+byte in Crystal's Market browse is independent of item classification.
+[Crystal protocolgame.cpp, 201189f8](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp#L3738-L3756)
+
+Selected peers may receive `appearance` on each ware. Its nonzero u16
+`object_appearance_id` comes from the activated Item policy for that exact
+definition and revision. The `catalogue_digest` is the 32-byte client artifact
+digest, encoded as an array of octets. Artwork applies to the catalogue's
+default subtype. Clients resolve the artwork with assets qualified for that
+digest. An unavailable binding is omitted. Peers without 588 receive the
+original rows and a request specifying a tier returns refusal code 9.

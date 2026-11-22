@@ -99,7 +99,11 @@ pub(super) fn meaningful(
         )
         .is_ok(),
         7 => oteryn_protocol_oteryn::npc_service::decode_npc_talk_intent(command.payload).is_ok(),
-        8 => oteryn_protocol_oteryn::npc_service::decode_npc_trade_intent(command.payload).is_ok(),
+        8 => oteryn_protocol_oteryn::npc_service::decode_npc_trade_intent_for(
+            command.payload,
+            selected.contains(&oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_OPTIONS_V1),
+        )
+        .is_ok(),
         13 => chat::decode_chat_intent(command.payload).is_ok_and(|intent| {
             !matches!(
                 intent,
@@ -181,7 +185,11 @@ pub(super) fn meaningful(
         78 => oteryn_protocol_oteryn::player_trade::decode_intent(command.payload).is_ok(),
         93 => oteryn_protocol_oteryn::player_report::decode_player_report_request(command.payload)
             .is_ok(),
-        97 => oteryn_protocol_oteryn::npc_shop::decode_npc_shop_intent(command.payload).is_ok(),
+        97 => oteryn_protocol_oteryn::npc_shop::decode_npc_shop_intent_for(
+            command.payload,
+            selected.contains(&oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_OPTIONS_V1),
+        )
+        .is_ok(),
         98 => oteryn_protocol_oteryn::creature_push::decode_creature_push_intent(command.payload)
             .is_ok(),
         _ => false,

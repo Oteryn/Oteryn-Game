@@ -68,6 +68,17 @@ async fn exchange(
     command_id: u64,
     intent: &NpcShopIntent,
 ) -> TestResult<(CommandStatus, NpcShopResult)> {
+    exchange_with_scope(owner, admitted, greet, command_id, intent, false).await
+}
+
+async fn exchange_with_scope(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    greet: Option<(u64, u64)>,
+    command_id: u64,
+    intent: &NpcShopIntent,
+    include_equipped: bool,
+) -> TestResult<(CommandStatus, NpcShopResult)> {
     let mut commands = Vec::new();
     if let Some((hi, trade)) = greet {
         for (talk_id, text) in [(hi, "hi"), (trade, "trade")] {
@@ -85,7 +96,13 @@ async fn exchange(
     commands.push((
         command_id,
         COMMAND_TYPE_NPC_SHOP,
-        encode_npc_shop_intent(intent).map_err(debug)?,
+        {
+            let mut payload = encode_npc_shop_intent(intent).map_err(debug)?;
+            if include_equipped {
+                payload.extend([56, 1]);
+            }
+            payload
+        },
     ));
     let before = *admitted;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
@@ -210,11 +227,15 @@ pub(super) enum ShopScenario {
     Bulk,
     WeightLimit,
     MissingProfile,
+    PackedBuy,
+    EquippedSale,
 }
 
 pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
     let wandering_rashid = matches!(case, ShopScenario::Rashid);
-    let bulk = matches!(case, ShopScenario::Bulk);
+    let packed = matches!(case, ShopScenario::PackedBuy);
+    let equipped = matches!(case, ShopScenario::EquippedSale);
+    let bulk = matches!(case, ShopScenario::Bulk) || packed;
     let weight_limit = matches!(case, ShopScenario::WeightLimit);
     run(async move |admin| {
         reset();
@@ -294,6 +315,8 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
         // Alice retains the synthetic four-gold meat offer for the generic case.
         let sold_item = if wandering_rashid {
             "oteryn:item.tibia.i5917"
+        } else if equipped {
+            "oteryn:item.tibia.i3447"
         } else {
             MEAT
         };
@@ -445,6 +468,17 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
         } else {
             seed_main_backpack(&h, &[(sold_item, 5), (FISH, 2), (sold_item, 3)]).await?;
         }
+        if equipped {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT(character_id) DO NOTHING")
+                .bind(id(41).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',3,1,encode($1,'hex')::uuid)")
+                .bind(id(220).as_slice()).bind(id(42).as_slice()).bind(sold_item).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,10,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
+                .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(220).as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+        }
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(session)
@@ -463,6 +497,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 6,
                 CAPABILITY_NPC_SHOP_V1,
                 oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1,
+                589,
             ],
         )
         .ok_or("npc shop selection")?;
@@ -475,7 +510,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 npc,
                 1,
                 NpcTradeSide::Buy,
-                101,
+                (101, false),
                 NpcIntentDisposition::Rejected,
             )
             .await?;
@@ -494,7 +529,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 npc,
                 4,
                 NpcTradeSide::Buy,
-                98,
+                (98, false),
                 NpcIntentDisposition::Ok,
             )
             .await?;
@@ -519,11 +554,32 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 npc,
                 1,
                 NpcTradeSide::Buy,
-                150,
+                (150, packed),
                 NpcIntentDisposition::Ok,
             )
             .await?;
             let bought = bought.ok_or("buy inventory")?;
+            if packed {
+                assert_eq!(carried(&h).await?, vec![
+                    ("oteryn:item.tibia.i3031".to_owned(), 30),
+                    ("oteryn:item.tibia.i21411".to_owned(), 1),
+                ]);
+                let children: Vec<i64> = sqlx::query_scalar(
+                    "SELECT i.quantity FROM game_npc_trades t JOIN game_item_nested_entries n
+                      ON n.parent_item_instance_id=t.shopping_bag_item_id
+                      JOIN game_item_instances i ON i.item_instance_id=n.item_instance_id
+                      WHERE i.definition_production_key=$1 ORDER BY i.quantity"
+                ).bind(MEAT).fetch_all(&h.pool).await?;
+                assert_eq!(children, vec![50, 100]);
+                let total: i64 = sqlx::query_scalar("SELECT total_gold_units FROM game_npc_trades")
+                    .fetch_one(&h.pool).await?;
+                assert_eq!(total, 170);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                h.cleanup().await?;
+                return Ok(());
+            }
             assert!(window.details.iter().all(|detail| detail.name == "meat"));
             let mut limits: Vec<_> = window
                 .offers
@@ -552,7 +608,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 npc,
                 4,
                 NpcTradeSide::Sell,
-                125,
+                (125, false),
                 NpcIntentDisposition::Ok,
             )
             .await?;
@@ -728,6 +784,31 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
         .await?;
         assert_eq!((units, gold, flag), (8, total_gold.to_string(), true));
 
+        if equipped {
+            let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(220).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(before, 1);
+            let (status, included) = exchange_with_scope(
+                &owner, &mut admitted, Some((7, 8)), 9, &sell_all, true,
+            ).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!((included.disposition, included.sold_units, included.total_gold_units),
+                (NpcIntentDisposition::Ok, 3, 12));
+            let after: (i64, i64) = sqlx::query_as("SELECT i.quantity,s.revision::bigint
+                FROM game_item_instances i CROSS JOIN game_character_equipment_state s
+                WHERE i.item_instance_id=encode($1,'hex')::uuid AND s.character_id=encode($2,'hex')::uuid
+                AND NOT EXISTS (SELECT 1 FROM game_character_equipment_slots e WHERE e.item_instance_id=i.item_instance_id)")
+                .bind(id(220).as_slice()).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(after, (0, 2));
+            let (status, replayed) = exchange_with_scope(&owner, &mut admitted, None, 9, &sell_all, true).await?;
+            assert_eq!(status, CommandStatus::DuplicateReplay);
+            assert_eq!(replayed, included);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return Ok(());
+        }
         // The resend of command 6 replays the retained result; the durable receipt answers the
         // same command again with its first outcome and writes nothing.
         let (status, replayed) = exchange(&owner, &mut admitted, None, 6, &sell_all).await?;
@@ -791,7 +872,7 @@ async fn bulk_exchange(
     npc: EntityRef,
     first: u64,
     side: NpcTradeSide,
-    quantity: u32,
+    (quantity, packed): (u32, bool),
     expected: NpcIntentDisposition,
 ) -> TestResult<(
     oteryn_protocol_oteryn::npc_service::NpcTradeWindow,
@@ -889,7 +970,10 @@ async fn bulk_exchange(
             .trade(quote, quantity)
             .ok_or("UI trade within authoritative bound")?;
         assert_eq!(intent.expected_unit_price, offer.unit_price);
-        let payload = wire::encode_npc_trade_intent(&intent).map_err(debug)?;
+        let mut payload = wire::encode_npc_trade_intent(&intent).map_err(debug)?;
+        if packed {
+            payload.extend([56, 1]);
+        }
         write_frame(
             &mut client,
             &encode_client_command(

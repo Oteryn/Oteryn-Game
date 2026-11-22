@@ -185,8 +185,8 @@ use oteryn_protocol_oteryn::npc_service::{
     DELTA_TYPE_NPC_CONVERSATION_V1, DELTA_TYPE_NPC_TRADE_WINDOW_V1, NpcConversation,
     NpcIntentDisposition, NpcTalkIntent, NpcTradeWindow, SNAPSHOT_TYPE_NPC_CONVERSATION_V1,
     SNAPSHOT_TYPE_NPC_TRADE_WINDOW_V1, STATE_DOMAIN_NPC_CONVERSATION,
-    STATE_DOMAIN_NPC_TRADE_WINDOW, decode_npc_talk_intent, decode_npc_trade_intent,
-    encode_npc_conversation, encode_npc_intent_result, encode_npc_trade_window,
+    STATE_DOMAIN_NPC_TRADE_WINDOW, decode_npc_talk_intent, encode_npc_conversation,
+    encode_npc_intent_result, encode_npc_trade_window,
 };
 use oteryn_protocol_oteryn::quest_log::{
     DELTA_TYPE_QUEST_LOG_V1, SNAPSHOT_TYPE_QUEST_LOG_V1, STATE_DOMAIN_QUEST_LOG,

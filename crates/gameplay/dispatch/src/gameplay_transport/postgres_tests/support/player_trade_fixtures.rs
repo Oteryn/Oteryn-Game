@@ -351,7 +351,7 @@ async fn scenario(
                 owner.offered_capabilities()
             },
             if contents {
-                &[3, 4, 6, 12, 14, 21, 60, 61, 132, 501]
+                &[3, 4, 6, 12, 14, 21, 60, 61, 132, 501, 590]
             } else if check_capacity {
                 &[4, 6, 21, 60, 508]
             } else if inspection {
@@ -492,11 +492,18 @@ async fn scenario(
                 .ok_or("partner ready")?;
             b.trade_state(&partner_state).await?;
             for peer in [&a, &b] {
-                let received = wire::decode_state_for(
+                let received = wire::decode_state_negotiated(
                     peer.last_trade.as_deref().ok_or("ready trade bytes")?,
+                    true,
                     true,
                 )
                 .map_err(debug)?;
+                assert_eq!(received.own.and_then(|offer| offer.appearance_id).map(|id| id.get()), Some(2854));
+                assert_eq!(received.counter.and_then(|offer| offer.appearance_id).map(|id| id.get()), Some(2854));
+                assert_eq!(
+                    received.contents.each_ref().map(|tree| tree[3].item.appearance_id.map(|id| id.get())),
+                    [Some(2874), Some(2874)],
+                );
                 assert_eq!(
                     received.contents.each_ref().map(|tree| tree[3].item.sub_type),
                     [7, 7],
@@ -1495,14 +1502,14 @@ impl Peer {
         Ok(r)
     }
     async fn trade_state(&mut self, state: &wire::State) -> TestResult {
-        let expected = wire::encode_state_for(state, self.details).map_err(debug)?;
+        let expected = wire::encode_state_negotiated(state, self.details, self.details).map_err(debug)?;
         while self.last_trade.as_ref() != Some(&expected) {
             let frame = self.read().await?;
             self.capture(&frame)?;
         }
         if self.details {
             let decoded =
-                wire::decode_state_for(self.last_trade.as_deref().ok_or("trade bytes")?, true)
+                wire::decode_state_negotiated(self.last_trade.as_deref().ok_or("trade bytes")?, true, true)
                     .map_err(debug)?;
             let panel = oteryn_dev_client::client_ui::player_trade::PlayerTradePanel {
                 selected: true,

@@ -1,0 +1,18 @@
+{
+  "id": 590,
+  "name": "PLAYER_TRADE_ARTWORK_V1",
+  "constant": "player_trade::CAPABILITY_PLAYER_TRADE_ARTWORK_V1",
+  "requires": [
+    4,
+    60
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

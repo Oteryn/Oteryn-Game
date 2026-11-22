@@ -1,0 +1,13 @@
+{
+  "id": 588,
+  "name": "MARKET_CATALOGUE_PRESENTATION_V1",
+  "owner_decision": "Market catalogue tier and artwork",
+  "owner": "Market",
+  "requires": [
+    63
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Selected only with its listed dependencies. Extends the existing routes and grants no new command or domain authority."
+}
