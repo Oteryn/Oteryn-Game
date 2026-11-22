@@ -593,7 +593,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             && let Some(conversation) = &mut outcome.conversation
         {
             for line in &mut conversation.lines {
-                *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
+                *line = npc_talk::render_dialogue(line, &name);
             }
         }
         outcome
