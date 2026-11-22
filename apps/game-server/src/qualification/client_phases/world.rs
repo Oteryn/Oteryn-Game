@@ -1209,7 +1209,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(36) {
                 verdict::indexed("W12.full", async {
-                    full_row_w12::run_packet(clients).await;
+                    full_row_w12::run_packet(clients, world).await;
                     release_row_characters(clients).await
                 })
                 .await;
@@ -2331,7 +2331,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(195) {
                 verdict::indexed("W12.client", async {
-                    client_row_w12::run_packet(clients).await;
+                    client_row_w12::run_packet(clients, world).await;
                     release_row_characters(clients).await
                 })
                 .await;
@@ -3317,6 +3317,14 @@ async fn connect_world_with_capabilities(
     connect_character_with_capabilities(clients, tag, 1, additional_capabilities).await
 }
 
+fn qualification_capability_offer(additional_capabilities: &[u32]) -> Vec<u32> {
+    let mut capabilities = oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES.to_vec();
+    capabilities.extend_from_slice(additional_capabilities);
+    capabilities.sort_unstable();
+    capabilities.dedup();
+    capabilities
+}
+
 fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT_CONNECTION: AtomicU64 = AtomicU64::new(1);
@@ -3365,10 +3373,7 @@ async fn connect_character_with_capabilities(
         attempt,
     };
     let token = sign_grant(&grant, now_seconds()?);
-    let mut capabilities = oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES.to_vec();
-    capabilities.extend_from_slice(additional_capabilities);
-    capabilities.sort_unstable();
-    capabilities.dedup();
+    let capabilities = qualification_capability_offer(additional_capabilities);
     let client = oteryn_dev_client::connect_session_with_capabilities(
         oteryn_dev_client::JoinRequest {
             address: clients.address,
@@ -3659,5 +3664,497 @@ fn qualification_nbroute_retries_only_stationary_rejections_with_a_bound() {
         ] {
             assert_eq!(town_route_retry_delay(disposition, false, attempt), None);
         }
+    }
+}
+
+#[cfg(test)]
+mod optional_capability_tests {
+    use super::*;
+    use native::{world_object, world_spatial};
+    use oteryn_protocol_oteryn::{self as native, arena, hireling::management};
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::{TcpListener, TcpStream};
+    use tokio::sync::oneshot;
+
+    const FIRST_COMMAND: u64 = 7;
+    const JOIN_SEQUENCE: u64 = 40;
+    type ServerStream = tokio_rustls::server::TlsStream<TcpStream>;
+
+    #[derive(Clone, Copy, Debug)]
+    enum Route {
+        Catalogue,
+        Match,
+        Hireling,
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    enum Case {
+        W17Full,
+        W17Client,
+        E12Full,
+        E12Client,
+        Selected(Route),
+        Unselected(Route),
+    }
+
+    impl Case {
+        fn capability(self) -> u32 {
+            match self {
+                Self::W17Full
+                | Self::W17Client
+                | Self::Selected(Route::Catalogue | Route::Match)
+                | Self::Unselected(Route::Catalogue | Route::Match) => arena::CAPABILITY_ARENA_V1,
+                _ => management::CAPABILITY_HIRELING_MANAGEMENT_V1,
+            }
+        }
+
+        fn extras(self) -> &'static [u32] {
+            match self {
+                Self::W17Full => full_row_w17::ADDITIONAL_CAPABILITIES,
+                Self::W17Client => client_row_w17::ADDITIONAL_CAPABILITIES,
+                Self::E12Full => full_row_e12::ADDITIONAL_CAPABILITIES,
+                Self::E12Client => client_row_e12::ADDITIONAL_CAPABILITIES,
+                Self::Selected(Route::Catalogue | Route::Match)
+                | Self::Unselected(Route::Catalogue | Route::Match) => {
+                    &[arena::CAPABILITY_ARENA_V1]
+                }
+                Self::Selected(Route::Hireling) | Self::Unselected(Route::Hireling) => {
+                    &[management::CAPABILITY_HIRELING_MANAGEMENT_V1]
+                }
+            }
+        }
+
+        fn route(self) -> Option<Route> {
+            match self {
+                Self::Selected(route) | Self::Unselected(route) => Some(route),
+                _ => None,
+            }
+        }
+
+        fn feature_profile(self) -> Vec<u32> {
+            if self.capability() == arena::CAPABILITY_ARENA_V1 {
+                vec![arena::CAPABILITY_ARENA_V1]
+            } else {
+                vec![
+                    native::npc_service::CAPABILITY_NPC_SERVICE_V1,
+                    native::staff::CAPABILITY_STAFF_V1,
+                    native::hireling::CAPABILITY_HIRELING_V1,
+                    management::CAPABILITY_HIRELING_MANAGEMENT_V1,
+                ]
+            }
+        }
+    }
+
+    struct Exchange {
+        command_type: u32,
+        request: Vec<u8>,
+        reply: Vec<u8>,
+    }
+
+    impl Route {
+        fn exchanges(self) -> TestResult<Vec<Exchange>> {
+            Ok(match self {
+                Self::Catalogue => vec![Exchange {
+                    command_type: arena::COMMAND_TYPE_ARENA_CATALOGUE,
+                    request: Vec::new(),
+                    reply: arena::encode_catalogue()
+                        .map_err(|error| format!("arena catalogue fixture: {error:?}"))?,
+                }],
+                Self::Match => [
+                    (arena::ArenaAction::Status, arena::ArenaDisposition::Applied),
+                    (
+                        arena::ArenaAction::Advance,
+                        arena::ArenaDisposition::WrongState,
+                    ),
+                ]
+                .into_iter()
+                .map(|(action, disposition)| {
+                    Ok(Exchange {
+                        command_type: arena::COMMAND_TYPE_ARENA_MATCH,
+                        request: arena::encode_match_request(action)
+                            .map_err(|error| format!("arena request fixture: {error:?}"))?,
+                        reply: arena::encode_match_result(&arena::ArenaResult {
+                            disposition,
+                            state: arena::ArenaState::default(),
+                        })
+                        .map_err(|error| format!("arena result fixture: {error:?}"))?,
+                    })
+                })
+                .collect::<TestResult<Vec<_>>>()?,
+                Self::Hireling => vec![Exchange {
+                    command_type: management::COMMAND_TYPE_HIRELING_MANAGEMENT,
+                    request: management::Request::List.encode(),
+                    reply: management::Reply::State(Vec::new())
+                        .encode_wire()
+                        .ok_or("hireling State fixture encode")?,
+                }],
+            })
+        }
+    }
+
+    #[test]
+    fn qualification_optional_170_250_bootstrap_w17_full() -> TestResult {
+        run(Case::W17Full)
+    }
+    #[test]
+    fn qualification_optional_170_250_bootstrap_w17_client() -> TestResult {
+        run(Case::W17Client)
+    }
+    #[test]
+    fn qualification_optional_170_250_bootstrap_e12_full() -> TestResult {
+        run(Case::E12Full)
+    }
+    #[test]
+    fn qualification_optional_170_250_bootstrap_e12_client() -> TestResult {
+        run(Case::E12Client)
+    }
+    #[test]
+    fn qualification_optional_170_250_selected_catalogue() -> TestResult {
+        run(Case::Selected(Route::Catalogue))
+    }
+    #[test]
+    fn qualification_optional_170_250_selected_match() -> TestResult {
+        run(Case::Selected(Route::Match))
+    }
+    #[test]
+    fn qualification_optional_170_250_selected_hireling() -> TestResult {
+        run(Case::Selected(Route::Hireling))
+    }
+
+    #[test]
+    fn qualification_optional_170_250_unselected_never_sends_a_command() -> TestResult {
+        for route in [Route::Catalogue, Route::Match, Route::Hireling] {
+            run(Case::Unselected(route))?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_optional_170_250_default_offer_stays_unchanged() {
+        for capability in [
+            arena::CAPABILITY_ARENA_V1,
+            management::CAPABILITY_HIRELING_MANAGEMENT_V1,
+        ] {
+            assert!(!oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
+        }
+    }
+
+    fn run(case: Case) -> TestResult {
+        let thread = std::thread::Builder::new()
+            .name("qualification-optional-capability-tls".into())
+            .stack_size(64 << 20)
+            .spawn(move || {
+                let result = (|| -> TestResult {
+                    let runtime = tokio::runtime::Builder::new_current_thread()
+                        .enable_all()
+                        .build()?;
+                    runtime.block_on(tokio::task::LocalSet::new().run_until(async {
+                        tokio::time::timeout(Duration::from_secs(20), async {
+                            // The two W17.full admission sites share this same caller policy.
+                            let repeats = if matches!(case, Case::W17Full) { 2 } else { 1 };
+                            let mut errors = Vec::new();
+                            for _ in 0..repeats {
+                                if let Err(error) = exercise(case).await {
+                                    errors.push(error.to_string());
+                                }
+                            }
+                            if errors.is_empty() {
+                                Ok(())
+                            } else {
+                                Err(errors.join("; ").into())
+                            }
+                        })
+                        .await
+                        .map_err(|_| "optional capability TLS fixture deadline")?
+                    }))
+                })();
+                result.map_err(|error| error.to_string())
+            })?;
+        match thread.join() {
+            Ok(result) => result.map_err(Into::into),
+            Err(panic) => std::panic::resume_unwind(panic),
+        }
+    }
+
+    async fn read(stream: &mut ServerStream) -> TestResult<Vec<u8>> {
+        let size = stream.read_u32().await?;
+        if size == 0 || size > native::MAX_WIRE_FRAME_BYTES {
+            return Err("optional capability native frame size".into());
+        }
+        let mut bytes = vec![0; usize::try_from(size)?];
+        stream.read_exact(&mut bytes).await?;
+        Ok(bytes)
+    }
+
+    async fn send(stream: &mut ServerStream, bytes: &[u8]) -> TestResult {
+        stream.write_u32(u32::try_from(bytes.len())?).await?;
+        stream.write_all(bytes).await?;
+        stream.flush().await?;
+        Ok(())
+    }
+
+    #[derive(Debug)]
+    struct Observed {
+        offered: Vec<u32>,
+        selected: Vec<u32>,
+        commands: Vec<(u64, u32, Vec<u8>)>,
+    }
+
+    async fn serve(
+        listener: TcpListener,
+        acceptor: tokio_rustls::TlsAcceptor,
+        case: Case,
+        ready: oneshot::Sender<()>,
+        mut complete: oneshot::Receiver<()>,
+    ) -> TestResult<Observed> {
+        let (tcp, _) = listener.accept().await?;
+        let mut stream = acceptor.accept(tcp).await?;
+        let bytes = read(&mut stream).await?;
+        let envelope = native::decode_wire_envelope(&bytes)?;
+        let offered = envelope.client_bootstrap()?.supported_capabilities.to_vec();
+        let selected: Vec<_> = case
+            .feature_profile()
+            .into_iter()
+            .filter(|capability| offered.contains(capability))
+            .filter(|capability| {
+                !matches!(case, Case::Unselected(_)) || *capability != case.capability()
+            })
+            .collect();
+        send(
+            &mut stream,
+            &native::encode_server_accepted(&native::ServerAcceptedValue {
+                game_session_id: native::GameSessionId::decode(&v7(1, 1))?,
+                world_id: native::WorldId::decode(&v7(2, 2))?,
+                channel_id: native::ChannelId::decode(&v7(3, 3))?,
+                connection_generation: 1,
+                current_server_sequence: JOIN_SEQUENCE,
+                next_command_id: FIRST_COMMAND,
+                schema_revision: 1,
+                selected_capabilities: &selected,
+            })?,
+        )
+        .await?;
+        let spatial =
+            world_spatial::encode_world_spatial(&world_spatial::WorldSpatialObservation {
+                content_generation: [0x11; 32],
+                actor_position: world_spatial::ActorPosition {
+                    x: 100,
+                    y: 101,
+                    floor: 7,
+                },
+            });
+        let overlay = world_object::encode_world_object_overlay_snapshot(&[])
+            .map_err(|error| format!("optional capability overlay fixture: {error:?}"))?;
+        for frame in native::encode_single_chunk_snapshot(
+            1,
+            1,
+            JOIN_SEQUENCE,
+            &[
+                native::DomainSnapshot {
+                    domain_id: world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    revision: 5,
+                    snapshot_type: world_spatial::SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                    payload: &spatial,
+                },
+                native::DomainSnapshot {
+                    domain_id: world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                    revision: 9,
+                    snapshot_type: world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                    payload: &overlay,
+                },
+            ],
+        )? {
+            send(&mut stream, &frame).await?;
+        }
+        ready
+            .send(())
+            .map_err(|_| "optional capability readiness receiver closed")?;
+        let exchanges = case
+            .route()
+            .map(Route::exchanges)
+            .transpose()?
+            .unwrap_or_default();
+        let blocked = world_spatial::encode_step_result(world_spatial::StepDisposition::Blocked);
+        let mut commands = Vec::new();
+        let mut sequence = JOIN_SEQUENCE;
+        loop {
+            tokio::select! {
+                _ = &mut complete => break,
+                frame = read(&mut stream) => {
+                    let bytes = frame?;
+                    let command = native::decode_wire_envelope(&bytes)?.client_command(1)?;
+                    commands.push((command.command_id, command.command_type, command.payload.to_vec()));
+                    let (status, payload): (_, &[u8]) = if command.command_type == world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
+                        (native::CommandStatus::Accepted, &blocked)
+                    } else if let Some(exchange) = exchanges.iter().find(|exchange|
+                        exchange.command_type == command.command_type && exchange.request == command.payload) {
+                        (native::CommandStatus::Accepted, &exchange.reply)
+                    } else {
+                        (native::CommandStatus::Rejected, &[])
+                    };
+                    sequence += 1;
+                    send(&mut stream, &native::encode_command_result(1, sequence, command.command_id, status, payload)?).await?;
+                }
+            }
+        }
+        Ok(Observed {
+            offered,
+            selected,
+            commands,
+        })
+    }
+
+    async fn exercise(case: Case) -> TestResult {
+        let generated = rcgen::generate_simple_self_signed(vec!["localhost".to_owned()])?;
+        let certificate = generated.cert.der().clone();
+        let key =
+            rustls::pki_types::PrivatePkcs8KeyDer::from(generated.signing_key.serialize_der());
+        let mut config = rustls::ServerConfig::builder_with_provider(std::sync::Arc::new(
+            rustls::crypto::aws_lc_rs::default_provider(),
+        ))
+        .with_protocol_versions(&[&rustls::version::TLS13])?
+        .with_no_client_auth()
+        .with_single_cert(vec![certificate.clone()], key.into())?;
+        config.alpn_protocols = vec![native::ALPN_OTERYN_GAME_V1.as_bytes().to_vec()];
+        let listener = TcpListener::bind("127.0.0.1:0").await?;
+        let address = listener.local_addr()?;
+        let acceptor = tokio_rustls::TlsAcceptor::from(std::sync::Arc::new(config));
+        let (ready_tx, ready_rx) = oneshot::channel();
+        let (complete_tx, complete_rx) = oneshot::channel();
+        let peer = tokio::task::spawn_local(serve(listener, acceptor, case, ready_tx, complete_rx));
+        let offered = qualification_capability_offer(case.extras());
+        let admission = oteryn_dev_client::connect_session_with_capabilities(
+            oteryn_dev_client::JoinRequest {
+                address,
+                server_name: "localhost",
+                root_certificate: &certificate,
+                schema_revision: 1,
+                character_id: native::CharacterId::decode(&v7(4, 4))?,
+                admission_material: b"optional-capability-fixture",
+                client_build_id: "optional-capability-tls-test",
+                deadline: Duration::from_secs(5),
+            },
+            &offered,
+        )
+        .await;
+        let mut client = match admission {
+            Ok(client) => client,
+            Err(error) => {
+                let _ = complete_tx.send(());
+                if !peer.is_finished() {
+                    peer.abort();
+                }
+                return Err(format!(
+                    "optional capability admission: client={error}; peer={:?}",
+                    peer.await
+                )
+                .into());
+            }
+        };
+        ready_rx.await?;
+        let selected = client.selected_capabilities().to_vec();
+        let before = *client.world_spatial();
+        let before_overlay = client.world_object_overlay().to_vec();
+        let exchanges = case
+            .route()
+            .map(Route::exchanges)
+            .transpose()?
+            .unwrap_or_default();
+        let result: TestResult = async {
+            assert_eq!(client.next_command_id(), FIRST_COMMAND);
+            assert_eq!(client.last_server_sequence(), JOIN_SEQUENCE);
+            if let Some(route) = case.route() {
+                if matches!(case, Case::Selected(_)) {
+                    assert_eq!(selected, case.feature_profile(), "route fixture must negotiate before testing the local guard");
+                    let (wrong, wrong_payload) = if matches!(route, Route::Hireling) {
+                        (arena::COMMAND_TYPE_ARENA_CATALOGUE, Vec::new())
+                    } else {
+                        (management::COMMAND_TYPE_HIRELING_MANAGEMENT, management::Request::List.encode())
+                    };
+                    let error = client.session_mut().gated_command(case.capability(), wrong, &wrong_payload).await
+                        .err().ok_or("wrong-owner command was accepted")?;
+                    assert!(matches!(error, oteryn_dev_client::SessionError::CapabilityNotSelected { capability } if capability == case.capability()));
+                    assert_eq!(client.next_command_id(), FIRST_COMMAND);
+                    assert_eq!(client.last_server_sequence(), JOIN_SEQUENCE);
+                    for (index, exchange) in exchanges.iter().enumerate() {
+                        let reply = client.session_mut().gated_command(case.capability(), exchange.command_type, &exchange.request).await?;
+                        let offset = u64::try_from(index)?;
+                        assert_eq!(reply.command_id, FIRST_COMMAND + offset);
+                        assert_eq!(reply.server_sequence, JOIN_SEQUENCE + offset + 1);
+                        assert_eq!(reply.status, native::CommandStatus::Accepted);
+                        assert_eq!(reply.payload, exchange.reply);
+                    }
+                } else {
+                    assert!(!selected.contains(&case.capability()));
+                    for exchange in &exchanges {
+                        let error = client.session_mut().gated_command(case.capability(), exchange.command_type, &exchange.request).await
+                            .err().ok_or("unselected command was accepted")?;
+                        assert!(matches!(error, oteryn_dev_client::SessionError::CapabilityNotSelected { capability } if capability == case.capability()));
+                        assert_eq!(client.next_command_id(), FIRST_COMMAND);
+                        assert_eq!(client.last_server_sequence(), JOIN_SEQUENCE);
+                    }
+                    // An acknowledged core command is a wire barrier, not a timeout-based no-send claim.
+                    let reply = client.step(world_spatial::StepDirection::North).await?;
+                    assert_eq!(reply.status, native::CommandStatus::Accepted);
+                    assert_eq!(reply.disposition, world_spatial::StepDisposition::Blocked);
+                }
+            }
+            assert_eq!(*client.world_spatial(), before);
+            assert_eq!(client.world_object_overlay(), before_overlay);
+            assert!(client.take_events().is_empty());
+            Ok(())
+        }.await;
+        complete_tx
+            .send(())
+            .map_err(|_| "optional capability peer ended before completion")?;
+        // Keep the session alive until the peer returns its observed requests; EOF cannot replace RED.
+        let observed = peer.await??;
+        drop(client);
+        assert_eq!(observed.selected, selected);
+        if let Err(error) = result {
+            return Err(format!(
+                "{case:?}: {error}; observed_commands={:?}",
+                observed.commands
+            )
+            .into());
+        }
+        if case.route().is_none() {
+            let mut expected = oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES.to_vec();
+            expected.push(case.capability());
+            expected.sort_unstable();
+            expected.dedup();
+            if observed.offered != expected {
+                return Err(format!(
+                    "{case:?} bootstrap did not advertise optional capability {}: observed={:?}",
+                    case.capability(),
+                    observed.offered
+                )
+                .into());
+            }
+            assert!(observed.commands.is_empty());
+        } else if matches!(case, Case::Unselected(_)) {
+            assert_eq!(
+                observed.commands,
+                vec![(
+                    FIRST_COMMAND,
+                    world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                    world_spatial::encode_step_intent(world_spatial::StepDirection::North)
+                )]
+            );
+        } else {
+            let expected = exchanges
+                .into_iter()
+                .enumerate()
+                .map(|(index, exchange)| {
+                    Ok((
+                        FIRST_COMMAND + u64::try_from(index)?,
+                        exchange.command_type,
+                        exchange.request,
+                    ))
+                })
+                .collect::<TestResult<Vec<_>>>()?;
+            assert_eq!(observed.commands, expected);
+        }
+        Ok(())
     }
 }

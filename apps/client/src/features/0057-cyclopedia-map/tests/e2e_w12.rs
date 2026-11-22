@@ -1,4 +1,4 @@
-//! W12 replay: the Cyclopedia map QUERY, FIND-refusal and START replies applied by the production
+//! W12 replay: automatic discovery QUERY/FIND and legacy START applied by the production
 //! client reducer `apply` (`protocol.rs`); requests are built by the production `command`.
 use super::*;
 use oteryn_client_runtime::raw_feature::CommandStatus;
@@ -38,9 +38,9 @@ fn replies() -> Result<Replies, Error> {
     };
     Ok(Replies {
         query: encode(0, 4, 0, vec![])?,
-        find: encode(4, 4, 0, vec![])?,
-        start: encode(0, 5, 0, vec![(32_100, 32_200, 7), (32_101, 32_203, 7)])?,
-        expected: "query_code=0\nquery_revision=4\nquery_discovered=false\nquery_found=0\nquery_percent=0\nquery_pool=12\nquery_epoch=3\nquery_improved=false\nquery_visible=[]\nfind_code=4\nfind_revision=4\nfind_discovered=false\nfind_found=0\nfind_percent=0\nfind_pool=12\nfind_epoch=3\nfind_improved=false\nfind_visible=[]\nstart_code=0\nstart_revision=5\nstart_discovered=false\nstart_found=0\nstart_percent=0\nstart_pool=12\nstart_epoch=3\nstart_improved=false\nstart_visible=[(32100, 32200, 7), (32101, 32203, 7)]\n".into(),
+        find: encode(0, 4, 0, vec![])?,
+        start: encode(0, 4, 0, vec![])?,
+        expected: "query_code=0\nquery_revision=4\nquery_discovered=false\nquery_found=0\nquery_percent=0\nquery_pool=12\nquery_epoch=3\nquery_improved=false\nquery_visible=[]\nfind_code=0\nfind_revision=4\nfind_discovered=false\nfind_found=0\nfind_percent=0\nfind_pool=12\nfind_epoch=3\nfind_improved=false\nfind_visible=[]\nstart_code=0\nstart_revision=4\nstart_discovered=false\nstart_found=0\nstart_percent=0\nstart_pool=12\nstart_epoch=3\nstart_improved=false\nstart_visible=[]\n".into(),
     })
 }
 
@@ -86,7 +86,7 @@ fn summary(expected: &str, prefix: &str) -> Result<String, Error> {
 }
 
 #[test]
-fn e2e_w12_replays_map_query_find_refusal_and_start() -> Result<(), Error> {
+fn e2e_w12_replays_map_query_find_and_idempotent_start() -> Result<(), Error> {
     let replies = replies()?;
     let expected = replies.expected.as_str();
     let blank = Panel {
@@ -111,29 +111,31 @@ fn e2e_w12_replays_map_query_find_refusal_and_start() -> Result<(), Error> {
     let confirmed = summary(expected, "query")?;
     assert_eq!(panel.summary, confirmed);
 
-    // FIND before START: the server's code 4 shows the refusal and keeps the confirmed summary.
-    assert_eq!(value(expected, "find_code")?, "4");
+    // FIND observes the automatically active exploration and publishes its exact state.
+    assert_eq!(value(expected, "find_code")?, "0");
     panel.pending = true;
     panel.pending_kind = 73;
     apply(&mut panel, &find, &result(CommandStatus::Accepted, &replies.find));
-    assert_eq!(panel.feedback, "No exploration in progress");
-    assert_eq!(panel.summary, confirmed);
+    assert!(!panel.pending);
+    let queried = wire::decode_result(&replies.query).map_err(|e| format!("{e:?}"))?;
+    let found = wire::decode_result(&replies.find).map_err(|e| format!("{e:?}"))?;
+    let completed_now = queried.found < 7 && found.discovered && found.found == 7;
+    assert_eq!(panel.feedback, if completed_now { "Subarea discovered! All seven points of interest found." } else { "Cyclopedia map updated" });
+    assert_eq!(panel.summary, summary(expected, "find")?);
 
-    // START: code 0 replaces the summary with the server's exploration state and visible points;
-    // code 2 (a non-premium character) shows the refusal and leaves the summary unchanged.
+    // START is an exact no-op while active. A completed run returns code 3 and
+    // preserves the already confirmed completion instead of requiring Premium.
+    let started = wire::decode_result(&replies.start).map_err(|e| format!("{e:?}"))?;
+    let expected_code = if found.discovered { 3 } else { 0 };
+    let mut expected_start = found;
+    expected_start.code = expected_code;
+    assert_eq!(started, expected_start);
+    assert_eq!(value(expected, "start_code")?, expected_code.to_string());
     panel.pending = true;
     apply(&mut panel, &start, &result(CommandStatus::Accepted, &replies.start));
-    match value(expected, "start_code")? {
-        "0" => {
-            assert_eq!(panel.feedback, "Cyclopedia map updated");
-            assert_eq!(panel.summary, summary(expected, "start")?);
-        }
-        "2" => {
-            assert_eq!(panel.feedback, "Premium required");
-            assert_eq!(panel.summary, confirmed);
-        }
-        other => return Err(format!("unexpected START code {other}").into()),
-    }
+    assert!(!panel.pending);
+    assert_eq!(panel.feedback, if expected_code == 0 { "Cyclopedia map updated" } else { "Area already discovered" });
+    assert_eq!(panel.summary, summary(expected, "start")?);
 
     // A rejected command and a truncated result leave the summary as it was.
     let before = panel.summary.clone();

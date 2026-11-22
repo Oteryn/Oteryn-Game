@@ -25,6 +25,18 @@ cleanup() {
     cp "$scratch/node-boot.log" "$diagnostics/node-boot.log"
     cp -R "$scratch/diagnostics/." "$diagnostics/"
     printf 'GAME_PLATFORM_DIAGNOSTICS=%s\n' "$diagnostics"
+    # The existing CI tee retains this bounded, sanitized excerpt. Raw logs stay private.
+    local log
+    for log in portal-harness.log identity-build.log identity.log native_ticket_and_gateway_fail_closed.log native_device_rotation_replay.log native_ticket_gateway_admits.log; do
+      [[ -f "$diagnostics/$log" ]] || continue
+      if python3 "$GAME_SOURCE/tools/qualification/game_platform/redact.py" \
+        "$diagnostics/$log" "$scratch/public.log" --public-excerpt; then
+        printf 'GAME_PLATFORM_DIAGNOSTIC_FILE %s\n' "$log"
+        cat "$scratch/public.log"
+      else
+        printf 'GAME_PLATFORM_DIAGNOSTIC_FILE %s public_log_redaction_failed\n' "$log"
+      fi
+    done
   fi
   rm -rf -- "$scratch"
 }

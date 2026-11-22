@@ -4,15 +4,68 @@ use oteryn_protocol_oteryn::{self as native, exiva};
 
 #[test]
 fn p17_named_allow_list_enables_its_mode_before_adding_the_player() -> TestResult {
-    run_transport(false)
+    run_transport(SettingsScenario::Allow { refuse_modes: false })
 }
 
 #[test]
 fn p17_refused_mode_change_does_not_add_a_player() -> TestResult {
-    run_transport(true)
+    run_transport(SettingsScenario::Allow { refuse_modes: true })
 }
 
-fn run_transport(refuse_modes: bool) -> TestResult {
+#[test]
+fn p17_malformed_modes_accepts_the_native_refusal_receipt() -> TestResult {
+    run_transport(SettingsScenario::Malformed {
+        status: CommandStatus::Rejected,
+        payload: vec![0],
+        expect_refusal: true,
+    })
+}
+
+#[test]
+fn p17_malformed_modes_rejects_accepted_refusal_payload() -> TestResult {
+    run_transport(SettingsScenario::Malformed {
+        status: CommandStatus::Accepted,
+        payload: vec![0],
+        expect_refusal: false,
+    })
+}
+
+#[test]
+fn p17_malformed_modes_rejects_empty_refusal_payload() -> TestResult {
+    run_transport(SettingsScenario::Malformed {
+        status: CommandStatus::Rejected,
+        payload: vec![],
+        expect_refusal: false,
+    })
+}
+
+#[test]
+fn p17_malformed_modes_rejects_committed_refusal_payload() -> TestResult {
+    run_transport(SettingsScenario::Malformed {
+        status: CommandStatus::Rejected,
+        payload: vec![1],
+        expect_refusal: false,
+    })
+}
+
+#[derive(Clone)]
+enum SettingsScenario {
+    Allow { refuse_modes: bool },
+    Malformed {
+        status: CommandStatus,
+        payload: Vec<u8>,
+        expect_refusal: bool,
+    },
+}
+
+fn named_allow_list() -> PlayerList {
+    PlayerList {
+        modes: 2,
+        players: vec![(v7(8, 8), "Packet Two".into())],
+    }
+}
+
+fn run_transport(scenario: SettingsScenario) -> TestResult {
     let thread = std::thread::Builder::new()
         .name("p17-settings-tls".into())
         .stack_size(64 << 20)
@@ -22,7 +75,7 @@ fn run_transport(refuse_modes: bool) -> TestResult {
                     .enable_all()
                     .build()?;
                 runtime.block_on(tokio::task::LocalSet::new().run_until(async {
-                    tokio::time::timeout(Duration::from_secs(20), exercise(refuse_modes))
+                    tokio::time::timeout(Duration::from_secs(20), exercise(scenario))
                         .await
                         .map_err(|_| "P17 settings TLS fixture deadline")?
                 }))
@@ -53,7 +106,7 @@ async fn send(stream: &mut ServerStream, bytes: &[u8]) -> TestResult {
     Ok(())
 }
 
-async fn exercise(refuse_modes: bool) -> TestResult {
+async fn exercise(scenario: SettingsScenario) -> TestResult {
     let generated = rcgen::generate_simple_self_signed(vec!["localhost".to_owned()])?;
     let certificate = generated.cert.der().clone();
     let key = PrivatePkcs8KeyDer::from(generated.signing_key.serialize_der());
@@ -67,6 +120,7 @@ async fn exercise(refuse_modes: bool) -> TestResult {
     let acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(config));
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let address = listener.local_addr()?;
+    let server_scenario = scenario.clone();
     let server = tokio::task::spawn_local(async move {
         let (tcp, _) = listener.accept().await?;
         let mut stream = acceptor.accept(tcp).await?;
@@ -105,36 +159,57 @@ async fn exercise(refuse_modes: bool) -> TestResult {
         ])? {
             send(&mut stream, &frame).await?;
         }
-        let mut state = PlayerList::default();
+        let mut state = match &server_scenario {
+            SettingsScenario::Allow { .. } => PlayerList::default(),
+            SettingsScenario::Malformed { .. } => named_allow_list(),
+        };
         let mut next_id = 7;
         loop {
             let bytes = read(&mut stream).await?;
             let command = native::decode_wire_envelope(&bytes)?.client_command(1)?;
             assert_eq!(command.command_id, next_id);
             assert_eq!(command.command_type, COMMAND_TYPE_EXIVA_SETTINGS);
-            let request = exiva::Request::decode(command.payload).ok_or("P17 request undecodable")?;
-            let mut status = CommandStatus::Accepted;
-            let payload = match request.operation {
-                exiva::Operation::SetModes if refuse_modes => {
-                    status = CommandStatus::Rejected;
-                    vec![0]
+            let (status, payload, finished) = match &server_scenario {
+                SettingsScenario::Malformed { status, payload, .. } => match next_id {
+                    7 => {
+                        assert_eq!(command.payload, &[0, 32]);
+                        assert!(exiva::Request::decode(command.payload).is_none());
+                        (*status, payload.clone(), false)
+                    }
+                    8 => {
+                        assert_eq!(command.payload, &[5]);
+                        (CommandStatus::Accepted, state.encode().ok_or("P17 List encode")?, true)
+                    }
+                    _ => return Err("unexpected malformed-refusal fixture command".into()),
+                },
+                SettingsScenario::Allow { refuse_modes } => {
+                    let request = exiva::Request::decode(command.payload)
+                        .ok_or("P17 request undecodable")?;
+                    let mut status = CommandStatus::Accepted;
+                    let payload = match request.operation {
+                        exiva::Operation::SetModes if *refuse_modes => {
+                            status = CommandStatus::Rejected;
+                            vec![0]
+                        }
+                        exiva::Operation::SetModes => {
+                            state.modes = request.modes;
+                            vec![1]
+                        }
+                        exiva::Operation::AddName => {
+                            state.players.push((v7(8, 8), request.name.ok_or("P17 name absent")?));
+                            vec![1]
+                        }
+                        exiva::Operation::List => state.encode().ok_or("P17 List encode")?,
+                        _ => return Err("unexpected P17 fixture operation".into()),
+                    };
+                    (status, payload, request.operation == exiva::Operation::List)
                 }
-                exiva::Operation::SetModes => {
-                    state.modes = request.modes;
-                    vec![1]
-                }
-                exiva::Operation::AddName => {
-                    state.players.push((v7(8, 8), request.name.ok_or("P17 name absent")?));
-                    vec![1]
-                }
-                exiva::Operation::List => state.encode().ok_or("P17 List encode")?,
-                _ => return Err("unexpected P17 fixture operation".into()),
             };
             send(&mut stream, &native::encode_command_result(
                 1, 41 + next_id - 7, next_id, status, &payload,
             )?).await?;
             next_id += 1;
-            if request.operation == exiva::Operation::List {
+            if finished {
                 return Ok::<_, Box<dyn std::error::Error>>(state);
             }
         }
@@ -149,18 +224,35 @@ async fn exercise(refuse_modes: bool) -> TestResult {
         client_build_id: "p17-settings-tls-test",
         deadline: Duration::from_secs(5),
     }).await?;
-    let result = allow_named_player(&mut client, "Packet Two").await;
+    let result = match &scenario {
+        SettingsScenario::Allow { .. } => allow_named_player(&mut client, "Packet Two").await,
+        SettingsScenario::Malformed { .. } => malformed_refused(&mut client).await,
+    };
+    // Always observe the following real List, including when the qualifier rejects
+    // the receipt. A disconnected peer or a skipped malformed request cannot pass.
     let observed = list(&mut client).await?;
     assert_eq!(server.await??, observed);
-    if refuse_modes {
-        assert!(result.is_err(), "a refused mode change must stop the allow-list edit");
-        assert_eq!(observed, PlayerList::default());
-    } else {
-        result?;
-        assert_eq!(observed, PlayerList {
-            modes: 2,
-            players: vec![(v7(8, 8), "Packet Two".into())],
-        }, "AddName alone must not be mistaken for enabling the player allow list");
+    match scenario {
+        SettingsScenario::Allow { refuse_modes: true } => {
+            assert!(result.is_err(), "a refused mode change must stop the allow-list edit");
+            assert_eq!(observed, PlayerList::default());
+        }
+        SettingsScenario::Allow { refuse_modes: false } => {
+            result?;
+            assert_eq!(observed, named_allow_list(),
+                "AddName alone must not be mistaken for enabling the player allow list");
+        }
+        SettingsScenario::Malformed { status, payload, expect_refusal } => {
+            assert_eq!(observed, named_allow_list(), "malformed SetModes must not mutate List");
+            if expect_refusal {
+                result?;
+            } else {
+                let error = result.err().ok_or("malformed SetModes accepted an invalid receipt")?;
+                assert_eq!(error.to_string(), format!(
+                    "step 5 malformed SetModes was not refused: status={status:?} payload={payload:?}"
+                ));
+            }
+        }
     }
     Ok(())
 }

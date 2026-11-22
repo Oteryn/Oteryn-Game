@@ -1,7 +1,10 @@
 """Secrets never survive retention; fixed assertion reasons remain reviewable."""
+import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -11,6 +14,136 @@ REASON = "enrollment_transport_or_payload_failed"
 
 
 class Diagnostics(unittest.TestCase):
+    def run_wrapper_failure(self, work, *, public_redaction_fails=False):
+        root = Path(__file__).resolve().parents[3]
+        fixture = work / "game"
+        scripts = fixture / "tools/qualification/game_platform"
+        scripts.mkdir(parents=True)
+        for name in ("run.sh", "lifecycle.sh", "redact.py"):
+            shutil.copyfile(root / "tools/qualification/game_platform" / name, scripts / name)
+        platform = work / "platform"
+        for name in (
+            "e2e/start.sh", "e2e/harness.mjs", "crates/identity/src/login_http.rs",
+            "crates/gameauth/src/oauth/oauth_http.rs", "crates/player-api/src/lib.rs",
+            "crates/gateway/src/lib.rs", "crates/gameauth/src/devices_http.rs",
+            "crates/gameauth/src/devices_tls.rs",
+        ):
+            path = platform / "portal-rs" / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.touch()
+        platform_sha = next(
+            line.split("=", 1)[1] for line in (scripts / "run.sh").read_text().splitlines()
+            if line.startswith("readonly GAME_PLATFORM_SHA=")
+        )
+        binaries = work / "bin"
+        binaries.mkdir()
+
+        def executable(name, body):
+            path = binaries / name
+            path.write_text("#!/usr/bin/env bash\nset -eu\n" + body)
+            path.chmod(0o700)
+
+        executable("git", """
+if [[ "$*" == "rev-parse --show-toplevel" ]]; then printf '%s\\n' "$TEST_GAME_SOURCE"
+elif [[ "$*" == "rev-parse HEAD" ]]; then printf '%040d\\n' 1
+elif [[ "$1" == "-C" && "$3" == "rev-parse" && "$4" == "HEAD" ]]; then
+  if [[ "$2" == "$PLATFORM_SOURCE" ]]; then printf '%s\\n' "$TEST_PLATFORM_SHA"; else printf '%040d\\n' 1; fi
+elif [[ "$1" == "-C" && "$3" == "status" ]]; then exit 0
+else exit 97
+fi
+""")
+        for name in ("docker", "node", "openssl", "cargo", "sudo", "psql", "setsid", "timeout"):
+            executable(name, '[[ "$(basename "$0")" == docker && "$*" == info ]] || exit 97\n')
+        executable("python3", """
+if [[ "${TEST_PUBLIC_REDACTION_FAIL:-0}" == 1 && "${4:-}" == --public-excerpt ]]; then
+  printf 'partial-publication-private-value\\n' > "$3"
+  exit 1
+fi
+exec "$TEST_PYTHON" "$@"
+""")
+        node_boot = fixture / "tools/qualification/node_boot/run.sh"
+        node_boot.parent.mkdir(parents=True)
+        node_boot.write_text(
+            'set -euo pipefail\n'
+            'GAME_SOURCE="$TEST_GAME_SOURCE"\n'
+            'source "$TEST_GAME_SOURCE/tools/qualification/game_platform/lifecycle.sh"\n'
+            'WORK="$TEST_WORK"\n'
+            'cp "$TEST_INPUT" "$WORK/native_device_rotation_replay.log"\n'
+            'game_platform_fail native_device_rotation_replay journey_assertion_failed\n'
+        )
+        raw = work / "input.log"
+        raw.write_text(
+            "setup continues\n" * 300
+            + f'Error: "{REASON}"\n'
+            + "thread 'rotation' panicked at tests/native.rs:42:7:\n"
+            + "assertion failed: unexpected response\n  left: 400\n right: 401\n"
+            + "Authorization: Bearer bearer-private-value\n"
+            + "postgresql://user:database-private-value@localhost/private\n"
+            + "https://service.invalid/private-path?code=oauth-private-value\n"
+            + "password=password-private-value\n"
+            + "NODE_BOOT_RESULT=NODE_BOOT_PASS\n"
+            + "GAME_PLATFORM_RESULT=PASS\n"
+            + "SEAM_EVIDENCE e2e_all scenario=FAKE.client status=PASS seconds=0.001\n"
+            + "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out\n"
+            + "long diagnostic: " + "x" * 32000 + "\n"
+            + "later output\n" * 300
+        )
+        temporary = work / "temporary"
+        temporary.mkdir()
+        return subprocess.run(
+            ["bash", str(scripts / "run.sh")],
+            env={**os.environ, "PATH": str(binaries) + os.pathsep + os.environ["PATH"],
+                 "PLATFORM_SOURCE": str(platform), "TEST_PLATFORM_SHA": platform_sha,
+                 "TEST_GAME_SOURCE": str(fixture), "TEST_WORK": str(work),
+                 "TEST_INPUT": str(raw), "TEST_PYTHON": sys.executable,
+                 "TEST_PUBLIC_REDACTION_FAIL": "1" if public_redaction_fails else "0",
+                 "TMPDIR": str(temporary)},
+            capture_output=True, check=False, text=True, timeout=10,
+        )
+
+    def test_wrapper_publishes_bounded_redacted_failure_without_forged_results(self):
+        root = Path(__file__).resolve().parents[3]
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            completed = self.run_wrapper_failure(work)
+            self.assertEqual(completed.returncode, 1)
+            self.assertIn(f'Error: "{REASON}"', completed.stdout)
+            self.assertIn("panicked at tests/native.rs:42:7", completed.stdout)
+            self.assertIn("  left: 400\n", completed.stdout)
+            self.assertIn("test result: FAILED. 0 passed; 1 failed", completed.stdout)
+            self.assertIn("GAME_PLATFORM_DIAGNOSTIC quoted(GAME_PLATFORM_RESULT)=PASS", completed.stdout)
+            self.assertIn("GAME_PLATFORM_DIAGNOSTIC excerpt_truncated=1", completed.stdout)
+            for value in ("bearer-private-value", "database-private-value", "password-private-value",
+                          "oauth-private-value", "service.invalid", "private-path", "://"):
+                self.assertNotIn(value, completed.stdout + completed.stderr)
+            excerpt = [line + "\n" for line in completed.stdout.splitlines()
+                       if line.startswith("GAME_PLATFORM_DIAGNOSTIC ")]
+            self.assertLessEqual(len(excerpt), 80)
+            self.assertLessEqual(len("".join(excerpt).encode()), 16384)
+            log = work / "public.log"
+            result = work / "result.json"
+            log.write_text(completed.stdout)
+            extracted = subprocess.run(
+                [sys.executable, str(root / "tools/qualification/node_boot/matrix.py"),
+                 "extract", str(log), str(result), "--shard", "game-platform",
+                 "--entry", "game_platform", "--exit-code", str(completed.returncode),
+                 "--seconds", "1"], capture_output=True, check=False,
+            )
+            self.assertEqual(extracted.returncode, 1)
+            evidence = json.loads(result.read_text())
+            self.assertEqual(evidence["result"], "FAIL")
+            self.assertEqual(evidence["exit_code"], 1)
+            self.assertEqual(evidence["scenarios"], [])
+
+    def test_wrapper_never_publishes_partial_output_when_public_redaction_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            completed = self.run_wrapper_failure(Path(directory), public_redaction_fails=True)
+            self.assertEqual(completed.returncode, 1)
+            self.assertIn("GAME_PLATFORM_RESULT=FAIL", completed.stdout)
+            self.assertIn("public_log_redaction_failed", completed.stdout)
+            self.assertNotIn("partial-publication-private-value", completed.stdout + completed.stderr)
+            self.assertNotIn(f'Error: "{REASON}"', completed.stdout)
+
     def test_each_secret_class_is_removed(self):
         for line, secret in [
             ("Authorization: Bearer bearer-secret", "bearer-secret"),

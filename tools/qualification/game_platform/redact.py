@@ -112,13 +112,47 @@ def redact(contents, evidence=()):
     return re.sub(r"(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{32,}(?![A-Za-z0-9_-])", opaque, contents)
 
 
+def public_excerpt(contents, evidence=()):
+    """Publish bounded context around the first failure, never raw retained text."""
+    sanitized = redact(contents, evidence)
+    sanitized = re.sub(r"(?i)\b[a-z][a-z0-9+.-]*://[^\s]+", MASK, sanitized)
+    sanitized = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "?", sanitized)
+    # matrix.extract searches inside lines too; quoted log text is not evidence.
+    for marker in ("NODE_BOOT_RESULT", "GAME_PLATFORM_RESULT", "SEAM_EVIDENCE"):
+        sanitized = sanitized.replace(marker, f"quoted({marker})")
+    lines = sanitized.splitlines()
+    failure = re.compile(r"(?i)panicked at|(?:^|\s)error(?:\[[^\]]+\])?:|assertion\b.*\bfailed\b|test result: FAILED")
+    first = next((index for index, line in enumerate(lines) if failure.search(line)), None)
+    start = max(0, first - 8) if first is not None else max(0, len(lines) - 78)
+    selected = lines[start:start + 78]
+    prefix = "GAME_PLATFORM_DIAGNOSTIC "
+    truncated = prefix + "excerpt_truncated=1\n"
+    output = [prefix + f"excerpt_start_line={start + 1} total_lines={len(lines)}\n"]
+    remaining = 16384 - len(output[0].encode()) - len(truncated.encode())
+    clipped = start > 0 or start + len(selected) < len(lines)
+    for line in selected:
+        encoded = (prefix + line + "\n").encode()
+        if len(encoded) > remaining:
+            if remaining > len(prefix) + 1:
+                output.append(encoded[:remaining - 1].decode(errors="ignore") + "\n")
+            clipped = True
+            break
+        output.append(encoded.decode())
+        remaining -= len(encoded)
+    if clipped:
+        output.append(truncated)
+    return "".join(output)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("source", type=Path)
     parser.add_argument("destination", type=Path)
     parser.add_argument("--evidence", action="append", default=[])
+    parser.add_argument("--public-excerpt", action="store_true")
     args = parser.parse_args()
-    sanitized = redact(args.source.read_text(errors="replace"), args.evidence)
+    contents = args.source.read_text(errors="replace")
+    sanitized = public_excerpt(contents, args.evidence) if args.public_excerpt else redact(contents, args.evidence)
     descriptor = os.open(args.destination, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     os.fchmod(descriptor, 0o600)
     with os.fdopen(descriptor, "w") as output:

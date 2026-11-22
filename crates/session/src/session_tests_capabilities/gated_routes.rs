@@ -57,6 +57,9 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         (117, &[133, 169, 178, 179, 180, 340, 491, 710], &[99]),
         (140, &[160], &[]),
         (165, &[220], &[]),
+        // Explicit optional offers retain their exact registry-owned commands.
+        (170, &[240, 436], &[]),
+        (250, &[470], &[]),
         (16, &[22], &[16]),
         (18, &[], &[17]),
         (19, &[], &[18]),

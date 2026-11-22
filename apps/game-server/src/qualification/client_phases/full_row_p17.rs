@@ -138,7 +138,7 @@ pub(super) async fn allow_named_player(
     Ok(())
 }
 
-async fn malformed_refused(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn malformed_refused(client: &mut DevClientSession) -> TestResult {
     let reply = client
         .session_mut()
         .gated_command(
@@ -147,7 +147,7 @@ async fn malformed_refused(client: &mut DevClientSession) -> TestResult {
             &[0, 32],
         )
         .await?;
-    if reply.status != CommandStatus::Rejected || !reply.payload.is_empty() {
+    if reply.status != CommandStatus::Rejected || reply.payload != [0] {
         return Err(format!(
             "step 5 malformed SetModes was not refused: status={:?} payload={:?}",
             reply.status, reply.payload

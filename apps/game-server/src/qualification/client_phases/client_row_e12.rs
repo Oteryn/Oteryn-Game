@@ -5,6 +5,8 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::hireling::management;
 
+pub(super) const ADDITIONAL_CAPABILITIES: &[u32] = &[oteryn_protocol_oteryn::hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1];
+
 fn capture(name: &str, bytes: &[u8]) {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
         return;
@@ -38,7 +40,7 @@ async fn command(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_world(clients, 0x3c).await?;
+    let mut client = connect_world_with_capabilities(clients, 0x3c, ADDITIONAL_CAPABILITIES).await?;
     if !client
         .selected_capabilities()
         .contains(&management::CAPABILITY_HIRELING_MANAGEMENT_V1)

@@ -24,6 +24,8 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::hireling::{self, management};
 
+pub(super) const ADDITIONAL_CAPABILITIES: &[u32] = &[oteryn_protocol_oteryn::hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1];
+
 const DEADLINE: Duration = Duration::from_secs(180);
 
 #[derive(Debug)]
@@ -138,7 +140,7 @@ async fn talk(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
-    let mut client = connect_world(clients, 0xe1).await.map_err(|error| {
+    let mut client = connect_world_with_capabilities(clients, 0xe1, ADDITIONAL_CAPABILITIES).await.map_err(|error| {
         verdict::record_error(verdict::IndexedError::as_error(&error));
         StepFailure {
             step: 1,

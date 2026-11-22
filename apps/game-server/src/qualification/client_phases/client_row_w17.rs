@@ -9,6 +9,8 @@ use oteryn_protocol_oteryn::arena::{
     self as wire, ArenaAction, ArenaDisposition, DromeAction, DromeResult,
 };
 
+pub(super) const ADDITIONAL_CAPABILITIES: &[u32] = &[oteryn_protocol_oteryn::arena::CAPABILITY_ARENA_V1];
+
 fn capture(name: &str, bytes: &[u8]) {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
         return;
@@ -73,7 +75,7 @@ fn drome_text(result: &DromeResult) -> String {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_world(clients, 0x8d).await?;
+    let mut client = connect_world_with_capabilities(clients, 0x8d, ADDITIONAL_CAPABILITIES).await?;
     if !client.selected_capabilities().contains(&wire::CAPABILITY_ARENA_V1) {
         return Err("step=capability arena-v1 not selected".into());
     }

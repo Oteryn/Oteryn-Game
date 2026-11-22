@@ -1,5 +1,5 @@
 //! P17 client replay capture: the real Exiva List payloads after the target denies everyone, adds
-//! a named player and removes it again, plus the empty rejection of a malformed SetModes. The
+//! a named player and removes it again, plus the one-byte refusal receipt for malformed SetModes. The
 //! consumer is `ExivaPanel::apply` and `panel_text` in
 //! `crates/client-ui/src/features/0147-exiva-settings`.
 use super::*;
@@ -85,10 +85,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     capture("p17-allowed.bin", &allowed_bytes);
 
-    let (status, refused) = settings(&mut target, &[0, 32]).await?;
-    if status != CommandStatus::Rejected || !refused.is_empty() {
-        return Err(format!("malformed SetModes: status={status:?} payload={refused:?}").into());
-    }
+    full_row_p17::malformed_refused(&mut target).await?;
     let (after_bytes, _) = list(&mut target).await?;
     if after_bytes != allowed_bytes {
         return Err("malformed SetModes changed the allow list".into());

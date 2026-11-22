@@ -32,6 +32,8 @@ use oteryn_protocol_oteryn::arena::{
     self as wire, ArenaAction, ArenaDisposition, ArenaState, DromeAction, DromeResult,
 };
 
+pub(super) const ADDITIONAL_CAPABILITIES: &[u32] = &[oteryn_protocol_oteryn::arena::CAPABILITY_ARENA_V1];
+
 struct Journey {
     started: std::time::Instant,
     completed: usize,
@@ -135,7 +137,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xb7).await?;
+    let mut client = connect_world_with_capabilities(clients, 0xb7, ADDITIONAL_CAPABILITIES).await?;
     if !client.selected_capabilities().contains(&wire::CAPABILITY_ARENA_V1) {
         return Err("step-1 selected-capabilities missing arena-v1".into());
     }
@@ -182,7 +184,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
 
     logout(&mut client).await?;
     drop(client);
-    let mut client = connect_world(clients, 0xb8).await?;
+    let mut client = connect_world_with_capabilities(clients, 0xb8, ADDITIONAL_CAPABILITIES).await?;
     let after_relog = command(&mut client, ArenaAction::Status).await?;
     if after_relog.state != initial.state {
         return Err(format!(

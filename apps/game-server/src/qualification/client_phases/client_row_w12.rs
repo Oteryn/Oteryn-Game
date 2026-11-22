@@ -1,5 +1,5 @@
-//! W12 client replay capture: the real Cyclopedia map QUERY reply, the FIND-before-START refusal
-//! (code 4), the START reply (code 0 premium or 2 non-premium) and a malformed intent refusal.
+//! W12 client replay capture: automatic discovery QUERY/FIND, idempotent legacy START
+//! (or already-discovered code 3), and a malformed intent refusal.
 //! The consumer is `apply` in `apps/client/src/features/0057-cyclopedia-map/protocol.rs`.
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -18,6 +18,7 @@ async fn exchange(
     client: &mut DevClientSession,
     operation: u8,
     file: &str,
+    record: &mut impl FnMut(&str, &[u8]),
 ) -> TestResult<wire::MapResult> {
     let (kind, payload) = wire::request(operation, 0).map_err(|_| "map request encoder")?;
     let reply = client
@@ -27,7 +28,7 @@ async fn exchange(
     if reply.status != CommandStatus::Accepted {
         return Err(format!("map operation {operation} status={:?}", reply.status).into());
     }
-    capture(file, &reply.payload);
+    record(file, &reply.payload);
     wire::decode_result(&reply.payload).map_err(|_| format!("operation {operation} result malformed").into())
 }
 
@@ -46,17 +47,49 @@ fn describe(prefix: &str, result: &wire::MapResult) -> String {
     )
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+async fn observe_initial_discovery<F, Fut>(
+    client: &mut DevClientSession,
+    record: &mut impl FnMut(&str, &[u8]),
+    witness: F,
+) -> TestResult<(wire::MapResult, wire::MapResult, wire::MapResult)>
+where
+    F: FnOnce(ActorPosition, wire::MapResult) -> Fut,
+    Fut: Future<Output = TestResult<u8>>,
+{
+    let query = exchange(client, 0, "w12-query.bin", record).await?;
+    let position = client.world_spatial().actor_position;
+    let find = exchange(client, 3, "w12-find.bin", record).await?;
+    if client.world_spatial().actor_position != position {
+        return Err("position changed during stationary discovery check".into());
+    }
+    super::full_row_w12::validate_initial_find(&query, &find, position, witness).await?;
+    let start = exchange(client, 1, "w12-start.bin", record).await?;
+    if client.world_spatial().actor_position != position {
+        return Err("position changed during stationary discovery check".into());
+    }
+    super::full_row_w12::validate_legacy_start(&find, &start)?;
+    Ok((query, find, start))
+}
+
+#[cfg(test)]
+pub(super) async fn observe_initial_discovery_for_test<F, Fut>(
+    client: &mut DevClientSession,
+    record: &mut impl FnMut(&str, &[u8]),
+    witness: F,
+) -> TestResult<(wire::MapResult, wire::MapResult, wire::MapResult)>
+where
+    F: FnOnce(ActorPosition, wire::MapResult) -> Fut,
+    Fut: Future<Output = TestResult<u8>>,
+{
+    observe_initial_discovery(client, record, witness).await
+}
+
+async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
     let mut client = connect_world(clients, 0xfc).await?;
-    let query = exchange(&mut client, 0, "w12-query.bin").await?;
-    let find = exchange(&mut client, 3, "w12-find.bin").await?;
-    if find.code != 4 {
-        return Err(format!("FIND before START was not refused with code 4: {find:?}").into());
-    }
-    let start = exchange(&mut client, 1, "w12-start.bin").await?;
-    if !matches!(start.code, 0 | 2) {
-        return Err(format!("START returned neither success nor premium refusal: {start:?}").into());
-    }
+    let mut record = capture;
+    let (query, find, start) = observe_initial_discovery(&mut client, &mut record, |position, observed| async move {
+        super::full_row_w12::completed_area_percentage(clients, world, position, &observed).await
+    }).await?;
     let refused = client
         .session_mut()
         .gated_command(
@@ -78,8 +111,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     Ok(expected.replace('\n', ";").replace(' ', ""))
 }
 
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients, world))).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W12.client status=CAPTURED evidence={observed}"
         )),
