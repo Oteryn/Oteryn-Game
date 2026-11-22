@@ -819,7 +819,7 @@ pub fn held_source_reservation_for_test(
     session: GameSessionId,
     event: [u8; 16],
     binding: [u8; 32],
-) -> Result<impl SourceActorReservationProof, CarrierError> {
+) -> Result<impl SourceActorReservationProof + use<>, CarrierError> {
     Ok(Proof {
         actor: player,
         session,
