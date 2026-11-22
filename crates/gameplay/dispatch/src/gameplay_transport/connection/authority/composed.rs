@@ -986,6 +986,28 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
+    async fn mana_shield_remaining(&self, admitted: AdmittedSession) -> Option<u32> {
+        let actor = admitted.runtime_actor?;
+        let session = admitted.game_session_id;
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        if runtime
+            .player_control_facts(actor, session)
+            .ok()?
+            .control_loss
+            .is_some()
+        {
+            return None;
+        }
+        let state = states.get(&runtime, actor, session)?;
+        Some(
+            state
+                .owned_conditions()
+                .mana_shield_at(self.owner_now().get())
+                .unwrap_or(0),
+        )
+    }
+
     async fn turn_actor_valid(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
@@ -1858,6 +1880,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         owner.reconcile_terminal_session(admitted).await
     }
 
+    async fn choose_offline_training(
+        &self,
+        admitted: AdmittedSession,
+        family: usize,
+    ) -> Option<oteryn_protocol_oteryn::loop_training::TrainingResult> {
+        self.choose_offline_training(admitted, family).await
+    }
+    async fn offline_training_skills(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::loop_training::OfflineTrainingSkills> {
+        self.offline_training_skills(admitted).await
+    }
     async fn offline_training(
         &self,
         admitted: AdmittedSession,

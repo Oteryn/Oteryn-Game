@@ -41,6 +41,40 @@ pub const CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1: u32 = 487;
 pub const MAX_VOCATION_ID: u8 = 11;
 /// Capability 488: Recent Deaths rows carry structured death details.
 pub const CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1: u32 = 488;
+
+/// Opt-in live movement speed suffix on the General Stats response.
+pub const CAPABILITY_CYCLOPEDIA_MOVEMENT_SPEED_V1: u32 = 603;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MovementSpeed {
+    pub current: u16,
+    pub base: u16,
+}
+
+impl MovementSpeed {
+    pub fn encode_suffix(value: Option<Self>, bytes: &mut Vec<u8>) {
+        bytes.push(u8::from(value.is_some()));
+        if let Some(value) = value {
+            bytes.extend_from_slice(&value.current.to_le_bytes());
+            bytes.extend_from_slice(&value.base.to_le_bytes());
+        }
+    }
+
+    pub fn decode_suffix(bytes: &[u8]) -> Result<Option<Self>, TabWireError> {
+        match bytes {
+            [0] => Ok(None),
+            [1, a, b, c, d] => {
+                let current = u16::from_le_bytes([*a, *b]);
+                let base = u16::from_le_bytes([*c, *d]);
+                if current == 0 || base == 0 {
+                    return Err(TabWireError);
+                }
+                Ok(Some(Self { current, base }))
+            }
+            _ => Err(TabWireError),
+        }
+    }
+}
 /// The byte bound of a killer name in a structured death row.
 pub const MAX_DEATH_NAME_BYTES: usize = 64;
 pub const MAX_BADGES_REQUEST_BYTES: usize = 0;

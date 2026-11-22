@@ -22,6 +22,19 @@ pub(in crate::gameplay_transport) struct MovementEquipmentRead {
     delta: i32,
 }
 impl MovementEquipmentRead {
+    pub(super) fn observed_delta(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        states: &ChannelSpellStates,
+        actor: ExactActorRef,
+        fence: CurrentCharacterItemFence,
+    ) -> Option<i32> {
+        if self.read.fence() != &fence {
+            return None;
+        }
+        self.current_delta(runtime, states, actor, fence.game_session_id)
+    }
+
     /// Call under runtime -> states locks, before movement admission. A buffered
     /// wake obtains a new read; its predecessor includes the existing buffer.
     pub(in crate::gameplay_transport) fn current_delta(

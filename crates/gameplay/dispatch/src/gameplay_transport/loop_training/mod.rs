@@ -1,4 +1,4 @@
-//! LOOP-TRAIN-1 server composition. No client-selected skill, rate, clock or charge count.
+//! LOOP-TRAIN-1 server composition. Rates, clocks and charges stay server-owned.
 mod exercise;
 #[cfg(test)]
 pub(in crate::gameplay_transport) use exercise::EXERCISE_READBACK_BARRIER;
@@ -13,7 +13,10 @@ use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::loop_training::{TrainingContext, TrainingLogout};
 use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_gameplay_progression::loop_training::TrainingRates;
-use oteryn_protocol_oteryn::loop_training::{CAPABILITY_TRAINING_V1, TrainingResult};
+use oteryn_protocol_oteryn::loop_training::{
+    CAPABILITY_OFFLINE_TRAINING_CHOICE_V1, CAPABILITY_TRAINING_V1, OfflineTrainingSkills,
+    TrainingResult,
+};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 
@@ -456,6 +459,55 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 
+    pub(in crate::gameplay_transport) async fn offline_training_skills(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<OfflineTrainingSkills> {
+        use oteryn_protocol_oteryn::character_info::PageRequest;
+        use oteryn_protocol_oteryn::cyclopedia_character::{CharacterTab, TabView};
+        self.bundle_map()?;
+        self.training_context()?;
+        let fence = admitted.item_fence?;
+        if admitted.controller.is_none()
+            || fence.game_session_id != admitted.game_session_id
+            || fence.connection_generation.get() != admitted.continuity.connection_generation
+        {
+            return None;
+        }
+        let TabView::GeneralStats(stats) = self
+            .root
+            .read_cyclopedia_character_tab(
+                self.character,
+                self.holder,
+                fence,
+                fence.character_id,
+                CharacterTab::GeneralStats,
+                PageRequest::new(0, 1)?,
+                super::character_info::unix_now_ms(),
+            )
+            .await
+            .ok()?
+        else {
+            return None;
+        };
+        let [fist, club, sword, axe, distance, ..] = stats.skills;
+        Some(OfflineTrainingSkills {
+            levels: [stats.magic_level, fist, club, sword, axe, distance],
+            pool_minutes: stats.offline_training_minutes,
+        })
+    }
+
+    pub(in crate::gameplay_transport) async fn choose_offline_training(
+        &self,
+        admitted: AdmittedSession,
+        family: usize,
+    ) -> Option<TrainingResult> {
+        if self.bundle_map().is_none() || self.training_context().is_none() {
+            return Some(TrainingResult::REFUSED);
+        }
+        self.start_offline_training(admitted, family).await
+    }
+
     pub(in crate::gameplay_transport) async fn offline_training(
         &self,
         admitted: AdmittedSession,
@@ -465,19 +517,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(context) = self.training_context() else {
             return Some(TrainingResult::REFUSED);
         };
-        let (Some(actor), Some(controller), Some(fence)) = (
-            admitted.runtime_actor,
-            admitted.controller,
-            command.item_fence,
-        ) else {
+        let Some(actor) = admitted.runtime_actor else {
             return Some(TrainingResult::REFUSED);
         };
+        if command.item_fence != admitted.item_fence {
+            return Some(TrainingResult::REFUSED);
+        }
         let Some(target) = self.training_target(actor, command, target, 1).await else {
             return Some(TrainingResult::REFUSED);
         };
         let Some(family) = context.rates.statues.get(&target.production_key).copied() else {
             return Some(TrainingResult::REFUSED);
         };
+        self.start_offline_training(admitted, family).await
+    }
+
+    async fn start_offline_training(
+        &self,
+        admitted: AdmittedSession,
+        family: usize,
+    ) -> Option<TrainingResult> {
+        let (Some(actor), Some(controller), Some(fence)) = (
+            admitted.runtime_actor,
+            admitted.controller,
+            admitted.item_fence,
+        ) else {
+            return Some(TrainingResult::REFUSED);
+        };
+        if fence.game_session_id != admitted.game_session_id
+            || fence.connection_generation.get() != admitted.continuity.connection_generation
+        {
+            return Some(TrainingResult::REFUSED);
+        }
         let Some(premium) = self.premium_coordinator else {
             return Some(TrainingResult::REFUSED);
         };
@@ -634,6 +705,15 @@ pub(super) fn offer(
         id: CAPABILITY_TRAINING_V1,
         requires: &[4, 18, 21],
     });
+    let choice = OfferedCapability {
+        id: CAPABILITY_OFFLINE_TRAINING_CHOICE_V1,
+        requires: &[CAPABILITY_TRAINING_V1],
+    };
+    let index = offer
+        .iter()
+        .position(|entry| entry.id > choice.id)
+        .unwrap_or(offer.len());
+    offer.insert(index, choice);
     let offer = Box::leak(offer.into_boxed_slice());
     cache.push((base, offer));
     offer

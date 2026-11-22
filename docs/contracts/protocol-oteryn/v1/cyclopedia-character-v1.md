@@ -352,3 +352,20 @@ With capability 506 selected, command 388 also accepts selector 135 from
 legacy selectors keep their existing grammars and bounds. The reply adds the
 active content names for exactly the server-filtered custody page. Selector 135
 is rejected without 506; legacy selector 130 and its reply remain unchanged.
+
+## Current and base movement speed (capability 603)
+
+With `CYCLOPEDIA_MOVEMENT_SPEED_V1` selected alongside 199, command 388
+appends a movement speed suffix to tab 1 after the unchanged body and the
+vocation byte when 487 was selected. The suffix is `0:u8` when unavailable
+or `1:u8, current:u16le, base:u16le` when observed. Both speeds are positive
+and use native Movement units. Other tabs and sessions without 603 retain
+their existing bytes and the extended reply bound remains 32768.
+
+The live Channel observation uses the same base speed, spell and runtime
+conditions, equipment and mounted speed as paced steps. Foreign characters,
+actors outside the Channel Movement owner, and unavailable or stale
+equipment observations return the unavailable tag. No movement fact is
+persisted. The two values correspond to Crystal's `getSpeed()` and
+`getBaseSpeed()` in
+[ProtocolGame::sendCyclopediaCharacterGeneralStats](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp#L4409-L4411).

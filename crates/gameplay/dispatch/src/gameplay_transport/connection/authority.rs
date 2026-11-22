@@ -74,6 +74,13 @@ pub trait FreshAdmissionAuthority {
         None
     }
 
+    fn mana_shield_remaining(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<u32>> {
+        async { None }
+    }
+
     fn observe_sounds(
         &self,
         _actor: ExactActorRef,
@@ -830,6 +837,20 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn choose_offline_training(
+        &self,
+        _admitted: AdmittedSession,
+        _family: usize,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::loop_training::TrainingResult>> {
+        async { Some(oteryn_protocol_oteryn::loop_training::TrainingResult::REFUSED) }
+    }
+    fn offline_training_skills(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::loop_training::OfflineTrainingSkills>>
+    {
+        async { None }
+    }
     fn offline_training(
         &self,
         _admitted: AdmittedSession,

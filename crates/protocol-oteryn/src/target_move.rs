@@ -4,6 +4,7 @@ use crate::world_spatial_entities::EntityRef;
 
 pub const CAPABILITY_TARGET_MOVE_V1: u32 = 64;
 pub const COMMAND_TYPE_TARGET_MOVE_INTENT: u32 = 81;
+pub const COMMAND_TYPE_FOLLOW_STATE: u32 = 6371;
 pub const MAX_TARGET_MOVE_BYTES: usize = 48;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

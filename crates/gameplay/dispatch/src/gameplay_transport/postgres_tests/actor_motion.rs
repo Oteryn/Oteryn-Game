@@ -166,6 +166,36 @@ fn scenario(position_before_change: bool) -> TestResult {
                 "forecast equipment must be available under the same lock"
             );
             writer.rollback().await?;
+            use super::cyclopedia_fixtures::support::exchange;
+            use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+            let offers = [
+                OfferedCapability { id: 199, requires: &[] },
+                OfferedCapability { id: 603, requires: &[199] },
+            ];
+            let mut stats = admitted;
+            stats.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
+            stats.continuity.selected_capabilities = SelectedCapabilities::select(&offers, &[199])
+                .ok_or("legacy cyclopedia capability")?;
+            let request = [1, 0, 0, 1];
+            let (status, before) = exchange(&owner, &mut stats, 1, 388, &request).await?;
+            assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+            stats.continuity.selected_capabilities = SelectedCapabilities::select(&offers, &[199, 603])
+                .ok_or("speed capability")?;
+            let (status, after) = exchange(&owner, &mut stats, 2, 388, &request).await?;
+            assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+            assert_eq!(after.get(..before.len()), Some(before.as_slice()));
+            let speed = oteryn_protocol_oteryn::cyclopedia_character::MovementSpeed::decode_suffix(
+                after.get(before.len()..).ok_or("speed suffix")?,
+            ).map_err(debug)?.ok_or("current and base speed")?;
+            let state_base = {
+                let runtime = dependencies.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                states.get(&runtime, dependencies.actor, admitted.game_session_id)
+                    .ok_or("movement owner")?.owned_base_speed()
+            };
+            assert_eq!(u32::from(speed.base), state_base);
+            assert!(speed.current > speed.base, "the equipped boots contribute to current speed");
+
             assert_mismatched_interpretation(&harness, &owner, &dependencies).await?;
         }
         let entity = appearance::EntityRef {
