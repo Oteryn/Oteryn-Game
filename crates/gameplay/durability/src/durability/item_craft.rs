@@ -775,15 +775,13 @@ async fn write_with_skinning<C: ItemLoopContent>(
         progress
     } else if conversion.recipe.starts_with("oteryn:reward-bag.") {
         achievement_granters::christmas_bundle(&definition.production_key)
-    } else if conversion.recipe.starts_with("oteryn:item-conversion.bake-6276-") {
-        // TibiaWiki page 62798, revision 753222: one plain cake baked.
-        Some(achievement_granters::THE_CAKES_THE_TRUTH)
     } else if conversion.recipe.starts_with("oteryn:item-conversion.cookie-tray-") {
         // TibiaWiki page 62446, revision 753128: one bake, regardless of cookie count.
         Some(achievement_granters::COOKIE_MONSTER)
+    } else if conversion.recipe == "oteryn:fishing.global.standard" {
+        Some(achievement_granters::HERE_FISHY_FISHY)
     } else {
-        (conversion.recipe == "oteryn:fishing.global.standard")
-            .then_some(achievement_granters::HERE_FISHY_FISHY)
+        achievement_granters::baking(&conversion.recipe)
     };
     if let Some(achievement) = achievement {
         super::account_achievement::add_progress(
