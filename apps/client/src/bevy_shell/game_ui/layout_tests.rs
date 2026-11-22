@@ -486,3 +486,20 @@ fn c2d_held_geometry_lock_allows_frames_while_save_waits() -> TestResult {
     assert!(WindowLayout::load(&path)?.bounds("console").is_some());
     Ok(())
 }
+
+#[test]
+fn concurrent_height_edit_preserves_large_width() -> std::io::Result<()> {
+    let dir = tempfile::tempdir()?;
+    let path = Some(dir.path().join("layout.json"));
+    let mut initial = LayoutStore::load(path.clone());
+    initial.remember_bounds(WINDOW, [0, 0, 1200, 720]);
+    drop(initial);
+    let mut wide = LayoutStore::load(path.clone());
+    let mut tall = LayoutStore::load(path.clone());
+    wide.remember_bounds(WINDOW, [0, 0, 5000, 720]);
+    drop(wide);
+    tall.remember_bounds(WINDOW, [0, 0, 1200, 900]);
+    drop(tall);
+    assert_eq!(LayoutStore::load(path).window(), Some([0, 0, 5000, 900]));
+    Ok(())
+}
