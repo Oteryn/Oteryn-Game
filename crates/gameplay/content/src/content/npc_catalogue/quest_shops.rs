@@ -12,6 +12,15 @@ use std::sync::OnceLock;
 mod native_fields;
 
 const SOURCE: &str = include_str!("../../../../../../content/quests/shared-quest-shops.json");
+const FARMINE: &str = include_str!("../../../../../../content/npcs/farmine-quest-shops.json");
+
+fn ordinary_service(npc: &str) -> Option<&'static str> {
+    match npc {
+        "oteryn:npc.esrik" => Some("oteryn:service.trade.esrik"),
+        "oteryn:npc.pompan" => Some("oteryn:service.trade.pompan"),
+        _ => None,
+    }
+}
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -107,7 +116,11 @@ fn parse(source: &str) -> Result<Vec<Shop>, &'static str> {
 pub fn shops() -> Result<&'static [Shop], &'static str> {
     static SHOPS: OnceLock<Result<Vec<Shop>, &'static str>> = OnceLock::new();
     SHOPS
-        .get_or_init(|| parse(SOURCE))
+        .get_or_init(|| {
+            let mut shops = parse(SOURCE)?;
+            shops.extend(parse(FARMINE)?);
+            Ok(shops)
+        })
         .as_ref()
         .map(Vec::as_slice)
         .map_err(|e| *e)
@@ -125,6 +138,14 @@ pub fn required<'a>(
     let Some(shop) = catalogue.iter().find(|s| s.npc == npc) else {
         return Ok(None);
     };
+    if ordinary_service(npc).is_some()
+        && !shop
+            .offers
+            .iter()
+            .any(|offer| offer.item == *item && offer.direction == direction)
+    {
+        return Ok(None);
+    }
     shop.offers
         .iter()
         .find(|o| {
@@ -152,6 +173,7 @@ pub fn book_digest(previous: &str) -> String {
         .chain_update(b"oteryn:quest-shops:v1\0")
         .chain_update(previous.as_bytes())
         .chain_update(SOURCE.as_bytes())
+        .chain_update(FARMINE.as_bytes())
         .finalize()
         .iter()
         .map(|b| format!("{b:02x}"))
@@ -184,6 +206,22 @@ pub(super) fn declarations(
         let ProjectV2Declaration::Npc { services, .. } = &mut npc else {
             continue;
         };
+        if let Some(key) = ordinary_service(&shop.npc)
+            && let Some((reference, declaration)) = records
+                .iter()
+                .find(|(r, _)| r.family == ProjectV2Family::Service && r.key == key)
+        {
+            let mut declaration = (**declaration).clone();
+            if let ProjectV2Declaration::Service { offers, .. } = &mut declaration {
+                offers.retain(|offer| {
+                    !shop
+                        .offers
+                        .iter()
+                        .any(|gated| gated.item == offer.item && gated.direction == offer.direction)
+                });
+                additions.push(((**reference).clone(), declaration));
+            }
+        }
         services.push(service.clone());
         additions.push(((**reference).clone(), npc));
         additions.push((

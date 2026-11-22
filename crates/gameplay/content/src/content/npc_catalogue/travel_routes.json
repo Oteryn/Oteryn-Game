@@ -2565,6 +2565,58 @@
     "carpet": true
   },
   {
+    "key": "oteryn:service.travel.tarak_inner/monument_tower",
+    "keyword": "monument tower",
+    "price": 50,
+    "premium": false,
+    "x": 32940,
+    "y": 31182,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_inner/passage",
+    "keyword": "passage",
+    "price": 50,
+    "premium": false,
+    "x": 32940,
+    "y": 31182,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_inner/trip",
+    "keyword": "trip",
+    "price": 50,
+    "premium": false,
+    "x": 32940,
+    "y": 31182,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_sunken/passage",
+    "keyword": "passage",
+    "price": 0,
+    "premium": false,
+    "x": 32916,
+    "y": 31199,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.thorgrin/cormaya",
     "keyword": "cormaya",
     "price": 110,

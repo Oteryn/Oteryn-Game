@@ -1,7 +1,9 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing. NODEBOOT-SAM: Sam Thais equipment trade at the agreeing Canary/Crystal promotion-candidate cell 32361,32198,z7 for node-boot NPC and player trade. QB-1: Hunter (Legola), Mage and Summoner (Angelina, Lynda, Myra, Zoltan) and Wizard (Lugri, The Queen of the Banshees) outfit hand-ins at their single agreeing promotion-candidate cells. QB-2: Cave Explorer (Gnommander, a source-backed solid contact), Revenant (Flickering Soul), Hand of the Inquisition (Grof, Kulag, Miles, Tim and Walter the Guard) at their single agreeing promotion-candidate cells. QB-3: mainland Citizen (Lubo, Hanna) and Warrior (Trisha, Cornelia) addon hand-ins at their agreeing promotion-candidate cells; Hanna's alternate example-map cell is excluded by explicit selection. QB Barbarian Outfits: Bron and Ajax near Northport at their single agreeing promotion-candidate cells (Bron as a source-backed block_solid_contact: no adjacent clear single-item ground). QCX13: Frodo and Mordecai at their retained promotion-candidate cells for the existing seller offers. QH-TOP-OF-THE-CITY: Iriana at her agreeing Canary/Crystal candidate cell; Jimmy at the TibiaWiki and Polish TibiaWiki cell 32857,31383,6, on the passage stub the qh_jimmy_stub world overlay restores (owner evidence 2026-11-17). QC-SINATUKI: Sinatuki (Nibelor, Sinatuki Quest) at the agreeing Canary/Crystal promotion-candidate cell 32425,31085,z7.",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing. NODEBOOT-SAM: Sam Thais equipment trade at the agreeing Canary/Crystal promotion-candidate cell 32361,32198,z7 for node-boot NPC and player trade. QB-1: Hunter (Legola), Mage and Summoner (Angelina, Lynda, Myra, Zoltan) and Wizard (Lugri, The Queen of the Banshees) outfit hand-ins at their single agreeing promotion-candidate cells. QB-2: Cave Explorer (Gnommander, a source-backed solid contact), Revenant (Flickering Soul), Hand of the Inquisition (Grof, Kulag, Miles, Tim and Walter the Guard) at their single agreeing promotion-candidate cells. QB-3: mainland Citizen (Lubo, Hanna) and Warrior (Trisha, Cornelia) addon hand-ins at their agreeing promotion-candidate cells; Hanna's alternate example-map cell is excluded by explicit selection. QB Barbarian Outfits: Bron and Ajax near Northport at their single agreeing promotion-candidate cells (Bron as a source-backed block_solid_contact: no adjacent clear single-item ground). QCX13: Frodo and Mordecai at their retained promotion-candidate cells for the existing seller offers. QH-TOP-OF-THE-CITY: Iriana at her agreeing Canary/Crystal candidate cell; Jimmy at the TibiaWiki and Polish TibiaWiki cell 32857,31383,6, on the passage stub the qh_jimmy_stub world overlay restores (owner evidence 2026-11-17). QC-SINATUKI: Sinatuki (Nibelor, Sinatuki Quest) at the agreeing Canary/Crystal promotion-candidate cell 32425,31085,z7. Regional population for Yalahar, Farmine, Gray Beach, Rathleton, Roshamuul, Issavi and Marapur at the pinned Crystal Global cells or retained TibiaWiki fallback cells.",
   "npcs": [
+    "oteryn:npc.a_beggar",
+    "oteryn:npc.a_grumpy_cyclops",
     "oteryn:npc.a_seagull",
     "oteryn:npc.a_sleeping_dragon",
     "oteryn:npc.a_strange_chalice",
@@ -9,31 +11,52 @@
     "oteryn:npc.a_sweaty_cyclops",
     "oteryn:npc.ajax",
     "oteryn:npc.al_dee",
+    "oteryn:npc.alaistar",
     "oteryn:npc.aldo",
     "oteryn:npc.alexander",
+    "oteryn:npc.alternative_rock",
+    "oteryn:npc.alyxo",
     "oteryn:npc.amanda",
     "oteryn:npc.ambassador_manop",
+    "oteryn:npc.ambassador_of_rathleton",
     "oteryn:npc.amber",
+    "oteryn:npc.amra",
     "oteryn:npc.angelina",
     "oteryn:npc.anna",
     "oteryn:npc.ariella",
+    "oteryn:npc.armenius",
     "oteryn:npc.asima",
+    "oteryn:npc.asnarus",
+    "oteryn:npc.asphota",
     "oteryn:npc.asralius",
+    "oteryn:npc.atur",
     "oteryn:npc.aurelia",
+    "oteryn:npc.auron",
     "oteryn:npc.avar_tar",
+    "oteryn:npc.azalea",
+    "oteryn:npc.barazbaz",
+    "oteryn:npc.barnabas_dee",
+    "oteryn:npc.barry",
     "oteryn:npc.billy",
     "oteryn:npc.blind_orc",
     "oteryn:npc.brewster",
     "oteryn:npc.briasol",
     "oteryn:npc.broken_servant_sentry",
     "oteryn:npc.bron",
+    "oteryn:npc.bruce",
     "oteryn:npc.buddel",
     "oteryn:npc.cael",
+    "oteryn:npc.captain_chelop",
+    "oteryn:npc.captain_cookie",
+    "oteryn:npc.captain_harava",
     "oteryn:npc.captain_waverider",
     "oteryn:npc.captain_waverider_island",
     "oteryn:npc.carlos",
     "oteryn:npc.charles",
+    "oteryn:npc.chavis",
     "oteryn:npc.chip",
+    "oteryn:npc.christine",
+    "oteryn:npc.chuckles",
     "oteryn:npc.cipfried",
     "oteryn:npc.cledwyn",
     "oteryn:npc.cornelia",
@@ -41,110 +64,245 @@
     "oteryn:npc.dallheim",
     "oteryn:npc.dedoras",
     "oteryn:npc.dermot",
+    "oteryn:npc.dhira",
     "oteryn:npc.dixi",
     "oteryn:npc.domizian",
+    "oteryn:npc.dorbin",
+    "oteryn:npc.doubleday",
+    "oteryn:npc.dr_merlay",
+    "oteryn:npc.dream_butterfly",
+    "oteryn:npc.dregor",
+    "oteryn:npc.drystan_wildweed",
     "oteryn:npc.duncan",
+    "oteryn:npc.eathar",
     "oteryn:npc.edala",
+    "oteryn:npc.edmund",
+    "oteryn:npc.eighty",
     "oteryn:npc.elane",
+    "oteryn:npc.elbert",
+    "oteryn:npc.eliyas",
+    "oteryn:npc.elliott",
     "oteryn:npc.emael",
+    "oteryn:npc.emily",
     "oteryn:npc.enpa_deia_pema",
     "oteryn:npc.eremo",
+    "oteryn:npc.eruaran",
+    "oteryn:npc.eshaya",
+    "oteryn:npc.esrik",
+    "oteryn:npc.ethan",
     "oteryn:npc.ezebeth",
+    "oteryn:npc.faloriel",
+    "oteryn:npc.fayla",
+    "oteryn:npc.fillias",
     "oteryn:npc.flickering_soul",
+    "oteryn:npc.flint",
+    "oteryn:npc.flora",
     "oteryn:npc.frank_the_plank",
     "oteryn:npc.frodo",
+    "oteryn:npc.fyodor",
     "oteryn:npc.gail",
     "oteryn:npc.gamon",
+    "oteryn:npc.gederas",
     "oteryn:npc.gelidrazah_s_thirst",
+    "oteryn:npc.giri",
     "oteryn:npc.gnommander",
+    "oteryn:npc.golem_guardian",
+    "oteryn:npc.graham",
+    "oteryn:npc.gree_dee",
     "oteryn:npc.grizzly_adams",
     "oteryn:npc.grof_the_guard",
+    "oteryn:npc.guard_bazaya",
+    "oteryn:npc.guard_inurta",
+    "oteryn:npc.guard_saros",
+    "oteryn:npc.guard_senet",
+    "oteryn:npc.guide_edna",
     "oteryn:npc.guide_jonathan",
+    "oteryn:npc.guide_meruka",
     "oteryn:npc.guide_tiko",
+    "oteryn:npc.haani",
     "oteryn:npc.habdel",
+    "oteryn:npc.hal",
     "oteryn:npc.hanna",
     "oteryn:npc.henricus",
+    "oteryn:npc.hexel",
     "oteryn:npc.hjaern",
     "oteryn:npc.humphrey",
     "oteryn:npc.hyacinth",
+    "oteryn:npc.inkaef",
+    "oteryn:npc.iptar_sin",
     "oteryn:npc.iriana",
     "oteryn:npc.irmana",
     "oteryn:npc.ishina",
+    "oteryn:npc.isika",
     "oteryn:npc.isimov",
     "oteryn:npc.ivalisse",
     "oteryn:npc.jack_springer",
+    "oteryn:npc.jacob",
+    "oteryn:npc.javala",
     "oteryn:npc.jimmy",
+    "oteryn:npc.jondrin",
     "oteryn:npc.jorge",
+    "oteryn:npc.jossel",
+    "oteryn:npc.julius",
+    "oteryn:npc.kallimae",
+    "oteryn:npc.karith",
     "oteryn:npc.kasmir",
     "oteryn:npc.kawill",
     "oteryn:npc.kepar",
+    "oteryn:npc.khanna",
     "oteryn:npc.king_tibianus",
+    "oteryn:npc.klesar",
+    "oteryn:npc.kromrek",
     "oteryn:npc.kulag_the_guard",
     "oteryn:npc.lai",
     "oteryn:npc.legola",
     "oteryn:npc.lily",
+    "oteryn:npc.lisander",
+    "oteryn:npc.lorietta",
     "oteryn:npc.lubo",
     "oteryn:npc.lugri",
     "oteryn:npc.lynda",
     "oteryn:npc.maealil",
     "oteryn:npc.marina",
+    "oteryn:npc.maris",
     "oteryn:npc.maris_mistrock",
+    "oteryn:npc.maritima",
+    "oteryn:npc.maro",
+    "oteryn:npc.marvin",
+    "oteryn:npc.maun",
     "oteryn:npc.mayor_pocaro",
+    "oteryn:npc.melian",
+    "oteryn:npc.menacing_mummy",
     "oteryn:npc.miles_the_guard",
     "oteryn:npc.minzy",
     "oteryn:npc.miraia",
+    "oteryn:npc.moe",
+    "oteryn:npc.morax",
     "oteryn:npc.mordecai",
     "oteryn:npc.morgan",
+    "oteryn:npc.morpel",
+    "oteryn:npc.mortis",
+    "oteryn:npc.mr_brandon",
+    "oteryn:npc.mr_west",
     "oteryn:npc.muriel",
+    "oteryn:npc.murim",
     "oteryn:npc.myra",
+    "oteryn:npc.narsai",
+    "oteryn:npc.nicholas",
+    "oteryn:npc.nilavarna",
+    "oteryn:npc.ninev",
+    "oteryn:npc.ninos",
+    "oteryn:npc.nipuna",
     "oteryn:npc.norf",
     "oteryn:npc.norma",
     "oteryn:npc.norman_the_foreman",
+    "oteryn:npc.normod",
     "oteryn:npc.obi",
+    "oteryn:npc.oiriz",
+    "oteryn:npc.old_rock_boy",
+    "oteryn:npc.oliver",
+    "oteryn:npc.ongulf",
+    "oteryn:npc.orc_berserker",
+    "oteryn:npc.ortheus",
     "oteryn:npc.palimuth",
     "oteryn:npc.para_norbert",
     "oteryn:npc.paulie",
     "oteryn:npc.percybald",
+    "oteryn:npc.peremin",
+    "oteryn:npc.peter",
+    "oteryn:npc.pompan",
+    "oteryn:npc.prezil",
+    "oteryn:npc.pugwah",
     "oteryn:npc.pydar",
     "oteryn:npc.queen_eloise",
     "oteryn:npc.quentin",
+    "oteryn:npc.rabaz",
     "oteryn:npc.rafzan",
     "oteryn:npc.rahkem",
+    "oteryn:npc.ramina",
     "oteryn:npc.rashid",
     "oteryn:npc.raymond_striker",
     "oteryn:npc.razan",
+    "oteryn:npc.redward",
+    "oteryn:npc.reed",
     "oteryn:npc.rhargu",
+    "oteryn:npc.rock_in_a_hard_place",
+    "oteryn:npc.rock_steady",
+    "oteryn:npc.rock_with_a_soft_spot",
+    "oteryn:npc.roswitha",
     "oteryn:npc.sam",
+    "oteryn:npc.sandomo",
     "oteryn:npc.santiago",
+    "oteryn:npc.saraki",
     "oteryn:npc.scott_the_scout",
+    "oteryn:npc.serafin",
+    "oteryn:npc.sessek",
     "oteryn:npc.seymour",
+    "oteryn:npc.sharai",
+    "oteryn:npc.sholley",
+    "oteryn:npc.siestaar",
+    "oteryn:npc.silas",
     "oteryn:npc.sinatuki",
+    "oteryn:npc.sissek",
     "oteryn:npc.snake_eye",
+    "oteryn:npc.soilance",
     "oteryn:npc.spectulus",
+    "oteryn:npc.strange_pipe",
+    "oteryn:npc.strange_pipe_1",
+    "oteryn:npc.strange_pipe_2",
+    "oteryn:npc.strange_pipe_3",
+    "oteryn:npc.sundara",
+    "oteryn:npc.swolt",
+    "oteryn:npc.tamara",
+    "oteryn:npc.tamed_lion",
+    "oteryn:npc.tamerin",
+    "oteryn:npc.tamoril",
+    "oteryn:npc.tanyt",
+    "oteryn:npc.tarak_inner",
+    "oteryn:npc.tarak_sunken",
+    "oteryn:npc.tarisu",
+    "oteryn:npc.taya",
+    "oteryn:npc.terrence",
+    "oteryn:npc.the_beggar_king",
+    "oteryn:npc.the_empress",
     "oteryn:npc.the_first_dragon",
     "oteryn:npc.the_forgemaster",
+    "oteryn:npc.the_librarian",
     "oteryn:npc.the_oracle",
     "oteryn:npc.the_queen_of_the_banshees",
+    "oteryn:npc.thorgrin",
     "oteryn:npc.tibra",
     "oteryn:npc.tim_the_guard",
+    "oteryn:npc.timothy",
     "oteryn:npc.tom",
+    "oteryn:npc.tony",
     "oteryn:npc.trisha",
     "oteryn:npc.tyrias",
+    "oteryn:npc.udu",
     "oteryn:npc.uzgod",
     "oteryn:npc.vascalir",
+    "oteryn:npc.vincent",
     "oteryn:npc.viola",
+    "oteryn:npc.virgil",
     "oteryn:npc.walter_the_guard",
     "oteryn:npc.wayland_smythers",
+    "oteryn:npc.wesley",
     "oteryn:npc.willard",
     "oteryn:npc.willie",
     "oteryn:npc.yalahari",
     "oteryn:npc.yana",
     "oteryn:npc.yberius",
+    "oteryn:npc.yonan",
     "oteryn:npc.zalamon",
+    "oteryn:npc.zarak",
     "oteryn:npc.zarifan",
+    "oteryn:npc.zedrulon_the_fallen",
+    "oteryn:npc.zeronex",
     "oteryn:npc.zethra",
     "oteryn:npc.zirella",
+    "oteryn:npc.ziyad",
     "oteryn:npc.zlak",
+    "oteryn:npc.znozel",
     "oteryn:npc.zoltan"
   ],
   "position_conflicts": [],
@@ -200,9 +358,28 @@
     ]
   },
   "block_solid_contacts": [
+    "oteryn:npc.alaistar",
+    "oteryn:npc.asnarus",
+    "oteryn:npc.barnabas_dee",
     "oteryn:npc.bron",
+    "oteryn:npc.christine",
+    "oteryn:npc.doubleday",
+    "oteryn:npc.dream_butterfly",
+    "oteryn:npc.edmund",
+    "oteryn:npc.emily",
+    "oteryn:npc.fayla",
     "oteryn:npc.gnommander",
-    "oteryn:npc.zarifan"
+    "oteryn:npc.javala",
+    "oteryn:npc.maun",
+    "oteryn:npc.oiriz",
+    "oteryn:npc.ortheus",
+    "oteryn:npc.pompan",
+    "oteryn:npc.rock_with_a_soft_spot",
+    "oteryn:npc.sholley",
+    "oteryn:npc.silas",
+    "oteryn:npc.timothy",
+    "oteryn:npc.zarifan",
+    "oteryn:npc.ziyad"
   ],
   "native_contacts": [
     "oteryn:npc.chip",
@@ -234,6 +411,85 @@
         "z": 6
       },
       "reason": "M01c collector route: original source cell contains BlockSolid item 1855; chosen adjacent native ground retains the donor position as provenance."
+    },
+    "oteryn:npc.alternative_rock": {
+      "source": {
+        "x": 33466,
+        "y": 31324,
+        "z": 7
+      },
+      "target": {
+        "x": 33466,
+        "y": 31325,
+        "z": 7
+      },
+      "reason": "Crystal XML anchor compiles as BlockSolid; move to clear native ground at the same contact."
+    },
+    "oteryn:npc.flint": {
+      "source": {
+        "x": 33635,
+        "y": 31882,
+        "z": 6
+      },
+      "target": {
+        "x": 33635,
+        "y": 31883,
+        "z": 6
+      },
+      "reason": "Crystal XML anchor compiles as BlockSolid; move to clear native ground at the same contact."
+    },
+    "oteryn:npc.jacob": {
+      "source": {
+        "x": 33570,
+        "y": 31985,
+        "z": 9
+      },
+      "target": {
+        "x": 33571,
+        "y": 31985,
+        "z": 9
+      },
+      "reason": "Crystal XML anchor compiles as BlockSolid; move to clear native ground at the same contact."
+    },
+    "oteryn:npc.rock_steady": {
+      "source": {
+        "x": 33453,
+        "y": 31330,
+        "z": 7
+      },
+      "target": {
+        "x": 33453,
+        "y": 31329,
+        "z": 7
+      },
+      "reason": "Crystal XML anchor compiles as BlockSolid; move to clear native ground at the same contact."
+    },
+    "oteryn:npc.sandomo": {
+      "source": {
+        "x": 33506,
+        "y": 32553,
+        "z": 7
+      },
+      "target": {
+        "x": 33507,
+        "y": 32554,
+        "z": 7
+      },
+      "reason": "Crystal XML anchor compiles as Wall; move to clear native ground at the same contact.",
+      "blocked_source": true
+    },
+    "oteryn:npc.tamoril": {
+      "source": {
+        "x": 32912,
+        "y": 31018,
+        "z": 5
+      },
+      "target": {
+        "x": 32911,
+        "y": 31018,
+        "z": 5
+      },
+      "reason": "Crystal XML anchor compiles as BlockSolid; move to clear native ground at the same contact."
     }
   },
   "authored_placements": {
@@ -483,6 +739,2880 @@
         "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
         "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
       }
+    },
+    "oteryn:npc.a_beggar": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration A Beggar in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33597,
+            "y": 31953,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.a_grumpy_cyclops": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration A Grumpy Cyclops in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32822,
+            "y": 31238,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.alaistar": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Alaistar in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33619,
+            "y": 31884,
+            "z": 4
+          }
+        }
+      ]
+    },
+    "oteryn:npc.alternative_rock": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Alternative Rock in Gray Beach. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33466,
+            "y": 31324,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.alyxo": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Alyxo in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33941,
+            "y": 31465,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.ambassador_of_rathleton": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Ambassador Of Rathleton in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33872,
+            "y": 31487,
+            "z": 3
+          }
+        }
+      ]
+    },
+    "oteryn:npc.amra": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Amra in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33800,
+            "y": 32756,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.armenius": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Armenius in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32859,
+            "y": 31325,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.asnarus": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Asnarus in Roshamuul. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33542,
+            "y": 32383,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.asphota": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Asphota in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33777,
+            "y": 32844,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.atur": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Atur in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33948,
+            "y": 31506,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.auron": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Auron in Roshamuul. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33526,
+            "y": 32385,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.azalea": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Azalea in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33593,
+            "y": 31899,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.barazbaz": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Barazbaz in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33652,
+            "y": 31883,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.barnabas_dee": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Barnabas Dee in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33631,
+            "y": 31881,
+            "z": 4
+          }
+        }
+      ]
+    },
+    "oteryn:npc.barry": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Barry in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32884,
+            "y": 31160,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.bruce": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Bruce in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32740,
+            "y": 31113,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.captain_chelop": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Captain Chelop in Roshamuul. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33494,
+            "y": 32568,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.captain_cookie": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Captain Cookie in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32804,
+            "y": 31277,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.captain_harava": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Captain Harava in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33902,
+            "y": 31462,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.chavis": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Chavis in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33548,
+            "y": 31948,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.christine": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Christine in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33613,
+            "y": 31895,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.chuckles": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Chuckles in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32790,
+            "y": 31236,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.dhira": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Dhira in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33726,
+            "y": 32861,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.dorbin": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Dorbin in Yalahar. NPC engine default NORTH. Select the Yalahar occurrence; the other anchor is on the example map.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32783,
+            "y": 31236,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.doubleday": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Doubleday in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33641,
+            "y": 31957,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.dream_butterfly": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Dream Butterfly in Roshamuul. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33716,
+            "y": 32376,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.drystan_wildweed": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Drystan Wildweed in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33703,
+            "y": 31942,
+            "z": 12
+          }
+        }
+      ]
+    },
+    "oteryn:npc.edmund": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Edmund in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33625,
+            "y": 31894,
+            "z": 4
+          }
+        }
+      ]
+    },
+    "oteryn:npc.eighty": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Eighty in Gray Beach. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33452,
+            "y": 31308,
+            "z": 8
+          }
+        }
+      ]
+    },
+    "oteryn:npc.elbert": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Elbert in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33583,
+            "y": 31988,
+            "z": 12
+          }
+        }
+      ]
+    },
+    "oteryn:npc.eliyas": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Eliyas in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33915,
+            "y": 31519,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.elliott": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Elliott in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33571,
+            "y": 31908,
+            "z": 8
+          }
+        }
+      ]
+    },
+    "oteryn:npc.emily": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Emily in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33611,
+            "y": 31886,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.eruaran": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Eruaran in Roshamuul. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33618,
+            "y": 32372,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.eshaya": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Eshaya in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33913,
+            "y": 31497,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.esrik": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Esrik in Farmine. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33036,
+            "y": 31530,
+            "z": 10
+          }
+        },
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33037,
+            "y": 31533,
+            "z": 12
+          }
+        },
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33035,
+            "y": 31531,
+            "z": 14
+          }
+        }
+      ]
+    },
+    "oteryn:npc.ethan": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Ethan in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32879,
+            "y": 31076,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.faloriel": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Faloriel in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33910,
+            "y": 31514,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.fayla": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Fayla in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33640,
+            "y": 31898,
+            "z": 4
+          }
+        }
+      ]
+    },
+    "oteryn:npc.fillias": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Fillias in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33570,
+            "y": 31926,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.flint": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Flint in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33635,
+            "y": 31882,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.flora": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Flora in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33654,
+            "y": 31937,
+            "z": 9
+          }
+        }
+      ]
+    },
+    "oteryn:npc.fyodor": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Fyodor in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33639,
+            "y": 31897,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.gederas": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Gederas in Roshamuul. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33497,
+            "y": 32549,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.giri": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Giri in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33819,
+            "y": 32768,
+            "z": 4
+          }
+        }
+      ]
+    },
+    "oteryn:npc.golem_guardian": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Golem Guardian in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32799,
+            "y": 31190,
+            "z": 7
+          }
+        },
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32803,
+            "y": 31190,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.graham": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Graham in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33611,
+            "y": 31886,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.gree_dee": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Gree Dee in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32789,
+            "y": 31236,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.guard_bazaya": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Guard Bazaya in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33937,
+            "y": 31527,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.guard_inurta": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Guard Inurta in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33868,
+            "y": 31498,
+            "z": 4
+          }
+        }
+      ]
+    },
+    "oteryn:npc.guard_saros": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Guard Saros in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33919,
+            "y": 31492,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.guard_senet": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Guard Senet in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33866,
+            "y": 31494,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.guide_edna": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Guide Edna in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32804,
+            "y": 31269,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.guide_meruka": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Guide Meruka in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33891,
+            "y": 31474,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.haani": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Haani in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33811,
+            "y": 32771,
+            "z": 4
+          }
+        }
+      ]
+    },
+    "oteryn:npc.hal": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Hal in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32687,
+            "y": 31190,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.inkaef": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Inkaef in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33904,
+            "y": 31518,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.iptar_sin": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Iptar-Sin in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33924,
+            "y": 31476,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.isika": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Isika in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33773,
+            "y": 32840,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.jacob": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Jacob in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33570,
+            "y": 31985,
+            "z": 9
+          }
+        }
+      ]
+    },
+    "oteryn:npc.javala": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Javala in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33889,
+            "y": 32654,
+            "z": 8
+          }
+        }
+      ]
+    },
+    "oteryn:npc.jondrin": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Jondrin in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33652,
+            "y": 31885,
+            "z": 4
+          }
+        }
+      ]
+    },
+    "oteryn:npc.julius": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Julius in Yalahar. NPC engine default NORTH. Select the Yalahar occurrence; the other anchor is on the example map.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32830,
+            "y": 31276,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.kallimae": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Kallimae in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33935,
+            "y": 31484,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.karith": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Karith in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32818,
+            "y": 31278,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.khanna": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Khanna in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33916,
+            "y": 31506,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.kromrek": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Kromrek in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33554,
+            "y": 31966,
+            "z": 13
+          }
+        }
+      ]
+    },
+    "oteryn:npc.lisander": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Lisander in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32812,
+            "y": 31248,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.lorietta": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Lorietta in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32787,
+            "y": 31277,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.maris": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Maris in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32648,
+            "y": 31292,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.maritima": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Maritima in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32902,
+            "y": 31167,
+            "z": 13
+          }
+        }
+      ]
+    },
+    "oteryn:npc.maro": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Maro in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33622,
+            "y": 31883,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.marvin": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Marvin in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33662,
+            "y": 31878,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.maun": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Maun in Roshamuul. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33522,
+            "y": 32562,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.melian": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Melian in Farmine. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32983,
+            "y": 31539,
+            "z": 1
+          }
+        }
+      ]
+    },
+    "oteryn:npc.menacing_mummy": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Menacing Mummy in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32807,
+            "y": 31246,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.moe": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Moe in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33909,
+            "y": 31495,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.morax": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Morax in Roshamuul. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33628,
+            "y": 32344,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.morpel": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Morpel in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32821,
+            "y": 31240,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.mortis": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Mortis in Roshamuul. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33536,
+            "y": 32503,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.mr_west": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Mr. West in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32771,
+            "y": 31357,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.murim": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Murim in Farmine. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33012,
+            "y": 31494,
+            "z": 10
+          }
+        }
+      ]
+    },
+    "oteryn:npc.narsai": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Narsai in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33913,
+            "y": 31530,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.nilavarna": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Nilavarna in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33729,
+            "y": 32824,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.ninev": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Ninev in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33871,
+            "y": 31528,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.ninos": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Ninos in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33904,
+            "y": 31498,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.nipuna": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Nipuna in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33778,
+            "y": 32837,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.oiriz": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Oiriz in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32787,
+            "y": 31238,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.old_rock_boy": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Old Rock Boy in Gray Beach. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33457,
+            "y": 31321,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.oliver": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Oliver in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32894,
+            "y": 31228,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.ongulf": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Ongulf in Farmine. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33023,
+            "y": 31542,
+            "z": 10
+          }
+        },
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33024,
+            "y": 31539,
+            "z": 12
+          }
+        },
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33024,
+            "y": 31543,
+            "z": 14
+          }
+        }
+      ]
+    },
+    "oteryn:npc.orc_berserker": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Orc Berserker in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32777,
+            "y": 31237,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.ortheus": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Ortheus in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32877,
+            "y": 31087,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.peter": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Peter in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32856,
+            "y": 31302,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.pompan": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Pompan in Farmine. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33037,
+            "y": 31543,
+            "z": 10
+          }
+        },
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33035,
+            "y": 31543,
+            "z": 12
+          }
+        },
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33033,
+            "y": 31543,
+            "z": 14
+          }
+        }
+      ]
+    },
+    "oteryn:npc.prezil": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Prezil in Farmine. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33027,
+            "y": 31525,
+            "z": 15
+          }
+        }
+      ]
+    },
+    "oteryn:npc.pugwah": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Pugwah in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32810,
+            "y": 31251,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.rabaz": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Rabaz in Farmine. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33009,
+            "y": 31532,
+            "z": 10
+          }
+        }
+      ]
+    },
+    "oteryn:npc.ramina": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Ramina in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33903,
+            "y": 31495,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.redward": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Redward in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32823,
+            "y": 31251,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.reed": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Reed in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32801,
+            "y": 31103,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.rock_in_a_hard_place": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Rock In A Hard Place in Gray Beach. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33458,
+            "y": 31302,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.rock_steady": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Rock Steady in Gray Beach. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33453,
+            "y": 31330,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.rock_with_a_soft_spot": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Rock With A Soft Spot in Gray Beach. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33444,
+            "y": 31321,
+            "z": 9
+          }
+        }
+      ]
+    },
+    "oteryn:npc.roswitha": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Roswitha in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33584,
+            "y": 31942,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.sandomo": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Sandomo in Roshamuul. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33506,
+            "y": 32553,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.saraki": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Saraki in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33722,
+            "y": 32764,
+            "z": 4
+          }
+        }
+      ]
+    },
+    "oteryn:npc.serafin": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Serafin in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32852,
+            "y": 31209,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.sessek": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Sessek in Marapur. NPC engine default NORTH. Select the Moonfall weapons shop; the second XML row is at the bank served by the separately registered Sissek.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33741,
+            "y": 32769,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.sharai": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Sharai in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33874,
+            "y": 32661,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.sholley": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Sholley in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33652,
+            "y": 31883,
+            "z": 3
+          }
+        }
+      ]
+    },
+    "oteryn:npc.siestaar": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Siestaar in Roshamuul. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33559,
+            "y": 32388,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.silas": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Silas in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33634,
+            "y": 31883,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.soilance": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Soilance in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32821,
+            "y": 31222,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.strange_pipe": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Strange Pipe in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33533,
+            "y": 31950,
+            "z": 14
+          }
+        }
+      ]
+    },
+    "oteryn:npc.strange_pipe_1": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Strange Pipe (1) in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33742,
+            "y": 31933,
+            "z": 15
+          }
+        }
+      ]
+    },
+    "oteryn:npc.strange_pipe_2": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Strange Pipe (2) in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33541,
+            "y": 31963,
+            "z": 15
+          }
+        }
+      ]
+    },
+    "oteryn:npc.strange_pipe_3": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Strange Pipe (3) in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33609,
+            "y": 32053,
+            "z": 15
+          }
+        }
+      ]
+    },
+    "oteryn:npc.sundara": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Sundara in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33822,
+            "y": 32773,
+            "z": 4
+          }
+        }
+      ]
+    },
+    "oteryn:npc.swolt": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Swolt in Farmine. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32993,
+            "y": 31542,
+            "z": 10
+          }
+        }
+      ]
+    },
+    "oteryn:npc.tamara": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Tamara in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32892,
+            "y": 31061,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.tamed_lion": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Tamed Lion in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33874,
+            "y": 31487,
+            "z": 4
+          }
+        }
+      ]
+    },
+    "oteryn:npc.tamerin": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Tamerin in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32659,
+            "y": 31211,
+            "z": 8
+          }
+        }
+      ]
+    },
+    "oteryn:npc.tamoril": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Tamoril in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32912,
+            "y": 31018,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.tanyt": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Tanyt in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33957,
+            "y": 31513,
+            "z": 0
+          }
+        }
+      ]
+    },
+    "oteryn:npc.tarak_inner": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Tarak (Inner) in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32917,
+            "y": 31198,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.tarak_sunken": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Tarak (Sunken) in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32941,
+            "y": 31181,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.tarisu": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Tarisu in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33799,
+            "y": 32860,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.taya": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Taya in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33811,
+            "y": 31464,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.terrence": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Terrence in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33645,
+            "y": 31951,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.the_beggar_king": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration The Beggar King in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33573,
+            "y": 31983,
+            "z": 8
+          }
+        }
+      ]
+    },
+    "oteryn:npc.the_empress": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration The Empress in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33868,
+            "y": 31497,
+            "z": 3
+          }
+        }
+      ]
+    },
+    "oteryn:npc.the_librarian": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration The Librarian in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33873,
+            "y": 31494,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.thorgrin": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Thorgrin in Farmine. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33025,
+            "y": 31553,
+            "z": 10
+          }
+        },
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33024,
+            "y": 31554,
+            "z": 12
+          }
+        },
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33024,
+            "y": 31554,
+            "z": 14
+          }
+        }
+      ]
+    },
+    "oteryn:npc.timothy": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Timothy in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32787,
+            "y": 31226,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.tony": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Tony in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32694,
+            "y": 31256,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.udu": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Udu in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33849,
+            "y": 32788,
+            "z": 2
+          }
+        }
+      ]
+    },
+    "oteryn:npc.vincent": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Vincent in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32790,
+            "y": 31237,
+            "z": 3
+          }
+        }
+      ]
+    },
+    "oteryn:npc.virgil": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Virgil in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33627,
+            "y": 31894,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.wesley": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Wesley in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33611,
+            "y": 31898,
+            "z": 12
+          }
+        }
+      ]
+    },
+    "oteryn:npc.yonan": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Yonan in Issavi. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33922,
+            "y": 31513,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.zarak": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Zarak in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32720,
+            "y": 31288,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.zedrulon_the_fallen": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Zedrulon The Fallen in Roshamuul. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33515,
+            "y": 32363,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.zeronex": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Zeronex in Rathleton. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33608,
+            "y": 31974,
+            "z": 4
+          }
+        }
+      ]
+    },
+    "oteryn:npc.ziyad": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Ziyad in Marapur. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33805,
+            "y": 32768,
+            "z": 2
+          }
+        }
+      ]
+    },
+    "oteryn:npc.znozel": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "path": "data-global/world/world-npc.xml"
+      },
+      "basis": "Crystal Global NPC XML registration Znozel in Yalahar. NPC engine default NORTH.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32822,
+            "y": 31249,
+            "z": 7
+          }
+        }
+      ]
     }
-  }
+  },
+  "new_placement_overrides": [
+    "oteryn:npc.dhira",
+    "oteryn:npc.nilavarna",
+    "oteryn:npc.saraki",
+    "oteryn:npc.sharai",
+    "oteryn:npc.tarisu",
+    "oteryn:npc.taya",
+    "oteryn:npc.udu"
+  ]
 }

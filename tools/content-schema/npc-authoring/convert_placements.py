@@ -72,11 +72,18 @@ def cell_of(position: dict) -> tuple[int, int, int]:
 
 
 def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
-    """Explicit pinned schedules supersede migration placement hypotheses, not definitions."""
+    """Explicit pinned positions can add or replace a scoped placement hypothesis."""
     result = copy.deepcopy(candidates)
-    for key, override in scope.get("placement_overrides", {}).items():
-        if key not in scope["npcs"] or key not in result:
-            raise ValueError("placement override requires a scoped candidate")
+    overrides = scope.get("placement_overrides", {})
+    new_contacts = scope.get("new_placement_overrides", [])
+    admitted = set(new_contacts)
+    if (len(admitted) != len(new_contacts)
+            or not admitted <= set(overrides)
+            or admitted & candidates.keys()):
+        raise ValueError("new placement overrides must introduce distinct pinned NPC contacts")
+    for key, override in overrides.items():
+        if key not in scope["npcs"] or (key not in result and key not in admitted):
+            raise ValueError("placement override requires a scoped candidate or explicit new contact")
         source, placements = override["source"], override["placements"]
         if (source.get("origin") not in SOURCES
                 or not re.fullmatch(r"[0-9a-f]{40}", source.get("revision", ""))
@@ -99,8 +106,9 @@ def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
                 raise ValueError("ambiguous native placement override")
             cells.add(cell)
         repository, _, source_key = SOURCES[source["origin"]]
-        result[key]["placements"] = copy.deepcopy(placements)
-        result[key]["placement_override_provenance"] = [{
+        candidate = result.setdefault(key, {"identity": {"key": key}})
+        candidate["placements"] = copy.deepcopy(placements)
+        candidate["placement_override_provenance"] = [{
             "origin": source["origin"], "repository": repository,
             "revision": source["revision"], "source_key": source_key,
             "source_row": source["path"], "source_sha256": source["sha256"],
