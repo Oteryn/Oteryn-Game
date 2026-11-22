@@ -114,6 +114,7 @@ async fn query(client: &mut DevClientSession, offset: u16, limit: u8) -> TestRes
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(920);
+    verdict::Harness::global().bounded_wait(deadline, "open-pvp-logout-lock");
     loop {
         match client.session_mut().logout().await?.result {
             Some(LogoutResult::Accepted) => return Ok(()),

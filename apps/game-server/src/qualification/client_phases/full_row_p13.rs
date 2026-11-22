@@ -51,7 +51,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if let Some(gap) = &gap {
         evidence(&format!("P13_GAP {gap}"));
     }
-    let detail = gap.map_or_else(String::new, |gap| format!(" evidence={gap}"));
+    let detail = verdict_detail(status, gap);
     evidence(&format!(
         "e2e_all scenario=P13.full status={status} seconds={:.3}{detail}",
         started.elapsed().as_secs_f64()
@@ -205,8 +205,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<(u32, u32)> {
     Ok((before.points, after.points))
 }
 
+fn verdict_detail(status: &str, gap: Option<String>) -> String {
+    if status == "MISSING-SERVER" {
+        return " evidence=source:crates/gameplay/dispatch/src/gameplay_transport/loyalty_skills.rs:57".into();
+    }
+    gap.map_or_else(String::new, |gap| format!(" evidence={gap}"))
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn missing_server_evidence_is_only_a_source_coordinate() {
+        assert_eq!(
+            super::verdict_detail("MISSING-SERVER", Some("points unchanged".into())),
+            " evidence=source:crates/gameplay/dispatch/src/gameplay_transport/loyalty_skills.rs:57"
+        );
+    }
+
     #[test]
     fn unchanged_loyalty_is_a_missing_server_verdict() {
         assert_eq!(loyalty_status(0, 0), "MISSING-SERVER");

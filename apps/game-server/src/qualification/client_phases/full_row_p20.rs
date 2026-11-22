@@ -6,7 +6,7 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use std::collections::BTreeSet;
 
-const STEPS: &[&str] = &["step-3", "step-4", "step-5", "step-6"];
+const STEPS: &[&str] = &["step-1", "step-2", "step-3", "step-4", "step-5", "step-6"];
 
 struct Row {
     completed: BTreeSet<&'static str>,
@@ -70,6 +70,42 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
 }
 
 // Promotion is durable separately from the base vocation and its Premium display.
+async fn vocation(client: &mut DevClientSession) -> TestResult<String> {
+    use oteryn_protocol_oteryn::item_look as wire;
+    let entities = client.world_entities().ok_or("P20 own actor view absent")?;
+    let own = entities
+        .iter()
+        .find(|entry| &entry.entity.identity == entities.own_identity())
+        .ok_or("P20 own actor identity absent")?
+        .entity;
+    let selection = wire::ItemLookSelection { extended: true };
+    let payload = wire::encode_item_look_intent_for(
+        wire::ItemLookIntent {
+            target: wire::ItemLookTarget::Creature(own),
+        },
+        selection,
+    )
+    .map_err(|error| format!("P20 self LOOK encode observed={error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::ITEM_LOOK_CAPABILITY_ID.ok_or("P20 look capability absent")?,
+            wire::ITEM_LOOK_COMMAND_ID.ok_or("P20 look command absent")?,
+            &payload,
+        )
+        .await?;
+    match wire::decode_item_look_result_for(&reply.payload, selection)
+        .map_err(|error| format!("P20 self LOOK decode observed={error:?}"))?
+    {
+        wire::ItemLookResult::Text(text) if reply.status == CommandStatus::Accepted => Ok(text),
+        observed => Err(format!(
+            "P20 self LOOK observed={observed:?} status={:?}",
+            reply.status
+        )
+        .into()),
+    }
+}
+
 async fn promotion(clients: &SeamClients<'_>) -> TestResult<Option<String>> {
     use sqlx::Connection as _;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
@@ -80,29 +116,30 @@ async fn promotion(clients: &SeamClients<'_>) -> TestResult<Option<String>> {
     Ok(purchase)
 }
 
-async fn approach_king(
+async fn approach_npc(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
+    key: &str,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
-    let king = npcs
+    let npc = npcs
         .npcs
         .iter()
-        .find(|npc| npc.key == "oteryn:npc.king_tibianus")
-        .ok_or("step-3 compiled world has no King Tibianus placement")?;
+        .find(|npc| npc.key == key)
+        .ok_or_else(|| format!("step=npc-approach no compiled placement for {key}"))?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        king.placements.iter().any(|place| {
+        npc.placements.iter().any(|place| {
             place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
         })
     })
-    .ok_or("step-3 no legitimate walking route to King Tibianus")?;
+    .ok_or_else(|| format!("step=npc-approach no legitimate walking route to {key}"))?;
     walk(client, world, &path).await?;
     client
         .world_entities()
         .and_then(|view| {
             view.iter().find(|entry| {
                 entry.kind == oteryn_dev_client::EntityKind::Npc
-                    && king.placements.iter().any(|place| {
+                    && npc.placements.iter().any(|place| {
                         entry.position
                             == ActorPosition {
                                 x: i32::from(place.x),
@@ -113,13 +150,14 @@ async fn approach_king(
             })
         })
         .map(|entry| entry.entity)
-        .ok_or_else(|| "step-3 King Tibianus actor absent after walking to him".into())
+        .ok_or_else(|| format!("step=npc-approach actor {key} absent after walking").into())
 }
 
-async fn talk(
+async fn talk_with(
     client: &mut DevClientSession,
     npc: oteryn_dev_client::EntityRef,
     text: &str,
+    expected: oteryn_protocol_oteryn::npc_service::NpcIntentDisposition,
 ) -> TestResult<Vec<String>> {
     use oteryn_protocol_oteryn::npc_service as wire;
     let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
@@ -127,23 +165,35 @@ async fn talk(
         text: text.into(),
     })
     .map_err(|error| format!("step-3 {text} encode: {error:?}"))?;
-    let reply = client
-        .session_mut()
-        .gated_command(
-            wire::CAPABILITY_NPC_SERVICE_V1,
-            wire::COMMAND_TYPE_NPC_TALK_INTENT,
-            &payload,
-        )
-        .await?;
-    let disposition = wire::decode_npc_intent_result(&reply.payload)
-        .map_err(|error| format!("step-3 {text} reply decode: {error:?}"))?;
-    if reply.status != CommandStatus::Accepted || disposition != wire::NpcIntentDisposition::Ok {
-        return Err(format!(
-            "step-3 player command={text:?} status={:?} disposition={disposition:?}; need=server acceptance of the native NPC command",
-            reply.status
-        )
-        .into());
-    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let reply = loop {
+        let reply = client
+            .session_mut()
+            .gated_command(
+                wire::CAPABILITY_NPC_SERVICE_V1,
+                wire::COMMAND_TYPE_NPC_TALK_INTENT,
+                &payload,
+            )
+            .await?;
+        let disposition = wire::decode_npc_intent_result(&reply.payload)
+            .map_err(|error| format!("NPC {text} reply decode: {error:?}"))?;
+        if reply.status != CommandStatus::Accepted {
+            return Err(format!("NPC {text} command status={:?}", reply.status).into());
+        }
+        if disposition == wire::NpcIntentDisposition::RateLimited
+            && tokio::time::Instant::now() < deadline
+        {
+            client.service_liveness(Duration::from_millis(50)).await?;
+            client.take_events();
+            continue;
+        }
+        if disposition != expected {
+            return Err(
+                format!("NPC {text} disposition={disposition:?} expected={expected:?}").into(),
+            );
+        }
+        break reply;
+    };
     loop {
         let delta = client
             .session_mut()
@@ -161,12 +211,145 @@ async fn talk(
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
-    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("step-5 logout observed={reply:?}").into());
+async fn talk(
+    client: &mut DevClientSession,
+    npc: oteryn_dev_client::EntityRef,
+    text: &str,
+) -> TestResult<Vec<String>> {
+    talk_with(
+        client,
+        npc,
+        text,
+        oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Ok,
+    )
+    .await
+}
+
+async fn expect_oressa(
+    client: &mut DevClientSession,
+    npc: oteryn_dev_client::EntityRef,
+    text: &str,
+    disposition: oteryn_protocol_oteryn::npc_service::NpcIntentDisposition,
+    message: &str,
+) -> TestResult {
+    let observed = talk_with(client, npc, text, disposition).await?;
+    if observed != [message] {
+        return Err(format!(
+            "step=oressa command={text:?} observed={observed:?} expected={message:?}"
+        )
+        .into());
     }
     Ok(())
+}
+
+async fn check_vocation(client: &mut DevClientSession, level: u32, name: &str) -> TestResult {
+    let observed = vocation(client).await?;
+    let expected = format!("You see yourself (Level {level}, {name}).");
+    if observed != expected {
+        return Err(format!("step=served-vocation observed={observed:?} expected={expected:?}; source:crates/gameplay/dispatch/src/gameplay_transport/item_look.rs:975").into());
+    }
+    Ok(())
+}
+
+async fn oressa(
+    row: &mut Row,
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    metadata: &oteryn_world_bundle::bundle::Visited,
+) -> TestResult {
+    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::{Ok as Accepted, Rejected};
+    const KEY: &str = "oteryn:npc.oressa";
+    const GREETING: &str = "Welcome. Ask about a vocation when you are ready to choose.";
+    const PROMPT: &str = "Do you wish to become a knight? Say yes to confirm, or no to reconsider.";
+    const UNQUOTED: &str = "Choose a vocation before confirming.";
+
+    let initial = progress(client).await?;
+    if initial.1 >= 8 {
+        return Err(format!("step=oressa-under-level need=unchosen-character-below-level-8 observed={initial:?}; source:apps/game-server/src/qualification/client_phases/full_e2ef6.rs:1267").into());
+    }
+    check_vocation(client, initial.1, "no vocation").await?;
+    let npc = approach_npc(client, world, &metadata.npcs, KEY).await?;
+    expect_oressa(client, npc, "hi", Accepted, GREETING).await?;
+    expect_oressa(client, npc, "yes", Rejected, UNQUOTED).await?;
+    check_vocation(client, initial.1, "no vocation").await?;
+    expect_oressa(client, npc, "knight", Accepted, PROMPT).await?;
+    expect_oressa(
+        client,
+        npc,
+        "yes",
+        Rejected,
+        "Reach level 8 before making your first vocation choice.",
+    )
+    .await?;
+    check_vocation(client, initial.1, "no vocation").await?;
+    if progress(client).await? != initial {
+        return Err("step=oressa refused choice altered progression".into());
+    }
+    row.complete("step-1", initial);
+
+    let old_session = client.join_snapshot().game_session_id;
+    logout(client).await?;
+    *client = connect_world(clients, 0xd2).await?;
+    if client.join_snapshot().game_session_id == old_session || progress(client).await? != initial {
+        return Err("step=oressa-under-level relog changed refused build or reused session".into());
+    }
+    check_vocation(client, initial.1, "no vocation").await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    let mut earned = initial;
+    while earned.1 < 8 {
+        tokio::time::timeout_at(deadline, async {
+            travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+            client_hunt::hunt(client).await
+        })
+        .await
+        .map_err(|_| format!("step=oressa-level observed={earned:?} need=earned-level-8"))??;
+        earned = progress(client).await?;
+    }
+    check_vocation(client, earned.1, "no vocation").await?;
+    let npc = approach_npc(client, world, &metadata.npcs, KEY).await?;
+    expect_oressa(client, npc, "hi", Accepted, GREETING).await?;
+    expect_oressa(client, npc, "knight", Accepted, PROMPT).await?;
+    expect_oressa(
+        client,
+        npc,
+        "no",
+        Accepted,
+        "Take your time before choosing your vocation.",
+    )
+    .await?;
+    expect_oressa(client, npc, "yes", Rejected, UNQUOTED).await?;
+    check_vocation(client, earned.1, "no vocation").await?;
+    if progress(client).await? != earned {
+        return Err("step=oressa decline altered progression".into());
+    }
+    expect_oressa(client, npc, "knight", Accepted, PROMPT).await?;
+    expect_oressa(client, npc, "yes", Accepted, "Your vocation is now knight.").await?;
+    check_vocation(client, earned.1, "knight").await?;
+    if progress(client).await? != earned {
+        return Err("step=oressa confirmation changed earned level or XP".into());
+    }
+    row.complete("step-2", earned);
+    Ok(())
+}
+
+async fn logout(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    verdict::Harness::global().bounded_wait(deadline, "promotion-logout");
+    loop {
+        let reply = client.session_mut().logout().await?;
+        match reply.result {
+            Some(LogoutResult::Accepted) => return Ok(()),
+            Some(LogoutResult::Busy | LogoutResult::InFight { .. })
+                if tokio::time::Instant::now() < deadline =>
+            {
+                client.service_liveness(Duration::from_millis(100)).await?;
+                client.take_events();
+            }
+            _ => return Err(format!("step=promotion-logout observed={reply:?}").into()),
+        }
+    }
 }
 
 fn relocation_position(
@@ -216,7 +399,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row {
         completed: BTreeSet::new(),
     };
-    let result: TestResult = verdict::indexed_timeout(Duration::from_secs(420), async {
+    let result: TestResult = verdict::indexed_timeout(Duration::from_secs(660), async {
         let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
         let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
         let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -228,11 +411,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         )?;
         let mut client = connect_world(clients, 0xd0).await?;
         let result: TestResult = verdict::observe(async {
+            oressa(&mut row, &mut client, clients, world, &metadata).await?;
             let initial = progress(&mut client).await?;
             let mut current = initial;
             let mut earned_prerequisites = false;
             let (npc, unpromoted, unpaid_gold, quote, confirmation) = loop {
-                let npc = approach_king(&mut client, world, &metadata.npcs).await?;
+                let npc = approach_npc(&mut client, world, &metadata.npcs, "oteryn:npc.king_tibianus").await?;
                 if talk(&mut client, npc, "hi").await?.is_empty() {
                     return Err("step=promotion-greeting observed=empty-conversation".into());
                 }
@@ -271,8 +455,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 }
                 super::full_e2ef7::earn_gold(&mut client, world, 20_000).await
                     .map_err(|error| format!("step=promotion-payment required=20000 observed={error}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs:249"))?;
+                current = progress(&mut client).await?;
                 earned_prerequisites = true;
             };
+            check_vocation(&mut client, current.1, "elite knight").await?;
             let promoted = promotion(clients).await?;
             let inventory = client
                 .inventory()
@@ -289,6 +475,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
             let duplicate_quote = talk(&mut client, npc, "promotion").await?;
             let duplicate = talk(&mut client, npc, "yes").await?;
+            check_vocation(&mut client, current.1, "elite knight").await?;
             let duplicate_promotion = promotion(clients).await?;
             if duplicate != ["You already have this blessing."]
                 || duplicate_promotion != promoted
@@ -326,19 +513,18 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             {
                 return Err(format!("step-5 fresh admission observed build={fresh_build:?} promotion={fresh_promotion:?} inventory={:?} position={:?}; expected build={build:?} promotion={promoted:?} inventory={inventory:?} position={before:?}", client.inventory(), client.world_spatial().actor_position).into());
             }
-            row.complete(
-                "step-5",
-                (old_session, build, &promoted, &inventory, before),
-            );
-
             let after = client.world_spatial().actor_position;
             let Some(premium_home @ (10..=16 | 18 | 20..=22)) = hometown_before else {
+                check_vocation(&mut client, fresh_build.1, "elite knight").await?;
                 if after != before {
                     return Err(format!("step=paid-region-expiry unexpected move {before:?}->{after:?} hometown={hometown_before:?}").into());
                 }
+                row.complete("step-5", (old_session, fresh_build, &fresh_promotion));
                 return Err(format!("step=paid-region-expiry observed=hometown-{hometown_before:?} need=Premium-area-hometown-and-authoritatively-ended-entitlement; source:crates/gameplay/dispatch/src/gameplay_transport/character_home_town.rs:60").into());
             };
             let ended = relocation_receipt(clients, client.join_snapshot().game_session_id, premium_home).await?;
+            check_vocation(&mut client, fresh_build.1, if ended { "knight" } else { "elite knight" }).await?;
+            row.complete("step-5", (old_session, fresh_build, &fresh_promotion));
             let temple = towns.town(THAIS).and_then(|town| town.temple)
                 .ok_or("step=paid-region-expiry need=compiled-Thais-temple")?;
             let expected = ActorPosition { x: i32::from(temple.x), y: i32::from(temple.y),
@@ -351,8 +537,8 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             Ok(())
         })
         .await;
-        let _ = logout(&mut client).await;
-        result
+        let cleanup = logout(&mut client).await;
+        result.and(cleanup)
     })
     .await
     .unwrap_or_else(|_| Err("P20 journey deadline after native mechanic commands".into()));
@@ -374,6 +560,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn promotion_and_relocation_alone_cannot_pass() {
+        let row = Row {
+            completed: ["step-3", "step-4", "step-5", "step-6"]
+                .into_iter()
+                .collect(),
+        };
+        assert_eq!(row.finish(&Ok(())), "FAIL");
+    }
+
     #[test]
     fn ended_premium_relocation_requires_the_temple_and_a_move() {
         let before = ActorPosition {

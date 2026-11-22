@@ -193,8 +193,28 @@ async fn probe_training_book(
     walk(client, world, &path).await?;
     let handle = adjacent_map_handle(client, &[reference])
         .ok_or("step=offline-training-book observed=no-live-i11441-handle")?;
+    use oteryn_protocol_oteryn::{server_modal as modal, world_object::UseDisposition};
+    if !client
+        .selected_capabilities()
+        .contains(&modal::CAPABILITY_SERVER_MODAL_V1)
+    {
+        return Err("step=offline-training-book need=server-modal-capability; source:crates/protocol-oteryn/src/server_modal.rs:2".into());
+    }
+    if book_modal(client).await? != modal::Reply::None {
+        return Err("step=offline-training-book modal already open before use".into());
+    }
     let observed = client.use_item(handle).await?;
-    Err(format!("step=offline-training-book observed=use-status-{:?},disposition-{:?} need=map-book-instruction-dialog; source:crates/gameplay/dispatch/src/gameplay_transport/item_inscription.rs:61", observed.status, observed.disposition).into())
+    if observed.status != CommandStatus::Accepted
+        || observed.disposition != UseDisposition::Committed
+    {
+        return Err(format!("step=offline-training-book observed=use-status-{:?},disposition-{:?} need=committed-map-book-use; source:crates/gameplay/dispatch/src/gameplay_transport/item_inscription.rs:64", observed.status, observed.disposition).into());
+    }
+    let reply = book_modal(client).await?;
+    if !instructional_dialog(&reply) {
+        return Err(format!("step=offline-training-book observed={reply:?} need=map-book-instruction-dialog; source:crates/gameplay/dispatch/src/gameplay_transport/item_inscription.rs:64").into());
+    }
+    evidence("P14_CHECK step=5 status=PASS observed=book-training-instructions");
+    Ok(())
 }
 
 fn adjacent(a: TilePos, b: TilePos) -> bool {
@@ -354,8 +374,66 @@ async fn general_stats(client: &mut DevClientSession) -> TestResult<u16> {
     Ok(u16::from_le_bytes(reply.payload[31..33].try_into()?))
 }
 
+async fn book_modal(
+    client: &mut DevClientSession,
+) -> TestResult<oteryn_protocol_oteryn::server_modal::Reply> {
+    use oteryn_protocol_oteryn::server_modal as modal;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            modal::CAPABILITY_SERVER_MODAL_V1,
+            modal::COMMAND_TYPE_SERVER_MODAL_QUERY,
+            &[],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!(
+            "step=offline-training-book modal query status={:?}",
+            reply.status
+        )
+        .into());
+    }
+    modal::Reply::decode(&reply.payload).map_err(Into::into)
+}
+
+fn instructional_dialog(reply: &oteryn_protocol_oteryn::server_modal::Reply) -> bool {
+    use oteryn_protocol_oteryn::server_modal::Reply;
+    let Reply::Dialog(dialog) = reply else {
+        return false;
+    };
+    let text = dialog.message.to_ascii_lowercase();
+    (dialog
+        .title
+        .to_ascii_lowercase()
+        .contains("offline training")
+        || text.contains("offline training"))
+        && text.contains("statue")
+        && (text.contains("log out") || text.contains("logout"))
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn accepts_training_instructions_but_not_an_unrelated_dialog() {
+        use oteryn_protocol_oteryn::server_modal::{Dialog, Reply};
+        let mut dialog = Dialog {
+            id: 1,
+            title: "Information on Offline Training".into(),
+            message: "Premium characters can use a training statue and log out to train offline."
+                .into(),
+            choices: vec![],
+            buttons: vec![(1, "OK".into())],
+            default_button: None,
+            cancel_button: None,
+            image: None,
+        };
+        assert!(super::instructional_dialog(&Reply::Dialog(dialog.clone())));
+        dialog.title = "Market".into();
+        dialog.message = "Sell your items.".into();
+        assert!(!super::instructional_dialog(&Reply::Dialog(dialog)));
+        assert!(!super::instructional_dialog(&Reply::None));
+    }
+
     #[test]
     fn quick_relog_must_not_spend_training_pool() {
         assert!(super::matches_short_offline_pool(3_616, 60));
