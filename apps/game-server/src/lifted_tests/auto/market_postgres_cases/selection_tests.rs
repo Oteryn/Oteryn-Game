@@ -1,4 +1,5 @@
 use super::*;
+use harness::Harness;
 
 #[test]
 fn market_native_offer_read_is_scoped_and_never_commits_a_return() -> TestResult {
