@@ -12,7 +12,7 @@ use crate::durability::character_progression::{
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState};
-use oteryn_gameplay_characters::stamina::HuntingClock;
+use oteryn_gameplay_characters::stamina::{HuntingClock, MAX_STAMINA_MINUTES};
 
 #[derive(Debug)]
 pub(super) struct LiveStamina {
@@ -201,6 +201,38 @@ impl ChannelSpellStates {
             .find(|s| s.actor == actor && s.session == session)
             .map(|s| s.minutes)
     }
+    pub(super) fn stamina_extension_before(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<u16> {
+        self.live_stamina(actor, session)
+            .filter(|_| !self.stamina_to_flush(actor, session))
+    }
+
+    pub(super) fn publish_stamina_extension(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        before: u16,
+        after: u16,
+    ) {
+        if runtime.owner_fence().is_err() || self.get(runtime, actor, session).is_none() {
+            return;
+        }
+        if let Some(state) = self.hunting_stamina.iter_mut().find(|state| {
+            state.actor == actor && state.session == session && state.durable == before
+        }) {
+            state.durable = after;
+            // Preserve activity accrued after PREPARE, along with the current hunting clock.
+            state.minutes = state
+                .minutes
+                .saturating_add(after - before)
+                .min(MAX_STAMINA_MINUTES as u16);
+        }
+    }
+
     pub(super) fn gain_resting_stamina(
         &mut self,
         actor: ExactActorRef,
@@ -228,15 +260,65 @@ impl ChannelSpellStates {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn flush_stamina_for_extension(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    ) -> bool {
+        if !self
+            .states
+            .spell_states
+            .lock()
+            .await
+            .stamina_to_flush(actor, session)
+        {
+            return true;
+        }
+        if !self.flush_prey_under_lane(session, permit).await {
+            return false;
+        }
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        for resting in [true, false] {
+            for _ in 0..2 {
+                let result = if resting {
+                    self.save_resting_stamina_after_prey(actor, session, &budget)
+                        .await
+                } else {
+                    self.save_hunting_stamina_after_prey(actor, session, &budget)
+                        .await
+                };
+                match result {
+                    TrainingSave::Saved => {}
+                    TrainingSave::NotApplicable => break,
+                    TrainingSave::FencedOut | TrainingSave::Unknown => return false,
+                }
+            }
+        }
+        true
+    }
+
     pub(super) async fn save_resting_stamina_with_budget(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
         budget: &AdmissionRetryBudget<'_>,
     ) -> TrainingSave {
-        if !self.flush_prey_with_budget(session, budget).await {
+        if !self.settle_pending_stamina_extension(actor, session).await
+            || !self.flush_prey_with_budget(session, budget).await
+        {
             return TrainingSave::Unknown;
         }
+        self.save_resting_stamina_after_prey(actor, session, budget)
+            .await
+    }
+
+    async fn save_resting_stamina_after_prey(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> TrainingSave {
         {
             let states = self.states.spell_states.lock().await;
             if !states.stamina_to_flush(actor, session) {
@@ -282,6 +364,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || item.scope_ownership_generation != runtime.binding().scope_generation()
         {
             return TrainingSave::FencedOut;
+        }
+        if states.item_uses.stamina_extension_pending(actor, session) {
+            return TrainingSave::Unknown;
         }
         let Some(state) = states
             .hunting_stamina
@@ -366,9 +451,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         budget: &AdmissionRetryBudget<'_>,
     ) -> TrainingSave {
-        if !self.flush_prey_with_budget(session, budget).await {
+        if !self.settle_pending_stamina_extension(actor, session).await
+            || !self.flush_prey_with_budget(session, budget).await
+        {
             return TrainingSave::Unknown;
         }
+        self.save_hunting_stamina_after_prey(actor, session, budget)
+            .await
+    }
+
+    async fn save_hunting_stamina_after_prey(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> TrainingSave {
         {
             let states = self.states.spell_states.lock().await;
             if !states.stamina_to_flush(actor, session) {
@@ -414,6 +511,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || item.scope_ownership_generation != runtime.binding().scope_generation()
         {
             return TrainingSave::FencedOut;
+        }
+        if states.item_uses.stamina_extension_pending(actor, session) {
+            return TrainingSave::Unknown;
         }
         let Some(state) = states
             .hunting_stamina
