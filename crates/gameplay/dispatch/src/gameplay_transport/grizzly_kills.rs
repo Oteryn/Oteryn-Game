@@ -4,6 +4,7 @@
 
 use std::sync::Arc;
 mod encounters;
+pub(super) use encounters::PreparedEncounter;
 mod guardians;
 pub(super) mod native_goals;
 

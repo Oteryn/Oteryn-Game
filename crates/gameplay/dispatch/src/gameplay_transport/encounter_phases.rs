@@ -120,9 +120,8 @@ impl Registry {
         now_us: u64,
     ) -> Result<std::sync::MutexGuard<'a, Vec<ActivePhase>>, CarrierError> {
         let mut active = self.active.lock().map_err(|_| CarrierError::PlanConflict)?;
-        let wall_now = super::unix_seconds();
         active.retain_mut(|phase| {
-            match phase.retire_abandoned_arbaziloth(runtime, states, now_us, wall_now) {
+            match phase.retire_abandoned_arbaziloth(runtime, states, now_us) {
                 Ok(true) => return false,
                 Err(_) => return true,
                 Ok(false) => {}
@@ -442,7 +441,6 @@ impl ActivePhase {
         runtime: &mut ChannelRuntimeV1,
         states: &ChannelSpellStates,
         now_us: u64,
-        wall_now: Option<i64>,
     ) -> Result<bool, CarrierError> {
         let (Fight::Arbaziloth(fight), Some(deadline)) = (&self.fight, self.arbaziloth_deadline)
         else {
@@ -464,13 +462,10 @@ impl ActivePhase {
         if now_us < deadline
             && self.participants.iter().any(|&(actor, session)| {
                 !states.is_dead(actor)
-                    && runtime
-                        .player_control_facts(actor, session)
-                        .is_ok_and(|facts| {
-                            facts.control_loss.is_none_or(|loss| {
-                                wall_now.is_none_or(|now| now < loss.grace_deadline)
-                            })
-                        })
+                    // The session owner arbitrates resume against durable grace
+                    // expiry before removing this exact slot. Until then, a retained
+                    // loss mark may already have a committed reconnect behind it.
+                    && runtime.player_control_facts(actor, session).is_ok()
                     && runtime.read_actor_position(actor).is_ok_and(|at| {
                         super::quest_callbacks::room_contains(&self.room, at.position())
                     })
@@ -622,20 +617,11 @@ impl ActivePhase {
 }
 
 pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now_us: u64) {
-    tick_at(runtime, states, now_us, super::unix_seconds());
-}
-
-pub(super) fn tick_at(
-    runtime: &mut ChannelRuntimeV1,
-    states: &ChannelSpellStates,
-    now_us: u64,
-    wall_now: Option<i64>,
-) {
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
     active.retain_mut(|phase| {
-        match phase.retire_abandoned_arbaziloth(runtime, states, now_us, wall_now) {
+        match phase.retire_abandoned_arbaziloth(runtime, states, now_us) {
             Ok(true) => return false,
             Err(error) => {
                 super::operator_event(&format!(

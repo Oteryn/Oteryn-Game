@@ -1,6 +1,6 @@
 //! Crystal 201189f8 moviment_trap.lua: a real creature push delivers merchant StepIn.
 use super::autowalk_fixtures::at;
-use super::classic_quests_fixtures::{install, talk};
+use super::classic_quests_fixtures::{install, talk, talk_expecting};
 use super::creature_push_fixtures::{prepare, reference, spawn};
 use super::fixture::{Harness, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
@@ -30,6 +30,9 @@ const TURN_IN: &str = "oteryn:quest-reward/rottin-wood/bushwhacking";
 const MERRY_ADVENTURES: &str = "oteryn:achievement/merry_adventures";
 const LOOT: &str = "oteryn:quest-callback/rottin-wood/loot-merchant";
 
+const REPLACE: &str = "oteryn:quest-reward/rottin-wood/replace-nets";
+const NEST_TIMER: &str = "oteryn:quest-progress/crystalserver/kv/nest-timer";
+const REPLACEMENTS: &str = "oteryn:quest-progress/rottin-wood/net-replacements";
 const NETS: &str = "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count";
 const EARLY_NET: &str = "oteryn:quest-callback/rottin-wood/place-net";
 const FINAL_NET: &str = "oteryn:quest-callback/rottin-wood/final-net";
@@ -83,6 +86,17 @@ pub(super) async fn accept(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(state, (1, 5, 5));
+    assert_eq!(
+        talk_expecting(owner, admitted, npc, 1612, "mission", NpcIntentDisposition::Rejected).await?,
+        ["I can only get you more traps in half an hour."]
+    );
+    let refused_mints: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_quest_reward_sources WHERE transition_key=$1",
+    )
+    .bind(REPLACE)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(refused_mints, 0);
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_secs();
@@ -91,10 +105,7 @@ pub(super) async fn accept(
         h,
         owner,
         admitted,
-        &[(
-            "oteryn:quest-progress/crystalserver/kv/nest-timer".into(),
-            expired_timer,
-        )],
+        &[(NEST_TIMER.into(), expired_timer)],
         169,
     )
     .await?;
@@ -102,14 +113,10 @@ pub(super) async fn accept(
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     assert_eq!(
-        talk(owner, admitted, npc, 1612, "mission").await?,
+        talk(owner, admitted, npc, 1613, "mission").await?,
         source_reply("line-131")?
     );
-    assert_eq!(
-        talk(owner, admitted, npc, 1613, "mission").await?,
-        ["I can only get you more traps in half an hour."]
-    );
-    for source in [START, "oteryn:quest-reward/rottin-wood/replace-nets"] {
+    for source in [START, REPLACE] {
         let shape: (i64, i64) = sqlx::query_as(
             "SELECT count(*), COALESCE(sum(jsonb_array_length(m.additional_plan)),0)::bigint
                FROM game_quest_reward_sources r
@@ -122,6 +129,26 @@ pub(super) async fn accept(
         .await?;
         assert_eq!(shape, (1, 4), "{source}: one mint with four additional nets");
     }
+    assert_eq!(
+        talk(owner, admitted, npc, 1614, "mission").await?,
+        source_reply("line-131")?,
+        "an expired initial timer stays expired after replacement"
+    );
+    let state: (i64, i64, i64, i64) = sqlx::query_as(
+        "SELECT
+         (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
+         (SELECT value FROM game_character_quest_tracks WHERE track_key=$2),
+         count(*), COALESCE(sum(jsonb_array_length(m.additional_plan)),0)::bigint
+           FROM game_quest_reward_sources r
+           JOIN game_reward_claim_mint_receipts m ON m.transaction_id=r.mint_transaction_id
+          WHERE r.transition_key=$3",
+    )
+    .bind(NEST_TIMER)
+    .bind(REPLACEMENTS)
+    .bind(REPLACE)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(state, (expired_timer, 2, 2, 8));
     Ok(())
 }
 

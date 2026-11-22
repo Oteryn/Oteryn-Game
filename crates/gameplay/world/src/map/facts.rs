@@ -54,7 +54,7 @@ pub use feroxa_map_phases::{FeroxaPhaseTile, prepare_feroxa_phase};
 use quest_callbacks::CallbackStates;
 pub use quest_callbacks::{
     ArenaPillarProjection, ElementalArrivalReservation, QuestCallbackProjection, QuestMapItemMove,
-    QuestSceneMutation, QuestTimedPassage, RafzaneElevator,
+    QuestSceneMutation, QuestTimedPassage, RafzaneElevator, SourceBossLeverProjection,
 };
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;

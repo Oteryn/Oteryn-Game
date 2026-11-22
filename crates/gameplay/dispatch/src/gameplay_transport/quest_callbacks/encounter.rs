@@ -2,6 +2,26 @@
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
+use oteryn_gameplay_entities::carrier::encounter_access::{
+    EncounterDefenders, StagedQuestEncounter,
+};
+
+struct PreparedPhase {
+    phase: Option<super::super::encounter_phases::ActivePhase>,
+    actors: Vec<ExactActorRef>,
+    roster: Option<EncounterDefenders>,
+}
+
+struct EncounterCreditPublication {
+    cache: std::sync::Arc<std::sync::Mutex<super::super::grizzly_kills::GrizzlyCaptureCache>>,
+    prepared: super::super::grizzly_kills::PreparedEncounter,
+}
+
+pub(super) struct StagedSourceBoss<'owner> {
+    native: StagedQuestEncounter<'owner, PreparedPhase>,
+    players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
+    capture: Option<EncounterCreditPublication>,
+}
 
 pub(in crate::gameplay_transport) fn room_contains(
     encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
@@ -91,7 +111,69 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             cause,
             reservation,
             projection,
+            None,
         )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn stage_source_boss<'owner>(
+        &self,
+        runtime: &'owner mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        expected_revision: u64,
+        after: EntryFacts,
+        cause: QuestCause,
+    ) -> Result<StagedSourceBoss<'owner>, UseDisposition> {
+        let mut staged = None;
+        let disposition = self.quest_encounter(
+            runtime,
+            states,
+            actor,
+            session,
+            map,
+            callback,
+            key,
+            expected_revision,
+            after,
+            false,
+            cause,
+            None,
+            None,
+            Some(&mut staged),
+        );
+        staged.ok_or(disposition)
+    }
+
+    pub(super) fn publish_staged_source_boss(
+        &self,
+        staged: StagedSourceBoss<'_>,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+        lever: crate::map::facts::SourceBossLeverProjection,
+    ) {
+        let (runtime, (snapshots, prepared)) = staged.native.publish();
+        if let (Some(capture), Some(roster)) = (staged.capture, prepared.roster) {
+            capture
+                .cache
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .publish_encounter(capture.prepared, roster);
+        }
+        if let Some(phase) = prepared.phase {
+            states
+                .encounter_phases
+                .active
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push(phase);
+        }
+        lever.publish();
+        self.project_encounter_movements(runtime, states, map, staged.players, snapshots);
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -123,13 +205,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             cause,
             None,
             projection,
+            None,
         )
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn quest_encounter(
+    fn quest_encounter<'owner>(
         &self,
-        runtime: &mut ChannelRuntimeV1,
+        runtime: &'owner mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
         session: GameSessionId,
@@ -142,10 +225,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
         projection: Option<&QuestCallbackProjection>,
+        staged_source_boss: Option<&mut Option<StagedSourceBoss<'owner>>>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
+        if staged_source_boss.is_some() && (encounter.phase.is_none() || encounter.timing.is_some())
+        {
+            return UseDisposition::Rejected;
+        }
         if preflight && callback.has_personal_state() {
             if !callback.requires_world_admission {
                 return UseDisposition::Rejected;
@@ -410,35 +498,65 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
-            proofs,
-            &monsters,
-            |runtime, actors| {
-                let roster = if prepared.is_some() {
-                    Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
+        let capture_required = prepared.is_some();
+        let bind = |runtime: &mut ChannelRuntimeV1, actors: &[ExactActorRef]| {
+            let roster = if capture_required {
+                Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
                         party.iter().map(|(actor, _)| *actor).collect(), actors.to_vec(),
                     )?)
-                } else { None };
-                credits
-                    .map(|credits| {
-                        super::super::encounter_phases::bind(
-                            runtime,
-                            encounter,
-                            key,
-                            actors,
-                            &party,
-                            credits,
-                            self.movement_cells().clone(),
-                            self.owner_now().get(),
-                        )
-                    })
-                    .transpose().map(|phase| (phase, actors.to_vec(), roster))
+            } else {
+                None
+            };
+            credits
+                .map(|credits| {
+                    super::super::encounter_phases::bind(
+                        runtime,
+                        encounter,
+                        key,
+                        actors,
+                        &party,
+                        credits,
+                        self.movement_cells().clone(),
+                        self.owner_now().get(),
+                    )
+                })
+                .transpose()
+                .map(|phase| PreparedPhase {
+                    phase,
+                    actors: actors.to_vec(),
+                    roster,
+                })
+        };
+        if let Some(staged) = staged_source_boss {
+            let Ok(native) = runtime.stage_quest_encounter_with_phase(proofs, &monsters, bind)
+            else {
+                return UseDisposition::Rejected;
+            };
+            let capture = prepared.zip(attack.as_ref()).map(|(prepared, attack)| {
+                EncounterCreditPublication {
+                    cache: attack.kills().1.clone(),
+                    prepared,
+                }
+            });
+            *staged = Some(StagedSourceBoss {
+                native,
+                players,
+                capture,
+            });
+            return UseDisposition::Committed;
+        }
+        let Ok((
+            snapshots,
+            PreparedPhase {
+                phase,
+                actors,
+                roster,
             },
-            || {
-                map.facts
-                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
-            },
-        ) else {
+        )) = runtime.commit_quest_encounter_with_phase(proofs, &monsters, bind, || {
+            map.facts
+                .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
+        })
+        else {
             return UseDisposition::Rejected;
         };
         if let (Some(capture), Some(prepared), Some(roster)) = (capture.as_mut(), prepared, roster)
@@ -462,6 +580,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return disposition;
         }
+        self.project_encounter_movements(runtime, states, map, players, snapshots);
+        UseDisposition::Committed
+    }
+
+    fn project_encounter_movements(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+        players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
+        snapshots: Vec<MovementPositionSnapshot>,
+    ) {
         for ((who, member_session, expected), snapshot) in players.into_iter().zip(snapshots) {
             states.stage_special_movement_step(
                 runtime,
@@ -485,7 +615,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 map.facts.emit_movement_effect(pos, 11);
             }
         }
-        UseDisposition::Committed
     }
 }
 

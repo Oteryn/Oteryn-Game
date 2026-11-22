@@ -120,6 +120,7 @@ pub(super) fn retain_predecessor(catalogue: &mut super::QuestStateCatalogue) -> 
                 | "oteryn:quest-progress/crystalserver/kv/nest-timer"
                 | "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount"
                 | "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count"
+                | "oteryn:quest-progress/rottin-wood/net-replacements"
         )
     };
     for before_hammer in [true, false] {
@@ -171,6 +172,42 @@ pub(super) fn retain_predecessor(catalogue: &mut super::QuestStateCatalogue) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rottin_nets_occurrence_plan_matches_the_catalogued_effects() -> Result<(), String> {
+        use super::super::reward_callbacks::{durable_plan, load};
+
+        let loaded = super::super::loader::load_embedded_quest_state("rottin-net-test")
+            .map_err(|err| format!("{err:?}"))?;
+        let replacement = "oteryn:quest-reward/rottin-wood/replace-nets";
+        let counter = "oteryn:quest-progress/rottin-wood/net-replacements";
+        let track = loaded
+            .catalogue()
+            .track(counter)
+            .ok_or("replacement count")?;
+        assert_eq!(
+            (track.initial, track.min, track.max),
+            (0, 0, 1_000_000_000_000)
+        );
+        let callback = load()?
+            .into_iter()
+            .find(|callback| callback.key == replacement)
+            .ok_or("replacement callback")?;
+        let plan = durable_plan(&callback)?;
+        assert_eq!(
+            plan["state_ops"][0]["effect"],
+            serde_json::json!({"kind": "add", "value": 0})
+        );
+        assert_eq!(
+            plan["state_ops"][1],
+            serde_json::json!({
+                "track": counter,
+                "from": {"kind": "between", "minimum": 0, "maximum": track.max - 1},
+                "effect": {"kind": "add", "value": 1}
+            })
+        );
+        Ok(())
+    }
 
     #[test]
     fn rottin_wall_bindings_are_registered_and_bounded() -> Result<(), String> {

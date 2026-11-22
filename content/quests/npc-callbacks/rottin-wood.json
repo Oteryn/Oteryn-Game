@@ -511,14 +511,19 @@
             "seconds": 1801
           },
           "effect": {
-            "kind": "set_now"
+            "kind": "add",
+            "value": 0
           }
         }
       ],
       "per_occurrence_mint": true,
       "failure_reply": [
         "I can only get you more traps in half an hour."
-      ]
+      ],
+      "counter": {
+        "track": "oteryn:quest-progress/rottin-wood/net-replacements",
+        "maximum": 1000000000000
+      }
     },
     {
       "key": "oteryn:quest-reward/rottin-wood/start-bushwhacking",

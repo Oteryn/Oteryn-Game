@@ -190,7 +190,11 @@ fn scenario(rabbit: bool) -> TestResult {
 
         if rabbit {
             let mut admitted = deps.admitted;
+            super::qengine_outfit_stories_fixtures::seed_production_progression_context(
+                &harness, &owner, admitted.game_session_id,
+            ).await?;
             owner.admit_progression_session(&mut admitted).await;
+            assert!(owner.progression_binding(admitted.game_session_id).is_some());
             nest_rabbit_knives(&harness).await?;
             let result = exercise_rabbit(&owner, &harness, native, fence, deps.actor).await;
             drop(owner);

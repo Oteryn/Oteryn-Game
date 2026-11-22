@@ -609,6 +609,40 @@ impl CallbackStates {
     }
 }
 
+/// A reservation owns one map revision without holding a mutex across a durable pass.
+pub struct SourceBossLeverProjection {
+    callbacks: Arc<Mutex<Arc<CallbackStates>>>,
+    key: u64,
+    next: u64,
+    after: EntryFacts,
+    reserved: bool,
+}
+
+impl SourceBossLeverProjection {
+    pub fn publish(mut self) {
+        let mut states = self
+            .callbacks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let states = Arc::make_mut(&mut states);
+        states.reserved.remove(&self.key);
+        states.changed.insert(self.key, (self.next, self.after));
+        self.reserved = false;
+    }
+}
+
+impl Drop for SourceBossLeverProjection {
+    fn drop(&mut self) {
+        if self.reserved {
+            let mut states = self
+                .callbacks
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            Arc::make_mut(&mut states).reserved.remove(&self.key);
+        }
+    }
+}
+
 impl BundleFacts {
     /// Fence up to eight already qualified map placements without transforming
     /// them. The synchronous consequence runs under the same map owner lock,
@@ -1717,6 +1751,32 @@ impl BundleFacts {
         clippy::too_many_arguments,
         reason = "one atomic projection binds the lever revision and its bounded map effects"
     )]
+    /// Reserve the exact source lever revision while its encounter and cooldown are staged.
+    pub fn reserve_source_boss_lever(
+        &self,
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+    ) -> Option<SourceBossLeverProjection> {
+        let next = expected.checked_add(1)?;
+        let mut states = self.callbacks.lock().ok()?;
+        let current = states.changed.get(&key).map_or_else(
+            || states.phase_revision(key).unwrap_or(0),
+            |(revision, _)| *revision,
+        );
+        if current != expected || states.key_reserved(key) || !states.has_capacity(1) {
+            return None;
+        }
+        Arc::make_mut(&mut states).reserved.insert(key);
+        Some(SourceBossLeverProjection {
+            callbacks: Arc::clone(&self.callbacks),
+            key,
+            next,
+            after,
+            reserved: true,
+        })
+    }
+
     pub fn apply_quest_callback(
         &self,
         key: u64,

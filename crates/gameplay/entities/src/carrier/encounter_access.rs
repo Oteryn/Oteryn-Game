@@ -7,6 +7,26 @@ pub use encounter_defenders::EncounterDefenders;
 
 pub type EncounterHealProjection = (Vec<(ExactActorRef, String, u64, u64)>, Vec<usize>);
 
+/// Native encounter prepared under the exclusive owner borrow. Dropping it
+/// leaves the original carrier intact, including movements and actor slots.
+pub struct StagedQuestEncounter<'owner, T> {
+    runtime: &'owner mut ChannelRuntimeV1,
+    carrier: ChannelActorCarrier,
+    output: (Vec<MovementPositionSnapshot>, T),
+}
+
+impl<'owner, T> StagedQuestEncounter<'owner, T> {
+    pub fn publish(
+        self,
+    ) -> (
+        &'owner mut ChannelRuntimeV1,
+        (Vec<MovementPositionSnapshot>, T),
+    ) {
+        self.runtime.carrier = self.carrier;
+        (self.runtime, self.output)
+    }
+}
+
 /// Runtime-owned encounter state. The carrier calls these at the existing damage,
 /// heal and corpse-publication boundaries, while holding the same owner borrow.
 pub trait EncounterHooks: std::fmt::Debug + Send + Sync + std::any::Any {
@@ -234,6 +254,21 @@ impl ChannelRuntimeV1 {
             true,
         )
     }
+    /// Prepare the actor projection before the source lever's durable publish decision.
+    pub fn stage_quest_encounter_with_phase<P: SourceStepCommitProof, T>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        bind: impl FnOnce(&mut Self, &[ExactActorRef]) -> Result<T, CarrierError>,
+    ) -> Result<StagedQuestEncounter<'_, T>, CarrierError> {
+        self.stage_quest_entry(
+            players,
+            monsters,
+            |runtime, actors, _| bind(runtime, actors),
+            true,
+        )
+    }
+
     /// Build the participant-bound defender owner before the map CAS; every failure rolls back.
     pub fn commit_quest_encounter_entry_with_defenders<P: SourceStepCommitProof>(
         &mut self,
@@ -312,6 +347,28 @@ impl ChannelRuntimeV1 {
         publish: bool,
         deferred_spawns: bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
+        let staged = self.stage_quest_entry(players, monsters, bind, deferred_spawns)?;
+        if !project() {
+            return Err(CarrierError::PlanConflict);
+        }
+        Ok(if publish {
+            staged.publish().1
+        } else {
+            staged.output
+        })
+    }
+
+    fn stage_quest_entry<P: SourceStepCommitProof, T>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        bind: impl FnOnce(
+            &mut Self,
+            &[ExactActorRef],
+            &[MovementPositionSnapshot],
+        ) -> Result<T, CarrierError>,
+        deferred_spawns: bool,
+    ) -> Result<StagedQuestEncounter<'_, T>, CarrierError> {
         if players.is_empty()
             || players.len() > 16
             || (!deferred_spawns && monsters.is_empty())
@@ -343,15 +400,14 @@ impl ChannelRuntimeV1 {
                 snapshots.push(self.commit_source_step(proof)?);
             }
             let phase = bind(self, &actors, &snapshots)?;
-            if !project() {
-                return Err(CarrierError::PlanConflict);
-            }
             Ok((snapshots, phase))
         })();
-        if !publish || result.is_err() {
-            self.carrier = before;
-        }
-        result
+        let carrier = std::mem::replace(&mut self.carrier, before);
+        Ok(StagedQuestEncounter {
+            runtime: self,
+            carrier,
+            output: result?,
+        })
     }
 
     /// Publish a bounded group relocation and its source map projection together.

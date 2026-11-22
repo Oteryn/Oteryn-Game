@@ -7,8 +7,7 @@ use crate::durability::{
 };
 use oteryn_gameplay_quests::quest::world_callbacks::court_warlock as source;
 
-#[derive(Clone)]
-pub(super) struct UnpublishedAdmission {
+struct SourceBossReservation {
     id: [u8; 16],
     lever: SourceBossLever,
     party: Vec<CurrentCharacterItemFence>,
@@ -83,7 +82,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         identity.extend_from_slice(&key.to_be_bytes());
         identity.extend_from_slice(&revision.to_be_bytes());
-        let admission = UnpublishedAdmission {
+        let admission = SourceBossReservation {
             id: super::super::npc_trade_command::derived(
                 &identity,
                 command.game_session_id(),
@@ -92,17 +91,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             lever,
             party,
         };
-        {
-            let Ok(mut refunds) = self.states.quest_callbacks.source_boss_refunds.lock() else {
-                return UseDisposition::Rejected;
-            };
-            // Register compensation before writing. Even cancellation of the
-            // outer USE leaves the exact unpublished transaction recoverable.
-            if refunds.len() >= 64 || refunds.iter().any(|pending| pending.id == admission.id) {
-                return UseDisposition::Rejected;
-            }
-            refunds.push(admission.clone());
-        }
         let reserved = self
             .source_boss_admission(&admission, SourceBossAdmission::Reserve)
             .await;
@@ -136,8 +124,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(false) => {
                 if uncertain {
                     self.try_refund_source_boss_lever(&admission).await;
-                } else {
-                    self.forget_unpublished_source_boss_lever(admission.id);
                 }
                 return UseDisposition::Rejected;
             }
@@ -148,21 +134,68 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             }
         }
-        let disposition = self.execute_quest_encounter(
-            runtime, states, actor, session, map, callback, key, revision, after, false, cause,
-            None, None,
-        );
-        if disposition == UseDisposition::Committed {
-            self.forget_unpublished_source_boss_lever(admission.id);
-        } else {
+        let Some(lever_projection) = map.facts.reserve_source_boss_lever(key, revision, after)
+        else {
             self.try_refund_source_boss_lever(&admission).await;
+            return UseDisposition::Rejected;
+        };
+        let staged = match self.stage_source_boss(
+            runtime, states, actor, session, map, callback, key, revision, after, cause,
+        ) {
+            Ok(staged) => staged,
+            Err(disposition) => {
+                self.try_refund_source_boss_lever(&admission).await;
+                return disposition;
+            }
+        };
+        // Nothing from the staged carrier or lever is observable before this
+        // durable linearization point. Reissuing Publish reads the same receipt.
+        let retry = super::super::AdmissionRetryBudget::for_command(self.root);
+        let publish = || self.source_boss_admission(&admission, SourceBossAdmission::Publish);
+        let publication = retry.retry_durability("source_boss_publish", publish).await;
+        #[cfg(test)]
+        let publication = if matches!(publication, Ok(true))
+            && self
+                .states
+                .quest_callbacks
+                .lose_source_boss_publish_ack
+                .swap(false, std::sync::atomic::Ordering::AcqRel)
+        {
+            Err(DurabilityError::CommitOutcomeUnknown)
+        } else {
+            publication
+        };
+        let publication = if matches!(
+            publication,
+            Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::RootPassDeadlineExceeded)
+        ) {
+            retry
+                .retry_durability("source_boss_publish_reconcile", publish)
+                .await
+        } else {
+            publication
+        };
+        match publication {
+            Ok(true) => {
+                self.publish_staged_source_boss(staged, states, map, lever_projection);
+                UseDisposition::Committed
+            }
+            Ok(false) => {
+                self.try_refund_source_boss_lever(&admission).await;
+                UseDisposition::Rejected
+            }
+            Err(error) => {
+                super::super::operator_event(&format!(
+                    "source_boss_publish_deferred reason={error:?}"
+                ));
+                UseDisposition::Rejected
+            }
         }
-        disposition
     }
 
     async fn source_boss_admission(
         &self,
-        admission: &UnpublishedAdmission,
+        admission: &SourceBossReservation,
         operation: SourceBossAdmission,
     ) -> Result<bool, DurabilityError> {
         self.root
@@ -178,45 +211,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
-    fn forget_unpublished_source_boss_lever(&self, id: [u8; 16]) {
-        if let Ok(mut refunds) = self.states.quest_callbacks.source_boss_refunds.lock() {
-            refunds.retain(|pending| pending.id != id);
-        }
-    }
-
-    async fn try_refund_source_boss_lever(&self, admission: &UnpublishedAdmission) {
-        match self
+    async fn try_refund_source_boss_lever(&self, admission: &SourceBossReservation) {
+        if let Err(error) = self
             .source_boss_admission(admission, SourceBossAdmission::Refund)
             .await
         {
-            Ok(true) => self.forget_unpublished_source_boss_lever(admission.id),
-            Ok(false) => {}
-            Err(error) => super::super::operator_event(&format!(
-                "source_boss_refund_deferred reason={error:?}"
-            )),
+            super::super::operator_event(&format!("source_boss_refund_deferred reason={error:?}"));
         }
     }
 
     pub(in crate::gameplay_transport) async fn refund_unpublished_source_boss_lever(&self) {
-        let pending = {
-            // The USE owns runtime through reservation, COMMIT and publication.
-            // Never refund while that turn can still publish the encounter.
-            let Ok(runtime) = self.runtime.try_lock() else {
-                return;
-            };
-            if runtime.owner_fence().is_err() {
-                return;
-            }
-            let Ok(mut refunds) = self.states.quest_callbacks.source_boss_refunds.lock() else {
-                return;
-            };
-            if !refunds.is_empty() {
-                refunds.rotate_left(1);
-            }
-            refunds.last().cloned()
+        // A current USE holds this same native guard from reserve through publish.
+        // Keep it across recovery so an unpublished row never races a live turn.
+        let Ok(runtime) = self.runtime.try_lock() else {
+            return;
         };
-        if let Some(pending) = pending {
-            self.try_refund_source_boss_lever(&pending).await;
+        let Ok(fence) = runtime.owner_fence() else {
+            return;
+        };
+        if let Err(error) = self
+            .root
+            .refund_abandoned_source_boss_lever(
+                self.character,
+                self.holder,
+                runtime.binding().runtime_scope(),
+                fence.generation(),
+            )
+            .await
+        {
+            super::super::operator_event(&format!("source_boss_refund_deferred reason={error:?}"));
         }
     }
 }

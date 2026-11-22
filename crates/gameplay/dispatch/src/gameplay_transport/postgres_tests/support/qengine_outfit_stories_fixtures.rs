@@ -385,6 +385,79 @@ pub(super) async fn earn_level(
 
 /// Historical prerequisite arrangement for the three source fixtures below.
 /// The tested quest action still uses its canonical owner and bound operation.
+/// Qualify a seeded Character against the active production progression before
+/// the normal session binder reads its durable revisions.
+pub(super) async fn seed_production_progression_context(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+) -> TestResult {
+    let character = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|_| "seeded character fence")?
+        .ok_or("seeded character")?
+        .character_id;
+    let interpretation = owner
+        .root
+        .read_character_root_interpretation(owner.character, character)
+        .await
+        .map_err(debug)?
+        .ok_or("seeded character interpretation")?;
+    let [profile, ruleset, content, _] = interpretation.revisions();
+    let policy = owner
+        .active_generation
+        .and_then(|generation| generation.progression())
+        .ok_or("production progression")?
+        .policy_for(profile, ruleset, content)
+        .map_err(debug)?;
+    let stored = owner
+        .root
+        .read_character_progression(owner.character, character)
+        .await
+        .map_err(debug)?
+        .ok_or("seeded progression")?;
+    // The generic harness pairs level 50 with 1,000 XP. The native calculator
+    // validates the stored level against its curve before accepting a receipt.
+    let experience = policy
+        .thresholds
+        .iter()
+        .find(|threshold| threshold.level == stored.level)
+        .ok_or("seeded level threshold")?
+        .minimum_experience
+        .get();
+
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let updated = sqlx::query(
+        "UPDATE game_character_progression_state
+         SET simulation_revision=$2, evidence_revision=$3, declaration_revision=$4,
+             policy_revision=$5, reward_revision=$6, total_experience=$10
+         WHERE character_id=encode($1,'hex')::uuid AND profile_revision=$7
+           AND ruleset_revision=$8 AND content_revision=$9
+           AND character_revision=$11::text::numeric AND level=$12",
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind(&policy.context.simulation)
+    .bind(&policy.context.evidence)
+    .bind(&policy.context.declaration)
+    .bind(&policy.policy_revision)
+    .bind(&policy.reward_revision)
+    .bind(profile)
+    .bind(ruleset)
+    .bind(content)
+    .bind(experience)
+    .bind(stored.character_revision.get().to_string())
+    .bind(i64::from(stored.level))
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(updated.rows_affected(), 1);
+    tx.commit().await?;
+    Ok(())
+}
+
 pub(super) async fn seed_quest_revision(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: crate::foundation::GameSessionId,

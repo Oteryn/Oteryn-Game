@@ -64,6 +64,7 @@ pub(super) struct PrepareTestBarrier {
 #[cfg(test)]
 tokio::task_local! {
     pub(super) static PREPARE_TEST_BARRIER: Arc<PrepareTestBarrier>;
+    pub(super) static PRE_RESTORE_TEST_BARRIER: Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
     pub(super) static LOSS_READ_TEST_BARRIER: Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
 }
 
@@ -784,6 +785,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 Unavailable
             });
+        }
+        #[cfg(test)]
+        if let Ok(barrier) = PRE_RESTORE_TEST_BARRIER.try_with(Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
         }
         {
             let mut runtime = self.runtime.lock().await;

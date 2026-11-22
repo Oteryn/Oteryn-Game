@@ -1234,6 +1234,26 @@ pub fn durable_plan(callback: &RewardCallback) -> Result<serde_json::Value, Stri
         let source = object.remove("carried_item").ok_or("recipe source")?;
         object.insert("recipe_source".into(), source);
     }
+    if let Some(counter) = callback
+        .counter
+        .as_ref()
+        .filter(|_| callback.per_occurrence_mint)
+    {
+        // The occurrence receipt validates its changed tracks against the exact source plan.
+        // Keep the counter claim identity and expose its implicit effect to that validator.
+        let operations = value
+            .as_object_mut()
+            .ok_or("occurrence plan")?
+            .entry("state_ops")
+            .or_insert_with(|| serde_json::json!([]))
+            .as_array_mut()
+            .ok_or("occurrence state operations")?;
+        operations.push(serde_json::json!({
+            "track": counter.track,
+            "from": {"kind": "between", "minimum": 0, "maximum": counter.maximum - 1},
+            "effect": {"kind": "add", "value": 1}
+        }));
+    }
     Ok(value)
 }
 
