@@ -23,6 +23,7 @@ PROGRESS = 'tools/content-schema/quest-authoring/samples/questlog/progress.json'
 INTERACTIONS = 'tools/content-schema/quest-authoring/samples/interactions/interactions.json'
 BUNDLE = 'tools/content-schema/quest-authoring/samples/source_migration/bundle.json'
 INTERACTION_MANIFEST = 'tools/content-schema/quest-authoring/samples/interactions/manifest.json'
+NATIVE_CLAIM_ALIASES = 'content/quests/native-reward-placement-aliases.json'
 DIRECTORY = 'content/quests/definitions/'
 REVISION = 'quest-r1'
 SHARD_SIZE = 100
@@ -338,6 +339,32 @@ def tree_validator():
     return jsonschema.Draft202012Validator(schema, registry=registry)
 
 
+def reconcile_paradox_key(root, records, claims):
+    """The existing key-mint owner serves this PG-qualified variant on the native map."""
+    key = 'oteryn:reward-claim.quest.key.id3899'
+    claim, = (row for row in claims if row['identity']['key'] == key)
+    alias, = (row for row in read(root, NATIVE_CLAIM_ALIASES)['aliases'] if row['claim'] == key)
+    placement, = claim['placements']
+    binding = placement['source_binding']
+    if (claim.get('definition_profile') != 'authored_variant_v1'
+            or claim['data_holds']
+            or claim['source_variant']['native_lowering']['pending_implementation']
+                != ['KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED']
+            or placement['reward'].get('key_binding') != 'canary:door-key/3899'
+            or alias['expected_revision'] != claim['identity']['revision']
+            or alias['project_position'] != binding['project_position']
+            or alias['appearance'] != placement['appearance_tibia_id']
+            or {'server': 'crystalserver', 'unique_id': alias['expected_source_uid']}
+                not in binding['legacy_unique_ids']):
+        raise ValueError('Paradox key native placement evidence differs from the qualified claim')
+    quest, = (row['definition'] for row in records
+              if row['definition']['identity']['key'] == 'oteryn:quest.the_paradox_tower_quest')
+    # Preserve the original source witness and source digest attached above.
+    quest['missing_data'].remove({
+        'code': 'claim_native_lowering_missing', 'source_key': claim['provenance']['pilot_key'],
+    })
+
+
 def expected_files(root, include_registration=False):
     quests = read(root, SOURCE)['quests']
     claims = claim_catalogue(root)
@@ -378,6 +405,7 @@ def expected_files(root, include_registration=False):
     records = attach_donor_data(root, records)
     from quest_soul_war_followup import apply as apply_soul_war_followup
     records, _ = apply_soul_war_followup(root, records)
+    reconcile_paradox_key(root, records, claims)
     from quest_item_keys import catalogue, enrich, item_definitions, validate_references
     items = item_definitions(root)
     recipes = [row['definition'].get('recipe') or
@@ -430,6 +458,7 @@ def expected_files(root, include_registration=False):
             'tools/content-schema/quest-authoring/quest_item_keys.py',
             'tools/content-schema/quest-authoring/quest_item_keys.schema.json',
             'content/quests/world-callbacks.json',
+            NATIVE_CLAIM_ALIASES,
             'tools/content-schema/quest-authoring/quest_donor_attachment.py',
             'tools/content-schema/quest-authoring/quest_donor_attachment.schema.json',
             'tools/content-schema/quest-authoring/quest_requirement_followup.py',

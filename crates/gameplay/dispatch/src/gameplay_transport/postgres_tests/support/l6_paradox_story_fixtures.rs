@@ -156,6 +156,7 @@ pub(super) fn crops() -> TestResult<Vec<super::l6_world_pickups_fixtures::Native
 async fn install(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
+    production: bool,
 ) -> TestResult<Vec<EntityRef>> {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
@@ -208,9 +209,14 @@ async fn install(
         })
         .collect();
     npcs.sort_by(|a, b| a.key.cmp(&b.key));
+    let table = if production {
+        super::paradox_tower_journey::placements()?
+    } else {
+        NpcPlacementTable { npcs }
+    };
     runtime
         .place_npcs(
-            &NpcPlacementTable { npcs },
+            &table,
             |key| allowed.contains(key),
             true,
         )
@@ -233,14 +239,14 @@ async fn install(
         .collect()
 }
 
-struct Reply {
+pub(super) struct Reply {
     id: u64,
     payload: Vec<u8>,
     body: Vec<u8>,
-    disposition: NpcIntentDisposition,
+    pub(super) disposition: NpcIntentDisposition,
 }
 
-async fn conversation(
+pub(super) async fn conversation(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -398,7 +404,8 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("POSTGRES_DATABASE_READY l6_paradox_story version={version}");
-    let npcs = install(owner, admitted).await?;
+    let journey = name == super::paradox_tower_journey::NAME;
+    let npcs = install(owner, admitted, journey).await?;
     let mut selected = admitted
         .continuity
         .selected_capabilities

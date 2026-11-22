@@ -298,7 +298,7 @@ pub(super) async fn at(
     })
 }
 
-async fn step(
+pub(super) async fn step(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     dx: i32,
@@ -366,7 +366,7 @@ async fn sql_state(h: &Harness) -> TestResult<serde_json::Value> {
     Ok(sqlx::query_scalar("SELECT jsonb_build_object('roots',(SELECT jsonb_agg(to_jsonb(r)) FROM game_character_roots r),'states',(SELECT jsonb_agg(to_jsonb(s) ORDER BY quest_key) FROM game_character_quest_states s),'tracks',(SELECT jsonb_agg(to_jsonb(t) ORDER BY track_key) FROM game_character_quest_tracks t),'receipts',(SELECT count(*) FROM game_character_quest_receipts),'sources',(SELECT count(*) FROM game_quest_reward_sources),'mints',(SELECT count(*) FROM game_reward_claim_mint_receipts),'consumptions',(SELECT count(*) FROM game_quest_callback_consumptions),'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY item_instance_id) FROM game_item_instances i))").fetch_one(&h.pool).await?)
 }
 
-async fn second(
+pub(super) async fn second(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
@@ -466,11 +466,12 @@ async fn second(
     Ok(())
 }
 
-async fn first(
+pub(super) async fn first(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
+    let personal_before = receipt_counts(h).await?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -574,16 +575,23 @@ async fn first(
         after, tool,
         "retained Machete identity/quantity/custody are unchanged"
     );
-    let personal:(i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_character_quest_receipts),(SELECT count(*) FROM game_quest_reward_sources),(SELECT count(*) FROM game_quest_callback_consumptions)").fetch_one(&h.pool).await?;
     assert_eq!(
-        personal,
-        (0, 0, 0),
+        receipt_counts(h).await?,
+        personal_before,
         "physical grass/stair puzzle neither charges quest inputs nor grants personal value"
     );
     Ok(())
 }
 
-async fn cut_grass(
+async fn receipt_counts(h: &Harness) -> TestResult<(i64, i64, i64)> {
+    Ok(sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_character_quest_receipts),          (SELECT count(*) FROM game_quest_reward_sources),          (SELECT count(*) FROM game_quest_callback_consumptions)",
+    )
+    .fetch_one(&h.pool)
+    .await?)
+}
+
+pub(super) async fn cut_grass(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     target: Position,
@@ -898,7 +906,7 @@ async fn third(
     Ok(())
 }
 
-fn set_clock(owner: &ComposedFreshAdmission<'_, '_, '_>, micros: u64) -> TestResult {
+pub(super) fn set_clock(owner: &ComposedFreshAdmission<'_, '_, '_>, micros: u64) -> TestResult {
     assert!(
         micros >= owner.owner_now().get(),
         "fixture semantic clock never rewinds"

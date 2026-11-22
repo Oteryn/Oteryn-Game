@@ -68,6 +68,7 @@ fn scenario_case(
     let spirit = name == "qengine-rewards-questpc4-spirit";
     let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
     let native_switch = name.starts_with("l6-tomb-switch-native-");
+    let paradox_journey = name == super::super::paradox_tower_journey::NAME;
     let native_upper = name.starts_with("qengine-rewards-questpc4-paradox-upper-");
     let native_story = name.starts_with("qengine-rewards-questpc4-paradox-story-");
     let diprath_room = name.starts_with("l6-diprath-room-");
@@ -115,7 +116,8 @@ fn scenario_case(
         || native_signs
         || diprath_room
         || native_story
-        || native_upper;
+        || native_upper
+        || paradox_journey;
     let start = if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
@@ -227,7 +229,7 @@ fn scenario_case(
         super::super::m01b_explore_fixtures::start(name, trigger)
     } else if native_upper {
         super::super::l6_paradox_upper_fixtures::start(name)
-    } else if native_story {
+    } else if native_story || paradox_journey {
         super::super::l6_paradox_story_fixtures::start()
     } else if diprath_room {
         super::super::l6_diprath_room_fixtures::start()?
@@ -1145,6 +1147,10 @@ fn scenario_case(
                     .ok_or("native explore policies")?,
                 name,
             )?
+        } else if paradox_journey {
+            super::super::paradox_tower_journey::world(
+                generation.native_gameplay().ok_or("Paradox native policies")?,
+            )?
         } else if native_upper {
             super::super::l6_paradox_upper_fixtures::world(
                 generation
@@ -1540,6 +1546,8 @@ fn scenario_case(
             } else if name == "questpc7-friends" {
                 // Thirteen selected vendors/priests and one player; charge every actor slot.
                 14
+            } else if paradox_journey {
+                8 // Pilgrim, six contacts, and the lever's timed Ghoul.
             } else if native_story
                 || (native_upper && name.ends_with("-complete"))
                 || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
@@ -2733,6 +2741,10 @@ fn scenario_case(
                 trigger,
             ))
             .await?;
+        } else if paradox_journey {
+            Box::pin(super::super::paradox_tower_journey::exercise(
+                &mut owner, &mut admitted, &h, &authority,
+            )).await?;
         } else if qengine_reward || shared_rewards {
             Box::pin(super::super::qengine_rewards_fixtures::exercise(
                 &mut owner,
