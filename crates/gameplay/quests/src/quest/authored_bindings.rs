@@ -163,7 +163,11 @@ impl Bindings {
             if !super::valid_quest_key(&quest.quest)
                 || !quest.quest.starts_with("oteryn:quest.")
                 || !quests.insert(&quest.quest)
-                || quest.tracks.is_empty()
+                || (quest.tracks.is_empty()
+                    && !quest
+                        .stages
+                        .iter()
+                        .all(super::world_contributions::is_stateless_contribution))
                 || quest.tracks.len() > 128
                 || quest.stages.is_empty()
                 || quest.stages.len() > 128
@@ -220,7 +224,10 @@ impl Bindings {
                                 .state_ops
                                 .iter()
                                 .any(|op| !state_operations::valid(quest, op))
-                            || callback.storage.is_empty()
+                            || (callback.storage.is_empty()
+                                && !super::world_contributions::is_stateless_npc_contribution(
+                                    callback,
+                                ))
                             || callback.storage.iter().any(|s| {
                                 s.increment
                                     || s.at_least
@@ -334,7 +341,8 @@ impl Bindings {
                         && !stage.is_native_encounter()
                         && !matches!(&stage.trigger,
                             Trigger::MapUse { callback } | Trigger::StepIn { callback }
-                            if callback.operation_count() > 0))
+                            if callback.operation_count() > 0
+                                || super::world_contributions::pump_coal(callback).is_some()))
                     || storage.iter().any(|s| {
                         !tracks.contains(&s.track)
                             || quest

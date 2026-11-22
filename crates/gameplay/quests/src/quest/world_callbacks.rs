@@ -1044,7 +1044,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     .world_requirements
                     .iter()
                     .any(|r| r.ground.is_some()))
-                && (!callback.has_state_writes()
+                && ((!callback.has_state_writes()
+                    && super::world_contributions::pump_coal(callback).is_none())
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use

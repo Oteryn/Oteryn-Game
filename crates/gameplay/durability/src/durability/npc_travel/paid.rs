@@ -70,6 +70,17 @@ async fn quote(
             return Ok(Err(TravelRefusal::UnavailableRoute));
         }
     }
+    let world = fence.runtime_scope.world_id();
+    for gate in match (route.service.as_str(), route.route.key.as_str()) {
+        ("oteryn:service.travel.junkar_thais", "kazordoon") => &["steamship"][..],
+        ("oteryn:service.travel.junkar_thais", "robsons_isle") => &["steamship", "awash"],
+        ("oteryn:service.travel.junkar_thais" | "oteryn:service.travel.junkar_robsons", "mines") => &["awash"],
+        _ => &[],
+    } {
+        if !crate::durability::world_event::change_active(tx, world, gate).await? {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
+    }
     if let Some(change) = &route.world_change
         && !crate::durability::world_event::change_active(
             tx,
