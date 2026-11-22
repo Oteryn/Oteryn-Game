@@ -5,6 +5,8 @@
 //! varints unless noted. The writer and the reader apply the same [`validate`], so the writer
 //! never writes what the reader rejects.
 
+use std::num::NonZeroU32;
+
 use crate::Error;
 use crate::bundle::Extent;
 use crate::sector::{Reader, TileLimits, put, put_text};
@@ -124,6 +126,8 @@ pub struct Point {
     pub direction: Direction,
     pub respawn_ms: u32,
     pub boss_policy: Option<BossPolicy>,
+    /// Marks a weighted ordinary point. Same-source entries at its cell are alternatives.
+    pub weight: Option<NonZeroU32>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -216,6 +220,7 @@ pub fn validate(table: &Table, world: &Extent) -> Result<(), Error> {
                 Some(policy) => {
                     policy.validate()?;
                     check(point.respawn_ms == 0, "boss uses ordinary respawn delay")?;
+                    check(point.weight.is_none(), "boss uses ordinary spawn weight")?;
                 }
                 None => limit(
                     (MIN_RESPAWN_MS..=MAX_RESPAWN_MS).contains(&point.respawn_ms),
@@ -259,6 +264,14 @@ pub(crate) fn encode_with_floors(table: &Table, floors: crate::bundle::FloorEnco
             put(&mut out, zigzag(i32::from(point.x) - i32::from(source.x)));
             put(&mut out, zigzag(i32::from(point.y) - i32::from(source.y)));
             out.push(point.direction.byte());
+            if let Some(weight) = point.weight {
+                // Zero delay escapes to the tagged policy space. Old entries retain their bytes.
+                put(&mut out, 0);
+                out.push(3);
+                put(&mut out, point.respawn_ms.into());
+                put(&mut out, weight.get().into());
+                continue;
+            }
             put(&mut out, point.respawn_ms.into());
             match point.boss_policy {
                 Some(BossPolicy::Respawn { min_s, max_s }) => {
@@ -327,26 +340,42 @@ pub(crate) fn decode_with_floors(
             let px = at(x, r.varint()?)?;
             let py = at(y, r.varint()?)?;
             let direction = Direction::from_byte(r.byte()?)?;
-            let respawn_ms = r.bounded(u64::from(u32::MAX), "respawn delay")? as u32;
-            let boss_policy = if respawn_ms == 0 {
-                Some(match r.byte()? {
-                    1 => BossPolicy::Respawn {
-                        min_s: r.varint()?,
-                        max_s: r.varint()?,
-                    },
-                    2 => BossPolicy::AtReset {
-                        chance: BossChance {
-                            numerator: r.varint()?,
-                            denominator: r.varint()?,
-                        },
-                    },
-                    _ => return Err(Error::Format("unknown boss policy tag".into())),
-                })
-            } else {
-                None
+            let delay = |r: &mut Reader<'_>| {
+                r.bounded(u64::from(u32::MAX), "respawn delay")
+                    .map(|delay| delay as u32)
             };
+            let mut respawn_ms = delay(&mut r)?;
+            let mut boss_policy = None;
+            let mut weight = None;
+            if respawn_ms == 0 {
+                match r.byte()? {
+                    1 => {
+                        boss_policy = Some(BossPolicy::Respawn {
+                            min_s: r.varint()?,
+                            max_s: r.varint()?,
+                        })
+                    }
+                    2 => {
+                        boss_policy = Some(BossPolicy::AtReset {
+                            chance: BossChance {
+                                numerator: r.varint()?,
+                                denominator: r.varint()?,
+                            },
+                        })
+                    }
+                    3 => {
+                        respawn_ms = delay(&mut r)?;
+                        let value = r.bounded(u64::from(u32::MAX), "spawn weight")? as u32;
+                        weight = Some(NonZeroU32::new(value).ok_or_else(|| {
+                            Error::Format("spawn weight must be positive".into())
+                        })?);
+                    }
+                    _ => return Err(Error::Format("unknown spawn policy tag".into())),
+                }
+            }
             list.push(Point {
                 boss_policy,
+                weight,
                 creature,
                 x: px,
                 y: py,

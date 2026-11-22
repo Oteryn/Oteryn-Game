@@ -219,6 +219,7 @@ fn families() -> Families {
             direction: Direction::South,
             respawn_ms: 60_000,
             boss_policy: None,
+            weight: None,
             owner: SpawnOwner::World,
         }],
     }];

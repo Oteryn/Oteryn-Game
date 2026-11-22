@@ -65,7 +65,7 @@ fn srx3_poor_soul_actual_world_uncredited_corpse_accepts_current_bundle_frame_po
                 sources.retain(|(points, _)| {
                     points
                         .iter()
-                        .any(|(at, _, key, _, _)| *at == (33851, 31870, 7) && key == POOR_SOUL)
+                        .any(|(at, _, key, ..)| *at == (33851, 31870, 7) && key == POOR_SOUL)
                 });
                 assert_eq!(sources.len(), 1, "one original XML source");
                 assert_eq!(sources[0].0.len(), 1, "preserve the complete source cohort");

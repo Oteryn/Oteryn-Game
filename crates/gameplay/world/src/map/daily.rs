@@ -467,6 +467,7 @@ pub(super) fn grimvale_spawns(
                     creature.to_owned(),
                     health,
                     blockable,
+                    None,
                 )],
                 super::boot::BUNDLE_OCCUPANCY_RETRY_MS,
             ));

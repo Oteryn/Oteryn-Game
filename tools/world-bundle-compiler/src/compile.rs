@@ -553,6 +553,12 @@ fn spawns_with(
     for (key, (source, points)) in kept {
         let (cx, cy, cz) = source.centre;
         let floor = native_floor(cz)?;
+        let weighted_cells: BTreeSet<_> = source
+            .points
+            .iter()
+            .filter(|point| point.weight.is_some())
+            .map(|point| point.cell)
+            .collect();
         let mut list = Vec::with_capacity(points.len());
         for point in points {
             if creatures[point.creature.as_str()].period != "All" {
@@ -565,6 +571,10 @@ fn spawns_with(
                 direction: point.direction,
                 respawn_ms: point.respawn_ms,
                 boss_policy: point.boss_policy,
+                weight: point.weight.or_else(|| {
+                    (point.boss_policy.is_none() && weighted_cells.contains(&point.cell))
+                        .then_some(std::num::NonZeroU32::MIN)
+                }),
             });
         }
         report.realized_points += list.len();

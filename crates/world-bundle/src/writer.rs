@@ -514,6 +514,7 @@ mod tests {
                     direction: spawn::Direction::West,
                     respawn_ms: if boss_policy.is_some() { 0 } else { 1_000 },
                     boss_policy,
+                    weight: None,
                 })
                 .collect(),
             }],

@@ -112,6 +112,7 @@ async fn scenario(harness: &Harness) -> TestResult {
                 "oteryn:creature.rat".into(),
                 rat_health,
                 false,
+                None,
             )],
             5_000,
         )])

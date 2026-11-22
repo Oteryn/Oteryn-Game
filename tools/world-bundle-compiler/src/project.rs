@@ -96,6 +96,7 @@ pub struct SpawnPoint {
     pub direction: Direction,
     pub respawn_ms: u32,
     pub boss_policy: Option<spawn::BossPolicy>,
+    pub weight: Option<std::num::NonZeroU32>,
     pub owner: SpawnOwner,
 }
 
@@ -306,6 +307,8 @@ struct PointRecord {
     #[serde(default)]
     boss_policy: Option<spawn::BossPolicy>,
     #[serde(default)]
+    weight: Option<std::num::NonZeroU32>,
+    #[serde(default)]
     owner: SpawnOwner,
 }
 
@@ -379,8 +382,8 @@ impl Families {
                 }
                 if let Some(policy) = point.boss_policy {
                     policy.validate()?;
-                    if point.respawn_ms != 0 {
-                        return Err(format("boss spawn uses ordinary respawn_ms"));
+                    if point.respawn_ms != 0 || point.weight.is_some() {
+                        return Err(format("boss spawn uses ordinary respawn_ms or weight"));
                     }
                 } else if !(spawn::MIN_RESPAWN_MS..=spawn::MAX_RESPAWN_MS)
                     .contains(&point.respawn_ms)
@@ -394,6 +397,7 @@ impl Families {
                     direction,
                     respawn_ms: point.respawn_ms,
                     boss_policy: point.boss_policy,
+                    weight: point.weight,
                     owner: point.owner,
                 });
             }
