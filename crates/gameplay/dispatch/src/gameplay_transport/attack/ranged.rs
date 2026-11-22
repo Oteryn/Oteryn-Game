@@ -808,7 +808,7 @@ pub(super) fn immune(
                 .any(|key| key == element_key(element)))
 }
 
-fn element_key(element: Element) -> &'static str {
+pub(super) fn element_key(element: Element) -> &'static str {
     match element {
         Element::Physical => "physical",
         Element::Death => "death",

@@ -130,6 +130,7 @@ fn p12c_melee_attack_total_follows_live_skill_and_fight_mode() -> Result<(), Str
         mode: FightMode::Offensive,
         weapon: SwingWeapon::Melee {
             attack: 30,
+            elemental: None,
             skill: MeleeSkill::Sword,
         },
         ranged: None,

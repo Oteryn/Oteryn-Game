@@ -71,15 +71,15 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "3a34749f472055e9ea147a02aff8f79662958ddb926594326048054e9bd0742e"
+        "sha256": "b74eb4eedb030a63df6e6270add9eb9aeb2584fb84b32156021ef7a489ceab35"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
-        "sha256": "731f480fb364d37850fad013b3c03f2a931eea63ab189df6b24e82fbfcfc8cfb"
+        "sha256": "ad82bad67d013f4840e93f92a343295b081cf8e103284b5bc2407adfb7ac0e13"
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "385443f31798e4ca5466d9d8e7800c23b624ec92014b81f12c6fb6c23b2217c9"
+        "sha256": "f78b22e63ed2abae5aac472de6eb8b651a7883f68b7fb68a30c56b1c26b6d4e4"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "acf258baf8e1a2f94edcd382b5471dbfe90ec12ea50b8df8df5a3b7c7b8c4f10"
+          "sha256": "5ffd53f6b1f9cf2603bfa5879ed1aef76397d03cd6585d8d3a8e8d76f2e8da44"
         },
         {
           "creates_canonical_identities": false,

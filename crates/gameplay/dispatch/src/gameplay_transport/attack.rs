@@ -1531,6 +1531,7 @@ mod weapon_tests {
             weapon_of(&[(5, 3264)]),
             Some(SwingWeapon::Melee {
                 attack: 14,
+                elemental: None,
                 skill: MeleeSkill::Sword
             })
         );
@@ -1538,6 +1539,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3286)]),
             Some(SwingWeapon::Melee {
                 attack: 16,
+                elemental: None,
                 skill: MeleeSkill::Club
             })
         );
@@ -1545,6 +1547,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3289)]),
             Some(SwingWeapon::Melee {
                 attack: 22,
+                elemental: None,
                 skill: MeleeSkill::Fist
             })
         );
@@ -1552,6 +1555,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3412), (5, 3264)]),
             Some(SwingWeapon::Melee {
                 attack: 14,
+                elemental: None,
                 skill: MeleeSkill::Sword
             }),
             "a shield is skipped for the other hand"
@@ -1560,6 +1564,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3286), (5, 3264)]),
             Some(SwingWeapon::Melee {
                 attack: 16,
+                elemental: None,
                 skill: MeleeSkill::Club
             }),
             "the left hand is read first"
@@ -1571,6 +1576,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3447), (5, 3264)]),
             Some(SwingWeapon::Melee {
                 attack: 14,
+                elemental: None,
                 skill: MeleeSkill::Sword
             }),
             "ammunition is skipped"

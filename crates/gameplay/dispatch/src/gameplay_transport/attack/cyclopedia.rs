@@ -413,7 +413,7 @@ impl Observation<'_> {
             let constants = AttackConstants::checked_in().ok_or(TabWireError)?;
             let (attack, id, skill_index) = match self.weapon {
                 SwingWeapon::Fists => (constants.fist.attack, 11, 0),
-                SwingWeapon::Melee { attack, skill } => (
+                SwingWeapon::Melee { attack, skill, .. } => (
                     attack,
                     match skill.index() {
                         1 => 9,

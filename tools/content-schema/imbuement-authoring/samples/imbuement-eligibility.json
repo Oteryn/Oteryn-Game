@@ -142529,7 +142529,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21000-21499.json",
-        "canonical_definition_sha256": "f689bced73938cf630d6bf7d9e727d39a16b2756f37581921317589b211cc904",
+        "canonical_definition_sha256": "3c14e2669b9c6adbf8fa406b80012be248b94d6eb3f36774a819a8207a11a442",
         "canonical_name": "make-do boots",
         "wiki_observations": [
           {

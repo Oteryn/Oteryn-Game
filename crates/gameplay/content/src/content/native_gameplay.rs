@@ -367,6 +367,7 @@ pub struct NativeItemAttributes {
     pub blocks_projectile: Option<bool>,
     pub immovable_block_solid: Option<bool>,
     /// Missing is Unknown; only a source-qualified recipe may assert a non-damaging field.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub field_condition: Option<crate::content::field_condition::QualifiedFieldCondition>,
     /// Explicit activated source/config policy; absence stays Unknown.
     pub rune_consumption: Option<NativeRuneConsumption>,
@@ -2308,22 +2309,26 @@ mod tests {
             };
             assert!(
                 matches!(&record.semantics.physical, F::Known(physical)
-                if physical.weight == F::Known(number("weight").expect("donor weight") as u32)
+                if physical.weight == F::Known(if id == 3101 {
+                    5800 // Verified Global Cyclopedia.
+                } else {
+                    number("weight").expect("donor weight") as u32
+                })
                    && physical.movable == F::Known(true) && physical.pickupable == F::Known(true)),
                 "{key}"
             );
 
             let kind = attributes["weapontype"].as_str();
             let slot = match (id, attributes["slot"].as_str(), kind) {
-                (9020, _, _) => None,
-                (3101, _, _) | (_, _, Some("shield" | "spellbook")) => Some(6),
-                (_, Some("head"), _) | (14258, _, _) => Some(1),
-                (_, Some("armor"), _) => Some(2),
-                (_, Some("legs"), _) => Some(3),
-                (_, Some("feet"), _) => Some(4),
-                (_, Some("necklace"), _) => Some(7),
-                (_, Some("ring"), _) => Some(8),
-                (_, Some("hand"), _) | (_, _, Some(_)) => Some(5),
+                (9020, _, _) => 4,
+                (3101, _, _) | (_, _, Some("shield" | "spellbook")) => 6,
+                (_, Some("head"), _) | (14258, _, _) => 1,
+                (_, Some("armor"), _) => 2,
+                (_, Some("legs"), _) => 3,
+                (_, Some("feet"), _) => 4,
+                (_, Some("necklace"), _) => 7,
+                (_, Some("ring"), _) => 8,
+                (_, Some("hand"), _) | (_, _, Some(_)) => 5,
                 _ => panic!("Crystal equipment source slot {key}"),
             };
             let equipment = equipment.unwrap_or_else(|| panic!("missing equipment policy {key}"));
@@ -2331,10 +2336,6 @@ mod tests {
                 .claims()
                 .iter()
                 .filter_map(|(slot, claim)| claim.as_ref().ok().map(|claim| (*slot, claim)));
-            let Some(slot) = slot else {
-                assert!(claims.next().is_none(), "{key}");
-                continue;
-            };
             usable += 1;
             let (actual_slot, claim) = claims
                 .next()
@@ -2492,7 +2493,7 @@ mod tests {
                 }
             }
         }
-        assert_eq!(usable, 149);
+        assert_eq!(usable, 150);
         for (base, active, duration) in [(6299, 6300, 480_000), (9019, 9018, 3_600_000)] {
             let base_key = format!("oteryn:item.tibia.i{base}");
             let active_key = format!("oteryn:item.tibia.i{active}");
@@ -3236,6 +3237,157 @@ mod tests {
             assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
         }
     }
+    fn with_crystal_equipment(
+        check: impl FnOnce(&NativeGameplayState) -> Result<(), Box<dyn std::error::Error>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let mut supplied =
+            NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))?;
+        supplied.source_world = None;
+        let room = qualify_native_entry_room(test_source(1)?.world_id)?;
+        let artifact = compile_native_gameplay(room.compiled(), &supplied)?;
+        check(&decode(&artifact.server_artifact)?.state)
+    }
+
+    #[test]
+    fn crystal_equipment_quiver_exclusion_claims() -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup;
+        with_crystal_equipment(|state| {
+            let group = ["oteryn:equipment-group.non_quiver_left_hand"];
+            for (slot, ids) in [
+                (
+                    5,
+                    &[19356, 19362, 20082, 20083, 20084, 20085, 20086, 20087][..],
+                ),
+                (
+                    6,
+                    &[
+                        19363, 19373, 20050, 20088, 20089, 20090, 20140, 21401, 22755, 22758,
+                    ][..],
+                ),
+            ] {
+                for id in ids {
+                    let key = format!("oteryn:item.tibia.i{id}");
+                    let policy = state
+                        .equipment_policy(&key, "definition-r1")
+                        .ok_or("equipment policy")?;
+                    let claims = policy
+                        .claims()
+                        .iter()
+                        .find(|(target, _)| *target == slot)
+                        .and_then(|(_, claim)| claim.as_ref().ok())
+                        .ok_or("equipment claim")?;
+                    assert_eq!(claims.slots, [slot], "{key}");
+                    assert_eq!(claims.groups, group, "{key}");
+                }
+            }
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn crystal_equipment_firewalker_expiry_target_has_feet_claim()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::{ReferenceItemField as F, ReferenceTemporalMode};
+        use oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup;
+        with_crystal_equipment(|state| {
+            let active = state
+                .item_policy_for_source_id(9018)
+                .ok_or("worn Firewalker boots")?;
+            let F::Known(temporal) = &active.record().semantics.temporal else {
+                return Err("Firewalker wear budget".into());
+            };
+            assert_eq!(
+                temporal.consumption_mode,
+                F::Known(ReferenceTemporalMode::AuthoritativeActiveTimeBudget)
+            );
+            let F::Known(target) = &temporal.decay_target else {
+                return Err("Firewalker expiry target".into());
+            };
+            assert_eq!(target.key, "oteryn:item.tibia.i9020");
+            let spent = state
+                .equipment_policy(&target.key, &target.revision)
+                .ok_or("spent Firewalker policy")?;
+            assert!(
+                spent.claims().iter().any(|(slot, claim)| *slot == 4
+                    && claim.as_ref().is_ok_and(|claim| claim.slots == [4]))
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn crystal_equipment_keeps_verified_global_weights() -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::ReferenceItemField as F;
+        with_crystal_equipment(|state| {
+            for (id, expected) in [
+                (3101, 5800),
+                (22765, 2250),
+                (22766, 3400),
+                (35520, 1200),
+                (43860, 200),
+                (47372, 2000),
+                (49864, 6700),
+                (49865, 6700),
+                (49866, 6700),
+                (49867, 8500),
+                (49868, 8500),
+                (50255, 12800),
+                (51265, 1150),
+                (51266, 1150),
+                (51267, 1150),
+                (51268, 1250),
+                (51269, 1100),
+                (52334, 8500),
+                (52335, 6800),
+                (52357, 6200),
+                (52964, 850),
+            ] {
+                let policy = state
+                    .item_policy_for_source_id(id)
+                    .ok_or("portable item policy")?;
+                let F::Known(physical) = &policy.record().semantics.physical else {
+                    return Err(format!("Item {id} missing physical facts").into());
+                };
+                assert_eq!(physical.weight, F::Known(expected), "Item {id}");
+            }
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn crystal_equipment_forgemaster_shot_values_agree_with_item_facts()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::{
+            ProjectV2RangedWeapon, ReferenceItemField as F, ReferenceSignedPoints,
+        };
+        with_crystal_equipment(|state| {
+            let bow = state
+                .item_policy_for_source_id(49520)
+                .ok_or("Inferniarch bow")?;
+            let bow = bow.record();
+            assert!(matches!(&bow.semantics.weapon, F::Known(weapon)
+                if weapon.attack == F::Known(ReferenceSignedPoints(6))));
+            assert!(
+                matches!(
+                    bow.authoring.ranged,
+                    Some(ProjectV2RangedWeapon::Distance { attack: 6, .. })
+                ),
+                "{:?}",
+                bow.authoring.ranged
+            );
+            let rod = state
+                .item_policy_for_source_id(49529)
+                .ok_or("Inferniarch rod")?;
+            assert!(
+                matches!(rod.record().authoring.ranged, Some(ProjectV2RangedWeapon::Rod(ref rod)) if rod.mana_per_shot == 21),
+                "{:?}",
+                rod.record().authoring.ranged
+            );
+            Ok(())
+        })
+    }
+
     #[test]
     fn crystal_equipment_slice_two_loads_inventory_and_combat_facts()
     -> Result<(), Box<dyn std::error::Error>> {
@@ -3298,12 +3450,14 @@ mod tests {
             assert_eq!(physical.pickupable, F::Known(true), "Item {id}");
             assert_eq!(
                 physical.weight,
-                F::Known(
-                    row["xml"]["weight"]
+                F::Known(match id {
+                    22765 => 2250,
+                    22766 => 3400,
+                    _ => row["xml"]["weight"]
                         .as_str()
                         .ok_or("Crystal weight")?
-                        .parse()?
-                ),
+                        .parse()?,
+                }),
                 "Item {id}"
             );
 
@@ -3332,12 +3486,24 @@ mod tests {
                 .ok_or_else(|| format!("Item {id} has no usable equipment claim"))?;
             assert!(accepted.next().is_none(), "Item {id}");
             assert_eq!(target_slot, slot, "Item {id}");
-            let expected_slots = if row["xml"]["slottype"] == "two-handed" {
+            let launcher = row["xml"]["ammotype"].is_string()
+                && (row["registration"]["weapontype"] == "distance"
+                    || row["xml"]["weapontype"] == "distance");
+            let expected_slots = if row["xml"]["slottype"] == "two-handed" && !launcher {
                 vec![5, 6]
             } else {
                 vec![slot]
             };
             assert_eq!(claims.slots, expected_slots, "Item {id}");
+            assert_eq!(
+                claims.groups,
+                if launcher || slot == 6 {
+                    vec!["oteryn:equipment-group.non_quiver_left_hand"]
+                } else {
+                    vec![]
+                },
+                "Item {id}"
+            );
             assert_eq!(
                 claims.level,
                 row["registration"]["level"]
@@ -3397,10 +3563,20 @@ mod tests {
         assert!(abilities.timed);
         assert_eq!(
             abilities.abilities,
-            [ItemAbility::SkillBoost {
-                skill: AbilitySkill::MagicLevel,
-                points: 1
-            }]
+            [
+                ItemAbility::SkillBoost {
+                    skill: AbilitySkill::MagicLevel,
+                    points: 1
+                },
+                ItemAbility::Protection {
+                    element: crate::content::ReferenceResistanceKind::Physical,
+                    percent: crate::content::ReferenceRationalPercent {
+                        numerator: 4,
+                        denominator: 1
+                    },
+                    field_only: false,
+                },
+            ]
         );
         assert!(
             matches!(&helmet.record().semantics.temporal, F::Known(temporal)
@@ -5268,14 +5444,10 @@ mod equipment_projection_tests {
                 .ok_or_else(|| format!("missing Crystal item policy {key}"))?;
             let actual = details.record();
             assert_eq!(actual.admission, expected.admission, "{key}");
-            let mut physical = expected.semantics.physical;
-            // Stoic Iks robe already has an active inventory policy on the base.
-            if key == "oteryn:item.tibia.i50255"
-                && let Field::Known(value) = &mut physical
-            {
-                value.weight = Field::Known(128_000);
-            }
-            assert_eq!(actual.semantics.physical, physical, "{key}");
+            assert_eq!(
+                actual.semantics.physical, expected.semantics.physical,
+                "{key}"
+            );
             assert_eq!(actual.semantics.container, Field::NotApplicable, "{key}");
             assert_eq!(actual.semantics.stack, expected.semantics.stack, "{key}");
             assert_eq!(

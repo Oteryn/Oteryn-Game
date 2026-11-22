@@ -762,8 +762,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 // CREATURE-RESIST-MELEE-1: a creature immune to physical damage meets the swing
                 // before its block (`Creature::blockHit` `isImmune`): no block, no training, no hit.
+                let split_melee = selected.weapon.weapon.has_elemental_attack()
+                    || offence.elemental_conversion.is_some();
                 if selected.weapon.ranged.is_none()
-                    && offence.elemental_conversion.is_none()
+                    && !split_melee
                     && creature_physically_immune(&snapshot.state.policy)
                 {
                     continue;
@@ -847,24 +849,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         blocks.len() - 1
                     }
                 };
-                let blocked = selected.weapon.ranged.is_none()
-                    && blocks[index].1.try_block(&constants.block, swing.at);
-                if selected.weapon.ranged.is_none() && offence.elemental_conversion.is_some() {
-                    ranged_magnitude = {
-                        use crate::content::ProjectV2RangedElement as E;
-                        offence.convert_physical(damage, 0, E::Physical).and_then(|(physical, elemental, element)| {
-                        let physical = creature_mitigated(&root, constants, entry.actor, swing.lineage, ordinal, physical, blocked, defense, armor)?;
-                        let physical = creature_physical_response(&snapshot.state.policy, physical)?;
-                        let key = match element {E::Fire=>"fire",E::Earth=>"earth",E::Ice=>"ice",E::Energy=>"energy",E::Death=>"death",E::Physical=>"physical"};
-                        let elemental = oteryn_gameplay_combat_rules::resolution::creature_damage_response(&snapshot.state.policy, elemental, key)?;
-                        resolved_element = element;
-                        Some([physical,elemental])
-                    })
+                let melee_components = if selected.weapon.ranged.is_none() && split_melee {
+                    let Some(components) = selected
+                        .weapon
+                        .weapon
+                        .split_damage(damage)
+                        .and_then(|(p, s, e)| offence.convert_physical(p, s, e))
+                    else {
+                        continue;
                     };
+                    Some(components)
+                } else {
+                    None
+                };
+                let blocked = selected.weapon.ranged.is_none()
+                    && (!selected.weapon.weapon.has_elemental_attack()
+                        || melee_components.is_some_and(|(physical, _, _)| physical > 0))
+                    && blocks[index].1.try_block(&constants.block, swing.at);
+                if let Some((physical, elemental, element)) = melee_components {
+                    ranged_magnitude = (|| {
+                        let physical = creature_mitigated(
+                            &root,
+                            constants,
+                            entry.actor,
+                            swing.lineage,
+                            ordinal,
+                            physical,
+                            blocked,
+                            defense,
+                            armor,
+                        )?;
+                        let physical =
+                            creature_physical_response(&snapshot.state.policy, physical)?;
+                        let elemental =
+                            oteryn_gameplay_combat_rules::resolution::creature_damage_response(
+                                &snapshot.state.policy,
+                                elemental,
+                                ranged::element_key(element),
+                            )?;
+                        resolved_element = element;
+                        Some([physical, elemental])
+                    })();
                 }
-                let Some(magnitude) = (if selected.weapon.ranged.is_some()
-                    || offence.elemental_conversion.is_some()
-                {
+                let Some(magnitude) = (if selected.weapon.ranged.is_some() || split_melee {
                     ranged_magnitude.and_then(|parts| parts[0].checked_add(parts[1]))
                 } else {
                     creature_mitigated(
@@ -884,19 +911,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // CREATURE-RESIST-MELEE-1: the creature's mitigation and physical response shape
                 // what passed its defence and armor (`Creature::mitigateDamage`, `Monster::blockHit`).
                 // Training already counted the swing by its block, so it trains by `magnitude`.
-                let landed =
-                    if selected.weapon.ranged.is_some() || offence.elemental_conversion.is_some() {
-                        magnitude
-                    } else if magnitude > 0 {
-                        let Some(landed) =
-                            creature_physical_response(&snapshot.state.policy, magnitude)
-                        else {
-                            continue;
-                        };
-                        landed
-                    } else {
-                        magnitude
+                let landed = if selected.weapon.ranged.is_some() || split_melee {
+                    magnitude
+                } else if magnitude > 0 {
+                    let Some(landed) =
+                        creature_physical_response(&snapshot.state.policy, magnitude)
+                    else {
+                        continue;
                     };
+                    landed
+                } else {
+                    magnitude
+                };
                 let landed = if selected.weapon.ranged.is_none() {
                     let Some(parts) = finish_melee_components(
                         ranged_magnitude.unwrap_or([landed, 0]),
@@ -1605,7 +1631,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             formula: content.training_formula(),
             trained: &mut *trained,
         };
-        let defence = if hit.weapon.ranged.is_some() {
+        let Some((physical_raw, secondary_raw, converted_element)) = hit
+            .weapon
+            .weapon
+            .split_damage(hit.magnitude)
+            .and_then(|(p, s, e)| offence.convert_physical(p, s, e))
+        else {
+            return;
+        };
+        let defence = if hit.weapon.ranged.is_some()
+            || (hit.weapon.weapon.has_elemental_attack() && physical_raw == 0)
+        {
             None
         } else {
             vitals.target_defence(
@@ -1617,13 +1653,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let armor = vitals.target_armor(runtime, hit.target, target_session);
         let protection = vitals.target_physical_protection(runtime, hit.target, target_session);
-        let Some((physical_raw, secondary_raw, converted_element)) = offence.convert_physical(
-            hit.magnitude,
-            0,
-            crate::content::ProjectV2RangedElement::Physical,
-        ) else {
-            return;
-        };
         let Some(mitigated) = (if hit.weapon.ranged.is_some() {
             ranged_damage
                 .as_ref()
@@ -2061,13 +2090,9 @@ fn melee_swing_formula(
         vocation,
         crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk
     ) {
-        let attack = match weapon {
-            SwingWeapon::Fists => constants.fist.attack,
-            SwingWeapon::Melee { attack, .. } => attack,
-        };
         return (
             player_monk_formula(constants),
-            attack,
+            weapon.attack(constants.fist.attack),
             "formula:player-monk",
         );
     }
@@ -2077,9 +2102,9 @@ fn melee_swing_formula(
             constants.fist.attack,
             "formula:player-fist",
         ),
-        SwingWeapon::Melee { attack, .. } => (
+        SwingWeapon::Melee { .. } => (
             player_melee_formula(constants),
-            attack,
+            weapon.attack(constants.fist.attack),
             "formula:player-melee",
         ),
     }
@@ -2573,6 +2598,38 @@ mod tests {
     }
 
     #[test]
+    fn crystal_equipment_amber_slayer_uses_intrinsic_attack_for_swing()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::combat_attack::AttackConstants;
+        use crate::content::native_gameplay::{
+            NativeGameplayInput, compile_native_gameplay, decode,
+        };
+        use oteryn_gameplay_combat_rules::resolution::swing_weapon;
+
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let mut input =
+            NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))?;
+        input.source_world = None;
+        let room = crate::content::qualify_native_entry_room(
+            crate::content::native_gameplay_test_world_id()?,
+        )?;
+        let artifact = compile_native_gameplay(room.compiled(), &input)?;
+        let state = decode(&artifact.server_artifact)?.state;
+        let weapon = swing_weapon(&state, |slot| {
+            (slot == 5).then_some(("oteryn:item.tibia.i47368", "definition-r1"))
+        })
+        .ok_or("Amber slayer")?;
+        let constants = AttackConstants::checked_in().ok_or("attack constants")?;
+        let (_, attack, _) = melee_swing_formula(constants, crate::spell::Vocation::Knight, weapon);
+        assert_eq!(attack, 50);
+        assert_eq!(
+            weapon.split_damage(100),
+            Some((0, 100, crate::content::ProjectV2RangedElement::Death))
+        );
+        Ok(())
+    }
+
+    #[test]
     fn autoatk_monk_and_knight_select_their_own_formula() -> Result<(), Box<dyn std::error::Error>>
     {
         use crate::combat_attack::AttackConstants;
@@ -2612,6 +2669,7 @@ mod tests {
                 vocation,
                 SwingWeapon::Melee {
                     attack: 44,
+                    elemental: None,
                     skill: oteryn_gameplay_combat_rules::resolution::MeleeSkill::Fist,
                 },
             );

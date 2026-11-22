@@ -224,7 +224,11 @@ fn check_crystal_equipment() -> TestResult {
         };
         assert_eq!(
             physical.weight,
-            ReferenceItemField::Known(u32::try_from(value("weight")?)?),
+            ReferenceItemField::Known(if source.id == 35520 {
+                1200 // Verified Global Cyclopedia.
+            } else {
+                u32::try_from(value("weight")?)?
+            }),
             "{key}"
         );
         assert_eq!(physical.movable, ReferenceItemField::Known(true), "{key}");

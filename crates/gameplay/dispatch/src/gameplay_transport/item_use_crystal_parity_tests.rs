@@ -392,29 +392,25 @@ fn i03_crystal_spellbook_has_vocation_filtered_spell_list() -> Result<(), &'stat
         .active()
         .and_then(|active| active.native_gameplay())
         .expect("native gameplay");
-    let mut admitted = Vec::new();
     for id in [
         3059, 6120, 8072, 8073, 8074, 8075, 8076, 8090, 11691, 14769, 16107, 20088, 21400, 22755,
         25699, 29431, 20089, 20090, 34153,
     ] {
-        if let Some(policy) = policy_of(state, id) {
-            assert!(
-                !matches!(
-                    policy.record().semantics.consumption,
-                    ReferenceItemField::Known(_)
-                ),
-                "spellbook {id} carries no consumption the item-use path acts on"
-            );
-            admitted.push(id);
-        }
+        let policy = policy_of(state, id).unwrap_or_else(|| panic!("admitted spellbook {id}"));
+        assert!(
+            !matches!(
+                policy.record().semantics.consumption,
+                ReferenceItemField::Known(_)
+            ),
+            "spellbook {id} carries no consumption the item-use path acts on"
+        );
+        assert!(
+            crate::gameplay_transport::item_look::is_spellbook(
+                &policy.record().production_definition.production_key
+            ),
+            "spellbook {id} is recognized by LOOK"
+        );
     }
-    // E12 admits the source Trader spellbooks, including the Task Board cohort;
-    // W15b additionally admits the basic spellbook 3059 as an exact chest reward;
-    // the pinned Newhaven starter profiles admit spellbook 21400.
-    assert_eq!(
-        admitted,
-        vec![3059, 6120, 8072, 8073, 8074, 8075, 21400, 25699]
-    );
     let text = crate::gameplay_transport::item_look::spellbook_text(
         state.spell_book(),
         crate::spell::Vocation::Knight,

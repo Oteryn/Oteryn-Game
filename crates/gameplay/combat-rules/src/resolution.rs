@@ -5,7 +5,9 @@ use oteryn_gameplay_content::content::creature_policy::{
     CompiledCreaturePolicy, CreatureExactRatio,
 };
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
-use oteryn_gameplay_content::content::{ReferenceItemField, ReferenceWeaponType};
+use oteryn_gameplay_content::content::{
+    ProjectV2RangedElement, ReferenceItemField, ReferenceWeaponElement, ReferenceWeaponType,
+};
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
@@ -22,7 +24,52 @@ pub const WEAPON_REFRESH_MICROS: u64 = 1_000_000;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SwingWeapon {
     Fists,
-    Melee { attack: u32, skill: MeleeSkill },
+    Melee {
+        attack: u32,
+        skill: MeleeSkill,
+        elemental: Option<(u32, ProjectV2RangedElement)>,
+    },
+}
+
+impl SwingWeapon {
+    /// The physical attack plus any intrinsic elemental attack on the weapon.
+    pub fn attack(self, fist_attack: u32) -> u32 {
+        match self {
+            Self::Fists => fist_attack,
+            Self::Melee {
+                attack, elemental, ..
+            } => attack.saturating_add(elemental.map_or(0, |(points, _)| points)),
+        }
+    }
+
+    pub const fn has_elemental_attack(self) -> bool {
+        matches!(
+            self,
+            Self::Melee {
+                elemental: Some(_),
+                ..
+            }
+        )
+    }
+
+    /// Split a single draw by attack points, truncating both components as in
+    /// Crystal 201189f8 weapons.cpp:346-358.
+    pub fn split_damage(self, damage: i64) -> Option<(i64, i64, ProjectV2RangedElement)> {
+        let Self::Melee {
+            attack,
+            elemental: Some((points, element)),
+            ..
+        } = self
+        else {
+            return Some((damage, 0, ProjectV2RangedElement::Physical));
+        };
+        let total = i64::from(attack) + i64::from(points);
+        Some((
+            damage.checked_mul(i64::from(attack))?.checked_div(total)?,
+            damage.checked_mul(i64::from(points))?.checked_div(total)?,
+            element,
+        ))
+    }
 }
 
 /// The skill a melee weapon trains and swings with (`player.cpp` `getWeaponSkill`): a club,
@@ -90,9 +137,32 @@ pub fn swing_weapon<'a>(
                     ReferenceWeaponType::Axe => MeleeSkill::Axe,
                     _ => MeleeSkill::Fist,
                 };
+                let elemental = match &weapon.elemental {
+                    ReferenceItemField::Known(elements) => match elements.as_slice() {
+                        [] => None,
+                        [element] => {
+                            let ReferenceItemField::Known(points) = element.points else {
+                                return None;
+                            };
+                            let points = u32::try_from(points.0).ok()?;
+                            let kind = match element.element {
+                                ReferenceWeaponElement::Death => ProjectV2RangedElement::Death,
+                                ReferenceWeaponElement::Earth => ProjectV2RangedElement::Earth,
+                                ReferenceWeaponElement::Energy => ProjectV2RangedElement::Energy,
+                                ReferenceWeaponElement::Fire => ProjectV2RangedElement::Fire,
+                                ReferenceWeaponElement::Ice => ProjectV2RangedElement::Ice,
+                            };
+                            (points > 0).then_some((points, kind))
+                        }
+                        _ => return None,
+                    },
+                    ReferenceItemField::Unknown | ReferenceItemField::NotApplicable => None,
+                    ReferenceItemField::Conflict => return None,
+                };
                 return Some(SwingWeapon::Melee {
                     attack: u32::try_from(attack.0).ok()?,
                     skill,
+                    elemental,
                 });
             }
         }
