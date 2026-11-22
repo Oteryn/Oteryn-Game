@@ -162,9 +162,22 @@ class RaidCatalogueTest(unittest.TestCase):
         unanchored["waves"][0]["raw_delay_ms"] = 55000
         self.assertFalse(raids.apply_global_timeline(unanchored, timeline, []))
 
-    def test_global_count_conflicts_and_custom_identity_do_not_activate(self):
+    def test_draconia_chayenne_uses_the_pinned_donor_raid(self):
+        catalogue = json.loads(raids.outputs(raids.ROOT, register=False)[raids.CATALOGUE])
+        raid = next(row for row in catalogue["records"] if row["key"] == "raid:abdendriel.chayenne")
+        self.assertTrue(raid["active"])
+        spawn, = raid["variants"][0]["waves"]
+        entry, = spawn["entries"]
+        self.assertEqual(entry["creature"], "oteryn:creature.chayenne")
+        self.assertEqual(entry["area"]["from"], {"x": 32799, "y": 31604, "floor": 7})
+        loot = json.loads((raids.ROOT / "content/loot/loot-00000-00499.json").read_bytes())
+        table = next(row["definition"] for row in loot["records"]
+                     if row["definition"]["identity"]["key"] == "oteryn:loot.creature.chayenne")
+        key = next(row for row in table["entries"] if row["item"]["key"] == "oteryn:item.tibia.i14682")
+        self.assertEqual((key["probability_ppm"], key["min_count"], key["max_count"]), (1_000_000, 1, 1))
+
+    def test_global_count_conflicts_do_not_activate(self):
         rows = {r["key"]: r for r in json.loads(raids.outputs(raids.ROOT, register=False)[raids.CATALOGUE])["records"]}
-        self.assertFalse(rows["raid:abdendriel.chayenne"]["active"])
         self.assertFalse(rows["raid:carlin.trolls"]["active"])
         self.assertFalse(rows["raid:roshamuul.gaz_haragoth"]["active"])
         orshabaal = rows["raid:edron.orshabaal"]

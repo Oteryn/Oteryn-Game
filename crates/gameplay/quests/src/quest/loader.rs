@@ -202,6 +202,7 @@ pub fn load_embedded_quest_state(
     let bindings = super::authored_bindings::embedded::load().map_err(QuestLoadError::Json)?;
     let mut lowered = admit_native_bindings(lowered, bindings.as_ref())?;
     super::reward_callbacks::retain_qc_reward_predecessors(&mut lowered.catalogue);
+    super::published_quest_pins::retain_source_route_predecessors(&mut lowered.catalogue);
     Ok(lowered)
 }
 
@@ -644,6 +645,7 @@ mod tests {
             crate::quest::world_callbacks::EMBEDDED,
             // QMECH source cohorts retain their separate registration owners.
             include_str!("../../../../../content/quests/world-callbacks/children-grease.json"),
+            include_str!("../../../../../content/quests/world-callbacks/crystal-wand.json"),
             include_str!("../../../../../content/quests/world-callbacks/dream-courts.json"),
             include_str!("../../../../../content/quests/world-callbacks/engenc2-cults.json"),
             include_str!("../../../../../content/quests/world-callbacks/ice-islands-seals.json"),

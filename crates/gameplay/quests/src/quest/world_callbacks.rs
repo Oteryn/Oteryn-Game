@@ -682,6 +682,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/children-grease.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/crystal-wand.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m39-stories.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -3058,6 +3061,10 @@ mod worldchg_grimvale_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "world_callbacks/cq07_source_tests.rs"]
+mod cq07_source_tests;
 
 #[cfg(test)]
 #[path = "world_callbacks/phase_tests.rs"]

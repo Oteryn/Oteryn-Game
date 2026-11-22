@@ -110,7 +110,7 @@ const fn objective(
     }
 }
 
-pub const OBJECTIVES: [KillObjective; 5] = [
+pub const OBJECTIVES: [KillObjective; 8] = [
     objective(
         "oteryn:quest-transition/elvenbane/dragon",
         "oteryn:creature.dragon",
@@ -141,6 +141,41 @@ pub const OBJECTIVES: [KillObjective; 5] = [
         Some(("oteryn:quest-progress/elvenbane/demon-skeleton", 2)),
         3,
     ),
+    // Crystal 201189f, creaturescripts_{upper,middle,lower}_spike_kill.lua:
+    // source kill credit is bounded by the corresponding Spike tier.
+    KillObjective {
+        transition: "oteryn:quest-transition/spike/upper/kill",
+        quest: "oteryn:quest.spike_task",
+        phase_track: "oteryn:quest-progress/spike/upper/phase",
+        phase_before: 1,
+        phase_after: 1,
+        creature: "oteryn:creature.demon_skeleton",
+        counter: Some(("oteryn:quest-progress/spike/upper/kills", 7)),
+        minimum: (32008, 32522, 8),
+        maximum: (32365, 32759, 10),
+    },
+    KillObjective {
+        transition: "oteryn:quest-transition/spike/middle/kill",
+        quest: "oteryn:quest.spike_task",
+        phase_track: "oteryn:quest-progress/spike/middle/phase",
+        phase_before: 1,
+        phase_after: 1,
+        creature: "oteryn:creature.crystalcrusher",
+        counter: Some(("oteryn:quest-progress/spike/middle/kills", 7)),
+        minimum: (32100, 32470, 11),
+        maximum: (32380, 32725, 12),
+    },
+    KillObjective {
+        transition: "oteryn:quest-transition/spike/lower/kill",
+        quest: "oteryn:quest.spike_task",
+        phase_track: "oteryn:quest-progress/spike/lower/phase",
+        phase_before: 1,
+        phase_after: 1,
+        creature: "oteryn:creature.drillworm",
+        counter: Some(("oteryn:quest-progress/spike/lower/kills", 7)),
+        minimum: (32120, 32470, 13),
+        maximum: (32345, 32710, 15),
+    },
 ];
 
 pub fn binding(transition: &str) -> Option<KillObjective> {
@@ -161,6 +196,15 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
         max: 4,
     });
     for rule in OBJECTIVES {
+        if rule.quest != QUEST {
+            tracks.push(QuestTrack {
+                key: rule.phase_track.into(),
+                quest: rule.quest.into(),
+                initial: 0,
+                min: 0,
+                max: 1,
+            });
+        }
         if let Some((key, max)) = rule.counter {
             tracks.push(QuestTrack {
                 key: key.into(),
@@ -198,7 +242,7 @@ mod tests {
             super::super::loader::load_embedded_quest_state("content-1").expect("catalogue");
         let catalogue = catalogue.catalogue();
         let mut state = BTreeMap::from([(PHASE.to_owned(), 2)]);
-        for rule in OBJECTIVES {
+        for rule in OBJECTIVES.into_iter().filter(|rule| rule.quest == QUEST) {
             if let Some((track, _)) = rule.counter {
                 state.insert(track.into(), 0);
             }
@@ -207,7 +251,11 @@ mod tests {
         assert!(dragon.contains(32590, 31645, 5));
         assert!(!dragon.contains(32590, 31645, -5));
         assert!(!dragon.contains(32799, 31559, 5));
-        for rule in OBJECTIVES.into_iter().skip(1) {
+        for rule in OBJECTIVES
+            .into_iter()
+            .filter(|rule| rule.quest == QUEST)
+            .skip(1)
+        {
             let transition = catalogue
                 .transition(rule.transition)
                 .expect("bound transition");
@@ -239,7 +287,11 @@ mod tests {
                 )
                 .is_err()
         );
-        for rule in OBJECTIVES.into_iter().skip(1) {
+        for rule in OBJECTIVES
+            .into_iter()
+            .filter(|rule| rule.quest == QUEST)
+            .skip(1)
+        {
             let (counter, maximum) = rule.counter.expect("counter");
             for _ in 0..maximum {
                 advance(&mut state, rule);

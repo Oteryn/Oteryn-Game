@@ -253,28 +253,6 @@
       ]
     },
     {
-      "key": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
-      "quest": "oteryn:quest.cave_explorer_outfits_quest",
-      "initial": 0,
-      "min": 0,
-      "max": 2,
-      "writable": true,
-      "sources": [
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
-      ]
-    },
-    {
-      "key": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
-      "quest": "oteryn:quest.cave_explorer_outfits_quest",
-      "initial": 0,
-      "min": 0,
-      "max": 20,
-      "writable": true,
-      "sources": [
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
-      ]
-    },
-    {
       "key": "oteryn:quest-progress/chosen-trial/fire_fighter/phase",
       "quest": "oteryn:quest.fire_fighter_outfits_quest",
       "initial": 0,
@@ -294,6 +272,50 @@
       "writable": true,
       "sources": [
         "owner:chosen-trial:fire_fighter:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/fame",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnommander.lua:75-169"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/upper/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/middle/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/lower/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua"
       ]
     },
     {
@@ -1998,25 +2020,11 @@
       "quest": "oteryn:quest.cave_explorer_outfits_quest",
       "npc": "oteryn:npc.gnommander",
       "keywords": [
-        "cave explorer report"
+        "yes"
       ],
-      "topic": 0,
+      "topic": 21,
       "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        },
-        {
-          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
-          "minimum": 20,
-          "maximum": 20,
-          "set": 20,
-          "preserve": true
-        }
-      ],
+      "storage": [],
       "take": [],
       "give": null,
       "outfit": {
@@ -2025,30 +2033,49 @@
       },
       "achievement": null,
       "reply": [
-        "Thank you for your help."
+        "Here is your reward."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnommander.lua:75-169"
       ],
       "fee": {
         "gold": 1000,
         "include_bank": false
       },
+      "minimum_level": 25,
       "requires_premium": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.spike_task",
+          "storage": [],
+          "state_ops": [
+            {
+              "track": "oteryn:quest-progress/spike/fame",
+              "from": {
+                "kind": "between",
+                "minimum": 100,
+                "maximum": 2147483647
+              },
+              "effect": {
+                "kind": "add",
+                "value": -100
+              }
+            }
+          ]
+        }
+      ],
       "forbids_outfits": [
         "oteryn:outfit.cave_explorer"
-      ],
-      "minimum_level": 80
+      ]
     },
     {
       "key": "oteryn:quest-reward/l12-cave-explorer-first",
       "quest": "oteryn:quest.cave_explorer_outfits_quest",
       "npc": "oteryn:npc.gnommander",
       "keywords": [
-        "cave explorer addon 1"
+        "yes"
       ],
-      "topic": 0,
+      "topic": 22,
       "next_topic": 0,
       "storage": [],
       "take": [],
@@ -2059,18 +2086,38 @@
       },
       "achievement": null,
       "reply": [
-        "Thank you for your help."
+        "Here is your reward."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnommander.lua:75-169",
+        "tibiawiki:Cave Completionist:846114"
       ],
       "fee": {
         "gold": 2000,
         "include_bank": false
       },
-      "minimum_level": 80,
+      "minimum_level": 50,
       "requires_premium": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.spike_task",
+          "storage": [],
+          "state_ops": [
+            {
+              "track": "oteryn:quest-progress/spike/fame",
+              "from": {
+                "kind": "between",
+                "minimum": 100,
+                "maximum": 2147483647
+              },
+              "effect": {
+                "kind": "add",
+                "value": -100
+              }
+            }
+          ]
+        }
+      ],
       "requires_outfits": [
         "oteryn:outfit.cave_explorer"
       ],
@@ -2079,6 +2126,12 @@
           "outfit": "oteryn:outfit.cave_explorer",
           "addons": 1
         }
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/cave_completionist",
+          "target": 2
+        }
       ]
     },
     {
@@ -2086,9 +2139,9 @@
       "quest": "oteryn:quest.cave_explorer_outfits_quest",
       "npc": "oteryn:npc.gnommander",
       "keywords": [
-        "cave explorer addon 2"
+        "yes"
       ],
-      "topic": 0,
+      "topic": 23,
       "next_topic": 0,
       "storage": [],
       "take": [],
@@ -2099,11 +2152,11 @@
       },
       "achievement": null,
       "reply": [
-        "Thank you for your help."
+        "Here is your reward."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnommander.lua:75-169",
+        "tibiawiki:Cave Completionist:846114"
       ],
       "fee": {
         "gold": 3000,
@@ -2111,6 +2164,26 @@
       },
       "minimum_level": 80,
       "requires_premium": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.spike_task",
+          "storage": [],
+          "state_ops": [
+            {
+              "track": "oteryn:quest-progress/spike/fame",
+              "from": {
+                "kind": "between",
+                "minimum": 100,
+                "maximum": 2147483647
+              },
+              "effect": {
+                "kind": "add",
+                "value": -100
+              }
+            }
+          ]
+        }
+      ],
       "requires_outfits": [
         "oteryn:outfit.cave_explorer"
       ],
@@ -2120,50 +2193,12 @@
           "addons": 2
         }
       ],
-      "requires_addons": [
+      "achievement_progress": [
         {
-          "outfit": "oteryn:outfit.cave_explorer",
-          "addons": 1
+          "key": "oteryn:achievement/cave_completionist",
+          "target": 2
         }
       ]
-    },
-    {
-      "key": "oteryn:quest-reward/l12-cave-explorer-start",
-      "quest": "oteryn:quest.cave_explorer_outfits_quest",
-      "npc": "oteryn:npc.gnommander",
-      "keywords": [
-        "cave explorer trial"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        },
-        {
-          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 0,
-          "preserve": true
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
-        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
-      ],
-      "requires_premium": true,
-      "minimum_level": 80
     },
     {
       "key": "oteryn:quest-reward/l12-dragon-slayer-base",
@@ -2437,6 +2472,306 @@
       ],
       "requires_premium": true,
       "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-lower-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 24,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Hunt seven of the local targets and then report back."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua"
+      ],
+      "minimum_level": 80,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72001
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-lower-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "kill"
+      ],
+      "topic": 25,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/lower/kills",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua"
+      ],
+      "experience": 3500,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/spike/fame",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-middle-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 24,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/middle/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Hunt seven of the local targets and then report back."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua"
+      ],
+      "minimum_level": 50,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/middle/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72001
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-middle-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "keywords": [
+        "killing"
+      ],
+      "topic": 25,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/middle/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/middle/kills",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua"
+      ],
+      "experience": 2000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/middle/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/spike/fame",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-upper-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 24,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/upper/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Hunt seven of the local targets and then report back."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua"
+      ],
+      "minimum_level": 25,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/upper/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72001
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-upper-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "killing"
+      ],
+      "topic": 25,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/upper/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/upper/kills",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua"
+      ],
+      "experience": 1000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/upper/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/spike/fame",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l2-battle-mage-base",

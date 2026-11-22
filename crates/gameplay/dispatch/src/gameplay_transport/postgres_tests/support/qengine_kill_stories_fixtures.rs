@@ -227,12 +227,7 @@ pub(super) async fn exercise(
                 ("dragon_lords", "oteryn:creature.dragon_lord", 20),
             ],
         ),
-        "cave-explorer" => (
-            "cave_explorer",
-            "oteryn:npc.gnommander",
-            80,
-            &[("kills", "oteryn:creature.crystal_spider", 20)],
-        ),
+        "cave-explorer" => return Box::pin(spike(owner, admitted, h, authority)).await,
         "fire-fighter" => (
             "fire_fighter",
             "oteryn:npc.gnomadness",
@@ -333,9 +328,6 @@ pub(super) async fn exercise(
         super::qengine_outfit_stories_fixtures::supply(owner, admitted, h, item, &mut bags, &mut ordinal)
             .await?;
     }
-    if label == "cave-explorer" {
-        super::qengine_voucher_stories_fixtures::mint(owner, admitted, 3043, 1, &mut ordinal).await?;
-    }
     claim(owner, admitted, h, npc, base).await?;
     assert_eq!(count(h, &format!("{root}phase")).await?, 2);
     let outfit = format!("oteryn:outfit.{family}");
@@ -370,6 +362,176 @@ pub(super) async fn exercise(
             .await?;
         }
     }
+    Ok(())
+}
+
+async fn spike(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    use super::qengine_rewards_fixtures::talk;
+    use super::{classic_quests_fixtures as npc, qengine_voucher_stories_fixtures as items};
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+    const FAME: &str = "oteryn:quest-progress/spike/fame";
+    const KILLS: &str = "oteryn:quest-progress/spike/lower/kills";
+    const PHASE: &str = "oteryn:quest-progress/spike/lower/phase";
+    const REPORTED_AT: &str = "oteryn:quest-progress/spike/lower/reported_at";
+    const DRILLWORM: &str = "oteryn:creature.drillworm";
+    const OUTFIT: &str = "oteryn:outfit.cave_explorer";
+    let mut capabilities = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    capabilities.extend([3, 4, 6, 11, 15, 18, 25]);
+    capabilities.sort_unstable();
+    capabilities.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            &offered,
+            &capabilities,
+        )
+        .ok_or("Spike capabilities")?;
+    owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
+    owner
+        .states
+        .chat
+        .admit(admitted.game_session_id, "Spike Witness", owner.owner_now());
+    let [argery, commander] = npc::install(
+        owner,
+        admitted,
+        ["oteryn:npc.gnomargery", "oteryn:npc.gnommander"],
+    )
+    .await?;
+    super::qengine_outfit_stories_fixtures::earn_level(owner, admitted, authority, 80).await?;
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native policies")?;
+    for creature in ["oteryn:creature.demon_skeleton", "oteryn:creature.crystalcrusher", DRILLWORM] {
+        native.reward_table().row(creature).map_err(debug)?;
+    }
+    native.install_companion_policies(&mut *owner.runtime.lock().await).map_err(debug)?;
+    death(owner, admitted, DRILLWORM, 20_000).await?;
+    assert_eq!(count(h, KILLS).await?, 0);
+    for (id, text) in [(1, "hi"), (2, "kill"), (3, "yes")] {
+        assert_eq!(
+            talk(owner, admitted, argery, id, text).await?,
+            NpcIntentDisposition::Ok
+        );
+    }
+    assert_eq!(count(h, PHASE).await?, 1);
+    for (id, text) in [(4, "report"), (5, "kill")] {
+        let _ = talk(owner, admitted, argery, id, text).await?;
+    }
+    assert_eq!(
+        count(h, FAME).await?,
+        0,
+        "an incomplete report earns no fame"
+    );
+    for kills in 1..=7 {
+        death(owner, admitted, DRILLWORM, 20_000 + kills).await?;
+        assert_eq!(
+            count(h, KILLS).await?,
+            i64::try_from(kills)?,
+            "one credit per lethal occurrence"
+        );
+    }
+    death(owner, admitted, DRILLWORM, 20_008).await?;
+    assert_eq!(count(h, KILLS).await?, 7);
+    for (id, text) in [(6, "report"), (7, "kill")] {
+        assert_eq!(
+            talk(owner, admitted, argery, id, text).await?,
+            NpcIntentDisposition::Ok
+        );
+    }
+    assert_eq!(count(h, FAME).await?, 1);
+    assert_eq!(count(h, KILLS).await?, 0);
+    assert_eq!(count(h, PHASE).await?, 0);
+    for (id, text) in [(8, "kill"), (9, "yes")] {
+        let _ = talk(owner, admitted, argery, id, text).await?;
+    }
+    assert_eq!(
+        count(h, PHASE).await?,
+        0,
+        "no new task during the source cooldown"
+    );
+    let elapsed_start: i64 = sqlx::query_scalar(
+        "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint - 72001",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(count(h, REPORTED_AT).await? > elapsed_start, "the report stamps the transaction clock");
+    arrange_track(h, REPORTED_AT, elapsed_start).await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    for (id, text) in [(10, "bye"), (11, "hi"), (12, "kill"), (13, "yes")] {
+        assert_eq!(
+            talk(owner, admitted, argery, id, text).await?,
+            NpcIntentDisposition::Ok,
+            "{id}: {text}"
+        );
+    }
+    assert_eq!(count(h, PHASE).await?, 1);
+
+    let _ = talk(owner, admitted, argery, 14, "bye").await?;
+    assert_eq!(
+        talk(owner, admitted, commander, 15, "hi").await?,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(
+        talk(owner, admitted, commander, 16, "worthy").await?,
+        NpcIntentDisposition::Rejected
+    );
+    assert_eq!(count(h, FAME).await?, 1);
+
+    // Bring the balance to the three-purchase boundary after proving how fame is earned.
+    arrange_track(h, FAME, 300).await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    items::mint(owner, admitted, 3043, 1, &mut 30_000).await?;
+    for (index, (keyword, remaining, mask)) in
+        [("basic", 200, 0), ("second", 100, 2), ("first", 0, 3)]
+            .into_iter()
+            .enumerate()
+    {
+        let first = 17 + u64::try_from(index)? * 3;
+        for (id, text) in [(first, "worthy"), (first + 1, keyword), (first + 2, "yes")] {
+            assert_eq!(
+                talk(owner, admitted, commander, id, text).await?,
+                NpcIntentDisposition::Ok
+            );
+        }
+        assert_eq!(count(h, FAME).await?, remaining);
+        items::mask(owner, admitted, OUTFIT, mask).await?;
+        let achievement: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/cave_completionist'")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(achievement, i64::from(mask == 3));
+    }
+    Ok(())
+}
+
+async fn arrange_track(h: &Harness, track: &str, value: i64) -> TestResult {
+    let mut fixture = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *fixture)
+        .await?;
+    let updated = sqlx::query("UPDATE game_character_quest_tracks SET value=$2 WHERE track_key=$1")
+        .bind(track)
+        .bind(value)
+        .execute(&mut *fixture)
+        .await?;
+    assert_eq!(updated.rows_affected(), 1);
+    fixture.commit().await?;
     Ok(())
 }
 

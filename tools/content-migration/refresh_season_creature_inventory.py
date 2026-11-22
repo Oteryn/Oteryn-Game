@@ -156,7 +156,9 @@ def generated(root):
         raise ValueError('Regenerate the source-qualified raid index first')
     raids = json.loads(outputs[raid_catalogue.CATALOGUE])['records']
     active = sum(row['active'] for row in raids)
-    if len(raids) != 239 + 1 or active != 136 + 1:
+    # The pinned Draconia raid supplies Chayenne's key through its existing loot.
+    chayenne, = [row for row in raids if row['key'] == 'raid:abdendriel.chayenne']
+    if len(raids) != 239 + 1 or active != 136 + 1 + 1 or not chayenne['active']:
         raise ValueError('Non-seasonal raid inventory changed; review its source first')
     path = 'crates/gameplay/encounter-rules/src/raid/catalogue.rs'
     replace(path, r'assert_eq!\(catalogue.records\(\).len\(\), [0-9_]+\);',

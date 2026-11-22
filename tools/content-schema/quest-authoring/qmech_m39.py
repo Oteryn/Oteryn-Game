@@ -57,6 +57,72 @@ def append(add, callbacks, offers, declarations, inputs, pin):
         'next_topic':12,'storage':[state(child+'questline',17,17,preserve=True)],
         'reply':['Have you found the way which will lead us to the great gate?']})
 
+    quest = 'children_of_the_revolution_quest'
+    npc = 'zalamon'
+    source = 'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua'
+
+    def progress(name, before, after, lines, reply, *, topic=0, words=('mission',), **options):
+        records = [state(child + 'questline', before, after)]
+        records.extend(state(child + track, low, value, high) for track, low, high, value
+                       in options.pop('mission', ()))
+        add('l2-zalamon-' + name, quest, npc, list(words), records, topic=topic,
+            take=options.pop('take', ()), give=options.pop('give', None),
+            requires=options.pop('requires', ()))
+        callbacks[-1].update(sources=[f'{source}:{lines}'], reply=[reply], **options)
+
+    def prompt(words, topic, next_topic, step, reply, *, any_topic=False, guards=()):
+        offers.append({'npc': 'oteryn:npc.zalamon', 'keywords': list(words), 'topic': topic,
+                       'any_topic': any_topic, 'next_topic': next_topic,
+                       'storage': [state(child + 'questline', step, step, preserve=True), *guards],
+                       'reply': [reply]})
+
+    frontier_gate = {'track': frontier + 'mission08', 'minimum': 2, 'maximum': 2}
+    prompt(('mission',), 0, 1, 0, 'Will you work for the resistance?', any_topic=True)
+    prompt(('yes',), 1, 2, 0, 'Find the enemy plans in the outpost beyond the mountains. Will you go?')
+    progress('accept', 0, 1, '244-262', 'Watch the mountain passes.', topic=2, words=('yes',),
+             mission=[('mission00', 0, 0, 1)], requires=[frontier_gate])
+    prompt(('mission',), 0, 3, 2, 'Did you find the enemy plans?', any_topic=True)
+    prompt(('yes',), 3, 4, 2, 'Will you give me the map?')
+    progress('map', 2, 3, '262-275', 'These troop movements will help us plan a defence.',
+             topic=4, words=('yes',), mission=[('mission00', 1, 1, 2)], take=[(637, 1)])
+
+    prompt(('mission',), 0, 5, 3, 'Will you investigate the Temple of Equilibrium?', any_topic=True)
+    progress('temple-accept', 3, 4, '275-281', 'The temple lies northwest of the outpost.',
+             topic=5, words=('yes',), mission=[('mission01', 0, 0, 1)])
+    progress('temple-report', 5, 6, '80-90', 'The corruption has reached the temple.',
+             mission=[('mission01', 2, 2, 3)])
+    prompt(('mission',), 0, 6, 6, 'Will you scout the enemy camp for food, weapons, and soldiers?', any_topic=True)
+    progress('spy-accept', 6, 7, '281-293', 'Look inside all three buildings.',
+             topic=6, words=('yes',), mission=[('mission02', 0, 0, 1)])
+    progress('spy-report', 7, 8, '98-107', 'A direct attack on an army that size would fail.',
+             mission=[('mission02', 4, 4, 5)], requires=[
+                 {'track': child + f'spy_building_0{number}', 'minimum': 1, 'maximum': 1}
+                 for number in range(1, 4)])
+    prompt(('mission',), 0, 7, 8, 'Can you disrupt their food supply?', any_topic=True)
+    prompt(('yes',), 7, 8, 8, 'Take a flask from the storeroom. Will you go to the rice fields?')
+    progress('poison-accept', 8, 9, '293-310', 'Mix it into the water on the uppermost terrace.',
+             topic=8, words=('yes',), mission=[('mission03', 0, 0, 1)])
+    prompt(('poison', 'poizzon'), 0, 0, 9, 'The emperor spreads corruption through those bound to him.', any_topic=True)
+    progress('poison-report', 11, 12, '115-123', 'You have weakened the emperor’s forces.',
+             mission=[('mission03', 2, 2, 3)])
+    prompt(('mission',), 0, 10, 12, 'Can you find a route north to the great gate?', any_topic=True)
+    progress('waystones-accept', 12, 13, '310-322', 'Search the temple for a passage.', topic=10, words=('yes',))
+    # The symbol room may be visited before the Waystones mission is accepted.
+    callbacks[-1]['storage'].append({**state(child + 'mission04', 0, 1, 6), 'at_least': True})
+    for step in (12, 13):
+        prompt(('symbols', 'strange symbols'), 0, 11, step,
+               'The symbols form a riddle. Will you try the levers?', any_topic=True,
+               guards=[state(child + 'strange_symbols', 1, 1, preserve=True)])
+    add('l2-zalamon-symbols', quest, npc, ['yes'], [state(child + 'strange_symbols', 1, 2),
+        state(child + 'mission04', 2, 3)], topic=11)
+    callbacks[-1].update(sources=[f'{source}:322-330'],
+                         reply=['Fetch grease from the shelf in the storeroom, then arrange the symbols with the levers.'])
+    prompt(('mission',), 0, 13, 18, 'Will you enter the passage to the great gate?', any_topic=True)
+    progress('phantom-accept', 18, 19, '337-345', 'Go through the portal and approach the gate.',
+             topic=13, words=('yes',), mission=[('teleport_access', 0, 0, 1), ('mission05', -1, 0, 1)])
+    progress('finish', 20, 21, '143-158', 'Take this serpent crest for your service to the resistance.',
+             mission=[('mission05', 1, 2, 3)], give=(10199, 1), experience=10_000, completes=True)
+
     bone = 'oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit'
     warning = 'Indeed there is something to be done, but I need someone more experienced. Come back later if you want to.'
     muriel = 'data-global/npc/muriel.lua'

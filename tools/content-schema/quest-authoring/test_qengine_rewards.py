@@ -161,7 +161,7 @@ class QuestRewards(unittest.TestCase):
     def test_native_trial_bindings_require_full_goals_and_one_shot_grants(self):
         document=json.loads(q.build()['content/quests/shared-reward-callbacks.json'])
         rows={c['key'].split('/')[-1]:c for c in document['callbacks']}
-        for label,goals in [('dragon-slayer',[20,20]),('cave-explorer',[20]),('fire-fighter',[10])]:
+        for label,goals in [('dragon-slayer',[20,20]),('fire-fighter',[10])]:
             start=rows[f'l12-{label}-start'];base=rows[f'l12-{label}-base']
             self.assertEqual(start['storage'][0]['minimum'],0)
             self.assertEqual(start['storage'][0]['set'],1)
@@ -169,7 +169,21 @@ class QuestRewards(unittest.TestCase):
             self.assertEqual(base['storage'][0]['set'],2)
             self.assertTrue(base['requires_premium'])
             self.assertEqual(base['forbids_outfits'],[base['outfit']['outfit']])
-        self.assertEqual([rows[f'l12-cave-explorer-{stage}']['fee']['gold'] for stage in ['base','first','second']],[1000,2000,3000])
+        choices = [rows[f'l12-cave-explorer-{stage}'] for stage in ['base', 'first', 'second']]
+        self.assertEqual([row['fee']['gold'] for row in choices], [1000, 2000, 3000])
+        self.assertEqual([row['minimum_level'] for row in choices], [25, 50, 80])
+        for row in choices:
+            debit = row['participants'][0]['state_ops'][0]
+            self.assertEqual(debit['from']['minimum'], 100)
+            self.assertEqual(debit['effect']['value'], -100)
+        for tier, level, experience in [('upper', 25, 1000), ('middle', 50, 2000), ('lower', 80, 3500)]:
+            accept = rows[f'l12-spike-{tier}-accept']
+            report = rows[f'l12-spike-{tier}-report']
+            self.assertEqual(accept['minimum_level'], level)
+            self.assertEqual(accept['state_ops'][0]['from']['seconds'], 72001)
+            self.assertEqual(report['experience'], experience)
+            self.assertEqual(report['storage'][1]['minimum'], 7)
+            self.assertEqual(report['state_ops'][1]['effect']['value'], 1)
         appearance=json.loads(q.build()['content/cosmetics/outfits/authoring.json'])['document']
         dragon=next(o for o in appearance['outfits'] if o['key']=='oteryn:outfit.dragon_slayer')
         self.assertEqual((dragon['female']['id'],dragon['male']['id']),(1289,1288))
@@ -498,9 +512,13 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-','l13-','m36-','qb-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),97)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),148)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),153)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
-        self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
+        source_routes = ('l12-cave-explorer-', 'l12-spike-')
+        for callback in callbacks:
+            new_source = callback['key'].rsplit('/', 1)[-1].startswith(source_routes)
+            revision = '201189f871d23597b82caf88fd611454a2ddefb8' if new_source else q.PIN
+            self.assertTrue(callback['sources'][0].startswith(f'crystal:{revision}:'))
 
     def test_l1_handins_preserve_source_crest_identity_and_exclusive_sides(self):
         callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}

@@ -24,7 +24,10 @@ def required_items(root, creatures, tables):
     rules = json.loads((root / corpse.RULES).read_bytes())['rules']
     rule_creatures = {objectives[rule['objective']]['creature'] for rule in rules}
     ordinary = json.loads((root / corpse.REQUIREMENTS).read_bytes())['objectives']
-    selected = rule_creatures | {objectives[key]['creature'] for key in ordinary}
+    # Kill credit for the Crystal Spike hunts shares the ordinary corpse and
+    # loot transaction. Admit the complete tables for these two source bodies.
+    spike_hunts = {'oteryn:creature.crystalcrusher', 'oteryn:creature.drillworm'}
+    selected = rule_creatures | {objectives[key]['creature'] for key in ordinary} | spike_hunts
     native = {row['profile']['target']['key']: row['profile']['target'] for row in creatures['records']}
     definitions = {}
     for path in sorted((root / 'content/creatures/definitions').glob('creatures-*.json')):
