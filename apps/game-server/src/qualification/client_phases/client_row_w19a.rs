@@ -69,6 +69,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 .map(|reference| (reference.get(), (reward.minimum, reward.maximum)))
         })
         .collect::<TestResult<BTreeMap<_, _>>>()?;
+    if !client.inventory().is_some_and(|inventory| inventory.entries.iter().any(|item| item.item_definition_ref == bag_ref)) {
+        super::full_row_w19a::acquire_bundles(&mut client, clients).await?;
+    }
     let before = client.inventory().cloned().ok_or("step=inventory snapshot absent")?;
     let bag = before
         .entries
@@ -138,7 +141,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W19a.client status=CAPTURED evidence={observed}"
         )),

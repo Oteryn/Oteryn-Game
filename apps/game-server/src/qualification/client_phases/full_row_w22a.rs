@@ -210,6 +210,94 @@ pub(super) async fn kill_and_open(
     }
 }
 
+pub(super) async fn travel_to_named_spawn(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    creature: &str,
+    name: &str,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let points: Vec<_> = spawns
+        .sources
+        .iter()
+        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
+        .filter(|(_, point)| {
+            spawns
+                .creatures
+                .get(point.creature as usize)
+                .is_some_and(|entry| entry.key == creature)
+        })
+        .collect();
+    let path = route(world, from, |at| {
+        !world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_none_or(|tile| tile.protection_zone())
+            && points.iter().any(|(floor, point)| {
+                at.floor == *floor && at.x.abs_diff(point.x) <= 1 && at.y.abs_diff(point.y) <= 1
+            })
+    })
+    .ok_or_else(|| format!("no reachable {creature} spawn within town route budget"))?;
+    walk(client, world, &path).await?;
+    for _ in 0..32 {
+        let here = client.world_spatial().actor_position;
+        let target = client
+            .world_entities()
+            .and_then(|entities| {
+                entities
+                    .iter()
+                    .filter(|entry| {
+                        entry.kind == oteryn_dev_client::EntityKind::Creature
+                            && entry.position.floor == here.floor
+                            && entry.display_name.is_some_and(|label| label.as_str().is_ok_and(|shown| shown.eq_ignore_ascii_case(name)))
+                    })
+                    .min_by_key(|entry| {
+                        entry
+                            .position
+                            .x
+                            .abs_diff(here.x)
+                            .max(entry.position.y.abs_diff(here.y))
+                    })
+            })
+            .copied()
+            .ok_or_else(|| format!("spawn route has no visible {name}"))?;
+        let target = tile(target.position)?;
+        let path = route(world, tile(here)?, |at| {
+            at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
+        })
+        .ok_or("visible creature unreachable")?;
+        let Some(direction) = path.first() else {
+            return Ok(());
+        };
+        walk(client, world, &[*direction]).await?;
+    }
+    Err("could not approach a live creature within the route budget".into())
+}
+
+pub(super) async fn move_loot(client: &mut DevClientSession, entries: &[oteryn_protocol_oteryn::item_view::ItemEntry]) -> TestResult {
+    for entry in entries {
+        let definition = entry.item_definition_ref.get();
+        let expected = quantity(client, definition)? + u64::from(entry.count.get());
+        let moved = client.move_item(&oteryn_dev_client::ItemMoveIntent {
+            source: entry.handle,
+            destination: ItemMoveDestination::MainBackpack,
+        }).await?;
+        if moved.outcome != ItemMoveOutcome::Moved {
+            return Err(format!("corpse-to-backpack move refused: {moved:?}").into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        while quantity(client, definition)? != expected {
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("corpse-to-backpack custody missing: definition={definition} expected={expected}").into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+            client.take_events();
+        }
+    }
+    Ok(())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -221,7 +309,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xb2).await?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_named_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat", "Rat").await?;
     row.pass("walk-to-rat", "STEP replies moved to authored rat spawn");
     let mut attempts = 1_u8;
     let mut entries = kill_and_open(&mut client, "Rat").await?;
@@ -234,11 +322,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         loop {
             client.service_liveness(Duration::from_millis(250)).await?;
             client.take_events();
-            if travel_to_spawn(
+            if travel_to_named_spawn(
                 &mut client,
                 world,
                 &metadata.spawns,
                 "oteryn:creature.rat",
+                "Rat",
             )
             .await
             .is_ok()

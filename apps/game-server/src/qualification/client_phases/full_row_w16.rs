@@ -146,7 +146,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     for &(suffix, name) in SUMMER_ACTORS {
         let key = format!("oteryn:creature.{suffix}");
-        travel_to_spawn(&mut fresh, world, &metadata.spawns, &key)
+        super::full_row_w22a::travel_to_named_spawn(&mut fresh, world, &metadata.spawns, &key, name)
             .await
             .map_err(|error| format!("step=summer-population-route need={key} observed={error}"))?;
         if !fresh.world_entities().is_some_and(|entities| {

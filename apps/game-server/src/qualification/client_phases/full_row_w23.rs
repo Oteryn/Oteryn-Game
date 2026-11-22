@@ -151,6 +151,12 @@ async fn step_onto(
     Ok(outcome)
 }
 
+async fn home_town(database: &mut sqlx::PgConnection, character: &[u8; 16]) -> TestResult<Option<i32>> {
+    Ok(sqlx::query_scalar(
+        "SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(character.as_slice()).fetch_optional(database).await?)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -163,12 +169,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let tiles = citizen_tiles(&bytes)?;
     let mut client = connect_world(clients, 0xd8).await?;
 
+    use sqlx::Connection as _;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let previous_home = home_town(&mut database, &clients.characters[1]).await?;
     let from = tile(client.world_spatial().actor_position)?;
     let (selected, path, direction) = tiles.iter()
-        .filter(|entry| entry.unique != SVARGROND_UNIQUE)
+        .filter(|entry| entry.unique != SVARGROND_UNIQUE && previous_home.and_then(|town| u32::try_from(town).ok()) != Some(entry.town))
         .filter_map(|entry| approach(world, from, entry.at).map(|(path, direction)| (*entry, path, direction)))
         .min_by_key(|(_, path, _)| path.len())
-        .ok_or("step=citizenship-route observed=no-walking-route need=reachable-shipped-citizen-tile")?;
+        .ok_or("step=citizenship-route observed=no-walking-route need=reachable-shipped-citizen-tile-for-different-home-town")?;
     walk(&mut client, world, &path).await?;
     client.take_events();
     let outcome = step_onto(&mut client, direction).await?;
@@ -192,7 +201,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if fresh.world_spatial().actor_position != expected_position {
         return Err(format!("step=fresh-admission observed={:?} need=durable-home-temple-{expected_position:?}", fresh.world_spatial().actor_position).into());
     }
-    evidence(&format!("W23_CHECK persistence PASS fresh={expected_position:?}"));
+    let home = home_town(&mut database, &clients.characters[1]).await?;
+    if home != Some(i32::try_from(selected.town)?) {
+        return Err(format!("step=fresh-admission-home-town observed={home:?} need={}", selected.town).into());
+    }
+    evidence(&format!("W23_CHECK persistence PASS town={} fresh={expected_position:?}", selected.town));
 
     let svargrond = tiles.iter().find(|entry| entry.unique == SVARGROND_UNIQUE)
         .ok_or("step=svargrond-content observed=unique-9066-absent need=shipped-citizen-tile")?;

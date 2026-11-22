@@ -116,8 +116,8 @@ fn shrine_target(world: &BundleWorld) -> TestResult<WorldObjectTarget> {
     })
 }
 
-fn shrine_revision(base: u64, published: Option<u64>) -> u64 {
-    published.unwrap_or(base).max(base)
+fn shrine_revision(base: u64, published: Option<u64>) -> TestResult<u64> {
+    published.filter(|revision| *revision > base).ok_or_else(|| format!("repeat-use needs a newer published shrine revision, base={base} observed={published:?}").into())
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -162,7 +162,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let observed_revision = client.world_object_overlay().iter()
         .find(|entry| entry.placement == target.placement)
         .map(|entry| entry.revision);
-    let revision = shrine_revision(target.expected_revision, observed_revision);
+    let revision = shrine_revision(target.expected_revision, observed_revision)?;
     let second = client
         .session_mut()
         .use_object(&target.placement, revision)
@@ -204,7 +204,8 @@ mod tests {
 
     #[test]
     fn journey_regression_replays_with_the_published_shrine_revision() {
-        assert_eq!(shrine_revision(2, None), 2);
-        assert_eq!(shrine_revision(2, Some(3)), 3);
+        assert!(shrine_revision(2, None).is_err());
+        assert!(shrine_revision(2, Some(2)).is_err());
+        assert_eq!(shrine_revision(2, Some(3)).ok(), Some(3));
     }
 }

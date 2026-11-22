@@ -21,7 +21,7 @@ use std::collections::BTreeMap;
 // Crystal 201189f8 data-global/npc/messenger_of_santa.lua:62.
 pub(super) const BAG_ID: u32 = 6506;
 
-fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
+pub(super) fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
     let mut result = BTreeMap::new();
     for entry in &client.inventory().ok_or("W19a inventory absent")?.entries {
         *result.entry(entry.item_definition_ref.get()).or_default() += u64::from(entry.count.get());
@@ -63,10 +63,9 @@ async fn earn_price(
             )
             .into());
         }
-        travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
-        client_hunt::hunt(client)
-            .await
-            .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step 1: rat ATTACK/loot observed={error}"), error) })?;
+        super::full_row_w22a::travel_to_named_spawn(client, world, spawns, "oteryn:creature.rat", "Rat").await?;
+        let entries = super::full_row_w22a::kill_and_open(client, "Rat").await?;
+        super::full_row_w22a::move_loot(client, &entries).await?;
     }
     Ok(())
 }
@@ -270,7 +269,7 @@ pub(super) fn random_outcome_matches(
     gains == picks
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
+pub(super) async fn acquire_bundles(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult<u64> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin: serde_json::Value =
@@ -281,14 +280,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xa9).await?;
-    let (mut intent, mut count) = quote(&mut client, world, &metadata.npcs).await?;
+    let (mut intent, mut count) = quote(client, world, &metadata.npcs).await?;
     let cost = u64::from(intent.expected_unit_price) * u64::from(intent.quantity);
-    if gold_and_goods(quantities(&client)?, &coin_values()?).0 < cost {
-        earn_price(&mut client, world, &metadata.spawns, cost).await?;
-        (intent, count) = quote(&mut client, world, &metadata.npcs).await?;
+    if gold_and_goods(quantities(client)?, &coin_values()?).0 < cost {
+        earn_price(client, world, &metadata.spawns, cost).await?;
+        (intent, count) = quote(client, world, &metadata.npcs).await?;
     }
-    let purchase_sequence = acquire(&mut client, &intent, count).await?;
+    acquire(client, &intent, count).await
+}
+
+async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let mut client = connect_world(clients, 0xa9).await?;
+    let purchase_sequence = acquire_bundles(&mut client, clients).await?;
     let before_refusal = quantities(&client)?;
     let position = client.world_spatial().actor_position;
     let source = bag_handle(&client)?;

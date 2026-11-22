@@ -31,6 +31,8 @@ fn reward_increased(before: &Custody, after: &Custody, definition: u32, count: u
             .sum::<u64>()
     };
     quantity(after).checked_sub(quantity(before)) == Some(u64::from(count))
+        && before.0.iter().filter(|((_, key, _), _)| *key != definition)
+            .eq(after.0.iter().filter(|((_, key, _), _)| *key != definition))
 }
 
 fn custody(client: &DevClientSession) -> TestResult<Custody> {
@@ -58,6 +60,7 @@ struct Chest {
     at: TilePos,
     target: WorldObjectTarget,
     claim: String,
+    transition: String,
     reward_definition: u32,
     reward_count: u32,
 }
@@ -77,7 +80,8 @@ fn quest_chests(world: &BundleWorld) -> TestResult<Vec<Chest>> {
     let mut chests = Vec::new();
     for claim in report.served {
         for placement in claim.placements {
-            if placement.placement.quest_transition.is_none() || placement.reward_callback.is_some() {
+            let Some(transition) = placement.placement.quest_transition else { continue };
+            if placement.reward_callback.is_some() {
                 continue;
             }
             let [reward] = placement.placement.items.as_slice() else {
@@ -99,6 +103,7 @@ fn quest_chests(world: &BundleWorld) -> TestResult<Vec<Chest>> {
                     expected_revision: 0,
                 },
                 claim: claim.key.as_str().to_owned(),
+                transition,
                 reward_definition,
                 reward_count: reward.count,
             });
@@ -145,6 +150,11 @@ async fn fresh_admission(
     Ok(fresh)
 }
 
+async fn quest_receipts(database: &mut sqlx::PgConnection, clients: &SeamClients<'_>, transition: &str) -> TestResult<(i64, i64)> {
+    Ok(sqlx::query_as("SELECT count(*), count(*) FILTER (WHERE transition_key=$2) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid")
+        .bind(clients.characters[1].as_slice()).bind(transition).fetch_one(database).await?)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -162,6 +172,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     walk(&mut client, world, &path)
         .await
         .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-2: walking to {} failed: {error}", chest.claim), error) })?;
+    use sqlx::Connection as _;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let receipts_before = quest_receipts(&mut database, clients, &chest.transition).await?;
     let first = use_chest(&mut client, &chest).await?;
     if first != UseDisposition::Committed {
         return Err(format!("step-3: first USE reply={first:?} claim={}", chest.claim).into());
@@ -182,6 +195,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         client.take_events();
     };
     let advanced = query_quest_journal(&mut client, false).await?;
+    let receipts_after = quest_receipts(&mut database, clients, &chest.transition).await?;
+    if receipts_after != (receipts_before.0 + 1, receipts_before.1 + 1) {
+        return Err(format!("step-3: exact quest receipt missing or unrelated transition committed: expected={} before={receipts_before:?} after={receipts_after:?}", chest.transition).into());
+    }
     if advanced == before_quests {
         return Err(format!("step-3: USE committed but quest-list delta missing claim={}", chest.claim).into());
     }
@@ -209,6 +226,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     if custody(&fresh)? != awarded || query_quest_journal(&mut fresh, false).await? != advanced {
         return Err("step-5: post-relog refusal changed durable inventory or quest state".into());
+    }
+    if quest_receipts(&mut database, clients, &chest.transition).await? != receipts_after {
+        return Err("step-5: duplicate USE or fresh admission changed durable quest receipts".into());
     }
     let logout = fresh.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -252,6 +272,8 @@ mod tests {
         assert!(!reward_increased(&before, &unrelated, 3607, 1));
         assert!(!reward_increased(&before, &reward, 3607, 2));
         assert!(reward_increased(&before, &reward, 3607, 1));
+        let lost = Custody(BTreeMap::from([((255, 3607, 0), 1)]));
+        assert!(!reward_increased(&before, &lost, 3607, 1));
     }
 
     #[test]

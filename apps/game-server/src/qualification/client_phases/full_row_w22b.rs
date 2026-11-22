@@ -147,6 +147,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }.await;
     row.observed(1, step1);
 
+    let mut looted = false;
     let step2 = async {
         let count = hunt_rat(&mut client, world, spawns).await?;
         let after = prey_request(&mut client, &prey::Request::Query).await?;
@@ -154,11 +155,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         let slot = after.slots.iter().find(|slot| {
             slot.slot == id && slot.selection_epoch == epoch
         }).ok_or("prey selection was not retained through kill")?;
-        if slot.hunting_seconds > seconds {
-            return Err("prey hunting clock increased after credited kill".into());
+        if slot.hunting_seconds >= seconds {
+            return Err("prey hunting clock did not decrease after credited kill".into());
         }
+        looted |= count > 0;
         evidence(&format!("W22B_LOOT prey corpse_entries={count}"));
-        Ok(())
+        Err(modifier_gap("Prey", count).into())
     }.await;
     row.observed(2, step2);
 
@@ -166,8 +168,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         let reply = command(&mut client, daily_boost::CAPABILITY_DAILY_BOOST_V1, daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY, &[]).await?;
         if reply.status != CommandStatus::Accepted { return Err(format!("daily boost query status={:?} payload={:?}", reply.status, reply.payload).into()); }
         let key = decode_boosted_creature(&reply.payload)?;
-        travel_to_spawn(&mut client, world, spawns, &key).await
-            .map_err(|error| format!("daily boost selects {key}; authored spawn route failed: {error}"))?;
         let profiles: serde_json::Value = serde_json::from_slice(&native_input()?.creature_profiles.bytes)?;
         let name = profiles["records"].as_array().and_then(|records| {
             records.iter().find_map(|record| {
@@ -178,9 +178,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 profile["data"]["profile"]["details"]["display_name"].as_str()
             })
         }).ok_or_else(|| format!("daily boost selects {key}; pinned creature display name absent"))?;
-        let count = super::full_row_w22a::kill_and_open(&mut client, name).await?.len();
+        super::full_row_w22a::travel_to_named_spawn(&mut client, world, spawns, &key, name).await
+            .map_err(|error| format!("daily boost selects {key}; authored spawn route failed: {error}"))?;
+        let entries = super::full_row_w22a::kill_and_open(&mut client, name).await?;
+        super::full_row_w22a::move_loot(&mut client, &entries).await?;
+        let count = entries.len();
+        looted |= count > 0;
         evidence(&format!("W22B_LOOT daily-boost creature={key} corpse_entries={count}"));
-        Ok(())
+        Err(modifier_gap("daily boost", count).into())
     }.await;
     row.observed(3, step3);
 
@@ -215,8 +220,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             ).into());
         }
         let count = hunt_rat(&mut client, world, spawns).await?;
+        looted |= count > 0;
         evidence(&format!("W22B_LOOT gut corpse_entries={count}"));
-        Ok(())
+        Err(modifier_gap("Gut", count).into())
     }.await;
     row.observed(4, step4);
 
@@ -226,28 +232,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .map(|entry| entry.handle);
     if let Some(handle) = carried {
         let step5 = async {
-            use oteryn_protocol_oteryn::{mechanics_status as wire, world_object::UseDisposition};
+            use oteryn_protocol_oteryn::world_object::UseDisposition;
             let used = client.use_item(handle).await?;
             if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {
                 return Err(format!("Wealth Duplex USE observed={used:?}").into());
             }
-            let reply = command(
-                &mut client,
-                wire::CAPABILITY_MECHANICS_STATUS_V1,
-                wire::COMMAND_TYPE_MECHANICS_STATUS_QUERY,
-                &[],
-            ).await?;
-            if reply.status != CommandStatus::Accepted {
-                return Err(format!("Wealth Duplex status query observed={:?}", reply.status).into());
-            }
-            let status = wire::MechanicsStatus::decode(&reply.payload)
-                .ok_or("invalid mechanics status after Wealth Duplex USE")?;
-            let timer = status.timers.iter().find(|timer| {
-                timer.key == "wealth_duplex" && timer.online_only && timer.remaining_ms > 0
-            }).ok_or("Wealth Duplex USE did not expose an active online timer")?;
+            let timer = wealth_timer(&mut client).await?
+                .ok_or("Wealth Duplex USE did not expose an active online timer")?;
             let count = hunt_rat(&mut client, world, spawns).await?;
-            evidence(&format!("W22B_LOOT wealth_duplex active_ms={} corpse_entries={count}", timer.remaining_ms));
-            Ok(())
+            looted |= count > 0;
+        evidence(&format!("W22B_LOOT wealth_duplex active_ms={} corpse_entries={count}", timer));
+            Err(modifier_gap("Wealth Duplex", count).into())
         }.await;
         row.observed(5, step5);
     } else {
@@ -257,9 +252,55 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let step6 = async { let stamina = stamina(&mut client).await?; let count = hunt_rat(&mut client, world, spawns).await?; if stamina > 840 { return Err(format!("low-stamina kill executed at served stamina={stamina}, corpse_entries={count}; need <=840 obtained through ordinary hunting").into()); } else if count != 0 { return Err(format!("low-stamina corpse was not empty: stamina={stamina} entries={count}").into()); } Ok(()) }.await;
     row.observed(6, step6);
 
-    let step7 = async { let prey_before = prey_request(&mut client, &prey::Request::Query).await?; let charm_before = charm_request(&mut client, charm::CharmProgressionAction::Query).await?; let stamina_before = stamina(&mut client).await?; release(&mut client).await?; client = connect_character(clients, 0xd3, 1).await?; let prey_after = prey_request(&mut client, &prey::Request::Query).await?; let charm_after = charm_request(&mut client, charm::CharmProgressionAction::Query).await?; let stamina_after = stamina(&mut client).await?; if prey_before != prey_after || charm_before != charm_after || stamina_before != stamina_after { return Err(format!("fresh admission durable delta mismatch: prey={} charm={} stamina={stamina_before}->{stamina_after}", prey_before != prey_after, charm_before != charm_after).into()); } Ok(()) }.await;
+    let step7 = async {
+        use super::full_row_w19a::quantities;
+        let prey_before = prey_request(&mut client, &prey::Request::Query).await?;
+        let charm_before = charm_request(&mut client, charm::CharmProgressionAction::Query).await?;
+        let stamina_before = stamina(&mut client).await?;
+        let wealth_before = wealth_timer(&mut client).await?;
+        let loot_before = quantities(&client)?;
+        release(&mut client).await?;
+        client = connect_character(clients, 0xd3, 1).await?;
+        let prey_after = prey_request(&mut client, &prey::Request::Query).await?;
+        let charm_after = charm_request(&mut client, charm::CharmProgressionAction::Query).await?;
+        let stamina_after = stamina(&mut client).await?;
+        let wealth_after = wealth_timer(&mut client).await?;
+        let loot_after = quantities(&client)?;
+        if prey_before != prey_after || charm_before != charm_after || stamina_before != stamina_after
+            || !retained_timer(wealth_before, wealth_after) || loot_before != loot_after {
+            return Err(format!("fresh admission durable delta mismatch: prey={} charm={} stamina={stamina_before}->{stamina_after} wealth_duplex={wealth_before:?}->{wealth_after:?} backpack={loot_before:?}->{loot_after:?}", prey_before != prey_after, charm_before != charm_after).into());
+        }
+        if wealth_before.is_none() || !looted {
+            return Err(format!("fresh admission durability prerequisites missing: active_wealth_duplex={} looted={looted}; need active timer and prior corpse-to-backpack custody", wealth_before.is_some()).into());
+        }
+        Ok(())
+    }.await;
     row.observed(7, step7);
     Ok(())
+}
+
+fn modifier_gap(modifier: &str, count: usize) -> String {
+    format!("{modifier} corpse_entries={count}; need modifier-attributable loot evidence, native corpse view exposes only merged item stacks")
+}
+
+fn retained_timer(before: Option<u64>, after: Option<u64>) -> bool {
+    match (before, after) {
+        (None, None) => true,
+        (Some(before), Some(after)) => after > 0 && after <= before,
+        _ => false,
+    }
+}
+
+async fn wealth_timer(client: &mut DevClientSession) -> TestResult<Option<u64>> {
+    use oteryn_protocol_oteryn::mechanics_status as wire;
+    let reply = command(client, wire::CAPABILITY_MECHANICS_STATUS_V1, wire::COMMAND_TYPE_MECHANICS_STATUS_QUERY, &[]).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("Wealth Duplex status query observed={:?}", reply.status).into());
+    }
+    let status = wire::MechanicsStatus::decode(&reply.payload)
+        .ok_or("invalid mechanics status while observing Wealth Duplex")?;
+    Ok(status.timers.iter().find(|timer| timer.key == "wealth_duplex" && timer.online_only && timer.remaining_ms > 0)
+        .map(|timer| timer.remaining_ms))
 }
 
 fn decode_boosted_creature(payload: &[u8]) -> TestResult<String> {
@@ -291,8 +332,10 @@ async fn hunt_rat(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult<usize> {
-    travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
-    Ok(super::full_row_w22a::kill_and_open(client, "Rat").await?.len())
+    super::full_row_w22a::travel_to_named_spawn(client, world, spawns, "oteryn:creature.rat", "Rat").await?;
+    let entries = super::full_row_w22a::kill_and_open(client, "Rat").await?;
+    super::full_row_w22a::move_loot(client, &entries).await?;
+    Ok(entries.len())
 }
 
 async fn release(client: &mut DevClientSession) -> TestResult {
@@ -302,6 +345,14 @@ async fn release(client: &mut DevClientSession) -> TestResult {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn durable_wealth_timer_must_remain_active_without_reset() {
+        assert!(super::retained_timer(Some(10_000), Some(9_000)));
+        assert!(!super::retained_timer(Some(10_000), None));
+        assert!(!super::retained_timer(Some(10_000), Some(0)));
+        assert!(!super::retained_timer(Some(10_000), Some(11_000)));
+    }
+
     use super::*;
     #[test]
     fn review_regression_unavailable_concoction_is_not_executed() {
