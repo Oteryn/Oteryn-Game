@@ -1,12 +1,17 @@
 //! The scope barrier belongs to the connection; the owner decides the transfer.
 use super::*;
+use crate::gameplay_transport::house_podium::Approach;
 use crate::gameplay_transport::raid_notices::ServerMessageConnection;
+use oteryn_protocol_oteryn::house_podium::{COMMAND_QUERY, decode_item};
 use oteryn_protocol_oteryn::house_transfer::{
     COMMAND_TYPE_HOUSE_TRANSFER, STATE_DOMAIN_HOUSE_SCOPE,
 };
 use oteryn_protocol_oteryn::zones_nologout::{
     CAPABILITY_ZONES_NOLOGOUT_V1, SERVER_MESSAGES_EMPTY_SNAPSHOT, STATE_DOMAIN_SERVER_MESSAGES,
 };
+use std::collections::VecDeque;
+use std::time::Duration;
+use tokio::time::Instant;
 
 pub(super) async fn execute<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     stream: &mut S,
@@ -153,6 +158,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
         .ok_or(ServeEnd::Disconnected)?;
         let generation = admitted.continuity.connection_generation;
         let mut queue = house_hireling::step::Queue::default();
+        let mut podium = None::<PodiumWalk>;
         let mut liveness = Liveness::new(policy);
         let mut cadence = tokio::time::interval_at(
             tokio::time::Instant::now() + policy.interval,
@@ -186,8 +192,21 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 })
                 .await
                 {
-                    Some(event) => event?,
+                    Some(event) => event,
                     None => continue,
+                }
+            };
+            let event = match event {
+                Ok(event) => event,
+                Err(end) => {
+                    if let Some(walk) = podium.take() {
+                        // The pending query never reached its owner, so its reservation
+                        // can retain a cancellation even if the client socket is gone.
+                        let _ = walk
+                            .finish(stream, &mut admitted, &mut commands, refused())
+                            .await;
+                    }
+                    return Err(end);
                 }
             };
             // Refresh before ingress/probes, not immediately after a reply: stash and
@@ -231,6 +250,24 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         .map_err(|_| ServeEnd::Disconnected)?;
                     continue;
                 }
+                house_hireling::step::Event::PodiumWalk => {
+                    let mut walk = podium.take().ok_or(ServeEnd::Disconnected)?;
+                    match walk
+                        .advance(stream, authority, &mut services, &mut admitted)
+                        .await?
+                    {
+                        PodiumTurn::Wait(due) => {
+                            queue.set_podium_due(Some(due));
+                            podium = Some(walk);
+                        }
+                        PodiumTurn::Finish(dispatch) => {
+                            integrity.observe(&dispatch);
+                            walk.finish(stream, &mut admitted, &mut commands, dispatch)
+                                .await?;
+                        }
+                    }
+                    continue;
+                }
                 house_hireling::step::Event::Input(input) => input,
             };
             let envelope = decode_wire_envelope(&frame).map_err(ServeEnd::Closed)?;
@@ -258,6 +295,18 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             let command = envelope
                 .client_command(generation)
                 .map_err(ServeEnd::Closed)?;
+            // Ingress permits one outstanding command. As with Channel item
+            // walks, a new action (including a manual STEP) first cancels the
+            // reserved automatic action. Retransmissions stay attached to it.
+            if let Some(walk) = podium.take() {
+                if walk.command_id.checked_add(1) == Some(command.command_id) {
+                    queue.set_podium_due(None);
+                    walk.finish(stream, &mut admitted, &mut commands, refused())
+                        .await?;
+                } else {
+                    podium = Some(walk);
+                }
+            }
             let limited = if buffered_original {
                 false
             } else {
@@ -360,12 +409,35 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         }
                         route::StepAction::Dispatch(dispatch) => dispatch,
                     }
-                } else if command.command_type
-                    == oteryn_protocol_oteryn::house_podium::COMMAND_QUERY
+                } else if command.command_type == COMMAND_QUERY
                     && selected.command_selected(command.command_type)
                 {
-                    drop(permit.take());
-                    podium_query(stream, authority, &mut services, &mut admitted, command).await?
+                    let Some(item) = decode_item(command.payload) else {
+                        drop(permit.take());
+                        return Err(close(
+                            stream,
+                            admitted,
+                            FoundationProtocolError::MalformedEnvelope,
+                        )
+                        .await);
+                    };
+                    match authority.house_podium_approach(admitted, item).await {
+                        Approach::Ready => services
+                            .route(authority, &mut admitted, command)
+                            .await
+                            .ok_or(ServeEnd::Disconnected)?,
+                        Approach::Walk(steps) => {
+                            podium = Some(PodiumWalk {
+                                command_id: command.command_id,
+                                item,
+                                steps: steps.into(),
+                            });
+                            queue.set_podium_due(Some(services.step_due()));
+                            continue;
+                        }
+                        Approach::NoPath => refused(),
+                        Approach::Unavailable => return Err(ServeEnd::Disconnected),
+                    }
                 } else {
                     services
                         .route(authority, &mut admitted, command)
@@ -485,78 +557,116 @@ mod authority_tests;
 #[path = "house_transfer_raid_tests.rs"]
 mod raid_tests;
 
-// The House loop retains the original command reservation while its native STEP
-// owner approaches the podium. Only the final query produces a CommandResult.
-async fn podium_query<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
-    stream: &mut S,
-    authority: &A,
-    services: &mut house_hireling::State,
-    admitted: &mut AdmittedSession,
-    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
-) -> Result<Dispatch, ServeEnd> {
-    let refused = || Dispatch::Reply(CommandStatus::Rejected, Vec::new());
-    let Some(item) = oteryn_protocol_oteryn::house_podium::decode_item(command.payload) else {
-        return Ok(refused());
-    };
-    let Some(route) = authority.house_podium_approach(*admitted, item).await else {
-        return Ok(refused());
-    };
-    let walked = !route.is_empty();
-    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(4);
-    for direction in route {
+// Crystal game.cpp:4609-4625 and player.cpp:6190-6192 retry after walking finishes.
+const PODIUM_RETRY_DELAY: Duration = Duration::from_millis(400);
+
+struct PodiumWalk {
+    command_id: u64,
+    item: [u8; 16],
+    steps: VecDeque<StepDirection>,
+}
+
+enum PodiumTurn {
+    Wait(Instant),
+    Finish(Dispatch),
+}
+
+fn refused() -> Dispatch {
+    Dispatch::Reply(CommandStatus::Rejected, Vec::new())
+}
+
+impl PodiumWalk {
+    async fn advance<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
+        &mut self,
+        stream: &mut S,
+        authority: &A,
+        services: &mut house_hireling::State,
+        admitted: &mut AdmittedSession,
+    ) -> Result<PodiumTurn, ServeEnd> {
+        let Some(permit) = authority.enter_input(admitted.game_session_id).await else {
+            return Ok(PodiumTurn::Finish(refused()));
+        };
+        let Some(&direction) = self.steps.front() else {
+            let dispatch = match authority.house_podium_approach(*admitted, self.item).await {
+                Approach::Ready => {
+                    let command = oteryn_protocol_oteryn::ClientCommandView {
+                        command_id: self.command_id,
+                        command_type: COMMAND_QUERY,
+                        payload: &self.item,
+                    };
+                    services
+                        .route(authority, admitted, command)
+                        .await
+                        .ok_or(ServeEnd::Disconnected)?
+                }
+                Approach::Walk(_) | Approach::NoPath => refused(),
+                Approach::Unavailable => return Err(ServeEnd::Disconnected),
+            };
+            return Ok(PodiumTurn::Finish(dispatch));
+        };
         let payload = oteryn_protocol_oteryn::world_spatial::encode_step_intent(direction);
-        let step = oteryn_protocol_oteryn::ClientCommandView {
-            command_id: command.command_id,
+        let command = oteryn_protocol_oteryn::ClientCommandView {
+            command_id: self.command_id,
             command_type: COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
             payload: &payload,
         };
-        loop {
-            if tokio::time::Instant::now() >= deadline {
-                return Ok(refused());
+        let outcome = services.step(authority, admitted, command, false).await;
+        drop(permit);
+        match outcome {
+            route::StepAction::Wait(due) => Ok(PodiumTurn::Wait(due)),
+            route::StepAction::Dispatch(
+                dispatch @ Dispatch::Step(
+                    StepOutcome {
+                        disposition: StepDisposition::Moved,
+                        ..
+                    },
+                    _,
+                ),
+            ) => {
+                self.steps.pop_front();
+                services
+                    .effects(stream, authority, admitted, dispatch)
+                    .await?;
+                let due = services.step_due();
+                Ok(PodiumTurn::Wait(if self.steps.is_empty() {
+                    due + PODIUM_RETRY_DELAY
+                } else {
+                    due
+                }))
             }
-            let Some(input) = authority.enter_input(admitted.game_session_id).await else {
-                return Ok(refused());
-            };
-            let outcome = services.step(authority, admitted, step, false).await;
-            drop(input);
-            match outcome {
-                route::StepAction::Wait(due) => {
-                    tokio::time::sleep_until(due.min(deadline)).await;
-                }
-                route::StepAction::Dispatch(
-                    dispatch @ Dispatch::Step(
-                        StepOutcome {
-                            disposition: StepDisposition::Moved,
-                            ..
-                        },
-                        _,
-                    ),
-                ) => {
-                    services
-                        .effects(stream, authority, admitted, dispatch)
-                        .await?;
-                    break;
-                }
-                route::StepAction::Dispatch(_) => return Ok(refused()),
-            }
+            route::StepAction::Dispatch(_) => Ok(PodiumTurn::Finish(refused())),
         }
     }
-    if walked {
-        // Crystal game.cpp:4609-4625 schedules the query after the walking action.
-        tokio::time::sleep(std::time::Duration::from_millis(400)).await;
-        if !authority
-            .house_podium_approach(*admitted, item)
+
+    async fn finish(
+        self,
+        stream: &mut (impl AsyncWrite + Unpin),
+        admitted: &mut AdmittedSession,
+        commands: &mut crate::gameplay_transport::session_ingress::SessionCommandStream,
+        dispatch: Dispatch,
+    ) -> Result<(), ServeEnd> {
+        let (status, payload) =
+            house_hireling::result(admitted.continuity.selected_capabilities, &dispatch)?;
+        let sequence = admitted
+            .continuity
+            .server_sequence
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        let frame = encode_command_result(
+            admitted.continuity.connection_generation,
+            sequence,
+            self.command_id,
+            status,
+            &payload,
+        )
+        .map_err(|_| ServeEnd::Disconnected)?;
+        commands
+            .terminalize_with(self.command_id, &frame, || {})
+            .ok_or(ServeEnd::Disconnected)?;
+        admitted.continuity.server_sequence = sequence;
+        admitted.continuity.next_command_id = commands.next_command_id();
+        write_frame(stream, &frame)
             .await
-            .is_some_and(|route| route.is_empty())
-        {
-            return Ok(refused());
-        }
+            .map_err(|_| ServeEnd::Disconnected)
     }
-    let Some(_input) = authority.enter_input(admitted.game_session_id).await else {
-        return Ok(refused());
-    };
-    services
-        .route(authority, admitted, command)
-        .await
-        .ok_or(ServeEnd::Disconnected)
 }
