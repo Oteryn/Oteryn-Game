@@ -9,10 +9,14 @@ use crate::foundation::{ChannelContentPin, WorldId};
 use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
 };
-use crate::map::overlay::TilePos;
+use crate::map::{overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_quests::quest::loader::load_embedded_quest_state;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+use oteryn_protocol_oteryn::quest_log::{
+    CAPABILITY_QUEST_LOG_V1, COMMAND_TYPE_QUEST_LOG_QUERY, QuestLogQuery, QuestLogView,
+    decode_quest_log, encode_quest_log_query,
+};
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent,
 };
@@ -47,6 +51,16 @@ fn children_of_the_revolution_earns_mission_eight_reports_map_and_investigates_t
 async fn exercise_trial(h: &Harness) -> TestResult {
     let loaded = load_embedded_quest_state("content-1").map_err(debug)?;
     let catalogue = loaded.catalogue();
+    let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&loaded)?;
+    let quest_index = u32::try_from(
+        journal
+            .content
+            .active()
+            .quests()
+            .iter()
+            .position(|quest| quest.key == CHILDREN)
+            .ok_or("Children quest journal identity")?,
+    )?;
     assert!(
         catalogue.transition(TRIAL).is_some(),
         "embedded Zalamon trial"
@@ -91,7 +105,7 @@ async fn exercise_trial(h: &Harness) -> TestResult {
         &[],
         start,
     )?;
-    let room = crate::content::qualify_native_entry_room(world_id).map_err(debug)?;
+    let room = pin.qualified_room().clone();
     let cells = world.movement_cells(room.movement_cells()).map_err(debug)?;
     let frame = world.frame_binding_digest(world_id);
     let map = world.map_revision_digest();
@@ -145,6 +159,10 @@ async fn exercise_trial(h: &Harness) -> TestResult {
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(active);
     owner.quest_catalogue = Some(Arc::new(catalogue.clone()));
+    owner.quest_log_content = Some(
+        crate::gameplay_transport::quest_log::QuestLogLines::new(journal.content)
+            .ok_or("quest journal bounds")?,
+    );
     owner.movement_cells = (&cells).into();
     owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&bundle_room), Some(&bundle_room));
     owner.premium_coordinator = Some(&premium);
@@ -177,16 +195,14 @@ async fn exercise_trial(h: &Harness) -> TestResult {
         ],
     )
     .await?;
-    super::qd_world_fixtures::select_talk_capabilities(&owner, &mut admitted, &[3, 4, 11, 13])?;
+    super::qd_world_fixtures::select_talk_capabilities(
+        &owner,
+        &mut admitted,
+        &[3, 4, 11, 13, CAPABILITY_QUEST_LOG_V1],
+    )?;
 
-    admitted.item_fence = Some(
-        owner
-            .current_quest_fence(admitted.game_session_id)
-            .await
-            .map_err(|()| "character fence")?
-            .ok_or("current session")?
-            .item_fence(),
-    );
+    prepare_inventory(&owner, &mut admitted, h).await?;
+    deps.initialize(&owner).await;
     let before = quantity(h, 637).await?;
     let first = admitted.continuity.next_command_id;
     super::grizzly_npc_fixtures::wire::talk_refused(
@@ -307,6 +323,95 @@ async fn exercise_trial(h: &Harness) -> TestResult {
     assert_eq!(progress(h, REVOLUTION, "mission01").await?, 3);
     assert_eq!(progress(h, REVOLUTION, "questline").await?, 6);
     assert_eq!(quantity(h, 637).await?, before);
+
+    let command = admitted.continuity.next_command_id;
+    let reply = super::quest_world_callbacks_fixtures::wire(
+        &owner,
+        &mut admitted,
+        command,
+        COMMAND_TYPE_QUEST_LOG_QUERY,
+        encode_quest_log_query(&QuestLogQuery::ListOnly).map_err(debug)?,
+    )
+    .await?;
+    let journal = decode_quest_log(&reply).map_err(debug)?;
+    assert!(matches!(journal.view, Some(QuestLogView::List(ref entries))
+        if entries.iter().any(|row| row.quest_index == quest_index && !row.completed)));
+    Ok(())
+}
+
+async fn prepare_inventory(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native content")?;
+    let server = native.source_digest();
+    let (client, frame) = {
+        let runtime = owner.runtime.lock().await;
+        (
+            runtime.content_pin().client_artifact_digest(),
+            runtime.content_pin().frame_binding_digest(),
+        )
+    };
+    sqlx::query(
+        "INSERT INTO game_control_scope_grants
+         VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)",
+    )
+    .bind(id(42).as_slice())
+    .bind(id(43).as_slice())
+    .execute(&h.pool)
+    .await?;
+    sqlx::query(
+        "SELECT game_content_record_activation(encode($1,'hex')::uuid,
+         encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)",
+    )
+    .bind(id(42).as_slice())
+    .bind(id(43).as_slice())
+    .bind(server.as_slice())
+    .bind(client.as_slice())
+    .bind(frame.as_slice())
+    .execute(&h.pool)
+    .await?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "character fence")?
+        .ok_or("current session")?
+        .item_fence();
+    let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
+    h.root
+        .initialize_admission_equipment(
+            owner.character,
+            owner.holder,
+            &fence,
+            server,
+            fresh.operation(),
+        )
+        .await
+        .map_err(debug)?;
+    let template = crate::durability::starter_grant::StarterTemplate {
+        definition: crate::durability::item_mint::TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "oteryn:item.tibia.i2854".into(),
+            revision_ref: "definition-r1".into(),
+        },
+        ..crate::durability::starter_grant::StarterTemplate::main()
+    };
+    h.root
+        .grant_starter_items(
+            owner.character,
+            owner.holder,
+            &fence,
+            &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+            &template,
+        )
+        .await
+        .map_err(debug)?;
+    admitted.item_fence = Some(fence);
+    owner.admit_progression_session(admitted).await;
     Ok(())
 }
 
