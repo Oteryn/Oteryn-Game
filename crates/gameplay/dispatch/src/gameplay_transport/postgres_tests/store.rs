@@ -58,13 +58,33 @@ async fn swords(harness: &Harness) -> TestResult<i64> {
     .await?)
 }
 
-fn scenario() -> TestResult { scenario_with_answer(false, false) }
+fn scenario() -> TestResult {
+    scenario_with_answer(Case::Normal)
+}
+
+#[derive(Clone, Copy)]
+enum Case {
+    Normal,
+    Malformed,
+    Restored,
+    CrystalCharges,
+}
+
+#[test]
+fn store_crystal_charged_offers_dispatch_and_mint_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-crystal-charges", || {
+        scenario_with_answer(Case::CrystalCharges)
+    })
+}
 
 #[test]
 fn storefix_protocol_violation_keeps_debit_uncertain_and_never_mints() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("storefix-malformed", || scenario_with_answer(true, false));
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("storefix-malformed", || scenario_with_answer(Case::Malformed));
     eprintln!("STORE-154 POSTGRES_CASE_COMPLETED storefix-malformed elapsed={:?}", started.elapsed());
     result
 }
@@ -73,14 +93,15 @@ fn storefix_protocol_violation_keeps_debit_uncertain_and_never_mints() -> TestRe
 fn store_restored_backup_refuses_new_and_reconciles_sent() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("store-restored", || scenario_with_answer(false, true));
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("store-restored", || scenario_with_answer(Case::Restored));
     eprintln!("STORE-154-D6 POSTGRES_CASE_COMPLETED elapsed={:?}", started.elapsed());
     result
 }
 
 #[allow(clippy::too_many_lines)]
-fn scenario_with_answer(malformed: bool, restored: bool) -> TestResult {
+fn scenario_with_answer(case: Case) -> TestResult {
     run(async |admin| {
+        let malformed = matches!(case, Case::Malformed);
         let harness = Harness::create_with_admission_seed(admin, "store_e2e", true, false).await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -137,7 +158,7 @@ fn scenario_with_answer(malformed: bool, restored: bool) -> TestResult {
             FakePlatform(ledger.clone()),
         ), "oteryn-game/store-consumer".into()))));
 
-        if restored {
+        if matches!(case, Case::Restored) {
             owner.store_purchases = crate::gameplay_transport::StorePurchaseMode::DisabledRestoredBackup;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 owner.offered_capabilities(),
@@ -195,13 +216,21 @@ fn scenario_with_answer(malformed: bool, restored: bool) -> TestResult {
         )
         .ok_or("selection")?;
 
-        // The catalogue page: 23 admitted exercise weapons and the Platform balance.
+        if matches!(case, Case::CrystalCharges) {
+            verify_crystal_charge_purchases(&harness, &owner, &mut admitted, &ledger).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
+        // The catalogue page: 24 admitted exercise weapons and the Platform balance.
         let values = serve(&owner, &mut admitted, &[page_request()?]).await?;
         assert_eq!(values.len(), 1, "{values:?}");
         assert_eq!(values[0].0, CommandStatus::Accepted, "{values:?}");
         let page = wire::decode_catalogue_page(&values[0].1).map_err(debug)?;
-        assert_eq!(page.catalog_revision, "451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c");
-        assert_eq!((page.offers.len(), page.total_coins, page.transferable_coins), (23, 60, 60));
+        assert_eq!(page.catalog_revision, "728b1173634c4da6ca09f44953eab1246701478b0cf11f9759b02e7f191e49da");
+        assert_eq!((page.offers.len(), page.total_coins, page.transferable_coins), (24, 60, 60));
         let sword = page
             .offers
             .iter()
@@ -374,4 +403,124 @@ fn scenario_with_answer(malformed: bool, restored: bool) -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+async fn verify_crystal_charge_purchases(
+    harness: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    ledger: &SyncMutex<Ledger>,
+) -> TestResult {
+    use crate::content::ReferenceItemField::Known;
+
+    let inbox_count = "SELECT count(*) FROM game_item_character_inbox_locations";
+    let initial = count(harness, inbox_count).await?;
+    ledger.lock().expect("ledger").balance = 2_000;
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("native Items")?;
+    let mut seed = 80;
+    for (category, offers) in [
+        (
+            "consumables.exercise-weapons",
+            &[("exercise-wraps", 50293, 25)][..],
+        ),
+        (
+            "consumables.kegs",
+            &[
+                ("great-health-keg", 25905, 103),
+                ("great-mana-keg", 25910, 66),
+                ("great-spirit-keg", 25913, 105),
+                ("health-keg", 25903, 26),
+                ("mana-keg", 25908, 26),
+                ("strong-health-keg", 25904, 53),
+                ("strong-mana-keg", 25909, 43),
+                ("supreme-health-keg", 25907, 288),
+                ("ultimate-health-keg", 25906, 175),
+                ("ultimate-mana-keg", 25911, 202),
+                ("ultimate-spirit-keg", 25914, 202),
+            ][..],
+        ),
+        (
+            "useful-things",
+            &[
+                ("gold-converter", 23722, 5),
+                ("magic-gold-converter", 28525, 15),
+            ][..],
+        ),
+    ] {
+        let request = wire::StoreCatalogueRequest {
+            category: category.into(),
+            page_cursor: String::new(),
+        };
+        let rows = serve(
+            owner,
+            admitted,
+            &[(
+                wire::COMMAND_TYPE_STORE_CATALOGUE_PAGE,
+                wire::encode_catalogue_request(&request).map_err(debug)?,
+            )],
+        )
+        .await?;
+        assert_eq!(rows[0].0, CommandStatus::Accepted);
+        let page = wire::decode_catalogue_page(&rows[0].1).map_err(debug)?;
+        for &(slug, item_id, price) in offers {
+            let key = format!("store:{slug}");
+            let card = page
+                .offers
+                .iter()
+                .find(|card| card.offer_key == key)
+                .ok_or_else(|| format!("missing card {key}"))?;
+            assert_eq!((card.price, card.currency.as_str()), (price, "TIBIA_COIN"));
+            let request = wire::StorePurchaseRequest {
+                purchase_request_id: id(seed),
+                offer_key: key.clone(),
+                catalog_revision: page.catalog_revision.clone(),
+                price,
+                currency: card.currency.clone(),
+            };
+            seed += 1;
+            let result = purchase(
+                owner,
+                admitted,
+                (
+                    wire::COMMAND_TYPE_STORE_PURCHASE,
+                    wire::encode_purchase_request(&request).map_err(debug)?,
+                ),
+            )
+            .await?;
+            assert_eq!(result.code, wire::StorePurchaseCode::Accepted, "{key}");
+            let operation = result.operation_id.ok_or("Store operation")?;
+            let minted: (String, String, String) = sqlx::query_as(
+                "SELECT i.definition_production_key,i.definition_revision_ref,i.quantity::text
+                 FROM store_delivery_receipts r
+                 JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id
+                 JOIN game_item_character_inbox_locations l
+                   ON l.item_instance_id=i.item_instance_id AND l.world_id=i.world_id
+                 WHERE r.operation_id=encode($1,'hex')::uuid AND i.lifecycle=1",
+            )
+            .bind(operation.as_slice())
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(
+                minted,
+                (
+                    format!("oteryn:item.tibia.i{item_id}"),
+                    "definition-r1".into(),
+                    "1".into()
+                )
+            );
+            let policy = native
+                .item_policy(&minted.0, &minted.1)
+                .ok_or("minted definition")?;
+            assert!(
+                matches!(&policy.record().semantics.charges, Known(charges) if charges.count == Known(500)),
+                "{key}"
+            );
+        }
+    }
+    assert_eq!(count(harness, inbox_count).await? - initial, 14);
+    assert_eq!(ledger.lock().expect("ledger").purchases, 14);
+    Ok(())
 }
