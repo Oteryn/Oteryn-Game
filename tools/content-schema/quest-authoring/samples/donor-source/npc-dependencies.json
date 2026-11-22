@@ -15995,7 +15995,7 @@
   ],
   "input_provenance": {
     "corpus_manifest_sha256": "9823fd5e25796d5cfcd88a586530a60c0d7a9ca8a4f1130df25afbc2fb21b693",
-    "npc_capture_sha256": "6c58695a4de4a9cfc1b6993a48943fc7dbdf836307375a69cfc6689f8accc286"
+    "npc_capture_sha256": "d661e19fe0dfcd56bca145809620ddc25702ef66f0c9e31c334d6faf6a0a8997"
   },
   "proofs": [
     {

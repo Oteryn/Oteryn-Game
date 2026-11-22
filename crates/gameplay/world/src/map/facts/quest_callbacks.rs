@@ -73,7 +73,10 @@ struct DynamicPortal {
 /// Already qualified facts for one atomic, Channel-local callback projection.
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
-    TimedTransform { due: u64, restore: EntryFacts },
+    TimedTransform {
+        due: u64,
+        restore: EntryFacts,
+    },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -115,6 +118,14 @@ pub enum QuestCallbackProjection {
     ItemPresence {
         position: TilePos,
         entry: EntryFacts,
+    },
+    ReleaseMerchant {
+        position: TilePos,
+    },
+    MerchantTrap {
+        position: TilePos,
+        entry: EntryFacts,
+        barricade: Option<(TilePos, EntryFacts)>,
     },
     Scene {
         mutations: Vec<QuestSceneMutation>,
@@ -159,6 +170,7 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
+    merchant_barricades: BTreeMap<u64, (TilePos, EntryId)>,
     batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
     naginata_picks: Vec<NaginataPick>,
@@ -451,6 +463,58 @@ impl CallbackStates {
                     self.presences.insert(owner, (*position, entry));
                 }
             }
+            QuestCallbackProjection::ReleaseMerchant { position } => {
+                let Some(entries) = self.movement_items.get_mut(position) else {
+                    return false;
+                };
+                let before = entries.len();
+                entries.retain(|entry| {
+                    !matches!(entry.source, view::EntrySource::Added(id)
+                    if id.get() == owner && entry.facts.appearance_id == 12189)
+                });
+                if before == entries.len() {
+                    return false;
+                }
+                if entries.is_empty() {
+                    self.movement_items.remove(position);
+                }
+                self.changed.remove(&owner);
+            }
+            QuestCallbackProjection::MerchantTrap {
+                position,
+                entry,
+                barricade,
+            } => {
+                if self.merchant_barricades.contains_key(&owner)
+                    || barricade.is_some_and(|(pos, _)| self.phase_has_dynamic_blocker(pos))
+                {
+                    return false;
+                }
+                for (pos, facts, blocking) in std::iter::once((*position, *entry, false))
+                    .chain(barricade.map(|(pos, facts)| (pos, facts, true)))
+                {
+                    let Some(sequence) = self.movement_sequence.checked_add(1) else {
+                        return false;
+                    };
+                    let Some(id) = EntryId::callback(sequence) else {
+                        return false;
+                    };
+                    if facts.pickupable {
+                        return false;
+                    }
+                    self.movement_sequence = sequence;
+                    self.movement_items
+                        .entry(pos)
+                        .or_default()
+                        .push(view::ComposedEntry {
+                            source: view::EntrySource::Added(id),
+                            facts,
+                        });
+                    if blocking {
+                        self.merchant_barricades.insert(owner, (pos, id));
+                    }
+                }
+            }
             QuestCallbackProjection::Scene {
                 mutations,
                 remove_self,
@@ -500,7 +564,9 @@ impl CallbackStates {
         })
     }
     pub(super) fn phase_has_dynamic_blocker(&self, pos: TilePos) -> bool {
-        self.solid_items.contains(&pos) || self.batch_blockers.contains(&pos)
+        self.solid_items.contains(&pos)
+            || self.batch_blockers.contains(&pos)
+            || self.merchant_barricades.values().any(|(at, _)| *at == pos)
     }
 
     pub(super) fn clear_feroxa_scenery(&mut self, inside: impl Fn(TilePos) -> bool) {
@@ -514,6 +580,7 @@ impl CallbackStates {
         };
         self.movement_items.retain(|p, _| !cleared(p));
         self.solid_items.retain(|p| !cleared(p));
+        self.merchant_barricades.retain(|_, (pos, _)| !cleared(pos));
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
         self.presences.retain(|_, (p, _)| !cleared(p));
@@ -535,9 +602,44 @@ impl CallbackStates {
             + self.movement_speech.len()
             + self.portals.len()
             + self.solid_items.len()
+            + self.merchant_barricades.len()
             + self.batch_blockers.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
         used.saturating_add(additional) < super::super::overlay::OVERLAY_BUDGET_BYTES / 512
+    }
+}
+
+/// A reservation owns one map revision without holding a mutex across a durable pass.
+pub struct SourceBossLeverProjection {
+    callbacks: Arc<Mutex<Arc<CallbackStates>>>,
+    key: u64,
+    next: u64,
+    after: EntryFacts,
+    reserved: bool,
+}
+
+impl SourceBossLeverProjection {
+    pub fn publish(mut self) {
+        let mut states = self
+            .callbacks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let states = Arc::make_mut(&mut states);
+        states.reserved.remove(&self.key);
+        states.changed.insert(self.key, (self.next, self.after));
+        self.reserved = false;
+    }
+}
+
+impl Drop for SourceBossLeverProjection {
+    fn drop(&mut self) {
+        if self.reserved {
+            let mut states = self
+                .callbacks
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            Arc::make_mut(&mut states).reserved.remove(&self.key);
+        }
     }
 }
 
@@ -892,6 +994,30 @@ impl BundleFacts {
         }
         changed
     }
+    /// Publish or consume the volatile fire owned by an admitted Arbaziloth lever.
+    pub fn project_arbaziloth_fire(&self, owner: u64, position: TilePos, close: bool) -> bool {
+        let Some(facts) = self.movement_item_facts(49362) else {
+            return false;
+        };
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if self.house_tile(position)
+            || states.position_reserved(position)
+            || (!close && !states.has_capacity(2))
+        {
+            return false;
+        }
+        Arc::make_mut(&mut states).project(
+            owner,
+            &QuestCallbackProjection::ItemPresence {
+                position,
+                entry: facts,
+            },
+            close,
+        )
+    }
+
     /// A movement callback may use a served Item even if the bundle never places that state.
     /// Unlike lever callbacks, house furniture movement is explicitly allowed by the source.
     pub fn movement_item_facts(&self, appearance: u16) -> Option<EntryFacts> {
@@ -1022,6 +1148,18 @@ impl BundleFacts {
         expected: u64,
         appearance: u16,
     ) -> bool {
+        self.transform_movement_item_with(key, expected, appearance, |_| true)
+    }
+
+    /// Commit the owner operation after checking the exact volatile entry and before
+    /// publishing its replacement. The closure must not reenter map facts.
+    pub fn transform_movement_item_with(
+        &self,
+        key: u64,
+        expected: u64,
+        appearance: u16,
+        consume: impl FnOnce(EntryFacts) -> bool,
+    ) -> bool {
         if key >> 62 != 2 || expected == u64::MAX {
             return false;
         }
@@ -1054,6 +1192,9 @@ impl BundleFacts {
         }) else {
             return false;
         };
+        if !consume(entry.facts) {
+            return false;
+        }
         after.bound = entry.facts.bound;
         after.count = entry.facts.count;
         entry.facts = after;
@@ -1188,6 +1329,13 @@ impl BundleFacts {
         true
     }
 
+    /// Resolve the entrance created by this exact shared scene before removing it.
+    pub fn merchant_barricade(&self, owner: u64) -> Option<(TilePos, u64)> {
+        let states = self.callbacks.lock().ok()?;
+        let (pos, id) = states.merchant_barricades.get(&owner)?;
+        Some((*pos, id.get()))
+    }
+
     /// Crystal data-global/scripts/systems/hazard_primal.lua:53,68 removes
     /// only the pod that still exists.
     /// The physical owner supplies this exact volatile occurrence, position and
@@ -1222,6 +1370,9 @@ impl BundleFacts {
         if entries.is_empty() {
             states.movement_items.remove(&pos);
         }
+        states
+            .merchant_barricades
+            .retain(|_, (_, id)| id.get() != key);
         states.changed.remove(&key);
         states.movement_decays.retain(|(_, entry), _| *entry != key);
         states.movement_sequence = sequence;
@@ -1595,6 +1746,32 @@ impl BundleFacts {
         Some(replacement.facts)
     }
 
+    /// Reserve the exact source lever revision while its encounter and cooldown are staged.
+    pub fn reserve_source_boss_lever(
+        &self,
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+    ) -> Option<SourceBossLeverProjection> {
+        let next = expected.checked_add(1)?;
+        let mut states = self.callbacks.lock().ok()?;
+        let current = states.changed.get(&key).map_or_else(
+            || states.phase_revision(key).unwrap_or(0),
+            |(revision, _)| *revision,
+        );
+        if current != expected || states.key_reserved(key) || !states.has_capacity(1) {
+            return None;
+        }
+        Arc::make_mut(&mut states).reserved.insert(key);
+        Some(SourceBossLeverProjection {
+            callbacks: Arc::clone(&self.callbacks),
+            key,
+            next,
+            after,
+            reserved: true,
+        })
+    }
+
     /// Apply a prevalidated lever and passage batch under the Channel owner lock.
     #[allow(
         clippy::too_many_arguments,
@@ -1647,9 +1824,18 @@ impl BundleFacts {
                 QuestCallbackProjection::ReadsetTransforms { entries, .. } => {
                     entries.iter().any(|(key, _, _)| states.key_reserved(*key))
                 }
-                QuestCallbackProjection::ItemPresence { position, .. }
+                QuestCallbackProjection::ReleaseMerchant { position }
+                | QuestCallbackProjection::ItemPresence { position, .. }
                 | QuestCallbackProjection::ItemCycle { position, .. } => {
                     states.position_reserved(*position)
+                }
+                QuestCallbackProjection::MerchantTrap {
+                    position,
+                    barricade,
+                    ..
+                } => {
+                    states.position_reserved(*position)
+                        || barricade.is_some_and(|(position, _)| states.position_reserved(position))
                 }
                 QuestCallbackProjection::Portals { endpoints, .. } => endpoints
                     .iter()
@@ -1719,7 +1905,12 @@ impl BundleFacts {
             states.changed.insert(entry, (revision, facts));
             states.passable.insert(entry, passable);
         }
-        states.changed.insert(key, (expected + 1, after));
+        if !matches!(
+            projection,
+            Some(QuestCallbackProjection::ReleaseMerchant { .. })
+        ) {
+            states.changed.insert(key, (expected + 1, after));
+        }
         true
     }
 
@@ -1805,6 +1996,10 @@ impl BundleFacts {
         };
         if !tile.walkable()
             || states.solid_items.contains(&pos)
+            || states
+                .merchant_barricades
+                .values()
+                .any(|(at, _)| *at == pos)
             || states.changed.contains_key(&key)
             || states.hidden.contains(&key)
             || states.passable.contains_key(&key)
@@ -1892,10 +2087,7 @@ impl BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        if states.solid_items.contains(&pos)
-            || states.batch_blockers.contains(&pos)
-            || states.arena_pillar_closed_at(pos)
-        {
+        if states.phase_has_dynamic_blocker(pos) || states.arena_pillar_closed_at(pos) {
             return true;
         }
         if states.phase_entry(pos, 0).is_some() {
