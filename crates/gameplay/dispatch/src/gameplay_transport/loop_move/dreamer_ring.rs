@@ -13,6 +13,13 @@ pub(super) struct Prepared {
     trees: Vec<(u64, TilePos)>,
 }
 
+/// Crystal's offering switch is across the entrance's tree barrier. Limit
+/// the ranged move to the Fire Bug landing and the actual pinned UID2244.
+pub(super) fn entrance_throw(actor: (i32, i32, i16), destination: WorldTilePosition) -> bool {
+    actor == (32857, 32234, -11)
+        && (destination.x, destination.y, destination.floor) == (32857, 32225, -11)
+}
+
 pub(super) fn target(
     map: &BundleMap,
     to: WorldTilePosition,
