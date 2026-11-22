@@ -1,5 +1,5 @@
 use super::*;
-use oteryn_platform_client::PlatformClientError;
+use oteryn_platform_client::PlatformClientError::{self, HttpStatus};
 use std::time::Duration;
 
 pub(super) async fn execute(
@@ -27,7 +27,12 @@ async fn apply(
 ) -> Result<(), NativeLoginError> {
     match action {
         Action::Refresh => {
-            refresh(view, client, token, cancel).await?;
+            view.checkout_unverified = true;
+            refresh(view, client, token, cancel)
+                .await
+                .inspect_err(|_| {
+                    view.checkout_unverified = true;
+                })?;
             view.feedback = tr!("Server packages and wallet balance refreshed.").into();
         }
         Action::Purchase {
@@ -86,8 +91,8 @@ async fn apply(
             }
             match client.coin_order_status(token, &id, cancel.clone()).await {
                 Ok(order) => accept(view, order)?,
-                Err(NativeLoginError::Platform(PlatformClientError::HttpStatus(404)))
-                    if view.post_rejected && view.pending() =>
+                Err(NativeLoginError::Platform(HttpStatus(404)))
+                    if view.post_refusal_status == Some(409) && view.pending() =>
                 {
                     clear_refused_order(view);
                     view.feedback = tr!("The server refused the request").into();
@@ -106,7 +111,7 @@ async fn apply(
 fn clear_refused_order(view: &mut View) {
     view.pending = None;
     view.confirmed = None;
-    view.post_rejected = false;
+    view.post_refusal_status = None;
     view.quote_until.clear();
 }
 
@@ -124,20 +129,12 @@ async fn submit(
     let result = client
         .create_coin_order(token, request, cancel.clone())
         .await;
-    view.post_rejected = matches!(
-        result,
-        Err(NativeLoginError::Platform(PlatformClientError::HttpStatus(
-            403 | 409
-        )))
-    );
-    if !retry
-        && matches!(
-            result,
-            Err(NativeLoginError::Platform(PlatformClientError::HttpStatus(
-                403
-            )))
-        )
-    {
+    // A retry's 403 does not bound the earlier POST. Keep its identity even after status 404.
+    view.post_refusal_status = match &result {
+        Err(NativeLoginError::Platform(HttpStatus(status @ (403 | 409)))) => Some(*status),
+        _ => None,
+    };
+    if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {
         clear_refused_order(view);
     }
     accept(view, result?)?;
@@ -238,18 +235,15 @@ fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
     {
         view.pending = None;
         view.confirmed = None;
-        view.post_rejected = false;
+        view.post_refusal_status = None;
     }
     view.quote_until.remove(&order.quote_id);
     view.order = Some(order);
+    view.checkout_unverified = false;
     Ok(())
 }
 fn open_checkout(view: &mut View, client: &NativeLoginClient, browser: &Browser) {
-    let Some(order) = view
-        .order
-        .as_ref()
-        .filter(|o| o.state == PurchaseState::AwaitingPayment)
-    else {
+    let Some(order) = view.order.as_ref().filter(|_| view.can_checkout()) else {
         view.feedback = tr!("No checkout is available for this purchase state.").into();
         return;
     };

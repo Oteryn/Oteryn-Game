@@ -16,6 +16,7 @@ pub(crate) struct CoinAuthority {
     pub drop_after_create: bool,
     pub fail_after_create: bool,
     pub fail_balance: bool,
+    pub fail_catalogue: bool,
     pub hide_recent_orders: bool,
     pub creations: u32,
     pub credits: u32,
@@ -50,6 +51,7 @@ impl CoinAuthority {
             drop_after_create: false,
             fail_after_create: false,
             fail_balance: false,
+            fail_catalogue: false,
             hide_recent_orders: false,
             creations: 0,
             credits: 0,
@@ -64,6 +66,9 @@ impl CoinAuthority {
     pub fn route(&mut self, method: &str, target: &str, body: &str) -> Option<(u16, String)> {
         if method == "GET" && target.starts_with("/api/v1/native-account/coin-purchases/catalogue")
         {
+            if self.fail_catalogue {
+                return Some((503, String::new()));
+            }
             let character = target
                 .split_once("?character_id=")
                 .map(|(_, id)| id.to_owned());

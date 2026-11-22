@@ -430,23 +430,37 @@ fn device_ticket_expired_before_gateway_reauthorizes_same_selection() -> TestRes
     device_ticket_falls_back(TicketFailure::ExpiredBeforeGateway)
 }
 
+#[test]
+fn device_gateway_401_reauthorizes_same_selection_once() -> TestResult {
+    device_ticket_falls_back(TicketFailure::GatewayRefused { twice: false })
+}
+
+#[test]
+fn second_gateway_401_after_device_recovery_returns_retry_login() -> TestResult {
+    device_ticket_falls_back(TicketFailure::GatewayRefused { twice: true })
+}
+
 #[derive(PartialEq, Eq)]
 enum TicketFailure {
     Refused,
     ExpiredInTransit,
     ExpiredBeforeGateway,
+    GatewayRefused { twice: bool },
 }
 
 fn device_ticket_falls_back(case: TicketFailure) -> TestResult {
     on_large_stack(move || {
         use crate::native_entry::test_support::{
-            Stack, authorize_selection, authorize_then_expire_ticket, channel_node,
+            Stack, authorize_selection, authorize_through_gateway, channel_node,
         };
         let stack = Stack::start_two_channels()?;
         tokio::runtime::Runtime::new()?.block_on(async {
             let rotated = changed_response(&credential('A'), false)?;
             let mut roster: serde_json::Value = serde_json::from_slice(&rotated)?;
             roster = serde_json::json!({"protocol_version": 2, "characters": roster["characters"].take()});
+            let gateway_refusal = matches!(case, TicketFailure::GatewayRefused { .. });
+            let use_gateway = gateway_refusal || case == TicketFailure::ExpiredBeforeGateway;
+            let denied = br#"{"protocol_version":2,"error":{"code":"NATIVE_LOGIN_AUTHENTICATION_REQUIRED","public_class":"AUTHENTICATION_REQUIRED"},"attempt_ref":null}"#;
             let mut replies = vec![(200, rotated)];
             if case == TicketFailure::Refused {
                 replies.push((401, fixture("denied.json")?));
@@ -454,12 +468,14 @@ fn device_ticket_falls_back(case: TicketFailure) -> TestResult {
                 let mut reply: serde_json::Value = serde_json::from_slice(&changed_response(&credential('E'), true)?)?;
                 if case == TicketFailure::ExpiredInTransit {
                     reply["expires_at"] = now()?.into();
-                } else {
+                } else if case == TicketFailure::ExpiredBeforeGateway {
                     reply["expires_in"] = 1.into();
                 }
                 replies.push((200, serde_json::to_vec(&reply)?));
             }
-            if case != TicketFailure::ExpiredBeforeGateway {
+            if gateway_refusal {
+                replies.push((401, denied.to_vec()));
+            } else if !use_gateway {
                 replies.push((200, fixture("revoke-response.json")?));
             }
             replies.extend([
@@ -467,7 +483,9 @@ fn device_ticket_falls_back(case: TicketFailure) -> TestResult {
                 (200, serde_json::to_vec(&roster)?),
                 (200, br#"{"protocol_version":1,"ticket":"fresh-ticket","expires_in":60}"#.to_vec()),
             ]);
-            if case == TicketFailure::ExpiredBeforeGateway {
+            if matches!(case, TicketFailure::GatewayRefused { twice: true }) {
+                replies.push((401, denied.to_vec()));
+            } else if use_gateway {
                 replies.push((200, format!(
                     r#"{{"protocol_version":2,"attempt_ref":"__ATTEMPTID__","world_id":"01890a5d-ac96-774b-bcce-b302099a8059","channel_id":"{}","endpoint":{{"host":"127.0.0.1","port":1,"tls_server_name":"localhost","alpn":"oteryn-game/1","protocol_major":1,"transport_profile":1}},"grant":{{"profile":"oteryn-pre-admission-v1","token":"eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJ4In0.c2lnbmF0dXJl","valid_for_seconds":30}}}}"#,
                     channel_node::CHANNEL_B
@@ -482,24 +500,33 @@ fn device_ticket_falls_back(case: TicketFailure) -> TestResult {
             config.session_options = Some(options());
             let character = config.character_id.clone();
             config.channel_switch = Some((character.clone(), channel_node::CHANNEL_B.into()));
-            let result = if case == TicketFailure::ExpiredBeforeGateway {
-                authorize_then_expire_ticket(&server.client, &config).await
+            let result = if use_gateway {
+                authorize_through_gateway(&server.client, &config, !gateway_refusal).await
             } else {
                 authorize_selection(&server.client, &config).await
             };
             let requests = server.requests.lock().map_err(|_| "requests")?;
             assert!(requests[1].starts_with("POST /api/v1/game-auth/device-sessions/tickets "));
-            assert!(matches!(result, Ok((ref id, Some(ref channel)))
-                if id == &character && channel == channel_node::CHANNEL_B), "{result:?}");
-            let oauth = if case == TicketFailure::ExpiredBeforeGateway { 2 } else { 3 };
+            if matches!(case, TicketFailure::GatewayRefused { twice: true }) {
+                use oteryn_platform_client::{gameplay_entry::GameplayEntryError, native_login::PublicClass};
+                assert!(matches!(result, Err(GameplayEntryError::Rejected(PublicClass::RetryLogin))), "{result:?}");
+            } else {
+                assert!(matches!(result, Ok((ref id, Some(ref channel)))
+                    if id == &character && channel == channel_node::CHANNEL_B), "{result:?}");
+            }
+            let oauth = if use_gateway && !gateway_refusal { 2 } else { 3 };
             assert!(requests[oauth].starts_with("POST /oauth/token "));
             assert!(requests[oauth + 1].starts_with("GET /api/v1/game-auth/native-characters "));
             assert!(requests[oauth + 2].starts_with("POST /api/v1/game-auth/tickets "));
-            if case == TicketFailure::ExpiredBeforeGateway {
-                let (_, body) = requests[oauth + 3].split_once("\r\n\r\n").ok_or("gateway body")?;
-                let login: serde_json::Value = serde_json::from_str(body)?;
-                assert_eq!(login["character_id"], character);
-                assert_eq!(login["channel_id"], channel_node::CHANNEL_B);
+            if use_gateway {
+                let gateway_requests: Vec<_> = requests.iter().filter(|r| r.starts_with("POST /v1/login ")).collect();
+                assert_eq!(gateway_requests.len(), if gateway_refusal { 2 } else { 1 });
+                for request in gateway_requests {
+                    let (_, body) = request.split_once("\r\n\r\n").ok_or("gateway body")?;
+                    let login: serde_json::Value = serde_json::from_str(body)?;
+                    assert_eq!(login["character_id"], character);
+                    assert_eq!(login["channel_id"], channel_node::CHANNEL_B);
+                }
             }
             Ok(())
         })

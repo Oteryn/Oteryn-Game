@@ -50,7 +50,7 @@ pub struct View {
     pub feedback: String,
     pub selected_view: AuctionView,
     pending: Option<BazaarRequest>,
-    post_rejected: bool,
+    post_refusal_status: Option<u16>,
     unresolved: std::collections::BTreeSet<String>,
     quote_until: Option<Instant>,
 }
@@ -64,7 +64,7 @@ impl Default for View {
                 .into(),
             selected_view: AuctionView::All,
             pending: None,
-            post_rejected: false,
+            post_refusal_status: None,
             unresolved: Default::default(),
             quote_until: None,
         }
@@ -75,7 +75,7 @@ impl View {
         self.pending.is_some() || !self.unresolved.is_empty()
     }
     pub fn can_retry(&self) -> bool {
-        self.pending.is_some() && !self.post_rejected
+        self.pending.is_some() && self.post_refusal_status.is_none()
     }
     fn pending_id(&self) -> Option<&str> {
         self.pending

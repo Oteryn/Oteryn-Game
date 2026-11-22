@@ -34,8 +34,8 @@ use oteryn_identity::{IdentityFlow, LoopbackRedirect, PkceMaterial, StateNonce};
 use oteryn_platform_client::PlatformClientConfig;
 use oteryn_platform_client::gameplay_entry::login_client;
 use oteryn_platform_client::native_login::{
-    AttemptRef, GatewayLogin, NativeLoginClient, NativeLoginError, NativeLoginGrant, NativeTicket,
-    PublicClass, parse_uuid_v7, secure_random,
+    AttemptRef, GatewayErrorCode, GatewayLogin, NativeLoginClient, NativeLoginError,
+    NativeLoginGrant, NativeTicket, PublicClass, parse_uuid_v7, secure_random,
 };
 use oteryn_session::{Admission, AdmissionPublicClass, CharacterId};
 use oteryn_session_tcp::connection::CONNECT_DEADLINE;
@@ -155,6 +155,7 @@ async fn initial_gateway_login(
     config: &NativeLoginConfig,
     cancel: CancellationToken,
 ) -> Result<(AttemptRef, NativeLoginGrant), GameplayEntryError> {
+    let mut refreshed_device_ticket = false;
     loop {
         let attempt_ref =
             AttemptRef::generate().map_err(|_| rejected(PublicClass::TemporarilyUnavailable))?;
@@ -169,12 +170,23 @@ async fn initial_gateway_login(
             .await
         {
             Ok(grant) => return Ok((attempt_ref, grant)),
-            Err(NativeLoginError::TicketSpent)
-                if authorized.from_device && Instant::now() >= authorized.ticket.usable_until() =>
+            Err(error)
+                if authorized.from_device
+                    && (matches!(
+                        error,
+                        NativeLoginError::Gateway(GatewayErrorCode::AuthenticationRequired)
+                    ) || (matches!(error, NativeLoginError::TicketSpent)
+                        && Instant::now() >= authorized.ticket.usable_until())) =>
             {
+                refreshed_device_ticket = true;
                 authorized
                     .refresh_ticket(client, config, cancel.clone())
                     .await?;
+            }
+            Err(NativeLoginError::Gateway(GatewayErrorCode::AuthenticationRequired))
+                if refreshed_device_ticket =>
+            {
+                return Err(rejected(PublicClass::RetryLogin));
             }
             Err(error) => return Err(login_rejected(error)),
         }

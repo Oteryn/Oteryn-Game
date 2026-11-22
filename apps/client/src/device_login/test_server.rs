@@ -74,9 +74,21 @@ impl Server {
                         }
                     }
                 }
+                let request_text = String::from_utf8_lossy(&request);
+                let (headers, payload) =
+                    request_text.split_once("\r\n\r\n").ok_or("request body")?;
+                let headers = headers
+                    .lines()
+                    .filter(|line| {
+                        !line
+                            .to_ascii_lowercase()
+                            .starts_with("authorization: bearer ")
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\r\n");
                 log.lock()
                     .map_err(|_| "log")?
-                    .push(String::from_utf8_lossy(&request).into_owned());
+                    .push(format!("{headers}\r\n\r\n{payload}"));
                 if delayed_ticket
                     && request.starts_with(b"POST /api/v1/game-auth/device-sessions/tickets ")
                 {

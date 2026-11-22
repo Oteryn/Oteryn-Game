@@ -29,7 +29,8 @@ pub struct View {
     pub unavailable: bool,
     character_id: Option<String>,
     pending: Option<CoinOrderRequest>,
-    post_rejected: bool,
+    post_refusal_status: Option<u16>,
+    checkout_unverified: bool,
     confirmed: Option<CoinPackage>,
     quote_until: BTreeMap<String, Instant>,
 }
@@ -48,7 +49,7 @@ impl View {
         self.pending.is_some()
     }
     pub fn can_retry(&self) -> bool {
-        self.pending() && !self.post_rejected
+        self.pending() && self.post_refusal_status.is_none()
     }
     pub fn can_purchase(&self, id: &str) -> bool {
         self.can_purchase_at(id, Instant::now())
@@ -68,9 +69,10 @@ impl View {
             })
     }
     pub fn can_checkout(&self) -> bool {
-        self.order
-            .as_ref()
-            .is_some_and(|o| o.state == PurchaseState::AwaitingPayment && o.checkout_url.is_some())
+        !self.checkout_unverified
+            && self.order.as_ref().is_some_and(|order| {
+                order.state == PurchaseState::AwaitingPayment && order.checkout_url.is_some()
+            })
     }
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();

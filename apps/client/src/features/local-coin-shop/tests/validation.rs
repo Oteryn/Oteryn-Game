@@ -145,7 +145,7 @@ fn coin_shop_money_format_is_integer_and_wallet_snapshot_cannot_regress() -> Tes
 fn coin_post_refusals_settle_after_missing_status() -> TestResult {
     test_thread(|| {
         let mut settled = Vec::new();
-        for refusal in [409, 403] {
+        for (first, retry) in [(0, Some(409)), (403, None), (0, Some(403))] {
             let mock = MockPlatform::start()?;
             let client = mock.client()?;
             let token = mock.token(&client)?;
@@ -162,8 +162,7 @@ fn coin_post_refusals_settle_after_missing_status() -> TestResult {
                 ))
             };
             execute(&mut view, Action::Refresh);
-            mock.authority.lock().map_err(|_| "lock")?.coin_post_failure =
-                Some(if refusal == 409 { 0 } else { refusal });
+            mock.authority.lock().map_err(|_| "lock")?.coin_post_failure = Some(first);
             execute(
                 &mut view,
                 Action::Purchase {
@@ -171,7 +170,7 @@ fn coin_post_refusals_settle_after_missing_status() -> TestResult {
                     confirmed: true,
                 },
             );
-            if refusal == 409 {
+            if let Some(refusal) = retry {
                 let request = view.pending.clone().ok_or("ambiguous purchase")?;
                 mock.authority.lock().map_err(|_| "lock")?.coin_post_failure = Some(refusal);
                 execute(&mut view, Action::Retry);
@@ -183,8 +182,8 @@ fn coin_post_refusals_settle_after_missing_status() -> TestResult {
         }
         assert_eq!(
             settled,
-            [true, true],
-            "coin retry 409 and pre-create 403 must both settle"
+            [true, true, false],
+            "coin retry 409 and pre-create 403 must settle, but retry 403 plus 404 must keep the original pending"
         );
         Ok(())
     })
@@ -254,6 +253,80 @@ fn coin_reopen_preserves_wallet_and_order_revision_floors() -> TestResult {
             );
             assert!(!view.can_purchase(PACKAGE));
         }
+        Ok(())
+    })
+}
+
+#[test]
+fn failed_reopen_requires_current_order_before_enabling_checkout() -> TestResult {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let opens = Arc::new(AtomicUsize::new(0));
+        let calls = opens.clone();
+        let browser: Browser = Arc::new(move |_| {
+            calls.fetch_add(1, Ordering::Relaxed);
+            true
+        });
+        let mut view = View::new(None);
+        let execute = |view: &mut View, action| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                &token,
+                &browser,
+                CancellationToken::new(),
+            ));
+        };
+        execute(&mut view, Action::Refresh);
+        execute(
+            &mut view,
+            Action::Purchase {
+                package_id: PACKAGE.into(),
+                confirmed: true,
+            },
+        );
+        assert!(view.can_checkout());
+        let retained = view.order.clone().ok_or("order")?;
+        let back: Presenter = Arc::new(|_, _| Action::Back);
+        let reopen = |view: &mut View| {
+            mock.runtime.block_on(run(
+                &client,
+                &token,
+                &back,
+                &browser,
+                view,
+                CancellationToken::new(),
+            ))
+        };
+
+        mock.with_coins(|coins| coins.fail_catalogue = true)?;
+        reopen(&mut view)?;
+        assert!(view.feedback.contains("unavailable"));
+        assert_eq!(view.order.as_ref(), Some(&retained));
+        assert!(
+            !view.can_checkout(),
+            "failed reopen enabled the retained checkout"
+        );
+        execute(&mut view, Action::OpenCheckout);
+        assert_eq!(opens.load(Ordering::Relaxed), 1);
+
+        mock.with_coins(|coins| {
+            coins.fail_catalogue = false;
+            coins.hide_recent_orders = true;
+        })?;
+        reopen(&mut view)?;
+        assert!(
+            !view.can_checkout(),
+            "a catalogue without this order cannot verify it"
+        );
+        execute(&mut view, Action::Status);
+        assert!(view.can_checkout());
+        execute(&mut view, Action::OpenCheckout);
+        assert_eq!(opens.load(Ordering::Relaxed), 2);
         Ok(())
     })
 }

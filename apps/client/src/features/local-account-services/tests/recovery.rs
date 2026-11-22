@@ -252,7 +252,7 @@ fn refreshed_tracked_receipt_reconciles_pending_and_preserves_terminal_identity(
 fn bazaar_retry_and_precreate_refusals_settle_after_missing_status() -> TestResult {
     test_thread(|| {
         let mut settled = Vec::new();
-        for refusal in [409, 403] {
+        for (first, retry) in [(0, Some(409)), (403, None), (0, Some(403))] {
             let mock = MockPlatform::start()?;
             let client = mock.client()?;
             let token = mock.token(&client)?;
@@ -270,7 +270,7 @@ fn bazaar_retry_and_precreate_refusals_settle_after_missing_status() -> TestResu
             mock.authority
                 .lock()
                 .map_err(|_| "lock")?
-                .bazaar_post_failure = Some(if refusal == 409 { 0 } else { refusal });
+                .bazaar_post_failure = Some(first);
             execute(
                 &mut view,
                 Action::Bid {
@@ -279,7 +279,7 @@ fn bazaar_retry_and_precreate_refusals_settle_after_missing_status() -> TestResu
                     confirmed: true,
                 },
             );
-            if refusal == 409 {
+            if let Some(refusal) = retry {
                 let request = view.pending.clone().ok_or("ambiguous bid")?;
                 mock.authority
                     .lock()
@@ -294,8 +294,8 @@ fn bazaar_retry_and_precreate_refusals_settle_after_missing_status() -> TestResu
         }
         assert_eq!(
             settled,
-            [true, true],
-            "bazaar retry 409 and pre-create 403 must both settle"
+            [true, true, false],
+            "bazaar retry 409 and pre-create 403 must settle, but retry 403 plus 404 must keep the original pending"
         );
         Ok(())
     })

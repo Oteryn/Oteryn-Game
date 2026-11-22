@@ -166,9 +166,11 @@ async fn apply(
             if let Some(id) = view.pending_id() {
                 match client.bazaar_status(token, id, cancel).await {
                     Ok(receipt) => accept(view, receipt),
-                    Err(NativeLoginError::Platform(HttpStatus(404))) if view.post_rejected => {
+                    Err(NativeLoginError::Platform(HttpStatus(404)))
+                        if view.post_refusal_status == Some(409) =>
+                    {
                         view.pending = None;
-                        view.post_rejected = false;
+                        view.post_refusal_status = None;
                         view.quote = None;
                         view.feedback = tr!("The server refused the request").into();
                     }
@@ -212,14 +214,15 @@ async fn submit(
         return Ok(());
     };
     let result = client.bazaar_command(token, request, cancel).await;
-    view.post_rejected = matches!(
-        result,
-        Err(NativeLoginError::Platform(HttpStatus(403 | 409)))
-    );
+    // A retry's 403 does not bound the earlier POST. Keep its identity even after status 404.
+    view.post_refusal_status = match &result {
+        Err(NativeLoginError::Platform(HttpStatus(status @ (403 | 409)))) => Some(*status),
+        _ => None,
+    };
     if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {
         view.pending = None;
         view.quote = None;
-        view.post_rejected = false;
+        view.post_refusal_status = None;
     }
     accept(view, result?);
     Ok(())
@@ -240,7 +243,7 @@ pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
         .as_ref()
         .is_some_and(|p| p.request_id == receipt.request_id)
     {
-        view.post_rejected = false;
+        view.post_refusal_status = None;
     }
     if receipt.state != OperationState::Pending
         && view
