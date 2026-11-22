@@ -9,7 +9,7 @@ def slug(s):return re.sub(r'[^a-z0-9]+','_',s.lower()).strip('_')
 npcs=records('content/npcs/definitions/index.json'); dialogues=records('content/dialogues/definitions/index.json');quests=records('content/quests/definitions/index.json'); texts=read('tools/content-schema/quest-authoring/samples/source_texts/source_texts.json')['texts']
 npckey={r['declaration']['identity']['key']:r for r in npcs};dialoguekey={r['declaration']['identity']['key']:r for r in dialogues}; byexternal=collections.defaultdict(list)
 for n in npcs:
- for b in n['source_bindings']:
+ for b in n.get('source_bindings', []):
   if b['identity_namespace'].endswith('/npc-file'):byexternal[(b['identity_namespace'],b['external_id'])].append((n,b))
 def npc_ref(n,b=None):
  d=n['declaration'];dr=d.get('dialogue');return {'npc':d['identity'],'dialogue':dr,'dialogue_record_present':bool(dr and dr['key'] in dialoguekey),'source_identity_binding':b,'executable_transition_resolved':False}

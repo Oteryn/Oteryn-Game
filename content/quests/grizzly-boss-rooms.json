@@ -698,7 +698,7 @@
     "content/world/objects/objects-12877-12916.json": "2c190feb8bf04817077ffe9126360e1aac81652221ccd232d7436616ad9ddcaa",
     "content/world/objects/objects-12917-12931.json": "f261d0a2cc18309b9fb76b1b5f3970ef800586ae5d3562e885fb1a908b4cfb69",
     "content/world/objects/objects-12932-13108.json": "1e960f7a61eccfddbf2428c40924598e4641bbb9790b0cb35305b65a8c2b4877",
-    "content/world/placements/index.json": "42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+    "content/world/placements/index.json": "8b54751ab29e8967deda48a94fb3aefdeb1631bd969b05135963360aa1634795",
     "content/world/placements/region-z01-x129-y121.b3": "c11e0e3ea456fbee69b320b8f4e8cacf2240e142045dacec81c91c679560d2be",
     "content/world/placements/region-z02-x125-y121.b3": "5d704484eadabaad8beca02502b161149daee492591a3369b30a0866c311a520",
     "content/world/placements/region-z02-x129-y121.b3": "c280a3777ab40f568fd4cda4883af45ceaea36e0a4bdc15e87b9ab3c237d34c3",
@@ -756,6 +756,8 @@
     "content/world/terrain/terrain-08693-08693.json": "9a1acf62162cfebf939e5d4146199be0733642279701c94b4b5bb41e4b0b2f00",
     "content/world/terrain/terrain-08748-08748.json": "34b262af1c1cc7e0379152c1ed2b8110bb5390613930018ebe284f3f086fd4dd",
     "content/world/terrain/terrain-08749-08749.json": "32cd0b4c3a4195516fecfe567bbd384352973e24c9fdedb63ecd0211b5c08da3",
-    "content/world/terrain/terrain-08750-08750.json": "590d200b3bb126cf08b68b83de6f37f440e904ff8049419c75ce9f48011b2a0c"
+    "content/world/terrain/terrain-08750-08750.json": "590d200b3bb126cf08b68b83de6f37f440e904ff8049419c75ce9f48011b2a0c",
+    "content/world/terrain/terrain-08751-08751.json": "e56b27e2f2bb3e483a28970957008f9f6bf082a1e9970b81f0bdfdebacf5e114",
+    "content/world/terrain/terrain-08752-08752.json": "67e655deddf67e8735493f759f1471250ac820235b584c35dd276bf934642251"
   }
 }

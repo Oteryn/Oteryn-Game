@@ -162,7 +162,7 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld, npcs: &oter
     use oteryn_dev_client::client_runtime::npc_shop;
     use oteryn_protocol_oteryn::npc_service as wire;
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join("content/services/trade/trade-00000-00323.json"))?)?;
+    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join("content/services/trade/trade-00000-00324.json"))?)?;
     let key = format!("oteryn:item.tibia.i{RUNE_ID}");
     let sellers: BTreeSet<String> = trades["records"].as_array().ok_or("C07 trade records absent")?.iter().filter_map(|r| {
         r["declaration"]["offers"].as_array()?.iter().any(|o| o["direction"] == "SellToPlayer" && o["item"]["key"] == key)

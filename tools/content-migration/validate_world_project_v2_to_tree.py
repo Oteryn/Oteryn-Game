@@ -52,12 +52,12 @@ CREATURE_FAMILY_NODES = {
     "Formula": "content/abilities/formulas/",
 }
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
-NPC_COUNT = 1282
+NPC_COUNT = 1292
 NPC_BINDING_COUNT = 2747
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 108
 DOCUMENT_COUNT = 1609
-DIALOGUE_COUNT = 836
+DIALOGUE_COUNT = 839
 # Charm is a static family with no legacy source (tools/content-schema/charm-authoring).
 CHARM_COUNT = 25
 # Proficiency likewise (tools/content-schema/proficiency-authoring).
@@ -73,7 +73,7 @@ import nrwicked_native
 REWARD_CLAIM_COUNT += len(engclaim_native.CASES) + len(nrwicked_native.records()[0])
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
-SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 57, "Service.Bank": 2, "Service.Promotion": 7, "Service.Blessing": 10}
+SERVICE_FAMILY_COUNTS = {"Service.Trade": 325, "Service.Travel": 57, "Service.Bank": 2, "Service.Promotion": 7, "Service.Blessing": 10}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes"), "Service.Bank": ("content/services/bank/", "bank"), "Service.Promotion": ("content/services/promotion/", "promotion"), "Service.Blessing": ("content/services/blessings/", "blessing")}
 
 class ValidationError(RuntimeError):
