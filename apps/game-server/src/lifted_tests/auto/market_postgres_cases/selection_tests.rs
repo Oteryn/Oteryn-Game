@@ -216,17 +216,26 @@ fn market_expiry_postgres_rechecks_offer_and_refunds_once() -> TestResult {
         assert_eq!(expiry_state(h, &due).await?, (1, 0, 0));
 
         // The lock holder ends the oldest candidate using the native atomic writer.
-        sqlx::query(
+        let outcome: Option<Vec<u8>> = sqlx::query_scalar(
             "SELECT game_market_write(encode($1,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,
                 game_market_identity(encode($2,'hex')::uuid,'expire'),4::smallint,
                 encode($2,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,NULL,NULL,sha256($2),NULL)",
         )
         .bind(taken.world.as_bytes().as_slice())
         .bind(taken.id.as_bytes().as_slice())
-        .execute(&mut *blocker)
+        .fetch_one(&mut *blocker)
         .await?;
+        assert!(
+            matches!(outcome.as_deref(), Some([1, id @ ..]) if id == taken.id.as_bytes()),
+            "expiry for {:?} should settle with code 01 and the same offer ID, got {outcome:02x?}",
+            taken.id,
+        );
         blocker.commit().await?;
-        assert_eq!(expiry_state(h, &taken).await?, (4, 1_000, 1));
+        assert_eq!(
+            expiry_state(h, &taken).await?,
+            (4, 1_000, 1),
+            "expiry writer returned {outcome:02x?}",
+        );
 
         assert!(advance_market(h, &runtime).await?);
         assert_eq!(expiry_state(h, &due).await?, (4, 1_000, 1));
