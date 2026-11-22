@@ -13,8 +13,8 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
-use crate::domain::soulpit::{EncounterEffect, SoulpitEncounter, SoulpitError};
-use crate::foundation::{CommandRef, RuntimeScopeRefV1, ScopeOwnershipGeneration};
+use crate::domain::soulpit::{EncounterEffect, EncounterPhase, SoulpitEncounter, SoulpitError};
+use crate::foundation::{CommandRef, GameSessionId, RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -211,6 +211,48 @@ pub struct SoulpitStoredEncounter {
     pub revision: u64,
     pub species: String,
     pub encounter: SoulpitEncounter,
+    /// Delivery identity and survivor connections from the committed final event.
+    pub completion: Option<SoulpitCompletion>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SoulpitCompletion {
+    pub occurrence: [u8; 16],
+    pub recipients: Vec<(GameSessionId, u64)>,
+}
+
+#[derive(Deserialize)]
+struct CompletionRecipient {
+    session: String,
+    connection: u64,
+}
+
+fn read_completion(
+    row: &sqlx::postgres::PgRow,
+    encounter: &SoulpitEncounter,
+) -> Result<Option<SoulpitCompletion>, DurabilityError> {
+    let snapshot = encounter.snapshot();
+    if snapshot.phase != EncounterPhase::Completed {
+        return Ok(None);
+    }
+    let occurrence = row.try_get::<sqlx::types::Uuid, _>("completion_occurrence")?;
+    let recipients: Vec<CompletionRecipient> =
+        serde_json::from_value(row.try_get("completion_recipients")?)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if recipients.len() != snapshot.surviving_slots.len() {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let recipients = recipients
+        .into_iter()
+        .map(|recipient| {
+            let session = sqlx::types::Uuid::parse_str(&recipient.session)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let session = GameSessionId::decode(session.as_bytes())
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            Ok((session, recipient.connection))
+        })
+        .collect::<Result<_, DurabilityError>>()?;
+    Ok(Some(SoulpitCompletion { occurrence: occurrence.into_bytes(), recipients }))
 }
 
 #[derive(Debug)]
@@ -343,13 +385,18 @@ impl DurabilityRoot {
             if !assert_runtime_scope_fence(&mut tx, scope, generation, &node).await? {
                 return Ok(Err(SoulpitWriteError::AuthorityRejected));
             }
-            let row = sqlx::query("SELECT f.revision,f.species_key,f.checkpoint FROM game_soulpit_encounters f JOIN game_activity_handoff_groups g USING(handoff_id) WHERE f.handoff_id=encode($1,'hex')::uuid AND g.world_id=encode($2,'hex')::uuid AND g.instance_id=encode($3,'hex')::uuid AND g.state=2 AND g.ownership_generation<=$4::text::numeric")
+            let row = sqlx::query("SELECT f.revision,f.species_key,f.checkpoint,e.occurrence_id AS completion_occurrence,e.intent->'survivors' AS completion_recipients FROM game_soulpit_encounters f JOIN game_activity_handoff_groups g USING(handoff_id) LEFT JOIN game_soulpit_events e ON f.terminal AND e.handoff_id=f.handoff_id AND e.occurrence_id=f.last_occurrence WHERE f.handoff_id=encode($1,'hex')::uuid AND g.world_id=encode($2,'hex')::uuid AND g.instance_id=encode($3,'hex')::uuid AND g.state=2 AND g.ownership_generation<=$4::text::numeric")
                 .bind(handoff_id.as_slice()).bind(scope.world_id().as_bytes().as_slice()).bind(instance_id.as_slice())
                 .bind(generation.get().to_string()).fetch_optional(&mut *tx).await?;
-            let result = row.map(|row| Ok(SoulpitStoredEncounter {
-                revision: u64::try_from(row.try_get::<i64,_>("revision")?).map_err(|_| DurabilityError::InvalidStoredState)?,
-                species: row.try_get("species_key")?, encounter: decode_checkpoint(row.try_get("checkpoint")?)?,
-            })).transpose();
+            let result = row.map(|row| {
+                let encounter = decode_checkpoint(row.try_get("checkpoint")?)?;
+                Ok(SoulpitStoredEncounter {
+                    revision: u64::try_from(row.try_get::<i64,_>("revision")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                    species: row.try_get("species_key")?,
+                    completion: read_completion(&row, &encounter)?,
+                    encounter,
+                })
+            }).transpose();
             commit_semantic_transaction(tx, deadline).await?;
             Ok(result)
         })).await?

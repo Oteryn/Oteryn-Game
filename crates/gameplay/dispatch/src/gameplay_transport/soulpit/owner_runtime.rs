@@ -104,7 +104,7 @@ struct VisibleSurvivor {
     observed: CurrentVisibleActorObservation,
 }
 
-fn durable(error: crate::durability::soulpit::SoulpitWriteError) -> SoulpitRuntimeError {
+pub(super) fn durable(error: crate::durability::soulpit::SoulpitWriteError) -> SoulpitRuntimeError {
     match error {
         crate::durability::soulpit::SoulpitWriteError::Unavailable(_)
         | crate::durability::soulpit::SoulpitWriteError::StaleState => {
@@ -477,11 +477,16 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
                 .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)
         })
     }
-    fn return_participants(
+    async fn return_participants(
         &mut self,
-        _: EncounterPhase,
-    ) -> impl std::future::Future<Output = Result<(), SoulpitRuntimeError>> {
-        return_members(self.admission.clone(), self.members.to_vec())
+        phase: EncounterPhase,
+    ) -> Result<(), SoulpitRuntimeError> {
+        if phase == EncounterPhase::Completed {
+            self.admission
+                .queue_committed_soulpit_completion(self.binding)
+                .await?;
+        }
+        return_members(self.admission.clone(), self.members.to_vec()).await
     }
 }
 

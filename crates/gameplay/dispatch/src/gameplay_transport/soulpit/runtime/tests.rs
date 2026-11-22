@@ -134,6 +134,7 @@ impl Owner {
             },
             stored: SoulpitStoredEncounter {
                 revision: 1,
+                completion: None,
                 species: "oteryn:creature.rat".into(),
                 encounter: SoulpitEncounter::new(250_000, &[0]).map_err(debug)?,
             },

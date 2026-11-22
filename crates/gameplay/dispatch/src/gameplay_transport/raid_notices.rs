@@ -127,32 +127,32 @@ impl ServerMessageHub {
     }
     /// An Instance session can complete only one Soulpit. Keep its occurrence
     /// after dequeue so replays cannot send it again on this connection.
+    /// Ineligible connections need no delivery; a full eligible queue must retry.
     pub(super) fn send_soulpit_completion(
         &self,
         session: GameSessionId,
         generation: u64,
         occurrence: [u8; 16],
         message: &ServerMessage,
-    ) {
-        if encode_server_message(message).is_err() {
-            return;
-        }
-        let Ok(mut state) = self.state.lock() else {
-            return;
-        };
+    ) -> Result<(), ()> {
+        encode_server_message(message).map_err(|_| ())?;
+        let mut state = self.state.lock().map_err(|_| ())?;
         let Some(recipient) = state.recipients.get_mut(&session) else {
-            return;
+            return Ok(());
         };
         if recipient.connection_generation != generation
             || recipient.soulpit_completion == Some(occurrence)
-            || recipient.queue.len() >= MAX_ANNOUNCEMENTS
         {
-            return;
+            return Ok(());
+        }
+        if recipient.queue.len() >= MAX_ANNOUNCEMENTS {
+            return Err(());
         }
         recipient.soulpit_completion = Some(occurrence);
         recipient.queue.push_back(Arc::new(message.clone()));
         drop(state);
         self.changed.notify_waiters();
+        Ok(())
     }
 
     pub(super) fn forget(&self, session: GameSessionId) {

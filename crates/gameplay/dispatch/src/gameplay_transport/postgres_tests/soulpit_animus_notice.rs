@@ -16,7 +16,7 @@ fn soulpit_postgres_committed_animus_notice_reaches_only_surviving_sessions() ->
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    scenario(admin, false)
+    scenario(admin, Delivery::Acked)
 }
 
 #[test]
@@ -24,10 +24,34 @@ fn soulpit_postgres_completion_retry_does_not_duplicate_animus_notice() -> TestR
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    scenario(admin, true)
+    scenario(admin, Delivery::Replay)
 }
 
-fn scenario(admin: String, replay: bool) -> TestResult {
+#[test]
+fn soulpit_postgres_terminal_retry_delivers_completion_after_lost_ack() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(admin, Delivery::LostAck)
+}
+
+#[test]
+fn soulpit_postgres_terminal_retry_waits_for_completion_queue_space() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(admin, Delivery::FullQueue)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Delivery {
+    Acked,
+    Replay,
+    LostAck,
+    FullQueue,
+}
+
+fn scenario(admin: String, delivery: Delivery) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("soulpit-animus-notice", move || {
         run(async move |_| {
             super::reset();
@@ -124,10 +148,19 @@ fn scenario(admin: String, replay: bool) -> TestResult {
             assert_eq!(messages.take(session, generation), None);
             assert_eq!(messages.take(bystander, 1), None);
 
-            let committed = owner
-                .commit_soulpit_progress(&initial.species, completion.clone())
-                .await
-                .map_err(debug)?;
+            let queued = oteryn_gameplay_encounter_rules::raid::MAX_ANNOUNCEMENTS;
+            let filler = ServerMessage::Advance("Earlier notice".into());
+            if delivery == Delivery::FullQueue {
+                for _ in 0..queued {
+                    assert!(messages.send_current(session, filler.clone()));
+                }
+            }
+            let committed = if delivery == Delivery::LostAck {
+                // The database commits, but the adapter never receives the outcome.
+                owner.root.advance_soulpit(&authority, &h.node, completion.clone()).await
+            } else {
+                owner.commit_soulpit_progress(&initial.species, completion.clone()).await
+            }.map_err(debug)?;
             assert!(!committed.replayed);
             assert_eq!(
                 committed.effect,
@@ -145,7 +178,25 @@ fn scenario(admin: String, replay: bool) -> TestResult {
             .await?;
             assert_eq!(credits, 1);
             assert_eq!(messages.take(bystander, 1), None);
-            let recipient = if replay {
+            if matches!(delivery, Delivery::LostAck | Delivery::FullQueue) {
+                let binding = crate::gameplay_transport::soulpit::runtime::SoulpitActivityBinding {
+                    handoff_id: admitted.handoff_id,
+                    scope: survivor.runtime_scope,
+                    generation: survivor.scope_ownership_generation,
+                };
+                if delivery == Delivery::FullQueue {
+                    assert!(matches!(
+                        owner.queue_committed_soulpit_completion(binding).await,
+                        Err(crate::gameplay_transport::soulpit::runtime::SoulpitRuntimeError::AdapterUnavailable)
+                    ));
+                    for _ in 0..queued {
+                        assert_eq!(messages.take(session, generation), Some(filler.clone()));
+                    }
+                }
+                owner.queue_committed_soulpit_completion(binding).await.map_err(debug)?;
+                owner.queue_committed_soulpit_completion(binding).await.map_err(debug)?;
+            }
+            let recipient = if delivery == Delivery::Replay {
                 connected
             } else {
                 // The cadence can return the player before their connection drains
@@ -160,7 +211,7 @@ fn scenario(admin: String, replay: bool) -> TestResult {
             };
             assert_eq!(owner.take_server_notice(recipient), Some(expected));
 
-            if replay {
+            if delivery == Delivery::Replay {
                 let retried = owner
                     .commit_soulpit_progress(&initial.species, completion)
                     .await

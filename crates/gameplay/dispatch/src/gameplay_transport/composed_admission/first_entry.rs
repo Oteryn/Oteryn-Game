@@ -381,12 +381,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let _ = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
             probe.placement.set(probe.placement.get() + 1);
         });
-        let outcome = match self
+        let (outcome, position) = match self
             .initialize_admitted_position(&mut runtime, actor, game_session_id, placement)
             .await
         {
-            Ok(FirstEntryPosition::Initialized(_)) => FirstEntryOutcome::Positioned,
-            Ok(FirstEntryPosition::Reconciled(_)) => FirstEntryOutcome::Reconciled,
+            Ok(FirstEntryPosition::Initialized(position)) => {
+                (FirstEntryOutcome::Positioned, position)
+            }
+            Ok(FirstEntryPosition::Reconciled(position)) => {
+                (FirstEntryOutcome::Reconciled, position)
+            }
             Err(_) => return (FirstEntryOutcome::RefusedByChannel, None, None),
         };
         #[cfg(test)]
@@ -511,6 +515,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.states
             .resting_areas
             .install(game_session_id, actor, daily_streak);
+        // Crystal Tile::postAddNotification runs StepIn on placement. Use the
+        // admitted cell, including a fallback or relocation, after equipment
+        // suppression is installed. A reconciled live actor already entered it.
+        if gourmet_created && let Some(map) = self.bundle_map() {
+            use super::super::paced_movement::underwater_drown::underwater;
+            let destination = position.position();
+            let now = self.owner_now().get();
+            let mut states = self.states.spell_states.lock().await;
+            states.stage_special_movement_step(
+                &runtime,
+                map,
+                actor,
+                game_session_id,
+                now,
+                None,
+                destination,
+                None,
+            );
+            states.stage_underwater_step(
+                &runtime,
+                actor,
+                game_session_id,
+                now,
+                false,
+                underwater(map, destination),
+            );
+        }
         let relocation = if temple.is_some() {
             let Ok(position) = runtime.read_actor_position(actor) else {
                 return (FirstEntryOutcome::RefusedByChannel, None, None);
