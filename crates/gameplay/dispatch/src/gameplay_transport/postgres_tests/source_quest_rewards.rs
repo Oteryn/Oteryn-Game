@@ -173,6 +173,8 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                     .iter()
                     .any(|placement| placement.placement.quest_transition.is_some())
         }) || world_owned
+            || oteryn_gameplay_quests::quest::completion_sets::mint_transition_for_claim(&chest.claim)?
+                .is_some()
         {
             let lowered =
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")

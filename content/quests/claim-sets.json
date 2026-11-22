@@ -277,5 +277,16 @@
         "kv/legiondawnport"
       ]
     ]
+  },
+  "oteryn:quest.thais_lighthouse_quest": {
+    "groups": [
+      [
+        "kv/lighthouse1"
+      ],
+      [
+        "kv/lighthouse2"
+      ]
+    ],
+    "mint_only": true
   }
 }
