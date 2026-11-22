@@ -554,9 +554,9 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/wrath-city.json"),
     include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/token-exchanges.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/wrath-city.json"),
     include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m09-rookie.json"),
@@ -2394,7 +2394,10 @@ mod tests {
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Shared covers 207 existing, 31 QB and 15 Gnomally routes. Additional shards include
         // Rottin Wood, the Forgemaster, Matchmaker, nine hunting reports, four Wrath routes, and 75 token exchange routes.
-        assert_eq!(load()?.len(), 253 + 59 + 125 + 1 + 1 + 13 + 12 + 1 + 9 + 4 + 75);
+        assert_eq!(
+            load()?.len(),
+            253 + 59 + 125 + 1 + 1 + 13 + 12 + 1 + 9 + 4 + 75
+        );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2419,8 +2422,19 @@ mod tests {
     fn authored_shards_complete_only_the_selected_quest_and_preserve_old_plans()
     -> Result<(), String> {
         let shared = parse(DOCUMENTS[0])?;
-        let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
+        let (qb, non_qb): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
         assert_eq!(qb.len(), 31);
+        let (gnomally, legacy): (Vec<_>, Vec<_>) = non_qb.into_iter().partition(|callback| {
+            callback
+                .key
+                .starts_with("oteryn:quest-reward/gnomally-exchange-")
+        });
+        assert_eq!(gnomally.len(), 15);
+        assert!(
+            gnomally
+                .iter()
+                .all(|callback| callback.npc == "oteryn:npc.gnomally")
+        );
         let added_keys = [
             "oteryn:quest-reward/l2-wizard-flowers",
             "oteryn:quest-reward/l2-wizard-flowers-start",

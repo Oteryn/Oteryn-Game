@@ -124,6 +124,21 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
 
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
     retain(catalogue, GAMEPLAY_PREDECESSORS);
+    for &(quest, previous) in DAILY_PREDECESSORS {
+        if catalogue
+            .definition_hash(quest)
+            .is_some_and(|current| current != previous)
+        {
+            catalogue
+                .predecessors
+                .entry(quest.into())
+                .or_default()
+                .push(NpcDefinitionPredecessor {
+                    hash: previous,
+                    defaults: Default::default(),
+                });
+        }
+    }
 }
 
 pub(super) fn retain_hunt_and_wrath_predecessors(catalogue: &mut QuestStateCatalogue) {
@@ -159,21 +174,6 @@ fn retain(catalogue: &mut QuestStateCatalogue, pins: &[PredecessorPin]) {
                     hash,
                     defaults: Default::default(),
                 }));
-        }
-    }
-    for &(quest, previous) in DAILY_PREDECESSORS {
-        if catalogue
-            .definition_hash(quest)
-            .is_some_and(|current| current != previous)
-        {
-            catalogue
-                .predecessors
-                .entry(quest.into())
-                .or_default()
-                .push(NpcDefinitionPredecessor {
-                    hash: previous,
-                    defaults: Default::default(),
-                });
         }
     }
 }

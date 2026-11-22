@@ -573,7 +573,8 @@ mod main_native_contract {
         // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
         // The gnome dailies and regional hunting/Wrath rules each add 22 tracks.
-        assert_eq!(before.tracks.len(), 2135 + 7 + 22 + 22);
+        // Storkus adds the two Vampire Hunter rank and door tracks.
+        assert_eq!(before.tracks.len(), 2135 + 7 + 22 + 22 + 2);
         for pharaoh in ["omruc", "vashresamun"] {
             let key = format!(
                 "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/{pharaoh}_sarcophagus_claim"

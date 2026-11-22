@@ -1230,7 +1230,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .filter(|program| program.document.schema == 1)
             .count(),
-        30
+        32
     );
     // Canonical main adds the exact source cohort checked above; schema2
     // Mystery has no fabricated legacy definition or absent-value mapping.

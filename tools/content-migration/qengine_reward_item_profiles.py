@@ -220,11 +220,11 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_SET')
     admitted={r['production_definition']['production_key']:r for r in
         json.loads((root/PROFILE).read_bytes())['records']}
+    independent_profiles = CORPSE_IDS | MERCHANT_SCENERY | TOKEN_EXCHANGE_ITEMS
     records=[]
     for item_id in sorted(selected):
         node=xml[item_id]
         flower = lion_flower.admitted(item_id, source.attrs(node))
-        independent_profiles = CORPSE_IDS | MERCHANT_SCENERY | TOKEN_EXCHANGE_ITEMS
         if not flower and item_id not in independent_profiles and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']

@@ -2,13 +2,13 @@
   "admission_main": "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c",
   "authoring_profile_counts": {
     "Ability": 7396,
-    "Behavior": 3147,
+    "Behavior": 3157,
     "Creature": 1865,
     "Effect": 5800,
     "Encounter": 108,
     "Formula": 6129,
     "Loot": 40,
-    "Presentation": 3147
+    "Presentation": 3157
   },
   "editor_entry_counts": {
     "Item": 165,
@@ -16,27 +16,27 @@
   },
   "family_counts": {
     "Ability": 7396,
-    "Behavior": 3147,
+    "Behavior": 3157,
     "Charm": 25,
     "Creature": 1865,
-    "Dialogue": 836,
+    "Dialogue": 839,
     "Document": 1609,
     "Effect": 5800,
     "Encounter": 108,
     "Encounter.Raid": 240,
     "Formula": 6129,
-    "Item": 34122,
+    "Item": 34123,
     "Loot": 1292,
     "Mount": 252,
-    "NPC": 1282,
-    "Presentation": 3147,
+    "NPC": 1292,
+    "Presentation": 3157,
     "Proficiency": 443,
     "Quest": 352,
-    "RewardClaim": 345,
+    "RewardClaim": 346,
     "Service.Bank": 2,
     "Service.Blessing": 10,
     "Service.Promotion": 7,
-    "Service.Trade": 324,
+    "Service.Trade": 325,
     "Service.Travel": 57,
     "StarterKit": 1,
     "item_conversion": 130
@@ -47,10 +47,10 @@
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "eccb941ee5334dd5423e5de7699c6388108bcb68",
+    "declarations": "d549c0a0ee259f63d5bb0924e6307b2b8b6fb36c",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "d6633ab6d1335663d3b6bc4929225b3adbcbff2c",
-    "reference": "e8c4487697f321137afbd4b4962a7d0e202a4331",
+    "imports": "e012967fcf9b9760cc8ab302fbfe8d5118587007",
+    "reference": "879bd7d09e430058e8519b401c904fd3815b38c8",
     "sources": "2cf0e78314dfab9278d37c5bb45e73d155c09eec"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -109,10 +109,10 @@
             "dependencies": "tools/content-schema/spell-authoring/spell-dependencies.schema.json",
             "manifest": "tools/content-schema/monster-authoring/monster-import-readiness.schema.json"
           },
-          "sha256": "f6372601a2fa1af0d6ca549d49b898d69eb3bee71d05df0dc335b3dd78b6aae5",
+          "sha256": "6a2dcac4cb4d9c00082ee2ad7eea3cf6fd7876af30d373e2d695be77da944dfc",
           "source_selection": {
             "path": "content/abilities/definitions/player-spell-selection.json",
-            "sha256": "486f541f0a8c011b63fc46f27647c4db1dcaab29c2680b471b1b14f79ee3ca4f"
+            "sha256": "edd2668dff781489cc66680a65047d423794a68726551f7a2914d3f969ab7d96"
           }
         },
         {
@@ -124,7 +124,7 @@
             "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
             "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/abilities/items"
           },
-          "sha256": "2bca5870303c5565b6b0ed052a7c13a4b9c2fafc4fb43a72ea8e8b4bc1899e3f"
+          "sha256": "7ba8b708baeaf7365f7c134383f6a6d76d9a13bc18291f42b168afc1a66a031a"
         },
         {
           "creates_canonical_identities": false,
@@ -155,7 +155,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/spell-native-profiles.json",
-          "record_count": 1875,
+          "record_count": 1877,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "47e9d5b54eb9cc3de65a88bc53e178ba36da10dffa4a5d1f0f4643a678908c36"
+          "sha256": "d3daf0604c607c40c580e5fbd734a6c14026e983b5c69e883bf4bdfdbc3ea071"
         },
         {
           "creates_canonical_identities": false,
@@ -214,7 +214,7 @@
             "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
             "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/effects/items"
           },
-          "sha256": "27f9820953317efac20eb904d1aac7f6553002b245db9fc5471d4cf5ca2f6ab3"
+          "sha256": "061cc1d7fe1b1d0e186719f68ec84185d070ff31ffb77c64330c79aea12594d0"
         }
       ],
       "Formula": [
@@ -227,14 +227,14 @@
             "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
             "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/formulas/items"
           },
-          "sha256": "2992bb5d477ec9c8e28cf9ee37aa72b1fcacb43534666b5ba692432531abab52"
+          "sha256": "31d487c0f97ce45ad9e0174ce12591e0d383e53dc4aba8a6c55d883f33c2b412"
         }
       ],
       "Item": [
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6643,
+          "record_count": 6683,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "4278193754395b30cb27cc964d26019adcfad72defb1947428d22ba3dc5866bd"
+          "sha256": "f5054ba77b2ddbd22a1116dffcda3a1a3215fe2f0fe1e0bab2fd7774fbf1c429"
         },
         {
           "creates_canonical_identities": false,
@@ -262,7 +262,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/definitions/spell-native-profiles.json",
-          "record_count": 1873,
+          "record_count": 1875,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
@@ -270,7 +270,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#PresentationProfilesDocument"
           },
-          "sha256": "1277964c2242c40d86a5b9648e423daa8212c6fc1819f2cacf82d14a2b0b57db"
+          "sha256": "b1fadd23d9641b7d437eb4e8da7cfc39638beec83b8e87b98ff4d79ef866315e"
         },
         {
           "creates_canonical_identities": false,

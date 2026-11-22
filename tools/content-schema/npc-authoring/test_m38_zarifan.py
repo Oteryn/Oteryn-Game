@@ -19,7 +19,8 @@ class ZarifanContactTest(unittest.TestCase):
                           for r in json.loads(text)["records"]
                           if r["declaration"].get("block_solid_contact", False)},
                          {f"oteryn:npc.{key}" for key in (
-                             "bron", "doctor_marrow", "ellipses", "gnommander", "kepar", "palimuth", "rafzan",
+                             "bron", "doctor_marrow", "ellipses", "gnomargery", "gnombold",
+                             "gnomilly", "gnommander", "kepar", "palimuth", "rafzan",
                              "raymond_striker", "sinatuki", "the_first_dragon",
                              "wyrdins_apprentice", "zalamon", "zarifan")})
         candidate = next(c for c in json.loads(cp.CANDIDATES.read_text())["candidates"]

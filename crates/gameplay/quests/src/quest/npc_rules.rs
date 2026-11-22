@@ -510,13 +510,13 @@ impl NpcRuleCatalog {
                 let mut catalogue = Self::load_embedded()?;
                 let supplemental = Self::from_json_documents(&[
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/hunting-tasks.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/m41-kilmaresh.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gerimor.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gnomus.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-oldrak.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-henricus.json"),
-                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/hunting-tasks.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/wrath-city.json"),
                 ])?;
                 catalogue.programs.extend(supplemental.programs);

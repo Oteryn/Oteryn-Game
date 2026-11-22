@@ -38,6 +38,7 @@ macro_rules! tasks {
                 maximum: $quota,
                 authored_stage: false,
                 world_change: None,
+                death_area: None,
             },)+)+
         ];
     };
