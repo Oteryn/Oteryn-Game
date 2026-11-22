@@ -68,7 +68,7 @@ impl View {
     }
     pub(crate) fn can_purchase_at(&self, id: &str, now: Instant) -> bool {
         !self.unavailable
-            && !self.prior.blocked()
+            && !self.prior.post_in_flight()
             && !self.pending()
             && self.balance.as_ref().is_some_and(|b| !b.review_required)
             && self.catalogue.as_ref().is_some_and(|c| {
@@ -89,7 +89,7 @@ impl View {
     }
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
-        if self.prior.blocked() {
+        if self.prior.post_in_flight() {
             text.push('\n');
             text.push_str(tr!(
                 "Resolve the pending operation before starting another."

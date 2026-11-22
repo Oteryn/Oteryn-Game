@@ -4,7 +4,8 @@ use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
-/// Only a current-bearer receipt can identify a retained request. Only a live POST holds the lock.
+/// A pending request gates its own authorization. Across authorizations only a live POST
+/// gates submission, and only a current-bearer lookup can establish ownership of a retained ID.
 #[derive(Clone)]
 pub(crate) struct PriorRequests {
     ids: Arc<Mutex<BTreeSet<String>>>,
@@ -31,7 +32,7 @@ impl PriorRequests {
         }
     }
 
-    pub(crate) fn blocked(&self) -> bool {
+    pub(crate) fn post_in_flight(&self) -> bool {
         self.post.available_permits() == 0
     }
 

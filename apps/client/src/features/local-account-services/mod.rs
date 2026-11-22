@@ -76,7 +76,7 @@ impl Default for View {
 }
 impl View {
     pub fn pending(&self) -> bool {
-        self.prior.blocked() || self.pending.is_some() || !self.unresolved.is_empty()
+        self.prior.post_in_flight() || self.pending.is_some() || !self.unresolved.is_empty()
     }
     pub fn can_retry(&self) -> bool {
         self.pending.is_some() && self.post_refusal_status.is_none()
@@ -142,7 +142,7 @@ impl View {
     }
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
-        if self.prior.blocked() {
+        if self.prior.post_in_flight() {
             text.push('\n');
             text.push_str(tr!(
                 "Resolve the pending operation before starting another."
