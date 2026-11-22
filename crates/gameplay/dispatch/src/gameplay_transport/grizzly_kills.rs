@@ -4,6 +4,7 @@
 
 use std::sync::Arc;
 mod encounters;
+pub(super) use encounters::PreparedEncounter;
 mod guardians;
 pub(super) mod native_goals;
 
@@ -801,6 +802,7 @@ pub(super) fn freeze_encounter_credit(
     creature: &str,
     admitted: &[EncounterCredit],
     shares: &[crate::foundation::RewardDamageShare],
+    hard_death: Option<crate::foundation::CreatureDeathOccurrenceKey>,
 ) -> Vec<super::quest_kills::Recipient> {
     let mut recipients = Vec::new();
     for participant in admitted {
@@ -818,6 +820,48 @@ pub(super) fn freeze_encounter_credit(
                         && lease.generation() == participant.lease_generation
                 })
         {
+            continue;
+        }
+        if let Some(death) = hard_death {
+            use crate::durability::quest_state::{
+                native_kills::{NativeDeathSource, NativeQuestDeath},
+                source_deaths::SourceDeathContext,
+            };
+            let Ok(position) = runtime.read_actor_position(participant.actor) else {
+                continue;
+            };
+            let at = position.position();
+            use oteryn_gameplay_quests::quest::source_deaths;
+            for transition in source_deaths::arbaziloth_hard_transitions().filter(|key| {
+                !source_deaths::is_arbaziloth_hard_counter(key)
+                    || *key == source_deaths::HARD_INCREMENT
+            }) {
+                recipients.push(super::quest_kills::Recipient {
+                    actor: participant.actor,
+                    session: participant.session,
+                    character: participant.character,
+                    lease_generation: participant.lease_generation,
+                    death: NativeQuestDeath {
+                        transition: transition.into(),
+                        definition_hash: None,
+                        creature: creature.into(),
+                        observed_revision: participant.observed_revision,
+                        source: NativeDeathSource::ArbazilothHard {
+                            death,
+                            source: SourceDeathContext {
+                                scope: death.runtime_scope(),
+                                scope_generation: death.scope_ownership_generation().get(),
+                                character: participant.character,
+                                session: participant.session,
+                                lease_generation: participant.lease_generation,
+                                position: [at.x, at.y, -i32::from(at.floor)],
+                                dealt_damage: true,
+                                top_damage_character: None,
+                            },
+                        },
+                    },
+                });
+            }
             continue;
         }
         // This is the participant's actual World-owned party snapshot. It neither
@@ -981,6 +1025,7 @@ mod encounter_credit_tests {
             "oteryn:creature.essence_of_malice",
             &credits[..2],
             &shares,
+            None,
         );
         assert_eq!(result.len(), 2);
         assert!(
@@ -988,6 +1033,67 @@ mod encounter_credit_tests {
                 .iter()
                 .all(|recipient| recipient.character != outsider.character)
         );
+        use oteryn_gameplay_quests::quest::source_deaths::{
+            ARBAZILOTH_ENRAGED, is_arbaziloth_hard_counter,
+        };
+        let enraged = ExactActorRef(runtime.admit_encounter_fixture_actor(
+            ActorState(0),
+            ARBAZILOTH_ENRAGED,
+            100,
+            Some(LocalPosition {
+                x: 102,
+                y: 100,
+                floor: 7,
+            }),
+        )?);
+        for (participant, damage) in credits.iter().zip([20, 30, 50]) {
+            runtime
+                .borrow_exact_actor_commit()
+                .commit_damage_for_bound_attacker(
+                    enraged,
+                    participant.actor,
+                    CommandRef::new(
+                        participant.session,
+                        CommandId::new(2).map_err(|_| CarrierError::PlanConflict)?,
+                    ),
+                    0,
+                    OwnerDamageCommand {
+                        target: ARBAZILOTH_ENRAGED.as_bytes(),
+                        occurrence: b"hard-win",
+                        binding: b"hard-win",
+                        damage,
+                    },
+                )?;
+        }
+        let mut death = runtime.borrow_combat_death();
+        let lethal = death.committed_lethal_receipt(enraged)?;
+        death.project_committed_lethal(lethal)?;
+        let (occurrence, _) = death.projected_death(enraged)?;
+        let hard_shares = death.reward_damage_shares(enraged)?;
+        let hard = freeze_encounter_credit(
+            &runtime,
+            &states,
+            ARBAZILOTH_ENRAGED,
+            &credits[..2],
+            &hard_shares,
+            Some(occurrence),
+        );
+        for admitted in &credits[..2] {
+            assert_eq!(
+                hard.iter()
+                    .filter(|recipient| {
+                        recipient.character == admitted.character
+                            && is_arbaziloth_hard_counter(&recipient.death.transition)
+                    })
+                    .count(),
+                1,
+            );
+        }
+        assert!(
+            hard.iter()
+                .all(|recipient| recipient.character != credits[2].character)
+        );
+
         runtime.remove_test_actor(credits[0].actor)?;
         let result = freeze_encounter_credit(
             &runtime,
@@ -995,6 +1101,7 @@ mod encounter_credit_tests {
             "oteryn:creature.essence_of_malice",
             &credits[..2],
             &shares,
+            None,
         );
         assert_eq!(
             result.len(),
