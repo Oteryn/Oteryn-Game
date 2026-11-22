@@ -47,7 +47,7 @@ class QuestRewards(unittest.TestCase):
         for row in nx5['outfits']:
             self.assertEqual(outfits[row['key']],row)
         packet=json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
-        self.assertEqual(len(packet['grants']),202)
+        self.assertEqual(len(packet['grants']),203)
         for grant in packet['grants']:
             mapping=mappings[grant['key']]
             self.assertEqual(mapping['compatible_provenance'],[packet['provenance']])
@@ -66,7 +66,8 @@ class QuestRewards(unittest.TestCase):
         capture=(q.ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes()
         self.assertEqual(admission['source_packet_sha256'],q.sha(capture))
         original=json.loads(capture)
-        self.assertEqual([r['item_id'] for r in packet['rules'] if r['item_id']!=21897], [r['item_id'] for r in original['rules']])
+        self.assertEqual([r['item_id'] for r in packet['rules'] if r['item_id'] not in (21897, 48424)],
+                         [r['item_id'] for r in original['rules']])
         self.assertEqual(sum(r['item_id']==21897 for r in packet['rules']),1)
         old=next(r for r in original['rules'] if r['mode']=='random_outfit')
         native=next(r for r in packet['rules'] if r['mode']=='random_outfit')
@@ -78,6 +79,26 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual((jungle['female']['id'],jungle['male']['id']),(620,621))
         self.assertFalse(jungle['starter_female'] or jungle['starter_male'])
         self.assertTrue(jungle['premium'])
+
+    def test_task_board_mount_offers_bind_exact_admitted_looks(self):
+        doc = self.author['document']
+        mounts = {row['key']: row['look']['id'] for row in doc['mounts']}
+        grants = {row['grant_key']: row for row in doc['grant_mappings']}
+        for offer, look in [(6, 1908), (7, 1909), (8, 1910), (9, 1281)]:
+            with self.subTest(offer=offer):
+                row = grants[f'oteryn:taskboard/shop/offer-{offer}']
+                self.assertEqual(row['compatible_provenance'], ['task-board-shop-v1'])
+                self.assertEqual(row['target']['kind'], 'Mount')
+                self.assertEqual(mounts[row['target']['mount_key']], look)
+
+    def test_pegasus_feather_is_a_direct_mount_source(self):
+        packet = json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
+        rule = next(row for row in packet['rules'] if row['item_id'] == 48424)
+        self.assertEqual(rule['mode'], 'direct')
+        self.assertFalse(rule['premium'])
+        choice, = rule['choices']
+        self.assertEqual(choice['grants'], ['oteryn:item-grant.mount.227'])
+        self.assertEqual(choice['achievements'], ['oteryn:achievement/i_wanna_fly_away'])
 
     def test_complete_glider_recipe_preserves_every_source_taming_row(self):
         original=json.loads((q.ROOT/'content/cosmetics/taming.json').read_bytes())

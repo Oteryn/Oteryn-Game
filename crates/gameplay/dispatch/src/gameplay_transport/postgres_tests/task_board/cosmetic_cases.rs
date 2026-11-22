@@ -107,6 +107,54 @@ async fn appearance(
         .ok_or_else(|| "current appearance observation".into())
 }
 
+pub(super) async fn production_mounts(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    let mut fixture = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *fixture)
+        .await?;
+    sqlx::query("UPDATE game_character_roots SET sex=2 WHERE character_id=encode($1,'hex')::uuid AND sex IS NULL")
+        .bind(id(41).as_slice()).execute(&mut *fixture).await?;
+    fixture.commit().await?;
+
+    let mut points = 4 * 145_000_u64;
+    fixture_track(harness, task_board::POINTS, i64::try_from(points)?).await?;
+    for (offer, mount) in [
+        (6, "oteryn:content.mount.tidal_seawater_predator"),
+        (7, "oteryn:content.mount.ashen_coast_predator"),
+        (8, "oteryn:content.mount.crimson_bay_predator"),
+        (9, "oteryn:content.mount.antelope"),
+    ] {
+        let before = appearance(owner, admitted).await?;
+        assert!(!before.catalogue.mounts.iter().any(|key| key == mount));
+        let command = admitted.continuity.next_command_id;
+        let purchase = full_board(owner, admitted, 16, offer, "").await?;
+        points -= 145_000;
+        assert_eq!(
+            (purchase.refusal, purchase.points),
+            (0, points),
+            "offer {offer}"
+        );
+        assert!(purchase.shop.iter().any(|entry| entry.index == offer && entry.bought));
+        let after = appearance(owner, admitted).await?;
+        assert!(after.catalogue.mounts.iter().any(|key| key == mount));
+        let replay = serve_from(owner, admitted, command, &[full_request(16, offer, "")]).await?;
+        assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
+        assert_eq!(
+            wire::full::decode_reply(&replay[0].2).map_err(debug)?,
+            purchase
+        );
+        let duplicate = full_board(owner, admitted, 16, offer, "").await?;
+        assert_eq!((duplicate.refusal, duplicate.points), (7, points));
+    }
+    assert_eq!(receipt_count(harness).await?, 4);
+    eprintln!("PG_EXECUTED task_board_production_mount_offers purchases=4");
+    Ok(())
+}
+
 pub(super) async fn cosmetics_case(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,

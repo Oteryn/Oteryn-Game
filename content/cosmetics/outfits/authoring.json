@@ -23702,6 +23702,16 @@
         ]
       },
       {
+        "grant_key": "oteryn:item-grant.mount.227",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.pegasus"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
         "grant_key": "oteryn:item-grant.mount.23",
         "target": {
           "kind": "Mount",
@@ -24102,6 +24112,46 @@
         ]
       },
       {
+        "grant_key": "oteryn:taskboard/shop/offer-6",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.tidal_seawater_predator"
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-7",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.ashen_coast_predator"
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-8",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.crimson_bay_predator"
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-9",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.antelope"
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
         "grant_key": "oteryn:content.mount.reliable_ram/quest-grant",
         "target": {
           "kind": "Mount",
@@ -24116,7 +24166,7 @@
       {
         "item_key": "oteryn:item.tibia.i6579",
         "donor": "data-crystal/scripts/special/addon_doll.lua:53-71",
-        "catalogue_sha256": "eef796747c97e3fb35664956e632a9450cbf44076b1670f39da4f3ebfc41e578",
+        "catalogue_sha256": "4899721140bb6d61beab9704fcab58ff9284552f31a838d5906b1d7bb07bdff2",
         "decision": "owner:S06:source-bound-native-item-acquisitions:2026-11-07",
         "source": {
           "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
@@ -39070,6 +39120,16 @@
           ]
         },
         {
+          "grant_key": "oteryn:item-grant.mount.227",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.pegasus"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
           "grant_key": "oteryn:item-grant.mount.23",
           "target": {
             "kind": "Mount",
@@ -39470,6 +39530,46 @@
           ]
         },
         {
+          "grant_key": "oteryn:taskboard/shop/offer-6",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.tidal_seawater_predator"
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-7",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.ashen_coast_predator"
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-8",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.crimson_bay_predator"
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-9",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.antelope"
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
           "grant_key": "oteryn:content.mount.reliable_ram/quest-grant",
           "target": {
             "kind": "Mount",
@@ -39495,7 +39595,7 @@
         {
           "item_key": "oteryn:item.tibia.i6579",
           "donor": "data-crystal/scripts/special/addon_doll.lua:53-71",
-          "catalogue_sha256": "eef796747c97e3fb35664956e632a9450cbf44076b1670f39da4f3ebfc41e578",
+          "catalogue_sha256": "4899721140bb6d61beab9704fcab58ff9284552f31a838d5906b1d7bb07bdff2",
           "decision": "owner:S06:source-bound-native-item-acquisitions:2026-11-07",
           "source": {
             "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
