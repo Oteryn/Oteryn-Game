@@ -79,16 +79,16 @@ pub(super) async fn execute(
             Some(previous) => previous,
             None if !live_allowed => return Some(reply),
             None => {
+                if !reachable {
+                    reply.outcome = StashOutcome::NoLocker;
+                    return Some(reply);
+                }
                 if intent.action.needs_stash_actions()
                     && !admission
                         .states
                         .player_trades
                         .physical_service(command.game_session_id)
                 {
-                    return Some(reply);
-                }
-                if !reachable {
-                    reply.outcome = StashOutcome::NoLocker;
                     return Some(reply);
                 }
                 if let Some(id) = hireling {
@@ -209,15 +209,21 @@ pub(super) async fn row_action(
     command: UseCommand,
     intent: StashRowIntent,
     row_open: bool,
-) -> Option<std::num::NonZeroU32> {
-    let fence = command.item_fence?;
-    let permit = admission.spell_lane_permit().await?;
+) -> Result<Option<std::num::NonZeroU32>, crate::durability::DurabilityError> {
+    let (Some(fence), Ok(command_id)) = (command.item_fence, CommandId::new(command.command_id))
+    else {
+        return Ok(None);
+    };
+    let permit = admission
+        .spell_lane_permit()
+        .await
+        .ok_or(crate::durability::DurabilityError::Unavailable)?;
     let (native, locker_reachable, hireling) = access(admission, actor, command).await;
+    let Some(native) = native else {
+        return Ok(None);
+    };
     let request = crate::durability::character_stash::StashRowRequest {
-        command: CommandRef::new(
-            command.game_session_id,
-            CommandId::new(command.command_id).ok()?,
-        ),
+        command: CommandRef::new(command.game_session_id, command_id),
         intent,
         row_open,
         locker_reachable,
@@ -231,9 +237,7 @@ pub(super) async fn row_action(
             admission.holder,
             fence,
             request,
-            native?,
+            native,
         )
         .await
-        .ok()
-        .flatten()
 }

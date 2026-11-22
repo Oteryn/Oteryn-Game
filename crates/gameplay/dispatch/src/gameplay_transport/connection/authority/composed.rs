@@ -812,7 +812,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         intent: oteryn_protocol_oteryn::stash::StashRowIntent,
         row_open: bool,
-    ) -> Option<std::num::NonZeroU32> {
+    ) -> Result<Option<std::num::NonZeroU32>, crate::durability::DurabilityError> {
         stash::row_action(self, actor, command, intent, row_open).await
     }
 

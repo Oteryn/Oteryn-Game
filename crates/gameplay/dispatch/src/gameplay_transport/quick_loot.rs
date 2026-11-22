@@ -3,6 +3,7 @@ use super::{
     ComposedFreshAdmission,
     connection::{AdmittedSession, UseCommand},
 };
+use crate::durability::item_loop_move::QuickLootCommand;
 use crate::foundation::CommandStatus;
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::quick_loot::{QuickLootRequest, QuickLootResult};
@@ -90,15 +91,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.character,
                 self.holder,
                 fence,
-                CommandRef::new(
-                    command.game_session_id,
-                    CommandId::new(command.command_id).ok()?,
-                ),
                 &super::item_ref_admission::NativeItemWeights(content).with_wheel(self.premium_coordinator),
-                cell,
-                premium,
-                request,
-                corpse,
+                QuickLootCommand {
+                    command: CommandRef::new(
+                        command.game_session_id,
+                        CommandId::new(command.command_id).ok()?,
+                    ),
+                    cell,
+                    premium,
+                    request,
+                    selected_corpse: corpse,
+                },
             )
             .await
             .ok()?;

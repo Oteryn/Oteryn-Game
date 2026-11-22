@@ -2,9 +2,12 @@ name=stash
 commands=79,6345
 [route]
 if command.command_type == oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_ROW_ACTION {
-    routing::stash::row_action(
+    match routing::stash::row_action(
         authority, session.actor, &session.admitted, command, session.stash_rows.as_deref(),
-    ).await
+    ).await {
+        Some(dispatch) => dispatch,
+        None => return Err(ServeEnd::Disconnected),
+    }
 } else {
     match routing::stash::route(
         authority,

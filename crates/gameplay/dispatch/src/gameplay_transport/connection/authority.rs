@@ -1024,8 +1024,9 @@ pub trait FreshAdmissionAuthority {
         _command: UseCommand,
         _intent: oteryn_protocol_oteryn::stash::StashRowIntent,
         _row_open: bool,
-    ) -> impl Future<Output = Option<std::num::NonZeroU32>> {
-        async { None }
+    ) -> impl Future<Output = Result<Option<std::num::NonZeroU32>, crate::durability::DurabilityError>>
+    {
+        async { Ok(None) }
     }
 
     /// Depot requests are resolved by the live Channel and fenced native item owner.

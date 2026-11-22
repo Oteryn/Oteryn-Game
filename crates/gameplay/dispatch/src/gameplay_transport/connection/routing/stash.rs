@@ -58,18 +58,18 @@ pub(in super::super) async fn row_action<A: FreshAdmissionAuthority>(
     admitted: &AdmittedSession,
     command: ClientCommandView<'_>,
     open_rows: Option<&[[u8; 16]]>,
-) -> Dispatch {
+) -> Option<Dispatch> {
     use crate::foundation::CommandStatus;
     use oteryn_protocol_oteryn::{market::CAPABILITY_MARKET_V1, quick_loot::CAPABILITY_QUICK_LOOT_V1};
 
     let Ok(intent) = decode_stash_row_intent(command.payload) else {
-        return Dispatch::Unregistered;
+        return Some(Dispatch::Unregistered);
     };
     let selected = admitted.continuity.selected_capabilities;
     if (intent.action == StashRowAction::Market && !selected.contains(CAPABILITY_MARKET_V1))
         || (intent.action.changes_loot_list() && !selected.contains(CAPABILITY_QUICK_LOOT_V1))
     {
-        return Dispatch::Unregistered;
+        return Some(Dispatch::Unregistered);
     }
     let row_open = open_rows.is_some_and(|rows| rows.contains(&intent.row));
     match authority.stash_row_action(
@@ -81,8 +81,8 @@ pub(in super::super) async fn row_action<A: FreshAdmissionAuthority>(
         },
         intent,
         row_open,
-    ).await {
-        Some(reference) => Dispatch::Reply(CommandStatus::Accepted, encode_stash_row_result(reference)),
-        None => Dispatch::Unregistered,
+    ).await.ok()? {
+        Some(reference) => Some(Dispatch::Reply(CommandStatus::Accepted, encode_stash_row_result(reference))),
+        None => Some(Dispatch::Unregistered),
     }
 }

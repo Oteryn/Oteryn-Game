@@ -49,7 +49,22 @@ BEGIN
     EXECUTE format('ALTER FUNCTION game_stash_carried_placement(uuid,uuid,numeric,uuid,uuid)
                     SET search_path=pg_catalog,%I,pg_temp',current_schema());
     body:=pg_get_functiondef('game_stash_admit()'::regprocedure);
-    body:=replace(body,'i.quantity<>NEW.quantity','i.quantity<NEW.quantity');
+    anchor:=$old$IF TG_TABLE_NAME='game_character_stash_operations' THEN$old$;
+    IF position(anchor IN body)=0 THEN RAISE EXCEPTION 'missing stash operation guard'; END IF;
+    body:=replace(body,anchor,$new$IF TG_TABLE_NAME='game_character_stash_operations' THEN
+  IF NEW.batch_ordinal>0 AND NOT EXISTS(
+    SELECT 1 FROM game_character_stash_operations previous
+    WHERE previous.game_session_id=NEW.game_session_id AND previous.command_id=NEW.command_id
+      AND previous.batch_ordinal=NEW.batch_ordinal-1
+      AND previous.created_xact_id=pg_current_xact_id()
+      AND (previous.character_id,previous.world_id,previous.intent,previous.action,previous.outcome)
+        =(NEW.character_id,NEW.world_id,NEW.intent,2,2)
+      AND (previous.house_key,previous.house_scope_ownership_generation)
+        IS NOT DISTINCT FROM (NEW.house_key,NEW.house_scope_ownership_generation)
+  ) THEN RAISE EXCEPTION 'stash batch requires its exact current predecessor' USING ERRCODE='23514'; END IF;$new$);
+    anchor:='i.quantity<>NEW.quantity';
+    IF position(anchor IN body)=0 THEN RAISE EXCEPTION 'missing stash source quantity proof'; END IF;
+    body:=replace(body,anchor,'i.quantity<NEW.quantity');
     anchor:=$old$OR NOT EXISTS(SELECT 1 FROM game_item_container_entries e JOIN game_item_container_slots b
             ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id
             WHERE e.item_instance_id=i.item_instance_id AND e.character_id=r.character_id

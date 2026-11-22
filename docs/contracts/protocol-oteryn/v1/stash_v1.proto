@@ -83,6 +83,8 @@ message StashRowIntentV1 {
 }
 // Common ACCEPTED carries the admitted generation's Item reference. Common
 // REJECTED with empty payload is the generic "Sorry, not possible." refusal.
+// If durable completion is uncertain, no terminal refusal is emitted. Recovery
+// can resolve the original edit by command identity.
 // The reply does not close the stash page. The client opens its existing
 // Cyclopedia or Market view using the returned reference.
 message StashRowResultV1 {

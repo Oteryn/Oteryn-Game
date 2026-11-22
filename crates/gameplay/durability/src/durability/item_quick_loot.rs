@@ -104,23 +104,28 @@ async fn recipient<C: ItemLoopContent>(
     Ok(LoopDestination::Container(id))
 }
 
+/// One manual command, retaining the input bytes' identity separately from Channel resolution.
+pub struct QuickLootCommand {
+    pub command: CommandRef,
+    pub cell: [u8; 10],
+    pub premium: bool,
+    pub request: QuickLootRequest,
+    pub selected_corpse: Option<[u8; 16]>,
+}
+
 impl DurabilityRoot {
     /// Command 114: replay, settings and all accepted transfers share one fenced item transaction.
-    #[allow(clippy::too_many_arguments)]
     pub async fn commit_quick_loot<C: ItemLoopContent>(
         &self,
         permit: &SpellLanePermit,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-        command: CommandRef,
         content: &C,
-        cell: [u8; 10],
-        premium: bool,
-        request: QuickLootRequest,
-        selected_corpse: Option<[u8; 16]>,
+        input: QuickLootCommand,
     ) -> std::result::Result<std::result::Result<QuickLootResult, LoopMoveRefusal>, DurabilityError>
     {
+        let QuickLootCommand { command, cell, premium, request, selected_corpse } = input;
         permit.check_scope(fence.runtime_scope)?;
         if selected_corpse.is_some() != request.corpse.is_some() {
             return Err(DurabilityError::InvalidStoredState);

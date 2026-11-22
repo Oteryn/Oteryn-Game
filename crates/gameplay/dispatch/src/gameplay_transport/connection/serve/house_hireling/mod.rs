@@ -257,7 +257,7 @@ impl State {
                 )
                 .await
             }
-            stash::COMMAND_TYPE_STASH_ROW_ACTION => Some(
+            stash::COMMAND_TYPE_STASH_ROW_ACTION => {
                 routing::stash::row_action(
                     authority,
                     self.actor,
@@ -265,8 +265,8 @@ impl State {
                     command,
                     self.stash_rows.as_deref(),
                 )
-                .await,
-            ),
+                .await
+            }
             _ => Some(Dispatch::Unregistered),
         }
     }
