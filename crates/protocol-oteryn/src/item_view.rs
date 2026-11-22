@@ -40,6 +40,11 @@ pub const CAPABILITY_ITEM_VIEW_MOVE_V1: u32 = 4;
 /// Optional appearance field 5 on ItemEntryV1; requires item views.
 pub const CAPABILITY_ITEM_APPEARANCE_V1: u32 = 499;
 pub const CAPABILITY_ITEM_APPEARANCE_V1_REQUIRES: &[u32] = &[CAPABILITY_ITEM_VIEW_MOVE_V1];
+/// CORPSE48 (owner decision 2026-11-17): domain 11 shows up to
+/// [`MAX_CORPSE_CONTAINER_48_ENTRIES`] corpse entries; requires item views. Without it every
+/// legacy domain-11 bound stays and the session is never sent more than
+/// [`MAX_OPEN_CONTAINER_ENTRIES`] entries.
+pub const CAPABILITY_CORPSE_CONTAINER_48_V1: u32 = 514;
 /// Capability 4 requires `WORLD_SPATIAL_ENTITIES`, which carries corpses in domain 1.
 pub const CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES: &[u32] = &[
     crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES, // WORLD_SPATIAL_ENTITIES
@@ -76,6 +81,13 @@ pub const MAX_CHARACTER_INVENTORY_ITEMS: usize = 30;
 /// `ITEMV0-RL-02`: entries in one domain-11 view, the corpse container capacity
 /// (`GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX`).
 pub const MAX_OPEN_CONTAINER_ENTRIES: usize = 30;
+/// `ITEMV0-RL-02-CORPSE48`: entries in one domain-11 view of a session that selected
+/// capability 514, the corpse container capacity (`GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX`).
+pub const MAX_CORPSE_CONTAINER_48_ENTRIES: usize = 48;
+/// The live handles capability 514 adds to every `ITEMV0-RL-03*` bound: the extra
+/// domain-11 entries.
+pub const MAX_CORPSE_CONTAINER_48_EXTRA_HANDLES: usize =
+    MAX_CORPSE_CONTAINER_48_ENTRIES - MAX_OPEN_CONTAINER_ENTRIES;
 /// `ITEMV0-RL-03`: live handles of one session. A handle is live while its item is in one of the
 /// session's views: domain 1 shows at most 255 objects besides the own player (`MOVE-RL-11`),
 /// domain 9 at most [`MAX_CHARACTER_INVENTORY_ITEMS`] and domain 11 at most
@@ -119,6 +131,30 @@ pub const MAX_CHARACTER_INVENTORY_EQUIP_DROP_APPEARANCE_BYTES: usize =
     MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES + 4 * MAX_CHARACTER_INVENTORY_ITEMS;
 pub const MAX_OPEN_CONTAINER_APPEARANCE_BYTES: usize =
     MAX_OPEN_CONTAINER_BYTES + 4 * MAX_OPEN_CONTAINER_ENTRIES;
+/// Domain 11 under capability 514: the corpse handle 1 + 10 and 48 entry elements.
+pub const MAX_OPEN_CONTAINER_CORPSE_48_BYTES: usize =
+    11 + MAX_CORPSE_CONTAINER_48_ENTRIES * MAX_ITEM_ENTRY_ELEMENT_BYTES;
+/// Domain 11 under capabilities 514 and 499.
+pub const MAX_OPEN_CONTAINER_CORPSE_48_APPEARANCE_BYTES: usize =
+    MAX_OPEN_CONTAINER_CORPSE_48_BYTES + 4 * MAX_CORPSE_CONTAINER_48_ENTRIES;
+
+/// The domain-11 entry bound of a session: 48 with capability 514, 30 without.
+pub const fn max_open_container_entries(corpse_48: bool) -> usize {
+    if corpse_48 {
+        MAX_CORPSE_CONTAINER_48_ENTRIES
+    } else {
+        MAX_OPEN_CONTAINER_ENTRIES
+    }
+}
+
+const fn max_open_container_bytes(appearances: bool, corpse_48: bool) -> usize {
+    match (appearances, corpse_48) {
+        (false, false) => MAX_OPEN_CONTAINER_BYTES,
+        (true, false) => MAX_OPEN_CONTAINER_APPEARANCE_BYTES,
+        (false, true) => MAX_OPEN_CONTAINER_CORPSE_48_BYTES,
+        (true, true) => MAX_OPEN_CONTAINER_CORPSE_48_APPEARANCE_BYTES,
+    }
+}
 
 /// `ItemTargetV1`: the handle 1 + 10.
 pub const MAX_ITEM_TARGET_BYTES: usize = 11;
@@ -482,8 +518,8 @@ fn validate_character_inventory(view: &CharacterInventory, equip_drop: bool) -> 
     )
 }
 
-fn validate_open_container(view: &OpenContainer) -> WireResult<()> {
-    if view.entries.len() > MAX_OPEN_CONTAINER_ENTRIES {
+fn validate_open_container(view: &OpenContainer, corpse_48: bool) -> WireResult<()> {
+    if view.entries.len() > max_open_container_entries(corpse_48) {
         return Err(ItemViewWireError::LimitExceeded);
     }
     if view.container_handle.is_none() && !view.entries.is_empty() {
@@ -623,7 +659,16 @@ pub fn encode_open_container_with_appearances(
     view: &OpenContainer,
     appearances: bool,
 ) -> WireResult<Vec<u8>> {
-    validate_open_container(view)?;
+    encode_open_container_for(view, appearances, false)
+}
+
+/// Domain 11 for the selected capabilities 499 (`appearances`) and 514 (`corpse_48`).
+pub fn encode_open_container_for(
+    view: &OpenContainer,
+    appearances: bool,
+    corpse_48: bool,
+) -> WireResult<Vec<u8>> {
+    validate_open_container(view, corpse_48)?;
     let mut output = Vec::new();
     if let Some(handle) = view.container_handle {
         push_varint_field(&mut output, 1, handle.get());
@@ -642,13 +687,16 @@ pub fn decode_open_container_with_appearances(
     payload: &[u8],
     appearances: bool,
 ) -> WireResult<OpenContainer> {
-    if payload.len()
-        > if appearances {
-            MAX_OPEN_CONTAINER_APPEARANCE_BYTES
-        } else {
-            MAX_OPEN_CONTAINER_BYTES
-        }
-    {
+    decode_open_container_for(payload, appearances, false)
+}
+
+/// Domain 11 for the selected capabilities 499 (`appearances`) and 514 (`corpse_48`).
+pub fn decode_open_container_for(
+    payload: &[u8],
+    appearances: bool,
+    corpse_48: bool,
+) -> WireResult<OpenContainer> {
+    if payload.len() > max_open_container_bytes(appearances, corpse_48) {
         return Err(ItemViewWireError::LimitExceeded);
     }
     let mut cursor = 0;
@@ -658,7 +706,7 @@ pub fn decode_open_container_with_appearances(
         match read_varint(payload, &mut cursor)? {
             0x08 => set_once(&mut handle, read_varint(payload, &mut cursor)?)?,
             0x12 => {
-                if entries.len() == MAX_OPEN_CONTAINER_ENTRIES {
+                if entries.len() == max_open_container_entries(corpse_48) {
                     return Err(ItemViewWireError::LimitExceeded);
                 }
                 entries.push(decode_entry_for(
@@ -673,7 +721,7 @@ pub fn decode_open_container_with_appearances(
         container_handle: handle.map(nonzero_u64).transpose()?,
         entries,
     };
-    validate_open_container(&view)?;
+    validate_open_container(&view, corpse_48)?;
     Ok(view)
 }
 

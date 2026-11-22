@@ -37,7 +37,7 @@
     "Service.Blessing": 10,
     "Service.Promotion": 7,
     "Service.Trade": 324,
-    "Service.Travel": 56,
+    "Service.Travel": 57,
     "StarterKit": 1,
     "item_conversion": 130
   },
@@ -47,7 +47,7 @@
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "1ece240aac647f149c1755b206b88444d2bad224",
+    "declarations": "eccb941ee5334dd5423e5de7699c6388108bcb68",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "a38ff435e6bc02c124589ef7a217546b3691d63f",
     "reference": "88a663439b6cc89039e8672b2692e48c1ef9947b",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "f6b2bec6e73f735c0aa55186f3cbc37d6204cd5432682ebc88d98d36b1ba285e"
+          "sha256": "3e3a78732a69be44fe11e3df17171973d4714f52155e2ca757be029133e196d2"
         },
         {
           "creates_canonical_identities": false,
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "e1dc31d0bfac441abcf8f5f304e929951aab4ec7a6ffea032ebff9eb515c39fc"
+          "sha256": "c7899eabd2b334b41f02d7a93272f07d0f4e14e333af1c27701e94cea3cb454a"
         },
         {
           "creates_canonical_identities": false,

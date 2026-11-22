@@ -7,26 +7,29 @@ mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: chatgpt/ci-pg-flow-20261121
+branch: chatgpt/ci-bottlenecks-single-pr-20261121
 issue: 3352
-pr: null
-base_sha: b20391213cde54511233bd02fae3370e019c7bf4
+pr: 3367
+base_sha: 5695f7b8af567086efa11bdeb47a2fd609f24c2c
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT standalone CI programme coordinator, issue 3352
 created_at: 2026-11-21T09:29:01Z
-updated_at: 2026-11-21T09:29:01Z
+updated_at: 2026-11-21T21:49:00Z
 execution_policy: continuous_progress
 owned_paths:
-  - tools/ci/pg_test_rerun.py
-  - tools/ci/test_pg_test_rerun.py
-  - .github/workflows/pg-test-rerun.yml
-  - tools/repository/benchmark_rust_cache.py
-  - tools/repository/test_benchmark_rust_cache.py
-  - .github/workflows/rust-cache-pilot.yml
-  - apps/game-server/src/qualification.rs
-  - apps/game-server/tests/
+  - .github/workflows/
+  - .claude/skills/oteryn-dev/references/ci-merge.md
+  - .claude/skills/oteryn-dev/references/local-checks.md
+  - tools/ci/
+  - tools/repository/
+  - tools/content-migration/
+  - tools/qualification/native_entry_room/
+  - tools/qualification/node_boot/
+  - tools/qualification/game_platform/
+  - tools/qualification/wp5_s3b/run.sh
+  - apps/game-server/tests/world_bundle_artifact_boot.rs
   - docs/agents/tasks/active/OTV2-20261121-ci-speed-programme.md
 public_contracts: []
 depends_on: []
@@ -37,30 +40,119 @@ external_repositories: []
 
 ## Outcome
 
-Issue #3352 owns this multi-PR programme. Make small changes cheaper to qualify,
+Issue #3352 owns this programme. The first wave landed in several PRs; the owner
+requires every second-wave repair in one integrated PR (2026-11-21). Make small changes cheaper to qualify,
 measure actual edited Rust builds, and remove redundant migration embedding.
 Preserve test coverage, source provenance, canonical PostgreSQL 18.6, required
 checks and protected-main integration. No achieved latency target is claimed.
 
-## Architecture and source of truth
+## Second wave: one integrated candidate
 
-- PROVEN: admitted main is `b20391213cde54511233bd02fae3370e019c7bf4`.
-- PROVEN: META policy binding is the repository's existing immutable 3.1.0 binding.
-- PROVEN: `GAME_MIGRATOR` already owns the canonical embedded migration chain.
-- PROVEN: PG producer emits five archive variants and bare filenames in SHA256SUMS;
-  the rerun consumer selected only e2e/lib and expected a leading `./`.
-- DERIVED: removing duplicate embedding can reduce compiler work; the speedup is
-  UNKNOWN until representative compilation measurements exist.
-- UNKNOWN: warm-builder end-to-end improvement, RAM high-water mark and PG 19
-  benefit on the accepted workload. Experiments must not change qualification pins.
+- Owner request: repair all audited CI bottlenecks in **one PR**; prior merge and
+  force-merge authorization remains in the session. This is standalone CI work,
+  not quest automation or a change to that programme's control plane.
+- Integrated main: `5695f7b8af567086efa11bdeb47a2fd609f24c2c`; sole writer:
+  `chatgpt/ci-bottlenecks-single-pr-20261121`, PR #3367. State: **AUTHORING**
+  for a successor of `90c80488e9c2674515a4c252dd9872a06cca054a`.
+  Root ended the freeze at 21:31:57 UTC: main36ca actually uploaded an
+  11,261,455,903-byte cache from a 61G target, exceeding the verified 10GB repo
+  limit; the later complete inventory had no Rust cache. GitHub documents
+  post-save eviction until under quota; the individual deletion event is unknown.
+  A owns bounded cache preparation/tests, C wires rust.yml/tests; root integrates
+  docs/pins/routing. Keep four existing cache roots and keys, cap raw bytes at
+  4GiB, preserve dependency reuse where possible and finish an active main warmer
+  before the latest queued one. No paid storage or quota change.
+  The proven copied-job resolver, exact-line auxiliary routing, #3366 revert,
+  #3362 build limit and earlier artifact/qualification fixes remain intact.
+- Publication: native Git dry-run returned `fatal: unable to get password from
+  user`. Use the already selected META 3.1.0 API-native new-candidate route with
+  a complete bounded delta, sole-parent commit, fresh expected-head lease,
+  non-force ref update and readback. No Remote Desktop publication workaround.
+
+| Work packet | Owner | Implementation and preserved contract |
+| --- | --- | --- |
+| A: compiler and evidence | audit_compile_cache | Exact regression-to-compile-shard resolver; canonical shared Dispatch archive, current-run/head proof and complete result collector; measured PG duration refresh. |
+| B: World and native tools | audit_pg_timing | Combined compatible World tools; bounded migration checks; native executable reuse and cleaned-up fallback; shared release World compiler. Real materialization, pin checks and all qualification cases remain. |
+| C: qualification executables | audit_postmerge_failures | Shared Platform binary; independent Server Seam producer; correct spawn/clock features; per-archive fast workers and older-head compatibility. Fresh databases, keys and real Platform issuance remain per consumer. |
+| Integration and publication | coordinator | Workflow wiring, package ledger completeness, protected pin rotation, one integrated review and CI, exact-head squash/readback. |
+
+Offline-death run `44919024484`/job `136890762651` failed after 57m02s;
+its final log was unavailable, so the cause is unknown. Resolve the exact
+case's shard from source and retain separate compile/test resource diagnostics.
+
+The final production smoke build is deliberately retained. Its package-scoped
+feature graph differs from the workspace build with examples/dev dependencies;
+reusing that workspace binary would change production qualification.
+
+The protected-base audit rejects changes to its own file by design. This batch
+requires a real pin rotation with the full candidate independently reviewed;
+no green audit result, bypass actor, relaxed required check, or authority receipt
+may be fabricated. Any rejection remains visible. No latency or monetary saving
+is claimed until the integrated head has run; compare both critical-path time
+and summed runner time, including artifact transfer and fallback builds.
+
+Acceptance pending: successor qualification and post-merge observation. On 448,
+fast passed in 19m16 and PG36/36 in26m11; cbdd PG36/36 passed in24m44.
+On 90c, content passed11m02, retained PG10m09, World20m10 and manual2043+38.
+Native initially rejected producer discovery with ValueError; its exact API
+response was not retained and stable snapshot replays did not reproduce it.
+Actual collector/native/World partial reruns passed on90c; native reused its
+original producer in2m04, and collector-only rerun took1m41/90 job-seconds.
+New cache-only changes do not turn earlier-head evidence into current-head PASS.
+No whole-machine RAM, financial saving or universal10–15min claim is made.
+
+Prior main `44920758625` failed Node admission contention and MAX501; the first
+PR run repeated MAX501 with three competing tests. On b75, PG job136951451690
+passed 219/219, including MAX501 with no overlapping sibling test. Slot
+reservation preserves the 2000ms contract and 501-item atomicity. The final
+successor needs its own qualification; no SQL or Node runtime repair is claimed.
+
+### Second-wave local validation on the integrated tree
+
+- Cache-cap/diagnostic successor: 314 repository, 27 native and 18 World tests
+  pass. Real offline Cargo proof retained a dependency fresh, rebuilt the removed
+  workspace executable, and passed its test. The helper has 13 budget/filesystem
+  tests; 4 actual-shell workflow tests and pin/routing mutations pass.
+- Governance: 135 tests and validation pass; repository policy passes for
+  23 files and 78 workflows.
+- World/native helpers: 51 tests pass. Node prebuilt: 15; repaired Platform: 16;
+  Node diagnostics: 38; Node matrix: 16. Shell syntax checks pass.
+- Content aggregate: five tests pass, including actual shell failure propagation;
+  the 40 checks and every original qualification command remain preserved.
+- Real nextest/mold protocol, MAX501 scheduling and linker installer reproduce the
+  first-head errors and pass with the repairs; artifact custody remains strict.
+- Workspace `cargo +1.100.0 fmt --all --check` and actionlint 1.7.12 on all
+  13 changed workflows pass.
+- Full merge-group contract passes, including 54 workflow mutations, four
+  PowerShell native-failure positions, aggregation and protected routing.
+  Nine local fixtures of the actual protected audit pass. These fixtures are
+  not a claim that the live self-modification audit will pass.
+- Derived pin freshness and whitespace checks pass. The reliability checklist
+  selects CI control-plane, Node harness and governance checks; all listed
+  local commands have now run.
+- Not run locally: full project Rust compilation, live PostgreSQL/Platform and
+  the World artifact boot integration target. No Cargo target/registry cache
+  or local PostgreSQL route was available. These remain CI obligations.
+  Manual integration dispatch uses the owner-authorized Molehill GitHub CLI
+  after exact-head verification; no Git publication uses that route.
+
+Local results qualify authoring only; immutable hosted evidence is in #3352.
+
+## First-wave source of truth
+
+Issue #3352 retains the admitted main, five-variant PG archive repair and shared
+`GAME_MIGRATOR` evidence. Warm-builder improvement, RAM high-water mark and PG 19
+benefit remain unknown; experiments must preserve qualification pins.
 
 ## High-risk authority/recovery qualification
 
-NOT_APPLICABLE: this first batch changes diagnostic CI and reuses the identical
-existing migrator. It does not change a production authority/fence operator,
-migration SQL, durable-value rules or accepted merge eligibility. Archive source
-identity, integrity, inventory ownership and actual runtime selection have
-negative regression coverage in `tools/ci/test_pg_test_rerun.py`.
+The second wave changes shared CI artifact custody and protected workflow pins.
+Required qualification includes negative source/digest/inventory/attempt tests,
+the actual protected-base audit behavior, all gate contract cases and an
+independent exact-head review. It changes no production authority or schema.
+
+First-wave scope: diagnostic CI and identical migrator reuse; negative archive
+custody regressions remain in `tools/ci/test_pg_test_rerun.py`.
 
 ## Acceptance criteria
 
@@ -80,61 +172,12 @@ negative regression coverage in `tools/ci/test_pg_test_rerun.py`.
 
 NOT_APPLICABLE: build/CI infrastructure; no new player mechanic or reference value.
 
-## Excluded scope
-
-No PostgreSQL version or durability change, skipped assertions, weaker provenance,
-protection bypass, paid runner purchase, unrelated PC cleanup or main workflow
-pin rotation is part of the initial three branches. Later protected workflow
-rotation requires its separately prepared exact audit/activation contract.
-
 ## Implementation / findings
 
-One writer per branch. Workers prepare uncommitted changes and release their
-worktree; the coordinator reviews, publishes, freezes and qualifies candidates.
-Branches: `chatgpt/ci-pg-flow-20261121`,
-`chatgpt/ci-migrator-reuse-20261121`, `chatgpt/ci-build-deltas-20261121`.
-This card remains active across those PRs and later measured programme work.
-
-Native local Git publication was attempted with a non-mutating dry run and failed
-because no GitHub credentials were available. The coordinator selects the bound
-META API-native new-candidate route: complete bounded tree, one sole-parent
-successor, fresh expected-head lease, one non-force ref movement, live readback,
-then fresh freeze/CI/review. This does not preserve any earlier candidate identity.
-
-## Validation
-
-### Focused
-
-- `python -m unittest discover -s tools/ci -p test_pg_test_rerun.py`: pass, 7 tests.
-- Existing archive affinity and partition planner regression suites: pass, 9 tests.
-- Mocked workflow shell seam: pass for five variants, repeated execution, legacy
-  single archive, and rejection before any run when nextest lacks a selected test.
-- Baseline producer-format fixture against old consumer: failed as expected,
-  exit 2 after checksum verification with no staged archive.
-- `python tools/repository/validate_repository_policy.py`: pass, 23 files/76 workflows.
-- `git diff --check`: pass before publication.
-- `python tools/agents/validate_governance.py`: pass.
-- `python -m unittest discover -s tools/agents/tests`: pass, 135 tests.
-- `python -m unittest discover -s tools/repository`: pass, 197 tests with Rust
-  1.100.0 on PATH, including PG planner, shard and heavy-gate regressions.
-- Broad tools/ci suite has a pre-existing failure at
-  `test_pg_client_capture_replays.py:93`, reproduced on admitted main.
-
-### Component/integration
-
-Actual hosted Actions, nextest and PostgreSQL execution pending on the candidate.
-Rust build/Clippy/tests and representative edited-build measurements pending.
-
-### E2E
-
-The PG rerun is diagnostic and grants no merge qualification. Full canonical PG
-and applicable WP5 qualification remain authoritative on the migration-reuse PR.
-
-### Exact-head CI
-
-No final head exists yet. Exact SHAs, runs and dispositions belong to immutable
-PR/check evidence after each final authoring commit; this file cannot contain
-its own future commit SHA.
+One writer per branch. Workers release bounded source changes; the coordinator
+reviews, publishes, freezes and qualifies the complete candidate. First-wave
+PRs #3353/#3354/#3355/#3356 and their evidence remain in #3352. This programme
+stays open for edited-build/persistent-builder measurements and RAM/cost targets.
 
 ## Self-review
 
@@ -143,8 +186,19 @@ before publication. Worker summaries do not replace source inspection.
 
 ## Independent review
 
-Required on each separately merging PR under OWNER_FUNDED_AI_POLICY.md. Root is
-the unique review dispatcher after a live same-head de-duplication check. Pending.
+Root is the sole dispatcher under OWNER_FUNDED_AI_POLICY.md. Both authorized
+reviews completed clean: 7533 (comment7066802278), then448 (comment7068364491).
+Neither is represented as a review of later heads. The cbdd routing repair was
+assessed as non-material with actual-workflow RED/GREEN and negative cases.
+The execution-alias repair materially changes CI job selection. It has direct
+coordinator source review and independent peer verification with real API pairs,
+an actual result ZIP, all 30 logical job histories and negative identity cases.
+The two native reviews do not cover later code. Cache-cap source review and
+independent filesystem/layout checks passed; a real Rust1.100 dependency-layout
+defect was reproduced and fixed RED/GREEN. No third paid review is dispatched.
+Current-session owner instructions authorize implementing and force-merging this
+bounded single-PR batch. Current-head required gates remain mandatory; actual
+collector/consumer partial-rerun proofs passed on90c before this cache delta.
 
 ## PR and closeout
 

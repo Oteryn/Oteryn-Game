@@ -9,10 +9,10 @@ on:
 permissions:
   contents: read
 
-# A newer main push supersedes the cache build of an older one; the newest cache is the useful one.
+# Finish the active cache warmup; later main pushes coalesce into the newest pending run.
 concurrency:
   group: rust-protected-main-cache-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   lanes:
@@ -251,8 +251,8 @@ jobs:
       - name: Compile workspace tests without executing them
         run: cargo +1.100.0 test --locked --workspace --exclude oteryn-gameplay-dispatch --features oteryn-gameplay-quests/test-support --no-run
 
-      # The MQ build-smoke leg, node_boot and server_seam build these package-scoped units
-      # (`-p` resolves features per package) and reuse them from this cache.
+      # Warm the dependency graphs used by MQ build-smoke, node_boot and server_seam
+      # (`-p` resolves features per package); the bounded cache omits final workspace products.
       - name: Build synthetic harness and native game-server
         run: |
           cargo +1.100.0 build --locked -p oteryn-synthetic-client-harness
@@ -260,15 +260,18 @@ jobs:
 
       # Only protected-main source may produce the shared compilation cache.
       # A cache hit never substitutes for exact-candidate MQ qualification.
-      - name: Trim incremental cache and record its source snapshot
+      - name: Bound the Cargo cache and record its source snapshot
         if: github.ref == 'refs/heads/main' && github.ref_protected
         shell: bash
         run: |
           set -euo pipefail
-          du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
-          find target -type d -name incremental -prune -exec rm -rf -- {} +
-          python tools/repository/normalize_cargo_mtimes.py --record
-          du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
+          python3 tools/repository/trim_cargo_cache.py --workspace . --target target \
+            --cargo-home "$HOME/.cargo" --max-bytes 4294967296 \
+            --metrics "$RUNNER_TEMP/cargo-cache-trim.json"
+          python3 tools/repository/normalize_cargo_mtimes.py --record
+          python3 tools/repository/trim_cargo_cache.py --workspace . --target target \
+            --cargo-home "$HOME/.cargo" --max-bytes 4294967296 --check-only \
+            --metrics "$RUNNER_TEMP/cargo-cache-final.json"
 
       - name: Save trimmed cache from protected main after compilation
         if: github.ref == 'refs/heads/main' && github.ref_protected

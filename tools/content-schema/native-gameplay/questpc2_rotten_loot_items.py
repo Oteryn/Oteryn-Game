@@ -46,11 +46,9 @@ def apply_admissions(definitions, root):
 
 def admit_native(root, generated, profile_path, manifest_path, order, canonical):
     profiles = {r['production_definition']['production_key']: r for r in source.capture(root, profiles_only=True)}
-    # Global client weights describe the canonical reference. These two admitted
-    # native leaves retain the independently pinned runtime loader-default zero.
-    # Accept only that exact client-weight overlay over the complete source body.
-    from import_cyclopedia_global import load_weights
-    weights = load_weights(root)
+    # Accept the exact Global weight over the otherwise unchanged donor body.
+    import item_detail_source_facts as item_details
+    weights = item_details.load_weight_facts(root, generated)
     planned = dict(generated)
     shared.admit_native(root, planned, profile_path, manifest_path, order, canonical,
                         item_ids=source.IDS, qualified_profiles=profiles)
@@ -66,7 +64,7 @@ def admit_native(root, generated, profile_path, manifest_path, order, canonical)
         client['value']['weight'] = {'state': 'KNOWN', 'value': weights[int(key.rsplit('.i', 1)[1])]}
         if record['semantics']['physical'] not in (physical, client):
             raise ValueError('ROTTEN_ITEM_NATIVE_PHYSICAL_SOURCE_CONFLICT:' + key)
-        record['semantics']['physical'] = copy.deepcopy(physical)
+        record['semantics']['physical'] = client
     planned[profile_path] = canonical(document)
     manifest = json.loads(planned[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(planned[profile_path]).hexdigest()

@@ -31,6 +31,7 @@ fn npcfix_m38_travel_permission_and_clear_fine_are_both_required_postgres() -> T
                     destination: crate::content::ProjectV2TravelDestination {
                         coordinate_frame: "global-target-2026-09-27".into(), x: 2, y: 11, floor: 7,
                     }, price: 100, premium: false, min_level: None,
+                    required_quest_tracks: Vec::new(),
                 }, keyword: "return".into(), postman: false, carpet: false, held: false,
                 yalahar_gate: false, yalahar_town_gate: None,
                 quest_gate: Some(permission.into()), quest_clear_gate: Some(fine.into()), ticket: None, return_origin: None, world_change: None,

@@ -53,6 +53,11 @@ LEDGER_LIMIT = 2000
 # Always part of every key, in every mode.
 COMMON_FILES = (
     ".github/workflows/merge-gate.yml",
+    ".github/workflows/rust-fast-archive.yml",
+    "tools/repository/run_rust_fast_archive.py",
+    "tools/repository/collect_rust_fast_results.py",
+    "tools/ci/shared_dispatch_archive.py",
+    "tools/qualification/native_entry_room/prebuilt.py",
     "tools/repository/classify_pr_test_lanes.py",
     "tools/repository/job_result_key.py",
 )

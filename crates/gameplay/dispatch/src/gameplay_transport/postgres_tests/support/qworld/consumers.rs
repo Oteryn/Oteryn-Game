@@ -323,6 +323,7 @@ fn travel_route(key: &str) -> oteryn_gameplay_content::content::npc_catalogue::t
             price: 100,
             premium: false,
             min_level: None,
+            required_quest_tracks: Vec::new(),
         },
         keyword: "qworld".into(),
         postman: false,

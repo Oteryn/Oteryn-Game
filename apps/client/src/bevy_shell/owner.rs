@@ -571,6 +571,10 @@ fn logout_reaches_the_picker_even_when_quick_login_has_a_valid_selection()
 }
 
 #[cfg(test)]
+#[path = "owner/options_revoke_tests.rs"]
+mod options_revoke_tests;
+
+#[cfg(test)]
 #[path = "owner/admission_tests.rs"]
 mod admission_tests;
 

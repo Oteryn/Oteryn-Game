@@ -75,6 +75,7 @@ pub(super) async fn request(
                 price: 0,
                 premium: false,
                 min_level: None,
+                required_quest_tracks: Vec::new(),
             },
             keyword: "travora".into(),
             postman: false,
