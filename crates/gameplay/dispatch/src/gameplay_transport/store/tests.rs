@@ -247,9 +247,19 @@ fn store_capability_requires_a_composed_platform_client() {
 #[test]
 fn store_catalogue_loads_every_crystal_default_charge_offer() -> Result<(), &'static str> {
     let catalogue = CATALOGUE.as_ref().ok_or("embedded catalogue")?;
+    let crystal: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../../../../tools/content-schema/store-authoring/crystal-charged-offers.json"
+    ))
+    .map_err(|_| "Crystal charged offers")?;
+    let crystal_kegs = crystal["offers"]
+        .as_array()
+        .ok_or("Crystal offer list")?
+        .iter()
+        .filter(|offer| offer["category"] == "consumables.kegs" && offer["charges"].is_u64())
+        .count();
     for (category, count) in [
         ("consumables.exercise-weapons", 24),
-        ("consumables.kegs", 11),
+        ("consumables.kegs", crystal_kegs),
         ("useful-things", 2),
     ] {
         let offers = catalogue
@@ -258,6 +268,7 @@ fn store_catalogue_loads_every_crystal_default_charge_offer() -> Result<(), &'st
             .map_err(|_| "page")?;
         assert_eq!(offers.len(), count, "{category}");
     }
+    assert!(catalogue.rules.offer("store:ultimate-health-keg").is_none());
     let offer = catalogue
         .rules
         .offer("store:exercise-wraps")

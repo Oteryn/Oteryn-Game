@@ -413,12 +413,24 @@ async fn write_delivery(
     if hireling.is_none() {
         super::hireling_reservation::lock_character(tx, plan.character_id).await?;
         if let Some(request) = plan.purchase_request_id {
+            let authorized: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM store_purchase_requests p
+                 WHERE p.purchase_request_id=encode($1,'hex')::uuid AND p.account_id=encode($2,'hex')::uuid
+                   AND p.character_id=encode($3,'hex')::uuid AND p.state=2
+                   AND (convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids') ? $4)",
+            ).bind(request.as_slice()).bind(plan.account_id.as_slice()).bind(plan.character_id.as_slice())
+                .bind(uuid_string(&operation_id)).fetch_one(&mut **tx).await?;
+            if !authorized {
+                return Err(StoreDurabilityError::AuthorityRejected);
+            }
             sqlx::query(
-            "DELETE FROM game_store_item_reservations r USING store_purchase_requests p
-             WHERE r.purchase_request_id=p.purchase_request_id AND p.purchase_request_id=encode($1,'hex')::uuid
-               AND p.account_id=encode($2,'hex')::uuid AND p.state=2
-               AND (convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids') ? $3",
-        ).bind(request.as_slice()).bind(plan.account_id.as_slice()).bind(uuid_string(&operation_id))
+                "DELETE FROM game_store_item_reservations WHERE purchase_request_id=encode($1,'hex')::uuid
+                   AND character_id=encode($2,'hex')::uuid",
+            ).bind(request.as_slice()).bind(plan.character_id.as_slice()).execute(&mut **tx).await?;
+            sqlx::query(
+                "INSERT INTO game_item_bindings (item_instance_id,world_id,character_id,cause)
+                 VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,'STORE_PURCHASE')",
+            ).bind(plan.item_instance_id.as_slice()).bind(plan.world_id.as_slice()).bind(plan.character_id.as_slice())
                 .execute(&mut **tx).await?;
         }
         if super::hireling_capacity::inbox_occupancy(tx, &plan.character_id).await? > 20 {

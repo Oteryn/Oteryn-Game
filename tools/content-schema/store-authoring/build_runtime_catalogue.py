@@ -28,6 +28,7 @@ SOURCE = "data/modules/scripts/gamestore/catalog/consumables_exercise_weapons.lu
 CATEGORY = "consumables.exercise-weapons"
 PREY_EXPANSION = ROOT / "rulesets/economy/store/prey-list-expansion.json"
 CRYSTAL_CHARGED = Path(__file__).with_name("crystal-charged-offers.json")
+CONVERTER_VARIANTS = {"25719", "28526"}
 
 
 def expansion_offer(config: dict) -> dict:
@@ -77,6 +78,14 @@ def with_expansion(catalogue: dict) -> dict:
     return catalogue | {"offers": offers}
 
 
+def crystal_converter_ids(extract: dict) -> set[str]:
+    return CONVERTER_VARIANTS | {
+        row["item_key"].rsplit(".i", 1)[1]
+        for row in extract["offers"]
+        if row["title"].endswith("Converter")
+    }
+
+
 def refresh_crystal_extract(lua: Path, items_xml: Path) -> None:
     """Capture the fields Crystal's charged purchase dispatch actually reads."""
     extract = json.loads(CRYSTAL_CHARGED.read_bytes())
@@ -110,11 +119,7 @@ def refresh_crystal_extract(lua: Path, items_xml: Path) -> None:
         or hashlib.sha256(raw).hexdigest() != item_source["INDEPENDENT_CRYSTAL_XML_SHA"]
     ):
         raise ValueError("Crystal converter item source digest mismatch")
-    converter_ids = {
-        row["item_key"].rsplit(".i", 1)[1]
-        for row in extract["offers"]
-        if row["title"].endswith("Converter")
-    }
+    converter_ids = crystal_converter_ids(extract)
     weights = {}
     for item in ET.fromstring(raw).findall("item"):
         if item.get("id") in converter_ids:
@@ -326,6 +331,20 @@ def check() -> list[str]:
         errors.append("Prey expansion offer needs regeneration")
     if catalogue != with_crystal_charged(catalogue, items):
         errors.append("Crystal charged offers need regeneration")
+    extract = json.loads(CRYSTAL_CHARGED.read_bytes())
+    weights = extract["converter_weights"]
+    profiles = {
+        row["production_definition"]["production_key"]: row
+        for row in json.loads(PROFILES.read_bytes())["records"]
+    }
+    for item_id in sorted(crystal_converter_ids(extract)):
+        profile = profiles[f"oteryn:item.tibia.i{item_id}"]
+        weight = profile["semantics"]["physical"]["value"]["weight"]
+        if item_id not in weights or weight != {
+            "state": "KNOWN",
+            "value": weights[item_id],
+        }:
+            errors.append(f"{item_id}: native converter weight differs from Crystal")
     for offer in catalogue["offers"]:
         if offer.get("unlock_key") == "prey-list-expansion":
             continue

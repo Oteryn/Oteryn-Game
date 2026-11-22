@@ -70,11 +70,14 @@ enum Case {
     CrystalCharges,
     CrystalCapacity,
     OldQuote,
+    RemovedOffer,
     ReceiptRecovery,
     RestoreReceiptGeneration,
     ClaimReceipt,
     LastSlot,
     InterruptedMint,
+    LostAnswer,
+    CrossCharacter,
 }
 
 #[test]
@@ -88,12 +91,32 @@ fn store_unanswered_purchase_reserves_the_last_inbox_slot() -> TestResult {
 }
 
 #[test]
+fn store_lost_answer_recovers_through_a_fresh_confirmation() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-lost-answer", || {
+        scenario_with_answer(Case::LostAnswer)
+    })
+}
+
+#[test]
 fn store_interrupted_mint_retries_with_a_new_wire_command() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("store-interrupted-mint", || {
         scenario_with_answer(Case::InterruptedMint)
+    })
+}
+
+#[test]
+fn store_paid_item_retry_keeps_the_purchasing_character() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-retry-character", || {
+        scenario_with_answer(Case::CrossCharacter)
     })
 }
 
@@ -128,6 +151,16 @@ fn store_retained_sword_completes_after_catalogue_update() -> TestResult {
 }
 
 #[test]
+fn store_opening_recovers_an_unanswered_purchase_of_a_removed_offer() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-removed-offer", || {
+        scenario_with_answer(Case::RemovedOffer)
+    })
+}
+
+#[test]
 fn store_receipt_is_republished_without_repeating_the_purchase() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -138,7 +171,7 @@ fn store_receipt_is_republished_without_repeating_the_purchase() -> TestResult {
 }
 
 #[test]
-fn store_worker_finishes_platform_claim_for_committed_delivery() -> TestResult {
+fn store_worker_leaves_platform_claim_pending_while_item_is_in_inbox() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
     super::kill_reward_e2e_fixtures::scenario_thread::run("store-claim", || {
         scenario_with_answer(Case::ClaimReceipt)
@@ -302,7 +335,7 @@ fn scenario_with_answer(case: Case) -> TestResult {
             ledger.lock().expect("ledger").fail_before_debit = true;
             assert_eq!(serve(&owner, &mut admitted, std::slice::from_ref(&request)).await?, [(CommandStatus::Rejected, Vec::new())]);
             ledger.lock().expect("ledger").fail_before_debit = false;
-            let other = purchase(&owner, &mut admitted, purchase_request(81, SWORD, 25)?).await?;
+            let other = purchase(&owner, &mut admitted, purchase_request(81, "store:exercise-axe", 25)?).await?;
             let retry = purchase(&owner, &mut admitted, request).await?;
             assert_eq!((other.code, retry.code), (wire::StorePurchaseCode::OfferUnavailable, wire::StorePurchaseCode::Accepted));
             assert_eq!(count(&harness, "SELECT count(*) FROM game_item_character_inbox_locations").await?, 20);
@@ -313,7 +346,25 @@ fn scenario_with_answer(case: Case) -> TestResult {
             return harness.cleanup().await;
         }
 
-        if matches!(case, Case::InterruptedMint) {
+        if matches!(case, Case::LostAnswer) {
+            ledger.lock().expect("ledger").malformed = true;
+            assert_eq!(
+                serve(&owner, &mut admitted, &[purchase_request(80, SWORD, 25)?]).await?,
+                [(CommandStatus::Rejected, Vec::new())],
+            );
+            assert_eq!(count(&harness, "SELECT count(*) FROM game_store_purchase_history").await?, 0);
+            ledger.lock().expect("ledger").malformed = false;
+            let retry = purchase(&owner, &mut admitted, purchase_request(81, SWORD, 25)?).await?;
+            assert_eq!(retry.code, wire::StorePurchaseCode::Accepted);
+            assert_eq!(ledger.lock().expect("ledger").debits, [25]);
+            assert_eq!(swords(&harness).await?, 1);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
+        if matches!(case, Case::InterruptedMint | Case::CrossCharacter) {
             sqlx::raw_sql(
                 "CREATE FUNCTION fail_store_commit() RETURNS trigger LANGUAGE plpgsql AS
                 $$ BEGIN RAISE EXCEPTION 'fixture interruption after preparation'; END; $$;
@@ -325,6 +376,20 @@ fn scenario_with_answer(case: Case) -> TestResult {
             assert_eq!(count(&harness, "SELECT count(*) FROM game_reward_claim_inbox_mint_reservations").await?, 1);
             assert_eq!(count(&harness, "SELECT count(*) FROM store_delivery_receipts").await?, 0);
             sqlx::query("DROP TRIGGER fail_store_commit ON store_delivery_receipts").execute(&harness.pool).await?;
+            if matches!(case, Case::CrossCharacter) {
+                let (second_node, second) = super::chat_world_fixture::admit_second_node_for_account(
+                    &harness, account_id,
+                ).await?;
+                let mut second_owner = second.owner(&harness, &authority);
+                second_owner.holder = &second_node;
+                second_owner.active_generation = Some(active);
+                second_owner.store = owner.store.clone();
+                let mut second_admitted = second.admitted;
+                second_admitted.continuity.selected_capabilities = admitted.continuity.selected_capabilities;
+                let retry = purchase(&second_owner, &mut second_admitted, purchase_request(83, SWORD, 25)?).await?;
+                assert_eq!(retry.code, wire::StorePurchaseCode::OfferUnavailable);
+                assert_eq!(swords(&harness).await?, 0);
+            }
             let resumed_request = purchase_request(81, SWORD, 25)?;
             let retry = purchase(&owner, &mut admitted, resumed_request.clone()).await?;
             assert_eq!(retry.code, wire::StorePurchaseCode::Accepted);
@@ -341,13 +406,12 @@ fn scenario_with_answer(case: Case) -> TestResult {
             let claim = matches!(case, Case::ClaimReceipt);
             {
                 let mut platform = ledger.lock().expect("ledger");
-                platform.fail_receipt = true;
                 platform.advertise_claims = claim;
             }
             let result = purchase(&owner, &mut admitted, purchase_request(80, SWORD, 25)?).await?;
             assert_eq!(result.code, wire::StorePurchaseCode::Accepted);
             let pending = owner.root.list_unacknowledged_store_receipts(1).await.map_err(debug)?;
-            assert_eq!(pending.len(), 1);
+            assert!(pending.is_empty(), "delivery was already acknowledged");
             if !claim {
                 // Simulate a reconciled successor installed after recovering this
                 // backup, retaining the same committed Store delivery and outbox.
@@ -359,18 +423,44 @@ fn scenario_with_answer(case: Case) -> TestResult {
                      RETURNING recovery_generation::text",
                 ).fetch_one(&mut *tx).await?;
                 tx.commit().await?;
-                ledger.lock().expect("ledger").recovery_generation = Some(next);
+                let mut platform = ledger.lock().expect("ledger");
+                platform.recovery_generation = Some(next);
+                platform.advertise_deliveries = true;
+                platform.receipts = 0;
+                platform.receipt_ready = Arc::default();
             }
             let ready = {
                 let mut platform = ledger.lock().expect("ledger");
                 platform.fail_receipt = false;
                 platform.receipt_ready.clone()
             };
-            let worker = crate::gameplay_transport::run_store_receipt_outbox(
-                owner.root,
-                owner.character,
-                StoreClient::new(Box::new(FakePlatform(ledger.clone())), "oteryn-game/store-consumer".into()),
+            let client = StoreClient::new(
+                Box::new(FakePlatform(ledger.clone())),
+                "oteryn-game/store-consumer".into(),
             );
+            if claim {
+                let worker = crate::gameplay_transport::run_store_receipt_outbox(owner.root, owner.character, client);
+                let _ = tokio::time::timeout(std::time::Duration::from_secs(2), worker).await;
+                assert_eq!(ledger.lock().expect("ledger").claims, 0, "item remains in the Inbox");
+                super::item_look_fixtures::seed_main_backpack(&harness, &[]).await?;
+                let request = wire::StoreInboxClaimRequest {
+                    fulfilment_unit_id: uuid(&result.operation_id.ok_or("delivery ID")?),
+                };
+                let reply = serve(&owner, &mut admitted, &[(
+                    wire::COMMAND_TYPE_STORE_INBOX_CLAIM,
+                    wire::encode_inbox_claim_request(&request).map_err(debug)?,
+                )]).await?;
+                assert_eq!(reply[0].0, CommandStatus::Accepted);
+                let receipt = wire::decode_claim_receipt(&reply[0].1).map_err(debug)?;
+                assert_eq!(receipt.result, wire::StoreClaimCode::Committed);
+                assert_eq!(ledger.lock().expect("ledger").claims, 1);
+                assert_eq!(count(&harness, "SELECT count(*) FROM game_item_character_inbox_locations").await?, 0);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return harness.cleanup().await;
+            }
+            let worker = crate::gameplay_transport::run_retained_store_reconciliation(owner.root, client);
             let published = tokio::select! {
                 () = worker => false,
                 observed = tokio::time::timeout(std::time::Duration::from_secs(2), ready.notified()) => observed.is_ok(),
@@ -407,8 +497,28 @@ fn scenario_with_answer(case: Case) -> TestResult {
             return harness.cleanup().await;
         }
 
+        if matches!(case, Case::RemovedOffer) {
+            ledger.lock().expect("ledger").balance = 2_000;
+            let request = retained_purchase(&owner, admitted, include_bytes!(
+                "../../../../../../rulesets/economy/store/predecessors/charged-catalogue.json"
+            ), "store:ultimate-health-keg").await?;
+            assert_eq!(count(&harness, "SELECT count(*) FROM store_purchase_requests WHERE state=1").await?, 1);
+            assert_eq!(count(&harness, "SELECT count(*) FROM game_store_purchase_history").await?, 0);
+            assert_eq!(count(&harness, "SELECT count(*) FROM store_delivery_receipts").await?, 0);
+            let page = serve(&owner, &mut admitted, &[page_request()?]).await?;
+            assert_eq!(page[0].0, CommandStatus::Accepted);
+            assert_eq!(count(&harness, "SELECT count(*) FROM store_delivery_receipts").await?, 1);
+            assert_eq!(ledger.lock().expect("ledger").debits, [request.price]);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
         if matches!(case, Case::OldQuote) {
-            let request = retained_sword(&owner, admitted).await?;
+            let request = retained_purchase(&owner, admitted, include_bytes!(
+                "../../../../../../rulesets/economy/store/predecessors/catalogue.json"
+            ), SWORD).await?;
             assert_eq!(swords(&harness).await?, 0);
             let command = |request: &wire::StorePurchaseRequest| -> TestResult<_> {
                 Ok((wire::COMMAND_TYPE_STORE_PURCHASE, wire::encode_purchase_request(request).map_err(debug)?))
@@ -633,9 +743,11 @@ fn scenario_with_answer(case: Case) -> TestResult {
     })
 }
 
-async fn retained_sword(
+async fn retained_purchase(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
+    catalogue: &[u8],
+    offer: &str,
 ) -> TestResult<wire::StorePurchaseRequest> {
     use crate::durability::store::{PurchaseRequest, PurchaseRequestState};
     use crate::native_admission_source::store::{PurchaseResult, PurchaseStoreOffer};
@@ -643,9 +755,10 @@ async fn retained_sword(
 
     let account = admitted.controller.ok_or("controller")?.account_id;
     let character = admitted.item_fence.ok_or("fence")?.character_id;
-    let mut snapshot: serde_json::Value = serde_json::from_slice(include_bytes!(
-        "../../../../../../rulesets/economy/store/predecessors/catalogue.json"
-    ))?;
+    let mut snapshot: serde_json::Value = serde_json::from_slice(catalogue)?;
+    let price = snapshot["offers"].as_array().ok_or("predecessor offers")?.iter()
+        .find(|row| row["key"] == offer).and_then(|row| row["price"].as_u64())
+        .ok_or("predecessor price")?;
     snapshot.sort_all_objects();
     let revision = super::store_fixtures::sha256(&serde_json::to_vec(&snapshot)?);
     let purchase_request_id = id(81);
@@ -653,9 +766,9 @@ async fn retained_sword(
         purchase_request_id: rules::PurchaseRequestId::from_bytes(purchase_request_id).map_err(debug)?,
         account_id: crate::domain::AccountId::from_bytes(account).map_err(debug)?,
         character_id: character,
-        offer_key: SWORD.into(),
+        offer_key: offer.into(),
         catalog_revision: revision.clone(),
-        price: 25,
+        price,
         currency: rules::CurrencyKind::TibiaCoin,
     };
     let state = owner.root.record_purchase_request(PurchaseRequest {
@@ -670,18 +783,18 @@ async fn retained_sword(
         account_id: uuid(&account),
         character_id: uuid(character.as_bytes()),
         world_id: uuid(admitted.world_id.as_bytes()),
-        offer_key: SWORD.into(),
+        offer_key: offer.into(),
         catalog_revision: revision.clone(),
         currency: "COINS".into(),
-        unit_price: "25".into(),
+        unit_price: price.to_string(),
         quantity: 1,
     }, "ITEM").await.map_err(debug)?;
     assert!(matches!(answer, PurchaseResult::Accepted { .. }));
     Ok(wire::StorePurchaseRequest {
         purchase_request_id,
-        offer_key: SWORD.into(),
+        offer_key: offer.into(),
         catalog_revision: revision,
-        price: 25,
+        price,
         currency: "TIBIA_COIN".into(),
     })
 }
@@ -791,6 +904,12 @@ async fn verify_crystal_charge_purchases(
                     "1".into()
                 )
             );
+            let owned: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM store_delivery_receipts r
+                 JOIN game_item_bindings b USING(item_instance_id,world_id,character_id)
+                 WHERE r.operation_id=encode($1,'hex')::uuid AND b.cause='STORE_PURCHASE')",
+            ).bind(operation.as_slice()).fetch_one(&harness.pool).await?;
+            assert!(owned, "{key}: Store mint must retain purchaser custody");
             let policy = native
                 .item_policy(&minted.0, &minted.1)
                 .ok_or("minted definition")?;

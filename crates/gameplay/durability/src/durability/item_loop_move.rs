@@ -1271,6 +1271,23 @@ async fn apply_loop_move<C: ItemLoopContent>(
         return refuse(LoopMoveRefusal::NotSupported);
     }
     let (height, size) = loop_subtree(tx, request.item).await?;
+    if matches!(request.destination, LoopDestination::Ground(_)) {
+        let store_bound: bool = sqlx::query_scalar(
+            "WITH RECURSIVE tree(item,depth) AS (
+                 SELECT encode($1,'hex')::uuid,0
+                 UNION ALL
+                 SELECT n.item_instance_id,t.depth+1 FROM tree t
+                 JOIN game_item_nested_entries n ON n.parent_item_instance_id=t.item
+                 WHERE t.depth<8
+             )
+             SELECT EXISTS(SELECT 1 FROM tree t JOIN game_item_bindings b
+                           ON b.item_instance_id=t.item WHERE b.cause='STORE_PURCHASE')",
+        ).bind(request.item.as_slice()).fetch_one(&mut **tx).await?;
+        if store_bound {
+            return refuse(LoopMoveRefusal::Rejected);
+        }
+    }
+
     let PlannedDestination {
         target,
         receiver,

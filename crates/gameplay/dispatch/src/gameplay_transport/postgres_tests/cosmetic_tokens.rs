@@ -45,6 +45,7 @@ enum Regression {
     LegacyRefusal,
     PaidBeforeGrant,
     OfflinePaid,
+    OfflineLostAnswer,
     Transfer,
     Earned,
     AccountOwnedToken,
@@ -77,6 +78,11 @@ fn coin_cosmetic_paid_grant_recovers_under_a_new_id() -> TestResult {
 #[test]
 fn coin_cosmetic_worker_recovers_before_game_grant() -> TestResult {
     regression("cosmetic-offline-paid", Regression::OfflinePaid)
+}
+
+#[test]
+fn coin_cosmetic_worker_recovers_a_lost_platform_answer() -> TestResult {
+    regression("cosmetic-offline-lost-answer", Regression::OfflineLostAnswer)
 }
 
 #[test]
@@ -578,9 +584,12 @@ async fn cosmetic_regression(
             let accepted = purchase(owner, admitted, command(&request)?).await?;
             assert_eq!(accepted.code, wire::StorePurchaseCode::Accepted);
         }
-        Regression::Abandoned | Regression::LegacyRefusal | Regression::PaidBeforeGrant | Regression::OfflinePaid => {
+        Regression::Abandoned | Regression::LegacyRefusal | Regression::PaidBeforeGrant | Regression::OfflinePaid | Regression::OfflineLostAnswer => {
             let paid = matches!(case, Regression::PaidBeforeGrant | Regression::OfflinePaid);
-            if paid {
+            let lost = matches!(case, Regression::OfflineLostAnswer);
+            if lost {
+                ledger.lock().map_err(|_| "ledger")?.malformed = true;
+            } else if paid {
                 sqlx::raw_sql(
                     "CREATE FUNCTION fail_cosmetic_grant() RETURNS trigger LANGUAGE plpgsql AS
                     $$ BEGIN RAISE EXCEPTION 'fixture interruption before cosmetic grant'; END; $$;
@@ -592,13 +601,18 @@ async fn cosmetic_regression(
             }
             let first = serve(owner, admitted, &[command(&request)?]).await?;
             assert_eq!(first, [(CommandStatus::Rejected, Vec::new())]);
-            if paid {
+            if lost {
+                ledger.lock().map_err(|_| "ledger")?.malformed = false;
+                let rows: i64 = sqlx::query_scalar("SELECT count(*) FROM game_store_purchase_history")
+                    .fetch_one(&harness.pool).await?;
+                assert_eq!(rows, 0);
+            } else if paid {
                 assert_eq!(ledger.lock().map_err(|_| "ledger")?.debits, [request.price]);
                 sqlx::query("DROP TRIGGER fail_cosmetic_grant ON store_delivery_receipts").execute(&harness.pool).await?;
             } else {
                 ledger.lock().map_err(|_| "ledger")?.fail_before_debit = false;
             }
-            if matches!(case, Regression::OfflinePaid) {
+            if matches!(case, Regression::OfflinePaid | Regression::OfflineLostAnswer) {
                 let ready = {
                     let mut platform = ledger.lock().map_err(|_| "ledger")?;
                     platform.advertise_deliveries = true;

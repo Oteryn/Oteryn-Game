@@ -53,18 +53,26 @@ pub(super) async fn clock(h: &Harness) -> TestResult<i64> {
 pub(super) async fn admit_second_node(
     h: &Harness,
 ) -> TestResult<(NodeIncarnationProof, Dependencies)> {
-    admit_second_node_inner(h, false).await
+    admit_second_node_inner(h, false, id(RECIPIENT_ACCOUNT)).await
 }
 
 pub(super) async fn admit_existing_second_node(
     h: &Harness,
 ) -> TestResult<(NodeIncarnationProof, Dependencies)> {
-    admit_second_node_inner(h, true).await
+    admit_second_node_inner(h, true, id(RECIPIENT_ACCOUNT)).await
+}
+
+pub(super) async fn admit_second_node_for_account(
+    h: &Harness,
+    account: [u8; 16],
+) -> TestResult<(NodeIncarnationProof, Dependencies)> {
+    admit_second_node_inner(h, false, account).await
 }
 
 async fn admit_second_node_inner(
     h: &Harness,
     existing_character: bool,
+    account_id: [u8; 16],
 ) -> TestResult<(NodeIncarnationProof, Dependencies)> {
     let node = super::fixture::registered_node(&h.root, 2).await?;
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
@@ -93,7 +101,7 @@ async fn admit_second_node_inner(
         let (account, world, name): (Vec<u8>, Vec<u8>, String) = sqlx::query_as(
             "SELECT uuid_send(account_id),uuid_send(world_id),name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
         ).bind(id(RECIPIENT).as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(account, id(RECIPIENT_ACCOUNT));
+        assert_eq!(account, account_id);
         assert_eq!(world, id(42));
         assert_eq!(name, RECIPIENT_NAME);
     } else {
@@ -101,7 +109,7 @@ async fn admit_second_node_inner(
         &h.pool,
         501,
         crate::domain::CharacterId::from_bytes(id(RECIPIENT)).map_err(debug)?,
-        id(RECIPIENT_ACCOUNT),
+        account_id,
         id(42),
         RECIPIENT_NAME,
     )
@@ -109,7 +117,7 @@ async fn admit_second_node_inner(
     }
     let now = clock(h).await?;
     let mut current = Source::new(now)?.current;
-    current.account_id = uuid(id(RECIPIENT_ACCOUNT));
+    current.account_id = uuid(account_id);
     current.character_id = crate::foundation::CharacterId::decode(&id(RECIPIENT)).map_err(debug)?;
     current.channel_id = channel;
     current.scope_ownership_generation = receipt.assignment.ownership_generation;
@@ -142,6 +150,16 @@ async fn admit_second_node_inner(
     signing.source.source_revision = prior.source.source_revision + 1;
     signing.source.decision_identity =
         format!("platform-observation-{}", signing.source.source_revision);
+    let account_key = AdmissionAuthorityGuardKeyV1::Account {
+        account_id: uuid(account_id),
+    };
+    let prior_account = guards.load(std::slice::from_ref(&account_key)).await
+        .map_err(debug)?.into_iter().next().flatten();
+    if let Some(prior) = &prior_account {
+        let account = source.rows.iter_mut().find(|row| row.key == account_key)
+            .ok_or("account row")?;
+        *account = prior.clone();
+    }
     let all_rows = source.rows.clone();
     source
         .rows
@@ -154,7 +172,8 @@ async fn admit_second_node_inner(
     source.rows = all_rows.clone();
     source
         .rows
-        .retain(|row| !matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
+        .retain(|row| !matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_))
+            && (prior_account.is_none() || row.key != account_key));
     let publication = AdmissionAuthorityPublicationV1::prepare(&source, now).map_err(debug)?;
     guards.publish(&publication).await.map_err(debug)?;
     source.rows = all_rows;
@@ -207,7 +226,7 @@ async fn admit_second_node_inner(
     dependencies.admitted.controller = Some(ControllerBinding {
         transport: crate::foundation::AuthenticatedTransportRefV1::decode(&[8; 16])
             .map_err(debug)?,
-        account_id: id(RECIPIENT_ACCOUNT),
+        account_id,
     });
     let mut fence = super::fixture::fence(1)?.item_fence();
     fence.character_id = crate::domain::CharacterId::from_bytes(id(RECIPIENT)).map_err(debug)?;
