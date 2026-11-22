@@ -9,6 +9,9 @@ mod lua;
 mod scheduler;
 mod storage;
 
+pub(super) const GAZ_FIRST_KEY: &str = "raid:roshamuul.gaz_haragoth_first";
+pub(super) const GAZ_PRISON_KEY: &str = "raid:roshamuul.gaz_haragoth";
+
 // Grimvale owns an independent encounter lifetime, despite retaining XML waves.
 pub(super) const FEROXA_KEY: &str = "raid:edron.feroxa";
 

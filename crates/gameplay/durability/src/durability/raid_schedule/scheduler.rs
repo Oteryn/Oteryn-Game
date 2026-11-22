@@ -137,8 +137,8 @@ impl DurabilityRoot {
             crate::durability::raid_runner::reconcile_deadlines(&mut tx, request.world, request.now_ms).await?;
             let last_end: i64 = sqlx::query_scalar("SELECT last_end_at_ms FROM game_world_raid_scheduler_clocks WHERE world_id=encode($1,'hex')::uuid FOR UPDATE")
                 .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-            let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND f.raid_key<>$2 AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
-                .bind(request.world.as_bytes().as_slice()).bind(super::FEROXA_KEY).fetch_one(&mut *tx).await?;
+            let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND f.raid_key NOT IN ($2,$3) AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
+                .bind(request.world.as_bytes().as_slice()).bind(super::FEROXA_KEY).bind(super::GAZ_FIRST_KEY).fetch_one(&mut *tx).await?;
             let world_changes = if request.candidates.iter().any(|candidate| requirements.contains_key(candidate.key.as_str())) {
                 crate::durability::world_event::changes::load(&mut tx, request.world, request.reset_epoch).await?
             } else { None };
@@ -151,7 +151,14 @@ impl DurabilityRoot {
                 }
                 let source_kind: i16 = if candidate.lua.is_some() { 2 }
                     else if candidate.calendar_window.is_some() { 3 } else { 1 };
-                let legacy = source_kind == 1 && candidate.key.as_str() != super::FEROXA_KEY;
+                let gaz_first = candidate.key.as_str() == super::GAZ_FIRST_KEY;
+                if gaz_first || candidate.key.as_str() == super::GAZ_PRISON_KEY {
+                    let defeated: bool = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM game_world_gaz_haragoth_first_defeats WHERE world_id=encode($1,'hex')::uuid)"
+                    ).bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                    if defeated == gaz_first { continue; }
+                }
+                let legacy = source_kind == 1 && !gaz_first && candidate.key.as_str() != super::FEROXA_KEY;
                 if (legacy && legacy_running)
                     || (!legacy && !candidate.eligible)
                 { continue; }
@@ -184,13 +191,22 @@ impl DurabilityRoot {
                 if before.retired { continue; }
                 // The retained XML supplies physical waves; Grimvale's source
                 // state owns occurrence selection independently of XML odds.
-                let feroxa_definition = (candidate.key.as_str() == super::FEROXA_KEY).then(|| {
+                let feroxa = candidate.key.as_str() == super::FEROXA_KEY;
+                let resolved_definition = (feroxa || gaz_first).then(|| {
                     let mut definition = candidate.definition.clone();
                     definition.policy = RaidPolicy::SourceScheduled;
                     definition
                 });
-                let definition = feroxa_definition.as_ref().unwrap_or(&candidate.definition);
-                let action = if feroxa_definition.is_some() {
+                let definition = resolved_definition.as_ref().unwrap_or(&candidate.definition);
+                let action = if gaz_first {
+                    // The first appearance is keyed to server save until the
+                    // hill boss is defeated; each committed reset gets one run.
+                    RaidAction::ResolvedCheck {
+                        now_ms: request.now_ms,
+                        selected: !before.latest_firing.as_ref().is_some_and(|f| f.reset_epoch == request.reset_epoch),
+                        firing_id: candidate.firing_id, bundle_digest: request.bundle_digest,
+                    }
+                } else if feroxa {
                     if request.now_ms < before.next_check_at_ms { continue; }
                     // The runner advances source Active under firing -> occurrence
                     // locks. Match that order before selected() locks the occurrence;

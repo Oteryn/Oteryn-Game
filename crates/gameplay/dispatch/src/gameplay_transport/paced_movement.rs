@@ -2,6 +2,7 @@
 use super::*;
 
 mod autowalk;
+mod cave_rope;
 mod drunk;
 pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
 pub(super) mod monster_trap;
@@ -334,6 +335,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     session,
                     now / 1000,
                 );
+                let snapshot = self
+                    .man_in_the_cave_step(&mut runtime, actor, session, snapshot, blocking)
+                    .unwrap_or(snapshot);
                 // PAR-M10: underwater ground drowns on entry and stops on exit, in the same
                 // owner turn as the committed step.
                 if let Some(map) = self.bundle_map() {

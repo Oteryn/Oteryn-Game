@@ -375,6 +375,11 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(RaidWrite::CompareFailed);
             }
+            // Serialize the first defeat with phase selection in the World
+            // scheduler. Acquire the World lock before the channel-run row.
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:raid-world:' || encode(uuid_send(world_id),'hex'),0)) FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid AND raid_key=$2")
+                .bind(identity.firing_id.as_slice()).bind(super::raid_schedule::GAZ_FIRST_KEY)
+                .execute(&mut *tx).await?;
             let owner: Option<String> = sqlx::query_scalar("SELECT owner_generation::text FROM game_world_raid_channel_runs WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid FOR UPDATE")
                 .bind(identity.firing_id.as_slice()).bind(identity.channel.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             if owner.as_deref() != Some(&identity.generation.get().to_string()) {
@@ -402,7 +407,21 @@ impl DurabilityRoot {
                     .bind(identity.firing_id.as_slice()).bind(identity.channel.as_bytes().as_slice())
                     .bind(effects::small(death.wave)?).bind(effects::small(death.entry)?).bind(effects::small(death.index)?)
                     .execute(&mut *tx).await?;
-                changed |= result.rows_affected() != 0;
+                if result.rows_affected() != 0 {
+                    changed = true;
+                    sqlx::query(
+                        "INSERT INTO game_world_gaz_haragoth_first_defeats(world_id,firing_id)
+                         SELECT f.world_id,f.firing_id FROM game_world_raid_firings f
+                         JOIN game_world_raid_creatures c USING(firing_id)
+                         WHERE f.firing_id=encode($1,'hex')::uuid AND f.raid_key=$2
+                         AND c.channel_id=encode($3,'hex')::uuid AND c.wave=$4 AND c.entry=$5
+                         AND c.creature_index=$6 AND c.creature_key='oteryn:creature.gaz_haragoth'
+                         ON CONFLICT (world_id) DO NOTHING"
+                    ).bind(identity.firing_id.as_slice()).bind(super::raid_schedule::GAZ_FIRST_KEY)
+                        .bind(identity.channel.as_bytes().as_slice())
+                        .bind(effects::small(death.wave)?).bind(effects::small(death.entry)?)
+                        .bind(effects::small(death.index)?).execute(&mut *tx).await?;
+                }
             }
             commit_semantic_transaction(tx, deadline).await?;
             Ok(if changed { RaidWrite::Applied } else { RaidWrite::Replayed })
