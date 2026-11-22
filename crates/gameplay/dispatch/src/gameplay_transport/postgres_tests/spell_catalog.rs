@@ -121,6 +121,18 @@ fn spell_catalog_projection_preserves_native_runes_costs_and_indices() -> TestRe
             (3160, "Ultimate Healing Rune"),
             (3156, "Wild Growth Rune"),
         ];
+        let all_vocations = crate::gameplay_transport::spell_catalog::catalog_with_visibility(
+            book, &state, 0, true,
+        )
+        .ok_or("all-vocation catalog")?;
+        for (item, label) in expected_rune_labels {
+            assert!(
+                all_vocations
+                    .iter()
+                    .any(|entry| entry.rune_item == Some(item) && entry.name == label),
+                "missing projected rune {item}: {label}"
+            );
+        }
         for entry in &initial {
             let index = std::num::NonZeroU32::new(entry.cast_index).ok_or("index")?;
             let spell = book.indexed(index).ok_or("cast lookup")?;

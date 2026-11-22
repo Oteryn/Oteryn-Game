@@ -34,10 +34,8 @@ fn renamed_rune_target_options_survive_settings_reload_and_multiaction()
             )?;
             assert!(old_link.spell_bar_bind(&["3".into(), "".into(), "".into(), "".into()]));
             assert!(old_link.bar_gesture(BarGesture::Aim { slot: 0, aim }));
-            let path = std::env::temp_dir().join(format!(
-                "rune-target-reload-{}-{item}-{aim:?}.json",
-                std::process::id()
-            ));
+            let fixture = tempfile::tempdir()?;
+            let path = fixture.path().join("client.json");
             let mut settings = SettingsState::new(Some(path.clone()));
             settings.sync_bar_actions(&old_link);
             let mut reloaded = SettingsState::new(Some(path.clone()));
@@ -45,7 +43,6 @@ fn renamed_rune_target_options_survive_settings_reload_and_multiaction()
                 reloaded.preferences.bar_actions,
                 settings.preferences.bar_actions
             );
-            std::fs::remove_file(path)?;
             let (link, mut commands, outbox) = play_channel();
             outbox.spell_catalog_initialize(
                 true,
@@ -91,6 +88,10 @@ fn renamed_rune_target_options_survive_settings_reload_and_multiaction()
                 crate::combat_input::PlayCommand::Combat(expected)
             );
             assert!(commands.try_recv().is_err());
+            let sidecar = path.with_extension("session-options.json");
+            assert!(sidecar.try_exists()?, "settings sidecar was never written");
+            fixture.close()?;
+            assert!(!sidecar.try_exists()?, "settings sidecar leaked");
         }
     }
     Ok(())
@@ -122,6 +123,8 @@ fn saved_spell_target_options_refuse_unproven_or_ambiguous_identity()
             vec![entry(71, "Cure Poison Rune", "", Some(3153))],
         ),
         ("", vec![entry(71, "Cure Poison Rune", "", Some(3197))]),
+        ("", vec![entry(71, "Antidote Rune", "", Some(3197))]),
+        ("", vec![entry(71, "antidote rune", "", Some(3197))]),
         (
             "",
             vec![entry(71, "Cure Poison Rune", "instant words", None)],

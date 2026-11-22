@@ -104,6 +104,20 @@ class NativeWorldCompletion(unittest.TestCase):
         native.assert_called_once()
         self.assertEqual(canonical.read_documents(default_world), self.original)
 
+    def test_qualification_installs_buddel_before_native_serialization(self):
+        def native(command, **kwargs):
+            staging = Path(command[command.index("--input-root") + 1])
+            install_buddel.assert_called_once_with(self.repo, staging)
+            return self.native_output(command, **kwargs)
+
+        argv = ["native_world_canonicalization.py", "--repo-root", str(self.repo),
+                "--input-root", str(self.world)]
+        with patch.object(sys, "argv", argv), \
+                patch("buddel_travel.install_buddel") as install_buddel, \
+                patch.object(canonical.subprocess, "run", side_effect=native):
+            canonical.main()
+        self.assertEqual(len(self.calls), 1)
+
     def test_normal_regeneration_completes_natively_before_refreshing_pins(self):
         shutil.copytree(self.world, self.repo / "content/world")
 
@@ -122,6 +136,7 @@ class NativeWorldCompletion(unittest.TestCase):
             source = Path(command[command.index("--canonicalize-root") + 1])
             output = Path(command[command.index("--output-root") + 1])
             self.assertEqual(source, self.repo / "content/world")
+            install_buddel.assert_called_once_with(self.repo, source)
             self.assertFalse(output.exists())
             # The real writer emits exactly the managed package, not the caller's
             # unmanaged sibling. Keep production's strict output-set assertion live.
@@ -140,6 +155,7 @@ class NativeWorldCompletion(unittest.TestCase):
                 patch.object(regenerate, "run", side_effect=canonical_writer), \
                 patch.object(regenerate, "refresh_quest_callback_proof"), \
                 patch.object(regenerate, "materialize_world"), \
+                patch("buddel_travel.install_buddel") as install_buddel, \
                 patch.object(regenerate, "refresh_source_cohort_extent", side_effect=measured), \
                 patch.object(regenerate, "repin_rust_inventory") as repin, \
                 patch.object(canonical.subprocess, "run", side_effect=self.native_output):

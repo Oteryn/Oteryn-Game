@@ -699,7 +699,7 @@ def main(*, items_only: bool = False) -> int:
                             "schema": declarations["schema"]}})
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
-    if len(service_records) != 399:
+    if len(service_records) != 400:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}
