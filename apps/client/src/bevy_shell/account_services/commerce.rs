@@ -363,11 +363,11 @@ fn finish(
                 continue;
             }
             commands.entity(entity).insert(InteractionDisabled);
-            if matches!(button.action, Action::Confirm(_)) {
-                if let Ok((mut form, _)) = forms.get_mut(button.form) {
-                    commands.entity(form.confirmation).despawn_children();
-                    form.confirming = None;
-                }
+            if matches!(button.action, Action::Confirm(_))
+                && let Ok((mut form, _)) = forms.get_mut(button.form)
+            {
+                commands.entity(form.confirmation).despawn_children();
+                form.confirming = None;
             }
         }
     }
