@@ -203,6 +203,7 @@ const INVENTORY: &[Entry] = &[
                 1,
             ),
             ("gameplay_transport/postgres_tests/m26_spite_chain.rs", 2),
+            ("gameplay_transport/postgres_tests/nrwicked_doomforge.rs", 1),
             // Primal cadence uses the actual activated Source combat seam.
             (
                 "gameplay_transport/postgres_tests/primal_menace_native.rs",
@@ -1074,7 +1075,6 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/browse_field/fixture.rs",
         2,
     ),
-    ("gameplay_transport/postgres_tests/creature_push.rs", 1),
     ("gameplay_transport/postgres_tests/cyclopedia.rs", 3),
     ("gameplay_transport/postgres_tests/dawnport_trial.rs", 1),
     // Q6's condition-potion fixture supplies only combat; its qualified room stays None.
@@ -1154,6 +1154,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/support/quest_world_callbacks/scenario.rs",
         2,
     ),
+    // Rottin wall 42501 uses the Outlaw Camp Bundle combat view and no qualified room.
+    ("gameplay_transport/postgres_tests/rottin_walls.rs", 2),
     // Rotten Blood progression supplies its source combat room; qualified room stays None.
     (
         "gameplay_transport/postgres_tests/rotten_blood_progression.rs",
@@ -1188,6 +1190,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("node/serve.rs", 1),
     ("qualification.rs", 1),
     // SRX-3 fixture room bindings; production Bundle closure is asserted separately.
+    // The Rottin merchant net capture moved the creature push room binding into its fixture.
+    (
+        "gameplay_transport/postgres_tests/support/creature_push_fixtures.rs",
+        1,
+    ),
     (
         "gameplay_transport/postgres_tests/support/hireling_lifecycle_fixtures.rs",
         1,
