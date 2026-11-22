@@ -80,6 +80,177 @@
       "reply": [
         "Are you ready to finish the lesson?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "riddle"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Can you solve my riddle? Give me the correct answer and I will give you something."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "pd-d-ks-p-pd"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Correct! Would you trade me some apples for my key?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Are you quite certain?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Have you really thought this through?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Then leave me alone."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "no"
+      ],
+      "topic": 2,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Then leave me alone."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Then leave me alone."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "no"
+      ],
+      "topic": 4,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Then leave me alone."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "no"
+      ],
+      "topic": 5,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Then leave me alone."
+      ]
     }
   ]
 }

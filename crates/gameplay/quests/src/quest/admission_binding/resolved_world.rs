@@ -86,9 +86,10 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
-        assert_eq!(base.len(), 1002);
+        // A reversible Katana scene and two readable props extend the native registry.
+        assert_eq!(base.len(), 1005);
         assert_eq!(bindings.world_callbacks().count(), 31);
-        assert_eq!(callbacks.len(), 1033);
+        assert_eq!(callbacks.len(), 1036);
         let expected: BTreeSet<_> = base
             .iter()
             .chain(bindings.world_callbacks())

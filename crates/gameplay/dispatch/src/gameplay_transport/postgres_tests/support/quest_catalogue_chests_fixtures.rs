@@ -745,6 +745,10 @@ pub(super) fn profile_phases(case: &str) -> impl FnMut(&str) + '_ {
 }
 
 pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
+    execute_with_regions(cases, false)
+}
+
+pub(super) fn execute_with_regions(cases: Vec<CatalogueChest>, use_classic_regions: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -776,6 +780,7 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
             let batch = super::quest_container_chests_fixtures::CatalogueBatch {
                 template: template.as_ref().ok_or("migration template")?,
                 quests,
+                use_classic_regions,
             };
             for case in cases {
                 for key in std::iter::once(case.root.as_str())

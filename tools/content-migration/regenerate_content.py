@@ -122,6 +122,8 @@ CHECKS = (
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/native_scene_callbacks.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/qengine_access.py", "--check"],
     ["python3", "tools/content-migration/refresh_season_creature_inventory.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply", "--check"],
     ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
@@ -815,6 +817,7 @@ def main() -> int:
     run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     run(["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply"])
+    run(["python3", "tools/content-schema/quest-authoring/native_scene_callbacks.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available"])
     refresh_quest_callback_proof()
     # Source-backed field regeneration uses the same explicit source root as its tests.

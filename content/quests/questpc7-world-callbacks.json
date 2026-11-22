@@ -159,7 +159,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        "content/world/placements/index.json:1:sha256:bfebdab970f5f98e86884cf98295a029c51aef1fa4f5452e95f1fe7e6398ae53",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -229,7 +229,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        "content/world/placements/index.json:1:sha256:bfebdab970f5f98e86884cf98295a029c51aef1fa4f5452e95f1fe7e6398ae53",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -299,7 +299,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        "content/world/placements/index.json:1:sha256:bfebdab970f5f98e86884cf98295a029c51aef1fa4f5452e95f1fe7e6398ae53",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -2556,7 +2556,7 @@
       "success_message": "You have visited the haunted grave in Darashia. The spectral trail continues.",
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "content/world/placements/region-z11-x129-y126.b3:1:sha256:1481abb99b49aa0df46fed1c06c739a30eba7587355f90c6f13aee902c8d1591",
+        "content/world/placements/region-z11-x129-y126.b3:1:sha256:f9f3d4b80d11781681da6e6cf811cb05c2d485e90680b6fc0514e8bf78a46edd",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
     },

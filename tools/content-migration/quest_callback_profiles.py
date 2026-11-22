@@ -191,7 +191,7 @@ def requested_keys(root, extra_keys=()):
 def _requested_inputs(root, extra_keys=()):
     # Retain both the selected startup source cohort and authored callback custody.
     sys.path.insert(0, str(root / 'tools/content-schema/world-authoring'))
-    from quest_chest_bindings import panpipe_key_claim
+    from quest_chest_bindings import numbered_key_claim, supported_claim
     sys.path.insert(0, str(root / 'tools/content-schema/reward-claim-authoring'))
     import container_native
 
@@ -271,13 +271,10 @@ def _requested_inputs(root, extra_keys=()):
             if definition['identity']['key'] in selected_chests:
                 # Filled-container/text claims already enter through the exact
                 # W15b native projection below; selection adds only map binding.
-                if definition.get('readiness') == 'ready' or panpipe_key_claim(definition):
+                if definition.get('readiness') == 'ready' or numbered_key_claim(definition):
                     keys.update(item['item']['key'] for placement in definition['placements']
                                 for item in placement['reward']['items'])
-                elif (definition.get('readiness') != 'waiting_implementation'
-                      or definition.get('data_holds') != []
-                      or definition.get('native_contents', {}).get('schema')
-                      != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'):
+                elif not supported_claim(definition):
                     raise ValueError('SELECTED_QUEST_CHEST_REWARD_NOT_READY')
                 selected_chests.remove(definition['identity']['key'])
             # QUEST-FINISH owner scope: retain the donor record as evidence,
@@ -548,10 +545,29 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
             present[key] = copy.deepcopy(candidates[0])
             document['records'].append(present[key])
         if key in present:
-            complete_native_stack(root, present[key], definition, matches[0])
-            continue
-        document['records'].append(canonical_native_profile(
-            root, definition, matches, source_items))
+            record = present[key]
+            complete_native_stack(root, record, definition, matches[0])
+        else:
+            record = canonical_native_profile(root, definition, matches, source_items)
+            document['records'].append(record)
+        if key == 'oteryn:item.tibia.i2969':
+            # A Prisoner's numbered reward uses the ordinary NPC MINT owner,
+            # which requires an explicit Key type. Fill the unknown field from
+            # the pinned Item XML without changing custody or stack policy.
+            source_id = matches[0]['external_id']
+            types = [field.get('value') for item in source_items if item.get('id') == source_id
+                     for field in item.findall('attribute') if field.get('key') == 'type']
+            semantics = record['semantics']
+            known_key = {'state': 'KNOWN', 'value': 'KEY'}
+            classification = semantics['classification']
+            if (source_id != '2969' or types != ['key'] or
+                    (classification != {'state': 'UNKNOWN'} and
+                     classification.get('value', {}).get('item_type') != known_key)):
+                raise ValueError('MAD_MAGE_PRISONER_KEY_SOURCE_DRIFT')
+            if classification == {'state': 'UNKNOWN'}:
+                semantics['classification'] = {'state': 'KNOWN', 'value': {
+                    'item_type': known_key, 'capabilities': {'state': 'UNKNOWN'},
+                }}
     document['records'].sort(key=order)
     raw = encode_native_profile(document)
     generated[profile_path] = raw

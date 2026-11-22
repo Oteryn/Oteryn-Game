@@ -79,7 +79,9 @@ fn scenario_case(
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let pinned_qc_world = name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
+    let katana_lever = name == "katana-hidden-lever";
     let native_crop = pinned_qc_world
+        || katana_lever
         || m03_use
         || qd_world
         || engenc_asura
@@ -116,7 +118,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if katana_lever {
+        super::super::classic_katana_lever_fixtures::START
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -1473,7 +1477,11 @@ fn scenario_case(
             tx.commit().await?;
         }
 
-        let world = if name.starts_with("qengine-rewards-l2-djinn-") {
+        let world = if katana_lever {
+            super::super::classic_katana_lever_fixtures::world(
+                generation.native_gameplay().ok_or("Katana native policies")?,
+            )?
+        } else if name.starts_with("qengine-rewards-l2-djinn-") {
             super::super::questl2_djinn_world::world()?
         } else if name == "qengine-rewards-l2-white-raven" {
             super::super::questl2_white_raven_world::world(
@@ -2904,6 +2912,9 @@ fn scenario_case(
                 ),
             )
             .await?;
+        } else if katana_lever {
+            super::super::classic_katana_lever_fixtures::exercise(&mut owner, &mut admitted, &world)
+                .await?;
         } else if name == "mintwallin-cyclops-scene" {
             Box::pin(super::super::questpc8_native_scenes_fixtures::exercise(
                 &mut owner,
