@@ -7,6 +7,7 @@ use crate::gameplay_transport::connection::{
 use crate::gameplay_transport::paced_movement::underwater_drown::{
     DROWN_DEFINITION_KEY, DROWN_SOURCE, drown_definition,
 };
+use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
 use oteryn_gameplay_entities::{ActorConditionTransition, ConditionSource};
 use oteryn_gameplay_foundation::foundation::condition::{
@@ -90,13 +91,6 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
     let deps = Dependencies::new()?;
     let mut owner = deps.owner(h, &authority);
     owner.evidence = &recovery.evidence;
-    owner
-        .runtime
-        .lock()
-        .await
-        .initialize_first_entry_position(deps.actor)
-        .map_err(debug)?;
-    deps.initialize(&owner).await;
     let mut admitted = deps.admitted;
     let session = admitted.game_session_id;
     let (current, _) = FreshAdmissionStore::from_root(h.root.clone())
@@ -105,6 +99,36 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
     admitted.first_entry = FirstEntryOutcome::Positioned;
     let old_fence = admitted.item_fence.ok_or("old lease fence")?;
+    // Logout checkpoints Monk state, so the actor must use its durable vocation and values.
+    let character = old_fence.character_id;
+    let facts = match load_character_cast_facts(&h.root, &authority, character).await {
+        CastFactsLoad::Ready { facts, .. } | CastFactsLoad::NoVocation { facts, .. } => facts,
+        CastFactsLoad::Unavailable => return Err("fixture character facts".into()),
+    };
+    let monk = owner
+        .load_monk_state(character)
+        .await
+        .ok_or("fixture monk state")?;
+    {
+        let mut runtime = deps.runtime.lock().await;
+        runtime
+            .initialize_first_entry_position(deps.actor)
+            .map_err(debug)?;
+        owner
+            .states
+            .spell_states
+            .try_lock()
+            .map_err(debug)?
+            .initialize(
+                &runtime,
+                deps.actor,
+                session,
+                facts,
+                monk,
+                owner.owner_now(),
+            )
+            .ok_or("fixture spell state")?;
+    }
     let applied_at = install_conditions(&owner, &deps, with_environment).await?;
     owner.clock_origin -= Duration::from_millis(750);
     let _clock = owner.freeze_owner_clock_for_test();
@@ -162,6 +186,15 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
     )
     .await
     .map_err(debug)?;
+    assert_ne!(fresh.game_session_id, session);
+    assert!(
+        matches!(
+            fresh.first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ),
+        "fresh first entry: {:?}",
+        fresh.first_entry
+    );
     let fresh_fence = fresh.item_fence.ok_or("fresh lease fence")?;
     assert!(fresh_fence.character_lease_generation > saved.lease_generation);
     let restored = {
