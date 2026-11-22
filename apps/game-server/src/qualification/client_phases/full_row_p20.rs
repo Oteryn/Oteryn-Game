@@ -69,40 +69,15 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     ))
 }
 
-async fn vocation(client: &mut DevClientSession) -> TestResult<String> {
-    use oteryn_protocol_oteryn::item_look as wire;
-    let entities = client.world_entities().ok_or("P20 own actor view absent")?;
-    let own = entities
-        .iter()
-        .find(|entry| &entry.entity.identity == entities.own_identity())
-        .ok_or("P20 own actor identity absent")?
-        .entity;
-    let selection = wire::ItemLookSelection { extended: true };
-    let payload = wire::encode_item_look_intent_for(
-        wire::ItemLookIntent {
-            target: wire::ItemLookTarget::Creature(own),
-        },
-        selection,
-    )
-    .map_err(|error| format!("P20 self LOOK encode observed={error:?}"))?;
-    let reply = client
-        .session_mut()
-        .gated_command(
-            wire::ITEM_LOOK_CAPABILITY_ID.ok_or("P20 look capability absent")?,
-            wire::ITEM_LOOK_COMMAND_ID.ok_or("P20 look command absent")?,
-            &payload,
-        )
-        .await?;
-    match wire::decode_item_look_result_for(&reply.payload, selection)
-        .map_err(|error| format!("P20 self LOOK decode observed={error:?}"))?
-    {
-        wire::ItemLookResult::Text(text) if reply.status == CommandStatus::Accepted => Ok(text),
-        observed => Err(format!(
-            "P20 self LOOK observed={observed:?} status={:?}",
-            reply.status
-        )
-        .into()),
-    }
+// Promotion is durable separately from the base vocation and its Premium display.
+async fn promotion(clients: &SeamClients<'_>) -> TestResult<Option<String>> {
+    use sqlx::Connection as _;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let purchase = sqlx::query_scalar(
+        "SELECT purchase_occurrence_id::text FROM game_character_promotions WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(clients.characters[1].as_slice()).fetch_optional(&mut db).await?;
+    db.close().await?;
+    Ok(purchase)
 }
 
 async fn approach_king(
@@ -194,6 +169,48 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn relocation_position(
+    eligible: bool,
+    before: ActorPosition,
+    after: ActorPosition,
+    temple: ActorPosition,
+) -> bool {
+    eligible && before != after && after == temple
+}
+
+const THAIS: u32 = 8;
+
+async fn home_town(clients: &SeamClients<'_>, default: Option<u32>) -> TestResult<Option<u32>> {
+    use sqlx::Connection as _;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let town = sqlx::query_scalar::<_, i32>(
+        "SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(clients.characters[1].as_slice())
+    .fetch_optional(&mut db)
+    .await?;
+    db.close().await?;
+    Ok(town.map(u32::try_from).transpose()?.or(default))
+}
+
+// Admission is the only place that can produce this receipt before the client
+// moves. It also covers elapsed Active entitlements that the overview still
+// labels Active until the Platform sends a newer revision.
+async fn relocation_receipt(
+    clients: &SeamClients<'_>,
+    session: oteryn_protocol_oteryn::GameSessionId,
+    hometown: u32,
+) -> TestResult<bool> {
+    use sqlx::Connection as _;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let recorded = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_home_town_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND town_before=$3 AND town_after=$4)",
+    ).bind(clients.characters[1].as_slice()).bind(session.as_bytes().as_slice())
+        .bind(i32::try_from(hometown)?).bind(i32::try_from(THAIS)?).fetch_one(&mut db).await?;
+    db.close().await?;
+    Ok(recorded)
+}
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let mut row = Row {
@@ -219,7 +236,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 if talk(&mut client, npc, "hi").await?.is_empty() {
                     return Err("step=promotion-greeting observed=empty-conversation".into());
                 }
-                let unpromoted = vocation(&mut client).await?;
+                let unpromoted = promotion(clients).await?;
                 let uncharged = client.inventory().cloned().ok_or("step=promotion inventory absent")?;
                 let quote = talk(&mut client, npc, "promotion").await?;
                 if quote != ["Do you want to be promoted for 20000 gold coins?"] {
@@ -230,7 +247,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 if confirmation == ["You are now promoted."] {
                     break (npc, unpromoted, unpaid_gold, quote, confirmation);
                 }
-                if vocation(&mut client).await? != unpromoted || client.inventory() != Some(&uncharged) || gold(&mut client).await? != unpaid_gold {
+                if promotion(clients).await? != unpromoted || client.inventory() != Some(&uncharged) || gold(&mut client).await? != unpaid_gold {
                     return Err(format!("step=promotion-refusal changed build or inventory; observed={confirmation:?}").into());
                 }
                 if confirmation == ["You need current Premium for this service."] {
@@ -256,15 +273,15 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                     .map_err(|error| format!("step=promotion-payment required=20000 observed={error}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs:249"))?;
                 earned_prerequisites = true;
             };
-            let promoted = vocation(&mut client).await?;
+            let promoted = promotion(clients).await?;
             let inventory = client
                 .inventory()
                 .ok_or("step-4 inventory observation absent")?
                 .clone();
             let paid_gold = gold(&mut client).await?;
-            if promoted == unpromoted || !paid_promotion_fee(unpaid_gold, paid_gold) {
+            if unpromoted.is_some() || promoted.is_none() || !paid_promotion_fee(unpaid_gold, paid_gold) {
                 return Err(format!(
-                    "step-3 successful purchase missing promotion or exact fee vocation={unpromoted:?}->{promoted:?} gold={unpaid_gold}->{paid_gold}"
+                    "step-3 successful purchase missing promotion or exact fee promotion={unpromoted:?}->{promoted:?} gold={unpaid_gold}->{paid_gold}"
                 )
                 .into());
             }
@@ -272,25 +289,27 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
             let duplicate_quote = talk(&mut client, npc, "promotion").await?;
             let duplicate = talk(&mut client, npc, "yes").await?;
-            let duplicate_vocation = vocation(&mut client).await?;
+            let duplicate_promotion = promotion(clients).await?;
             if duplicate != ["You already have this blessing."]
-                || duplicate_vocation != promoted
+                || duplicate_promotion != promoted
                 || gold(&mut client).await? != paid_gold
                 || client.inventory() != Some(&inventory)
             {
                 return Err(format!(
-                    "step-4 duplicate observed quote={duplicate_quote:?} reply={duplicate:?} vocation={promoted:?}->{duplicate_vocation:?} inventory_unchanged={}",
+                    "step-4 duplicate observed quote={duplicate_quote:?} reply={duplicate:?} promotion={promoted:?}->{duplicate_promotion:?} inventory_unchanged={}",
                     client.inventory() == Some(&inventory)
                 )
                 .into());
             }
             row.complete(
                 "step-4",
-                (&duplicate_quote, &duplicate, &duplicate_vocation),
+                (&duplicate_quote, &duplicate, &duplicate_promotion),
             );
 
             let build = progress(&mut client).await?;
             let before = client.world_spatial().actor_position;
+            let towns = &world.base().subareas;
+            let hometown_before = home_town(clients, towns.default_town).await?;
             let old_session = client.join_snapshot().game_session_id;
             logout(&mut client).await?;
             client = connect_world(clients, 0xd1).await?;
@@ -298,22 +317,38 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 return Err("step-5 fresh admission reused the old game session".into());
             }
             let fresh_build = progress(&mut client).await?;
-            let fresh_vocation = vocation(&mut client).await?;
+            let fresh_promotion = promotion(clients).await?;
             if fresh_build != build
-                || fresh_vocation != promoted
+                || fresh_promotion != promoted
                 || gold(&mut client).await? != paid_gold
                 || client.inventory().cloned().map(super::full_row_p18::durable_inventory)
                     != Some(super::full_row_p18::durable_inventory(inventory.clone()))
-                || client.world_spatial().actor_position != before
             {
-                return Err(format!("step-5 fresh admission observed build={fresh_build:?} vocation={fresh_vocation:?} inventory={:?} position={:?}; expected build={build:?} vocation={promoted:?} inventory={inventory:?} position={before:?}", client.inventory(), client.world_spatial().actor_position).into());
+                return Err(format!("step-5 fresh admission observed build={fresh_build:?} promotion={fresh_promotion:?} inventory={:?} position={:?}; expected build={build:?} promotion={promoted:?} inventory={inventory:?} position={before:?}", client.inventory(), client.world_spatial().actor_position).into());
             }
             row.complete(
                 "step-5",
                 (old_session, build, &promoted, &inventory, before),
             );
 
-            Err("step=paid-region-expiry need=Premium-area-hometown-and-authoritatively-ended-entitlement; source:crates/gameplay/dispatch/src/gameplay_transport/character_home_town.rs:57".into())
+            let after = client.world_spatial().actor_position;
+            let Some(premium_home @ (10..=16 | 18 | 20..=22)) = hometown_before else {
+                if after != before {
+                    return Err(format!("step=paid-region-expiry unexpected move {before:?}->{after:?} hometown={hometown_before:?}").into());
+                }
+                return Err(format!("step=paid-region-expiry observed=hometown-{hometown_before:?} need=Premium-area-hometown-and-authoritatively-ended-entitlement; source:crates/gameplay/dispatch/src/gameplay_transport/character_home_town.rs:60").into());
+            };
+            let ended = relocation_receipt(clients, client.join_snapshot().game_session_id, premium_home).await?;
+            let temple = towns.town(THAIS).and_then(|town| town.temple)
+                .ok_or("step=paid-region-expiry need=compiled-Thais-temple")?;
+            let expected = ActorPosition { x: i32::from(temple.x), y: i32::from(temple.y),
+                floor: spatial_basis::current(&mut client)?.floor(temple.floor) };
+            let hometown_after = home_town(clients, towns.default_town).await?;
+            if !relocation_position(ended, before, after, expected) || hometown_after != Some(THAIS) {
+                return Err(format!("step=paid-region-expiry admission-receipt={ended} hometown={hometown_before:?}->{hometown_after:?} observed={before:?}->{after:?} expected={expected:?}; source:crates/gameplay/dispatch/src/gameplay_transport/character_home_town.rs:60").into());
+            }
+            row.complete("step-6", (before, after, hometown_after));
+            Ok(())
         })
         .await;
         let _ = logout(&mut client).await;
@@ -339,6 +374,20 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn ended_premium_relocation_requires_the_temple_and_a_move() {
+        let before = ActorPosition {
+            x: 1,
+            y: 1,
+            floor: -7,
+        };
+        let temple = ActorPosition { x: 2, ..before };
+        assert!(relocation_position(true, before, temple, temple));
+        assert!(!relocation_position(true, before, before, temple));
+        assert!(!relocation_position(false, before, temple, temple));
+        assert!(!relocation_position(true, temple, temple, temple));
+    }
+
     use super::*;
 
     #[test]

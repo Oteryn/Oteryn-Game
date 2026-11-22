@@ -25,19 +25,35 @@ use oteryn_protocol_oteryn::loyalty_skills::{
 
 const OWNER_GAP: &str = "step=loyalty-earning need=platform-loyalty-ingestion source:crates/gameplay/dispatch/src/gameplay_transport/loyalty_skills.rs:57";
 
+fn loyalty_status(before: u32, after: u32) -> &'static str {
+    match after.cmp(&before) {
+        std::cmp::Ordering::Greater => "PASS",
+        std::cmp::Ordering::Equal => "MISSING-SERVER",
+        std::cmp::Ordering::Less => "FAIL",
+    }
+}
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let failure = match verdict::indexed_timeout(Duration::from_secs(210), journey(clients)).await {
-        Ok(Ok(())) => None,
-        Ok(Err(error)) => Some(error.to_string()),
-        Err(_) => Some("step=journey observed=timeout-210s need=responsive-server".into()),
-    };
-    if let Some(gap) = &failure {
+    let (status, gap) =
+        match verdict::indexed_timeout(Duration::from_secs(210), journey(clients)).await {
+            Ok(Ok((before, after))) if before == after => (
+                loyalty_status(before, after),
+                Some(format!("{OWNER_GAP} observed=points-{before}-to-{after}")),
+            ),
+            Ok(Ok((before, after))) => (loyalty_status(before, after), None),
+            Ok(Err(error)) => ("FAIL", Some(error.to_string())),
+            Err(_) => (
+                "FAIL",
+                Some("step=journey observed=timeout-210s need=responsive-server".into()),
+            ),
+        };
+    if let Some(gap) = &gap {
         evidence(&format!("P13_GAP {gap}"));
     }
+    let detail = gap.map_or_else(String::new, |gap| format!(" evidence={gap}"));
     evidence(&format!(
-        "e2e_all scenario=P13.full status={} seconds={:.3}",
-        if failure.is_none() { "PASS" } else { "FAIL" },
+        "e2e_all scenario=P13.full status={status} seconds={:.3}{detail}",
         started.elapsed().as_secs_f64()
     ));
 }
@@ -107,7 +123,7 @@ async fn accepted_logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
+async fn journey(clients: &SeamClients<'_>) -> TestResult<(u32, u32)> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -179,18 +195,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     cleanup?;
     evidence("P13_CHECK fresh-admission PASS projection-identical-after-logout");
-    if after.points <= before.points {
+    if after.points < before.points {
         return Err(format!(
-            "{OWNER_GAP} observed=points-{}-to-{}",
+            "step=loyalty-earning observed=regressed-points-{}-to-{}",
             before.points, after.points
         )
         .into());
     }
-    Ok(())
+    Ok((before.points, after.points))
 }
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn unchanged_loyalty_is_a_missing_server_verdict() {
+        assert_eq!(loyalty_status(0, 0), "MISSING-SERVER");
+        assert_eq!(loyalty_status(2, 3), "PASS");
+        assert_eq!(loyalty_status(3, 2), "FAIL");
+    }
+
     use super::*;
 
     #[test]

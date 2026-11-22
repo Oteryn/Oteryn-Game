@@ -22,6 +22,7 @@
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
+use oteryn_protocol_oteryn::forge_preview as preview;
 use oteryn_protocol_oteryn::item_forge::{
     CAPABILITY_ITEM_FORGE_V1, COMMAND_TYPE_ITEM_FORGE, Operation, Request,
 };
@@ -50,34 +51,6 @@ fn occurrence(session: oteryn_protocol_oteryn::GameSessionId, ordinal: u8) -> [u
 }
 
 const FUSION_PAIR: &str = "oteryn:item.tibia.i3267";
-
-fn handles(
-    client: &DevClientSession,
-    reference: std::num::NonZeroU32,
-) -> TestResult<(NonZeroU64, NonZeroU64)> {
-    let inventory = client
-        .inventory()
-        .ok_or("step=forge-pair inventory frame missing")?;
-    pair_handles(
-        inventory
-            .entries
-            .iter()
-            .chain(&inventory.main_backpack)
-            .chain(inventory.equipment.iter().map(|entry| &entry.item))
-            .filter(|item| item.item_definition_ref == reference)
-            .map(|entry| entry.handle),
-    )
-    .ok_or_else(|| {
-        format!("step=forge-pair need=two-distinct-carried-{FUSION_PAIR}-handles").into()
-    })
-}
-
-fn pair_handles(mut handles: impl Iterator<Item = NonZeroU64>) -> Option<(NonZeroU64, NonZeroU64)> {
-    let first = handles.next()?;
-    handles
-        .find(|handle| *handle != first)
-        .map(|second| (first, second))
-}
 
 /// Item handles are issued by each session. Compare the complete carried view
 /// after removing only those handle values.
@@ -234,13 +207,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         Operation::DustLimit,
     ];
     let mut observations = Vec::new();
+    let mut missing_pairs = Vec::new();
     for (index, operation) in operations.into_iter().enumerate() {
         let pair = if operation.requires_pair() {
-            if operation != Operation::Fusion {
-                super::full_e2ef7::acquire(&mut client, world, &definitions, FUSION_PAIR, 2)
-                    .await?;
-            }
-            Some(handles(&client, pair_ref)?)
+            let preferred = (operation == Operation::Fusion).then_some(pair_ref.get());
+            let Some(pair) = quoted_pair(&mut client, operation, preferred).await? else {
+                missing_pairs.push(operation);
+                continue;
+            };
+            Some(pair)
         } else {
             None
         };
@@ -289,11 +264,127 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .collect::<Vec<_>>()
             .join(",");
         return Err(format!(
-            "steps-3-5 real mechanic attempts refused=[{refused}]; need=tiered-transfer-donor,class-four-convergence-pair,and-ordinary-dust/sliver/core-acquisition; pair-source:crates/gameplay/items/src/forge.rs:103; dust-source:crates/gameplay/domain/src/domain/forge_creature.rs:93"
+            "steps-3-5 missing-valid-carried-pair={missing_pairs:?} mechanic-refusals=[{refused}]; need=served-pair-quote-and-ordinary-forge-resources; pair-source:crates/gameplay/items/src/forge.rs:103; dust-source:crates/gameplay/domain/src/domain/forge_creature.rs:93"
         )
         .into());
     }
     Ok(())
+}
+
+fn eligible_pair(operation: Operation, first: &preview::Item, second: &preview::Item) -> bool {
+    if first.handle == second.handle
+        || first.classification == 0
+        || first.classification != second.classification
+        || first.container
+        || second.container
+    {
+        return false;
+    }
+    match operation {
+        Operation::Fusion => {
+            first.definition_ref == second.definition_ref
+                && first.tier == second.tier
+                && first.tier < first.maximum_tier
+        }
+        Operation::ConvergenceFusion => {
+            first.classification == 4
+                && first.tier == second.tier
+                && first.tier < first.maximum_tier
+        }
+        Operation::Transfer => {
+            first.tier == 0 && second.tier >= 2 && second.tier - 1 <= first.maximum_tier
+        }
+        Operation::ConvergenceTransfer => {
+            first.classification == 4
+                && first.tier == 0
+                && second.tier > 0
+                && second.tier <= first.maximum_tier
+        }
+        _ => false,
+    }
+}
+
+async fn preview(
+    client: &mut DevClientSession,
+    selection: preview::Selection,
+) -> TestResult<preview::Payload> {
+    let request = preview::Request {
+        nonce: 1,
+        selection,
+    };
+    let bytes = request
+        .encode()
+        .ok_or("step=forge-preview invalid request")?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            preview::CAPABILITY_FORGE_PREVIEW_V1,
+            preview::COMMAND_TYPE_FORGE_PREVIEW,
+            &bytes,
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!(
+            "step=forge-preview selection={selection:?} status={:?}",
+            reply.status
+        )
+        .into());
+    }
+    let reply = preview::Reply::decode(&reply.payload).ok_or("step=forge-preview invalid reply")?;
+    if reply.nonce != request.nonce {
+        return Err("step=forge-preview mismatched nonce".into());
+    }
+    Ok(reply.payload)
+}
+
+async fn quoted_pair(
+    client: &mut DevClientSession,
+    operation: Operation,
+    definition: Option<u32>,
+) -> TestResult<Option<(NonZeroU64, NonZeroU64)>> {
+    let mut items = Vec::new();
+    let mut after = 0;
+    loop {
+        let preview::Payload::Page(page) =
+            preview(client, preview::Selection::Browse { after }).await?
+        else {
+            return Err("step=forge-preview need=carried-item-page".into());
+        };
+        if page.after != after || items.len() + page.items.len() > 512 {
+            return Err("step=forge-preview invalid page or inventory bound exceeded".into());
+        }
+        items.extend(page.items);
+        match page.next {
+            None => break,
+            Some(next) if next > after => after = next,
+            _ => return Err("step=forge-preview cursor did not advance".into()),
+        }
+    }
+    for first in items
+        .iter()
+        .filter(|item| definition.is_none_or(|id| item.definition_ref == id))
+    {
+        for second in items
+            .iter()
+            .filter(|second| eligible_pair(operation, first, second))
+        {
+            let selection = preview::Selection::Pair {
+                operation,
+                first: first.handle,
+                second: second.handle,
+                boost: false,
+                protect: false,
+            };
+            match preview(client, selection).await? {
+                preview::Payload::Quote(quote) if quote.selection == selection => {
+                    return Ok(Some((first.handle, second.handle)));
+                }
+                preview::Payload::Refused => {}
+                _ => return Err("step=forge-preview mismatched pair quote".into()),
+            }
+        }
+    }
+    Ok(None)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -327,19 +418,50 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
-    fn forge_pair_requires_two_distinct_instances() -> TestResult {
-        let first = NonZeroU64::new(1).ok_or("first handle")?;
-        let second = NonZeroU64::new(2).ok_or("second handle")?;
-        assert_eq!(pair_handles([first, first].into_iter()), None);
-        assert_eq!(
-            pair_handles([first, first, second].into_iter()),
-            Some((first, second))
-        );
+    fn forge_pair_prerequisites_follow_the_selected_operation() -> TestResult {
+        use oteryn_protocol_oteryn::forge_preview::Item;
+        let first = Item {
+            handle: NonZeroU64::MIN,
+            definition_ref: 1,
+            appearance: 1,
+            name: "dagger".into(),
+            classification: 1,
+            tier: 0,
+            maximum_tier: 1,
+            container: false,
+        };
+        let mut second = Item {
+            handle: NonZeroU64::new(2).ok_or("second handle")?,
+            ..first.clone()
+        };
+        assert!(!eligible_pair(Operation::Fusion, &first, &first));
+        assert!(eligible_pair(Operation::Fusion, &first, &second));
+        second.tier = 1;
+        assert!(!eligible_pair(Operation::Transfer, &first, &second));
+        let first = Item {
+            classification: 4,
+            maximum_tier: 10,
+            ..first
+        };
+        second.classification = 4;
+        second.maximum_tier = 10;
+        assert!(!eligible_pair(
+            Operation::ConvergenceFusion,
+            &first,
+            &second
+        ));
+        assert!(eligible_pair(
+            Operation::ConvergenceTransfer,
+            &first,
+            &second
+        ));
+        second.tier = 2;
+        assert!(eligible_pair(Operation::Transfer, &first, &second));
         Ok(())
     }
+
+    use super::*;
 
     #[test]
     fn occurrences_are_v7_session_scoped() -> TestResult {
