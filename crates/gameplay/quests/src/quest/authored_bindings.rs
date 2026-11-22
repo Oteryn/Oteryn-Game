@@ -452,6 +452,25 @@ impl Bindings {
             // legacy migration owners only for unrelated, retained quests.
             catalogue.npc_legacy.remove(&quest.quest);
             catalogue.predecessors.remove(&quest.quest);
+            // The first Threatened Dreams bindings extend the published NPC
+            // route. Shared-track and transition validation above preserves its
+            // original state and defaults, including in-progress characters.
+            if quest.quest == "oteryn:quest.threatened_dreams_quest"
+                && let Some(hash) = base.definition_hash(&quest.quest)
+            {
+                catalogue.predecessors.insert(
+                    quest.quest.clone(),
+                    vec![super::NpcDefinitionPredecessor {
+                        hash,
+                        defaults: base
+                            .tracks
+                            .values()
+                            .filter(|track| track.quest == quest.quest)
+                            .map(|track| (track.key.clone(), track.initial))
+                            .collect(),
+                    }],
+                );
+            }
         }
         let mut world = super::world_callbacks::load()?;
         world.extend(self.world_callbacks().cloned());
