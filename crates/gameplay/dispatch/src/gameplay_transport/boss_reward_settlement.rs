@@ -397,18 +397,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         entry: &PendingKillSettlement,
     ) -> bool {
-        let Some(frozen) = &entry.boss_reward else {
-            if oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some() {
-                let plan = crate::durability::boss_encounter::reward_chest::BossDeathAtomicPlan {
-                    death: personal_death_id(entry.facts.death),
-                    boss_key: entry.creature.clone(),
-                    minted_at_unix_ms: entry.facts.died_at_unix_ms,
-                    rewards: None,
-                };
-                let _ = entry.boss_reward_plan.set(plan);
+        let overlord =
+            oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some();
+        if entry.boss_reward.is_none() && entry.boss_outfit.is_none() {
+            if overlord {
+                let _ = entry.boss_reward_plan.set(
+                    crate::durability::boss_encounter::reward_chest::BossDeathAtomicPlan {
+                        death: personal_death_id(entry.facts.death),
+                        boss_key: entry.creature.clone(),
+                        minted_at_unix_ms: entry.facts.died_at_unix_ms,
+                        rewards: None,
+                        outfit: None,
+                    },
+                );
             }
             return true;
-        };
+        }
         let admission = self;
         let Some(native) = admission
             .active_generation
@@ -441,6 +445,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if entry.boss_reward_plan.get().is_some() {
             return true;
         }
+        let outfit = entry.boss_outfit.as_ref().and_then(|(outfit, recipients)| {
+            crate::durability::boss_encounter::reward_chest::BossOutfitDeath::admit(
+                *outfit,
+                recipients.clone(),
+                native,
+            )
+        });
+        let Some(frozen) = &entry.boss_reward else {
+            if outfit.is_some() || overlord {
+                let _ = entry.boss_reward_plan.set(
+                    crate::durability::boss_encounter::reward_chest::BossDeathAtomicPlan {
+                        death: personal_death_id(entry.facts.death),
+                        boss_key: entry.creature.clone(),
+                        minted_at_unix_ms: entry.facts.died_at_unix_ms,
+                        rewards: None,
+                        outfit,
+                    },
+                );
+            }
+            return true;
+        };
         // Use the authored boss identity when present, otherwise the qualified creature key.
         // reward_boss is the native classification; Bosstiary membership is not required.
         let key = frozen
@@ -504,7 +529,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             }
         };
-        let _ = entry.boss_reward_plan.set(plan.into());
+        let mut plan =
+            crate::durability::boss_encounter::reward_chest::BossDeathAtomicPlan::from(plan);
+        plan.outfit = outfit;
+        let _ = entry.boss_reward_plan.set(plan);
         true
     }
 }

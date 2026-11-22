@@ -81,6 +81,9 @@ impl DurabilityRoot {
         }) {
             return Err(DurabilityError::InvalidStoredState);
         }
+        if plan.outfit.as_ref().is_some_and(|outfit| !outfit.matches_settlement(&plan.boss_key)) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -93,13 +96,23 @@ impl DurabilityRoot {
         // A retained non-private death can be observed again at a later wall clock.
         // Its native occurrence is the identity; minted_at remains first-commit metadata.
         // Private rewards additionally bind their original frozen mint timestamp.
-        let intent = serde_json::to_vec(&json!({"world":scope.world_id().as_bytes(),"scope_kind":kind,"scope":id,"generation":generation.get(),"death":plan.death,"boss":plan.boss_key,"minted":plan.rewards.as_ref().map(|reward| reward.minted_at_unix_ms),"personal_rewards":plan.rewards.is_some()})).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let base_intent = json!({"world":scope.world_id().as_bytes(),"scope_kind":kind,"scope":id,"generation":generation.get(),"death":plan.death,"boss":plan.boss_key,"minted":plan.rewards.as_ref().map(|reward| reward.minted_at_unix_ms),"personal_rewards":plan.rewards.is_some()});
+        let mut intent = base_intent.clone();
+        if let Some(outfit) = &plan.outfit {
+            intent["outfit_recipients"] = json!(outfit.intent());
+        }
+        let intent = serde_json::to_vec(&intent).map_err(|_| DurabilityError::InvalidStoredState)?;
         sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:boss-death-atomic:' || encode($1,'hex') || ':' || encode($2,'hex'),0))")
             .bind(scope.world_id().as_bytes().as_slice()).bind(plan.death.as_slice()).execute(&mut **tx).await?;
         let previous: Option<Vec<u8>> = sqlx::query_scalar("SELECT intent FROM game_boss_death_settlements WHERE world_id=encode($1,'hex')::uuid AND death_id=encode($2,'hex')::uuid")
             .bind(scope.world_id().as_bytes().as_slice()).bind(plan.death.as_slice()).fetch_optional(&mut **tx).await?;
+        let first_settlement = previous.is_none();
         if let Some(previous) = previous {
-            if previous != intent {
+            // Deaths committed before outfit receipts retain their original outcome.
+            if previous != intent
+                && (plan.outfit.is_none()
+                    || previous != serde_json::to_vec(&base_intent).map_err(|_| DurabilityError::InvalidStoredState)?)
+            {
                 return Err(DurabilityError::InvalidStoredState);
             }
         } else {
@@ -119,15 +132,17 @@ impl DurabilityRoot {
             sqlx::query("INSERT INTO game_boss_death_settlements(world_id,death_id,boss_key,minted_at,scope_kind,scope_id,scope_generation,personal_rewards,intent) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,encode($6,'hex')::uuid,$7::text::numeric,$8,$9) ON CONFLICT(world_id,death_id) DO NOTHING")
                 .bind(scope.world_id().as_bytes().as_slice()).bind(plan.death.as_slice()).bind(&plan.boss_key).bind(minted).bind(kind).bind(id.as_slice()).bind(generation.get().to_string()).bind(plan.rewards.is_some()).bind(intent).execute(&mut **tx).await?;
         }
-        match plan.rewards {
-            Some(rewards) => {
-                self.settle_boss_reward_chests_in_transaction(
-                    tx, authority, node, scope, generation, rewards,
-                )
-                .await
-            }
-            None => Ok(true),
+        if let Some(rewards) = plan.rewards
+            && !self
+                .settle_boss_reward_chests_in_transaction(tx, authority, node, scope, generation, rewards)
+                .await?
+        {
+            return Ok(false);
         }
+        if first_settlement && let Some(outfit) = plan.outfit {
+            outfit.grant(self, tx, scope, generation, plan.death).await?;
+        }
+        Ok(true)
     }
 
     /// One owner for the frozen death and its chests. Native XP and Quest owners

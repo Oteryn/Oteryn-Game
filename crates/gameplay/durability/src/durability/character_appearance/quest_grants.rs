@@ -57,7 +57,20 @@ pub(crate) async fn grant_content_outfit(
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
     native: &NativeGameplayState,
 ) -> Result<Vec<String>, DurabilityError> {
-    if occurrence.is_empty() || occurrence.len() > 4096 || !outfit_compatible(native, reward) {
+    if !outfit_compatible(native, reward) {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    grant_validated_content_outfit(tx, character, occurrence, reward).await
+}
+
+/// For callers holding admission of this exact reward under the current content pin.
+pub(crate) async fn grant_validated_content_outfit(
+    tx: &mut Transaction<'_, Postgres>,
+    character: CharacterId,
+    occurrence: &[u8],
+    reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
+) -> Result<Vec<String>, DurabilityError> {
+    if occurrence.is_empty() || occurrence.len() > 4096 {
         return Err(DurabilityError::InvalidStoredState);
     }
     let account: sqlx::types::Uuid = sqlx::query_scalar(
