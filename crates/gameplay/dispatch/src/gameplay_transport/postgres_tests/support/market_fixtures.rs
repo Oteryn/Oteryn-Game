@@ -1117,6 +1117,48 @@ pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
         };
         assert!(items.iter().any(|item| item.definition == first.definition));
         assert!(items.iter().all(|item| filter.matches(item)));
+        let mut extended = admitted;
+        extended.continuity.selected_capabilities =
+            crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[4, 6, 18, 37, 63, 588],
+            )
+            .ok_or("selected Market catalogue capability")?;
+        let catalogue_by_tier = |tier| {
+            let json = format!(r#"{{"query":"Catalogue","filter":{{"forge_tier":{tier}}},"page":0}}"#);
+            let mut payload = vec![8, 9, 66, u8::try_from(json.len())?];
+            payload.extend(json.as_bytes());
+            Ok::<_, Box<dyn std::error::Error>> (payload)
+        };
+        let next = extended.continuity.next_command_id;
+        let replies = routed_market_payloads(
+            &owner,
+            &mut extended,
+            [(next, catalogue_by_tier(0)?), (next + 1, catalogue_by_tier(1)?)],
+        )
+        .await?;
+        let tier_zero: serde_json::Value = serde_json::from_slice(&replies[0])?;
+        let upgraded: serde_json::Value = serde_json::from_slice(&replies[1])?;
+        assert_eq!(tier_zero["items"][0]["definition"], first.definition);
+        assert_eq!(upgraded["items"], serde_json::json!([]));
+        let rows = tier_zero["items"].as_array().ok_or("tier zero rows")?;
+        let mut checked = 0;
+        for row in rows {
+            let reference = std::num::NonZeroU32::new(u32::try_from(row["definition"].as_u64().ok_or("definition")?)?)
+                .ok_or("nonzero definition")?;
+            let (key, revision) = index.definition_at(reference).ok_or("active definition")?;
+            if let Some(policy) = native.item_policy(key, revision) {
+                let id = policy.record().production_binding.external_id.parse::<u16>()?;
+                assert_eq!(row["appearance"]["object_appearance_id"], id);
+                assert_eq!(row["appearance"]["catalogue_digest"], serde_json::json!(generation.identity().client_artifact_digest()));
+                checked += 1;
+            }
+        }
+        assert!(checked > 0);
+        admitted.continuity.next_command_id = extended.continuity.next_command_id;
+        let next = admitted.continuity.next_command_id;
+        let legacy = routed_market_payloads(&owner, &mut admitted, [(next, catalogue_by_tier(0)?)]).await?;
+        assert_eq!(details::decode_reply(&legacy[0]).map_err(debug)?, Reply::Refused { code: 9 });
         let stale = crate::durability::item_transfer::CurrentCharacterItemFence {
             connection_generation: crate::foundation::ConnectionGeneration::new(99)
                 .map_err(debug)?,

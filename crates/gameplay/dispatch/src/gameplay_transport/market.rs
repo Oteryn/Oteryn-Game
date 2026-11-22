@@ -56,10 +56,16 @@ pub(super) async fn execute(
     id: u64,
     payload: &[u8],
 ) -> Option<Vec<u8>> {
+    let presentation = admitted.continuity.selected_capabilities.contains(
+        oteryn_protocol_oteryn::market_details::CAPABILITY_MARKET_CATALOGUE_PRESENTATION_V1,
+    );
     let query = if oteryn_protocol_oteryn::market_details::is_query(payload) {
         match oteryn_protocol_oteryn::market_details::decode_query(payload) {
-            Ok(query) => Some(query),
-            Err(_) => {
+            Ok(query)
+                if presentation || !matches!(&query,
+                    oteryn_protocol_oteryn::market_details::Query::Catalogue { filter, .. }
+                        if filter.forge_tier.is_some()) => Some(query),
+            Ok(_) | Err(_) => {
                 return oteryn_protocol_oteryn::market_details::encode_reply(
                     &oteryn_protocol_oteryn::market_details::Reply::Refused { code: 9 },
                 )
@@ -158,7 +164,7 @@ pub(super) async fn execute(
         return refusal(14);
     }
     if let Some(query) = query.clone() {
-        return details::project(owner, fence, native, town, query, definition).await;
+        return details::project(owner, fence, native, town, query, definition, presentation).await;
     }
     if matches!(request.action, 5 | 6)
         && !owner
