@@ -7,6 +7,7 @@ use crate::durability::server_save_sweep::{
     GroundSweepPolicy, GroundSweepRoot, GroundSweepTileFacts, ServerSaveCleanup, ServerSaveOwner,
 };
 use crate::durability::world_reset::PlannedWorldReset;
+use crate::map::boot::BundleCollisionIndexExt;
 use oteryn_foundation::CancellationToken;
 use oteryn_protocol_oteryn::server_save_countdown::ServerSaveCountdown;
 

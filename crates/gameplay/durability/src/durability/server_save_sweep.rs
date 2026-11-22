@@ -380,7 +380,7 @@ async fn read_tree(
          ), bounded AS MATERIALIZED (SELECT * FROM tree LIMIT $4)
          SELECT t.item::text,t.parent::text,t.ordinal::text,t.placement::text,t.corpse,t.depth,
                 i.state_revision::text AS item_revision,
-                (i.item_instance_id IS NULL OR i.lifecycle<>1 OR i.quantity<=0
+                (i.item_instance_id IS NULL OR i.lifecycle<>1 OR i.quantity<=0 OR i.definition_family<>'Item'
                  OR EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.parent_item_instance_id=t.item)
                  OR EXISTS(SELECT 1 FROM game_item_ground_locations g WHERE g.item_instance_id=t.item AND t.depth>0)
                  OR EXISTS(SELECT 1 FROM game_item_house_interior_locations h WHERE h.item_instance_id=t.item)) AS invalid

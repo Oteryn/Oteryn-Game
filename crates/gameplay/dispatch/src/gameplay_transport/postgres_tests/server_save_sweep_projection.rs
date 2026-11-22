@@ -1,12 +1,16 @@
 //! A lost publication is reconciled by the next real countdown owner pass.
-use super::{Dependencies, Harness, TestResult, debug, id, planned_world_reset_fixtures::reset_fixture};
+use super::{
+    Dependencies, Harness, TestResult, debug, id, planned_world_reset_fixtures::reset_fixture,
+};
 use crate::durability::server_save_sweep::{GroundSweepPolicy, ServerSaveCleanup};
 use crate::foundation::{ChannelContentPin, ChannelId, WorldId};
 use crate::gameplay_transport::{SeamRooms, loop_move::loop_ground};
 
 #[test]
 fn server_save_sweep_dispatch_rebuilds_the_ground_projection_postgres() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -24,7 +28,8 @@ fn server_save_sweep_dispatch_rebuilds_the_ground_projection_postgres() -> TestR
 
 async fn scenario(admin: String) -> TestResult {
     let started = std::time::Instant::now();
-    let harness = Harness::create_with_admission_seed(admin, "save_sweep_projection", true, false).await?;
+    let harness =
+        Harness::create_with_admission_seed(admin, "save_sweep_projection", true, false).await?;
     let outcome = qualify(&harness).await;
     let cleanup = harness.cleanup().await;
     outcome.and(cleanup)?;
@@ -35,28 +40,48 @@ async fn scenario(admin: String) -> TestResult {
 async fn qualify(h: &Harness) -> TestResult {
     let world = WorldId::decode(&id(42)).map_err(debug)?;
     let channel = ChannelId::decode(&id(43)).map_err(debug)?;
-    let (controller, entry) = crate::content::native_gameplay::test_support::activated_with_loot_tables(
-        world,
-        Some(include_bytes!("../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json")),
-    );
+    let (controller, entry) =
+        crate::content::native_gameplay::test_support::activated_with_loot_tables(
+            world,
+            Some(include_bytes!(
+                "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+            )),
+        );
     let active = controller.active().ok_or("active bundle content")?;
     let native = active.native_gameplay().ok_or("native Item policy")?;
     let index = native.item_index().ok_or("active Item definition index")?;
     let bundle = crate::map::spell_tiles::tests::vertical_movement::world(world, channel);
-    let start = crate::content::NativeEntryStart { x: 10, y: 10, floor: 6 };
+    let start = crate::content::NativeEntryStart {
+        x: 10,
+        y: 10,
+        floor: 6,
+    };
     let entry = entry.qualified_room();
-    let room = entry.bundle_view(
-        bundle.movement_cells(entry.movement_cells())?,
-        bundle.frame_binding_digest(world), bundle.map_revision_digest(), start,
-    ).ok_or("qualified bundle frame")?;
+    let room = entry
+        .bundle_view(
+            bundle.movement_cells(entry.movement_cells())?,
+            bundle.frame_binding_digest(world),
+            bundle.map_revision_digest(),
+            start,
+        )
+        .ok_or("qualified bundle frame")?;
     let pin = ChannelContentPin::from_activation(
-        world, 1, room.compiled().server_digest(), room.compiled().client_digest(),
-        room.frame_binding().digest(), room.map_revision_digest(), (start.x,start.y,start.floor),
+        world,
+        1,
+        room.compiled().server_digest(),
+        room.compiled().client_digest(),
+        room.frame_binding().digest(),
+        room.map_revision_digest(),
+        (start.x, start.y, start.floor),
     );
     let deps = Dependencies::with_content(pin, room.clone(), native.spell_book().clone())?;
     reset_fixture::publish_ready(h, 1).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
-    let recovery = h.root.open_character_authority(&seal).await.map_err(debug)?;
+    let recovery = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
     let mut owner = deps.owner(h, &recovery);
     owner.active_generation = Some(active);
     owner.movement_cells = room.movement_cells().into();
@@ -64,9 +89,16 @@ async fn qualify(h: &Harness) -> TestResult {
     let base = owner.bundle_map().ok_or("bundle map")?.overlay.base();
     seed(h, &room, crate::map::overlay::map_revision(base)).await?;
 
-    let before = loop_ground(&owner, base, Some(index)).await.ok_or("initial Ground projection")?;
+    let before = loop_ground(&owner, base, Some(index))
+        .await
+        .ok_or("initial Ground projection")?;
     assert!(before.ground_entry(&id(101)).is_some());
-    let cleanup = ServerSaveCleanup { enabled: true, policy: GroundSweepPolicy { clean_protection_zones: true } };
+    let cleanup = ServerSaveCleanup {
+        enabled: true,
+        policy: GroundSweepPolicy {
+            clean_protection_zones: true,
+        },
+    };
     let mut worker = deps.owner(h, &recovery);
     worker.active_generation = Some(active);
     worker.movement_cells = room.movement_cells().into();
@@ -75,34 +107,56 @@ async fn qualify(h: &Harness) -> TestResult {
     // leaves the observing owner on the previously published snapshot.
     worker.states = Default::default();
     let mut worker_publication = None;
-    worker.advance_server_save(cleanup, &mut worker_publication).await?;
-    assert_eq!(sqlx::query_scalar::<_,String>("SELECT disposition FROM game_server_save_ground")
-        .fetch_one(&h.pool).await?, "pending");
-    let _lost = worker.advance_server_save(cleanup, &mut worker_publication).await;
+    worker
+        .advance_server_save(cleanup, &mut worker_publication)
+        .await?;
+    assert_eq!(
+        sqlx::query_scalar::<_, String>("SELECT disposition FROM game_server_save_ground")
+            .fetch_one(&h.pool)
+            .await?,
+        "pending"
+    );
+    let _lost = worker
+        .advance_server_save(cleanup, &mut worker_publication)
+        .await;
     drop(worker);
-    let stale = loop_ground(&owner, base, Some(index)).await.ok_or("still cached Ground projection")?;
+    let stale = loop_ground(&owner, base, Some(index))
+        .await
+        .ok_or("still cached Ground projection")?;
     assert!(std::sync::Arc::ptr_eq(&before, &stale));
     assert!(stale.ground_entry(&id(101)).is_some());
     let mut replacement_publication = None;
-    owner.advance_server_save(cleanup, &mut replacement_publication).await?;
+    owner
+        .advance_server_save(cleanup, &mut replacement_publication)
+        .await?;
     assert!(replacement_publication.is_some());
-    let rebuilt = loop_ground(&owner,base,Some(index)).await.ok_or("rebuilt Ground projection")?;
+    let rebuilt = loop_ground(&owner, base, Some(index))
+        .await
+        .ok_or("rebuilt Ground projection")?;
     assert!(rebuilt.ground_entry(&id(101)).is_none());
 
     use sqlx::Connection;
     let mut fresh = sqlx::PgConnection::connect_with(&h.pool.connect_options()).await?;
-    let proof: (i16,i64,i64,i64,String) = sqlx::query_as("SELECT lifecycle,
+    let proof: (i16, i64, i64, i64, String) = sqlx::query_as(
+        "SELECT lifecycle,
        (SELECT count(*) FROM game_item_ground_locations),
        (SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=7),
        (SELECT count(*) FROM game_spell_item_audit_outbox),
        (SELECT state FROM game_server_save_channels)
-       FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
-       .bind(id(101).as_slice()).fetch_one(&mut fresh).await?;
-    assert_eq!(proof,(2,0,1,1,"complete".into()));
+       FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(101).as_slice())
+    .fetch_one(&mut fresh)
+    .await?;
+    assert_eq!(proof, (2, 0, 1, 1, "complete".into()));
     Ok(())
 }
 
-async fn seed(h: &Harness, room: &crate::content::QualifiedNativeEntryRoom, map: String) -> TestResult {
+async fn seed(
+    h: &Harness,
+    room: &crate::content::QualifiedNativeEntryRoom,
+    map: String,
+) -> TestResult {
     let world = id(42);
     let channel = id(43);
     let server = room.compiled().server_digest();
@@ -124,7 +178,9 @@ async fn seed(h: &Harness, room: &crate::content::QualifiedNativeEntryRoom, map:
           map_revision,server_digest,frame_digest,true,true FROM game_world_reset_epochs").execute(&mut *tx).await?;
     // Provision a typed, non-authored Item and the ordinary player drop codec.
     // All retirement and readback proofs are enabled in subsequent transactions.
-    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
     sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,
         definition_revision_ref,quantity,lifecycle,minted_transaction_id)
         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i3031','definition-r1',1,1,encode($1,'hex')::uuid)")

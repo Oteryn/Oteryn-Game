@@ -5,7 +5,9 @@ use sqlx::{Connection, PgConnection};
 
 #[test]
 fn server_save_sweep_world_reset_activation_waits_for_empty_ground_postgres() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -23,7 +25,8 @@ fn server_save_sweep_world_reset_activation_waits_for_empty_ground_postgres() ->
 
 async fn scenario(admin: String) -> TestResult {
     let started = std::time::Instant::now();
-    let harness = Harness::create_with_admission_seed(admin, "reset_ground_gate", true, false).await?;
+    let harness =
+        Harness::create_with_admission_seed(admin, "reset_ground_gate", true, false).await?;
     let outcome = qualify(&harness).await;
     let cleanup = harness.cleanup().await;
     outcome.and(cleanup)?;
@@ -45,7 +48,9 @@ async fn qualify(harness: &Harness) -> TestResult {
     let mut tx = harness.pool.begin().await?;
     // Pre-existing ordinary Ground. The assertion below runs all activation
     // guards under the exact current replacement assignment.
-    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
     sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,
       definition_revision_ref,quantity,lifecycle,minted_transaction_id)
       VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i3031','definition-r1',1,1,encode($1,'hex')::uuid)")
@@ -60,20 +65,48 @@ async fn qualify(harness: &Harness) -> TestResult {
     tx.commit().await?;
 
     let mut fresh = PgConnection::connect_with(&harness.pool.connect_options()).await?;
-    assert!(sqlx::query_scalar::<_, bool>("SELECT game_world_reset_drained(encode($1,'hex')::uuid,0)")
-        .bind(id(42).as_slice()).fetch_one(&mut fresh).await?);
+    assert!(
+        sqlx::query_scalar::<_, bool>("SELECT game_world_reset_drained(encode($1,'hex')::uuid,0)")
+            .bind(id(42).as_slice())
+            .fetch_one(&mut fresh)
+            .await?
+    );
     assert_eq!(activate(harness, &mut fresh).await?, None);
     assert_eq!(harness.root.active_world_reset_epoch(world).await?, Some(0));
-    assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_ground_locations")
-        .fetch_one(&mut fresh).await?, 1);
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_ground_locations")
+            .fetch_one(&mut fresh)
+            .await?,
+        1
+    );
 
     let seal = harness.recovery.seal_current().map_err(debug)?;
-    let recovery = harness.root.open_character_authority(&seal).await.map_err(debug)?;
-    let job = harness.root.retiring_world_reset(world).await?.ok_or("retiring World reset")?;
-    assert!(harness.root.retire_world_reset_ground(&recovery,&harness.node,&job).await?);
-    assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_ground_locations")
-        .fetch_one(&mut fresh).await?, 0);
-    assert_eq!(activate(harness, &mut fresh).await?.as_deref(), Some("NEW_EPOCH"));
+    let recovery = harness
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let job = harness
+        .root
+        .retiring_world_reset(world)
+        .await?
+        .ok_or("retiring World reset")?;
+    assert!(
+        harness
+            .root
+            .retire_world_reset_ground(&recovery, &harness.node, &job)
+            .await?
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_ground_locations")
+            .fetch_one(&mut fresh)
+            .await?,
+        0
+    );
+    assert_eq!(
+        activate(harness, &mut fresh).await?.as_deref(),
+        Some("NEW_EPOCH")
+    );
     assert_eq!(harness.root.active_world_reset_epoch(world).await?, Some(1));
     Ok(())
 }
