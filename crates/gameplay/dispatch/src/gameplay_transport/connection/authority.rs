@@ -1661,6 +1661,7 @@ pub trait FreshAdmissionAuthority {
             HighscoresQuery,
             Option<oteryn_protocol_oteryn::highscores_catalogue::WorldType>,
         )>,
+        _include_battleye: bool,
     ) -> impl Future<Output = HighscoresReply> {
         async { HighscoresReply::Rejected }
     }

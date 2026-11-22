@@ -1727,6 +1727,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             oteryn_protocol_oteryn::highscores::HighscoresQuery,
             Option<oteryn_protocol_oteryn::highscores_catalogue::WorldType>,
         )>,
+        include_battleye: bool,
     ) -> highscores::HighscoresReply {
         crate::durability::highscores_catalogue::answer_session(
             self.root,
@@ -1734,6 +1735,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             world,
             session,
             query,
+            include_battleye,
         )
         .await
     }
