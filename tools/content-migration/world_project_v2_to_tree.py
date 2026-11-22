@@ -116,11 +116,11 @@ def refresh_bestiary_inventory(root: Path) -> None:
     body = f"const SHARDS: [(&str, &[u8]); {len(shards)}] = [\n"
     for path in shards:
         body += f'    (\n        "{path}",\n        include_bytes!(\n            "../../../../../../{path}"\n        ),\n    ),\n'
-    body += f"];\nconst CREATURE_COUNT: usize = {count:_};\nconst BESTIARY_COUNT: usize = {bestiary_count:_};"
+    body += f"];\nconst CREATURE_COUNT: usize = {count:_};\nconst CREATURE_BINDING_COUNT: usize = {binding_count:_};\nconst BESTIARY_COUNT: usize = {bestiary_count:_};"
     target = root / "crates/gameplay/content/src/content/project/bestiary.rs"
     text = target.read_text()
     replacements = (
-        (r"const SHARDS: \[\(&str, &\[u8\]\); [0-9]+\] = \[[\s\S]*?\n\];\nconst CREATURE_COUNT: usize = [0-9_]+;\nconst BESTIARY_COUNT: usize = [0-9_]+;", body),
+        (r"const SHARDS: \[\(&str, &\[u8\]\); [0-9]+\] = \[[\s\S]*?\n\];\nconst CREATURE_COUNT: usize = [0-9_]+;\nconst CREATURE_BINDING_COUNT: usize = [0-9_]+;\nconst BESTIARY_COUNT: usize = [0-9_]+;", body),
         (r"assert_eq!\(catalogue\.bestiary\.len\(\), [0-9_]+\);", f"assert_eq!(catalogue.bestiary.len(), {bestiary_count:_});"),
         (r"assert_eq!\(catalogue\.bosstiary\.len\(\), [0-9_]+\);",
          f"assert_eq!(catalogue.bosstiary.len(), {sum(boss_counts.values()):_});"),

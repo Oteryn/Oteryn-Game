@@ -38,6 +38,7 @@ const SHARDS: [(&str, &[u8]); 4] = [
     ),
 ];
 const CREATURE_COUNT: usize = 1_893;
+const CREATURE_BINDING_COUNT: usize = 1_909;
 const BESTIARY_COUNT: usize = 824;
 
 #[derive(Deserialize)]
@@ -210,7 +211,7 @@ fn decode_catalogue(
         || index.family != "Creature"
         || index.record_count != CREATURE_COUNT
         || index.attached_authoring_profiles != CREATURE_COUNT
-        || index.attached_source_bindings != CREATURE_COUNT
+        || index.attached_source_bindings != CREATURE_BINDING_COUNT
         || index.shard_size != 500
         || index
             .shards
@@ -233,6 +234,7 @@ fn decode_catalogue(
     let mut bosses = Vec::new();
     let mut previous = None;
     let mut seen = 0;
+    let mut seen_bindings = 0;
     for (ordinal, (_, bytes)) in shards.iter().enumerate() {
         let shard: Shard = parse_strict(bytes, limits)?;
         if shard.schema != "OTERYN_CREATURE_ADMISSION_SHARD/v1"
@@ -309,9 +311,13 @@ fn decode_catalogue(
                 rows.push((race, u32::from(bestiary.charm_points), bestiary.difficulty));
             }
             seen += 1;
+            seen_bindings += record.source_bindings.len();
         }
     }
-    if seen != CREATURE_COUNT || rows.len() != BESTIARY_COUNT {
+    if seen != CREATURE_COUNT
+        || seen_bindings != CREATURE_BINDING_COUNT
+        || rows.len() != BESTIARY_COUNT
+    {
         return Err(ProjectError::InvalidProject(
             "canonical Bestiary population mismatch",
         ));
