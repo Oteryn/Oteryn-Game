@@ -66,7 +66,7 @@ fn daily_reward_remote_dispatch_spends_one_token_and_replays() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    scenario_mode(false, 4)
+    extended_daily_scenario(4)
 }
 
 async fn remote_case(
@@ -75,15 +75,61 @@ async fn remote_case(
     admitted: &mut AdmittedSession,
 ) -> TestResult {
     use crate::foundation::CommandStatus;
+    let selected = admitted.continuity.selected_capabilities;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        &crate::gameplay_transport::daily_reward::offered(PRODUCTION_OFFERED_CAPABILITIES, true),
+        &[1, wire::CAPABILITY_DAILY_REWARD_V2],
+    )
+    .ok_or("base daily capability")?;
+    let (_, output) = serve(owner, admitted, &[(6322, &[])]).await?;
+    let legacy = results(&output)?;
+    assert_eq!(
+        (legacy[0].1, legacy[0].2.as_slice()),
+        (CommandStatus::Rejected, &[][..])
+    );
+    admitted.continuity.selected_capabilities = selected;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let mut positions = runtime.borrow_movement_position();
+        let mut current = positions.read(actor).map_err(debug)?;
+        for _ in 0..2 {
+            let mut next = current.position();
+            next.x += 1;
+            current = positions.commit_cardinal(current, next).map_err(debug)?;
+        }
+        assert!(current.position().x.abs_diff(0) > 1);
+    }
     let (_, output) = serve(owner, admitted, &[(6322, &[]), (6321, &[])]).await?;
     let values = results(&output)?;
     assert_eq!(values[0].1, CommandStatus::Accepted);
     assert!(values[0].2.ends_with(&[56, 0, 64, 0]));
-    assert_eq!((values[1].1, values[1].2.as_slice()), (CommandStatus::Rejected, [8, 4].as_slice()));
+    assert_eq!(
+        (values[1].1, values[1].2.as_slice()),
+        (CommandStatus::Rejected, [8, 4].as_slice())
+    );
 
     sqlx::query("INSERT INTO game_character_daily_reward_access (character_id, tokens) VALUES(encode($1,'hex')::uuid,2)")
         .bind(id(41).as_slice()).execute(&harness.pool).await?;
-    let (_, output) = serve(owner, admitted, &[(6322, &[]), (6321, &[]), (6321, &[]), (6322, &[])]).await?;
+    sqlx::raw_sql(
+        "CREATE FUNCTION remote_claim_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+           RAISE EXCEPTION 'remote claim commit failure';
+         END $$;
+         CREATE CONSTRAINT TRIGGER remote_claim_fail AFTER INSERT ON game_character_daily_reward_lines
+         DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION remote_claim_fail()"
+    ).execute(&harness.pool).await?;
+    let (_, output) = serve(owner, admitted, &[(6321, &[]), (6322, &[])]).await?;
+    let values = results(&output)?;
+    assert_eq!(values[0].1, CommandStatus::Rejected);
+    assert!(values[1].2.ends_with(&[56, 1, 64, 2]));
+    sqlx::raw_sql("DROP TRIGGER remote_claim_fail ON game_character_daily_reward_lines; DROP FUNCTION remote_claim_fail()")
+        .execute(&harness.pool).await?;
+    let (_, output) = serve(
+        owner,
+        admitted,
+        &[(6322, &[]), (6321, &[]), (6321, &[]), (6322, &[])],
+    )
+    .await?;
     let values = results(&output)?;
     assert!(values[0].2.ends_with(&[56, 1, 64, 2]));
     assert_eq!(values[1].1, CommandStatus::Accepted);
@@ -102,7 +148,16 @@ fn daily_reward_details_dispatch_reports_berlin_reset_boundary() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    scenario_mode(false, 3)
+    extended_daily_scenario(3)
+}
+
+fn extended_daily_scenario(mode: u8) -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || scenario_mode(false, mode).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "extended daily reward PostgreSQL scenario panicked")?
+        .map_err(Into::into)
 }
 
 async fn reset_boundary_case(
@@ -118,7 +173,10 @@ async fn reset_boundary_case(
     assert_eq!(&extended[..4], b"DRD2");
     assert_eq!(&extended[4..legacy.len()], &legacy[4..]);
     // 2026-10-25 06:00 Berlin is 05:00 UTC after the DST transition.
-    assert_eq!(&extended[legacy.len()..], &1_792_904_400_000_i64.to_le_bytes());
+    assert_eq!(
+        &extended[legacy.len()..],
+        &1_792_904_400_000_i64.to_le_bytes()
+    );
     Ok(())
 }
 
@@ -196,7 +254,10 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (generation, pin) =
-            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                world,
+                "content-1",
+            )?;
         let room = pin.qualified_room().clone();
         let (channel_pin, _, _, _) = pin.into_channel_parts();
         let dependencies = Dependencies::with_content(
@@ -252,9 +313,15 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
             PRODUCTION_OFFERED_CAPABILITIES,
             owner.daily_reward_available(),
         );
-        admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(&offer, &[1, wire::CAPABILITY_DAILY_REWARD_V2, wire::CAPABILITY_DAILY_REWARD_ACCESS_V1])
-                .ok_or("selection")?;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            &offer,
+            &[
+                1,
+                wire::CAPABILITY_DAILY_REWARD_V2,
+                wire::CAPABILITY_DAILY_REWARD_ACCESS_V1,
+            ],
+        )
+        .ok_or("selection")?;
         assert!(
             admitted
                 .continuity

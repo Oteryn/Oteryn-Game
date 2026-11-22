@@ -70,3 +70,80 @@ impl DurabilityRoot {
         })).await
     }
 }
+
+pub struct WorldLoginInfo {
+    pub players_online: u32,
+    pub boost: Option<WorldLoginBoost>,
+}
+
+pub struct WorldLoginBoost {
+    pub creature_key: String,
+    pub boss_key: String,
+    pub reset_epoch: u64,
+    pub effective_from: i64,
+    pub effective_until: i64,
+}
+
+impl DurabilityRoot {
+    /// Public aggregate for the locally served World. It never opens a session
+    /// or initializes a boost. The census and active selection share one SQL cut.
+    pub async fn read_world_login_info(
+        &self,
+        world: crate::foundation::WorldId,
+        bundle: Option<[u8; 32]>,
+        epoch: u64,
+    ) -> Result<WorldLoginInfo, DurabilityError> {
+        const MAX_ONLINE: i64 =
+            oteryn_gameplay_native_admission_source::public_projections::MAX_ONLINE as i64;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+            let row = sqlx::query(
+                "WITH requested AS (SELECT encode($1,'hex')::uuid AS world_id),
+                census AS (
+                    SELECT count(*) AS players_online FROM (
+                        SELECT 1 FROM requested w
+                        JOIN game_durability_admission_character_guards g USING (world_id)
+                        JOIN game_durability_reconnect_sessions s ON s.game_session_id=g.holder_game_session_id
+                        JOIN game_character_roots c ON c.character_id=g.character_id AND c.world_id=w.world_id
+                        WHERE g.eligible AND s.world_id=w.world_id AND s.character_id=g.character_id
+                          AND s.account_id=g.account_id AND c.account_id=g.account_id
+                          AND s.character_lease_generation=g.lease_generation
+                          AND s.session_state=2 AND s.current_transport_ref IS NOT NULL
+                          AND c.lifecycle=1 AND NOT game_account_closure_detached(g.character_id)
+                        LIMIT $2
+                    ) bounded
+                )
+                SELECT players_online,b.creature_key,b.boss_key,b.effective_from,b.effective_until
+                FROM census CROSS JOIN requested w LEFT JOIN LATERAL (
+                    SELECT d.creature_key,d.boss_key,
+                        floor(extract(epoch FROM e.activated_at)*1000)::bigint AS effective_from,
+                        floor(extract(epoch FROM ((date_trunc('day',(statement_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '6 hours')+interval '1 day 6 hours') AT TIME ZONE 'Europe/Berlin'))*1000)::bigint AS effective_until
+                    FROM game_world_reset_active a
+                    JOIN game_world_reset_epochs e USING(world_id,reset_epoch)
+                    JOIN game_world_daily_boosts d USING(world_id,reset_epoch)
+                    WHERE a.world_id=w.world_id AND e.target_digest=$3 AND e.reset_epoch=$4::text::numeric
+                      AND e.calendar='TIBIA_SERVER_SAVE_BERLIN_06'
+                      AND NOT EXISTS (SELECT 1 FROM game_world_reset_jobs j WHERE j.world_id=w.world_id AND j.phase='RETIRING')
+                ) b ON true",
+            ).bind(world.as_bytes().as_slice()).bind(MAX_ONLINE+1)
+                .bind(bundle.as_ref().map(<[u8; 32]>::as_slice)).bind(epoch.to_string())
+                .fetch_one(&mut *tx).await?;
+            let count: i64 = row.try_get("players_online")?;
+            if count > MAX_ONLINE {
+                return Err(DurabilityError::Unavailable);
+            }
+            let players_online = u32::try_from(count).map_err(|_| DurabilityError::InvalidStoredState)?;
+            let boost = match row.try_get::<Option<String>, _>("creature_key")? {
+                Some(creature_key) => Some(WorldLoginBoost {
+                    creature_key,
+                    boss_key: row.try_get("boss_key")?,
+                    reset_epoch: epoch,
+                    effective_from: row.try_get("effective_from")?,
+                    effective_until: row.try_get("effective_until")?,
+                }),
+                None => None,
+            };
+            Ok(WorldLoginInfo { players_online, boost })
+        })).await
+    }
+}

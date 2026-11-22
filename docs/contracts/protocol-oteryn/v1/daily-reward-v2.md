@@ -47,8 +47,8 @@ Maximum 20 bytes. No new snapshot domain is introduced.
 Command 6322 requires capability 580 `DAILY_REWARD_ACCESS_V1`,
 which depends on capability 182. The request is empty. The reply is the wall with explicit
 varints 7 (`remote_eligible`, bool) and 8 (`instant_access_tokens`, u32).
-Eligibility requires a current playable session, an unclaimed day, and at
-least one token. Field 5 still describes the shrine path. Command 355 sends
+Eligibility requires a current playable session, an unclaimed day, at
+least one token, and no unsettled spell or trade commit. Field 5 still describes the shrine path. Command 355 sends
 the original wall. A missing provisioned balance reads as zero.
 
 ## remote claim

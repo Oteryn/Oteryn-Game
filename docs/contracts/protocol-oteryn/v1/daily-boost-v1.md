@@ -1,7 +1,7 @@
 # Daily boosted creature and boss v1 (BOOSTED-1)
 
 Game owns one durable selection per World and activated server-save reset epoch,
-shared across Channels. The native `TIBIA_SERVER_SAVE_BERLIN_10` reset owner defines
+shared across Channels. The native `TIBIA_SERVER_SAVE_BERLIN_06` reset owner defines
 the boundary; process startup and client clocks never choose the day. The selector
 canonicalizes eligible active-generation definition keys, hashes World/epoch/slot,
 and persists the first choice under the active reset pointer lock. Reload returns
@@ -59,3 +59,31 @@ Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`, Crystal
 `201189f871d23597b82caf88fd611454a2ddefb8`. Boss slots/progression and contribution-based
 reward-chest distribution remain their separate owning mechanic. This change
 applies the daily bonus through the existing Game kill/corpse settlement path.
+
+## Selected World login probe
+
+Use the selected World's game endpoint over the existing framed TLS transport.
+The standalone, opt-in bootstrap command 6326 `WORLD_LOGIN_INFO` has a
+one-request connection. The usual `ClientCommand` and `CommandResult`
+envelopes contain only fields 1 (type) and 4 (bytes), in that order. The
+request body contains fields 1 (command ID 1), 2 (6326) and 4 (16-byte nonzero
+WorldId), in that order. The reply carries command ID 1 and status Accepted,
+with a UTF-8 JSON payload of at most 4096 bytes containing `world_id` (sixteen
+byte integers) and `info`. There is no generation or sequence for this
+standalone exchange. Command 6326 is available only on the first frame.
+The listener replies once and closes. The probe carries no credentials,
+consumes no admission grant, creates no session and needs no capability.
+Normal player bootstrap, the authenticated operator bulletin and command 177
+keep their existing wire layouts.
+
+`info` is null for an unavailable or mismatched World. Otherwise it contains
+`players_online` (u32 count of active, eligible, currently connected
+characters in that World across Channels) and `boost`. A non-null boost
+contains `reset_epoch` (u64), `effective_from` and `effective_until` (i64 Unix
+milliseconds), and `creature` and `boss`. Each race publishes `key`, `name`
+and `artwork`, with artwork fields `kind` (`outfit` or `item`) and
+`look_type` (positive u32 source appearance reference). The interval starts
+at active reset activation and ends at the next scheduled Europe/Berlin 06:00
+server save. Game reads the World owner's committed choice and resolves
+presentation using the endpoint's loaded native catalogue. During retirement
+or if the selection or presentation is unavailable, `boost` is null.

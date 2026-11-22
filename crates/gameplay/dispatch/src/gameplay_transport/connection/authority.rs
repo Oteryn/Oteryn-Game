@@ -39,6 +39,13 @@ pub trait FreshAdmissionAuthority {
     fn client_bulletin(&self) -> impl Future<Output = Option<String>> {
         async { None }
     }
+    /// Standalone public World information. This hook never grants admission.
+    fn world_login_info(
+        &self,
+        _world: [u8; 16],
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::daily_boost::login::WorldInfo>> {
+        async { None }
+    }
     /// NX-1: current durable bans/kicks and session staff flags; independent of presentation capabilities.
     fn staff_refresh(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
         async { true }

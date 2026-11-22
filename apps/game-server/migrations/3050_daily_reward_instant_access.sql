@@ -1,4 +1,5 @@
-CREATE TABLE public.game_character_daily_reward_access (
+-- Crystal-style Instant Reward Access is character-bound. Provisioning belongs to Game control.
+CREATE TABLE IF NOT EXISTS public.game_character_daily_reward_access (
     character_id uuid PRIMARY KEY REFERENCES public.game_character_roots(character_id) ON DELETE CASCADE,
     tokens bigint NOT NULL CHECK (tokens BETWEEN 0 AND 4294967295)
 );

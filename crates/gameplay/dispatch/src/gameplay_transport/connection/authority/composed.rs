@@ -21,6 +21,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn client_bulletin(&self) -> Option<String> {
         self.states.bulletin_source.as_ref()?.load().await
     }
+    async fn world_login_info(
+        &self,
+        world: [u8; 16],
+    ) -> Option<oteryn_protocol_oteryn::daily_boost::login::WorldInfo> {
+        self.read_world_login_information(world).await
+    }
     fn step_wait_receipts(&self) -> bool {
         #[cfg(test)]
         if let Some(enabled) = self.test_step_wait_receipts {

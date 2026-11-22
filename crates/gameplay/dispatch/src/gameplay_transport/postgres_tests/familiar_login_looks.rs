@@ -1,4 +1,5 @@
 //! First entry reconciles vocation looks even when no familiar needs restoration.
+use super::daily_reward_fixtures;
 use super::*;
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, convert_vocation,
@@ -18,15 +19,23 @@ use std::sync::Arc;
 
 #[test]
 fn familiar_first_entry_grants_and_selects_vocation_look_postgres() -> TestResult {
-    scenario("familiar_login_grant_look", true)
+    scenario("familiar_login_grant_look", true, false)
 }
 
 #[test]
 fn familiar_first_entry_removes_expired_premium_vocation_look_postgres() -> TestResult {
-    scenario("familiar_login_remove_look", false)
+    scenario("familiar_login_remove_look", false, false)
 }
 
-fn scenario(name: &'static str, premium_current: bool) -> TestResult {
+#[test]
+fn familiar_appearance_dispatch_confirms_only_granted_looks_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario("familiar_appearance_wire", true, true)
+}
+
+fn scenario(name: &'static str, premium_current: bool, check_appearance: bool) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
         let h = Harness::create_with_admission_seed(admin, name, false, false).await?;
         let result: TestResult = async {
@@ -80,11 +89,11 @@ fn scenario(name: &'static str, premium_current: bool) -> TestResult {
             owner.active_generation = Some(active);
             let mut admitted = deps.admitted;
             owner.admit_progression_session(&mut admitted).await;
-            qengine_outfit_stories_fixtures::earn_level(&owner, &admitted, &authority, 200)
-                .await?;
+            qengine_outfit_stories_fixtures::earn_level(&owner, &admitted, &authority, 200).await?;
 
             let formula = native.training_formula().ok_or("training formula")?;
-            let build_fence = death_ml_loss_composed_fixtures::current_fence(&owner, session).await?;
+            let build_fence =
+                death_ml_loss_composed_fixtures::current_fence(&owner, session).await?;
             let before = h
                 .root
                 .read_character_build_state(&authority, build_fence.character_id)
@@ -189,6 +198,89 @@ fn scenario(name: &'static str, premium_current: bool) -> TestResult {
                 assert_eq!(after.state().selected_look, look);
             } else {
                 assert!(after.state().granted_looks.is_empty());
+            }
+            if check_appearance {
+                let mut admitted = deps.admitted;
+                admitted.first_entry =
+                    crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
+                let fence = death_ml_loss_composed_fixtures::current_fence(&owner, session).await?;
+                let progression = h
+                    .root
+                    .read_character_progression(&authority, character)
+                    .await
+                    .map_err(debug)?
+                    .ok_or("progression")?;
+                let mut unselected = after.state().clone();
+                unselected.selected_look = 0;
+                unselected.lifecycle.as_mut().ok_or("v2 checkpoint")?.writer =
+                    FamiliarLifecycleWriter::from_fence(&fence).map_err(debug)?;
+                h.root
+                    .commit_character_familiar_state(
+                        &authority,
+                        &h.node,
+                        fence,
+                        FamiliarStateRequest {
+                            occurrence: FamiliarStateOccurrence::from_bytes(id(184))
+                                .map_err(debug)?,
+                            before: after.state().clone(),
+                            after: unselected,
+                            content_revision: progression.context.content,
+                            policy_revision: progression.policy_revision,
+                            policy_digest: native.source_digest(),
+                        },
+                    )
+                    .await
+                    .map_err(debug)?;
+                admitted.item_fence = Some(fence.item_fence());
+                let offered = crate::gameplay_transport::appearance_change::offer::offered(
+                    crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                    true,
+                );
+                admitted.continuity.selected_capabilities =
+                    crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                        &offered,
+                        &[6, 25, 579],
+                    )
+                    .ok_or("appearance selection")?;
+                let (_, output) =
+                    daily_reward_fixtures::serve(&owner, &mut admitted, &[(6324, &[])]).await?;
+                let values = daily_reward_fixtures::results(&output)?;
+                assert_eq!(values[0].1, crate::foundation::CommandStatus::Accepted);
+                let view: serde_json::Value = serde_json::from_slice(&values[0].2)?;
+                assert_eq!(view["choices"].as_array().ok_or("choices")?.len(), 1);
+                assert!(view["selected"].is_null());
+                assert_eq!(view["choices"][0]["look_type"], look);
+                let choose = serde_json::to_vec(&serde_json::json!({
+                    "root_revision": view["root_revision"], "key": view["choices"][0]["key"]
+                }))?;
+                let invalid = serde_json::to_vec(&serde_json::json!({
+                    "root_revision": view["root_revision"], "key": "oteryn:unknown"
+                }))?;
+                let (_, output) = daily_reward_fixtures::serve(
+                    &owner,
+                    &mut admitted,
+                    &[(6325, &invalid), (6325, &choose)],
+                )
+                .await?;
+                let values = daily_reward_fixtures::results(&output)?;
+                assert_eq!(values[0].1, crate::foundation::CommandStatus::Rejected);
+                assert_eq!(values[1].1, crate::foundation::CommandStatus::Accepted);
+                let confirmation: serde_json::Value = serde_json::from_slice(&values[1].2)?;
+                assert_eq!(confirmation["choices"], view["choices"]);
+                assert_eq!(confirmation["selected"], view["choices"][0]);
+                assert_eq!(
+                    confirmation["root_revision"].as_u64(),
+                    view["root_revision"].as_u64().map(|revision| revision + 1)
+                );
+                assert_eq!(
+                    h.root
+                        .read_character_familiar_state(&authority, character)
+                        .await
+                        .map_err(debug)?
+                        .state()
+                        .selected_look,
+                    look
+                );
             }
             Ok(())
         }
