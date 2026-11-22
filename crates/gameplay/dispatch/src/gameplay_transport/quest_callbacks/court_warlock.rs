@@ -5,12 +5,26 @@ use crate::durability::{
     boss_encounter::{SourceBossAdmission, SourceBossLever},
     item_transfer::CurrentCharacterItemFence,
 };
+use oteryn_gameplay_entities::carrier::encounter_access::PublishedQuestEncounterProof;
 use oteryn_gameplay_quests::quest::world_callbacks::court_warlock as source;
 
+#[derive(Clone)]
 struct SourceBossReservation {
     id: [u8; 16],
     lever: SourceBossLever,
     party: Vec<CurrentCharacterItemFence>,
+}
+
+#[derive(Clone)]
+pub(super) struct SourceBossSeal {
+    admission: SourceBossReservation,
+    proof: PublishedQuestEncounterProof,
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static PRE_SOURCE_BOSS_CONFIRM:
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -35,7 +49,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let QuestCause::Use(command) = cause else {
             return UseDisposition::Rejected;
         };
-        let Ok(_turn) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
+        let Ok(mut publications) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
             return UseDisposition::Exhausted;
         };
         let ready = self.execute_quest_encounter(
@@ -190,6 +204,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return UseDisposition::Rejected;
                 }
                 let installed = staged.install(admission.id);
+                #[cfg(test)]
+                if let Ok(barrier) = PRE_SOURCE_BOSS_CONFIRM.try_with(std::sync::Arc::clone) {
+                    barrier.0.notify_one();
+                    barrier.1.notified().await;
+                }
                 let proof = installed.proof();
                 let confirm = || {
                     self.source_boss_admission(
@@ -213,19 +232,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 match confirmed {
                     Ok(true) => {
-                        self.publish_installed_source_boss(
+                        #[cfg(test)]
+                        if self
+                            .states
+                            .quest_callbacks
+                            .interrupt_source_boss_after_confirmation
+                            .swap(false, std::sync::atomic::Ordering::AcqRel)
+                        {
+                            return UseDisposition::Rejected;
+                        }
+                        let proof = self.publish_installed_source_boss(
                             installed,
                             states,
                             map,
                             lever_projection,
                         );
+                        // Keep proof before any await, even if this command is cancelled
+                        // or the seal commits without an acknowledgement.
+                        let pending = SourceBossSeal { admission, proof };
+                        publications.push_back(pending.clone());
+                        #[cfg(test)]
+                        if self
+                            .states
+                            .quest_callbacks
+                            .defer_source_boss_seal
+                            .swap(false, std::sync::atomic::Ordering::AcqRel)
+                        {
+                            return UseDisposition::Committed;
+                        }
+                        let seal = || self.seal_source_boss(&pending);
+                        let sealed = retry.retry_durability("source_boss_seal", seal).await;
+                        if matches!(sealed, Ok(true)) {
+                            publications.pop_back();
+                        }
                         UseDisposition::Committed
                     }
-                    Ok(false) => {
-                        drop(installed);
-                        self.try_refund_source_boss_lever(&admission).await;
-                        UseDisposition::Rejected
-                    }
+                    // A refused or unacknowledged installation remains pending
+                    // for the recovery cycle. Dropping it rolls back the carrier.
+                    Ok(false) => UseDisposition::Rejected,
                     Err(error) => {
                         super::super::operator_event(&format!(
                             "source_boss_projection_deferred reason={error:?}"
@@ -274,6 +318,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
+    async fn seal_source_boss(&self, pending: &SourceBossSeal) -> Result<bool, DurabilityError> {
+        self.source_boss_admission(
+            &pending.admission,
+            SourceBossAdmission::SealProjection(pending.proof),
+        )
+        .await
+    }
+
     pub(in crate::gameplay_transport) async fn refund_unpublished_source_boss_lever(&self) {
         if let Err(error) = self.recover_source_boss_admission().await {
             super::super::operator_event(&format!("source_boss_refund_deferred reason={error:?}"));
@@ -286,12 +338,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use crate::foundation::RuntimeScopeRefV1;
 
         let scope = RuntimeScopeRefV1::channel(self.world_id, self.channel_id);
-        let Some(candidate) = self.root.source_boss_recovery(scope).await? else {
-            return Ok(false);
+        let published: Vec<_> = {
+            let Ok(publications) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
+                return Ok(false);
+            };
+            publications
+                .iter()
+                .map(|pending| pending.admission.id)
+                .collect()
         };
+        let has_unsealed_publication = !published.is_empty();
+        let candidate = self.root.source_boss_recovery(scope, published).await?;
+        if candidate.is_none() && !has_unsealed_publication {
+            return Ok(false);
+        }
         // The source command excludes recovery for its whole turn. This gate
         // does not block the Channel runtime while SQL revalidates the refund.
-        let Ok(_turn) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
+        let Ok(mut publications) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
             return Ok(false);
         };
         let generation = {
@@ -306,9 +369,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             fence.generation()
         };
-        self.root
-            .refund_source_boss_recovery(self.character, self.holder, generation, candidate)
-            .await
+        if let Some(candidate) = candidate
+            && !publications
+                .iter()
+                .any(|pending| pending.admission.id == candidate.admission())
+        {
+            return self
+                .root
+                .refund_source_boss_recovery(self.character, self.holder, generation, candidate)
+                .await;
+        }
+        if let Some(pending) = publications.front().cloned() {
+            publications.rotate_left(1);
+            if self.seal_source_boss(&pending).await? {
+                publications.pop_back();
+            }
+        }
+        Ok(false)
     }
 }
 

@@ -10,6 +10,8 @@ use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;
 mod court_warlock;
+#[cfg(test)]
+pub(super) use court_warlock::PRE_SOURCE_BOSS_CONFIRM;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod dreamer_carrot;
@@ -101,13 +103,17 @@ struct ObservedWorldCallback {
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
-    source_boss_turn: tokio::sync::Mutex<()>,
+    source_boss_turn: tokio::sync::Mutex<std::collections::VecDeque<court_warlock::SourceBossSeal>>,
     #[cfg(test)]
     pub(super) lose_source_boss_commit_ack: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub(super) lose_source_boss_publish_ack: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub(super) interrupt_source_boss_before_projection: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) interrupt_source_boss_after_confirmation: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) defer_source_boss_seal: std::sync::atomic::AtomicBool,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     encounters: std::sync::Mutex<Vec<encounter::EncounterVisit>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,

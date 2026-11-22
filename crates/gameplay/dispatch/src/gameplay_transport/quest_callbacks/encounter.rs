@@ -3,7 +3,8 @@ use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
 use oteryn_gameplay_entities::carrier::encounter_access::{
-    EncounterDefenders, InstalledQuestEncounter, InstalledQuestEncounterProof, StagedQuestEncounter,
+    EncounterDefenders, InstalledQuestEncounter, InstalledQuestEncounterProof,
+    PublishedQuestEncounterProof, StagedQuestEncounter,
 };
 
 struct PreparedPhase {
@@ -182,7 +183,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         states: &mut ChannelSpellStates,
         map: &BundleMap,
         lever: crate::map::facts::SourceBossLeverProjection,
-    ) {
+    ) -> PublishedQuestEncounterProof {
         installed.native.publish(|runtime| {
             if let (Some(capture), Some(roster)) = (installed.capture, installed.prepared.roster) {
                 capture
@@ -207,7 +208,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 installed.players,
                 installed.snapshots,
             );
-        });
+        })
     }
 
     #[allow(clippy::too_many_arguments)]

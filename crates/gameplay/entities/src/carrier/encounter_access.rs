@@ -27,7 +27,7 @@ impl<'owner, T> StagedQuestEncounter<'owner, T> {
     }
 
     /// Install the native projection under the exclusive owner borrow. The
-    /// caller can now record installation durably before exposing its effects.
+    /// caller can now confirm installation before exposing its effects.
     pub fn install(
         self,
         admission: [u8; 16],
@@ -67,9 +67,29 @@ impl InstalledQuestEncounter<'_> {
         }
     }
 
-    pub fn publish(mut self, project: impl FnOnce(&mut ChannelRuntimeV1)) {
+    pub fn publish(
+        mut self,
+        project: impl FnOnce(&mut ChannelRuntimeV1),
+    ) -> PublishedQuestEncounterProof {
+        let installed = self.proof();
         self.previous = None;
         project(self.runtime);
+        PublishedQuestEncounterProof(installed)
+    }
+}
+
+/// Evidence issued after the complete native publication has run.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct PublishedQuestEncounterProof(InstalledQuestEncounterProof);
+
+impl PublishedQuestEncounterProof {
+    pub fn matches(
+        self,
+        admission: [u8; 16],
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
+    ) -> bool {
+        self.0.matches(admission, scope, generation)
     }
 }
 

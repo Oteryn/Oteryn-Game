@@ -100,6 +100,22 @@ fn nrwicked_successor_refunds_publication_interrupted_before_projection() -> Tes
     run_case(admin, "nrwicked_projection_owner_loss", FORGE, Scenario::ProjectionOwnerLoss)
 }
 
+#[test]
+fn nrwicked_successor_refunds_confirmed_installation_interrupted_before_publication() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, "nrwicked_confirmed_owner_loss", FORGE, Scenario::ConfirmedOwnerLoss)
+}
+
+#[test]
+fn nrwicked_confirm_with_stale_party_session_preserves_pending_admission() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, "nrwicked_stale_confirmation", FORGE, Scenario::StaleConfirmation)
+}
+
 #[derive(Clone, Copy)]
 enum Scenario {
     Portal,
@@ -109,6 +125,8 @@ enum Scenario {
     AdmissionAckLost,
     AdmissionRecovery,
     ProjectionOwnerLoss,
+    ConfirmedOwnerLoss,
+    StaleConfirmation,
 }
 
 fn run(admin: String, fixture_name: &'static str, destination: TilePos) -> TestResult {
@@ -552,16 +570,48 @@ async fn two_player_encounter(
     if matches!(case, Scenario::AdmissionAckLost) {
         owner.states.quest_callbacks.lose_source_boss_commit_ack.store(true, Ordering::Release);
         owner.states.quest_callbacks.lose_source_boss_publish_ack.store(true, Ordering::Release);
+        owner.states.quest_callbacks.defer_source_boss_seal.store(true, Ordering::Release);
     }
     if matches!(case, Scenario::ProjectionOwnerLoss) {
         owner.states.quest_callbacks.interrupt_source_boss_before_projection.store(true, Ordering::Release);
     }
-    let outcome = owner.use_object(first, UseCommand {
+    if matches!(case, Scenario::ConfirmedOwnerLoss) {
+        owner.states.quest_callbacks.interrupt_source_boss_after_confirmation.store(true, Ordering::Release);
+    }
+    let use_lever = owner.use_object(first, UseCommand {
         game_session_id: session, command_id: 1, item_fence: Some(fence.item_fence()),
-    }, WorldObjectTarget { placement: lever_placement.clone(), expected_revision: 0 }).await;
-    if matches!(case, Scenario::ProjectionOwnerLoss) {
+    }, WorldObjectTarget { placement: lever_placement.clone(), expected_revision: 0 });
+    let outcome = if matches!(case, Scenario::StaleConfirmation) {
+        use crate::gameplay_transport::quest_callbacks::PRE_SOURCE_BOSS_CONFIRM;
+        use std::sync::Arc;
+        let barrier = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+        let using_lever = PRE_SOURCE_BOSS_CONFIRM.scope(barrier.clone(), use_lever);
+        tokio::pin!(using_lever);
+        tokio::select! {
+            outcome = &mut using_lever => return Err(format!(
+                "lever ended before installation confirmation: {:?}", outcome.disposition,
+            ).into()),
+            () = barrier.0.notified() => {}
+        }
+        // Advance the peer's actual durable generation after the party fences
+        // were captured and the pre-publication authorization committed.
+        let changed = sqlx::query(
+            "UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1
+              WHERE game_session_id=encode($1,'hex')::uuid AND session_state=2",
+        )
+        .bind(other_session.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
+        assert_eq!(changed.rows_affected(), 1);
+        barrier.1.notify_one();
+        using_lever.await
+    } else {
+        use_lever.await
+    };
+    if matches!(case, Scenario::ProjectionOwnerLoss | Scenario::ConfirmedOwnerLoss | Scenario::StaleConfirmation) {
         assert_eq!(outcome.disposition, UseDisposition::Rejected);
         assert!(!owner.states.quest_callbacks.interrupt_source_boss_before_projection.load(Ordering::Acquire));
+        assert!(!owner.states.quest_callbacks.interrupt_source_boss_after_confirmation.load(Ordering::Acquire));
         {
             let runtime = owner.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
@@ -576,6 +626,13 @@ async fn two_player_encounter(
         }
         let key = bundle::placement_key(LEVER.floor, LEVER.x, LEVER.y, 2).ok_or("lever key")?;
         assert_eq!(crate::map::view::MapFacts::object_revision(facts, key), 0);
+        assert_eq!(
+            source_boss_admission_state(h).await?,
+            [(2, true, matches!(case, Scenario::ConfirmedOwnerLoss), 2)],
+        );
+        if matches!(case, Scenario::StaleConfirmation) {
+            return Ok(());
+        }
         return exercise_source_boss_handoff(h, deps, owner, fence.item_fence(), None).await;
     }
     assert_eq!(outcome.disposition, UseDisposition::Committed, "production Arbaziloth lever");
@@ -585,7 +642,10 @@ async fn two_player_encounter(
     if matches!(case, Scenario::AdmissionAckLost) {
         assert!(!owner.states.quest_callbacks.lose_source_boss_commit_ack.load(Ordering::Acquire));
         assert!(!owner.states.quest_callbacks.lose_source_boss_publish_ack.load(Ordering::Acquire));
+        assert!(!owner.states.quest_callbacks.defer_source_boss_seal.load(Ordering::Acquire));
+        assert_eq!(source_boss_admission_state(h).await?, [(2, true, true, 2)]);
         assert!(!owner.recover_source_boss_admission().await?);
+        assert_eq!(source_boss_admission_state(h).await?, [(2, false, true, 2)]);
         let cooldowns: (i64, i64, i64) = sqlx::query_as(
             "SELECT count(*), count(DISTINCT admission), count(DISTINCT available_at)
                FROM game_character_boss_cooldowns WHERE boss_key='oteryn:boss.arbaziloth'",
@@ -1111,29 +1171,17 @@ async fn exercise_source_boss_handoff(
         RuntimeScopeAssignmentWriter,
     };
     let scope = published.runtime_scope;
-    let admission_state = || async {
-        sqlx::query_as::<_, (i16, bool, i64)>(
-            "SELECT a.state, a.projection_pending, (
-                 SELECT count(*)
-                   FROM game_character_boss_cooldowns c
-                  WHERE c.admission=a.admission AND c.boss_key=a.boss_key)
-               FROM game_source_boss_admissions a
-              WHERE a.boss_key='oteryn:boss.arbaziloth' ORDER BY a.state",
-        )
-        .fetch_all(&h.pool)
-        .await
-    };
-    let before = if unpublished.is_some() {
-        vec![(1, false, 1), (2, false, 1)]
+    let before = source_boss_admission_state(h).await?;
+    if unpublished.is_some() {
+        assert_eq!(before, [(1, false, false, 1), (2, false, true, 1)]);
     } else {
-        vec![(2, true, 2)]
-    };
+        assert!(matches!(before.as_slice(), [(2, true, _, 2)]));
+    }
     let after = if unpublished.is_some() {
-        vec![(2, false, 1), (3, false, 0)]
+        vec![(2, false, true, 1), (3, false, false, 0)]
     } else {
-        vec![(3, false, 0)]
+        vec![(3, false, false, 0)]
     };
-    assert_eq!(admission_state().await?, before);
     sqlx::query(
         "INSERT INTO game_control_scope_grants VALUES
         (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 2)",
@@ -1172,7 +1220,7 @@ async fn exercise_source_boss_handoff(
 
     assert!(!owner.recover_source_boss_admission().await?);
     assert_eq!(
-        admission_state().await?,
+        source_boss_admission_state(h).await?,
         before,
         "stale runtime cannot refund either outcome"
     );
@@ -1193,9 +1241,9 @@ async fn exercise_source_boss_handoff(
     let mut replacement = deps.owner_from(&h.root, &successor, owner.character);
     replacement.runtime = (&runtime).into();
     assert!(replacement.recover_source_boss_admission().await?, "successor applied the refund");
-    assert_eq!(admission_state().await?, after);
+    assert_eq!(source_boss_admission_state(h).await?, after);
     assert!(!replacement.recover_source_boss_admission().await?, "refund replay is a no-op");
-    assert_eq!(admission_state().await?, after);
+    assert_eq!(source_boss_admission_state(h).await?, after);
     if let Some(unpublished) = unpublished {
         let retained: (Vec<u8>, Vec<u8>) = sqlx::query_as(
             "SELECT uuid_send(character_id),uuid_send(admission) FROM game_character_boss_cooldowns
@@ -1207,6 +1255,19 @@ async fn exercise_source_boss_handoff(
         assert_ne!(retained.1, unpublished);
     }
     Ok(())
+}
+
+async fn source_boss_admission_state(h: &Harness) -> TestResult<Vec<(i16, bool, bool, i64)>> {
+    Ok(sqlx::query_as(
+        "SELECT a.state, a.projection_pending, a.installation_confirmed, (
+             SELECT count(*)
+               FROM game_character_boss_cooldowns c
+              WHERE c.admission=a.admission AND c.boss_key=a.boss_key)
+           FROM game_source_boss_admissions a
+          WHERE a.boss_key='oteryn:boss.arbaziloth' ORDER BY a.state",
+    )
+    .fetch_all(&h.pool)
+    .await?)
 }
 
 async fn publish_source_boss_successor_readiness(
