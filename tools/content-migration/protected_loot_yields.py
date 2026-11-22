@@ -7,9 +7,9 @@ import encounter_loot_item_admissions as source
 
 # Crystal 201189f8 enraged_arbaziloth.lua hard-mode equipment.
 ARBAZILOTH_HARD_ITEMS = {f'oteryn:item.tibia.i{i}' for i in (49531, 49532, 49533, 49534, 50189)}
-# Crystal 201189f8 cultist loot and hunter_outfits_quest/action_music_sheet.lua.
-HUNTER_HYMN_ITEMS = {f'oteryn:item.tibia.i{i}' for i in (6087, 6088, 6089, 6090)}
-ITEMS = ARBAZILOTH_HARD_ITEMS | HUNTER_HYMN_ITEMS | {f'oteryn:item.tibia.i{i}' for i in (
+# Crystal 201189f8 cultist loot includes the quest doll and all four hymn sheets.
+CULT_LOOT_ITEMS = {f'oteryn:item.tibia.i{i}' for i in (5810, 6087, 6088, 6089, 6090)}
+ITEMS = ARBAZILOTH_HARD_ITEMS | CULT_LOOT_ITEMS | {f'oteryn:item.tibia.i{i}' for i in (
     2863, 2950, 3019, 3022, 3023, 3024, 3304, 3331, 3334, 3335, 3339, 3432,
     3573, 5883, 5930, 7396, 8897, 8898, 9615, 10244, 10290, 12482, 12483, 12509,
 )}
@@ -32,7 +32,7 @@ def admit(root, items, order):
     needs_proof = [
         definition for key, definition in sorted(definitions.items())
         if key not in existing or (
-            key in HUNTER_HYMN_ITEMS
+            key in CULT_LOOT_ITEMS
             and native_loot_yield_facts(definition['identity'], existing[key]) is None
         )
     ]

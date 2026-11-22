@@ -42,9 +42,13 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
                 .any(|entry| entry.item == sheet)
         );
     }
+    // The return teleport between the piano and landing is a separate map action.
     super::questpc8_native_slice::world(
         native,
-        &[(32400, 32792, 32408, 32796, -9)],
+        &[
+            (32402, 32794, 32402, 32794, -9),
+            (32406, 32794, 32407, 32794, -9),
+        ],
         &[],
         TilePos {
             x: PIANO.x + 1,
