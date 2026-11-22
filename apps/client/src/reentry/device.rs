@@ -59,10 +59,7 @@ impl Reentry {
             return false;
         }
         if let Some(token) = &self.attempt_cancellation {
-            let _delivery = self
-                .browser_delivery
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            self.browser_delivery.close();
             token.cancel();
         }
         if let Some(config) = &self.client.native_login {
@@ -79,6 +76,21 @@ impl Reentry {
     pub(crate) fn arm_cancel_fixture(&mut self) {
         self.state = EntryState::Entering;
         self.attempt_cancellation = Some(CancellationToken::new());
+    }
+
+    #[cfg(all(test, bevy_shell))]
+    pub(crate) fn wait_for_ready_admission(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let admitted = self
+            .pending
+            .as_ref()
+            .ok_or("no pending admission")?
+            .recv_timeout(std::time::Duration::from_secs(10))??;
+        let (sender, receiver) = mpsc::channel();
+        sender
+            .send(Ok(admitted))
+            .map_err(|_| "admission receiver dropped")?;
+        self.pending = Some(receiver);
+        Ok(())
     }
 
     #[cfg(test)]
@@ -108,6 +120,40 @@ impl Reentry {
             .is_some_and(|config| crate::web_links::open(config, link))
     }
 
+    #[cfg(bevy_shell)]
+    pub(crate) fn start_web_link(
+        &self,
+        link: crate::web_links::WebLink,
+    ) -> Option<std::sync::mpsc::Receiver<bool>> {
+        let config = self.client.native_login.as_ref()?;
+        let url = crate::web_links::url(
+            &config.platform_url,
+            link,
+            oteryn_client_ui::localization::current(),
+        )?;
+        let browser = config.scoped_browser(self.client.runtime.cancellation());
+        let (sender, result) = std::sync::mpsc::channel();
+        std::thread::Builder::new()
+            .name("login-web-link".into())
+            .spawn(move || {
+                let _ = sender.send(browser(&url));
+            })
+            .ok()?;
+        Some(result)
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn config_for_forget(&self) -> Option<&crate::NativeLoginConfig> {
+        self.client.native_login.as_ref()
+    }
+
+    pub(crate) fn cancel_after_sign_out(&mut self) {
+        if let Some(config) = &self.client.native_login {
+            config.training_queue.clear();
+        }
+        self.cancel_entry();
+    }
+
     pub fn native_sign_out(
         &mut self,
     ) -> Result<
@@ -115,10 +161,7 @@ impl Reentry {
         oteryn_platform_client::native_login::NativeLoginError,
     > {
         let result = self.forget_native_session()?;
-        if let Some(config) = &self.client.native_login {
-            config.training_queue.clear();
-        }
-        self.cancel_entry();
+        self.cancel_after_sign_out();
         Ok(result)
     }
     /// Explicit native sign-out; normal game logout keeps a remembered login available.
@@ -145,21 +188,29 @@ impl Reentry {
                 .unwrap_or_default()
         });
         options.remember_device = false;
+        let target = config.clone();
+        Ok(Some(self.finish_recorded_forget(target)))
+    }
+
+    pub(crate) fn finish_recorded_forget(
+        &mut self,
+        config: crate::NativeLoginConfig,
+    ) -> watch::Receiver<Option<bool>> {
         let runtime = &self.client.runtime;
         if let Some(previous) = self
             .revocations
             .iter_mut()
-            .find(|previous| previous.matches(config))
+            .find(|previous| previous.matches(&config))
         {
             if previous.finished().is_some() {
-                *previous = Revocation::start(Arc::new(config.clone()), runtime);
+                *previous = Revocation::start(Arc::new(config), runtime);
             }
-            return Ok(Some(previous.result.clone()));
+            return previous.result.clone();
         }
-        let revocation = Revocation::start(Arc::new(config.clone()), runtime);
+        let revocation = Revocation::start(Arc::new(config), runtime);
         let result = revocation.result.clone();
         self.revocations.push(revocation);
-        Ok(Some(result))
+        result
     }
 
     pub(super) fn revocation_for_entry(&mut self) -> Option<watch::Receiver<Option<bool>>> {
@@ -329,4 +380,29 @@ fn wait_for_revocation(
         .await??;
         result.ok_or_else(|| "revocation result missing".into())
     })
+}
+
+#[cfg(all(test, bevy_shell))]
+#[test]
+fn login_web_link_returns_before_browser_delivery() -> Result<(), Box<dyn std::error::Error>> {
+    use std::time::Duration;
+    let folder = tempfile::tempdir()?;
+    let mut config = Reentry::device_test_config(folder.path().into(), "https://localhost:1")?;
+    let (release, wait) = mpsc::channel();
+    let wait = std::sync::Mutex::new(wait);
+    config.open_browser = Arc::new(move |_| {
+        assert!(
+            wait.lock()
+                .is_ok_and(|rx| rx.recv_timeout(Duration::from_secs(5)).is_ok())
+        );
+        false
+    });
+    let entry = Reentry::new(ClientBootstrap::new()?.with_native_login(config));
+    let result = entry
+        .start_web_link(crate::web_links::WebLink::CookiePolicy)
+        .ok_or("start web link")?;
+    release.send(())?;
+    assert!(!result.recv_timeout(Duration::from_secs(5))?);
+    entry.shutdown();
+    Ok(())
 }

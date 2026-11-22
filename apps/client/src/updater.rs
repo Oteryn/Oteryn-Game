@@ -29,7 +29,8 @@ pub fn pinned_root(channel: &str) -> &'static [u8] {
 }
 const MAX_SLOT_LENGTH: usize = 64;
 
-pub(crate) fn read_release_pointer(directory: &Path) -> io::Result<String> {
+/// Reads the active release pointer within the installer size limit.
+pub fn read_release_pointer(directory: &Path) -> io::Result<String> {
     const MAX_POINTER_BYTES: u64 = 1024;
     let mut current = String::new();
     std::fs::File::open(directory.join("current.txt"))?
