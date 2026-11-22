@@ -174,11 +174,16 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
             expected,
         ));
     }
-    crops.push(crop(
-        1,
-        (32562, 31957, 32570, 31960),
-        vec![expected(ALTAR, vec![10145])],
-    ));
+    crops.push(NativeCrop {
+        bytes: include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/placements/region-z01-x127-y124.b3"
+        )),
+        region: (1, 127, 124),
+        bounds: (32562, 31957, 32570, 31960),
+        start: (start.x, start.y),
+        expected: vec![expected(ALTAR, vec![10145])],
+    });
     crops.push(crop(
         7,
         (32496, 31887, 32499, 31889),
@@ -217,7 +222,7 @@ async fn track(h: &Harness, key: &str) -> TestResult<Option<i64>> {
     )
 }
 
-async fn carried(
+pub(super) async fn carried(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,

@@ -422,6 +422,11 @@ pub(super) async fn exercise(
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("NPC capabilities")?;
     super::l6_paradox_fixtures::raise_level(owner, admitted, authority, h, 30).await?;
+    let carried = if journey {
+        Some(super::paradox_tower_journey::carried(owner, admitted, h).await?)
+    } else {
+        None
+    };
     let initial = snapshot(h).await?;
     if name.ends_with("out-of-order") {
         relocate(owner, admitted, 1).await?;
@@ -440,6 +445,12 @@ pub(super) async fn exercise(
             .all(|r| r.disposition == NpcIntentDisposition::Ok)
     );
     assert_eq!(progress(h).await?, 1);
+    if let Some(before) = &carried {
+        assert_eq!(
+            super::paradox_tower_journey::carried(owner, admitted, h).await?,
+            *before
+        );
+    }
     if name.ends_with("lesson-guard") {
         let before = snapshot(h).await?;
         relocate(owner, admitted, 4).await?;
@@ -474,6 +485,12 @@ pub(super) async fn exercise(
             expected,
             "only the exact ordered contact advances the story"
         );
+        if let Some(before) = &carried {
+            assert_eq!(
+                super::paradox_tower_journey::carried(owner, admitted, h).await?,
+                *before
+            );
+        }
     }
     let before = snapshot(h).await?;
     relocate(owner, admitted, 1).await?;
@@ -509,6 +526,12 @@ pub(super) async fn exercise(
             .collect::<Vec<_>>()
     );
     assert_eq!(progress(h).await?, 5);
+    if let Some(before) = &carried {
+        assert_eq!(
+            super::paradox_tower_journey::carried(owner, admitted, h).await?,
+            *before
+        );
+    }
     let achievements: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
     )

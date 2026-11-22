@@ -591,7 +591,7 @@ async fn receipt_counts(h: &Harness) -> TestResult<(i64, i64, i64)> {
     .await?)
 }
 
-pub(super) async fn cut_grass(
+async fn cut_grass(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     target: Position,
