@@ -91,7 +91,7 @@ fn directory_owner_is_accepted_with_the_bearer_and_a_refused_one_is_unauthentica
         ],
     )?;
     let client = directory_client(&server)?;
-    let token = AccessToken(SecretText(bearer.clone()), None);
+    let token = AccessToken(SecretText(bearer.clone()));
     let directory =
         runtime.block_on(client.fetch_directory_as(Some(&token), CancellationToken::new()))?;
     let names: Vec<_> = directory.worlds[0]

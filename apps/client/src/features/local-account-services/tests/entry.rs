@@ -174,33 +174,31 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
                         .unwrap_or_else(std::sync::PoisonError::into_inner) = id.map(str::to_owned);
                     Action::Back
                 }
-                (false, 2) => {
-                    assert!(view.can_retry());
-                    assert_eq!(
-                        view.pending_id(),
+                (false, 2 | 3) => {
+                    assert!(view.pending());
+                    assert!(!view.can_retry());
+                    assert!(view.pending_id().is_none());
+                    let original = original
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
+                    assert!(
                         original
-                            .lock()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner)
                             .as_deref()
+                            .is_some_and(|id| !format!("{view:?}").contains(id))
                     );
-                    Action::Bid {
-                        auction_id: AUCTION.into(),
-                        coins: 55,
-                        confirmed: true,
+                    if step == 2 {
+                        Action::Bid {
+                            auction_id: AUCTION.into(),
+                            coins: 55,
+                            confirmed: true,
+                        }
+                    } else {
+                        Action::Back
                     }
                 }
-                (false, 3) => {
-                    assert_eq!(
-                        view.pending_id(),
-                        original
-                            .lock()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner)
-                            .as_deref()
-                    );
-                    Action::Back
-                }
                 (false, 4) => {
-                    assert!(!view.pending(), "sign-out retained a Bazaar request");
+                    assert!(view.pending_id().is_none());
+                    assert!(!view.can_retry());
                     Action::Back
                 }
                 _ => Action::Back,
@@ -219,10 +217,10 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
                     CoinAction::Back
                 }
                 _ => {
-                    assert_eq!(view.pending(), coin.load(Ordering::SeqCst) == 3);
-                    assert_eq!(
-                        view.can_purchase(crate::account_services::test_server::coins::PACKAGE),
-                        !view.pending()
+                    assert!(!view.pending());
+                    assert!(!view.can_retry());
+                    assert!(
+                        !view.can_purchase(crate::account_services::test_server::coins::PACKAGE)
                     );
                     CoinAction::Back
                 }
@@ -247,6 +245,19 @@ fn fresh_services_oauth(coins: bool) -> TestResult {
         ))?;
         let state = mock.authority.lock().map_err(|_| "lock")?;
         assert_eq!(state.effects, 0);
+        let path = if coins {
+            "POST /api/v1/native-account/coin-purchases/orders "
+        } else {
+            "POST /api/v1/native-account/bazaar/commands "
+        };
+        assert_eq!(
+            state
+                .requests
+                .iter()
+                .filter(|r| r.starts_with(path))
+                .count(),
+            1
+        );
         assert_eq!(state.oauth_exchanges, 8);
         Ok(())
     })
@@ -265,7 +276,7 @@ fn commerce_oauth_bearer_is_absent_from_debug_and_log_output() -> TestResult {
     assert!(output.status.success(), "commerce test subprocess failed");
     let stdout = String::from_utf8(output.stdout)?;
     let stderr = String::from_utf8(output.stderr)?;
-    assert!(stdout.contains("3 passed"));
+    assert!(stdout.contains("4 passed"));
     assert!(
         stderr.contains("endpoint=directory"),
         "native logs must be captured"

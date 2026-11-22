@@ -191,6 +191,11 @@ async fn refresh(
     {
         accept(view, order.clone())?;
     }
+    for order in &catalogue.recent_orders {
+        if view.prior.contains(&order.request_id) {
+            accept(view, order.clone())?;
+        }
+    }
     if view.order.is_none()
         && !view.pending()
         && let Some(order) = catalogue
@@ -255,6 +260,7 @@ fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
         view.confirmed = None;
         view.post_refusal_status = None;
     }
+    view.prior.reconcile(&order.request_id);
     view.quote_until.remove(&order.quote_id);
     view.order = Some(order);
     view.checkout_unverified = false;

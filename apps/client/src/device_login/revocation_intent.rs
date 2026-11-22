@@ -9,7 +9,6 @@ impl DeviceLogin {
 
     /// Fence this process immediately and publish the intent before spawning a worker.
     pub(crate) fn block_remembered(&self) -> Result<(), NativeLoginError> {
-        self.clear_commerce();
         let process = self.journal.record_process_intent()?;
         if !process && let Some(path) = self.intent_path() {
             if let Some(bytes) = self.vault.read().map_err(|_| storage_error())?

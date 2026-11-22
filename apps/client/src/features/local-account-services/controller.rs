@@ -266,6 +266,7 @@ pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
     } else {
         view.unresolved.remove(&receipt.request_id);
     }
+    view.prior.reconcile(&receipt.request_id);
     view.feedback = match receipt.state {
         OperationState::Pending => {
             tr!("Awaiting the authoritative receipt. Check status or retry with the same identity.")

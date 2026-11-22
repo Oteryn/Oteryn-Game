@@ -524,7 +524,7 @@ fn owner_characters_borrow_token_and_classify_responses() -> TestResult {
         ],
     )?;
     let client = client_for(&server)?;
-    let token = AccessToken(SecretText("owner-access".into()), None);
+    let token = AccessToken(SecretText("owner-access".into()));
     let rows = runtime.block_on(client.owner_characters(&token, CancellationToken::new()))?;
     assert_eq!(rows[0].character_id, CHARACTER);
     assert_eq!(rows[0].availability, CharacterAvailability::Available);
@@ -943,7 +943,7 @@ fn owner_character_feed_rejects_invalid_names_and_duplicate_identities() -> Test
         feeds.push(serde_json::json!({"protocol_version": 2, "characters": [row.clone(), row]}));
         let server = spawn_server(&runtime, feeds.iter().map(|v| (200, "", v.to_string())).collect()).map_err(|e| e.to_string())?;
         let client = client_for(&server).map_err(|e| e.to_string())?;
-        let token = AccessToken(SecretText("owner-access".into()), None);
+        let token = AccessToken(SecretText("owner-access".into()));
         for _ in feeds {
             assert_eq!(runtime.block_on(client.owner_characters(&token, CancellationToken::new())).err(), Some(NativeLoginError::Platform(PlatformClientError::InvalidPayload)));
         }
