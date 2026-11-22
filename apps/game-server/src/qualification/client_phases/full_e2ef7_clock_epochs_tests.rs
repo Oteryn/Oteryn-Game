@@ -692,3 +692,32 @@ async fn old_frames_deadline() -> TestResult {
     peer.await??;
     Ok(())
 }
+
+#[test]
+fn m01_peer_operation_services_idle_client_across_three_probes() -> TestResult {
+    run_transport(|| async {
+        let completed = Arc::new(Notify::new());
+        let server_completed = Arc::clone(&completed);
+        let (mut client, peer) =
+            connect_peer(reading(359), 8, move |mut stream| async move {
+                for id in 1..=3 {
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    probe(&mut stream, id, 0).await?;
+                }
+                server_completed.notify_one();
+                wait_for_close(&mut stream).await;
+                Ok(())
+            })
+            .await?;
+        let session = client.join_snapshot().game_session_id;
+        super::super::provisioning::with_peer_liveness(&mut client, async {
+            completed.notified().await;
+            Ok(())
+        })
+        .await?;
+        assert_eq!(client.join_snapshot().game_session_id, session);
+        drop(client);
+        peer.await??;
+        Ok(())
+    })
+}

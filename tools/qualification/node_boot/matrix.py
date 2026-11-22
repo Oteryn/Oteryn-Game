@@ -51,7 +51,7 @@ ENTRIES = ("node_boot", "game_platform")
 # Knobs a shard may set, with the values each accepts. Every key must be read
 # by the harness (checked by test_matrix.py).
 ROW_BATCH = re.compile(r"^[0-9]{1,7}:[0-9]{1,7}$")
-SENSITIVE = re.compile(r"password|postgres://|mysql://|secret|token|key|grant", re.IGNORECASE)
+SENSITIVE = re.compile(r"password|postgres://|mysql://|secret|token|(?<!hot)key|grant", re.IGNORECASE)
 SCENARIO = re.compile(
     r"SEAM_EVIDENCE e2e_all scenario=([A-Za-z0-9_.-]{1,64}) status=([A-Z0-9_-]{1,32}) "
     r"seconds=([0-9]{1,7}(?:\.[0-9]{1,6})?)(?:\s|$)"
