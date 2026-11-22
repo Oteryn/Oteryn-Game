@@ -40,10 +40,34 @@ CREATE TABLE game_server_save_ground (
 CREATE INDEX game_server_save_ground_pending ON game_server_save_ground(occurrence_id,channel_id,item_id)
  WHERE disposition='pending';
 
+CREATE INDEX game_item_ground_save_scope ON game_item_ground_locations(world_id,channel_id,item_instance_id)
+ WHERE scope_kind=1 AND instance_id IS NULL;
+CREATE TRIGGER game_server_save_ground_terminal BEFORE UPDATE ON game_server_save_ground
+ FOR EACH ROW WHEN (OLD.disposition<>'pending' OR NEW.disposition NOT IN ('skipped','retired'))
+ EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_server_save_channel_terminal BEFORE UPDATE ON game_server_save_channels
+ FOR EACH ROW WHEN (OLD.state<>'frozen' OR NEW.state<>'complete')
+ EXECUTE FUNCTION game_item_immutable();
+
 REVOKE ALL ON game_server_save_occurrences,game_server_save_channels,game_server_save_ground FROM PUBLIC;
 GRANT SELECT ON game_server_save_occurrences TO oteryn_game_runtime;
-GRANT SELECT,INSERT,UPDATE ON game_server_save_channels,game_server_save_ground TO oteryn_game_runtime;
+GRANT SELECT,INSERT ON game_server_save_channels,game_server_save_ground TO oteryn_game_runtime;
+GRANT UPDATE (state) ON game_server_save_channels TO oteryn_game_runtime;
+GRANT UPDATE (disposition,reason,transaction_id) ON game_server_save_ground TO oteryn_game_runtime;
 GRANT SELECT ON game_server_save_occurrences,game_server_save_channels,game_server_save_ground TO oteryn_game_control;
+
+-- A freeze that cannot physically commit before the window leaves no cohort.
+CREATE FUNCTION game_server_save_cohort_committed_in_window() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NEW.state='frozen' AND NOT EXISTS(SELECT 1 FROM game_server_save_occurrences s
+   WHERE s.occurrence_id=NEW.occurrence_id AND s.cleanup_enabled
+    AND clock_timestamp()>=s.scheduled_at AND clock_timestamp()<s.freeze_until)
+ THEN RAISE EXCEPTION 'server save cohort window closed before commit' USING ERRCODE='23514'; END IF;
+ RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER game_server_save_cohort_committed_in_window AFTER INSERT ON game_server_save_channels
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_server_save_cohort_committed_in_window();
+REVOKE ALL ON FUNCTION game_server_save_cohort_committed_in_window() FROM PUBLIC;
 
 -- The save owner uses database time and a one-minute admission window.
 -- The last Berlin slot is recovered after restart even if its window expired.
@@ -313,6 +337,7 @@ GRANT EXECUTE ON FUNCTION game_server_save_retire_tree(uuid,uuid,uuid,numeric) T
 DO $$ DECLARE f regprocedure; BEGIN
  FOREACH f IN ARRAY ARRAY['game_retire_ground_tree_batch(uuid,uuid[],jsonb,boolean)'::regprocedure,
    'game_server_save_retirement_proven()'::regprocedure,
+   'game_server_save_cohort_committed_in_window()'::regprocedure,
    'game_server_save_retire_tree(uuid,uuid,uuid,numeric)'::regprocedure] LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
  END LOOP;

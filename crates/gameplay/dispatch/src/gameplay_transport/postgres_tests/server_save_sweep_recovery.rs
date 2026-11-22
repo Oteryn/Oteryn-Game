@@ -161,7 +161,7 @@ impl<'a> Scene<'a> {
 
     async fn poll(&self, cleanup: ServerSaveCleanup) -> TestResult<crate::durability::server_save_sweep::ServerSavePoll> {
         Ok(self.harness.root.publish_due_server_save(
-            self.facts.0.world, self.facts.0.channel, &self.owner(), cleanup,
+            &self.facts.0, &self.owner(), cleanup,
         ).await?)
     }
 
@@ -238,9 +238,9 @@ async fn qualify(harness: &Harness, case: Case) -> TestResult {
     let occurrence = scene.slot(true).await?;
 
     if matches!(case, Case::CohortRollback) {
-        inject(pool, "game_server_save_ground", "INSERT", "TRUE").await?;
+        fault(pool, Fault::Cohort, true).await?;
         assert!(scene.step(root).await.is_err());
-        drop_fault(pool, "game_server_save_ground").await?;
+        fault(pool, Fault::Cohort, false).await?;
         assert_eq!(readback(&scene, &occurrence).await?, [2, 0, 0, 0, 0, 0, 0, 0]);
         scene.step(root).await?;
         assert_eq!(readback(&scene, &occurrence).await?, [2, 0, 0, 0, 0, 1, 1, 0]);
@@ -264,22 +264,21 @@ async fn qualify(harness: &Harness, case: Case) -> TestResult {
 
     match case {
         Case::Restart => {
-            pickup_then_redrop(&scene).await?;
             seed_ground(pool, 104, None).await?;
-            scene.step(&fresh).await?;
+            pickup_then_redrop(&scene, &fresh).await?;
             assert_eq!(readback(&scene, &occurrence).await?, [3, 0, 0, 0, 0, 0, 1, 0]);
             assert_eq!(disposition(&scene, &occurrence, 101).await?, "skipped");
         }
         Case::TreeRollback => {
             // By the root UPDATE, both children have been updated and unlinked.
-            inject(pool, "game_item_instances", "UPDATE", "NEW.lifecycle=2 AND EXISTS(SELECT 1 FROM game_item_ground_locations g WHERE g.item_instance_id=OLD.item_instance_id)").await?;
+            fault(pool, Fault::Root, true).await?;
             assert!(scene.step(root).await.is_err());
-            drop_fault(pool, "game_item_instances").await?;
+            fault(pool, Fault::Root, false).await?;
             assert_eq!(readback(&scene, &occurrence).await?, [2, 2, 0, 0, 0, 1, 1, 0]);
             assert_eq!(lifecycle(&scene, 105).await?, 1);
-            inject(pool, "game_server_save_ground", "UPDATE", "NEW.disposition='retired'").await?;
+            fault(pool, Fault::Progress, true).await?;
             assert!(scene.step(root).await.is_err());
-            drop_fault(pool, "game_server_save_ground").await?;
+            fault(pool, Fault::Progress, false).await?;
             assert_eq!(readback(&scene, &occurrence).await?, [2, 2, 0, 0, 0, 1, 1, 0]);
             scene.step(&fresh).await?;
             assert_eq!(readback(&scene, &occurrence).await?, [1, 0, 1, 1, 1, 0, 1, 0]);
@@ -378,16 +377,35 @@ async fn seed_ground(pool: &PgPool, item: u8, parent: Option<u8>) -> TestResult 
     Ok(())
 }
 
-async fn inject(pool: &PgPool, table: &str, operation: &str, predicate: &str) -> TestResult {
-    sqlx::raw_sql(&format!("CREATE OR REPLACE FUNCTION reject_server_save() RETURNS trigger LANGUAGE plpgsql AS $$
-      BEGIN RAISE EXCEPTION 'injected server-save crash' USING ERRCODE='23514'; END $$;
-      CREATE TRIGGER reject_server_save BEFORE {operation} ON {table} FOR EACH ROW
-      WHEN ({predicate}) EXECUTE FUNCTION reject_server_save();")).execute(pool).await?;
-    Ok(())
+#[derive(Clone, Copy)]
+enum Fault {
+    Cohort,
+    Root,
+    Progress,
 }
 
-async fn drop_fault(pool: &PgPool, table: &str) -> TestResult {
-    sqlx::raw_sql(&format!("DROP TRIGGER reject_server_save ON {table}")).execute(pool).await?;
+async fn fault(pool: &PgPool, fault: Fault, install: bool) -> TestResult {
+    if install {
+        sqlx::query("CREATE OR REPLACE FUNCTION reject_server_save() RETURNS trigger LANGUAGE plpgsql AS $$
+          BEGIN
+            IF TG_TABLE_NAME='game_item_instances' THEN
+              IF NEW.lifecycle<>2 OR NOT EXISTS(SELECT 1 FROM game_item_ground_locations g
+                 WHERE g.item_instance_id=OLD.item_instance_id) THEN RETURN NEW; END IF;
+            END IF;
+            RAISE EXCEPTION 'injected server-save crash' USING ERRCODE='23514';
+          END $$").execute(pool).await?;
+    }
+    let sql = match (fault, install) {
+        (Fault::Cohort,true) => "CREATE TRIGGER reject_server_save BEFORE INSERT ON game_server_save_ground
+           FOR EACH ROW EXECUTE FUNCTION reject_server_save()",
+        (Fault::Root,true) => "CREATE TRIGGER reject_server_save BEFORE UPDATE ON game_item_instances
+           FOR EACH ROW EXECUTE FUNCTION reject_server_save()",
+        (Fault::Progress,true) => "CREATE TRIGGER reject_server_save BEFORE UPDATE ON game_server_save_ground
+           FOR EACH ROW WHEN (NEW.disposition='retired') EXECUTE FUNCTION reject_server_save()",
+        (Fault::Root,false) => "DROP TRIGGER reject_server_save ON game_item_instances",
+        (Fault::Cohort | Fault::Progress,false) => "DROP TRIGGER reject_server_save ON game_server_save_ground",
+    };
+    sqlx::query(sql).execute(pool).await?;
     Ok(())
 }
 
@@ -449,7 +467,7 @@ impl ItemLoopContent for LoopContent {
     }
 }
 
-async fn pickup_then_redrop(scene: &Scene<'_>) -> TestResult {
+async fn pickup_then_redrop(scene: &Scene<'_>, replacement: &DurabilityRoot) -> TestResult {
     let h = scene.harness;
     let root = &h.root;
     let current = FreshAdmissionStore::from_root(root.clone())
@@ -485,6 +503,10 @@ async fn pickup_then_redrop(scene: &Scene<'_>) -> TestResult {
                 map_revision: MAP.into(), content_revision: CONTENT.into(), placement_context: FRAME.to_vec(),
             }),
         }).await?.map_err(debug)?;
-    assert_eq!(dropped.operation, 4);
-    Ok(())
+        assert_eq!(dropped.operation, 4);
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let (moved, swept) = tokio::join!(moves, scene.step(replacement));
+    moved?;
+    swept
 }

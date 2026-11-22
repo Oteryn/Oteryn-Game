@@ -8,7 +8,7 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::spell_item_transaction::assert_creature_event_scope_in_transaction;
 use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
-use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
+use crate::foundation::{ChannelId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId};
 use serde_json::{Value, json};
 use sqlx::{Postgres, Row, Transaction, postgres::PgRow};
 use std::collections::BTreeSet;
@@ -197,6 +197,10 @@ async fn census_page(
         "SELECT g.item_instance_id::text AS item_id,i.state_revision::text AS item_revision,
                 i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,
                 to_jsonb(i) AS item_evidence,to_jsonb(g) AS ground_evidence,
+                (EXISTS(SELECT 1 FROM game_item_nested_entries e WHERE e.parent_item_instance_id=i.item_instance_id)
+                 OR EXISTS(SELECT 1 FROM game_item_corpse_container_entries e WHERE e.parent_item_instance_id=i.item_instance_id)
+                 OR EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.parent_item_instance_id=i.item_instance_id)
+                 OR EXISTS(SELECT 1 FROM game_item_house_interior_locations h WHERE h.item_instance_id=i.item_instance_id)) AS inspect_tree,
                 (EXISTS(SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=i.item_instance_id
                            AND m.transaction_id=i.minted_transaction_id AND m.loot_purpose_key<>'CORPSE_MATERIALIZATION')
                  OR EXISTS(SELECT 1 FROM game_character_starter_grants m WHERE m.item_instance_id=i.item_instance_id
@@ -211,8 +215,9 @@ async fn census_page(
          JOIN game_item_instances i USING(item_instance_id,world_id)
          WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid
            AND g.scope_kind=1 AND g.instance_id IS NULL AND i.lifecycle=1 AND i.quantity>0
-           AND ($3::bytea IS NULL OR CASE WHEN $5 THEN g.item_instance_id=encode($3,'hex')::uuid
-                 ELSE g.item_instance_id>encode($3,'hex')::uuid END)
+           AND g.item_instance_id>=COALESCE(encode($3::bytea,'hex')::uuid,'00000000-0000-0000-0000-000000000000'::uuid)
+           AND (CASE WHEN $5 THEN g.item_instance_id=encode($3,'hex')::uuid
+                 ELSE g.item_instance_id IS DISTINCT FROM encode($3,'hex')::uuid END)
          ORDER BY g.item_instance_id LIMIT $4",
     )
     .bind(binding.world.as_bytes().as_slice())
@@ -248,6 +253,12 @@ async fn census_page(
         };
         let disposition = match exclusion(facts, binding, policy, &root, &row)? {
             Some(excluded) => excluded,
+            None if root.item_revision == u64::MAX => {
+                GroundSweepDisposition::Unknown(GroundSweepUnknown::CustodyTree)
+            }
+            None if !row.try_get::<bool, _>("inspect_tree")? => {
+                GroundSweepDisposition::Eligible(Vec::new())
+            }
             None => match read_tree(tx, &root).await? {
                 Some(tree) => GroundSweepDisposition::Eligible(tree),
                 None => GroundSweepDisposition::Unknown(GroundSweepUnknown::CustodyTree),
@@ -400,14 +411,19 @@ async fn read_tree(
         if depth == 0 {
             continue;
         }
+        let corpse = row.try_get::<bool, _>("corpse")?;
+        let item_revision = read_u64(&row, "item_revision")?;
+        if (corpse && depth != 1) || item_revision == u64::MAX {
+            return Ok(None);
+        }
         tree.push(GroundSweepEdge {
             item_id,
             depth,
-            item_revision: read_u64(&row, "item_revision")?,
+            item_revision,
             parent_id: uuid_text(row.try_get("parent")?)?,
             ordinal: read_u64(&row, "ordinal")?,
             placed_transaction: uuid_text(row.try_get("placement")?)?,
-            custody: if row.try_get("corpse")? {
+            custody: if corpse {
                 GroundSweepCustody::Corpse
             } else {
                 GroundSweepCustody::Nested
@@ -450,18 +466,22 @@ impl DurabilityRoot {
     /// Duplicate World publishers converge on one immutable scheduled occurrence.
     pub async fn publish_due_server_save(
         &self,
-        world: WorldId,
-        channel: ChannelId,
+        binding: &GroundSweepBinding,
         owner: &ServerSaveOwner<'_>,
         cleanup: ServerSaveCleanup,
     ) -> Result<ServerSavePoll, DurabilityError> {
+        let world = binding.world;
+        let channel = binding.channel;
+        let scope = RuntimeScopeRefV1::channel(world, channel);
+        let generation = ScopeOwnershipGeneration::new(binding.generation)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
         let mut context = owner;
         self.try_issue_semantic_pass()?
             .run_with_context(&mut context, move |holder, deadline, owner| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     super::db::lock_admission_relations(&mut tx).await?;
-                    if !super::runtime_scope_assignment::prove_current_incarnation(&mut tx, owner.node).await? {
+                    if !super::character_progression::assert_runtime_scope_fence(&mut tx, scope, generation, owner.node).await? {
                         return Ok(ServerSavePoll::default());
                     }
                     sqlx::query("SELECT game_server_save_publish_due(encode($1,'hex')::uuid,$2::text::numeric,$3,$4)")

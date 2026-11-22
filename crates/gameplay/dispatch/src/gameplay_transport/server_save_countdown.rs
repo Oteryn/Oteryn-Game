@@ -179,7 +179,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let poll = self
             .root
-            .publish_due_server_save(self.world_id, self.channel_id, &owner, cleanup)
+            .publish_due_server_save(&binding, &owner, cleanup)
             .await?;
         if poll.latest_retirement.is_some() && poll.latest_retirement != *latest_retirement {
             self.states.loop_ground.invalidate();
@@ -195,9 +195,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             binding,
             room,
             profiles: room.item_profile_source(),
-            bundle_revision: self
-                .bundle_map()
-                .map(|bundle| crate::map::overlay::map_revision(bundle.overlay.base())),
+            bundle_revision: match room.movement_cells().index() {
+                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
+                    Some(crate::map::overlay::map_revision(
+                        index.map().overlay.base(),
+                    ))
+                }
+                _ => None,
+            },
         };
         // Also invalidates if cancellation or a lost COMMIT response interrupts
         // publication. The next Ground read rebuilds under the cache epoch.
