@@ -51,24 +51,14 @@ pub(super) async fn store(
 }
 
 pub(super) fn category_id(value: LootCategory) -> i16 {
-    match value {
-        LootCategory::Gold => 0,
-        LootCategory::CreatureProduct => 1,
-        LootCategory::Equipment => 2,
-        LootCategory::Consumable => 3,
-        LootCategory::Other => 4,
-    }
+    value as i16
 }
+
 fn category(value: i16) -> std::result::Result<LootCategory, DurabilityError> {
-    match value {
-        0 => Ok(LootCategory::Gold),
-        1 => Ok(LootCategory::CreatureProduct),
-        2 => Ok(LootCategory::Equipment),
-        3 => Ok(LootCategory::Consumable),
-        4 => Ok(LootCategory::Other),
-        _ => Err(DurabilityError::InvalidStoredState),
-    }
+    usize::try_from(value).ok().and_then(|id| LootCategory::ALL.get(id).copied())
+        .ok_or(DurabilityError::InvalidStoredState)
 }
+
 pub(super) fn recipient_parts(value: Recipient<[u8; 16]>) -> (Option<[u8; 16]>, bool) {
     match value {
         Recipient::Container(id) => (Some(id), false),
@@ -131,9 +121,10 @@ pub(super) async fn load_obtain(
     let rows = sqlx::query(
         "SELECT category, uuid_send(container_id) AS target, gold_pouch
          FROM game_character_quick_loot_obtain
-         WHERE character_id = encode($1, 'hex')::uuid ORDER BY category LIMIT 6",
+         WHERE character_id = encode($1, 'hex')::uuid ORDER BY category LIMIT $2",
     )
     .bind(character.as_slice())
+    .bind((1 + LootCategory::ALL.len()) as i64)
     .fetch_all(&mut **tx)
     .await?;
     rows.into_iter().map(|row| {
@@ -186,13 +177,7 @@ mod tests {
 
     #[test]
     fn category_ids_are_stable() -> std::result::Result<(), DurabilityError> {
-        for (id, value) in [
-            LootCategory::Gold,
-            LootCategory::CreatureProduct,
-            LootCategory::Equipment,
-            LootCategory::Consumable,
-            LootCategory::Other,
-        ]
+        for (id, value) in LootCategory::ALL
         .into_iter()
         .enumerate()
         {

@@ -158,7 +158,7 @@ pub(super) async fn execute(
     }
     .encode()
 }
-async fn gift_status(
+pub(super) async fn gift_status(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
 ) -> Option<[u8; wire::GIFT_OF_LIFE_STATUS_BYTES]> {

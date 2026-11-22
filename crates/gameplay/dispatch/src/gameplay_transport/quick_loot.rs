@@ -3,9 +3,9 @@ use super::{
     ComposedFreshAdmission,
     connection::{AdmittedSession, UseCommand},
 };
+use crate::durability::item_loop_move::QuickLootInput;
 use crate::foundation::CommandStatus;
 use crate::foundation::{CommandId, CommandRef};
-use oteryn_protocol_oteryn::quick_loot::QuickLootRequest;
 
 macro_rules! authority_methods {
     () => {
@@ -13,7 +13,8 @@ macro_rules! authority_methods {
             &self,
             _admitted: AdmittedSession,
             _command: UseCommand,
-            _request: oteryn_protocol_oteryn::quick_loot::QuickLootRequest,
+            _wire: (u32, &[u8]),
+            _request: Option<oteryn_protocol_oteryn::quick_loot::QuickLootRequest>,
         ) -> impl std::future::Future<Output = Option<(crate::foundation::CommandStatus, Vec<u8>)>>
         {
             async { None }
@@ -40,9 +41,19 @@ macro_rules! composed_methods {
             &self,
             admitted: connection::AdmittedSession,
             command: connection::UseCommand,
-            request: oteryn_protocol_oteryn::quick_loot::QuickLootRequest,
+            wire: (u32, &[u8]),
+            request: Option<oteryn_protocol_oteryn::quick_loot::QuickLootRequest>,
         ) -> Option<(crate::foundation::CommandStatus, Vec<u8>)> {
-            self.execute_quick_loot(admitted, command, request).await
+            self.execute_quick_loot(
+                admitted,
+                command,
+                crate::durability::item_loop_move::QuickLootInput::Managed {
+                    command_type: wire.0,
+                    payload: wire.1,
+                    request,
+                },
+            )
+            .await
         }
         async fn quick_loot(
             &self,
@@ -53,7 +64,13 @@ macro_rules! composed_methods {
             crate::foundation::CommandStatus,
             oteryn_protocol_oteryn::quick_loot::QuickLootResult,
         )> {
-            let (status, result) = self.execute_quick_loot(admitted, command, request).await?;
+            let (status, result) = self
+                .execute_quick_loot(
+                    admitted,
+                    command,
+                    crate::durability::item_loop_move::QuickLootInput::Legacy(request),
+                )
+                .await?;
             Some((
                 status,
                 oteryn_protocol_oteryn::quick_loot::decode_quick_loot_result(&result).ok()?,
@@ -68,7 +85,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
         command: UseCommand,
-        request: QuickLootRequest,
+        input: QuickLootInput<'_>,
     ) -> Option<(CommandStatus, Vec<u8>)> {
         let fence = command.item_fence?;
         let actor = admitted.runtime_actor?;
@@ -94,6 +111,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .concat()
         .try_into()
         .ok()?;
+        if matches!(input, QuickLootInput::Managed { .. }) {
+            if !super::battle_instinct_status::actor_is_current(&runtime, admitted) {
+                return Some((CommandStatus::Rejected, Vec::new()));
+            }
+            drop(runtime);
+        }
         let premium = self
             .session_premium_gate(admitted.game_session_id)
             .await
@@ -114,7 +137,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .with_wheel(self.premium_coordinator),
                 cell,
                 premium,
-                request,
+                input,
             )
             .await
             .ok()?;

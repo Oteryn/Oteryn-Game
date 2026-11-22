@@ -555,12 +555,12 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
                 .and_then(|i| i.definition_ref("Item", "oteryn:item.tibia.i3031", "definition-r1"))
                 .ok_or("coin ref")?
                 .get();
-            let id = admitted.continuity.next_command_id;
+            let command_id = admitted.continuity.next_command_id;
             let result = wire_requests(
                 &owner,
                 &mut admitted,
                 &[(
-                    id,
+                    command_id,
                     QuickLootRequest {
                         filter_mode: Some(QuickLootFilterMode::Skip),
                         filter_definition_ref: Some(reference),
@@ -583,6 +583,7 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
                 "full list reloads without truncation or mutation"
             );
             owner.premium_coordinator = Some(&premium);
+            owner.admit_premium(id(40), admitted.game_session_id);
             quick_loot_destination_management(&owner, &mut admitted, &harness.pool).await?;
             equip_quiver_via_wire(&owner, admitted, &harness.pool).await?;
         }
@@ -620,8 +621,9 @@ async fn quick_loot_destination_management(
         .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(coin.as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 98, 607])
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 98, 607])
             .ok_or("quick loot destination capability")?;
+    assert!(admitted.continuity.selected_capabilities.contains(607));
     let assign = QuickLootRequest {
         recipient: Some(QuickLootRecipient::Container),
         recipient_id: Some(id(71)),
@@ -635,7 +637,7 @@ async fn quick_loot_destination_management(
         },
         review,
         QuickLootRequest {
-            category: Some(QuickLootCategory::Gold),
+            category: Some(QuickLootCategory::Boots),
             ..request(QuickLootAction::UnassignLoot)
         },
         QuickLootRequest {
@@ -644,20 +646,24 @@ async fn quick_loot_destination_management(
             ..assign
         },
         review,
-        QuickLootRequest {
-            corpse: Some(id(70)),
-            ..request(QuickLootAction::Distribute)
-        },
+        request(QuickLootAction::Distribute),
     ];
+    // A fresh domain 9 snapshot allocates the backpack handle first.
+    let backpack = std::num::NonZeroU64::new(admitted.continuity.item_view.handle_counter + 1)
+        .ok_or("backpack handle")?;
     let commands: Vec<_> = commands
         .iter()
         .map(|request| {
-            Ok((
-                request.action.command_type(),
-                encode_quick_loot_request(request).map_err(debug)?,
-            ))
+            let payload = if request.action == QuickLootAction::Distribute {
+                encode_quick_loot_view_request(request, backpack)
+            } else {
+                encode_quick_loot_request(request)
+            }
+            .map_err(debug)?;
+            Ok((request.action.command_type(), payload))
         })
         .collect::<TestResult<_>>()?;
+    let distribution_id = admitted.continuity.next_command_id + (commands.len() - 1) as u64;
     let (replies, _) =
         super::parameter_spell_fixtures::exchange(owner, admitted, &commands, false, false).await?;
     assert_eq!(replies.len(), commands.len());
@@ -667,14 +673,14 @@ async fn quick_loot_destination_management(
             .all(|(status, _)| *status == CommandStatus::Accepted)
     );
     let first = decode_quick_loot_destinations(&replies[1].1).map_err(debug)?;
-    assert_eq!(first.loot.len(), 6);
+    assert_eq!(first.loot.len(), QuickLootCategory::ALL.len() + 1);
     assert!(first.loot.iter().all(|r| r.recipient_id == Some(id(71))));
     let after = decode_quick_loot_destinations(&replies[4].1).map_err(debug)?;
     assert!(
         !after
             .loot
             .iter()
-            .any(|r| r.category == Some(QuickLootCategory::Gold))
+            .any(|r| r.category == Some(QuickLootCategory::Boots))
     );
     assert_eq!(after.obtain.len(), 1);
     assert_eq!(after.obtain[0].category, Some(QuickLootCategory::Gold));
@@ -687,6 +693,14 @@ async fn quick_loot_destination_management(
     let actual: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(parent_item_instance_id) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(coin.as_slice()).fetch_one(pool).await?;
     assert_eq!(actual, id(71));
+    // Resume an original command whose terminal result had not been observed.
+    // The fresh snapshot allocates new handles, so the old handle cannot resolve.
+    admitted.continuity.next_command_id = distribution_id;
+    let (retry, _) =
+        super::parameter_spell_fixtures::exchange(owner, admitted, &commands[5..], false, false)
+            .await?;
+    assert_eq!(retry, [replies[5].clone()]);
+
     Ok(())
 }
 

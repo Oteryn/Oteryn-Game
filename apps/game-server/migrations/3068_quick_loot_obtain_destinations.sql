@@ -1,7 +1,12 @@
+ALTER TABLE game_character_quick_loot_categories
+    DROP CONSTRAINT game_character_quick_loot_categories_category_check,
+    ADD CONSTRAINT game_character_quick_loot_categories_category_check
+        CHECK (category BETWEEN 0 AND 26);
+
 CREATE TABLE game_character_quick_loot_obtain (
     character_id UUID NOT NULL REFERENCES game_character_roots(character_id)
         ON DELETE CASCADE,
-    category SMALLINT NOT NULL CHECK (category BETWEEN -1 AND 4),
+    category SMALLINT NOT NULL CHECK (category BETWEEN -1 AND 26),
     container_id UUID,
     gold_pouch BOOLEAN NOT NULL,
     PRIMARY KEY (character_id, category),

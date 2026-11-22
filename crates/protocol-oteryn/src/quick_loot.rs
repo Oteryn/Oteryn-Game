@@ -3,6 +3,7 @@ use crate::charm_wire::{
     CyclopediaWireError, push_message_field, push_nonzero_varint_field, push_varint_field,
     read_bytes, read_uint32, read_varint, set_once,
 };
+use crate::item_view::ItemHandle;
 
 pub const CAPABILITY_QUICK_LOOT_V1: u32 = 98;
 pub const COMMAND_TYPE_QUICK_LOOT: u32 = 114;
@@ -32,6 +33,7 @@ pub enum QuickLootAction {
     AssignAllLoot = 12,
     AssignAllObtain = 13,
     Distribute = 14,
+    AssignLoot = 15,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuickLootCategory {
@@ -40,16 +42,68 @@ pub enum QuickLootCategory {
     Equipment = 3,
     Consumable = 4,
     Other = 5,
+    Armor = 6,
+    Necklace = 7,
+    Boots = 8,
+    Containers = 9,
+    Decoration = 10,
+    Food = 11,
+    Helmet = 12,
+    Legs = 13,
+    Potion = 14,
+    Ring = 15,
+    Rune = 16,
+    Shield = 17,
+    Tools = 18,
+    Valuables = 19,
+    Ammunition = 20,
+    Axe = 21,
+    Club = 22,
+    DistanceWeapon = 23,
+    Sword = 24,
+    Wand = 25,
+    Quiver = 26,
+    FistWeapon = 27,
 }
 impl QuickLootCategory {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 27] = [
         Self::Gold,
         Self::CreatureProduct,
         Self::Equipment,
         Self::Consumable,
         Self::Other,
+        Self::Armor,
+        Self::Necklace,
+        Self::Boots,
+        Self::Containers,
+        Self::Decoration,
+        Self::Food,
+        Self::Helmet,
+        Self::Legs,
+        Self::Potion,
+        Self::Ring,
+        Self::Rune,
+        Self::Shield,
+        Self::Tools,
+        Self::Valuables,
+        Self::Ammunition,
+        Self::Axe,
+        Self::Club,
+        Self::DistanceWeapon,
+        Self::Sword,
+        Self::Wand,
+        Self::Quiver,
+        Self::FistWeapon,
     ];
+
+    pub const fn from_wire(value: u32) -> Option<Self> {
+        match value.checked_sub(1) {
+            Some(index) if index < Self::ALL.len() as u32 => Some(Self::ALL[index as usize]),
+            _ => None,
+        }
+    }
 }
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuickLootRecipient {
     Container = 1,
@@ -99,7 +153,8 @@ impl QuickLootAction {
             | Self::AssignObtain
             | Self::UnassignObtain
             | Self::AssignAllLoot
-            | Self::AssignAllObtain => COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+            | Self::AssignAllObtain
+            | Self::AssignLoot => COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
             Self::Distribute => COMMAND_TYPE_QUICK_LOOT_DISTRIBUTE,
         }
     }
@@ -119,13 +174,14 @@ pub struct QuickLootDestinations {
     pub fallback_to_main: bool,
 }
 
-pub const MAX_QUICK_LOOT_DESTINATIONS_BYTES: usize = 3 + 2 * 6 * 18;
+const MAX_DESTINATIONS_PER_KIND: usize = 1 + QuickLootCategory::ALL.len();
+pub const MAX_QUICK_LOOT_DESTINATIONS_BYTES: usize = 3 + 2 * MAX_DESTINATIONS_PER_KIND * 18;
 
 // Each section is sorted by category, with the default row first when present.
 pub fn encode_quick_loot_destinations(value: &QuickLootDestinations) -> WireResult<Vec<u8>> {
     let mut bytes = vec![u8::from(value.fallback_to_main)];
     for rows in [&value.loot, &value.obtain] {
-        if rows.len() > 6 {
+        if rows.len() > MAX_DESTINATIONS_PER_KIND {
             return malformed();
         }
         bytes.push(rows.len() as u8);
@@ -158,7 +214,7 @@ pub fn decode_quick_loot_destinations(mut bytes: &[u8]) -> WireResult<QuickLootD
     let mut by_kind = [Vec::new(), Vec::new()];
     for rows in &mut by_kind {
         let (count, rest) = bytes.split_first().ok_or(QuickLootWireError::Malformed)?;
-        if *count > 6 {
+        if usize::from(*count) > MAX_DESTINATIONS_PER_KIND {
             return malformed();
         }
         bytes = rest;
@@ -170,8 +226,7 @@ pub fn decode_quick_loot_destinations(mut bytes: &[u8]) -> WireResult<QuickLootD
                 None
             } else {
                 Some(
-                    *QuickLootCategory::ALL
-                        .get(usize::from(*category - 1))
+                    QuickLootCategory::from_wire(u32::from(*category))
                         .ok_or(QuickLootWireError::Malformed)?,
                 )
             };
@@ -246,10 +301,33 @@ fn uuid(bytes: &[u8]) -> WireResult<[u8; 16]> {
 }
 
 pub fn encode_quick_loot_request(request: &QuickLootRequest) -> WireResult<Vec<u8>> {
-    validate_request(request)?;
+    validate_request(request, false)?;
+    Ok(encode_request(request, None))
+}
+
+/// Encode a native item handle for an assignment or distribution. Leave the
+/// corresponding UUID field absent. The server resolves the handle on entry.
+pub fn encode_quick_loot_view_request(
+    request: &QuickLootRequest,
+    handle: ItemHandle,
+) -> WireResult<Vec<u8>> {
+    if request.action.command_type() == COMMAND_TYPE_QUICK_LOOT
+        || request.corpse.is_some()
+        || request.recipient_id.is_some()
+    {
+        return malformed();
+    }
+    validate_request(request, true)?;
+    Ok(encode_request(request, Some(handle.get().to_le_bytes())))
+}
+
+fn encode_request(r: &QuickLootRequest, handle: Option<[u8; 8]>) -> Vec<u8> {
+    let request = r;
     let mut out = Vec::new();
     push_varint_field(&mut out, 1, request.action as u64);
-    if let Some(value) = request.corpse {
+    if let Some(value) = handle.filter(|_| request.action == QuickLootAction::Distribute) {
+        push_message_field(&mut out, 2, &value);
+    } else if let Some(value) = request.corpse {
         push_message_field(&mut out, 2, &value);
     }
     if let Some(value) = request.category {
@@ -258,7 +336,9 @@ pub fn encode_quick_loot_request(request: &QuickLootRequest) -> WireResult<Vec<u
     if let Some(value) = request.recipient {
         push_varint_field(&mut out, 4, value as u64);
     }
-    if let Some(value) = request.recipient_id {
+    if let Some(value) = handle.filter(|_| request.action != QuickLootAction::Distribute) {
+        push_message_field(&mut out, 5, &value);
+    } else if let Some(value) = request.recipient_id {
         push_message_field(&mut out, 5, &value);
     }
     push_nonzero_varint_field(&mut out, 6, u64::from(request.fallback_to_main));
@@ -268,9 +348,13 @@ pub fn encode_quick_loot_request(request: &QuickLootRequest) -> WireResult<Vec<u
     if let Some(reference) = request.filter_definition_ref {
         push_varint_field(&mut out, 8, u64::from(reference));
     }
-    Ok(out)
+    out
 }
-fn validate_request(r: &QuickLootRequest) -> WireResult<()> {
+
+fn validate_request(r: &QuickLootRequest, has_handle: bool) -> WireResult<()> {
+    let has_source = r.corpse.is_some() || (has_handle && r.action == QuickLootAction::Distribute);
+    let has_recipient =
+        r.recipient_id.is_some() || (has_handle && r.action != QuickLootAction::Distribute);
     let filter_action = matches!(
         r.action,
         QuickLootAction::FilterAdd
@@ -278,29 +362,33 @@ fn validate_request(r: &QuickLootRequest) -> WireResult<()> {
             | QuickLootAction::FilterClear
             | QuickLootAction::FilterSelect
     );
+    if r.action == QuickLootAction::Assign && r.category.is_some_and(|c| c as u8 > 5) {
+        return malformed();
+    }
     if !filter_action && (r.filter_mode.is_some() || r.filter_definition_ref.is_some()) {
         return malformed();
     }
     let valid = match r.action {
         QuickLootAction::Click => {
-            r.corpse.is_some()
+            has_source
                 && r.category.is_none()
                 && r.recipient.is_none()
-                && r.recipient_id.is_none()
+                && !has_recipient
                 && !r.fallback_to_main
         }
         QuickLootAction::LootAll => {
-            r.corpse.is_none()
+            !has_source
                 && r.category.is_none()
                 && r.recipient.is_none()
-                && r.recipient_id.is_none()
+                && !has_recipient
                 && !r.fallback_to_main
         }
         QuickLootAction::Assign
+        | QuickLootAction::AssignLoot
         | QuickLootAction::AssignObtain
         | QuickLootAction::AssignAllLoot
         | QuickLootAction::AssignAllObtain => {
-            r.corpse.is_none()
+            !has_source
                 && (!matches!(
                     r.action,
                     QuickLootAction::AssignAllLoot | QuickLootAction::AssignAllObtain
@@ -310,30 +398,29 @@ fn validate_request(r: &QuickLootRequest) -> WireResult<()> {
                     QuickLootAction::AssignObtain | QuickLootAction::AssignAllObtain
                 ) || !r.fallback_to_main)
                 && r.recipient.is_some()
-                && r.recipient_id.is_some()
-                    == !matches!(r.recipient, Some(QuickLootRecipient::MainContainer))
+                && has_recipient == !matches!(r.recipient, Some(QuickLootRecipient::MainContainer))
         }
         QuickLootAction::UnassignLoot
         | QuickLootAction::UnassignObtain
         | QuickLootAction::ReviewDestinations
         | QuickLootAction::Distribute => {
-            r.corpse.is_some() == (r.action == QuickLootAction::Distribute)
+            has_source == (r.action == QuickLootAction::Distribute)
                 && (!matches!(
                     r.action,
                     QuickLootAction::ReviewDestinations | QuickLootAction::Distribute
                 ) || r.category.is_none())
                 && r.recipient.is_none()
-                && r.recipient_id.is_none()
+                && !has_recipient
                 && !r.fallback_to_main
         }
         QuickLootAction::FilterAdd
         | QuickLootAction::FilterRemove
         | QuickLootAction::FilterClear
         | QuickLootAction::FilterSelect => {
-            r.corpse.is_none()
+            !has_source
                 && r.category.is_none()
                 && r.recipient.is_none()
-                && r.recipient_id.is_none()
+                && !has_recipient
                 && !r.fallback_to_main
                 && r.filter_mode.is_some()
                 && if matches!(
@@ -349,12 +436,31 @@ fn validate_request(r: &QuickLootRequest) -> WireResult<()> {
     if valid { Ok(()) } else { malformed() }
 }
 pub fn decode_quick_loot_request(payload: &[u8]) -> WireResult<QuickLootRequest> {
+    decode_quick_loot_view_request(payload, |_| None)
+}
+
+/// Resolve a reference only through the admitted session's current handle table.
+pub fn decode_quick_loot_view_request(
+    payload: &[u8],
+    resolve: impl Fn(ItemHandle) -> Option<[u8; 16]>,
+) -> WireResult<QuickLootRequest> {
     if payload.len() > MAX_QUICK_LOOT_REQUEST_BYTES {
         return Err(QuickLootWireError::LimitExceeded);
     }
     let (mut action, mut corpse, mut category, mut recipient, mut recipient_id, mut fallback) =
         (None, None, None, None, None, None);
     let (mut filter_mode, mut filter_definition_ref) = (None, None);
+    let mut raw_handle = None;
+    let mut reference = |bytes: &[u8]| -> WireResult<[u8; 16]> {
+        if let Ok(handle_bytes) = <[u8; 8]>::try_from(bytes) {
+            let handle = ItemHandle::new(u64::from_le_bytes(handle_bytes))
+                .ok_or(QuickLootWireError::Malformed)?;
+            set_once(&mut raw_handle, handle_bytes)?;
+            resolve(handle).ok_or(QuickLootWireError::Malformed)
+        } else {
+            uuid(bytes)
+        }
+    };
     read_fields(payload, |number, wire, input, cursor| {
         match (number, wire) {
             (1, 0) => set_once(
@@ -376,22 +482,15 @@ pub fn decode_quick_loot_request(payload: &[u8]) -> WireResult<QuickLootRequest>
                         (12, QuickLootAction::AssignAllLoot),
                         (13, QuickLootAction::AssignAllObtain),
                         (14, QuickLootAction::Distribute),
+                        (15, QuickLootAction::AssignLoot),
                     ],
                 )?,
             ),
-            (2, 2) => set_once(&mut corpse, uuid(read_bytes(input, cursor)?)?),
+            (2, 2) => set_once(&mut corpse, reference(read_bytes(input, cursor)?)?),
             (3, 0) => set_once(
                 &mut category,
-                enum_value(
-                    read_uint32(input, cursor)?,
-                    &[
-                        (1, QuickLootCategory::Gold),
-                        (2, QuickLootCategory::CreatureProduct),
-                        (3, QuickLootCategory::Equipment),
-                        (4, QuickLootCategory::Consumable),
-                        (5, QuickLootCategory::Other),
-                    ],
-                )?,
+                QuickLootCategory::from_wire(read_uint32(input, cursor)?)
+                    .ok_or(QuickLootWireError::Malformed)?,
             ),
             (4, 0) => set_once(
                 &mut recipient,
@@ -404,7 +503,7 @@ pub fn decode_quick_loot_request(payload: &[u8]) -> WireResult<QuickLootRequest>
                     ],
                 )?,
             ),
-            (5, 2) => set_once(&mut recipient_id, uuid(read_bytes(input, cursor)?)?),
+            (5, 2) => set_once(&mut recipient_id, reference(read_bytes(input, cursor)?)?),
             (6, 0) => {
                 let v = read_uint32(input, cursor)?;
                 if v > 1 {
@@ -436,8 +535,11 @@ pub fn decode_quick_loot_request(payload: &[u8]) -> WireResult<QuickLootRequest>
         filter_mode,
         filter_definition_ref,
     };
-    validate_request(&result)?;
-    if encode_quick_loot_request(&result)? != payload {
+    validate_request(&result, false)?;
+    if raw_handle.is_some() && result.action.command_type() == COMMAND_TYPE_QUICK_LOOT {
+        return malformed();
+    }
+    if encode_request(&result, raw_handle) != payload {
         return malformed();
     }
     Ok(result)

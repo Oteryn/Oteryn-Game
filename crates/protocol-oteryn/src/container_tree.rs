@@ -52,6 +52,12 @@ pub struct ContainerSeek {
 }
 
 impl ContainerSeek {
+    pub fn encode(self) -> Option<[u8; 4]> {
+        let [low, high] = self.offset.to_le_bytes();
+        let payload = [self.view_id, low, high, self.page_size];
+        Self::decode(&payload).map(|_| payload)
+    }
+
     pub fn decode(payload: &[u8]) -> Option<Self> {
         let [view_id, low, high, page_size] = payload else {
             return None;
@@ -80,6 +86,18 @@ impl ContainerPage {
         let [low, high] = self.offset.to_le_bytes();
         let [total_low, total_high] = self.total.to_le_bytes();
         [low, high, total_low, total_high, self.page_size]
+    }
+
+    pub fn decode(payload: &[u8]) -> Option<Self> {
+        let [low, high, total_low, total_high, page_size] = *<&[u8; 5]>::try_from(payload).ok()?;
+        let offset = u16::from_le_bytes([low, high]);
+        let total = u16::from_le_bytes([total_low, total_high]);
+        ContainerSeek::decode(&[0, low, high, page_size])?;
+        (offset == 0 || offset < total).then_some(Self {
+            offset,
+            total,
+            page_size,
+        })
     }
 }
 

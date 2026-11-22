@@ -30,14 +30,18 @@ pub fn is_loot_coin(definition: &TypedDefinitionRef) -> bool {
         )
 }
 
-fn category(value: QuickLootCategory) -> LootCategory {
-    match value {
-        QuickLootCategory::Gold => LootCategory::Gold,
-        QuickLootCategory::CreatureProduct => LootCategory::CreatureProduct,
-        QuickLootCategory::Equipment => LootCategory::Equipment,
-        QuickLootCategory::Consumable => LootCategory::Consumable,
-        QuickLootCategory::Other => LootCategory::Other,
+const _: () = {
+    assert!(LootCategory::ALL.len() == QuickLootCategory::ALL.len());
+    let mut index = 0;
+    while index < LootCategory::ALL.len() {
+        assert!(LootCategory::ALL[index] as usize == index);
+        assert!(QuickLootCategory::ALL[index] as usize == index + 1);
+        index += 1;
     }
+};
+
+fn category(value: QuickLootCategory) -> LootCategory {
+    LootCategory::ALL[(value as usize) - 1]
 }
 
 pub(super) async fn assert_corpse_source(
@@ -110,6 +114,12 @@ async fn recipient<C: ItemLoopContent>(
     Ok(LoopDestination::Container(id))
 }
 
+/// The receipt keeps the original wire binding for handle-bearing commands.
+pub enum QuickLootInput<'a> {
+    Legacy(QuickLootRequest),
+    Managed { command_type: u32, payload: &'a [u8], request: Option<QuickLootRequest> },
+}
+
 impl DurabilityRoot {
     /// Command 114: replay, settings and all accepted transfers share one fenced item transaction.
     #[allow(clippy::too_many_arguments)]
@@ -123,7 +133,7 @@ impl DurabilityRoot {
         content: &C,
         cell: [u8; 10],
         premium: bool,
-        request: QuickLootRequest,
+        input: QuickLootInput<'_>,
     ) -> std::result::Result<std::result::Result<Vec<u8>, LoopMoveRefusal>, DurabilityError>
     {
         permit.check_scope(fence.runtime_scope)?;
@@ -131,15 +141,24 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        let encoded = wire::encode_quick_loot_request(&request)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let (encoded, request, legacy) = match input {
+            QuickLootInput::Legacy(request) => (
+                wire::encode_quick_loot_request(&request).map_err(|_| DurabilityError::InvalidStoredState)?,
+                Some(request),
+                true,
+            ),
+            QuickLootInput::Managed { command_type, payload, request } => {
+                let mut encoded = command_type.to_le_bytes().to_vec();
+                encoded.extend_from_slice(payload);
+                (encoded, request, false)
+            }
+        };
         let mut context = (permit, content);
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
             let (permit, content) = *context;
             let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &record).await?;
             lock_loop_command(&mut tx, command).await?;
-            let legacy = request.action.command_type() == wire::COMMAND_TYPE_QUICK_LOOT;
             if !legacy && let Err(error) = assert_current_equipment_in_transaction(
                 &mut tx, &record, &node, &fence, Some(command), content.loop_content_digest(),
             ).await {
@@ -153,6 +172,10 @@ impl DurabilityRoot {
                 super::super::db::commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(result));
             }
+            let Some(request) = request else {
+                tx.rollback().await?;
+                return Ok(Err(LoopMoveRefusal::Stale));
+            };
             let attempt: LoopResult<Vec<u8>> = async {
                 if legacy {
                     assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await?;
@@ -195,7 +218,7 @@ impl DurabilityRoot {
                         return wire::encode_quick_loot_destinations(&projection)
                             .map_err(|_| DurabilityError::InvalidStoredState.into());
                     }
-                    QuickLootAction::Assign | QuickLootAction::AssignAllLoot | QuickLootAction::UnassignLoot => {
+                    QuickLootAction::Assign | QuickLootAction::AssignLoot | QuickLootAction::AssignAllLoot | QuickLootAction::UnassignLoot => {
                         if (request.category.is_some() || request.action == QuickLootAction::AssignAllLoot) && !premium {
                             return refuse(LoopMoveRefusal::Rejected);
                         }
@@ -286,7 +309,7 @@ impl DurabilityRoot {
                         .bind(corpse_id.as_slice()).bind((MAX_TRANSFERS_PER_COMMAND-result.items.len()) as i64).fetch_all(&mut *tx).await?;
                     let entries: Vec<_> = entries.into_iter().map(|entry| Ok((uuid_text(entry.try_get("item_instance_id")?)?, definition_of(&entry)?))).collect::<LoopResult<_>>()?;
                     let policy_settings = LootSettings { category_targets: settings.category_targets.clone(), unassigned_target: settings.unassigned_target, fallback_to_main: settings.fallback_to_main };
-                    let corpse = Corpse { key: corpse_id, distance: 0, age_millis: 0, top_damage_or_party: corpse.try_get("loot_allowed")?, items: entries.iter().map(|(item,definition)| LootItem { key: *item, category: content.loot_category(definition), is_coin: is_loot_coin(definition), allowed_by_filter: if settings.accept_only {settings.accepted_items.contains(&definition.production_key)} else {!settings.skipped_items.contains(&definition.production_key)} }).collect() };
+                    let corpse = Corpse { key: corpse_id, distance: 0, age_millis: 0, top_damage_or_party: corpse.try_get("loot_allowed")?, items: entries.iter().map(|(item,definition)| LootItem { key: *item, category: preferred_category(content, definition, |category| settings.category_targets.contains_key(&category)), is_coin: is_loot_coin(definition), allowed_by_filter: if settings.accept_only {settings.accepted_items.contains(&definition.production_key)} else {!settings.skipped_items.contains(&definition.production_key)} }).collect() };
                     let mode = if request.action == QuickLootAction::Click { ManualLootMode::Click } else { ManualLootMode::AllNearby };
                     let plan = plan_manual_loot(mode, request.corpse, premium, &policy_settings, &[corpse]);
                     let base_ordinal = result.items.len();
@@ -331,19 +354,22 @@ fn assignment(request: QuickLootRequest) -> LoopResult<Recipient<[u8; 16]>> {
 }
 
 fn destination_row((category, target): (Option<LootCategory>, Recipient<[u8; 16]>)) -> QuickLootDestination {
-    let category = category.map(|key| match key {
-        LootCategory::Gold => QuickLootCategory::Gold,
-        LootCategory::CreatureProduct => QuickLootCategory::CreatureProduct,
-        LootCategory::Equipment => QuickLootCategory::Equipment,
-        LootCategory::Consumable => QuickLootCategory::Consumable,
-        LootCategory::Other => QuickLootCategory::Other,
-    });
+    let category = category.map(|key| QuickLootCategory::ALL[key as usize]);
     let (recipient, recipient_id) = match target {
         Recipient::MainContainer => (QuickLootRecipient::MainContainer, None),
         Recipient::Container(id) => (QuickLootRecipient::Container, Some(id)),
         Recipient::GoldPouch(id) => (QuickLootRecipient::GoldPouch, Some(id)),
     };
     QuickLootDestination { category, recipient, recipient_id }
+}
+
+fn preferred_category<C: ItemLoopContent>(
+    content: &C,
+    definition: &TypedDefinitionRef,
+    assigned: impl FnOnce(LootCategory) -> bool,
+) -> LootCategory {
+    content.managed_item_category(definition).filter(|&category| assigned(category))
+        .unwrap_or_else(|| content.loot_category(definition))
 }
 
 type BatchContext<'a, 'tx, C> = (
@@ -383,7 +409,8 @@ async fn distribute<C: ItemLoopContent>(
     for (index, row) in rows.iter().enumerate() {
         let item = uuid_text(row.try_get("item_instance_id")?)?;
         let definition = definition_of(row)?;
-        let target = targets.get(&Some(content.loot_category(&definition))).or_else(|| targets.get(&None));
+        let category = preferred_category(*content, &definition, |category| targets.contains_key(&Some(category)));
+        let target = targets.get(&Some(category)).or_else(|| targets.get(&None));
         let accepted = if let Some(&target) = target {
             let context = MoveContext {
                 source: MoveSource::Carried(source),
