@@ -44,6 +44,7 @@ pub enum DailyRewardClaimError {
     InvalidRequest,
     AuthorityRejected,
     ResetWindowUnavailable,
+    InstantAccessUnavailable,
     BindingMismatch,
     Durability(DurabilityError),
 }

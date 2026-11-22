@@ -1,5 +1,6 @@
 //! Offer only the composed appearance path with admitted cosmetics available.
 use super::super::capabilities::OfferedCapability;
+use oteryn_protocol_oteryn::appearance::familiar::CAPABILITY_FAMILIAR_APPEARANCE_V1;
 use oteryn_protocol_oteryn::appearance::{
     CAPABILITY_APPEARANCE_V1, CAPABILITY_EMPTY_OUTFIT_V1, CAPABILITY_FORGE_CREATURE_V1,
 };
@@ -13,6 +14,7 @@ pub(in crate::gameplay_transport) fn offered(
         .copied()
         .filter(|c| {
             c.id != CAPABILITY_APPEARANCE_V1
+                && c.id != CAPABILITY_FAMILIAR_APPEARANCE_V1
                 && c.id != CAPABILITY_FORGE_CREATURE_V1
                 && c.id != CAPABILITY_EMPTY_OUTFIT_V1
                 && c.id != oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1
@@ -58,6 +60,13 @@ pub(in crate::gameplay_transport) fn offered(
                 requires: &[6, 13, 25],
             },
         );
+    }
+    if available {
+        let at = result.partition_point(|c| c.id < CAPABILITY_FAMILIAR_APPEARANCE_V1);
+        result.insert(at, OfferedCapability {
+            id: CAPABILITY_FAMILIAR_APPEARANCE_V1,
+            requires: &[CAPABILITY_APPEARANCE_V1],
+        });
     }
     result
 }
