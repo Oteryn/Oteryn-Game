@@ -21,13 +21,15 @@ class NativeQuestLootFacts(unittest.TestCase):
         cls.bindings = {row['target']['key']: row for row in json.loads(
             (loot.ROOT / 'imports/crystalserver/bindings/items.json').read_bytes())['bindings']}
 
-    def test_actual_animal_loot_bridge_preserves_all_entries_and_source_quantities(self):
+    def test_quest_loot_bridge_preserves_entries_and_projects_only_pinned_source_rates(self):
         required = loot.required_items(loot.ROOT, self.creatures, self.tables)
         expected = {f'oteryn:item.tibia.i{number}' for number in
                     [7398, 3413, 3410, 9657, 9689, 3336, 3355, 3277]}
         animal_expected = expected.copy()
         expected |= {f'oteryn:item.tibia.i{number}' for number in
                      [281, 3006, 3036, 3037, 3038, 5809, 5892, 5904, 7414, 7427, 23529, 23531, 23533, 23542, 23543, 23544, 25759, 30192, 30195, 30275, 30276, 30277, 30278, 30279, 30280, 30281, 30282, 30283, 30284, 30285, 30318, 30319, 30320, 30321, 30322]}
+        expected |= {f'oteryn:item.tibia.i{number}' for number in
+                     [3120, 3741, 5901, 9686, 12517, 12551, 12552, 12553, 12554, 12555, 12556]}
         # Main now admits these seven canonical Items before native projection.
         # Model the pre-projection admission view this bridge test exercises,
         # retaining every source quantity and all unrelated canonical facts.
@@ -42,7 +44,17 @@ class NativeQuestLootFacts(unittest.TestCase):
         facts, tables = copy.deepcopy(baseline), copy.deepcopy(self.tables)
         loot.apply_loot_facts(facts, loot.ROOT, self.creatures, tables, self.profiles)
         self.assertTrue(all(facts[key]['materializable'] for key in required))
-        self.assertEqual(tables, self.tables)
+        expected_tables = copy.deepcopy(self.tables)
+        for creature, rates in [
+            ('feverish_citizen', {12551: 16600, 12552: 17200, 12553: 22900,
+                                 12554: 20060, 12555: 20600, 12556: 22900}),
+            ('swamp_troll', {12517: 21600}),
+        ]:
+            for entry in expected_tables[f'oteryn:loot.creature.{creature}']['entries']:
+                item = int(entry['item']['key'].rsplit('.i', 1)[1])
+                if item in rates:
+                    entry['probability_ppm'] = rates[item]
+        self.assertEqual(tables, expected_tables)
         changed = {key for key in facts if facts[key] != baseline[key]}
         self.assertEqual(changed, expected)
         for key in animal_expected:

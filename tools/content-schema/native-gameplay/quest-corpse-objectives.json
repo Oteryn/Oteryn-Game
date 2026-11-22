@@ -9,7 +9,9 @@
     "https://tibia.fandom.com/wiki/Little_Corym_Charlatan",
     "imports/canary/items-xml/items.xml#17449-17450",
     "content/creatures/definitions/spell-native-profiles.json#exact-ordinary-creature-corpse-bindings",
-    "imports/canary/items-xml/items.xml#corpse-capacity-and-decay"
+    "imports/canary/items-xml/items.xml#corpse-capacity-and-decay",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/feverish_citizen.lua:32,90-95",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humanoids/swamp_troll.lua:33,90"
   ],
   "capacity_projections": [
     {
@@ -28,6 +30,7 @@
     "oteryn:creature.dipthrah": 6031,
     "oteryn:creature.dworc_voodoomaster": 6055,
     "oteryn:creature.faun": 25815,
+    "oteryn:creature.feverish_citizen": 18114,
     "oteryn:creature.mahrdis": 6025,
     "oteryn:creature.merlkin": 6044,
     "oteryn:creature.morguthis": 6025,
@@ -35,9 +38,23 @@
     "oteryn:creature.rahemos": 6031,
     "oteryn:creature.rotworm": 5967,
     "oteryn:creature.souleater": 11675,
+    "oteryn:creature.swamp_troll": 6018,
     "oteryn:creature.thalas": 6025,
     "oteryn:creature.tortoise": 6072,
     "oteryn:creature.undead_gladiator": 8909,
     "oteryn:creature.vashresamun": 6025
+  },
+  "source_loot_probabilities_ppm": {
+    "oteryn:creature.feverish_citizen": {
+      "oteryn:item.tibia.i12551": 16600,
+      "oteryn:item.tibia.i12552": 17200,
+      "oteryn:item.tibia.i12553": 22900,
+      "oteryn:item.tibia.i12554": 20060,
+      "oteryn:item.tibia.i12555": 20600,
+      "oteryn:item.tibia.i12556": 22900
+    },
+    "oteryn:creature.swamp_troll": {
+      "oteryn:item.tibia.i12517": 21600
+    }
   }
 }

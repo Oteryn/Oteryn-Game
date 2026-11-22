@@ -28,7 +28,7 @@ CREATURES = 'content/creatures/definitions/spell-native-profiles.json'
 # crates/gameplay/domain/src/domain/loot_data.rs CORPSE_CONTAINER_ENTRIES_MAX.
 CORPSE_CAPACITY_MAX = 48
 GROUPS = ('physical', 'stack', 'container', 'temporal', 'classification')
-MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 40, 8, 144
+MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 40, 8, 145
 
 
 def item_id(reference):
@@ -62,7 +62,7 @@ def required_with_loot_scope(root, creatures):
         raise ValueError('QUEST_CORPSE_DUPLICATE_CREATURE')
     ordinary = json.loads((root / REQUIREMENTS).read_bytes())
     if (not {'schema', 'objectives', 'sources'} <= set(ordinary)
-            or set(ordinary) - {'schema', 'objectives', 'sources', 'capacity_projections', 'loot_creatures'} or ordinary.get('schema') != 1
+            or set(ordinary) - {'schema', 'objectives', 'sources', 'capacity_projections', 'loot_creatures', 'source_loot_probabilities_ppm'} or ordinary.get('schema') != 1
             or not isinstance(ordinary['objectives'], list) or len(ordinary['objectives']) > MAX_RULES
             or any(not isinstance(key, str) or not key.startswith('oteryn:quest-death/') for key in ordinary['objectives'])
             or len(set(ordinary['objectives'])) != len(ordinary['objectives'])

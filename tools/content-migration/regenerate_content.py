@@ -852,8 +852,6 @@ def main() -> int:
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
     run(["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py"])
-    # Callback witnesses add authored props to the native index; rooms must pin that final index.
-    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     for tool in AUTHORING_TOOLS:
         if tool.endswith("/reward_claim_authoring.py"):
             run(["python3", "tools/content-migration/refresh_reward_stack_weight_proof.py"])
@@ -864,6 +862,8 @@ def main() -> int:
     # branch-owned chest transitions in the resulting Claim bodies.
     run(["python3", "tools/content-schema/quest-authoring/quest_tree_authoring.py", "content",
          "--source-packet", "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"])
+    # Authored props pin the freshly lowered Quest definitions and placement index.
+    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_state_lowering.py"])
     run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py", "content"])
     # These standalone compilers consume the final Quest and placement inputs;

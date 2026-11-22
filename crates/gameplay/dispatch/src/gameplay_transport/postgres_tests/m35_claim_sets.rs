@@ -30,6 +30,43 @@ fn m35_alawar_dispatch_completes_only_on_last_chest() -> TestResult {
     println!("M35_ALAWAR_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
+#[test]
+fn alawar_retained_lever_and_key_door_have_source_selectors() -> TestResult {
+    use crate::map::door::DoorUse;
+    use oteryn_world_bundle::bundle::placement_key;
+
+    super::kill_reward_e2e_fixtures::scenario_thread::run("alawar-native-access", || {
+        let deps = Dependencies::new()?;
+        let (controller, _) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?;
+        let native = controller
+            .active()
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or("native gameplay")?;
+        let world = super::qready1_reward_claims::retained_world((32105, 31567, -9), native)?;
+        let door = placement_key(-9, 32107, 31568, 1).ok_or("vault door")?;
+        let doors = world.facts().doors();
+        assert_eq!(doors.use_key(door, 0, 4501), Some(DoorUse::Locked));
+        assert!(matches!(
+            doors.use_key(door, 0, 4502),
+            Some(DoorUse::Toggled {
+                revision: 1,
+                open: true
+            })
+        ));
+        let lever = placement_key(-8, 32180, 31633, 1).ok_or("vault lever")?;
+        assert!(
+            world
+                .facts()
+                .quest_callback_matches(lever, Some(30008), None, Some(2772))
+        );
+        Ok(())
+    })
+}
+
 // Crystal 201189f8 chest.lua:2131-2161: these placements share ChestsWine storage.
 #[test]
 fn m35_dreamer_wine_alternatives_do_not_complete_other_required_groups() -> TestResult {
@@ -500,7 +537,8 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             }
         }
         let fire_axe = matches!(case, Case::FireAxeAll | Case::FireAxeBag);
-        let world = if fire_axe {
+        let alawar = matches!(case, Case::Alawar);
+        let world = if fire_axe || alawar {
             super::qready1_reward_claims::retained_world(chest, native)?
         } else if matches!(case, Case::EmperorCookies) {
             source_world_spatial(
@@ -536,6 +574,20 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             world.base().as_ref(),
             &|_| true,
         )?;
+        if alawar {
+            let is_vault_claim = |key: &str| {
+                matches!(
+                    key,
+                    "oteryn:reward-claim.kv.alawars_vault1"
+                        | "oteryn:reward-claim.kv.alawars_vault2"
+                )
+            };
+            bound
+                .served
+                .retain(|claim| is_vault_claim(claim.key.as_str()));
+            bound.unbound.retain(|p| is_vault_claim(&p.claim));
+            bound.left_out.retain(|(key, _)| is_vault_claim(key));
+        }
         if fire_axe {
             let is_fire_axe_claim = |key: &str| {
                 key == "oteryn:reward-claim.kv.fireaxe1"
@@ -611,7 +663,11 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
         let at = MovementLocalPosition {
-            x: i32::from(chest.0) - 1,
+            x: if alawar {
+                32106
+            } else {
+                i32::from(chest.0) - 1
+            },
             y: i32::from(chest.1),
             floor: -i16::from(chest.2),
         };
@@ -770,7 +826,11 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 chest.2
             };
             let destination = MovementLocalPosition {
-                x: i32::from(x) - 1,
+                x: if alawar && position_index == 0 {
+                    i32::from(x) + 1
+                } else {
+                    i32::from(x) - 1
+                },
                 y: i32::from(y),
                 floor: -i16::from(floor),
             };
@@ -807,13 +867,13 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 destination,
             )
             .await?;
-            let key = if fire_axe {
+            let key = if fire_axe || alawar {
                 let key = bound
                     .served
                     .iter()
                     .flat_map(|claim| &claim.placements)
                     .find(|p| (p.cell.x, p.cell.y, p.cell.floor) == (x, y, floor))
-                    .ok_or("shipped Fire Axe placement")?
+                    .ok_or("shipped reward placement")?
                     .bundle_placement_key;
                 let (_, ordinal) =
                     crate::map::view::placement_of(key).ok_or("placement ordinal")?;
@@ -821,7 +881,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     .base()
                     .tile(x, y, floor)
                     .and_then(|tile| tile.unique(ordinal))
-                    .ok_or("shipped Fire Axe UID")?;
+                    .ok_or("shipped reward UID")?;
                 assert_eq!(unique.unique, choices[position_index].1);
                 key
             } else {
@@ -935,6 +995,21 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 | Case::Katana
                         ) && index == 1
                 );
+            }
+            if alawar {
+                let (item, quantity) = if position_index == 0 {
+                    (3026, 3)
+                } else {
+                    (3301, 1)
+                };
+                let reward: (String, i64) = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key=$1",
+                )
+                .bind(format!("oteryn:item.tibia.i{item}"))
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(reward, (format!("oteryn:item.tibia.i{item}"), quantity));
             }
             if matches!(case, Case::GriffinShield) {
                 let roots: Vec<(String, i64)> = sqlx::query_as(
