@@ -12,7 +12,7 @@ use crate::gameplay_transport::connection::{
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use crate::gameplay_transport::last_position::AdmissionPosition;
 use crate::gameplay_transport::quest_log::QuestLogLines;
-use crate::map::overlay::TilePos;
+use crate::map::{overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_quests::quest::{
     loader::load_embedded_quest_state, log::loader::load_embedded_quest_log,
 };
