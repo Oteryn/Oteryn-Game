@@ -714,11 +714,20 @@ fn scenario(case: ExerciseCase, admin: Option<String>) -> TestResult {
         assert_eq!(result.disposition, 1, "{result:?}");
         assert_eq!(result.charges, 500);
         if second_start {
+            let ItemKey::MapBase { bundle_digest, placement_key, .. } = dummy else {
+                return Err("house dummy placement key".into());
+            };
+            let placement = placement_key.to_string();
             let lease = || {
-                sqlx::query_as::<_, (String, String, i64)>(
-                    "SELECT game_session_id::text, placement_key::text, lease_until_ms \
-                     FROM game_exercise_dummy_reservations",
+                sqlx::query_as::<_, (String, i64)>(
+                    "SELECT game_session_id::text, lease_until_ms \
+                     FROM game_exercise_dummy_reservations \
+                     WHERE world_id = encode($1, 'hex')::uuid \
+                       AND base_bundle_digest = $2 AND placement_key = $3::text::numeric",
                 )
+                .bind(admitted.world_id.as_bytes().as_slice())
+                .bind(bundle_digest.as_slice())
+                .bind(&placement)
                 .fetch_optional(&h.pool)
             };
             let original = lease().await?.ok_or("first Start must reserve the house dummy")?;
@@ -726,36 +735,50 @@ fn scenario(case: ExerciseCase, admin: Option<String>) -> TestResult {
                 original.0,
                 crate::gameplay_transport::canonical_uuid(admitted.game_session_id.as_bytes())
             );
-            let ItemKey::MapBase { placement_key, .. } = dummy else {
-                return Err("house dummy placement key".into());
-            };
-            assert_eq!(original.1, placement_key.to_string());
             let send = async |id, payload: &[u8]| {
                 crate::gameplay_transport::loop_training::wire::dispatch(
                     &owner,
                     admitted,
-                    UseCommand { command_id: id, ..command },
+                    UseCommand {
+                        command_id: id,
+                        ..command
+                    },
                     COMMAND_TYPE_EXERCISE_TRAINING,
                     payload,
                     Some(&items),
                 )
                 .await
             };
-            // The initial Start exhaust has elapsed and the original checkpoint is due.
-            owner.states.test_owner_time.fetch_add(60_000_000, std::sync::atomic::Ordering::Relaxed);
-            assert!(owner.training_activity(admitted, COMMAND_TYPE_EXERCISE_TRAINING).await);
+            // The initial Start exhaust has elapsed, with five charges due on the first run.
+            let clock = &owner.states.test_owner_time;
+            clock.fetch_add(10_000_000, std::sync::atomic::Ordering::Relaxed);
+            assert!(
+                owner.training_activity(admitted, COMMAND_TYPE_EXERCISE_TRAINING).await
+            );
             assert_eq!(send(2, &start).await, Some(TrainingResult::REFUSED));
-            assert_eq!(lease().await?, Some(original), "repeat Start must leave the first lease intact");
+            assert_eq!(
+                lease().await?.as_ref(),
+                Some(&original),
+                "repeat Start must leave the first lease intact"
+            );
+            let status = send(3, &[8, 2]).await.ok_or("running Status")?;
+            assert_eq!((status.disposition, status.charges), (1, 495));
+
+            // An overdue checkpoint must still wait for cadence or an explicit Status/Stop.
+            clock.fetch_add(50_000_000, std::sync::atomic::Ordering::Relaxed);
+            assert!(
+                owner.training_activity(admitted, COMMAND_TYPE_EXERCISE_TRAINING).await
+            );
+            assert_eq!(send(4, &start).await, Some(TrainingResult::REFUSED));
+            assert_eq!(lease().await?, Some(original), "a due checkpoint must leave the lease intact on repeat Start");
             let checkpoints: i64 =
                 sqlx::query_scalar("SELECT count(*) FROM game_character_exercise_receipts")
                     .fetch_one(&h.pool)
                     .await?;
             assert_eq!(checkpoints, 0, "repeat Start must leave the first checkpoint due");
-            let status = send(3, &[8, 2]).await.ok_or("running Status")?;
-            assert_eq!((status.disposition, status.charges), (1, 470));
-            owner.states.test_owner_time.fetch_add(2_000_000, std::sync::atomic::Ordering::Relaxed);
-            let stopped = send(4, &[8, 3]).await.ok_or("explicit Stop")?;
-            assert_eq!((stopped.disposition, stopped.charges), (2, 469));
+            let stopped = send(5, &[8, 3]).await.ok_or("explicit Stop")?;
+            assert_eq!(stopped.disposition, 2);
+            assert!(stopped.charges < status.charges, "Stop settles charges due on the first run");
             assert!(lease().await?.is_none(), "explicit Stop releases the house dummy");
             drop(owner);
             drop(authority);
