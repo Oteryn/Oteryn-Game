@@ -1610,12 +1610,12 @@ const PARTY_COST_ACTIONS: &[&str] = &[
 const W20B_LEVEL_BUDGET: Duration = Duration::from_secs(150);
 const W20B_HANDOFF_BUDGET: Duration = Duration::from_secs(75);
 
-fn w20b_deadline(exercise: Duration) -> Duration {
+fn w20b_deadline(exercise: Duration, minimum_exercise: Duration) -> Duration {
     // Setup and the five later raw admissions all use real time, even with
     // an accelerated spell clock. Each admission can wait on fixture release
     // (160s), TCP/TLS and the join snapshot (20s each).
     let admissions = Duration::from_secs(200) * 6;
-    W20B_LEVEL_BUDGET + W20B_HANDOFF_BUDGET + admissions + exercise
+    W20B_LEVEL_BUDGET + W20B_HANDOFF_BUDGET + admissions + exercise.max(minimum_exercise)
 }
 
 fn light_premium_is_current(overview: &oteryn_protocol_oteryn::premium_overview::Overview) -> bool {
@@ -1650,8 +1650,16 @@ mod w20b_review_tests {
 
     #[test]
     fn w20b_review_budget_leaves_the_full_exercise_after_setup() {
-        let exercise = Duration::from_secs(120);
-        assert!(w20b_deadline(exercise) >= W20B_LEVEL_BUDGET + W20B_HANDOFF_BUDGET + exercise);
+        let minimum_exercise = Duration::from_secs(240);
+        let setup = W20B_LEVEL_BUDGET + W20B_HANDOFF_BUDGET + Duration::from_secs(1_200);
+        assert_eq!(
+            w20b_deadline(Duration::from_secs(120), minimum_exercise),
+            setup + minimum_exercise,
+        );
+        assert_eq!(
+            w20b_deadline(Duration::from_secs(3_300), minimum_exercise),
+            setup + Duration::from_secs(3_300),
+        );
     }
 
     #[test]
@@ -1706,7 +1714,7 @@ async fn additional_rows(clients: &SeamClients<'_>) {
     let mut completed = false;
     let mut result = watch
         .bound(
-            w20b_deadline(qualification_deadline(3_300).max(Duration::from_secs(240))),
+            w20b_deadline(qualification_deadline(3_300), Duration::from_secs(240)),
             "personal-light journey exceeded wall-time deadline",
             async {
                 let result = light_journey(&mut row, &mut light, clients).await;

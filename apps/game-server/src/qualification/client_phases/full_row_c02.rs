@@ -642,12 +642,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     equip(&mut client, wand, EquipmentSlot::RightHand).await?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let wand_count = count(&client, wand)?;
+    let wand_xp_before = experience(&mut client).await?;
     let wand_hit = attack_damage(&mut client, Some(PresentationColor::Purple)).await?;
     if wand_hit.1.checked_sub(WAND_MANA) != Some(wand_hit.2) || count(&client, wand)? != wand_count
     {
         return Err(format!("wand-cost-or-custody:observed={wand_hit:?}").into());
     }
-    let wand_xp = finish_kill(&mut client, bow_xp, "wand").await?;
+    let wand_xp = finish_kill(&mut client, wand_xp_before, "wand").await?;
     row.pass(3, (wand_hit, wand_xp));
     let old = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
@@ -672,7 +673,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     // The rod leg uses a distinct Character and its own earned purchase and XP.
     let mut client = connect_character(clients, 0xc4, 0).await?;
-    let rod_xp_before = druid_experience(&mut client).await?;
+    require_eligible_druid(&mut client).await?;
     earn_gold(&mut client, world, &metadata.spawns, 500).await?;
     buy(&mut client, world, &metadata.npcs, ROD, 1).await?;
     equip(&mut client, rod, EquipmentSlot::RightHand)
@@ -682,6 +683,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         })?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let rod_count = count(&client, rod)?;
+    let rod_xp_before = experience(&mut client).await?;
     let rod_hit = attack_damage(&mut client, Some(PresentationColor::LightGreen)).await?;
     if rod_hit.1.checked_sub(ROD_MANA) != Some(rod_hit.2) || count(&client, rod)? != rod_count {
         return Err(format!("rod-cost-or-custody:observed={rod_hit:?}").into());
@@ -728,7 +730,7 @@ async fn general_stats(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
     Ok(reply.payload)
 }
 
-async fn druid_experience(client: &mut DevClientSession) -> TestResult<u64> {
+async fn require_eligible_druid(client: &mut DevClientSession) -> TestResult {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
     if !client
         .selected_capabilities()
@@ -754,7 +756,7 @@ async fn druid_experience(client: &mut DevClientSession) -> TestResult<u64> {
         )
         .into());
     }
-    experience(client).await
+    Ok(())
 }
 
 async fn experience(client: &mut DevClientSession) -> TestResult<u64> {
