@@ -18,6 +18,13 @@
       "families": {},
       "slot_count": 1
     },
+    "19374": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
     "21169": {
       "families": {
         "INCREASE_SPEED": "3",

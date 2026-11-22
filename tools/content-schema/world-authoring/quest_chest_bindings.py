@@ -251,15 +251,18 @@ def capture(source_root, selected, root=ROOT):
             container_id = (
                 int(container["key"].rsplit(".i", 1)[1]) if container else None
             )
-            source_reward = container_native.source_charged_reward(
-                definition.get("provenance", {}).get("pilot_key"),
-                global_corrections.source_reward(
-                    unique,
-                    position,
-                    poison_daggers.source_reward(unique, position, setting["reward"]),
-                ),
-                items,
+            pilot = definition.get("provenance", {}).get("pilot_key")
+            source_reward = global_corrections.source_reward(
+                unique,
+                position,
+                poison_daggers.source_reward(unique, position, setting["reward"]),
             )
+            # Troll Cave shares its claim between a charged necklace and
+            # ordinary legs. Only the legs selector has no charge argument.
+            if (pilot, unique) != ("canary:reward-claim/kv/trollcave1", 6040):
+                source_reward = container_native.source_charged_reward(
+                    pilot, source_reward, items
+                )
             if (
                 setting["itemPos"] != position
                 or setting["itemId"] != placement["appearance_tibia_id"]

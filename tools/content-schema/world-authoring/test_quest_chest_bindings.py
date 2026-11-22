@@ -56,6 +56,36 @@ class QuestChestBindings(unittest.TestCase):
                             selectors[(x, y)] = (appearance, (attrs or {}).get("unique"))
             self.assertEqual(selectors, expected)
 
+    def test_quest_reward_selectors_are_present_in_repository_regions(self):
+        index = json.loads((chests.ROOT / chests.INDEX).read_bytes())
+        selectors = (
+            (32565, 32119, 3, 2472, 6160),
+            (33143, 31719, 10, 2473, 6039),
+            (33143, 31721, 10, 2473, 6040),
+            (33189, 31688, 14, 2469, 6041),
+            (33195, 31688, 14, 2469, 6042),
+            (33188, 31682, 14, 2469, 6071),
+            (33158, 31621, 15, 2469, 6043),
+            (33158, 31622, 15, 2469, 6044),
+            (32970, 32646, 8, 2472, 6258),
+            (32972, 31461, 10, 1986, 6278),
+        )
+        for x, y, z, appearance, unique in selectors:
+            with self.subTest(unique=unique):
+                region = chests.ROOT / "content/world/placements" / codec.region_name(
+                    z, x // 256, y // 256
+                )
+                _, _, _, sectors = codec.decode_region(region.read_bytes())
+                found = [
+                    (attrs or {}).get("unique")
+                    for _, tiles in sectors
+                    for tx, ty, _, _, _, items in tiles
+                    if (tx, ty) == (x, y)
+                    for palette, depth, attrs in items
+                    if depth == 0 and index["palette"][palette]["source_item_id"] == appearance
+                ]
+                self.assertEqual(found, [unique])
+
     def test_current_committed_corpus_captures_exact_elvenbane_startup_uids(self):
         from pathlib import Path
 

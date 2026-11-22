@@ -40,6 +40,28 @@ class CorpseLootAdmissionTests(unittest.TestCase):
         self.assertFalse(facts['oteryn:item.tibia.i3056']['stackable'])
         self.assertTrue(facts['oteryn:item.tibia.i11472']['stackable'])
 
+    def test_vampire_lord_token_reaches_the_native_reward_lottery(self):
+        _, creatures = full.read(full.CREATURE_PROFILES)
+        document = json.loads(full.loot_tables(creatures))
+        facts = {row['item']['key']: row for row in document['items']}
+        token = 'oteryn:item.tibia.i8192'
+        self.assertTrue(facts[token]['materializable'])
+        self.assertTrue(facts[token]['stackable'])
+        self.assertEqual(facts['oteryn:item.tibia.i8109']['container_capacity'], 10)
+        vampire_lords = {'arachir_the_ancient_one', 'diblis_the_fair', 'sir_valorcrest',
+                         'the_pale_count', 'zevelon_duskbringer'}
+        tables = {row['identity']['key'].rsplit('.', 1)[1]: row for row in document['tables']
+                  if any(entry['item']['key'] == token for entry in row['entries'])}
+        self.assertEqual(set(tables), vampire_lords)
+        for lord, table in tables.items():
+            for entry in table['entries']:
+                self.assertTrue(facts[entry['item']['key']]['materializable'],
+                                (lord, entry['item']['key']))
+        diblis = tables['diblis_the_fair']
+        self.assertEqual([(entry['probability_ppm'], entry['min_count'], entry['max_count'])
+                          for entry in diblis['entries'] if entry['item']['key'] == token],
+                         [(1000000, 1, 1)])
+
     def produce(self, profile, *, body_is_yield=False, candidate_profile=None):
         body = {'family': 'Item', 'key': 'oteryn:item.tibia.i5969', 'revision': 'definition-r1'}
         creature = {'family': 'Creature', 'key': 'oteryn:creature.test-corpse', 'revision': 'definition-r1'}

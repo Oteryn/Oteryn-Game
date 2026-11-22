@@ -10,6 +10,18 @@ import qengine_reward_item_profiles as profiles
 
 
 class SharedPhysicalAdmission(unittest.TestCase):
+    def test_vampire_hunter_token_and_doll_are_native_portable_items(self):
+        profiles_by_key = {
+            row["production_definition"]["production_key"]: row["admission"]
+            for row in json.loads((profiles.ROOT / profiles.PROFILE).read_bytes())["records"]
+        }
+        for item, stack in ((8191, "NonStackable"), (8192, "StackCapable")):
+            with self.subTest(item=item):
+                self.assertEqual(profiles_by_key.get(f"oteryn:item.tibia.i{item}"), {
+                    "materializable": True, "stack_class": stack,
+                    "legal_destinations": ["CharacterInventory", "Ground"],
+                })
+
     def test_capture_keeps_the_mining_owned_pick_speed_unknown(self):
         native=json.loads((profiles.ROOT/profiles.PROFILE).read_bytes())
         key='oteryn:item.tibia.i3456'
@@ -37,7 +49,8 @@ class SharedPhysicalAdmission(unittest.TestCase):
     def run_admission(self, record, existing, schema='OTERYN_NATIVE_GAMEPLAY_MANIFEST/v5'):
         generated = {'profiles': json.dumps({'records': [existing]}).encode(),
                      'manifest': json.dumps({'schema': schema, 'item_profiles': {}}).encode()}
-        with tempfile.TemporaryDirectory() as directory, patch.object(profiles, 'capture', return_value={'records': [record]}):
+        packet = {'records': [record], 'custody_promotions': []}
+        with tempfile.TemporaryDirectory() as directory, patch.object(profiles, 'capture', return_value=packet):
             profiles.admit(Path(directory), generated, 'profiles', 'manifest',
                            lambda row: row['production_definition']['production_key'],
                            lambda value: json.dumps(value).encode())

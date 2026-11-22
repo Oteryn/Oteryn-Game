@@ -33,6 +33,10 @@ IDS |= {3460, 12171, 12173}
 IDS |= {12186, 12260}
 # M12 selected daily harvest: existing Juicy Roots identity, exact portable facts.
 IDS |= {21291}
+# Storkus takes stackable lord tokens and grants a portable Vampire Doll.
+IDS |= {8191, 8192}
+# The Pale Count's reward table closes as a whole, including its other yields.
+IDS |= {18935, 18936, 19373, 19374}
 # M13: source-pinned carried Guardcatcher and each Perfume Gatherer stage.
 IDS |= {17669, 17670, 17672, 17673, 17674, 17675, 7253}
 # M13: native Slug corpse closure; Ground-only source durations remain authoritative.

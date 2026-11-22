@@ -136,6 +136,7 @@
     "oteryn:npc.sinatuki",
     "oteryn:npc.snake_eye",
     "oteryn:npc.spectulus",
+    "oteryn:npc.storkus",
     "oteryn:npc.telas",
     "oteryn:npc.the_first_dragon",
     "oteryn:npc.the_forgemaster",
@@ -762,6 +763,27 @@
             "y": 31915,
             "z": 12
           }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.storkus": {
+      "basis": "Crystal world-npc.xml:1741-1743 places Storkus at the Vampire Hunter contact. The source leaves direction unspecified.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32589,
+            "y": 31962,
+            "z": 7
+          },
+          "spawn_interval_s": 60,
+          "spawn_radius": 1
         }
       ],
       "source": {

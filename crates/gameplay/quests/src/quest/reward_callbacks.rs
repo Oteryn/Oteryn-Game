@@ -569,6 +569,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/vampire-hunter.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
@@ -2389,7 +2390,7 @@ mod tests {
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Shared covers 207 existing and 31 QB routes. The final two terms are
         // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12);
+        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12 + 6);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

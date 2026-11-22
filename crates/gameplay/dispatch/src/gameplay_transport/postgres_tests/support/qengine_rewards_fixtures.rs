@@ -91,6 +91,18 @@ pub(super) async fn talk(
     id: u64,
     text: &str,
 ) -> TestResult<NpcIntentDisposition> {
+    Ok(talk_outcome(owner, admitted, npc, id, text)
+        .await?
+        .disposition)
+}
+
+pub(super) async fn talk_outcome(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    id: u64,
+    text: &str,
+) -> TestResult<crate::gameplay_transport::npc_command::NpcTalkOutcome> {
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -115,7 +127,7 @@ pub(super) async fn talk(
         )
         .await;
     assert!(!outcome.unknown, "NPC command must have a known outcome");
-    Ok(outcome.disposition)
+    Ok(outcome)
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
@@ -886,6 +898,12 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     // Keep each route's future state out of this shared dispatcher's inline state.
+    if name == "qengine-rewards-vampire-hunter" {
+        return Box::pin(super::vampire_hunter_journey::exercise(owner, admitted, h)).await;
+    }
+    if name == "qengine-rewards-vampire-hunter-loot" {
+        return Box::pin(super::vampire_hunter_journey::loot(owner, admitted, h)).await;
+    }
     if name.starts_with("qengine-rewards-fibula-completion") {
         return Box::pin(super::questpc6_fibula_completion_fixtures::exercise(
             owner, admitted, h, name,
@@ -1503,6 +1521,19 @@ pub(super) async fn exercise(
             .await?,
             1
         );
+    }
+    let yalahari_achievement = match key {
+        "l1-yalaharian-sage" => Some("oteryn:achievement/yalahari_of_wisdom"),
+        "l1-yalaharian-villain" => Some("oteryn:achievement/yalahari_of_power"),
+        _ => None,
+    };
+    if let Some(expected) = yalahari_achievement {
+        let granted: Vec<String> = sqlx::query_scalar(
+            "SELECT achievement_key FROM game_account_achievements WHERE achievement_key IN ('oteryn:achievement/yalahari_of_wisdom','oteryn:achievement/yalahari_of_power')",
+        )
+        .fetch_all(&h.pool)
+        .await?;
+        assert_eq!(granted, [expected]);
     }
     // Literal transport replay cannot take items or repeat either value grant.
     assert_eq!(
