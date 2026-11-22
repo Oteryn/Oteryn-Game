@@ -3,7 +3,9 @@
 mod cake;
 mod feroxa_map;
 mod feroxa_spectators;
+mod pale_count;
 pub(in crate::gameplay_transport) use feroxa_spectators::FeroxaSpectators;
+pub(super) use pale_count::{PaleCountAccess, PaleCountBlocker};
 
 use super::ComposedFreshAdmission;
 use crate::durability::DurabilityError;

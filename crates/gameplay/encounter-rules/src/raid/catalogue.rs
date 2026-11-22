@@ -31,6 +31,43 @@ pub enum CatalogueKind {
     Calendar,
 }
 
+/// Northern Darama Raids (Tibia Fandom archive): the lair opens four minutes
+/// after the first announcement and closes fifteen minutes after it.
+pub const PALE_COUNT_RAID: &str = "raid:darashia.thepalecount";
+pub const PALE_COUNT_OPEN_DELAY_MS: i64 = 4 * 60_000;
+pub const PALE_COUNT_EXIT_DELAY_MS: i64 = 15 * 60_000;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PaleCountLair {
+    pub from: CataloguePosition,
+    pub to: CataloguePosition,
+    pub exit: CataloguePosition,
+}
+
+impl PaleCountLair {
+    pub fn area(self) -> RaidArea {
+        RaidArea {
+            from: self.from.position(),
+            to: self.to.position(),
+        }
+    }
+
+    fn validate(self) -> Result<(), RaidError> {
+        self.area().validate()?;
+        if self.area().contains(self.exit.position())
+            || [self.from, self.to, self.exit].into_iter().any(|at| {
+                !(0..=65_535).contains(&at.x)
+                    || !(0..=65_535).contains(&at.y)
+                    || !(0..=15).contains(&at.floor)
+            })
+        {
+            return Err(RaidError::InvalidDefinition);
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct CatalogueRaid {
     pub key: String,
@@ -43,6 +80,8 @@ pub struct CatalogueRaid {
     pub end: CatalogueEnd,
     #[serde(default)]
     pub requires_world_change: Option<CatalogueWorldChange>,
+    #[serde(default)]
+    pub pale_count_lair: Option<PaleCountLair>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -198,7 +237,7 @@ pub struct CatalogueRegion {
     pub sha256: String,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub struct CataloguePosition {
     pub x: i32,
     pub y: i32,
@@ -285,6 +324,7 @@ pub struct SelectedRaid {
     pub boss_entries: BTreeSet<(u16, u16)>,
     pub spawn_modes: BTreeMap<(u16, u16), CatalogueSpawnMode>,
     pub end_policy: RaidEndPolicy,
+    pub pale_count_lair: Option<PaleCountLair>,
 }
 
 impl RaidCatalogue {
@@ -340,6 +380,15 @@ impl CatalogueRaid {
     pub fn validate(&self) -> Result<(), RaidError> {
         if !self.active || !self.inactive_reasons.is_empty() || self.variants.is_empty() {
             return Err(RaidError::InvalidDefinition);
+        }
+        if (self.key == PALE_COUNT_RAID) != self.pale_count_lair.is_some() {
+            return Err(RaidError::InvalidDefinition);
+        }
+        if let Some(lair) = self.pale_count_lair {
+            lair.validate()?;
+            if !matches!(self.end, CatalogueEnd::DespawnAfter { .. }) {
+                return Err(RaidError::InvalidDefinition);
+            }
         }
         if let Some(required) = &self.requires_world_change {
             required.validate()?;
@@ -534,6 +583,21 @@ impl CatalogueRaid {
             waves,
         };
         definition.validate()?;
+        if self.pale_count_lair.is_some() {
+            let first = definition
+                .announcement_sequence(0)?
+                .first()
+                .map(|(at, _)| *at)
+                .ok_or(RaidError::InvalidDefinition)?;
+            if definition.deadline(0)? != first + PALE_COUNT_EXIT_DELAY_MS
+                || definition
+                    .waves
+                    .iter()
+                    .any(|wave| i64::from(wave.delay_ms) < first)
+            {
+                return Err(RaidError::InvalidDefinition);
+            }
+        }
         Ok(SelectedRaid {
             definition,
             variant_index: index,
@@ -541,6 +605,7 @@ impl CatalogueRaid {
             boss_entries,
             spawn_modes,
             end_policy: self.end.policy()?,
+            pale_count_lair: self.pale_count_lair,
         })
     }
 }
