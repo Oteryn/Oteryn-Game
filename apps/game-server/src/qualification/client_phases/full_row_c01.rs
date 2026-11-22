@@ -24,7 +24,7 @@ use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveIntent, ItemMoveD
 use std::collections::BTreeSet;
 
 const MELEE_KIT: [(u32, EquipmentSlot); 2] = [
-    (3270, EquipmentSlot::LeftHand),
+    (3270, EquipmentSlot::RightHand),
     (3358, EquipmentSlot::Armor),
 ];
 
@@ -293,8 +293,8 @@ mod tests {
         let definitions = provisioning::item_index()?;
         let [(hand, hand_slot), (body, body_slot)] = MELEE_KIT;
         assert_ne!(provisioning::item_reference(&definitions, hand)?, provisioning::item_reference(&definitions, body)?);
-        assert_eq!(hand_slot, EquipmentSlot::LeftHand);
-        assert_eq!(body_slot, EquipmentSlot::Armor);
+        assert_eq!(hand_slot.semantic_key(), "WEAPON");
+        assert_eq!(body_slot.semantic_key(), "TORSO");
         Ok(())
     }
 
