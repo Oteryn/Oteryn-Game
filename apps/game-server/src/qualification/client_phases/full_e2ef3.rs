@@ -9,6 +9,9 @@ use std::collections::BTreeMap;
 #[path = "full_e2ef3_e2ei-a.rs"]
 mod e2ei_a;
 
+#[path = "full_e2ef3_e2ei-b.rs"]
+mod full_e2ef3_e2ei_b;
+
 struct Row {
     id: &'static str,
     source: &'static str,
@@ -17,11 +20,6 @@ struct Row {
 
 // Keep the audit's sub-actions explicit, including the durability assertions.
 const ROWS: &[Row] = &[
-    Row {
-        id: "I04",
-        source: "crates/protocol-oteryn/src/mail.rs:14",
-        missing: "write-read-rewritable,text-limit,write-once-transform,rewrite-refusal,relogin-text-transform",
-    },
     Row {
         id: "I06",
         source: "crates/gameplay/dispatch/src/gameplay_transport/corpse_decay.rs:7",
@@ -36,11 +34,6 @@ const ROWS: &[Row] = &[
         id: "I08",
         source: "crates/gameplay/dispatch/src/gameplay_transport/reward_bag_use.rs:16",
         missing: "obtain-primal-bag,use-consumes-one,pinned-pool-reward,relogin-reward",
-    },
-    Row {
-        id: "I09",
-        source: "crates/gameplay/dispatch/src/gameplay_transport/item_transform.rs:16",
-        missing: "approach-unbound-nonhouse-furniture,use-rotate,assert-definition-and-collision",
     },
     Row {
         id: "I12",
@@ -302,5 +295,5 @@ pub(super) async fn run(
         );
     }
     let client = e2ei_a::run(client, clients).await;
-    observations.map(|()| client)
+    full_e2ef3_e2ei_b::run(observations.map(|()| client), clients).await
 }
