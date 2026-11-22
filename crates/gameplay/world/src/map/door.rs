@@ -457,7 +457,7 @@ pub struct DoorTileItem<T> {
     pub corpse: bool,
 }
 
-/// Crystal/Canary closing_door.lua: relocate movable non-corpses before closing.
+/// Step-out closing plan for a vacant level or quest doorway.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DoorStepOut<T> {
     Nothing,
@@ -486,8 +486,8 @@ pub fn door_step_out_destination(
         })
 }
 
-/// Close after a player leaves if the doorway is vacant and every movable item
-/// can be relocated to the destination. Leave custody in place if both exits fail.
+/// Close a vacant doorway. Relocation requires an enterable destination. When
+/// both exits are blocked, existing item custody remains on the doorway.
 pub fn door_step_out<T: Copy>(
     open_id: u16,
     creature_present: bool,
@@ -507,13 +507,13 @@ pub fn door_step_out<T: Copy>(
     {
         return DoorStepOut::Nothing;
     }
-    let mut item_moves = Vec::new();
-    for item in items.iter().filter(|item| item.movable && !item.corpse) {
-        let Some(to) = destination else {
-            return DoorStepOut::Nothing;
-        };
-        item_moves.push((item.item, to));
-    }
+    let item_moves = destination.map_or_else(Vec::new, |to| {
+        items
+            .iter()
+            .filter(|item| item.movable && !item.corpse)
+            .map(|item| (item.item, to))
+            .collect()
+    });
     DoorStepOut::Close {
         item_moves,
         closed_id,
@@ -651,19 +651,7 @@ mod step_out_tests {
     fn destination_overflow_never_wraps() {
         let position = TilePos { x: u16::MAX, ..AT };
         let destination = door_step_out_destination(position, |tile| tile.y == position.y);
-        assert_eq!(
-            door_step_out(
-                5114,
-                false,
-                destination,
-                &[DoorTileItem {
-                    item: 1,
-                    movable: true,
-                    corpse: false
-                }]
-            ),
-            DoorStepOut::Nothing
-        );
+        assert_eq!(destination, None);
     }
 }
 

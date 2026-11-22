@@ -776,22 +776,28 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 return;
             }
             let destination = door_step_out_destination(position, |tile| {
+                // Crystal probes with the departing creature, including when it
+                // has just arrived on this candidate tile.
+                let cell = MovementLocalPosition {
+                    x: i32::from(tile.x),
+                    y: i32::from(tile.y),
+                    floor: -i16::from(tile.floor),
+                };
                 self.movement_cells()
                     .index()
                     .lookup(
                         self.movement_cells().scope(),
                         crate::content::LogicalCell {
-                            x: i32::from(tile.x),
-                            y: i32::from(tile.y),
-                            z: -i32::from(tile.floor),
+                            x: cell.x,
+                            y: cell.y,
+                            z: i32::from(cell.floor),
                         },
                     )
                     .ok()
                     == Some(crate::content::CollisionClass::Walkable)
                     && !map.facts.doors().blocks(tile)
-                    && !crate::gameplay_transport::map_door::doorway_occupied(
-                        &runtime, actor, at, tile,
-                    )
+                    && runtime.position_occupied_by_other(actor, cell) == Ok(false)
+                    && runtime.reserved_into_by_own_pending(actor, cell) == Ok(false)
             });
             (
                 crate::gameplay_transport::item_ref_admission::pinned_index(

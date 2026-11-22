@@ -29,7 +29,15 @@ fn m06_quest_door_step_out_moves_item_south_when_east_is_blocked() -> TestResult
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run_case(admin, false)
+    run_case(admin, StepDirection::West, false)
+}
+
+#[test]
+fn m06_quest_door_step_out_closes_when_player_steps_south() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, StepDirection::South, false)
 }
 
 #[test]
@@ -37,10 +45,10 @@ fn m06_quest_door_step_out_keeps_custody_when_both_exits_are_blocked() -> TestRe
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run_case(admin, true)
+    run_case(admin, StepDirection::West, true)
 }
 
-fn run_case(admin: String, south_blocked: bool) -> TestResult {
+fn run_case(admin: String, direction: StepDirection, south_blocked: bool) -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -49,19 +57,19 @@ fn run_case(admin: String, south_blocked: bool) -> TestResult {
                 .enable_all()
                 .build()
                 .map_err(|error| error.to_string())?
-                .block_on(Box::pin(scenario(admin, south_blocked)))
+                .block_on(Box::pin(scenario(admin, direction, south_blocked)))
                 .map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "quest door step-out case panicked")??;
     eprintln!(
-        "POSTGRES_CASE_COMPLETED door_step_out south_blocked={south_blocked} duration={:?}",
+        "POSTGRES_CASE_COMPLETED door_step_out {direction:?} south_blocked={south_blocked} duration={:?}",
         started.elapsed()
     );
     Ok(())
 }
 
-async fn scenario(admin: String, south_blocked: bool) -> TestResult {
+async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) -> TestResult {
     let harness = Harness::create_with_admission_seed(admin, "door_step_out", true, false).await?;
     prepare_current_session(&harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -267,7 +275,7 @@ async fn scenario(admin: String, south_blocked: bool) -> TestResult {
     assert_eq!(before[0].item.ground.spatial_position, cell(DOORWAY));
 
     let (step, _) = owner
-        .ordinary_paced_step(deps.actor, session, StepDirection::West, None, None)
+        .ordinary_paced_step(deps.actor, session, direction, None, None)
         .await;
     assert_eq!(step.disposition, StepDisposition::Moved);
     assert_eq!(
@@ -278,7 +286,11 @@ async fn scenario(admin: String, south_blocked: bool) -> TestResult {
             .read_actor_position(deps.actor)
             .map_err(debug)?
             .position(),
-        local(WEST)
+        local(if direction == StepDirection::South {
+            SOUTH
+        } else {
+            WEST
+        })
     );
     let after = owner.root.read_item_loop_ground(world, channel).await?;
     let moves: (i64, i64) = sqlx::query_as("SELECT count(*), COALESCE(sum(quantity_after),0)::bigint FROM game_item_loop_move_lines WHERE item_instance_id=encode($1,'hex')::uuid AND from_kind=3 AND to_kind=3")
@@ -289,17 +301,15 @@ async fn scenario(admin: String, south_blocked: bool) -> TestResult {
             "a blocked relocation must preserve durable custody"
         );
         assert_eq!(moves, (0, 0));
-        assert_eq!(map.facts().doors().revision(door), 1);
-        assert!(map.enterable(DOORWAY));
     } else {
         assert_eq!(after.len(), 1);
         assert_eq!(after[0].item.item_instance_id, item);
         assert_eq!(after[0].item.quantity, 1);
         assert_eq!(after[0].item.ground.spatial_position, cell(SOUTH));
         assert_eq!(moves, (1, 1));
-        assert_eq!(map.facts().doors().revision(door), 2);
-        assert!(!map.enterable(DOORWAY));
     }
+    assert_eq!(map.facts().doors().revision(door), 2);
+    assert!(!map.enterable(DOORWAY));
     drop(owner);
     drop(authority);
     drop(seal);
