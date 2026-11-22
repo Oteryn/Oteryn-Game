@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::spell::cast::{CharacterCastFacts, PlayerSpellState};
 use crate::spell::companion_lifecycle::*;
 use crate::spell::native::CompiledNativeSpell;
@@ -30,20 +30,7 @@ fn profile(source: &str) -> CompiledNativeSpell {
     )
     .expect("complete canonical qualification")
 }
-fn target_fixture(
-    mana: u64,
-    infinite: bool,
-) -> (
-    ChannelRuntimeV1,
-    crate::content::QualifiedNativeEntryRoom,
-    DirectCompanionReservation,
-    AcquisitionOwnerFacts,
-) {
-    let (mut runtime, owner, session) =
-        crate::gameplay_transport::actor_spell::tests::runtime_with_player(96);
-    runtime
-        .initialize_first_entry_position(owner)
-        .expect("actual positioned owner");
+fn install_same_name_policies(runtime: &mut ChannelRuntimeV1) {
     // A typed physical owner fixture, not an active source importer or grant.
     let policy = CompiledCreaturePolicy {
         definition_key: "creature:test-direct".into(),
@@ -90,6 +77,30 @@ fn target_fixture(
             .expect("closed fixture policy"),
         )
         .expect("actual owner policy");
+}
+
+fn fixture_character() -> crate::domain::CharacterId {
+    crate::domain::CharacterId::from_bytes([
+        1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16,
+    ])
+    .expect("native character")
+}
+
+fn target_fixture(
+    mana: u64,
+    infinite: bool,
+) -> (
+    ChannelRuntimeV1,
+    crate::content::QualifiedNativeEntryRoom,
+    DirectCompanionReservation,
+    AcquisitionOwnerFacts,
+) {
+    let (mut runtime, owner, session) =
+        crate::gameplay_transport::actor_spell::tests::runtime_with_player(96);
+    runtime
+        .initialize_first_entry_position(owner)
+        .expect("actual positioned owner");
+    install_same_name_policies(&mut runtime);
     let target = runtime
         .create_companion(
             owner,
@@ -114,16 +125,12 @@ fn target_fixture(
         can_convince_all: true,
         black_skull: false,
     };
-    let character = crate::domain::CharacterId::from_bytes([
-        1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16,
-    ])
-    .expect("native character");
     let reservation = prepare_direct_acquisition(
         &runtime,
         room.movement_cells(),
         owner,
         session,
-        character,
+        fixture_character(),
         &profile("target_creature"),
         AcquisitionSource::Target(target),
         &restrictions,
@@ -134,14 +141,22 @@ fn target_fixture(
 
 #[test]
 fn named_summon_uses_the_costed_creature_when_a_raid_shares_its_name() {
-    let (runtime, room, target, current) = target_fixture(500, false);
+    let (mut runtime, room, owner, session) = positioned_room_runtime(96);
+    install_same_name_policies(&mut runtime);
+    let current = AcquisitionOwnerFacts {
+        mana: 500,
+        has_infinite_mana: false,
+        can_summon_all: false,
+        can_convince_all: false,
+        black_skull: false,
+    };
     assert!(runtime.companion_policy("test direct").is_err());
     let summon = prepare_direct_acquisition(
         &runtime,
         room.movement_cells(),
-        target.master_actor(),
-        target.game_session_id(),
-        target.character_id(),
+        owner,
+        session,
+        fixture_character(),
         &profile("named_creature"),
         AcquisitionSource::Named("test direct".into()),
         &current,
@@ -198,10 +213,16 @@ fn infinite_mana_keeps_exact_source_training_cost_without_debit_or_profile_subst
     assert!(!reservation.qualifies_payment(&profile("target_creature"), 1));
     assert!(reservation.validate_current(&runtime, &current).is_ok());
 }
-#[test]
-fn bounded_exclusions_narrow_static_placement_without_granting_absent_cells() {
+fn positioned_room_runtime(
+    tag: u8,
+) -> (
+    ChannelRuntimeV1,
+    crate::content::QualifiedNativeEntryRoom,
+    ExactActorRef,
+    GameSessionId,
+) {
     let (reference, _, session) =
-        crate::gameplay_transport::actor_spell::tests::runtime_with_player(97);
+        crate::gameplay_transport::actor_spell::tests::runtime_with_player(tag);
     let world = reference.binding().world_id();
     let room = crate::content::qualify_native_entry_room(world).expect("qualified immutable map");
     let start = room.entry_start();
@@ -245,6 +266,12 @@ fn bounded_exclusions_narrow_static_placement_without_granting_absent_cells() {
     runtime
         .initialize_first_entry_position(owner)
         .expect("qualified positioned actor");
+    (runtime, room, owner, session)
+}
+
+#[test]
+fn bounded_exclusions_narrow_static_placement_without_granting_absent_cells() {
+    let (runtime, room, owner, _) = positioned_room_runtime(97);
     let anchor = runtime
         .read_actor_position(owner)
         .expect("actual physical source")
