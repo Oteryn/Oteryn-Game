@@ -20,9 +20,8 @@ const TRACK: &str = "oteryn:quest-progress/fixture/wyda-exchange";
 const HERB: &str = "oteryn:item.tibia.i3734";
 const SHOVEL: &str = "oteryn:item.tibia.i3457";
 const ROPE: &str = "oteryn:item.tibia.i3003";
-const SHOVEL_REPLY: &str =
-    "Thank you -SOOO- much! No, I really mean it! Really! Here, let me give you a reward...";
-const ROPE_REPLY: &str = "Thank you -SOOO- much! No, I really mean it! Really! Ah, you know what, you can have this old thing...";
+const SHOVEL_REPLY: &str = "The herb will do. Here is a shovel.";
+const ROPE_REPLY: &str = "Take this rope in exchange for the herb.";
 
 #[test]
 fn weighted_npc_exchange_replays_committed_item_and_reply_after_lost_ack() -> TestResult {
@@ -43,7 +42,7 @@ fn weighted_npc_exchange_refuses_inactive_event_and_grants_once_per_active_epoch
 }
 
 fn authored(event: bool) -> TestResult<QuestStateCatalogue> {
-    // Wyda's weights and reply branches come from Crystal 201189f8, wyda.lua:104–115.
+    // The 70/30 split comes from Crystal 201189f8, wyda.lua:104–115.
     // Use two inventory-admitted items while the donor reward custody data is authored.
     // Grimvale supplies an existing live gate for the generic occurrence rule.
     let stages = json!([{"key":"exchange","completes":false,"trigger":{
