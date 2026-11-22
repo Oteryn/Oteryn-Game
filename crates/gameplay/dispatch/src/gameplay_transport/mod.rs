@@ -1370,12 +1370,34 @@ fn record_entry_decision(outcome: &str, attempts: u64, elapsed: Duration, phase:
 /// Join boundaries are emitted before awaiting their work, so a cancelled join still names
 /// its last phase. The entry outcome is the current one, after all admission participants.
 fn record_join_progress(phase: &str, first_entry: connection::FirstEntryOutcome) {
+    emit_join_progress(phase, first_entry, None);
+}
+
+fn record_join_refusal(phase: &str, admitted: connection::AdmittedSession, reason: &str) {
+    emit_join_progress(
+        phase,
+        admitted.first_entry,
+        Some((reason, connection::entry_refusal_phase(admitted))),
+    );
+}
+
+fn emit_join_progress(
+    phase: &str,
+    first_entry: connection::FirstEntryOutcome,
+    refusal: Option<(&str, Option<&str>)>,
+) {
     use oteryn_error_codes::{FieldValue, Level, Line};
     let trace = connection::diagnostic_connection_trace().map(format_connection_trace);
     let first_entry = format!("{first_entry:?}");
     let mut line = Line::new(Level::Info, "gameplay_transport", "join_progress")
         .field("phase", FieldValue::Token(phase))
         .field("first_entry", FieldValue::Token(&first_entry));
+    if let Some((reason, entry_phase)) = refusal {
+        line = line.field("reason", FieldValue::Token(reason));
+        if let Some(entry_phase) = entry_phase {
+            line = line.field("entry_phase", FieldValue::Token(entry_phase));
+        }
+    }
     if let Some(trace) = trace.as_deref() {
         line = line.trace(trace);
     }

@@ -3,7 +3,7 @@
 //! owners; movement never constructs a Channel actor or substitutes its fence.
 use super::*;
 use crate::content::{CollisionClass, LogicalCell, NativeEntryMovementCells};
-use crate::durability::house_interior::{HouseStepReadRequest, HouseStepSnapshot};
+use crate::durability::house_interior::{HouseDoorAccess, HouseStepReadRequest, HouseStepSnapshot};
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, MovementFacing,
     MovementLocalPosition,
@@ -125,12 +125,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         house,
                         items: &items,
                         doors,
+                        door_access: &read.door_access,
                     };
                     let tile_cost = |at| {
                         let tile = cell(at);
                         (!blocker.blocks(tile)
-                            && cells.index().lookup(cells.scope(), tile)
+                            && (cells.index().lookup(cells.scope(), tile)
                                 == Ok(CollisionClass::Walkable)
+                                || blocker.permits_house_door(tile))
                             && !runtime
                                 .house_cell_occupied_except(
                                     actor,
@@ -365,6 +367,7 @@ impl Turn<'_, '_, '_, '_> {
             house: &current.state().house,
             items: &items,
             doors: &self.doors,
+            door_access: &read.door_access,
         };
         let pvp = crate::gameplay_transport::pvp_live::PvpBlocker {
             inner: &blocker,
@@ -605,8 +608,55 @@ struct HouseBlocker<'a> {
     house: &'a str,
     items: &'a ItemCells,
     doors: &'a BTreeSet<LogicalCell>,
+    door_access: &'a HouseDoorAccess,
 }
+
+impl HouseBlocker<'_> {
+    fn bundle_door(&self, cell: LogicalCell) -> Option<(crate::map::overlay::TilePos, u32)> {
+        let facts = &self.bundle?.facts;
+        let tile = crate::map::overlay::TilePos {
+            x: u16::try_from(cell.x).ok()?,
+            y: u16::try_from(cell.y).ok()?,
+            floor: i8::try_from(cell.z).ok()?.checked_neg()?,
+        };
+        let house = crate::gameplay_transport::house_query::source_house_id(self.house)?;
+        facts.house_door(tile, house)?;
+        Some((tile, house))
+    }
+
+    fn door_allowed(&self, cell: LogicalCell) -> Option<bool> {
+        if self.bundle.is_some() {
+            let (tile, _) = self.bundle_door(cell)?;
+            return Some(self.door_access.permits(tile.x, tile.y, tile.floor));
+        }
+        let placement = self
+            .cells
+            .house_tiles()
+            .house_at(self.cells.scope(), cell)
+            .ok()??;
+        if placement.house().key != self.house || placement.door_at(cell).is_none() {
+            return None;
+        }
+        Some(self.door_access.permits(
+            u16::try_from(cell.x).ok()?,
+            u16::try_from(cell.y).ok()?,
+            i8::try_from(cell.z).ok()?,
+        ))
+    }
+}
+
 impl CellBlocker for HouseBlocker<'_> {
+    fn permits_house_door(&self, cell: LogicalCell) -> bool {
+        let Some((tile, house)) = self.bundle_door(cell) else {
+            return false;
+        };
+        self.door_access.permits(tile.x, tile.y, tile.floor)
+            && self.bundle.is_some_and(|map| {
+                map.facts
+                    .house_door_ground_clear(map.overlay.base(), tile, house)
+            })
+    }
+
     fn blocks(&self, cell: LogicalCell) -> bool {
         if i16::try_from(cell.z).is_err() {
             return true;
@@ -619,12 +669,14 @@ impl CellBlocker for HouseBlocker<'_> {
             Err(crate::content::static_cell_engine::StaticCellEngineError::Absent) => false,
             Err(_) => true,
         };
+        let allowed = self.door_allowed(cell);
         let door = self.bundle.map_or_else(
-            || self.doors.contains(&cell),
+            || self.doors.contains(&cell) && allowed != Some(true),
             |bundle| crate::map::floor::BundleDoors(&bundle.facts).blocks(cell),
         );
         outside
             || door
+            || allowed == Some(false)
             || self
                 .items
                 .get(&cell)
@@ -734,6 +786,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         context.validates(crate::durability::house_transfer::HouseAdmissionRead {
                             interior: read.interior,
                             hirelings: read.hirelings,
+                            door_access: read.door_access,
                         });
                     false
                 },
@@ -789,8 +842,10 @@ impl PlacementCheck<'_, '_, '_, '_> {
             house: &self.candidate.house,
             items: &items,
             doors: self.doors,
+            door_access: &read.door_access,
         };
-        if cells.index().lookup(cells.scope(), at) != Ok(CollisionClass::Walkable)
+        if (cells.index().lookup(cells.scope(), at) != Ok(CollisionClass::Walkable)
+            && !blocker.permits_house_door(at))
             || blocker.blocks(at)
             || !is_house_cell(cells, self.owner.bundle_map(), &self.candidate.house, at)
             || !self

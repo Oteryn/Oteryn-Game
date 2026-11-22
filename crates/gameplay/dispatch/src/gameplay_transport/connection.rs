@@ -43,6 +43,7 @@ use tokio::io::{AsyncRead, AsyncWrite};
 struct ConnectionTraceContext {
     trace: [u8; 16],
     enabled: std::cell::Cell<bool>,
+    entry_refusal: std::cell::Cell<Option<(GameSessionId, FirstEntryOutcome, &'static str)>>,
 }
 
 tokio::task_local! {
@@ -70,6 +71,7 @@ async fn with_connection_trace_state<F: Future>(
             ConnectionTraceContext {
                 trace,
                 enabled: std::cell::Cell::new(enabled),
+                entry_refusal: std::cell::Cell::new(None),
             },
             // LOGDBG-C: the durable passes this connection issues carry its trace.
             crate::durability::with_holder_trace(trace, future),
@@ -86,6 +88,28 @@ fn connection_trace() -> Option<[u8; 16]> {
 
 pub(super) fn diagnostic_connection_trace() -> Option<[u8; 16]> {
     CONNECTION_TRACE.try_with(|context| context.trace).ok()
+}
+
+/// Retain only a bounded owner phase for this connection's eventual hold log.
+pub(super) fn remember_entry_refusal(
+    session: GameSessionId,
+    outcome: FirstEntryOutcome,
+    phase: &'static str,
+) {
+    let _ = CONNECTION_TRACE.try_with(|context| {
+        context.entry_refusal.set(Some((session, outcome, phase)));
+    });
+}
+
+pub(super) fn entry_refusal_phase(admitted: AdmittedSession) -> Option<&'static str> {
+    CONNECTION_TRACE
+        .try_with(|context| {
+            let (session, outcome, phase) = context.entry_refusal.get()?;
+            (session == admitted.game_session_id && outcome == admitted.first_entry)
+                .then_some(phase)
+        })
+        .ok()
+        .flatten()
 }
 
 fn enable_connection_trace() {
@@ -1073,28 +1097,6 @@ where
     };
     let _ = send_error(stream, error, admitted.continuity.connection_generation).await;
     ConnectionEnd::AdmittedThenClosed(admitted, error)
-}
-
-/// ARCH-PROGRESSION-SOURCE-0 §1.5: an admitted session that is not playable but holds a runtime
-/// actor is held at most `policy.interval * policy.missed_limit`; then the connection reports
-/// `NOT_SUPPORTED` before closing, so a silent client cannot keep its committed GameSession and slot. A frame
-/// before the bound ends it as `hold_admitted` does. A session with no actor is held unbounded.
-async fn hold_refused<S>(
-    stream: &mut S,
-    admitted: AdmittedSession,
-    policy: LivenessPolicy,
-) -> ConnectionEnd
-where
-    S: AsyncRead + AsyncWrite + Unpin,
-{
-    if admitted.runtime_actor.is_none() {
-        return hold_admitted(stream, admitted).await;
-    }
-    let bound = policy.interval.saturating_mul(policy.missed_limit);
-    match tokio::time::timeout(bound, hold_admitted(stream, admitted)).await {
-        Ok(end) => end,
-        Err(_) => close_admitted(stream, admitted, FoundationProtocolError::NotSupported).await,
-    }
 }
 
 /// FIRST-CONTROL post-admission play (FND-02 §§14-16, #642/#139). A positioned actor gets the

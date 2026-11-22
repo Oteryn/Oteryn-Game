@@ -9,7 +9,8 @@ use super::house_scope_handoff::{HOUSE_TILE_MAX_BYTES, HouseId};
 use crate::foundation::CharacterId;
 #[path = "house_interior/step.rs"]
 mod step;
-pub use step::{HouseStepReadRequest, HouseStepSnapshot};
+pub(in crate::durability) use step::read_house_door_access;
+pub use step::{HouseDoorAccess, HouseStepReadRequest, HouseStepSnapshot};
 
 pub use oteryn_gameplay_housing::house_interior::{
     HOUSE_INTERIOR_ITEMS_MAX, HouseCharacterSource, HouseInteriorError, HouseItemAction,

@@ -13,9 +13,43 @@ pub struct HouseStepReadRequest {
     pub content_digest: [u8; 32],
 }
 
+/// Access to doors of the exact House whose property is locked for this turn.
+#[derive(Debug)]
+pub struct HouseDoorAccess {
+    all_doors: bool,
+    lists: Vec<String>,
+}
+
+impl HouseDoorAccess {
+    pub fn permits(&self, x: u16, y: u16, floor: i8) -> bool {
+        use oteryn_gameplay_housing::house_management::HouseManagementList;
+        self.all_doors
+            || (HouseManagementList::Door { x, y, floor })
+                .key()
+                .is_some_and(|key| self.lists.iter().any(|list| list == &key))
+    }
+}
+
+pub(in crate::durability) async fn read_house_door_access(
+    tx: &mut Transaction<'_, Postgres>,
+    house: &HouseId,
+    fence: &CurrentCharacterItemFence,
+) -> DbResult<HouseDoorAccess> {
+    let (all_doors, lists) = sqlx::query_as(
+        "SELECT all_doors,lists FROM game_house_door_access(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid)",
+    )
+    .bind(house.world_id().as_bytes().as_slice())
+    .bind(house.house_key())
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await?;
+    Ok(HouseDoorAccess { all_doors, lists })
+}
+
 #[derive(Debug)]
 pub struct HouseStepSnapshot {
     pub interior: HouseInteriorSnapshot,
+    pub door_access: HouseDoorAccess,
     pub equipment: EquipmentSnapshot,
     pub hirelings: Vec<super::super::house_hireling::HirelingSnapshot>,
 }
@@ -73,7 +107,8 @@ impl DurabilityRoot {
                 let hirelings = super::super::house_hireling::read_house_hirelings_in_transaction(
                     &mut tx, &request.fence,
                 ).await?;
-                if operation(HouseStepSnapshot { interior, equipment, hirelings }, owner) {
+                let door_access = read_house_door_access(&mut tx, &request.house, &request.fence).await?;
+                if operation(HouseStepSnapshot { interior, equipment, hirelings, door_access }, owner) {
                     release_placed_entry(&mut tx, &node, &request.fence).await?;
                 }
                 // A failed or unknown cleanup may retain the reservation for

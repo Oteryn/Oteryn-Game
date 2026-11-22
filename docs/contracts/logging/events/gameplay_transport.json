@@ -239,10 +239,12 @@
       "span": false,
       "fields": [
         "phase",
-        "first_entry"
+        "first_entry",
+        "reason",
+        "entry_phase"
       ],
       "codes": [],
-      "note": "Join boundary before awaiting baseline or each snapshot preparation group, encoding, or writing. held_unplayable and held_no_baseline identify admission-only holds; snapshot_flushed means all snapshot frames including commit completed write_frame and flush. live_sounds and live_movement_effects precede post-snapshot initialization; live_ready means setup completed and socket polling can start. first_entry is the current FirstEntryOutcome, including changes after initial positioning. Connection trace when available; no player identity or raw errors."
+      "note": "Join boundary before awaiting baseline or each snapshot preparation group, encoding, or writing. held_unplayable and held_no_baseline identify admission-only holds; snapshot_flushed means all snapshot frames including commit completed write_frame and flush. live_sounds and live_movement_effects precede post-snapshot initialization; live_ready means setup completed and socket polling can start. first_entry is the current FirstEntryOutcome, including changes after initial positioning. A refused hold or spell repair adds a bounded reason and, when available for the same session and outcome, its last admission owner phase as entry_phase. Connection trace when available; no player identity or raw errors."
     },
     {
       "event": "join_snapshot_summary",
@@ -379,11 +381,18 @@
     },
     {
       "event": "serve_end",
-      "level": "info",
+      "level": "warn",
       "span": false,
-      "fields": [],
+      "fields": [
+        "reason",
+        "path",
+        "phase",
+        "source",
+        "next_command_id",
+        "server_sequence"
+      ],
       "codes": [],
-      "note": "Seeded from current server code."
+      "note": "Connection end with its last phase when known. A refused join that reaches the hold deadline reports the same phase as its preceding join_progress event."
     },
     {
       "event": "session_durability_failed",

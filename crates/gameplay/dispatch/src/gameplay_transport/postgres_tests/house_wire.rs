@@ -520,6 +520,14 @@ fn scenario() -> TestResult {
         );
         // Field 11 carries the qualified Guildhall class (enum value 3).
         assert!(guildhall_page.windows(2).any(|field| field == [88, 3]));
+        let generation = initial.continuity.connection_generation.to_string();
+        let bound_receipts: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_house_management_receipts WHERE connection_generation=$1::text::numeric",
+        )
+        .bind(generation)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(bound_receipts, count);
         verify_guild_acl(&h, &restarted, &mut admitted).await?;
         drop(replayed);
         drop(restarted);
@@ -550,6 +558,14 @@ async fn verify_guild_acl(
     sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,1)")
         .bind(actor.as_slice()).bind(id(90).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
+
+    let name: String = sqlx::query_scalar(
+        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(actor.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(name, "House Member");
 
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 49, 515])
@@ -653,10 +669,14 @@ async fn verify_guild_acl_write_fence(h: &Harness, admitted: &AdmittedSession) -
         (current, 9, "House ACL lacks current owner receipt"),
     ] {
         let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
         let session = admitted.game_session_id.as_bytes().as_slice();
-        sqlx::query("INSERT INTO game_house_management_receipts(game_session_id,command_id,character_id,world_id,house_key,request_binding,result_revision,action_kind,list_key) VALUES(encode($1,'hex')::uuid,10000,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,decode(repeat('01',32),'hex'),$5,1,'guest')")
+        let stamped: String = sqlx::query_scalar("INSERT INTO game_house_management_receipts(game_session_id,command_id,character_id,world_id,house_key,request_binding,result_revision,action_kind,list_key) VALUES(encode($1,'hex')::uuid,10000,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,decode(repeat('01',32),'hex'),$5,1,'guest') RETURNING connection_generation::text")
             .bind(session).bind(actor.as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(revision)
-            .execute(&mut *tx).await?;
+            .fetch_one(&mut *tx).await?;
+        assert_eq!(stamped, current.to_string());
         let error = sqlx::query("SELECT game_house_management_guild_acl_advance(encode($1,'hex')::uuid,10000,$2::text::numeric,'[]'::jsonb)")
             .bind(session).bind(generation.to_string()).execute(&mut *tx).await
             .expect_err("unfenced House guild ACL");

@@ -245,8 +245,8 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             )
             .map_err(debug)?;
     }
-    // Historical fixture only: a distinct owner Character, then a real guest ACL
-    // entry. The production access function and all write guards remain enabled.
+    // Historical fixture only: a distinct owner Character, plus guest and exact
+    // entrance-door ACL entries. The production access functions remain enabled.
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -274,7 +274,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         .execute(&mut *tx)
         .await?;
     if case != Case::TimedWrap {
-        sqlx::query("INSERT INTO game_house_acl_entries(world_id,house_key,list_key,character_id) VALUES(encode($1,'hex')::uuid,$2,'guest',encode($3,'hex')::uuid)")
+        sqlx::query("INSERT INTO game_house_acl_entries(world_id,house_key,list_key,character_id) SELECT encode($1,'hex')::uuid,$2,entry,encode($3,'hex')::uuid FROM unnest(ARRAY['guest','door:32309:32804:-7']) AS lists(entry)")
         .bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
