@@ -14,6 +14,12 @@ use oteryn_protocol_oteryn::cyclopedia_character::{
 };
 use sqlx::Row;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ElementalMeleeCase {
+    BlockBudget,
+    ImmuneTraining,
+}
+
 #[test]
 fn p12c_cyclopedia_combat_postgres_dispatch_snapshot_replay_and_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -21,13 +27,23 @@ fn p12c_cyclopedia_combat_postgres_dispatch_snapshot_replay_and_fences() -> Test
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(None).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "P12c combat scenario panicked")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn crystal_equipment_zero_primary_spends_creature_block_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(Some(ElementalMeleeCase::BlockBudget)))
+}
+
+#[test]
+fn crystal_equipment_immune_melee_awards_no_training_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(Some(ElementalMeleeCase::ImmuneTraining)))
+}
+
+fn scenario(elemental_melee: Option<ElementalMeleeCase>) -> TestResult {
     use super::cyclopedia_fixtures::support::exchange;
     run(async |admin| {
         reset();
@@ -82,9 +98,19 @@ fn scenario() -> TestResult {
         native
             .install_companion_policies(&mut runtime)
             .map_err(debug)?;
+        let race = if elemental_melee == Some(ElementalMeleeCase::ImmuneTraining) {
+            "oteryn:creature.percht_minion"
+        } else {
+            "oteryn:creature.rat"
+        };
+        let policy = runtime.companion_policy(race).map_err(debug)?;
+        if elemental_melee == Some(ElementalMeleeCase::ImmuneTraining) {
+            assert!(policy.damage_immunities.iter().any(|key| key == "physical"));
+            assert!(policy.damage_immunities.iter().any(|key| key == "death"));
+        }
         let maximum_health = u64::try_from(
             runtime
-                .companion_policy("oteryn:creature.rat")
+                .companion_policy(race)
                 .map_err(debug)?
                 .maximum_health,
         )?;
@@ -93,7 +119,7 @@ fn scenario() -> TestResult {
                 vec![(1, 11, -7)],
                 60_000,
                 5_000,
-                "oteryn:creature.rat".into(),
+                race.into(),
                 maximum_health,
             )])
             .map_err(debug)?;
@@ -113,7 +139,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         deps.admitted.runtime_actor = Some(deps.actor);
-        seed(&h).await?;
+        seed(&h, elemental_melee.is_some()).await?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
@@ -194,6 +220,52 @@ fn scenario() -> TestResult {
             1,
             "the production weapon refresh persists statistics before the first tab query"
         );
+        if let Some(case) = elemental_melee {
+            let immune = case == ElementalMeleeCase::ImmuneTraining;
+            use oteryn_gameplay_combat_rules::attack::AttackConstants;
+            use oteryn_gameplay_progression::hit_training::{HitBlock, SkillFamily};
+            let formula = native.training_formula().ok_or("training formula")?;
+            let now = owner.owner_now();
+            {
+                let mut runtime = deps.runtime.lock().await;
+                let creature = runtime.visible_entities().creatures.first().ok_or("target")?.actor;
+                runtime.set_test_creature_health(creature, 10_000).map_err(debug)?;
+                let mut states = owner.states.spell_states.lock().await;
+                let state = states
+                    .get_mut(&runtime, deps.actor, admitted.game_session_id)
+                    .ok_or("player state")?;
+                state.facts.level = 330;
+                state.facts.vocation = crate::spell::Vocation::Knight;
+                if immune {
+                    let build = crate::durability::character_build::DurableBuildState::new(
+                        "knight", (u16::try_from(state.facts.magic_level)?, 0), [(50, 0); 7],
+                    ).map_err(debug)?;
+                    state.enable_owned_training(&build, formula).map_err(debug)?;
+                    state.train_skill(SkillFamily::Sword, now.get(), formula, |hits| {
+                        hits.melee_hit(HitBlock::Unblocked);
+                        0
+                    }).map_err(debug)?;
+                    assert!(!state.has_training_to_flush());
+                }
+            }
+            owner.drain_auto_attacks().await;
+            let runtime = deps.runtime.lock().await;
+            let creature = runtime.visible_entities().creatures.first().ok_or("target")?.actor;
+            let budget = owner.states.attack.lock().await.test_creature_blocks(creature).ok_or("melee swing reached block settlement")?;
+            if immune {
+                let states = owner.states.spell_states.lock().await;
+                let state = states.get(&runtime, deps.actor, admitted.game_session_id).ok_or("player state")?;
+                assert!(!state.has_training_to_flush(), "an immune swing awards no sword tries");
+            } else {
+                let constants = AttackConstants::checked_in().ok_or("attack constants")?;
+                assert_eq!(budget, constants.block.max_blocks - 1);
+            }
+            drop(runtime);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         // The following connection exercises only the tab capability, so an independent
         // periodic attack observation cannot obscure the command-replay write count.
         admitted.continuity.selected_capabilities =
@@ -418,7 +490,7 @@ fn scenario() -> TestResult {
     })
 }
 
-async fn seed(h: &Harness) -> TestResult {
+async fn seed(h: &Harness, elemental: bool) -> TestResult {
     // Only custody/effect provisioning is fixture SQL. Every observed value passes through the
     // native content, equipment and combat owners before the new writer persists it.
     let mut tx = h.pool.begin().await?;
@@ -431,6 +503,9 @@ async fn seed(h: &Harness) -> TestResult {
         (112_u8, "oteryn:item.tibia.i3264", 6_i16),
         (114, "oteryn:item.tibia.i6529", 4),
     ] {
+        if elemental && slot == 6 {
+            continue;
+        }
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($1,'hex')::uuid)")
             .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(key).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($4,'hex')::uuid)")
@@ -441,6 +516,12 @@ async fn seed(h: &Harness) -> TestResult {
         .bind(id(seed).as_slice())
         .execute(&mut *tx)
         .await?;
+    }
+    if elemental {
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i47368','definition-r1',1,1,encode($1,'hex')::uuid)")
+            .bind(id(116).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,5,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(116).as_slice()).execute(&mut *tx).await?;
     }
     for key in [
         "oteryn:blessing.spiritual_shielding",

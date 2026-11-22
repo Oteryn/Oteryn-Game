@@ -380,6 +380,11 @@ impl SpellPresentationOwner {
                 add(&presentation.caster_effect_asset_binding, &mut allowed);
             }
         }
+        if uses_elemental_bond(definition)
+            && allowed.contains("canary.appearance:effect/claw_white")
+        {
+            allowed.extend([EARTH_BOND_IMPACT, ENERGY_BOND_IMPACT]);
+        }
         // The current exact source definition's Harmony role also carries the
         // accepted gained-charge heal cue, including a Harmony spender refund.
         // This is closed cue provenance, not recipient or current cast authority.
@@ -681,6 +686,66 @@ fn canonical_events(events: &[Presentation]) -> Result<Vec<u8>, Error> {
     }
     Ok(out)
 }
+pub fn uses_elemental_bond(spell: &crate::spell::SpellDefinition) -> bool {
+    matches!(
+        spell.key.as_str(),
+        "candidate:spell/tiger_clash"
+            | "candidate:spell/greater_tiger_clash"
+            | "candidate:spell/devastating_knockout"
+    )
+}
+
+const EARTH_BOND_IMPACT: &str = "canary.appearance:effect/green_tigerclash";
+const ENERGY_BOND_IMPACT: &str = "canary.appearance:effect/pink_tigerclash";
+
+/// The authored physical impact uses the corresponding Crystal claw on a bonded cast.
+pub fn monk_bond_impact(
+    spell: &crate::spell::SpellDefinition,
+    element: crate::spell::native_combat::Element,
+) -> Option<&'static str> {
+    use crate::spell::native_combat::Element;
+    if !uses_elemental_bond(spell) {
+        return None;
+    }
+    match element {
+        Element::Earth => Some(EARTH_BOND_IMPACT),
+        Element::Energy => Some(ENERGY_BOND_IMPACT),
+        _ => None,
+    }
+}
+
+fn resolve_monk_bond_cue(alias: &str) -> Option<Cue> {
+    #[derive(Deserialize)]
+    struct Bindings {
+        records: Vec<Binding>,
+    }
+    #[derive(Deserialize)]
+    struct Binding {
+        key: String,
+        kind: String,
+        client_id: Option<u16>,
+    }
+    static IDS: OnceLock<Option<[u16; 2]>> = OnceLock::new();
+    let index = [EARTH_BOND_IMPACT, ENERGY_BOND_IMPACT]
+        .iter()
+        .position(|binding| *binding == alias)?;
+    let ids = IDS.get_or_init(|| {
+        let bindings: Bindings = serde_json::from_slice(include_bytes!(
+            "../../../../../content/presentations/bindings/client-ids.json"
+        ))
+        .ok()?;
+        let resolve = |key| {
+            let found = bindings
+                .records
+                .iter()
+                .find(|row| row.key == key && row.kind == "effect")?;
+            found.client_id.filter(|id| *id > 0)
+        };
+        Some([resolve(EARTH_BOND_IMPACT)?, resolve(ENERGY_BOND_IMPACT)?])
+    });
+    Some(Cue::Effect(ids.as_ref()?[index]))
+}
+
 #[derive(Deserialize)]
 struct CueDocument {
     records: Vec<CueRecord>,
@@ -704,7 +769,9 @@ pub fn resolve_source_cue(alias: &str) -> Option<Cue> {
         .expect("compiled source-qualified cue policy")
         .records
     });
-    let record = records.iter().find(|record| record.alias == alias)?;
+    let Some(record) = records.iter().find(|record| record.alias == alias) else {
+        return resolve_monk_bond_cue(alias);
+    };
     match record.kind.as_str() {
         "effect" => Some(Cue::Effect(record.value)),
         "projectile" => Some(Cue::Projectile(record.value)),

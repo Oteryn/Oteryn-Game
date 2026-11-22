@@ -3,7 +3,7 @@
 //! from the actual owners; the client supplies only a spatial proposal.
 use super::*;
 use crate::gameplay_transport::spell_presentations::{
-    CueTarget, LocatedCueRequest, QualifiedCueTile,
+    CueTarget, LocatedCueRequest, QualifiedCueTile, monk_bond_impact, uses_elemental_bond,
 };
 use crate::spell::ResolvedEffect;
 use crate::spell::cast::PaidOrdinaryCast;
@@ -65,13 +65,17 @@ fn element(key: &str) -> Result<Element, SpellCastDisposition> {
         _ => return reject(),
     })
 }
-fn uses_elemental_bond(spell: &SpellDefinition) -> bool {
-    matches!(
-        spell.key.as_str(),
-        "candidate:spell/tiger_clash"
-            | "candidate:spell/greater_tiger_clash"
-            | "candidate:spell/devastating_knockout"
-    )
+fn impact_asset_binding<'a>(
+    spell: &SpellDefinition,
+    damage_element: Option<Element>,
+    authored: &'a str,
+) -> &'a str {
+    if authored == "canary.appearance:effect/claw_white"
+        && let Some(bond) = damage_element.and_then(|element| monk_bond_impact(spell, element))
+    {
+        return bond;
+    }
+    authored
 }
 
 fn spell_damage_element(
@@ -650,6 +654,9 @@ fn lower(
         None
     };
     if let Some(owner) = magnitude.as_mut() {
+        if let Some(weapon) = owned.intrinsic_weapon_for_spell(spell, content) {
+            owner.bind_intrinsic_weapon(weapon);
+        }
         owner
             .bind_native_health_observations(runtime, owned.native_health_observations())
             .map_err(|_| SpellCastDisposition::Rejected)?;
@@ -933,6 +940,7 @@ fn lower(
                 });
             }
             if let Some(binding) = &p.impact_asset_binding {
+                let binding = impact_asset_binding(spell, damage_element, binding);
                 if is_area || tile_target {
                     for tile in &geometry {
                         if world
@@ -942,7 +950,7 @@ fn lower(
                             && world.area_sight_clear(*tile)
                         {
                             cues.push(LocatedCueRequest {
-                                binding: binding.clone(),
+                                binding: binding.into(),
                                 target: CueTarget::Tile(
                                     QualifiedCueTile::from_owners(room, runtime, cell(*tile)).map_err(|_reason| {
                     #[cfg(test)]
@@ -960,7 +968,7 @@ fn lower(
                             .find(|b| b.source_id == *id)
                             .ok_or(SpellCastDisposition::Rejected)?;
                         cues.push(LocatedCueRequest {
-                            binding: binding.clone(),
+                            binding: binding.into(),
                             target: CueTarget::Actor(target.actor),
                         });
                     }
@@ -1189,7 +1197,7 @@ mod tests {
     }
 
     #[test]
-    fn crystal_equipment_monk_spenders_select_cobra_bo_earth_bond()
+    fn crystal_equipment_monk_spenders_select_bond_and_impact()
     -> Result<(), Box<dyn std::error::Error>> {
         use crate::content::native_gameplay::{
             NativeGameplayInput, compile_native_gameplay, decode,
@@ -1226,10 +1234,18 @@ mod tests {
                 },
             }],
         };
-        for (weapon, expected) in [
-            ("oteryn:item.tibia.i50167", Element::Earth),
-            ("oteryn:item.tibia.i50251", Element::Energy),
-            ("oteryn:item.tibia.i50157", Element::Physical),
+        for (weapon, expected, cue) in [
+            (
+                "oteryn:item.tibia.i50167",
+                Element::Earth,
+                "green_tigerclash",
+            ),
+            (
+                "oteryn:item.tibia.i50251",
+                Element::Energy,
+                "pink_tigerclash",
+            ),
+            ("oteryn:item.tibia.i50157", Element::Physical, "claw_white"),
         ] {
             equipment.items[0].definition.production_key = weapon.into();
             for key in ["tiger_clash", "greater_tiger_clash", "devastating_knockout"] {
@@ -1240,20 +1256,30 @@ mod tests {
                     .iter()
                     .find(|spell| spell.key == key)
                     .ok_or("published Monk spell")?;
-                let damage_type = spell
+                let (damage_type, authored_impact) = spell
                     .authored
                     .as_ref()
                     .and_then(|source| {
-                        source
-                            .dependencies
-                            .effects
-                            .iter()
-                            .find_map(|effect| effect.damage_type.as_deref())
+                        source.dependencies.effects.iter().find_map(|effect| {
+                            Some((
+                                effect.damage_type.as_deref()?,
+                                effect
+                                    .presentation
+                                    .as_ref()?
+                                    .impact_asset_binding
+                                    .as_deref()?,
+                            ))
+                        })
                     })
-                    .ok_or("published spell damage type")?;
+                    .ok_or("published spell damage and impact")?;
                 let actual = spell_damage_element(&state, &equipment, spell, damage_type)
                     .map_err(|error| format!("{error:?}"))?;
                 assert_eq!(actual, expected, "{key} with {weapon}");
+                assert_eq!(
+                    impact_asset_binding(spell, Some(actual), authored_impact),
+                    format!("canary.appearance:effect/{cue}"),
+                    "{key} with {weapon}"
+                );
             }
         }
         Ok(())

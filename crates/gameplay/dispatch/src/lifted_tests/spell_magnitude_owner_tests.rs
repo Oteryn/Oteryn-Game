@@ -316,6 +316,49 @@ fn qualify(f: &Fixture, p: &NativeCombatPlan) -> Result<PreparedMagnitudeOwner, 
 }
 
 #[test]
+fn crystal_equipment_weapon_skill_hit_uses_intrinsic_element_response() {
+    use crate::content::native_gameplay::{NativeGameplayInput, compile_native_gameplay, decode};
+    use oteryn_gameplay_combat_rules::resolution::swing_weapon;
+
+    let fixture = fixture_with_damage_healing(100);
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let mut input = NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))
+        .expect("committed native inputs");
+    input.source_world = None;
+    let room = crate::content::qualify_native_entry_room(fixture.runtime.binding().world_id())
+        .expect("qualified room");
+    let native = decode(&compile_native_gameplay(room.compiled(), &input).expect("artifact").server_artifact)
+        .expect("decoded artifact")
+        .state;
+    let weapon = swing_weapon(&native, |slot| {
+        (slot == 5).then_some(("oteryn:item.tibia.i47374", "definition-r1"))
+    }).expect("Amber weapon");
+    assert!(weapon.has_elemental_attack());
+    let source = plan();
+    let NativeCombatPlan::Combat(combat) = &source else {
+        unreachable!();
+    };
+    let hit = &combat.hits[0];
+    let target = &fixture.bindings[1];
+    let energy = qualify(&fixture, &source).expect("ordinary elemental plan")
+        .finish_with_damage_healing(&source, hit, target, &mut |low, _| low)
+        .expect("elemental response");
+    assert_eq!(energy.0, 0);
+    assert!(energy.1 > 0);
+
+    let mut weapon_plan = source.clone();
+    if let NativeCombatPlan::Combat(combat) = &mut weapon_plan {
+        combat.element = Element::Physical;
+    }
+    let mut weapon_owner = qualify(&fixture, &weapon_plan).expect("ordinary weapon-skill plan");
+    assert!(weapon_owner.finish(&weapon_plan, hit, target, &mut |low, _| low)
+        .expect("physical response") > 0);
+    weapon_owner.bind_intrinsic_weapon(weapon);
+    assert_eq!(weapon_owner.finish_with_damage_healing(&weapon_plan, hit, target, &mut |low, _| low),
+        Ok(energy));
+}
+
+#[test]
 fn wheel_magnitude_known_fields_require_real_observed_wheel_revision_in_baseline() {
     let mut f = fixture();
     f.attributes.policy = MagnitudePolicy::BaselineTest;

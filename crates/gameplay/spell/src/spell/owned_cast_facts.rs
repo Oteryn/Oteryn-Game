@@ -215,6 +215,36 @@ impl OwnedCastFacts {
         }
         Ok(stage)
     }
+    fn main_hand_melee(
+        &self,
+        content: &NativeGameplayState,
+    ) -> Option<oteryn_gameplay_combat_rules::resolution::SwingWeapon> {
+        oteryn_gameplay_combat_rules::resolution::swing_weapon(content, |slot| {
+            (slot == 5)
+                .then(|| self.equipment.items.iter().find(|item| item.slot == slot))
+                .flatten()
+                .map(|item| {
+                    (
+                        item.definition.production_key.as_str(),
+                        item.definition.revision_ref.as_str(),
+                    )
+                })
+        })
+    }
+
+    /// Weapon-skill callbacks use intrinsic melee damage even for a mixed weapon.
+    pub fn intrinsic_weapon_for_spell(
+        &self,
+        spell: &SpellDefinition,
+        content: &NativeGameplayState,
+    ) -> Option<oteryn_gameplay_combat_rules::resolution::SwingWeapon> {
+        if !uses_attack_formula(spell) {
+            return None;
+        }
+        self.main_hand_melee(content)
+            .filter(|weapon| weapon.has_elemental_attack())
+    }
+
     pub fn caster(
         &self,
         state: &PlayerSpellState,
@@ -300,15 +330,7 @@ impl OwnedCastFacts {
         if require_cast_access && spell.learning_required && learned.is_none() {
             return Err(OwnedFactsError::UnavailableLearning);
         }
-        let needs_attack = spell.needs_weapon
-            || matches!(&spell.execution, super::Execution::NativeProfile(profile)
-                if attack_input(&profile.spell()["execution"]))
-            || spell.authored.as_ref().is_some_and(|p| {
-                p.dependencies.formulas.iter().any(|f| {
-                    f.minimum.as_ref().is_some_and(attack_input)
-                        || f.maximum.as_ref().is_some_and(attack_input)
-                })
-            });
+        let needs_attack = spell.needs_weapon || uses_attack_formula(spell);
         let mut attack = None;
         let mut shield = None;
         // Source-defined first shield is left hand then right. The snapshot is the actual owner.
@@ -352,6 +374,14 @@ impl OwnedCastFacts {
                         let ReferenceItemField::Known(value) = weapon.attack else {
                             return Err(OwnedFactsError::UnavailableEquipment);
                         };
+                        let attack_value = if skill < 4 {
+                            self.main_hand_melee(content)
+                                .ok_or(OwnedFactsError::UnavailableEquipment)?
+                                .attack(0)
+                        } else {
+                            u32::try_from(value.0)
+                                .map_err(|_| OwnedFactsError::UnavailableEquipment)?
+                        };
                         attack = Some((
                             skill_adjustments
                                 .adjust_skill(
@@ -362,8 +392,7 @@ impl OwnedCastFacts {
                                     value.checked_add(self.access.proficiency_skills[skill])
                                 })
                                 .ok_or(OwnedFactsError::BuildMismatch)?,
-                            u32::try_from(value.0)
-                                .map_err(|_| OwnedFactsError::UnavailableEquipment)?,
+                            attack_value,
                             skill < 4,
                         ));
                     }
@@ -428,6 +457,17 @@ impl OwnedCastFacts {
         })
     }
 }
+fn uses_attack_formula(spell: &SpellDefinition) -> bool {
+    matches!(&spell.execution, super::Execution::NativeProfile(profile)
+                if attack_input(&profile.spell()["execution"]))
+        || spell.authored.as_ref().is_some_and(|p| {
+            p.dependencies.formulas.iter().any(|f| {
+                f.minimum.as_ref().is_some_and(attack_input)
+                    || f.maximum.as_ref().is_some_and(attack_input)
+            })
+        })
+}
+
 pub fn attack_input(value: &serde_json::Value) -> bool {
     match value {
         serde_json::Value::String(s) => matches!(

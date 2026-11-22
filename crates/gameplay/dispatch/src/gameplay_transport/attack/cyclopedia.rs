@@ -411,10 +411,10 @@ impl Observation<'_> {
             }
         } else {
             let constants = AttackConstants::checked_in().ok_or(TabWireError)?;
-            let (attack, id, skill_index) = match self.weapon {
-                SwingWeapon::Fists => (constants.fist.attack, 11, 0),
-                SwingWeapon::Melee { attack, skill, .. } => (
-                    attack,
+            let attack = self.weapon.attack(constants.fist.attack);
+            let (id, skill_index) = match self.weapon {
+                SwingWeapon::Fists => (11, 0),
+                SwingWeapon::Melee { skill, .. } => (
                     match skill.index() {
                         1 => 9,
                         2 => 8,
@@ -427,6 +427,21 @@ impl Observation<'_> {
             out.set(Stat::AttackEquipment, i64::from(attack))?;
             out.set(Stat::AttackSkillId, id)?;
             out.set(Stat::AttackElement, 0)?;
+            if let SwingWeapon::Melee {
+                attack: physical,
+                elemental: Some((elemental, element)),
+                ..
+            } = self.weapon
+            {
+                out.set(Stat::ConvertedElement, element_id(element))?;
+                // Crystal displays a conversion fraction only for mixed melee weapons.
+                let converted = if physical == 0 {
+                    0
+                } else {
+                    i64::from(elemental) * 1_000_000 / i64::from(attack)
+                };
+                out.set(Stat::ConvertedDamage, converted)?;
+            }
             if let Some(skill) = self.skill(skill_index) {
                 // Crystal protocolgame.cpp:5114-5126,5142-5154 reports these display values.
                 let (total_attack, raw_attack) = attack_totals(flat, attack, skill, self.mode);

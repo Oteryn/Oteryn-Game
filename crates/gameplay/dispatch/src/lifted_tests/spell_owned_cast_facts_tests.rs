@@ -21,6 +21,90 @@ fn binding() -> CastFactsBinding {
     }
 }
 #[test]
+fn crystal_equipment_weapon_skill_cast_reads_intrinsic_attack() {
+    use crate::content::native_gameplay::{NativeGameplayInput, compile_native_gameplay, decode};
+    use crate::durability::character_equipment::{CombatMode, EquippedItem};
+    use crate::durability::item_mint::TypedDefinitionRef;
+    use crate::spell::{Vocation, cast::CharacterCastFacts};
+
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let mut input = NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))
+        .expect("committed native inputs");
+    input.source_world = None;
+    let room = crate::content::qualify_native_entry_room(
+        crate::content::native_gameplay_test_world_id().expect("world identity"),
+    )
+    .expect("qualified room");
+    let content = decode(
+        &compile_native_gameplay(room.compiled(), &input)
+            .expect("compile native")
+            .server_artifact,
+    )
+    .expect("native artifact")
+    .state;
+    let state = PlayerSpellState::new(
+        CharacterCastFacts {
+            vocation: Vocation::Knight,
+            level: 330,
+            magic_level: 0,
+            max_health: 5000,
+            max_mana: 1000,
+            max_soul: 100,
+        },
+        0,
+        0,
+    )
+    .expect("player state");
+    let mut binding = binding();
+    binding.player_revision = state.revision();
+    binding.content_digest = content.source_digest();
+    let weapon = content.item_policy_for_source_id(47368).expect("Amber Slayer");
+    let definition = &weapon.record().production_definition;
+    let equipment = EquipmentSnapshot {
+        character: binding.character,
+        content_digest: binding.content_digest,
+        character_revision: binding.character_revision,
+        revision: binding.equipment_revision,
+        combat_mode: Some(CombatMode::Attack),
+        items: vec![EquippedItem {
+            slot: 5,
+            item_instance_id: [2; 16],
+            tier: 0,
+            quantity: 1,
+            state_revision: 1,
+            definition: TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: definition.production_key.clone(),
+                revision_ref: definition.revision_ref.clone(),
+            },
+        }],
+    };
+    let expected = oteryn_gameplay_combat_rules::resolution::swing_weapon(&content, |slot| {
+        (slot == 5).then_some((definition.production_key.as_str(), definition.revision_ref.as_str()))
+    })
+    .expect("live melee weapon")
+    .attack(0);
+    assert!(expected > 0);
+    let owned = OwnedCastFacts::from_owner_reads(
+        binding,
+        DurableBuildState::new("knight", (0, 0), [(100, 0); 7]).expect("knight build"),
+        330,
+        equipment,
+        AccessProjections::default(),
+    )
+    .expect("fenced owner reads");
+    for name in ["fierce_berserk", "berserk"] {
+        let key = format!("candidate:spell/{name}");
+        let spell = content.spell_book().spells.iter().find(|spell| spell.key == key)
+            .expect("published weapon-skill cast");
+        let caster = owned
+            .numerical_caster(&state, spell, &content, HarmonyMultiplier::ONE, 1)
+            .expect("owned weapon-skill caster");
+        assert_eq!(caster.attack_value, expected, "{name}");
+    }
+}
+
+#[test]
 fn current_projection_requires_every_owner_revision_and_unexpired_authority() {
     let expected = binding();
     let mut projection = CurrentProjection {

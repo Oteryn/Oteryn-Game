@@ -276,6 +276,14 @@ pub struct ChannelAttackStates {
 }
 
 impl ChannelAttackStates {
+    #[cfg(test)]
+    pub(super) fn test_creature_blocks(&self, actor: ExactActorRef) -> Option<u8> {
+        self.blocks
+            .iter()
+            .find(|(target, _)| *target == actor)
+            .map(|(_, budget)| budget.blocks())
+    }
+
     pub const fn kills(&self) -> &super::kill_reward::KillSettlementQueue {
         &self.kills
     }

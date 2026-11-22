@@ -331,6 +331,7 @@ enum Scenario {
     EquippedMantraAmmo,
     EquippedLastCharge,
     EquippedWrongSlot,
+    EquippedDeadline,
     EquippedRollback,
     EquippedCommit,
 }
@@ -344,6 +345,7 @@ fn equipped(scenario: Scenario) -> bool {
             | Scenario::EquippedMantraAmmo
             | Scenario::EquippedLastCharge
             | Scenario::EquippedWrongSlot
+            | Scenario::EquippedDeadline
             | Scenario::EquippedRollback
             | Scenario::EquippedCommit
     )
@@ -358,7 +360,7 @@ fn equipped_hit(scenario: Scenario, output: u32, ordinal: u32) -> u32 {
         return damage.saturating_sub(if ordinal == 0 { 3 } else { 0 });
     }
     if !equipped(scenario)
-        || scenario == Scenario::EquippedWrongSlot
+        || matches!(scenario, Scenario::EquippedWrongSlot | Scenario::EquippedDeadline)
         || scenario == Scenario::EquippedLastCharge && ordinal > 0
     {
         return damage;
@@ -403,6 +405,15 @@ fn field_runes_postgres_equipped_step_tick_charges_and_mantra() -> TestResult {
                 .await?;
             }
             Ok(())
+        })
+    })
+}
+
+#[test]
+fn crystal_equipment_deadline_helmet_allows_field_damage_postgres() -> TestResult {
+    large_stack(|| {
+        run(async |admin| {
+            field_scenario(admin, 3188, 1, 2118, true, false, false, Scenario::EquippedDeadline).await
         })
     })
 }
@@ -802,7 +813,7 @@ async fn field_scenario_inner(
         .await
         .map_err(debug)?;
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-    let (controller, pin) = if equipped(scenario) {
+    let (controller, pin) = if equipped(scenario) && scenario != Scenario::EquippedDeadline {
         equipped_generation(world, scenario)?
     } else {
         production_generation_with_pin(world, "content-1")?
@@ -1020,7 +1031,7 @@ async fn field_scenario_inner(
     };
     if equipped(scenario) {
         let policy = native
-            .item_policy_for_source_id(3081)
+            .item_policy_for_source_id(if scenario == Scenario::EquippedDeadline { 22127 } else { 3081 })
             .ok_or("equipment policy")?;
         let definition = &policy.record().production_definition;
         let mut tx = harness.pool.begin().await?;
@@ -1030,7 +1041,7 @@ async fn field_scenario_inner(
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)")
             .bind(id(180).as_slice()).bind(id(42).as_slice()).bind(&definition.production_key).bind(&definition.revision_ref).bind(id(181).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid)")
-            .bind(id(101).as_slice()).bind(if matches!(scenario,Scenario::EquippedWrongSlot|Scenario::EquippedMantraAmmo) {10_i16}else{7_i16}).bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(182).as_slice()).execute(&mut *tx).await?;
+            .bind(id(101).as_slice()).bind(match scenario { Scenario::EquippedWrongSlot | Scenario::EquippedMantraAmmo => 10_i16, Scenario::EquippedDeadline => 1_i16, _ => 7_i16 }).bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(182).as_slice()).execute(&mut *tx).await?;
         if scenario == Scenario::EquippedPair {
             sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)")
                 .bind(id(183).as_slice()).bind(id(42).as_slice()).bind(&definition.production_key).bind(&definition.revision_ref).bind(id(184).as_slice()).execute(&mut *tx).await?;
@@ -2033,7 +2044,7 @@ async fn field_scenario_inner(
         let (lifecycle, charges, writes): (i16, Option<i32>, i64) = sqlx::query_as("SELECT i.lifecycle,t.charges,(SELECT count(*) FROM game_item_timed_state_writes w WHERE w.item_instance_id=i.item_instance_id) FROM game_item_instances i LEFT JOIN game_item_timed_states t USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid").bind(id(180).as_slice()).fetch_one(&harness.pool).await?;
         let spent = if matches!(
             scenario,
-            Scenario::EquippedWrongSlot | Scenario::EquippedMantraAmmo
+            Scenario::EquippedWrongSlot | Scenario::EquippedMantraAmmo | Scenario::EquippedDeadline
         ) {
             0
         } else if matches!(
