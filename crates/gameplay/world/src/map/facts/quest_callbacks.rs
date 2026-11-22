@@ -592,8 +592,17 @@ impl BundleFacts {
         if states.phase_entry(pos, 0).is_some() {
             return Some(0);
         }
+        let dug_bear_cave_hole = pos == super::source_bindings::DRAGON_CORPSE_HOLE
+            && base.tile(pos.x, pos.y, pos.floor)?.appearance(0) == Some(593)
+            && self
+                .rotations
+                .lock()
+                .ok()?
+                .get(&first)
+                .is_some_and(|(_, entry)| entry.appearance_id == 594);
         if states.changed.range(first..=first + 63).next().is_none()
             && states.hidden.range(first..=first + 63).next().is_none()
+            && !dug_bear_cave_hole
         {
             return None;
         }

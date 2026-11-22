@@ -222,7 +222,7 @@ fn sewers(owner: &ComposedFreshAdmission<'_, '_, '_>, position: TilePos) -> Test
 
 // Resolve the same handle / base ordinal that the real client receives. A
 // movement-created sewer is handle-bearing, unlike its immutable base version.
-async fn use_sewer(
+pub(super) async fn use_sewer(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     command_id: u64,

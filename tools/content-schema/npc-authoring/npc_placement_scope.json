@@ -14,6 +14,7 @@
     "oteryn:npc.amanda",
     "oteryn:npc.ambassador_manop",
     "oteryn:npc.amber",
+    "oteryn:npc.an_old_dragonlord",
     "oteryn:npc.angelina",
     "oteryn:npc.anna",
     "oteryn:npc.ariella",
@@ -303,6 +304,25 @@
     }
   },
   "placement_overrides": {
+    "oteryn:npc.an_old_dragonlord": {
+      "basis": "Crystal world-npc.xml:48-50 anchors An Old Dragonlord at the tower for his existing Dragonfetish exchange. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32796,
+            "y": 31558,
+            "z": 2
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
     "oteryn:npc.buddel": {
       "basis": "Crystal world-npc.xml:1219-1221 anchors Buddel in Svargrond. The source leaves direction unspecified, so the native placement uses north.",
       "placements": [

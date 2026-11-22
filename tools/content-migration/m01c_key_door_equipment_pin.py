@@ -1,7 +1,9 @@
-"""Declare the two additional source-backed locked doors, independently of output."""
+"""Declare additional source-backed locked doors independently of provider output."""
 import re
 
 from key_door_item_profiles import IDS
+
+ADDED_LOCKED_DOORS = {5097, 5106, 6248}
 
 
 def refresh(source, packet):
@@ -9,9 +11,9 @@ def refresh(source, packet):
     if (packet['schema'] != 'OTERYN_NATIVE_KEY_DOOR_ITEM_PROFILES/v1'
             or len(identities) != len(IDS)
             or set(identities) != {f'oteryn:item.tibia.i{i}' for i in IDS}
-            or not {5097, 6248} <= IDS):
+            or not ADDED_LOCKED_DOORS <= IDS):
         raise ValueError('M01C_KEY_DOOR_COHORT')
-    line = '    ("M01C-KEY-DOORS", 2),'
+    line = f'    ("M01C-KEY-DOORS", {len(ADDED_LOCKED_DOORS)}),'
     matches = list(re.finditer(r'^[ \t]*\("M01C-KEY-DOORS",\s*\d+\),$',
                               source, re.MULTILINE))
     if len(matches) > 1:

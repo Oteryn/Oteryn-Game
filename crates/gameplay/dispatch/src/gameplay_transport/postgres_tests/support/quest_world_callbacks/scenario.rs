@@ -23,6 +23,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let classic_native = name.strip_prefix("classic-native-");
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
@@ -79,7 +80,8 @@ fn scenario_case(
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let pinned_qc_world = name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
-    let native_crop = pinned_qc_world
+    let native_crop = classic_native.is_some()
+        || pinned_qc_world
         || m03_use
         || qd_world
         || engenc_asura
@@ -116,7 +118,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if classic_native.is_some() {
+        trigger
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -357,7 +361,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if classic_native.is_some() {
+        callback("draconia-lever-30006")?
+    } else if m03_use {
         super::super::qengine_m03_use_fixtures::callback()?
     } else if qd_world {
         super::super::qd_world_fixtures::callback(name)?
@@ -1036,7 +1042,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if pinned_qc_world {
+        let world = if let Some(route) = classic_native {
+            super::super::classic_quest_native_fixtures::world(
+                generation.native_gameplay().ok_or("classic quest policies")?,
+                route,
+                start,
+            )?
+        } else if pinned_qc_world {
             super::super::qc_pinned_world::world(
                 generation
                     .native_gameplay()
@@ -1899,7 +1911,11 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_use {
+        if let Some(route) = classic_native {
+            Box::pin(super::super::classic_quest_native_fixtures::exercise(
+                &mut owner, &mut admitted, &h, route,
+            )).await?;
+        } else if m03_use {
             Box::pin(super::super::qengine_m03_use_fixtures::exercise(
                 &mut owner,
                 &mut admitted,
