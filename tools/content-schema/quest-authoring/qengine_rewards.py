@@ -29,12 +29,13 @@ PROVENANCE = 'crystal-9f5a72c-quest-rewards-v1'
 DECISION = 'owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06'
 
 # These independently registered documents retain their existing greeting owner.
-# Zalamon's chosen opening is explicitly authored; M10, M13 and L6 (Lubo) retain source text.
+# Zalamon's chosen opening is explicitly authored; M10, M13 and L6 retain source text.
 REWARD_GREETING_OWNERS = {
-    'oteryn:npc.zalamon': 'content/dialogues/quests/chosen-reward-greetings.json',
+    'oteryn:npc.a_prisoner': 'content/dialogues/quests/l6-story-greetings.json',
     'oteryn:npc.henricus': 'content/dialogues/quests/qnpcfx-m10-greetings.json',
     'oteryn:npc.lubo': 'content/dialogues/quests/l6-story-greetings.json',
     'oteryn:npc.rafzan': 'content/dialogues/quests/m13-goblin-greetings.json',
+    'oteryn:npc.zalamon': 'content/dialogues/quests/chosen-reward-greetings.json',
 }
 
 
