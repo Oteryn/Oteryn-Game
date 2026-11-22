@@ -155,6 +155,7 @@ impl Mailbox {
         };
         self.stepped = None;
         self.combat.clear();
+        self.logout_requested = None;
         self.logout_refused = None;
         self.world_context.pending = false;
         self.world_context.targeting = None;

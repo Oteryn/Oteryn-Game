@@ -503,3 +503,40 @@ fn concurrent_height_edit_preserves_large_width() -> std::io::Result<()> {
     assert_eq!(LayoutStore::load(path).window(), Some([0, 0, 5000, 900]));
     Ok(())
 }
+
+#[test]
+fn hud_preferences_hide_toolbar_and_move_compact_status_below_map() -> TestResult {
+    let mut app = app();
+    let mut owner = crate::bevy_shell::owner::HostOwner::new(None)?;
+    owner.settings.preferences.top_menu_visible = false;
+    owner.settings.preferences.status_bar_bottom = true;
+    app.insert_non_send(owner)
+        .add_systems(Update, super::super::projection::project_regions);
+    app.update();
+    let menu = app
+        .world_mut()
+        .query_filtered::<&Node, With<super::super::ToolbarRegion>>()
+        .single(app.world())?;
+    assert_eq!(menu.display, Display::None);
+    let bar = app.world().resource::<super::super::StatusBar>().0;
+    let home = app
+        .world()
+        .get::<ChildOf>(bar)
+        .ok_or("status parent")?
+        .parent();
+    assert_eq!(
+        app.world().get::<Children>(home).ok_or("layout")?.get(1),
+        Some(&bar)
+    );
+    app.world_mut()
+        .non_send_mut::<crate::bevy_shell::owner::HostOwner>()
+        .settings
+        .preferences
+        .status_bar_bottom = false;
+    app.update();
+    assert_eq!(
+        app.world().get::<Children>(home).ok_or("layout")?.first(),
+        Some(&bar)
+    );
+    Ok(())
+}

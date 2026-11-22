@@ -292,6 +292,7 @@ pub(super) struct Mailbox {
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
     combat: VecDeque<CombatReport>,
     /// The latest refused logout not yet polled.
+    logout_requested: Option<std::time::Instant>,
     logout_refused: Option<Option<LogoutResult>>,
     ended: Option<PlayEvent>,
     pub(super) task_board: oteryn_client_ui::task_board::TaskBoardPanel,

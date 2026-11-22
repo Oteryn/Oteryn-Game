@@ -173,7 +173,9 @@ impl Outbox {
     }
 
     pub(in crate::play) fn logout_refused(&self, result: Option<LogoutResult>) {
-        lock(&self.0).logout_refused = Some(result);
+        let mut mailbox = lock(&self.0);
+        mailbox.logout_requested = None;
+        mailbox.logout_refused = Some(result);
     }
 
     /// The first end wins.
@@ -361,7 +363,21 @@ impl PlayLink {
     pub fn request_logout(&self) {
         let mut mailbox = lock(&self.mailbox);
         oteryn_client_ui::target_move::cancel(&mut mailbox.target_walk);
-        let _ = self.commands.send(PlayCommand::Logout);
+        if mailbox.logout_requested.is_none() && self.commands.send(PlayCommand::Logout).is_ok() {
+            mailbox.logout_requested = Some(std::time::Instant::now());
+        }
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn stalled_logout(&self, now: std::time::Instant) -> Option<std::time::Instant> {
+        lock(&self.mailbox).logout_requested.filter(|sent| {
+            now.saturating_duration_since(*sent) >= std::time::Duration::from_secs(5)
+        })
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn awaiting_logout(&self, sent: std::time::Instant) -> bool {
+        lock(&self.mailbox).logout_requested == Some(sent)
     }
 
     /// The next event: pushes older than the step outcome, the outcome, coalesced pushes, then end.

@@ -23,6 +23,9 @@ impl WorldPointerHits<'_, '_> {
     /// Compare at the native normalizer's physical-pixel precision. A frame-final
     /// pointer cannot establish ownership for an earlier, different press position.
     pub fn matches_primary_pointer(&self, physical: Vec2) -> bool {
+        self.matches_pointer(PointerId::Mouse, physical)
+    }
+    fn matches_pointer(&self, pointer_id: PointerId, physical: Vec2) -> bool {
         let Ok((entity, window)) = self.primary.single() else {
             return false;
         };
@@ -40,14 +43,11 @@ impl WorldPointerHits<'_, '_> {
         {
             return false;
         }
-        let mut mice = self
-            .pointers
-            .iter()
-            .filter(|(id, _)| **id == PointerId::Mouse);
-        let Some((_, pointer)) = mice.next() else {
+        let mut pointers = self.pointers.iter().filter(|(id, _)| **id == pointer_id);
+        let Some((_, pointer)) = pointers.next() else {
             return false;
         };
-        if mice.next().is_some() {
+        if pointers.next().is_some() {
             return false;
         }
         let Some(location) = pointer.location() else {
@@ -65,10 +65,13 @@ impl WorldPointerHits<'_, '_> {
     /// candidate. Active item releases use their captured upstream Slot/World token
     /// instead, so they remain valid when the pointer leaves the world rectangle.
     pub fn allows_world_start(&self, world: Entity, physical: Vec2) -> bool {
-        if !self.matches_primary_pointer(physical) {
+        self.allows_pointer_start(PointerId::Mouse, world, physical)
+    }
+    pub fn allows_pointer_start(&self, id: PointerId, world: Entity, physical: Vec2) -> bool {
+        if !self.matches_pointer(id, physical) {
             return false;
         }
-        let Some(hits) = self.hover.get(&PointerId::Mouse) else {
+        let Some(hits) = self.hover.get(&id) else {
             return false;
         };
         !hits.is_empty()

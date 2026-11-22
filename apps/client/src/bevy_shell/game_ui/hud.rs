@@ -82,6 +82,7 @@ pub(super) fn install(app: &mut App) {
             battle::project,
             status_icons::project,
             top_bar::project,
+            top_bar::project_skills,
         )
             .chain(),
     )

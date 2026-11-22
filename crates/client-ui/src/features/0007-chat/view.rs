@@ -23,6 +23,8 @@ fn tab_text(
     tab: super::ConsoleTab,
     channel: Option<&super::ChannelTab>,
 ) -> String {
+    let view = panel.transcript_after_clear(tab, channel);
+    let panel = &*view;
     // A channel tab filters like the Private tab: it is not the combined All view.
     let tab = if channel.is_some() {
         super::ConsoleTab::Private

@@ -14,6 +14,10 @@ pub(super) struct BarFill(bool);
 pub(super) struct LevelText;
 #[derive(Component)]
 pub(super) struct XpFill;
+#[derive(Component)]
+pub(super) struct SelectedSkills;
+#[derive(Component)]
+pub(super) struct BarBody;
 
 /// Line heights of the large style (about 27 px for the two lines).
 const VITAL_HEIGHT: f32 = 14.;
@@ -29,6 +33,7 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
     let bar = commands
         .spawn((
             Name::new("Status bar"),
+            BarBody,
             Node {
                 width: percent(100.),
                 flex_shrink: 0.,
@@ -168,9 +173,19 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
             ..default()
         })
         .id();
+    let skills = commands
+        .spawn((
+            SelectedSkills,
+            source::text("", font),
+            Node {
+                display: Display::None,
+                ..default()
+            },
+        ))
+        .id();
     commands
         .entity(bar)
-        .add_children(&[vitals, experience, conditions]);
+        .add_children(&[vitals, experience, skills, conditions]);
     commands.entity(parent).add_child(bar);
     conditions
 }
@@ -230,5 +245,67 @@ pub(super) fn project(
         if node.width != width {
             node.width = width;
         }
+    }
+}
+
+pub(super) fn project_skills(
+    owner: NonSend<HostOwner>,
+    region: Option<Res<super::super::StatusBar>>,
+    mut nodes: Query<(&mut Node, Has<BarBody>), Without<SelectedSkills>>,
+    mut skills: Query<(&mut Node, &mut Text), With<SelectedSkills>>,
+) {
+    let prefs = &owner.settings.preferences;
+    if let Some(region) = region
+        && let Ok((mut node, _)) = nodes.get_mut(region.0)
+    {
+        node.display = if prefs.status_bar_visible {
+            Display::Flex
+        } else {
+            Display::None
+        };
+    }
+    for (mut body, is_bar) in &mut nodes {
+        if is_bar {
+            body.flex_direction = if prefs.status_bar_compact {
+                FlexDirection::Row
+            } else {
+                FlexDirection::Column
+            };
+        }
+    }
+    let Some(play) = &owner.play else { return };
+    let Ok((mut node, mut text)) = skills.single_mut() else {
+        return;
+    };
+    let panel = play.link.skill_progress_panel();
+    let snapshot = panel
+        .complete
+        .map(|complete| complete.trained)
+        .or(panel.snapshot);
+    let labels = oteryn_client_ui::skill_progress::SKILL_LABELS;
+    let values: Vec<_> = snapshot
+        .into_iter()
+        .flat_map(|snapshot| {
+            snapshot
+                .skills
+                .into_iter()
+                .enumerate()
+                .filter_map(|(index, skill)| {
+                    let level = panel
+                        .complete
+                        .and_then(|full| full.current_levels)
+                        .map_or(u32::from(skill.level), |levels| levels[index]);
+                    prefs.status_bar_skills[index].then(|| format!("{} {level}", labels[index]))
+                })
+        })
+        .collect();
+    node.display = if values.is_empty() {
+        Display::None
+    } else {
+        Display::Flex
+    };
+    let next = values.join("   ");
+    if text.0 != next {
+        text.0 = next;
     }
 }

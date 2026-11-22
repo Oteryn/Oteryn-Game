@@ -5,7 +5,18 @@ impl Outbox {
         lock(&self.0).vip.selected = selected;
     }
     pub(in crate::play) fn vip_result(&self, response: &oteryn_client_runtime::vip::VipResponse) {
-        oteryn_client_ui::vip::apply_result(&mut lock(&self.0).vip, response);
+        let mut mailbox = lock(&self.0);
+        let changed = mailbox.vip.revision != response.result.revision;
+        oteryn_client_ui::vip::apply_result(&mut mailbox.vip, response);
+        if response.result.code == 1
+            && let Ok(page) = serde_json::from_str::<serde_json::Value>(&response.result.view)
+            && let Some(entries) = page.get("entries").and_then(serde_json::Value::as_array) {
+            let names = &mut mailbox.chat.console.communication.vip_names;
+            if changed { names.clear(); }
+            names.extend(entries.iter().filter_map(|entry| entry.get("name")?.as_str()).map(str::to_lowercase));
+            mailbox.chat_private.communication = mailbox.chat.console.communication.clone();
+            mailbox.chat_party_room.communication = mailbox.chat.console.communication.clone();
+        }
     }
 }
 

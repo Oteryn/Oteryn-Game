@@ -343,3 +343,31 @@ fn context_stop_refuses_an_opponent_published_after_validation() -> Result {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn stalled_logout_offers_a_local_disconnect_after_confirmation() -> Result {
+    let mut host = HostOwner::new(None)?;
+    let (link, mut commands, _) = play_channel();
+    host.play = Some(super::super::owner::ActivePlay {
+        view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    host.phase = Phase::Playing;
+    let now = std::time::Instant::now();
+    host.play.as_ref().ok_or("play")?.link.request_logout();
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Logout
+    ));
+    host.request_logout_confirmation_at(now + std::time::Duration::from_secs(10));
+    let id = host
+        .dialogs
+        .pending
+        .as_ref()
+        .ok_or("force confirmation")?
+        .id;
+    assert!(host.choose_dialog(id, Choice::ForceLogout));
+    assert!(host.play.is_none());
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

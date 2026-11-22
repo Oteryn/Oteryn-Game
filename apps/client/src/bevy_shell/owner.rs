@@ -59,6 +59,7 @@ pub(super) struct HostOwner {
     entry: Option<Reentry>,
     pub(super) controls: super::controls::Controls,
     pub play: Option<ActivePlay>,
+    pub(super) view_mode: super::game_ui::viewport::ViewMode,
     retired_minimaps: Vec<crate::play::MinimapSaves>,
     pub settings: SettingsState,
     preferences_path: Option<PathBuf>,
@@ -106,6 +107,7 @@ impl HostOwner {
             entry: Some(Reentry::new(client)),
             controls: super::controls::Controls::new()?,
             play: None,
+            view_mode: Default::default(),
             retired_minimaps: Vec::new(),
             settings: SettingsState::new(path.clone()),
             preferences_path: path,
@@ -172,7 +174,7 @@ impl HostOwner {
         self.status = "Connected to Oteryn.".into();
         true
     }
-    fn leave(&mut self, message: &str) {
+    pub(super) fn leave(&mut self, message: &str) {
         self.arrival = None;
         self.retire_play();
         self.change_scope(None);

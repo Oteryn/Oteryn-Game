@@ -310,3 +310,86 @@ fn copy_speech_after_history_evicts_its_source() -> TestResult {
     assert!(app.world().resource::<ChatState>().menu.is_none());
     Ok(())
 }
+
+#[test]
+fn copy_name_from_private_speech_menu() -> TestResult {
+    let (mut app, _) = console_app(
+        ChatRoomSet::default(),
+        vec![ChatLine::Private {
+            speaker_name: "Alice".into(),
+            text: "hello there".into(),
+        }],
+    )?;
+    capture_copy(&mut app);
+    menu(&mut app, "hello there", "Copy Name")?;
+    assert_eq!(app.world().resource::<Copied>().0, "Alice");
+    Ok(())
+}
+
+#[test]
+fn select_all_in_message_menu_focuses_the_whole_read_only_transcript() -> TestResult {
+    let lines = ["first", "second"].map(|message| ChatLine::Private {
+        speaker_name: "Alice".into(),
+        text: message.into(),
+    });
+    let (mut app, _) = console_app(ChatRoomSet::default(), lines.into())?;
+    menu(&mut app, "first", "Select All")?;
+    app.update();
+    let focused = app
+        .world()
+        .resource::<InputFocus>()
+        .get()
+        .ok_or("transcript focus")?;
+    let selected = app
+        .world()
+        .get::<EditableText>(focused)
+        .ok_or("editable transcript")?
+        .value()
+        .to_string();
+    assert!(selected.contains("first") && selected.contains("second"));
+    assert_eq!(
+        app.world().get::<TextReadWriteMode>(focused),
+        Some(&TextReadWriteMode::ReadOnly)
+    );
+    Ok(())
+}
+
+#[test]
+fn clear_channel_menu_keeps_other_tabs_and_future_messages() -> TestResult {
+    let first = ChatLine::Private {
+        speaker_name: "Alice".into(),
+        text: "before clear".into(),
+    };
+    let (mut app, outbox) = console_app(ChatRoomSet::default(), vec![first.clone()])?;
+    menu(&mut app, "before clear", "Clear Messages")?;
+    let visible = |app: &mut App, needle: &str| {
+        app.world_mut()
+            .query_filtered::<&EditableText, With<Transcript>>()
+            .iter(app.world())
+            .any(|row| row.value().to_string().contains(needle))
+    };
+    assert!(!visible(&mut app, "before clear"));
+    with_link(&mut app, |link| link.chat_console_tab(ConsoleTab::Private))?;
+    assert!(visible(&mut app, "before clear"));
+    with_link(&mut app, |link| link.chat_console_tab(ConsoleTab::All))?;
+    let second = ChatLine::Private {
+        speaker_name: "Alice".into(),
+        text: "after clear".into(),
+    };
+    outbox.push(vec![oteryn_session::SessionEvent::ChatLine(
+        oteryn_session::AppliedDelta {
+            server_sequence: 2,
+            base_revision: 1,
+            new_revision: 2,
+            value: second.clone(),
+        },
+    )]);
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        Default::default(),
+        vec![first, second],
+    );
+    app.update();
+    assert!(visible(&mut app, "after clear") && !visible(&mut app, "before clear"));
+    Ok(())
+}

@@ -254,3 +254,78 @@ fn channel_log_refuses_an_intermediate_directory_junction() -> Result<(), Error>
     }
     Ok(())
 }
+
+#[test]
+fn communication_form_switches_filter_private_lines_and_preserves_membership() -> Result<(), Error>
+{
+    let (link, _, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    crate::play::mailbox::lock(&outbox.0).chat.lines = vec![ChatLine::Private {
+        speaker_name: "Alice".into(),
+        text: "letter".into(),
+    }];
+    link.chat_lists_open(None);
+    let form = crate::play::FeatureForm::all()
+        .iter()
+        .copied()
+        .find(|form| form.title(&link) == "Communication lists")
+        .ok_or("communication form")?;
+    let toggle = |label| -> Result<(), Error> {
+        let index = link
+            .feature_form_view(form)
+            .buttons
+            .iter()
+            .position(|button| *button == label)
+            .ok_or("missing preference button")?;
+        link.feature_form_submit(form, index, vec![]);
+        Ok(())
+    };
+    let visible = || panel_text(&link.chat_panel()).contains("letter");
+    toggle("Block private messages")?;
+    assert!(!visible());
+    toggle("Block private messages")?;
+    assert!(visible());
+    link.chat_communication(Some(CommunicationList::Ignore), "Alice", true);
+    toggle("Suspend ignore list")?;
+    assert!(visible());
+    toggle("Suspend ignore list")?;
+    assert!(!visible());
+    link.chat_communication(Some(CommunicationList::Whitelist), "Alice", true);
+    assert!(visible());
+    toggle("Suspend whitelist")?;
+    assert!(!visible());
+    toggle("Suspend whitelist")?;
+    assert!(visible());
+    Ok(())
+}
+
+#[test]
+fn communication_form_exempts_vip_names_and_filters_yells_only() -> Result<(), Error> {
+    use oteryn_client_runtime::chat::{ActorPosition, ChatSpeaker, ChatSpeechMode};
+    let (link, _, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    let line = |name: &str, mode| ChatLine::Local {
+        speaker: ChatSpeaker { identity: [1;16], generation: std::num::NonZeroU64::MIN },
+        speaker_name: name.into(), mode, text: format!("message from {name}"),
+        position: ActorPosition { x: 1, y: 2, floor: 7 },
+    };
+    outbox.chat_public_state(ChatRoomSet::default(), vec![
+        line("Alice", ChatSpeechMode::Yell), line("Bob", ChatSpeechMode::Yell), line("Carol", ChatSpeechMode::Say)
+    ]);
+    link.chat_communication(Some(CommunicationList::Ignore), "Alice", true);
+    link.chat_lists_open(None);
+    let form = crate::play::FeatureForm::all().iter().copied().find(|form| form.title(&link) == "Communication lists").ok_or("form")?;
+    for label in ["Block yells","Allow VIP speakers"] {
+        let index = link.feature_form_view(form).buttons.iter().position(|button| *button == label).ok_or("filter button")?;
+        link.feature_form_submit(form,index,vec![]);
+    }
+    outbox.vip_result(&oteryn_client_runtime::vip::VipResponse {
+        status: oteryn_session::CommandStatus::Accepted,
+        result: oteryn_client_runtime::vip::vip::ResultView { code: 1, revision: 1, number: 0, wait: 0,
+            view: r#"{"entries":[{"number":1,"name":"ALICE"}],"next_entry":0}"#.into() }
+    });
+    let text = panel_text(&link.chat_panel());
+    assert!(text.contains("message from Alice") && text.contains("message from Carol"));
+    assert!(!text.contains("message from Bob"));
+    Ok(())
+}
