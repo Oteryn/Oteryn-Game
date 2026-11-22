@@ -328,6 +328,15 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
                 .selected_capabilities
                 .contains(wire::CAPABILITY_DAILY_REWARD_V2)
         );
+        if mode == 4 {
+            // A negotiated remote wall must not present an unavailable reset as a wall.
+            let (_, output) = serve(&owner, &mut admitted, &[(6322, &[])]).await?;
+            let result = results(&output)?;
+            assert_eq!(
+                result,
+                [(1, crate::foundation::CommandStatus::Rejected, Vec::new())]
+            );
+        }
         epoch(&harness, 1).await?;
         if mode == 3 {
             epoch(&harness, 24).await?;

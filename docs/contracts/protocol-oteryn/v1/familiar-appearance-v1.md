@@ -25,4 +25,4 @@ Crystal 201189f8 filters the outfit dialog's familiar list through the
 character's grants and publishes the saved familiar look in that dialog.
 [Crystal outfit window](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp#L8636-L8757)
 
-[TibiaWiki familiar reference](https://www.tibiawiki.com.br/wiki/Familiars)
+The Customize Character dialog also appears in the [Tibia Fandom archive](https://tibia.fandom.com/wiki/Familiars).

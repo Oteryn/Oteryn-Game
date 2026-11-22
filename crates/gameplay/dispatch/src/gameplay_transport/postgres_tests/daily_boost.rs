@@ -47,6 +47,7 @@ async fn pre_admission_case(
         .map_err(|()| "boost init")?;
     let (mut stream, mut peer) = tokio::io::duplex(8192);
     assert!(crate::gameplay_transport::world_login_info::route(&mut stream, &request, owner).await);
+    drop(stream);
     let reply = crate::gameplay_transport::tcp_tls::read_frame(&mut peer)
         .await
         .map_err(debug)?;
@@ -79,6 +80,7 @@ async fn pre_admission_case(
         )
         .await
     );
+    drop(stream);
     let reply = crate::gameplay_transport::tcp_tls::read_frame(&mut peer)
         .await
         .map_err(debug)?;

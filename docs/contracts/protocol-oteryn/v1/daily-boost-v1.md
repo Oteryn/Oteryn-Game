@@ -87,3 +87,7 @@ at active reset activation and ends at the next scheduled Europe/Berlin 06:00
 server save. Game reads the World owner's committed choice and resolves
 presentation using the endpoint's loaded native catalogue. During retirement
 or if the selection or presentation is unavailable, `boost` is null.
+
+The Tibia Fandom archive documents login-screen placement and the duration
+through server save. [Boosted Creature](https://tibia.fandom.com/wiki/Boosted_Creature)
+[Daily Boosted Boss](https://tibia.fandom.com/wiki/Cyclopedia#Daily_Boosted_Boss)
