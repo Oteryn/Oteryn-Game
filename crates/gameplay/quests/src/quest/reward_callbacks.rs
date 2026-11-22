@@ -510,6 +510,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/sinatuki.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
 ];
@@ -2297,7 +2298,7 @@ mod tests {
         // shared-reward-callbacks.json has 207 existing rows plus the generated
         // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
         // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1);
+        assert_eq!(load()?.len(), 238 + 59 + 129 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
