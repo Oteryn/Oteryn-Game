@@ -170,10 +170,10 @@ async fn acquire_weapon(
     metadata: &oteryn_world_bundle::bundle::Visited,
     definitions: &[wire::ProficiencyCatalogueEntry],
 ) -> TestResult<NonZeroU32> {
-    use oteryn_dev_client::client_runtime::npc_shop;
     use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
-    let (definition, request) = weapon_quote(client, world, &metadata.npcs, definitions).await?;
-    let reply = npc_shop::buy(client.session_mut(), &request).await?;
+    let (definition, request, count) =
+        weapon_quote(client, world, &metadata.npcs, definitions).await?;
+    let reply = buy_quoted_weapon(client, definition, &request, count).await?;
     if reply == NpcIntentDisposition::Ok {
         return Ok(definition);
     }
@@ -217,8 +217,9 @@ async fn acquire_weapon(
     if funded < needed || funded == before {
         return Err(format!("step=weapon-shop buy definition={definition} price={needed} reply={reply:?} carried-gold={before}->{funded}").into());
     }
-    let (definition, request) = weapon_quote(client, world, &metadata.npcs, definitions).await?;
-    let reply = npc_shop::buy(client.session_mut(), &request).await?;
+    let (definition, request, count) =
+        weapon_quote(client, world, &metadata.npcs, definitions).await?;
+    let reply = buy_quoted_weapon(client, definition, &request, count).await?;
     if reply != NpcIntentDisposition::Ok {
         return Err(format!(
             "step=weapon-shop funded buy definition={definition} price={} reply={reply:?}",
@@ -229,6 +230,37 @@ async fn acquire_weapon(
     Ok(definition)
 }
 
+async fn buy_quoted_weapon(
+    client: &mut DevClientSession,
+    definition: NonZeroU32,
+    request: &oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+    count: u32,
+) -> TestResult<oteryn_protocol_oteryn::npc_service::NpcIntentDisposition> {
+    use oteryn_dev_client::client_runtime::npc_shop;
+    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+    let units = |client: &DevClientSession| {
+        client.inventory().map_or(0, |inventory| {
+            inventory
+                .entries
+                .iter()
+                .filter(|entry| entry.item_definition_ref == definition)
+                .map(|entry| u64::from(entry.count.get()))
+                .sum::<u64>()
+        })
+    };
+    let expected = units(client)
+        .checked_add(u64::from(count))
+        .ok_or("step=weapon-purchase inventory count overflow")?;
+    let reply = npc_shop::buy(client.session_mut(), request).await?;
+    if reply == NpcIntentDisposition::Ok {
+        full_row_p05::wait_for_inventory(client, "weapon-purchase", |client| {
+            units(client) == expected
+        })
+        .await?;
+    }
+    Ok(reply)
+}
+
 async fn weapon_quote(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -237,6 +269,7 @@ async fn weapon_quote(
 ) -> TestResult<(
     NonZeroU32,
     oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+    u32,
 )> {
     use oteryn_dev_client::client_runtime::npc_shop;
     use oteryn_protocol_oteryn::npc_service as npc;
@@ -311,6 +344,7 @@ async fn weapon_quote(
             quantity: 1,
             expected_unit_price: offer.unit_price,
         },
+        offer.count,
     ))
 }
 
@@ -345,10 +379,10 @@ async fn equip_weapon(client: &mut DevClientSession, definition: NonZeroU32) -> 
             ),
         })
         .await?;
-    if moved.outcome != ItemMoveOutcome::Moved || !equipped(client) {
+    if moved.outcome != ItemMoveOutcome::Moved {
         return Err(format!("step=weapon-equip definition={definition} reply={moved:?}").into());
     }
-    Ok(())
+    full_row_p05::wait_for_inventory(client, "weapon-equip", equipped).await
 }
 
 async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> TestResult {
@@ -648,4 +682,16 @@ fn row_08_publishes_a_gap_for_an_unproven_journey() {
             .split_once("#[cfg(test)]")
             .is_some_and(|(production, _)| production.contains("P08_GAP status="))
     );
+}
+
+#[cfg(test)]
+#[test]
+fn weapon_acquisition_waits_for_the_post_trade_inventory_delta() {
+    let source = include_str!("full_row_p08.rs");
+    let acquisition = source.split("async fn buy_quoted_weapon(").nth(1);
+    assert!(acquisition.is_some_and(|body| {
+        body.split("async fn weapon_quote(")
+            .next()
+            .is_some_and(|body| body.contains("wait_for_inventory("))
+    }));
 }

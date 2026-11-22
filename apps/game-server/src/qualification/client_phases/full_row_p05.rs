@@ -126,10 +126,8 @@ fn accepted(
     Ok(reply)
 }
 
-fn item_count(client: &DevClientSession) -> TestResult<u32> {
-    let definitions = provisioning::item_index()?;
-    let reference = provisioning::item_reference(&definitions, TALISMAN_ITEM)?;
-    Ok(client
+fn item_count(client: &DevClientSession, reference: std::num::NonZeroU32) -> u32 {
+    client
         .inventory()
         .map(|inventory| {
             inventory
@@ -139,7 +137,23 @@ fn item_count(client: &DevClientSession) -> TestResult<u32> {
                 .map(|entry| entry.count.get())
                 .sum()
         })
-        .unwrap_or(0))
+        .unwrap_or(0)
+}
+
+pub(super) async fn wait_for_inventory(
+    client: &mut DevClientSession,
+    step: &str,
+    committed: impl Fn(&DevClientSession) -> bool,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(6);
+    while !committed(client) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step={step} accepted-command-inventory-delta-missing").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+    Ok(())
 }
 
 pub(super) async fn complete_bounty(
@@ -271,35 +285,32 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
                 source: Some(error),
             }
         })?;
-    let items_before = item_count(&client).map_err(|error| {
-        verdict::record_error(error.as_ref());
-        StepFailure {
+    let reference = provisioning::item_index()
+        .and_then(|definitions| provisioning::item_reference(&definitions, TALISMAN_ITEM))
+        .map_err(|error| StepFailure {
             step: 2,
-            observed: format!("inventory-before-{error}"),
+            observed: format!("talisman-definition-{error}"),
             source: Some(error),
-        }
-    })?;
+        })?;
+    let items_before = item_count(&client, reference);
     let bought = accepted(2, command(&mut client, 17, 0).await?).map_err(|mut failure| {
         failure.observed.push_str(";need=5000-spendable-gold;source=crates/gameplay/quests/src/quest/task_board_full.rs:604");
         failure
     })?;
-    let items_after = item_count(&client).map_err(|error| {
-        verdict::record_error(error.as_ref());
-        StepFailure {
-            step: 2,
-            observed: format!("inventory-after-{error}"),
-            source: Some(error),
-        }
+    let items_after = items_before.checked_add(1).ok_or_else(|| StepFailure {
+        step: 2,
+        observed: "talisman-count-overflow".into(),
+        source: None,
     })?;
-    if items_after != items_before + 1 {
-        return Err(StepFailure {
-            step: 2,
-            observed: format!(
-                "status-Accepted-refusal-0-missing-inventory-delta-before-{items_before}-after-{items_after}"
-            ),
-            source: None,
-        });
-    }
+    wait_for_inventory(&mut client, "talisman-purchase", |client| {
+        item_count(client, reference) == items_after
+    })
+    .await
+    .map_err(|error| StepFailure {
+        step: 2,
+        observed: error.to_string(),
+        source: Some(error),
+    })?;
     evidence("P05_CHECK step=2 status=PASS purchase-and-inventory-delta");
 
     let duplicate = command(&mut client, 17, 0).await?;
@@ -308,14 +319,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
         observed: format!("status-{:?}-missing-reply", duplicate.0),
         source: None,
     })?;
-    let duplicate_items = item_count(&client).map_err(|error| {
-        verdict::record_error(error.as_ref());
-        StepFailure {
-            step: 3,
-            observed: format!("inventory-{error}"),
-            source: Some(error),
-        }
-    })?;
+    let duplicate_items = item_count(&client, reference);
     if duplicate.0 != CommandStatus::Accepted
         || duplicate_reply.refusal == 0
         || duplicate_items != items_after
@@ -362,7 +366,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
             source: Some(error),
         })?;
     let persisted = accepted(7, command(&mut fresh, 4, 0).await?)?;
-    if persisted != saved || item_count(&fresh).ok() != Some(items_after) {
+    if persisted != saved || item_count(&fresh, reference) != items_after {
         return Err(StepFailure {
             step: 7,
             observed: "fresh-admission lost board or talisman custody".into(),
