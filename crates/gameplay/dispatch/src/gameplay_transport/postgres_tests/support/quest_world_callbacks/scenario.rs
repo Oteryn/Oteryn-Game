@@ -25,6 +25,7 @@ fn scenario_case(
 ) -> TestResult {
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
+    let frontier = name == super::super::new_frontier_journey::NAME;
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -80,6 +81,7 @@ fn scenario_case(
     let pinned_qc_world = name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
     let native_crop = pinned_qc_world
+        || frontier
         || m03_use
         || qd_world
         || engenc_asura
@@ -116,7 +118,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if frontier {
+        super::super::new_frontier_journey::start()
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -428,6 +432,8 @@ fn scenario_case(
             "dreamers-challenge-carrot-entry"
         } else if m44_flower {
             "m44-lions-flower-0"
+        } else if frontier {
+            "new-frontier-mountain-passage-31532"
         } else if m44_lions || name == "lions-rock-strength-first" {
             "m07/lion-strength"
         } else if name == "lions-rock-beauty" {
@@ -1036,7 +1042,9 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if pinned_qc_world {
+        let world = if frontier {
+            super::super::new_frontier_journey::world(generation.native_gameplay().ok_or("Frontier native policies")?)?
+        } else if pinned_qc_world {
             super::super::qc_pinned_world::world(
                 generation
                     .native_gameplay()
@@ -1551,6 +1559,8 @@ fn scenario_case(
                 7
             } else if name == "authored-treasure-island" {
                 3
+            } else if frontier {
+                12
             } else if name == "authored-secret-library" {
                 5
             } else if matches!(name, "authored-anniversary" | "authored-venore") {
@@ -2822,6 +2832,8 @@ fn scenario_case(
                 &h,
             ))
             .await?;
+        } else if frontier {
+            Box::pin(super::super::new_frontier_journey::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == "authored-secret-library" {
             Box::pin(super::super::questpc8_secret_library_fixtures::exercise(
                 &mut owner,

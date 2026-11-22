@@ -338,6 +338,39 @@ def tree_validator():
     return jsonschema.Draft202012Validator(schema, registry=registry)
 
 
+def reconcile_frontier_potion_claim(records, claims):
+    """Clear the runtime hold only for the exact UID 6097 native container projection."""
+    key = 'oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.potions'
+    claim = next((record for record in claims if record['identity']['key'] == key), None)
+    if (claim is None or claim.get('definition_profile') != 'authored_variant_v1'
+            or claim.get('readiness') != 'waiting_implementation' or claim['data_holds']
+            or claim['source_variant']['source_data']['status'] != 'COMPLETE'):
+        return
+    def item(item_id):
+        return {'family': 'Item', 'key': f'oteryn:item.tibia.i{item_id}', 'revision': 'definition-r1'}
+    native = claim.get('native_contents')
+    placement = {
+        'unique_id': 6097, 'capacity': 20, 'line': 1324, 'root': item(2854),
+        'completion': {'kind': 'storage', 'key': 'Storage.Quest.U8_54.TheNewFrontier.Reward.Potions'},
+        'contents': [{'count': 1, 'item': item(id)} for id in (7439, 7440, 7443)],
+    }
+    if native != {
+        'schema': 'OTERYN_NATIVE_CONTAINER_REWARD/v1',
+        'revision': '201189f871d23597b82caf88fd611454a2ddefb8',
+        'source_sha256': 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757',
+        'placements': [placement],
+    }:
+        return
+    owner = 'oteryn:quest.the_new_frontier_quest'
+    source_key = claim['provenance']['pilot_key']
+    for row in records:
+        definition = row['definition']
+        if definition['identity']['key'] == owner:
+            definition['missing_data'].remove({
+                'code': 'claim_native_lowering_missing', 'source_key': source_key,
+            })
+
+
 def expected_files(root, include_registration=False):
     quests = read(root, SOURCE)['quests']
     claims = claim_catalogue(root)
@@ -401,6 +434,8 @@ def expected_files(root, include_registration=False):
                                 'target_items' not in original.get(stage['key'], {}))
     resolution = enrich([*recipes, {'stages': extra_stages}], index)
     validate_references(records, items)
+    # SOURCE recipe validation still sees the historical hold and its frozen digest.
+    reconcile_frontier_potion_claim(records, claims)
     files, shards = {'content/quests/item-key-resolution.json': compact(resolution)}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
         chunk = records[start:start + SHARD_SIZE]
