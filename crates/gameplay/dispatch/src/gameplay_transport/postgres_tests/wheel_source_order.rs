@@ -152,6 +152,7 @@ fn wheel_save_mixed_refund_and_spend_respects_source_slot_retry_order() -> TestR
         .await?;
         assert_eq!(receipts, 2);
         drop(authority);
+        drop(seal);
         drop(gate);
         h.cleanup().await
     })
