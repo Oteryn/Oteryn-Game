@@ -566,6 +566,32 @@ async fn exercise(
         use_with_map_item: Some(MapUseTarget::Item(std::num::NonZeroU64::MIN)),
     }).map_err(debug)?;
     let actual = if lose_ack {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        // The definition-based hotkey must find the only amulet in the necklace slot.
+        let equipped = sqlx::query(
+            "WITH amulet AS (
+               DELETE FROM game_item_container_entries WHERE item_instance_id=$1
+               RETURNING character_id,item_instance_id,world_id,placed_transaction_id
+             ) INSERT INTO game_character_equipment_slots
+               (character_id,slot,item_instance_id,world_id,placed_transaction_id)
+             SELECT character_id,7,item_instance_id,world_id,placed_transaction_id FROM amulet",
+        )
+        .bind(sqlx::types::Uuid::from_bytes(id(92)))
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+        assert_eq!(equipped, 1);
+        sqlx::query(
+            "INSERT INTO game_character_equipment_state(character_id,revision)
+             VALUES($1,1) ON CONFLICT (character_id) DO NOTHING",
+        )
+        .bind(sqlx::types::Uuid::from_bytes(id(41)))
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
         composed_test_owner::interrupt_ground_use_after_commit(&owner);
         let (lost, result, actual, _) = framed_attempt(
             &owner, admitted, command, 2, &definition_payload, (None, Some(corpse)), false, true,
@@ -1480,7 +1506,9 @@ async fn framed_attempt(
                         let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(envelope_result.payload).map_err(debug)?;
                         assert_eq!(
                             envelope_result.status,
-                            if disposition == UseDisposition::Rejected {
+                            if command < admitted.continuity.next_command_id {
+                                CommandStatus::DuplicateReplay
+                            } else if disposition == UseDisposition::Rejected {
                                 CommandStatus::Rejected
                             } else {
                                 CommandStatus::Accepted

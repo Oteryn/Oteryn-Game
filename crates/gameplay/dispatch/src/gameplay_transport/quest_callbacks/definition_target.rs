@@ -184,7 +184,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .active_generation
                 .and_then(|active| active.native_gameplay())
                 .and_then(|native| native.item_index());
-            backpack().find(|entry| {
+            entries().find(|entry| {
                 super::super::mount_taming::quest_objects::matches_source(
                     &intent.target,
                     None,

@@ -19,6 +19,7 @@ pub(super) const CHAIN: &str = "qc-twenty-miles";
 pub(super) const GUARDIAN: &str = "qc-twenty-miles-wandering-guardian";
 pub(super) const TRADE: &str = "qc-twenty-miles-open-trade";
 pub(super) const GOLD: &str = "qc-twenty-miles-merged-gold";
+pub(super) const SPLIT_GOLD: &str = "qc-twenty-miles-split-gold";
 pub(super) const RESUME: &str = "qc-twenty-miles-resume";
 pub(super) const START: Position = Position {
     x: 33550,
@@ -64,7 +65,7 @@ const NPCS: [(&str, Position); 5] = [
 ];
 
 pub(super) fn matches(name: &str) -> bool {
-    matches!(name, CHAIN | RESUME | GUARDIAN | TRADE | GOLD)
+    matches!(name, CHAIN | RESUME | GUARDIAN | TRADE | GOLD | SPLIT_GOLD)
 }
 
 fn source(callback: &Callback) -> Option<Position> {
@@ -369,6 +370,7 @@ async fn move_recovery_item(
     item: [u8; 16],
     command_id: u64,
     drop: bool,
+    count: Option<u32>,
 ) -> TestResult {
     use crate::gameplay_transport::connection::UseCommand;
     use crate::gameplay_transport::item_move::{LoopMove, LoopMoveResult, LoopTarget};
@@ -383,7 +385,7 @@ async fn move_recovery_item(
         UseCommand { game_session_id: admitted.game_session_id, command_id, item_fence: Some(fence.item_fence()) },
         LoopMove {
             item: ItemKey::Instance(item),
-            count: None,
+            count,
             target: if drop {
                 LoopTarget::Ground(WorldTilePosition { x: origin.x, y: origin.y, floor: -origin.floor })
             } else {
@@ -671,15 +673,15 @@ pub(super) async fn exercise(
         use_object(owner, admitted, "sea-ear-shell", None, Committed).await?;
         let item_key = world_callbacks::phase::SEA_EAR_ITEM;
         let ear = only_live_item(h, item_key).await?;
-        move_recovery_item(owner, admitted, ear, 22_002, true).await?;
+        move_recovery_item(owner, admitted, ear, 22_002, true, None).await?;
         enter(owner, admitted, "shell-cave-exit", true).await?;
         enter(owner, admitted, "maelstrom-to-shells", true).await?;
-        move_recovery_item(owner, admitted, ear, 22_003, false).await?;
+        move_recovery_item(owner, admitted, ear, 22_003, false, None).await?;
         enter(owner, admitted, "shell-cave-exit", true).await?;
         enter(owner, admitted, "maelstrom-to-grounds-with-ear", true).await?;
         say!(1, "guardian-sea-ear", ["mission"], true);
         say!(1, "recover-sea-ear-after-report", ["lost sea ear"], false);
-        move_recovery_item(owner, admitted, ear, 22_004, true).await?;
+        move_recovery_item(owner, admitted, ear, 22_004, true, None).await?;
         say!(1, "recover-sea-ear-after-report", ["lost sea ear"], false);
         assert_eq!(only_live_item(h, item_key).await?, ear);
         expire_dropped_item(h, ear).await?;
@@ -771,10 +773,10 @@ pub(super) async fn exercise(
         assert_eq!(track(h, &energy).await?, 0);
     }
     say!(1, "guardian-skulls-laid", ["mission", "yes"], true);
-    if name == GOLD {
+    if matches!(name, GOLD | SPLIT_GOLD) {
         let gold = "oteryn:item.tibia.i21746";
         let issued = only_live_item(h, gold).await?;
-        move_recovery_item(owner, admitted, issued, 22_010, true).await?;
+        move_recovery_item(owner, admitted, issued, 22_010, true, None).await?;
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
         let receiver = super::fixture::id(216);
@@ -787,10 +789,27 @@ pub(super) async fn exercise(
              FROM game_item_container_entries GROUP BY character_id,parent_item_instance_id,world_id",
         ).bind(receiver.as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
-        move_recovery_item(owner, admitted, issued, 22_011, false).await?;
+        move_recovery_item(owner, admitted, issued, 22_011, false, None).await?;
         assert_eq!(only_live_item(h, gold).await?, receiver);
+        if name == SPLIT_GOLD {
+            // Split a fresh coin onto Ground, then lose the original stack. With
+            // zero carried coins the recovery must reach its issuance check.
+            move_recovery_item(owner, admitted, receiver, 22_012, true, Some(1)).await?;
+            let split: sqlx::types::Uuid = sqlx::query_scalar(
+                "SELECT item_instance_id FROM game_item_instances
+                 WHERE definition_production_key=$1 AND lifecycle=1 AND item_instance_id<>$2",
+            ).bind(gold).bind(sqlx::types::Uuid::from_bytes(receiver)).fetch_one(&h.pool).await?;
+            move_recovery_item(owner, admitted, receiver, 22_013, true, None).await?;
+            expire_dropped_item(h, receiver).await?;
+            assert_eq!(only_live_item(h, gold).await?, *split.as_bytes());
+            say!(1, "recover-cursed-gold", ["lost cursed gold"], false);
+            expire_dropped_item(h, *split.as_bytes()).await?;
+            say!(1, "recover-cursed-gold", ["lost cursed gold"], true);
+            stage(h, 3).await?;
+            return Ok(());
+        }
         say!(1, "recover-cursed-gold", ["lost cursed gold"], false);
-        move_recovery_item(owner, admitted, receiver, 22_012, true).await?;
+        move_recovery_item(owner, admitted, receiver, 22_012, true, None).await?;
         expire_dropped_item(h, receiver).await?;
         say!(1, "recover-cursed-gold", ["lost cursed gold"], true);
         assert_ne!(only_live_item(h, gold).await?, receiver);

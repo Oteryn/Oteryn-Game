@@ -2592,8 +2592,10 @@ mod tests {
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // shared-reward-callbacks.json has 207 existing rows plus the generated
         // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
-        // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 238 + 59 + 130 + 1 + 1 + 29 + 13 + 12);
+        // QuestPC7 and the other registered shards include separate counts for
+        // Twenty Miles, Rottin Wood, Sinatuki and NR Wicked. Colours and
+        // Kingsday each generate one additional callback.
+        assert_eq!(load()?.len(), 238 + 59 + 126 + 29 + 13 + 8 + 12 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

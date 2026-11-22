@@ -1062,9 +1062,12 @@ fn location_queries(kind: &str) -> Result<(&'static str, &'static str), Durabili
              WHERE item_instance_id=$1::uuid FOR UPDATE",
             "SELECT * FROM game_quest_callback_remove_backpack($1::uuid)",
         )),
+        // Equipment moves take the item and Character root locks. The
+        // runtime role can read and replace slots but has no slot UPDATE grant.
         "equipment" => Ok((
             "SELECT to_jsonb(l) FROM game_character_equipment_slots l \
-             WHERE item_instance_id=$1::uuid FOR UPDATE",
+             JOIN game_item_instances i USING(item_instance_id) \
+             WHERE item_instance_id=$1::uuid FOR UPDATE OF i",
             "DELETE FROM game_character_equipment_slots WHERE item_instance_id=$1::uuid",
         )),
         _ => Err(DurabilityError::InvalidStoredState),

@@ -21,6 +21,11 @@ fn qc_twenty_miles_merged_gold_recovery() -> TestResult {
 }
 
 #[test]
+fn qc_twenty_miles_split_gold_recovery() -> TestResult {
+    run(quest::SPLIT_GOLD)
+}
+
+#[test]
 fn qc_twenty_miles_world_use_refuses_open_trade() -> TestResult {
     run(quest::TRADE)
 }

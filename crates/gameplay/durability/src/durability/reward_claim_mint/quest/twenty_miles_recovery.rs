@@ -30,7 +30,9 @@ pub(super) async fn missing(
     let recovery_keys = [recovery.to_owned(), format!("{recovery}-after-report")];
     // The root lock serializes this Character's reward writers. Lock the exact
     // issued instances too, including those in other players' or Ground custody.
-    // Follow whole-stack retirements to the receiver recorded by Item Loop.
+    // Follow quantity transfers in Item Loop receipts, including fresh split
+    // instances and merges where the source remains live. UNION visits each
+    // instance once even if later moves transfer units back to an ancestor.
     // Select live descendants in the CTE, then lock by identity so a concurrent
     // retirement of a selected descendant still refuses this attempt.
     let active: Vec<i64> = sqlx::query_scalar(
@@ -46,21 +48,25 @@ pub(super) async fn missing(
            WHERE r.character_id=encode($1,'hex')::uuid
            UNION
            SELECT receiver.item_instance_id
-           FROM lineage JOIN game_item_instances merged USING(item_instance_id)
-           JOIN game_item_loop_move_lines source
-             ON source.transaction_id=merged.last_transaction_id
-             AND source.item_instance_id=merged.item_instance_id AND source.to_kind=0
+           FROM lineage JOIN game_item_loop_move_lines source USING(item_instance_id)
            JOIN game_item_loop_move_lines receiver
-             ON receiver.transaction_id=source.transaction_id AND receiver.to_kind=9
+             ON receiver.transaction_id=source.transaction_id
              AND receiver.quantity_after > receiver.quantity_before
-           WHERE merged.lifecycle=2
+           WHERE source.definition_production_key=$4
+             AND source.quantity_after < source.quantity_before
          ), surviving AS MATERIALIZED (
            SELECT item_instance_id FROM lineage JOIN game_item_instances USING(item_instance_id)
            WHERE lifecycle=1
          )
          SELECT i.quantity FROM surviving JOIN game_item_instances i USING(item_instance_id)
          ORDER BY i.item_instance_id LIMIT 6 FOR UPDATE OF i",
-    ).bind(character).bind(&claims).bind(&recovery_keys[..]).fetch_all(&mut **tx).await?;
+    )
+    .bind(character)
+    .bind(&claims)
+    .bind(&recovery_keys[..])
+    .bind(item)
+    .fetch_all(&mut **tx)
+    .await?;
     let issued: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_reward_claims
          WHERE character_id=encode($1,'hex')::uuid AND claim_family='RewardClaim'
