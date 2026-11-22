@@ -441,15 +441,16 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
                     .await
                     .premium_current()
             );
-            let setup = durable_quick_loot(
-                &owner,
-                admitted,
-                admitted.continuity.next_command_id,
-                assign,
-            )
-            .await?;
+            let (_, unseen) =
+                exchange(&owner, &mut admitted, corpse_identity, |_| Ok(vec![assign])).await?;
+            assert_eq!(
+                unseen[0].0,
+                CommandStatus::Rejected,
+                "an unseen Inbox UUID cannot assign the pouch"
+            );
+            // Fixture writes use receipt keys outside this scenario's wire command stream.
+            let setup = durable_quick_loot(&owner, admitted, 1000, assign).await?;
             assert_eq!(setup.0, CommandStatus::Accepted);
-            admitted.continuity.next_command_id += 1;
             fixture_overload_pouch(&harness.pool, true).await?;
             let (_, heavy) =
                 exchange(&owner, &mut admitted, corpse_identity, |_| Ok(vec![all])).await?;
@@ -461,22 +462,20 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
             );
             fixture_overload_pouch(&harness.pool, false).await?;
         }
-        let assignment_id = admitted.continuity.next_command_id;
-        let loot_id = assignment_id + 1;
+        let loot_id = admitted.continuity.next_command_id + u64::from(!pouch);
         let replies = if pouch {
             // The Store Inbox has no item-view projection. Provision the saved Gold
             // Pouch selection through the durable owner, then execute Loot All on wire.
             let assignment = durable_quick_loot(
                 &owner,
                 admitted,
-                assignment_id,
+                1001,
                 QuickLootRequest {
                     category: Some(QuickLootCategory::Gold),
                     ..assign
                 },
             )
             .await?;
-            admitted.continuity.next_command_id = loot_id;
             let (_, mut replies) =
                 exchange(&owner, &mut admitted, corpse_identity, |_| Ok(vec![all])).await?;
             replies.insert(0, assignment);
@@ -556,6 +555,7 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
         })
         .await?;
         assert_eq!(stale[0].0, CommandStatus::Rejected);
+        admitted.continuity = stale_admitted.continuity;
         let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quick_loot_receipts")
             .fetch_one(&harness.pool)
             .await?;
