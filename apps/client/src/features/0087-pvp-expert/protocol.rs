@@ -1,5 +1,5 @@
 use crate::play::feature_0115_mail::protocol::accepted;
-use crate::play::{Outbox, Stepper, mailbox::lock};
+use crate::play::{Outbox, Stepper};
 use oteryn_client_runtime::{
     pvp_expert as wire,
     raw_feature::{FeatureCommand, GatedCommandResult},
@@ -101,9 +101,12 @@ pub(in crate::play) fn initialize<T: Stepper>(panel: &mut Panel, session: &T) {
     }
 }
 impl Outbox {
-    pub(in crate::play) fn pvp_expert_events(&self, events: &[oteryn_session::SessionEvent]) {
-        let mut shared = lock(&self.0);
-        let panel = &mut shared.properties.pvp_expert;
+}
+
+
+impl crate::play::mailbox::Mailbox {
+    pub(in crate::play) fn pvp_expert_events(&mut self, events: &[oteryn_session::SessionEvent]) {
+        let panel = &mut self.properties.pvp_expert;
         if !panel.selected {
             return;
         }

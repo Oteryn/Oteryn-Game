@@ -348,18 +348,17 @@ pub(in crate::play) fn dialog_confirm(
     }
 }
 
-impl Outbox {
-    pub(in crate::play) fn console_events(&self, events: &[oteryn_session::SessionEvent]) {
+impl Mailbox {
+    pub(in crate::play) fn console_events(&mut self, events: &[oteryn_session::SessionEvent]) {
         let received = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
-        let mut mailbox = lock(&self.0);
         for event in events {
             match event {
                 oteryn_session::SessionEvent::ChatLine(delta) => {
-                    mailbox.chat.pending_lines = mailbox.chat.pending_lines.wrapping_add(1);
-                    mailbox
+                    self.chat.pending_lines = self.chat.pending_lines.wrapping_add(1);
+                    self
                         .chat
                         .console
                         .metadata
@@ -378,18 +377,20 @@ impl Outbox {
                             (NoticeClass::Status, format!("Warning: {text}"))
                         }
                     };
-                    mailbox.chat.console.notices.push(class, &text, received);
+                    self.chat.console.notices.push(class, &text, received);
                 }
                 oteryn_session::SessionEvent::ChatSnapshot(_) => {
-                    mailbox.chat.scope = mailbox.chat.scope.wrapping_add(1);
-                    mailbox.chat.console.metadata.reset_history();
-                    mailbox.chat.console.reset_extensions();
+                    self.chat.scope = self.chat.scope.wrapping_add(1);
+                    self.chat.console.metadata.reset_history();
+                    self.chat.console.reset_extensions();
                 }
                 _ => {}
             }
         }
     }
+}
 
+impl Outbox {
     pub(in crate::play) fn console_result(&self, result: &oteryn_session::GatedCommandResult) {
         let mut mailbox = lock(&self.0);
         let Some(names) = mailbox.chat.console.metadata.pending.take() else {
