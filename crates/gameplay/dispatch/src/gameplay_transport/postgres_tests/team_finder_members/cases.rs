@@ -214,6 +214,9 @@ pub(super) async fn drive(
         LISTING
     };
     advertise(&mut leader_peer, listing).await?;
+    if case == Case::Notices {
+        leader_peer.expect_notice("The team listing was updated.").await?;
+    }
     assert_eq!(h.count("game_team_finder_active_listings").await?, 1);
     let listings = browse(&mut member_peer).await?;
     assert_eq!(listings.len(), 1);
@@ -252,6 +255,18 @@ pub(super) async fn drive(
     let member_handle = member.handle;
 
     match case {
+        Case::Notices => {
+            leader_peer.expect_notice("There is a new request to join your team.").await?;
+            member_peer.expect_notice("Your request to join the team was sent.").await?;
+
+            advertise(&mut leader_peer, LeaderListing { max_level: 121, ..listing }).await?;
+            leader_peer.expect_notice("The team listing was updated.").await?;
+            member_peer.expect_notice("The team listing was updated.").await?;
+
+            member_action(&mut member_peer, MemberAction::Cancel { leader: handle }, CommandStatus::Accepted).await?;
+            leader_peer.expect_notice("A request to join your team was withdrawn.").await?;
+            member_peer.expect_notice("Your request to join the team was withdrawn.").await?;
+        }
         Case::Request => {
             let count = h.count("game_team_finder_member_receipts").await?;
             let (status, bytes) = member_peer

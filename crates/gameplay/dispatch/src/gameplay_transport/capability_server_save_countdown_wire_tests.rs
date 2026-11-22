@@ -125,3 +125,36 @@ fn capability_75_receives_each_countdown_minute_once_across_probes_and_reconnect
         Ok(())
     })
 }
+
+#[test]
+fn categorized_server_save_keeps_the_countdown_domain_and_emits_one_system_notice()
+-> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::zones_nologout::{
+        CAPABILITY_SERVER_MESSAGE_CATEGORY_V1, CAPABILITY_ZONES_NOLOGOUT_V1,
+        STATE_DOMAIN_SERVER_MESSAGES, ServerMessage, ServerMessageCategory, decode_server_notification,
+    };
+    run(async {
+        let authority = NegotiatingAuthority::new(None);
+        let (admitted, _) = admit(&authority, &bootstrap(&[
+            CAPABILITY_SERVER_SAVE_COUNTDOWN_V1, CAPABILITY_ZONES_NOLOGOUT_V1,
+            CAPABILITY_SERVER_MESSAGE_CATEGORY_V1,
+        ])?).await?;
+        authority.server_save.set(Some(due(1)));
+        let (_, frames) = serve_probed(&authority, admitted.map_err(|e| format!("{e:?}"))?).await?;
+        assert_eq!(countdown_of(&frames)?.1, [(0, 1, due(1).notice)]);
+        let mut notices = Vec::new();
+        for frame in frames {
+            let envelope = decode_wire_envelope(&frame)?;
+            if envelope.message_type() == MessageType::StateDelta {
+                let delta = decode_state_delta(envelope.payload())?;
+                if delta.domain_id == STATE_DOMAIN_SERVER_MESSAGES {
+                    notices.push(decode_server_notification(delta.payload).map_err(|e| format!("{e:?}"))?);
+                }
+            }
+        }
+        assert_eq!(notices.len(), 1);
+        assert_eq!(notices[0].category, ServerMessageCategory::System);
+        assert_eq!(notices[0].message, ServerMessage::Warning("Server save in 1 minute.".into()));
+        Ok(())
+    })
+}

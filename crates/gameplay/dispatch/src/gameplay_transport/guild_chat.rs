@@ -80,7 +80,7 @@ fn qualified_fence(
     qualified_chat_fence(admitted, runtime)
 }
 
-fn qualified_chat_fence(
+pub(super) fn qualified_chat_fence(
     admitted: &AdmittedSession,
     runtime: &ChannelRuntimeV1,
 ) -> Option<CurrentCharacterItemFence> {

@@ -198,6 +198,9 @@ where
                 )
                 .await
                 .ok_or(ServeEnd::Disconnected)?;
+                super::party_membership::refresh(stream, authority, session)
+                    .await
+                    .ok_or(ServeEnd::Disconnected)?;
                 super::native_cues::refresh(stream, authority, session).await?;
                 achievement_notices::refresh(stream, authority, session).await
             };

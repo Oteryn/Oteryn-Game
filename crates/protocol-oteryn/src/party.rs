@@ -5,6 +5,8 @@ use crate::world_spatial_entities::EntityRef;
 type Result<T> = std::result::Result<T, PartyWireError>;
 pub const CAPABILITY_PARTY_V1: u32 = 42;
 pub const CAPABILITY_PARTY_LIST_V1: u32 = 461;
+pub const CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1: u32 = 576;
+pub const DELTA_TYPE_PARTY_MEMBERSHIP_NOTICE_V1: u32 = 2;
 #[path = "party_list.rs"]
 mod list;
 pub use list::PartyListEntity;
@@ -72,6 +74,52 @@ impl PartyResult {
         }
     }
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PartyMembershipChange {
+    Joined = 1,
+    Left = 2,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PartyMembershipNotice {
+    pub member_handle: u64,
+    pub change: PartyMembershipChange,
+}
+
+pub fn encode_party_membership_notice(notice: PartyMembershipNotice) -> Result<Vec<u8>> {
+    if notice.member_handle == 0 {
+        return bad();
+    }
+    let mut payload = Vec::new();
+    push_varint_field(&mut payload, 1, notice.member_handle);
+    push_varint_field(&mut payload, 2, notice.change as u64);
+    Ok(payload)
+}
+
+pub fn decode_party_membership_notice(payload: &[u8]) -> Result<PartyMembershipNotice> {
+    bounded(payload, 13)?;
+    let mut cursor = 0;
+    if read_varint(payload, &mut cursor)? != 0x08 {
+        return bad();
+    }
+    let member_handle = read_varint(payload, &mut cursor)?;
+    if member_handle == 0 || read_varint(payload, &mut cursor)? != 0x10 {
+        return bad();
+    }
+    let change = match read_varint(payload, &mut cursor)? {
+        1 => PartyMembershipChange::Joined,
+        2 => PartyMembershipChange::Left,
+        _ => return bad(),
+    };
+    if cursor != payload.len() {
+        return bad();
+    }
+    Ok(PartyMembershipNotice {
+        member_handle,
+        change,
+    })
+}
+
 fn bad<T>() -> Result<T> {
     Err(PartyWireError::Malformed)
 }

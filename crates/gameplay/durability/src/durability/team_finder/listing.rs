@@ -1,12 +1,46 @@
 use super::*;
 
+pub struct ListingOutcome {
+    pub accepted: bool,
+    pub changed: bool,
+    pub applicants: Vec<Target>,
+}
+
+async fn online_applicants(
+    tx: &mut Transaction<'_, Postgres>,
+    scope: Scope,
+    leader: [u8; 16],
+) -> Result<Vec<Target>> {
+    let rows = sqlx::query(
+        "SELECT uuid_send(m.member_character_id) AS character,
+                uuid_send(s.game_session_id) AS session, s.current_generation::text AS generation
+         FROM game_team_finder_members m
+         JOIN game_durability_admission_character_guards g ON g.character_id=m.member_character_id
+         JOIN game_durability_reconnect_sessions s ON s.game_session_id=g.holder_game_session_id
+         WHERE m.leader_character_id=encode($1,'hex')::uuid
+           AND m.world_id=encode($2,'hex')::uuid AND m.channel_id=encode($3,'hex')::uuid
+           AND s.character_id=m.member_character_id AND s.world_id=m.world_id
+           AND s.runtime_scope_kind=1 AND s.runtime_scope_world_id=m.world_id
+           AND s.runtime_scope_channel_id=m.channel_id AND s.session_state=2
+           AND s.character_lease_generation=g.lease_generation AND g.eligible
+           AND s.scope_ownership_generation=$4::text::numeric(20,0)
+         ORDER BY m.member_character_id LIMIT 256",
+    )
+    .bind(leader.as_slice())
+    .bind(scope.0.as_slice())
+    .bind(scope.1.as_slice())
+    .bind(scope.2.to_string())
+    .fetch_all(&mut **tx).await?;
+    rows.iter().map(target).collect()
+}
+
 /// Existing commands 390/391 now change the retained template and its active
 /// advertisement together. A historical replay never republishes an old ad.
 pub async fn apply_leader_listing_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
     listing: Option<LeaderListing>,
-) -> Result<bool> {
+) -> Result<ListingOutcome> {
     let (scope, party) = owner(tx, authority).await?;
     let character = authority.character_id_bytes();
     let command = authority.command();
@@ -35,9 +69,13 @@ pub async fn apply_leader_listing_in_transaction(
         {
             return Err(reject("team finder leader command conflict"));
         }
-        return Ok(row.try_get("accepted")?);
+        return Ok(ListingOutcome {
+            accepted: row.try_get("accepted")?,
+            changed: false,
+            applicants: Vec::new(),
+        });
     }
-    if let Some(listing) = listing {
+    let (changed, applicants) = if let Some(listing) = listing {
         let (kind, first, area) = match listing.target {
             TeamTarget::Boss(id) => (1_i16, id, None),
             TeamTarget::Hunt { kind, area } => (2, kind, Some(i32::from(area))),
@@ -85,15 +123,18 @@ pub async fn apply_leader_listing_in_transaction(
                     .bind(character.as_slice()).bind(scope.0.as_slice()).bind(scope.1.as_slice()).bind(member.character.as_slice()).execute(&mut **tx).await?;
             }
         }
+        (true, online_applicants(tx, scope, character).await?)
     } else {
+        let applicants = online_applicants(tx, scope, character).await?;
         // Both active membership tables cascade from the existing S14a row.
-        sqlx::query("DELETE FROM game_team_finder_leader_listings WHERE leader_character_id=encode($1,'hex')::uuid")
+        let removed = sqlx::query("DELETE FROM game_team_finder_leader_listings WHERE leader_character_id=encode($1,'hex')::uuid")
             .bind(character.as_slice()).execute(&mut **tx).await?;
-    }
+        (removed.rows_affected() != 0, applicants)
+    };
     sqlx::query("INSERT INTO game_team_finder_leader_receipts(game_session_id,command_id,leader_character_id,accepted,binding) VALUES(encode($1,'hex')::uuid,$2::text::numeric(20,0),encode($3,'hex')::uuid,true,$4)")
         .bind(command.game_session_id().as_bytes().as_slice())
         .bind(command.command_id().get().to_string())
         .bind(character.as_slice()).bind(binding.as_slice())
         .execute(&mut **tx).await?;
-    Ok(true)
+    Ok(ListingOutcome { accepted: true, changed, applicants })
 }

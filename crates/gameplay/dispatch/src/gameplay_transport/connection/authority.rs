@@ -556,6 +556,13 @@ pub trait FreshAdmissionAuthority {
         None
     }
 
+    fn take_party_membership_notices(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Vec<crate::durability::world_party::MembershipNotice>> {
+        async { Vec::new() }
+    }
+
     /// PARITY-EVENT-CALLBACKS-1: the Channel's currently due server-save countdown minute.
     fn server_save_countdown(
         &self,
@@ -577,7 +584,7 @@ pub trait FreshAdmissionAuthority {
     fn take_server_notice(
         &self,
         _admitted: AdmittedSession,
-    ) -> Option<oteryn_protocol_oteryn::zones_nologout::ServerMessage> {
+    ) -> Option<oteryn_protocol_oteryn::zones_nologout::ServerNotification> {
         None
     }
 

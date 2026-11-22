@@ -32,3 +32,16 @@ message PartyResultV1 {
 // Intents return only their original receipted disposition. Queries return current data.
 // Transport retains FND-02 sequence/replay rules; mutations use World party receipts.
 // A session retains <=4096 observed handles; exhaustion returns PARTY_UNAVAILABLE.
+
+// Crystal 201189f8 src/creatures/players/grouping/party.cpp:211-218,296-325.
+// Domain 57 delta type 2, only with capability 576 (requires 42 and 92).
+// Each active member at the committed join/leave, including the changed member,
+// receives the change on its own connection. Receipts and rejected mutations do
+// not emit it again. A kick is a leave. The existing query 46 refreshes the roster.
+// Field 1 matches the recipient's opaque member handle in that roster; the
+// handle in this message alone does not authorize an action on a member.
+// Live delivery is bounded to the latest 64 pending changes per connection.
+message PartyMembershipNoticeV1 {
+  uint64 member_handle = 1; // Required, nonzero.
+  uint32 change = 2; // Required. 1 joined, 2 left.
+}

@@ -26,25 +26,35 @@ use std::time::Duration;
 use tokio::{io::AsyncWriteExt, sync::Mutex};
 
 pub(super) fn run(partyskull: bool) -> TestResult {
-    run_case(partyskull, false, false, false)
+    run_case(partyskull, false, false, false, false)
 }
 
 pub(super) fn run_reference_level() -> TestResult {
-    run_case(false, true, false, false)
+    run_case(false, true, false, false, false)
 }
 
 pub(super) fn run_chat() -> TestResult {
-    run_case(false, false, true, false)
+    run_case(false, false, true, false, false)
 }
 
 pub(super) fn run_busy_holder() -> TestResult {
-    run_case(false, false, false, true)
+    run_case(false, false, false, true, false)
 }
 
-fn run_case(partyskull: bool, reference_level: bool, chat: bool, busy: bool) -> TestResult {
+pub(super) fn run_notices(admin: String) -> TestResult {
+    run_with_admin(admin, false, false, false, false, true)
+}
+
+fn run_case(partyskull: bool, reference_level: bool, chat: bool, busy: bool, notices: bool) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
+    run_with_admin(admin, partyskull, reference_level, chat, busy, notices)
+}
+
+fn run_with_admin(
+    admin: String, partyskull: bool, reference_level: bool, chat: bool, busy: bool, notices: bool,
+) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -60,7 +70,7 @@ fn run_case(partyskull: bool, reference_level: bool, chat: bool, busy: bool) -> 
                 )
                 .await
                 .map_err(debug)?;
-                let result = scenario(&h, partyskull, reference_level, chat, busy)
+                let result = scenario(&h, partyskull, reference_level, chat, busy, notices)
                     .await
                     .map_err(|e| e.to_string());
                 h.cleanup().await.map_err(debug)?;
@@ -81,6 +91,7 @@ pub(super) enum Step {
     Kick(usize),
     Leave,
     Malformed,
+    Notice(PartyMembershipChange),
 }
 
 // These fixture peers implement the same live protocol as the native client.
@@ -113,7 +124,12 @@ pub(super) async fn roundtrip(
     let session = *admitted;
     let (mut server, mut client) = tokio::io::duplex(16_384);
     // Each peer owns its stream so an early return closes it and wakes the other peer.
-    let serving = async move { serve_admitted(&mut server, session, owner, IDLE_LIVENESS).await };
+    let policy = if session.continuity.selected_capabilities.contains(CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1) {
+        notice_policy()
+    } else {
+        IDLE_LIVENESS
+    };
+    let serving = async move { serve_admitted(&mut server, session, owner, policy).await };
     let driving = async move {
         loop {
             let frame =
@@ -125,7 +141,16 @@ pub(super) async fn roundtrip(
             }
         }
         let mut results: Vec<PartyResult> = Vec::new();
+        let mut notices = std::collections::VecDeque::new();
         for (offset, step) in steps.iter().enumerate() {
+            if let Step::Notice(change) = step {
+                let notice = if let Some(notice) = notices.pop_front() { notice } else {
+                    read_notice(&mut client, session.continuity.connection_generation).await?
+                };
+                assert_eq!(notice.change, *change);
+                assert_ne!(notice.member_handle, 0);
+                continue;
+            }
             let command_id = session.continuity.next_command_id + offset as u64;
             let intent = match step {
                 Step::Invite(target) => Some(PartyIntent::Invite(*target)),
@@ -157,7 +182,7 @@ pub(super) async fn roundtrip(
                         .handle,
                 )),
                 Step::Leave => Some(PartyIntent::Leave),
-                Step::Query | Step::Malformed => None,
+                Step::Query | Step::Malformed | Step::Notice(_) => None,
             };
             let payload = if matches!(step, Step::Malformed) {
                 vec![8, 0]
@@ -186,6 +211,9 @@ pub(super) async fn roundtrip(
                     read_live_frame(&mut client, session.continuity.connection_generation).await?;
                 let envelope = decode_wire_envelope(&frame).map_err(debug)?;
                 if envelope.message_type() != MessageType::CommandResult {
+                    if let Some(notice) = party_notice(&envelope)? {
+                        notices.push_back(notice);
+                    }
                     continue;
                 }
                 let result = decode_command_result(envelope.payload()).map_err(debug)?;
@@ -220,7 +248,87 @@ pub(super) async fn roundtrip(
     result
 }
 
-async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bool, busy: bool) -> TestResult {
+fn notice_policy() -> crate::gameplay_transport::connection::LivenessPolicy {
+    crate::gameplay_transport::connection::LivenessPolicy {
+        interval: Duration::from_millis(500),
+        missed_limit: 10,
+    }
+}
+
+fn party_notice(
+    envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
+) -> TestResult<Option<PartyMembershipNotice>> {
+    if envelope.message_type() == MessageType::StateDelta {
+        let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+        if delta.domain_id == oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES
+            && delta.delta_type == DELTA_TYPE_PARTY_MEMBERSHIP_NOTICE_V1
+        {
+            return Ok(Some(decode_party_membership_notice(delta.payload).map_err(debug)?));
+        }
+    }
+    Ok(None)
+}
+
+async fn read_notice(client: &mut tokio::io::DuplexStream, generation: u64) -> TestResult<PartyMembershipNotice> {
+    loop {
+        let frame = read_live_frame(client, generation).await?;
+        if let Some(notice) = party_notice(&decode_wire_envelope(&frame).map_err(debug)?)? {
+            return Ok(notice);
+        }
+    }
+}
+
+async fn check_notices(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut [AdmittedSession],
+) -> TestResult {
+    for peer in admitted.iter_mut().take(2) {
+        peer.continuity.selected_capabilities = SelectedCapabilities::select(
+            owner.offered_capabilities(), &[6, 21, 42, 92, CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1],
+        ).filter(|selected| selected.contains(CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1))
+        .ok_or("party membership notice offer")?;
+    }
+    let observer = admitted[0];
+    let generation = observer.continuity.connection_generation;
+    let member = &mut admitted[1];
+    let (mut server, mut client) = tokio::io::duplex(16_384);
+    let serving = async { serve_admitted(&mut server, observer, owner, notice_policy()).await };
+    let driving = async {
+        loop {
+            let frame = read_live_frame(&mut client, generation).await?;
+            if decode_wire_envelope(&frame).map_err(debug)?.message_type() == MessageType::SnapshotCommit {
+                break;
+            }
+        }
+
+        let (result, joined) = tokio::join!(
+            roundtrip(owner, member, &[Step::Query, Step::Accept, Step::Notice(PartyMembershipChange::Joined)]),
+            read_notice(&mut client, generation),
+        );
+        assert_eq!(result?[1].disposition, PartyDisposition::Ok);
+        let joined = joined?;
+        assert_eq!(joined.change, PartyMembershipChange::Joined);
+
+        let (result, left) = tokio::join!(
+            roundtrip(owner, member, &[Step::Leave, Step::Notice(PartyMembershipChange::Left)]),
+            read_notice(&mut client, generation),
+        );
+        assert_eq!(result?[0].disposition, PartyDisposition::Ok);
+        let left = left?;
+        assert_eq!(left.change, PartyMembershipChange::Left);
+        assert_eq!(left.member_handle, joined.member_handle);
+        client.shutdown().await?;
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let (end, result) = tokio::time::timeout(
+        Duration::from_secs(30), super::fixture::join_two(serving, driving),
+    ).await?;
+    result?;
+    assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+    Ok(())
+}
+
+async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bool, busy: bool, notices: bool) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -393,6 +501,9 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
         let result = roundtrip(&owner, &mut admitted[1], &[Step::Query, Step::Accept]).await?;
         assert_eq!(result[1].disposition, PartyDisposition::Rejected);
         super::party_skull_fixtures::aggression(h, &targets, &characters, false).await?;
+    }
+    if notices {
+        return check_notices(&owner, &mut admitted).await;
     }
     for a in admitted.iter_mut().skip(1) {
         let results = roundtrip(&owner, a, &[Step::Query, Step::Accept]).await?;

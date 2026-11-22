@@ -14,22 +14,30 @@ pub struct SessionPartyView {
     pub(super) hunt_prices: Vec<oteryn_protocol_oteryn::analyser_party::Price>,
     pub(super) hunt_reply: Option<Vec<u8>>,
 }
+pub(super) fn party_member_handle(admitted: AdmittedSession, id: [u8; 16]) -> Option<u64> {
+    party_handle(admitted, 1, id)
+}
+
+fn party_handle(admitted: AdmittedSession, kind: u8, id: [u8; 16]) -> Option<u64> {
+    let mut hash = Sha256::new();
+    hash.update(b"oteryn.party.handle.v1");
+    hash.update(admitted.game_session_id.as_bytes());
+    hash.update(admitted.continuity.connection_generation.to_be_bytes());
+    hash.update([kind]);
+    hash.update(id);
+    let bytes: [u8; 32] = hash.finalize().into();
+    let handle = u64::from_be_bytes(bytes[..8].try_into().ok()?);
+    (handle != 0).then_some(handle)
+}
+
 const MAX_HANDLES: usize = 4096;
 impl SessionPartyView {
     fn handle(&mut self, admitted: AdmittedSession, kind: u8, id: [u8; 16]) -> Option<u64> {
-        let mut hash = Sha256::new();
-        hash.update(b"oteryn.party.handle.v1");
-        hash.update(admitted.game_session_id.as_bytes());
-        hash.update(admitted.continuity.connection_generation.to_be_bytes());
-        hash.update([kind]);
-        hash.update(id);
-        let bytes: [u8; 32] = hash.finalize().into();
-        let handle = u64::from_be_bytes(bytes[..8].try_into().ok()?);
-        if handle == 0
-            || self
-                .handles
-                .get(&handle)
-                .is_some_and(|old| *old != (kind, id))
+        let handle = party_handle(admitted, kind, id)?;
+        if self
+            .handles
+            .get(&handle)
+            .is_some_and(|old| *old != (kind, id))
         {
             return None;
         }

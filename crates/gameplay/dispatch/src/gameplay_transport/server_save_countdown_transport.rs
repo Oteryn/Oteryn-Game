@@ -1,6 +1,9 @@
 //! PARITY-EVENT-CALLBACKS-1: capability-gated server-save countdown framing (domain 40).
 use super::*;
 use oteryn_protocol_oteryn::server_save_countdown::*;
+use oteryn_protocol_oteryn::zones_nologout::{
+    CAPABILITY_SERVER_MESSAGE_CATEGORY_V1, ServerMessage, ServerMessageCategory, ServerNotification,
+};
 
 pub(super) fn snapshot(admitted: &AdmittedSession) -> Option<DomainSnapshot<'static>> {
     admitted
@@ -53,5 +56,19 @@ pub(super) async fn emit<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     admitted.continuity.server_sequence = next_sequence;
     admitted.continuity.server_save_revision = next_revision;
     admitted.continuity.server_save_sent = Some(due.receipt());
-    write_frame(stream, &frame).await.ok()
+    write_frame(stream, &frame).await.ok()?;
+    if admitted
+        .continuity
+        .selected_capabilities
+        .contains(CAPABILITY_SERVER_MESSAGE_CATEGORY_V1)
+    {
+        let minutes = due.notice.minutes_remaining;
+        let unit = if minutes == 1 { "minute" } else { "minutes" };
+        let notice = ServerNotification {
+            message: ServerMessage::Warning(format!("Server save in {minutes} {unit}.")),
+            category: ServerMessageCategory::System,
+        };
+        zones_nologout_transport::emit_notification(stream, admitted, sequence, &notice).await?;
+    }
+    Some(())
 }

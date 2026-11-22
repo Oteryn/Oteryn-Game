@@ -14,6 +14,8 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 pub mod ingress;
+mod notices;
+pub use notices::MembershipNotice;
 type Result<T> = std::result::Result<T, SpellItemError>;
 fn reject(s: &'static str) -> SpellItemError {
     SpellItemError::Rejected(s)
@@ -618,6 +620,7 @@ async fn apply_world_party_command_inner(
                         sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,CASE WHEN $5::bytea IS NULL THEN NULL ELSE encode($5,'hex')::uuid END)").bind(character.as_slice()).bind(requested.as_slice()).bind(r.try_get::<String,_>("seq")?).bind(presence).bind(presence_channel).execute(&mut **tx).await?;
                         sqlx::query("DELETE FROM game_party_invitations WHERE party_id=encode($2,'hex')::uuid AND invitee=encode($1,'hex')::uuid").bind(character.as_slice()).bind(requested.as_slice()).execute(&mut **tx).await?;
                         sqlx::query("UPDATE game_parties SET revision=revision+1 WHERE party_id=encode($1,'hex')::uuid").bind(requested.as_slice()).execute(&mut **tx).await?;
+                        notices::enqueue(tx, requested, character, oteryn_protocol_oteryn::party::PartyMembershipChange::Joined).await?;
                     }
                 } else {
                     disposition = "NOT_INVITED"
