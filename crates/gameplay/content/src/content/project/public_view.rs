@@ -1,7 +1,9 @@
 //! Read-only public projection of the exact graph admitted by the server's CONTENT loader.
 //! No donor documents, migration shards or display names are parsed as native authority.
 use super::*;
-use crate::content::ReferenceItemField;
+use crate::content::{
+    REFERENCE_ITEM_MAX_NAME_BYTES, REFERENCE_LOOT_PROBABILITY_PPM_SCALE, ReferenceItemField,
+};
 use serde_json::{Value, json};
 
 pub const CATALOG_CAPABILITIES: [&str; 8] = [
@@ -16,6 +18,7 @@ pub const CATALOG_CAPABILITIES: [&str; 8] = [
 ];
 
 const WIRE_MAX_STRING_BYTES: usize = 2_048;
+const WIRE_MAX_ARRAY_ENTRIES: usize = 200_000;
 
 // These are the v1 carrier bounds enforced by the producer. The native graph
 // can admit wider values and stays intact when the public view omits them.
@@ -77,16 +80,21 @@ fn project_creature_fields(profile: &ProjectV2CreatureAuthoring, data: &mut Valu
     }
     // Preserve a list only when every member can be represented exactly.
     if !profile.resistances.is_empty() {
-        if profile.resistances.iter().all(|entry| {
-            wire_source_text(&entry.damage_type) && i64::try_from(entry.percent.denominator).is_ok()
-        }) {
+        if profile.resistances.len() <= WIRE_MAX_ARRAY_ENTRIES
+            && profile.resistances.iter().all(|entry| {
+                wire_source_text(&entry.damage_type)
+                    && i64::try_from(entry.percent.denominator).is_ok()
+            })
+        {
             data["resistances"] = json!(profile.resistances);
         } else {
             complete = false;
         }
     }
     if !profile.immunities.is_empty() {
-        if profile.immunities.iter().all(|text| wire_source_text(text)) {
+        if profile.immunities.len() <= WIRE_MAX_ARRAY_ENTRIES
+            && profile.immunities.iter().all(|text| wire_source_text(text))
+        {
             data["immunities"] = json!(profile.immunities);
         } else {
             complete = false;
@@ -366,8 +374,7 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
                 && let ReferenceItemField::Known(presentation) = &semantics.presentation
                 && let ReferenceItemField::Known(name) = &presentation.name
             {
-                // Native admission already checks the v1 Item name byte limit.
-                if name.is_empty() {
+                if name.is_empty() || name.len() > REFERENCE_ITEM_MAX_NAME_BYTES {
                     view.incomplete.insert("item");
                 } else {
                     projected["data"]["name"] = json!(name);
@@ -625,6 +632,11 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
         for (ordinal, entry) in entries.iter().enumerate() {
             let relation_key = format!("{}.loot.{ordinal}", identity.key);
             if !wire_key(&relation_key)
+                || entry.min_count == 0
+                || entry.min_count > entry.max_count
+                || entry
+                    .probability_ppm
+                    .is_some_and(|probability| probability > REFERENCE_LOOT_PROBABILITY_PPM_SCALE)
                 || !is_exported(
                     "item",
                     entry.item.key.as_str(),
@@ -848,6 +860,99 @@ mod tests {
                 }
                 assert!(data(ITEM).ok_or("Item missing")?.get("name").is_none());
                 for capability in ["item", "creature", "npc", "npc_shop"] {
+                    assert!(view.incomplete.contains(capability));
+                }
+                Ok(())
+            },
+        )
+    }
+
+    #[test]
+    fn admitted_payload_bounds_preserve_representable_catalogue_rows() -> TestResult {
+        const ITEM: &str = "oteryn:item.tibia.i1000";
+        project_mutation(
+            |draft| {
+                let item = draft
+                    .core
+                    .records
+                    .iter_mut()
+                    .find_map(|row| match row {
+                        ProjectReferenceRecord::Item {
+                            identity,
+                            semantics,
+                            ..
+                        } if identity.key == ITEM => Some(semantics),
+                        _ => None,
+                    })
+                    .ok_or("Item missing")?;
+                let ReferenceItemField::Known(presentation) = &mut item.presentation else {
+                    return Err("Item presentation missing".into());
+                };
+                presentation.name = ReferenceItemField::Known(format!("{}x", "é".repeat(23)));
+
+                let profile = draft
+                    .state
+                    .authoring_profiles
+                    .iter_mut()
+                    .find(|row| row.target.key == ABYSSADOR)
+                    .ok_or("Abyssador profile missing")?;
+                let ProjectV2AuthoringProfileData::Creature(creature) = &mut profile.data else {
+                    return Err("expected a Creature profile".into());
+                };
+                creature.immunities = (0..=200_000).map(|index| format!("i{index:06}")).collect();
+
+                let entries = draft
+                    .core
+                    .records
+                    .iter_mut()
+                    .find_map(|row| match row {
+                        ProjectReferenceRecord::Loot {
+                            identity, entries, ..
+                        } if identity.key == ABYSSADOR_LOOT => Some(entries),
+                        _ => None,
+                    })
+                    .ok_or("Abyssador loot definition missing")?;
+                let [zero, inverted, probability, ..] = entries.as_mut_slice() else {
+                    return Err("expected at least three loot rows".into());
+                };
+                zero.min_count = 0;
+                inverted.min_count = inverted.max_count + 1;
+                probability.probability_ppm = Some(1_000_001);
+                Ok(())
+            },
+            |view| {
+                let input = view.preproduction_input(
+                    "0123456789abcdef0123456789abcdef01234567",
+                    "2026-01-01T00:00:00Z",
+                );
+                let entities = input["entities"].as_array().ok_or("entities missing")?;
+                let relations = input["relations"].as_array().ok_or("relations missing")?;
+                let mut leaked = Vec::new();
+                for (key, field) in [(ITEM, "name"), (ABYSSADOR, "immunities")] {
+                    let entity = entities
+                        .iter()
+                        .find(|row| row["content_key"] == key)
+                        .ok_or("expected projected entity")?;
+                    if entity["data"].get(field).is_some() {
+                        leaked.push(field.to_owned());
+                    }
+                }
+                for ordinal in 0..3 {
+                    let key = format!("{ABYSSADOR}.loot.{ordinal}");
+                    if relations.iter().any(|row| row["relation_key"] == key) {
+                        leaked.push(key);
+                    }
+                }
+                assert!(
+                    leaked.is_empty(),
+                    "native values outside wire bounds: {leaked:?}"
+                );
+                assert!(
+                    relations
+                        .iter()
+                        .any(|row| row["relation_key"] == format!("{ABYSSADOR}.loot.3"))
+                );
+                for capability in ["item", "creature", "creature_loot"] {
                     assert!(view.incomplete.contains(capability));
                 }
                 Ok(())

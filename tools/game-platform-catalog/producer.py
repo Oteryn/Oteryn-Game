@@ -6,6 +6,7 @@ import json
 import math
 import os
 import re
+import shutil
 import sys
 import tempfile
 from contextlib import contextmanager
@@ -780,23 +781,83 @@ def _publication_lock(directory: Path):
         os.close(parent)
 
 
+def _activate_pair(pair: Path, storage: Path, artifact_hex: str) -> None:
+    generation = storage / artifact_hex
+    if not generation.exists():
+        pair.replace(generation)
+    pointer = pair.parent / "activate"
+    pointer.symlink_to(generation.name, target_is_directory=True)
+    # Both public paths traverse this pointer. This is the only commit point.
+    pointer.replace(storage / "current")
+
+
+def _install_public_paths(
+    output: Path, sidecar: Path, storage: Path, staging: Path
+) -> None:
+    current = storage.relative_to(output.parent) / "current"
+    public_paths = {path: current / path.name for path in (output, sidecar)}
+    legacy = []
+    for path, target in public_paths.items():
+        if path.is_symlink():
+            if path.readlink() != target:
+                raise CatalogValidationError(f"unexpected catalogue link: {path}")
+        elif path.exists():
+            if not path.is_file():
+                raise CatalogValidationError(f"invalid catalogue output: {path}")
+            legacy.append(path)
+
+    if legacy:
+        # Switch legacy files to links with identical bytes before committing a
+        # new generation. A retry can continue after either link was replaced.
+        pair = staging / "legacy"
+        pair.mkdir()
+        for path, limit in ((output, MAX_FILE_BYTES), (sidecar, 65)):
+            if not path.is_file() or path.stat().st_size > limit:
+                raise CatalogValidationError("cannot migrate incomplete catalogue pair")
+            shutil.copyfile(path, pair / path.name)
+        with (pair / output.name).open("rb") as handle:
+            artifact_hex = hashlib.file_digest(handle, "sha256").hexdigest()
+        if (pair / sidecar.name).read_bytes() != artifact_hex.encode("ascii") + b"\n":
+            raise CatalogValidationError("cannot migrate mismatched catalogue pair")
+        _activate_pair(pair, storage, artifact_hex)
+        link = staging / "alias"
+        for path in legacy:
+            link.symlink_to(public_paths[path])
+            link.replace(path)
+
+    for path, target in public_paths.items():
+        if not path.is_symlink():
+            path.symlink_to(target)
+
+
 def write_snapshot_files(snapshot: dict, output: Path) -> None:
     verify_snapshot(snapshot)
+    output = output.parent.resolve() / output.name
+    if (
+        output.name.casefold().endswith(".sha256")
+        or any(part.casefold() == ".catalogue" for part in output.parts)
+        or output.name.casefold() == ".catalogue.lock"
+    ):
+        raise CatalogValidationError(f"reserved catalogue output path: {output}")
     if not output.parent.exists():
         raise CatalogValidationError(
             f"output directory does not exist: {output.parent}"
         )
+    sidecar = output.with_name(output.name + ".sha256")
+    storage = output.parent / ".catalogue" / output.name
     try:
         with tempfile.TemporaryDirectory(
             prefix=".catalogue-", dir=output.parent
-        ) as staging:
-            artifact = Path(staging) / "snapshot"
-            digest = Path(staging) / "digest"
-            artifact_hex = _stage_snapshot(artifact, snapshot)
-            digest.write_bytes((artifact_hex + "\n").encode("ascii"))
+        ) as temporary:
+            staging = Path(temporary)
+            pair = staging / "pair"
+            pair.mkdir()
+            artifact_hex = _stage_snapshot(pair / output.name, snapshot)
+            (pair / sidecar.name).write_bytes((artifact_hex + "\n").encode("ascii"))
             with _publication_lock(output.parent):
-                artifact.replace(output)
-                digest.replace(output.with_suffix(output.suffix + ".sha256"))
+                storage.mkdir(parents=True, exist_ok=True)
+                _install_public_paths(output, sidecar, storage, staging)
+                _activate_pair(pair, storage, artifact_hex)
     except OSError as exc:
         raise CatalogValidationError(f"cannot write output file: {output}") from exc
 

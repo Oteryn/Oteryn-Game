@@ -64,7 +64,8 @@ def _materialize_tree(root: Path, checkout: Path, revision: str, git_env: dict) 
 
 def build(root: Path, output: Path, *, preproduction: bool = False) -> str:
     root = root.resolve()
-    output = output.resolve()
+    # Keep the public basename when it already points to a published generation.
+    output = output.parent.resolve() / output.name
     # Read the original object and tree identified by the attested commit SHA.
     git_env = {**os.environ, "GIT_NO_REPLACE_OBJECTS": "1"}
     revision = subprocess.check_output(

@@ -107,6 +107,100 @@ class ProducerIoTests(unittest.TestCase):
                 expected_digest + "\n",
             )
 
+    def test_failed_publication_preserves_previous_pair(self) -> None:
+        default = HERE / "fixtures/unsupported-native-input.json"
+        preproduction = HERE / "fixtures/supported-native-input.json"
+        replace = Path.replace
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "catalog.json"
+            sidecar = output.with_suffix(".json.sha256")
+            self.assertEqual(main(["produce", str(default), str(output)]), 0)
+            previous = output.read_bytes(), sidecar.read_bytes()
+
+            def fail_publication(path, destination):
+                if destination == sidecar or destination.name == "current":
+                    raise OSError("injected publication failure")
+                return replace(path, destination)
+
+            with patch.object(Path, "replace", fail_publication):
+                self.assertEqual(main(["produce", str(preproduction), str(output)]), 2)
+            self.assertEqual((output.read_bytes(), sidecar.read_bytes()), previous)
+
+    def test_readers_see_matching_pair_at_publication_commit(self) -> None:
+        fixtures = HERE / "fixtures"
+        replace = Path.replace
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "catalog.json"
+            sidecar = output.with_suffix(".json.sha256")
+
+            def check_pair(path, destination):
+                result = replace(path, destination)
+                self.assertEqual(output.exists(), sidecar.exists())
+                if output.exists():
+                    self.assertEqual(
+                        sidecar.read_bytes(),
+                        hashlib.sha256(output.read_bytes()).hexdigest().encode()
+                        + b"\n",
+                    )
+                return result
+
+            with patch.object(Path, "replace", check_pair):
+                for source in (
+                    "unsupported-native-input.json",
+                    "supported-native-input.json",
+                ):
+                    self.assertEqual(
+                        main(["produce", str(fixtures / source), str(output)]), 0
+                    )
+
+    def test_interrupted_legacy_migration_keeps_the_pair_readable(self) -> None:
+        fixtures = HERE / "fixtures"
+        default = build_snapshot(
+            load_json_file(fixtures / "unsupported-native-input.json")
+        )
+        source = fixtures / "supported-native-input.json"
+        replace = Path.replace
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "catalog.json"
+            sidecar = output.with_suffix(".json.sha256")
+            old_bytes = canonical_json_bytes(default) + b"\n"
+            old_digest = hashlib.sha256(old_bytes).hexdigest().encode() + b"\n"
+            output.write_bytes(old_bytes)
+            sidecar.write_bytes(old_digest)
+
+            def fail_second_alias(path, destination):
+                if destination == sidecar:
+                    raise OSError("injected legacy link failure")
+                return replace(path, destination)
+
+            with patch.object(Path, "replace", fail_second_alias):
+                self.assertEqual(main(["produce", str(source), str(output)]), 2)
+            self.assertEqual(
+                (output.read_bytes(), sidecar.read_bytes()), (old_bytes, old_digest)
+            )
+
+            pinned = output.resolve(strict=True)
+            self.assertEqual(main(["produce", str(source), str(output)]), 0)
+            self.assertNotEqual(output.read_bytes(), old_bytes)
+            self.assertEqual(
+                (pinned.read_bytes(), pinned.with_suffix(".json.sha256").read_bytes()),
+                (old_bytes, old_digest),
+            )
+            self.assertEqual(
+                sidecar.read_bytes(),
+                hashlib.sha256(output.read_bytes()).hexdigest().encode() + b"\n",
+            )
+
+    def test_produce_refuses_transport_digest_as_output(self) -> None:
+        source = HERE / "fixtures/unsupported-native-input.json"
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "catalog.json"
+            sidecar = output.with_suffix(".json.sha256")
+            self.assertEqual(main(["produce", str(source), str(output)]), 0)
+            previous = sidecar.read_bytes()
+            self.assertEqual(main(["produce", str(source), str(sidecar)]), 2)
+            self.assertEqual(sidecar.read_bytes(), previous)
+
     def test_concurrent_public_profiles_publish_matching_sidecar(self) -> None:
         fixtures = HERE / "fixtures"
         default = fixtures / "unsupported-native-input.json"
@@ -120,7 +214,7 @@ class ProducerIoTests(unittest.TestCase):
 
             def pause_after_first_json(path, destination):
                 result = replace(path, destination)
-                if destination == output and not published_json.is_set():
+                if destination.name == "current" and not published_json.is_set():
                     published_json.set()
                     if not resume_default.wait(10):
                         raise TimeoutError("default publication did not resume")
