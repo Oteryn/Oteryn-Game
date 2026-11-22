@@ -16,7 +16,7 @@ use oteryn_platform_client::native_login::{AccessToken, AttemptRef, NativeLoginC
 use oteryn_platform_client::{PlatformClientError::HttpStatus, native_login::NativeLoginError};
 use std::{sync::Arc, time::Instant};
 
-pub(crate) use session::Unverified;
+pub(crate) use session::HistoryStatus;
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -58,7 +58,7 @@ pub struct View {
     prior: PriorRequests,
     pending: Option<BazaarRequest>,
     post_refusal_status: Option<u16>,
-    unverified: Unverified,
+    history: HistoryStatus,
     unresolved: std::collections::BTreeSet<String>,
     quote_until: Option<Instant>,
 }
@@ -74,7 +74,7 @@ impl Default for View {
             prior: Default::default(),
             pending: None,
             post_refusal_status: None,
-            unverified: Default::default(),
+            history: Default::default(),
             unresolved: Default::default(),
             quote_until: None,
         }
@@ -85,7 +85,7 @@ impl View {
         self.prior.post_in_flight()
             || self.pending.is_some()
             || !self.unresolved.is_empty()
-            || !self.unverified.0.is_empty()
+            || !self.history.unverified.is_empty()
     }
     pub fn can_retry(&self) -> bool {
         self.pending.is_some() && self.post_refusal_status.is_none()
@@ -118,11 +118,11 @@ impl View {
                     continue;
                 }
                 _ => {
-                    self.unverified.0.insert(row.request_id);
+                    self.history.lookup_failed(row.request_id);
                     continue;
                 }
             };
-            self.unverified.0.remove(&row.request_id);
+            self.history.unverified.remove(&row.request_id);
             if self.prior.contains(&receipt.request_id)
                 || self
                     .pending
@@ -137,6 +137,7 @@ impl View {
             } else if receipt.state == OperationState::Pending {
                 self.unresolved.insert(receipt.request_id.clone());
             } else {
+                self.history.settled(&receipt.request_id);
                 self.unresolved.remove(&receipt.request_id);
             }
             page.recent_operations.push(receipt);
@@ -177,7 +178,7 @@ impl View {
     }
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
-        if self.prior.post_in_flight() || !self.unverified.0.is_empty() {
+        if self.prior.post_in_flight() || !self.history.unverified.is_empty() {
             text.push('\n');
             text.push_str(tr!(
                 "Resolve the pending operation before starting another."

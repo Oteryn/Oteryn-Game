@@ -170,13 +170,13 @@ async fn apply(
         Action::Status => {
             if let Some(id) = view
                 .pending_id()
-                .or_else(|| view.unverified.0.first().map(String::as_str))
+                .or_else(|| view.history.unverified.first().map(String::as_str))
             {
                 match client.bazaar_status(token, id, cancel).await {
                     Ok(receipt) => accept(view, receipt),
                     Err(NativeLoginError::Platform(HttpStatus(404)))
                         if view.post_refusal_status == Some(409)
-                            && !view.unverified.0.contains(id)
+                            && !view.history.unverified.contains(id)
                             && !view.unresolved.contains(id) =>
                     {
                         view.prior.reconcile(id);
@@ -254,7 +254,7 @@ async fn submit(
     Ok(())
 }
 pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
-    view.unverified.0.remove(&receipt.request_id);
+    view.history.unverified.remove(&receipt.request_id);
     if view.receipt.as_ref().is_some_and(|old| {
         old.request_id == receipt.request_id
             && old.state != OperationState::Pending
@@ -286,6 +286,7 @@ pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
         view.unresolved.remove(&receipt.request_id);
     }
     if receipt.state != OperationState::Pending {
+        view.history.settled(&receipt.request_id);
         view.prior.reconcile(&receipt.request_id);
     }
     view.feedback = match receipt.state {

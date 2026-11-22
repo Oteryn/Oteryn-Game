@@ -511,3 +511,39 @@ fn bazaar_refresh_looks_up_both_rows_concurrently() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn terminal_bid_survives_history_lookup_outage() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let mut view = View::default();
+        let execute = |view: &mut View, action| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                &token,
+                CancellationToken::new(),
+            ))
+        };
+        execute(&mut view, Action::Refresh(AuctionView::All));
+        execute(
+            &mut view,
+            Action::Bid {
+                auction_id: AUCTION.into(),
+                coins: 50,
+                confirmed: true,
+            },
+        );
+        assert_eq!(
+            view.receipt.as_ref().ok_or("receipt")?.state,
+            OperationState::Committed
+        );
+        mock.authority.lock().map_err(|_| "lock")?.status_failure = Some(503);
+        execute(&mut view, Action::Refresh(AuctionView::Own));
+        assert!(!view.pending(), "a committed bid became pending again");
+        Ok(())
+    })
+}

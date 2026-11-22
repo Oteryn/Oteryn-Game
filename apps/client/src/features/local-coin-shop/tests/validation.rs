@@ -437,3 +437,92 @@ fn failed_known_order_lookup_fences_purchases_until_terminal_receipt() -> TestRe
         Ok(())
     })
 }
+
+#[test]
+fn denied_status_revokes_checkout_until_verified_again() -> TestResult {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let opens = Arc::new(AtomicUsize::new(0));
+        let calls = opens.clone();
+        let browser: Browser = Arc::new(move |_| {
+            calls.fetch_add(1, Ordering::Relaxed);
+            true
+        });
+        let mut view = View::new(None);
+        let execute = |view: &mut View, action| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                &token,
+                &browser,
+                CancellationToken::new(),
+            ))
+        };
+        execute(&mut view, Action::Refresh);
+        execute(
+            &mut view,
+            Action::Purchase {
+                package_id: PACKAGE.into(),
+                confirmed: true,
+            },
+        );
+        assert!(view.can_checkout());
+        mock.with_coins(|coins| coins.status_failure = Some(403))?;
+        execute(&mut view, Action::Status);
+        execute(&mut view, Action::OpenCheckout);
+        assert_eq!(
+            opens.load(Ordering::Relaxed),
+            1,
+            "denied order reopened checkout"
+        );
+        mock.with_coins(|coins| coins.status_failure = None)?;
+        execute(&mut view, Action::Status);
+        assert!(view.can_checkout());
+        Ok(())
+    })
+}
+
+#[test]
+fn terminal_receipt_survives_history_lookup_outage() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let browser: Browser = Arc::new(|_| true);
+        let mut view = View::new(None);
+        let execute = |view: &mut View, action| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                &token,
+                &browser,
+                CancellationToken::new(),
+            ))
+        };
+        execute(&mut view, Action::Refresh);
+        execute(
+            &mut view,
+            Action::Purchase {
+                package_id: PACKAGE.into(),
+                confirmed: true,
+            },
+        );
+        let (body, signature) =
+            mock.signed_event(view.order.as_ref().ok_or("order")?, EventKind::Paid)?;
+        assert_eq!(mock.webhook(&body, &signature)?, 200);
+        execute(&mut view, Action::Status);
+        assert!(view.can_purchase(PACKAGE));
+        mock.with_coins(|coins| coins.status_failure = Some(503))?;
+        execute(&mut view, Action::Refresh);
+        assert!(
+            view.can_purchase(PACKAGE),
+            "history outage fenced an already settled purchase"
+        );
+        Ok(())
+    })
+}
