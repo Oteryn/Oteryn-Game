@@ -354,15 +354,15 @@ class QuestCallbackProfiles(unittest.TestCase):
                 for placement in record['definition'].get('native_contents', {}).get('placements', []):
                     expected.add(placement['root']['key'])
                     expected.update(child['item']['key'] for child in placement['contents'])
-        # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
-        # 3083), with 3083 also used by Triangle Tower; retain the complete closure.
-        self.assertEqual(len(expected), 160)
+        # The Global Fire Axe correction leaves the axe in the separate reward
+        # pile. The complete container closure therefore has one fewer item.
+        self.assertEqual(len(expected), 159)
         # Goblin Temple adds pan3466 and snowball2992; vial2874 was already present.
         self.assertTrue({'oteryn:item.tibia.i3466','oteryn:item.tibia.i2992'} <= expected)
         # Draconia adds the one-charge ice rapier and serpent sword to full bags.
         self.assertTrue({'oteryn:item.tibia.i3284', 'oteryn:item.tibia.i3297'} <= expected)
-        # Fire Axe adds the already-admitted dragon necklace and Fire Axe to bags.
-        self.assertTrue({'oteryn:item.tibia.i3085', 'oteryn:item.tibia.i3320'} <= expected)
+        self.assertIn('oteryn:item.tibia.i3085', expected)
+        self.assertNotIn('oteryn:item.tibia.i3320', expected)
         # Dreamer adds certificate, bread and the source-selected wine vial to the exact closure.
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (6498, 3602, 2874)} <= expected)
         # Desert2 adds exactly its three previously absent child identities;
