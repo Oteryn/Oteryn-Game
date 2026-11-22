@@ -77,7 +77,9 @@ and the established bounds apply.
 The same SBR1 schema. The server intersects existing admitted offers with
 Crystal 201189f8 `data/modules/scripts/gamestore/gamestore.lua`'s active
 `STATE_NEW` rows (Corpsefire Skull and Doom Skull mounts) by trusted mount
-preview key. This matches the current [Tibia Store manual](https://www.tibia.com/gameguides/?subtopic=manual&section=store)
+preview key. Only rows with artwork resolved against the active native content
+are shown. The view still returns the Platform balance when no rows qualify.
+This matches the current [Tibia Store manual](https://www.tibia.com/gameguides/?subtopic=manual&section=store)
 placement of recent offers on Home. The pinned Oteryn catalogue currently
 admits neither mount, so the recent view returns an empty product list and
 the real Platform balance. Cursors from 6118 cannot be reused on 6335.

@@ -40,7 +40,12 @@ pub(super) async fn execute(
             .player_control_facts(admitted.runtime_actor?, admitted.game_session_id)
             .ok()?;
     }
-    let native = owner.active_generation?.native_gameplay()?;
+    let native = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay());
+    if !recent && native.is_none() {
+        return None;
+    }
     let mut catalogues = vec![CATALOGUE.as_ref()?, COSMETIC_CATALOGUE.as_ref()?];
     if admitted.continuity.selected_capabilities.contains(250) {
         catalogues.push(HIRELING_CATALOGUE.as_ref()?);
@@ -51,6 +56,12 @@ pub(super) async fn execute(
             if recent && !recently_added(catalogue.preview(&offer.key)) {
                 continue;
             }
+            let Some(artwork) = native.and_then(|native| artwork(native, catalogue, offer)) else {
+                if recent {
+                    continue;
+                }
+                return None;
+            };
             products.push(Product {
                 category: offer.category.clone(),
                 revision: catalogue.rules.revision().into(),
@@ -60,7 +71,7 @@ pub(super) async fn execute(
                     price: offer.price_coins,
                     currency: currency_text(offer.currency).into(),
                 },
-                artwork: artwork(native, catalogue, offer)?,
+                artwork,
             });
         }
     }

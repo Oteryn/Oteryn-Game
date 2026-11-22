@@ -35,13 +35,9 @@ fn scenario(case: u32) -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let (controller, _) =
-            crate::content::native_gameplay::test_support::activated_with_loot_tables(
-                deps.admitted.world_id,
-                None,
-            );
+        // A configured Store still owes the empty recent view on a channel
+        // without a native snapshot. No unrelated artwork is needed.
         let mut owner = deps.owner(&harness, &authority);
-        owner.active_generation = controller.active();
         owner.store = Some(platform(deps.admitted.world_id.as_bytes()));
         deps.initialize(&owner).await;
         owner
