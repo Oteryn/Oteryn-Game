@@ -467,8 +467,8 @@ async fn observe_day_night_transition(
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = qualification_world(clients)?;
-    let target = destination_tile(today()?);
     let mut client = connect_world(clients, 0xe5).await?;
+    let target = destination_tile(today()?);
     // A missing weekday destination does not prevent observing the timed NPC.
     if world.base().tile(target.x, target.y, target.floor).is_none() {
         let weekday = approach(&mut client, world, target).await;
@@ -497,7 +497,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == first_session {
         return Err("step=fresh-admission observed=reused-game-session need=new-session".into());
     }
-    let actor = approach(&mut fresh, world, target).await?;
+    let fresh_target = destination_tile(today()?);
+    let actor = approach(&mut fresh, world, fresh_target).await?;
     open_trade(&mut fresh, actor).await?;
     row.pass("fresh-admission-weekday-trade");
     let timed = observe_day_night_transition(&mut fresh, world).await;

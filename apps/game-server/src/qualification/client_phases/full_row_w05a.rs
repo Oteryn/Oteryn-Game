@@ -61,8 +61,8 @@ fn countdowns(
     })
 }
 
-fn proves_reset(ending_epoch: u64, admitted_epoch: u64) -> bool {
-    admitted_epoch > ending_epoch
+fn proves_reset(initial_epoch: u64, ending_epoch: u64, admitted_epoch: u64) -> bool {
+    initial_epoch == ending_epoch && admitted_epoch > initial_epoch
 }
 
 fn follows(previous: Option<ServerSaveCountdown>, notice: ServerSaveCountdown) -> bool {
@@ -162,6 +162,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         {
             return Err(format!("step=countdown observed=invalid-delta-{delta:?}").into());
         }
+        let initial_epoch = super::full_row_w13::query(&mut client, 4).await?.reset_epoch;
+        if initial_epoch != delta.value.ending_epoch {
+            return Err(format!(
+                "step=countdown-epoch observed={} need=admitted-epoch-{initial_epoch}",
+                delta.value.ending_epoch
+            ).into());
+        }
         evidence(&format!("W05a_CHECK step=countdown delta={delta:?}"));
         // The notice says the reset lands within its minute: `minutes_remaining` minutes at most
         // and more than one minute fewer at least. Require a close in that window
@@ -176,7 +183,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         let deadline = noticed + latest;
         let mut outcome = Ok(());
         let close = loop {
-            for delta in notices {
+            for delta in notices.by_ref().chain(countdowns(client.take_events())) {
                 if delta.base_revision != revision
                     || revision.checked_add(1) != Some(delta.new_revision)
                     || !follows(Some(prior), delta.value)
@@ -201,7 +208,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
                 ).into());
             }
             outcome = client.service_liveness(remaining.min(Duration::from_secs(1))).await;
-            notices = countdowns(client.take_events());
         };
         let elapsed = noticed.elapsed();
         if elapsed < earliest {
@@ -218,7 +224,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
             return Err(format!("step=post-reset-admission observed=session-{:?}-position-{:?} expected-new-session-position-{saved:?}", client.join_snapshot().game_session_id, client.world_spatial().actor_position).into());
         }
         let admitted_epoch = super::full_row_w13::query(&mut client, 6).await?.reset_epoch;
-        if !proves_reset(prior.ending_epoch, admitted_epoch) {
+        if !proves_reset(initial_epoch, prior.ending_epoch, admitted_epoch) {
             return Err(format!("step=post-reset-epoch observed={admitted_epoch} need=epoch-after-{}", prior.ending_epoch).into());
         }
         evidence(&format!("W05a_CHECK step=post-reset-epoch observed={admitted_epoch}"));
@@ -291,9 +297,10 @@ mod tests {
 
     #[test]
     fn review_close_and_readmission_on_same_epoch_does_not_prove_reset() {
-        assert!(!proves_reset(7, 7));
-        assert!(!proves_reset(7, 6));
-        assert!(proves_reset(7, 8));
+        assert!(!proves_reset(7, 7, 7));
+        assert!(!proves_reset(7, 7, 6));
+        assert!(proves_reset(7, 7, 8));
+        assert!(!proves_reset(8, 7, 8));
     }
 
     #[test]
