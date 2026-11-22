@@ -190,6 +190,7 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/primal_callbacks/normal.rs", 1),
             ("gameplay_transport/kill_reward.rs", 1),
             ("gameplay_transport/raid_live_world/feroxa_map.rs", 1),
+            ("gameplay_transport/server_save_countdown.rs", 1),
             ("gameplay_transport/primal_callbacks.rs", 3),
             ("gameplay_transport/soul_war_cloak_blood.rs", 1),
             ("gameplay_transport/monster_ai_cycle.rs", 5),

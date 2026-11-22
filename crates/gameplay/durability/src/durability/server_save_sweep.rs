@@ -1,9 +1,15 @@
-//! Read-only server-save Ground census. Each page observes one ledger snapshot.
-use super::db::{begin_observation_transaction, commit_semantic_transaction};
+//! Ground census and fenced Channel settlement for durable server saves.
+use super::db::{
+    begin_observation_transaction, begin_semantic_transaction, commit_semantic_transaction,
+};
 use super::item_loop_move::{ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX};
 use super::item_mint::uuid_text;
+use super::runtime_scope_assignment::NodeIncarnationProof;
+use super::spell_item_transaction::assert_creature_event_scope_in_transaction;
+use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
-use crate::foundation::{ChannelId, WorldId};
+use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
+use serde_json::{Value, json};
 use sqlx::{Postgres, Row, Transaction, postgres::PgRow};
 use std::collections::BTreeSet;
 use std::num::NonZeroU16;
@@ -31,6 +37,9 @@ pub struct GroundSweepPolicy {
 /// supply a negative fact only when its source is known to cover that attribute.
 pub trait GroundSweepFacts: Sync {
     fn binding(&self) -> &GroundSweepBinding;
+    fn alternate_map_revision(&self) -> Option<&str> {
+        None
+    }
     fn tile(&self, placement: &GroundSweepPlacement) -> GroundSweepTileFacts;
     fn item(&self, root: &GroundSweepRoot) -> GroundSweepItemFacts;
 }
@@ -71,6 +80,7 @@ pub struct GroundSweepRoot {
     pub definition_key: String,
     pub definition_revision: String,
     pub quantity: i64,
+    pub runtime_without_source_ids: bool,
     pub placement: GroundSweepPlacement,
 }
 
@@ -82,6 +92,7 @@ pub struct GroundSweepEdge {
     pub ordinal: u64,
     pub placed_transaction: [u8; 16],
     pub custody: GroundSweepCustody,
+    depth: i32,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -131,7 +142,6 @@ pub struct GroundSweepPlan {
 impl DurabilityRoot {
     /// Keyset pagination uses the last reported Item UUID. A continuation is
     /// another live observation. The page grants no authority to remove custody.
-    #[allow(dead_code, reason = "W05a-2 wires the save-owner caller")]
     pub async fn plan_server_save_sweep(
         &self,
         mut facts: &impl GroundSweepFacts,
@@ -143,7 +153,18 @@ impl DurabilityRoot {
             .run_with_context(&mut facts, move |holder, deadline, facts| {
                 Box::pin(async move {
                     let mut tx = begin_observation_transaction(holder, deadline).await?;
-                    let plan = plan_page(&mut tx, *facts, policy, after, page_size).await?;
+                    let (entries, next_after) = census_page(
+                        &mut tx,
+                        *facts,
+                        policy,
+                        CensusPosition::After(after),
+                        page_size,
+                    )
+                    .await?;
+                    let plan = GroundSweepPlan {
+                        entries: entries.into_iter().map(|(entry, _)| entry).collect(),
+                        next_after,
+                    };
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(plan)
                 })
@@ -152,18 +173,34 @@ impl DurabilityRoot {
     }
 }
 
-async fn plan_page(
+enum CensusPosition {
+    After(Option<[u8; 16]>),
+    Exact([u8; 16]),
+}
+
+type CensusPage = (Vec<(GroundSweepEntry, Value)>, Option<[u8; 16]>);
+
+async fn census_page(
     tx: &mut Transaction<'_, Postgres>,
     facts: &impl GroundSweepFacts,
     policy: GroundSweepPolicy,
-    after: Option<[u8; 16]>,
+    position: CensusPosition,
     page_size: NonZeroU16,
-) -> Result<GroundSweepPlan, DurabilityError> {
+) -> Result<CensusPage, DurabilityError> {
+    let (key, exact) = match position {
+        CensusPosition::After(after) => (after, false),
+        CensusPosition::Exact(id) => (Some(id), true),
+    };
     let binding = facts.binding();
     let limit = GROUND_PAGE_MAX.min(page_size.get());
     let mut rows = sqlx::query(
         "SELECT g.item_instance_id::text AS item_id,i.state_revision::text AS item_revision,
                 i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,
+                to_jsonb(i) AS item_evidence,to_jsonb(g) AS ground_evidence,
+                (EXISTS(SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=i.item_instance_id
+                           AND m.transaction_id=i.minted_transaction_id AND m.loot_purpose_key<>'CORPSE_MATERIALIZATION')
+                 OR EXISTS(SELECT 1 FROM game_character_starter_grants m WHERE m.item_instance_id=i.item_instance_id
+                           AND m.transaction_id=i.minted_transaction_id AND m.outcome=1)) AS runtime_without_source_ids,
                 g.runtime_scope_ownership_generation::text AS generation,g.spatial_position,g.map_revision,
                 g.content_revision,g.native_room_placement_context,g.stack_ordinal,g.corpse_ref,
                 EXISTS(SELECT 1 FROM game_house_tiles h
@@ -174,13 +211,15 @@ async fn plan_page(
          JOIN game_item_instances i USING(item_instance_id,world_id)
          WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid
            AND g.scope_kind=1 AND g.instance_id IS NULL AND i.lifecycle=1 AND i.quantity>0
-           AND ($3::bytea IS NULL OR g.item_instance_id>encode($3,'hex')::uuid)
+           AND ($3::bytea IS NULL OR CASE WHEN $5 THEN g.item_instance_id=encode($3,'hex')::uuid
+                 ELSE g.item_instance_id>encode($3,'hex')::uuid END)
          ORDER BY g.item_instance_id LIMIT $4",
     )
     .bind(binding.world.as_bytes().as_slice())
     .bind(binding.channel.as_bytes().as_slice())
-    .bind(after.as_ref().map(<[u8; 16]>::as_slice))
+    .bind(key.as_ref().map(<[u8; 16]>::as_slice))
     .bind(i64::from(limit) + 1)
+    .bind(exact)
     .fetch_all(&mut **tx)
     .await?;
     let has_more = rows.len() > usize::from(limit);
@@ -194,6 +233,7 @@ async fn plan_page(
             definition_key: row.try_get("definition_production_key")?,
             definition_revision: row.try_get("definition_revision_ref")?,
             quantity: row.try_get("quantity")?,
+            runtime_without_source_ids: row.try_get("runtime_without_source_ids")?,
             placement: GroundSweepPlacement {
                 world: binding.world,
                 channel: binding.channel,
@@ -213,16 +253,36 @@ async fn plan_page(
                 None => GroundSweepDisposition::Unknown(GroundSweepUnknown::CustodyTree),
             },
         };
-        entries.push(GroundSweepEntry { root, disposition });
+        let tree = match &disposition {
+            GroundSweepDisposition::Eligible(tree) => Some(
+                tree.iter()
+                    .map(|edge| {
+                        json!({
+                            "item_id": hex(&edge.item_id),
+                            "item_revision": edge.item_revision,
+                            "parent_id": hex(&edge.parent_id),
+                            "ordinal": edge.ordinal,
+                            "placed_transaction": hex(&edge.placed_transaction),
+                            "corpse": edge.custody == GroundSweepCustody::Corpse,
+                            "depth": edge.depth,
+                        })
+                    })
+                    .collect::<Vec<_>>(),
+            ),
+            _ => None,
+        };
+        let evidence = json!({
+            "item": row.try_get::<Value, _>("item_evidence")?,
+            "ground": row.try_get::<Value, _>("ground_evidence")?,
+            "tree": tree,
+        });
+        entries.push((GroundSweepEntry { root, disposition }, evidence));
     }
     let next_after = entries
         .last()
         .filter(|_| has_more)
-        .map(|entry| entry.root.item_id);
-    Ok(GroundSweepPlan {
-        entries,
-        next_after,
-    })
+        .map(|(entry, _)| entry.root.item_id);
+    Ok((entries, next_after))
 }
 
 fn exclusion(
@@ -243,7 +303,8 @@ fn exclusion(
     let placement = &root.placement;
     // Retained Ground may predate the current owner generation.
     if placement.generation > binding.generation
-        || placement.map_revision != binding.map_revision
+        || (placement.map_revision != binding.map_revision
+            && facts.alternate_map_revision() != Some(placement.map_revision.as_str()))
         || placement.content_revision != binding.content_revision
         || placement.frame != binding.frame
         || placement.stack_ordinal.is_none()
@@ -341,6 +402,7 @@ async fn read_tree(
         }
         tree.push(GroundSweepEdge {
             item_id,
+            depth,
             item_revision: read_u64(&row, "item_revision")?,
             parent_id: uuid_text(row.try_get("parent")?)?,
             ordinal: read_u64(&row, "ordinal")?,
@@ -359,4 +421,299 @@ fn read_u64(row: &PgRow, column: &str) -> Result<u64, DurabilityError> {
     row.try_get::<&str, _>(column)?
         .parse()
         .map_err(|_| DurabilityError::InvalidStoredState)
+}
+
+/// Immutable policy captured by the save publisher at the first observation of a slot.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ServerSaveCleanup {
+    pub enabled: bool,
+    pub policy: GroundSweepPolicy,
+}
+
+/// Current runtime evidence. The epoch map revision names its content issuance,
+/// while the planner's map revision is the Item ledger's placement codec.
+pub struct ServerSaveOwner<'a> {
+    pub node: &'a NodeIncarnationProof,
+    pub epoch: u64,
+    pub epoch_map_revision: &'a str,
+    pub server_digest: [u8; 32],
+}
+
+impl DurabilityRoot {
+    /// Save owner publication is independent of the warning read and the Item lane.
+    /// Duplicate World publishers converge on one immutable scheduled occurrence.
+    pub async fn publish_due_server_save(
+        &self,
+        world: WorldId,
+        channel: ChannelId,
+        owner: &ServerSaveOwner<'_>,
+        cleanup: ServerSaveCleanup,
+    ) -> Result<bool, DurabilityError> {
+        let mut context = owner;
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, owner| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    if !super::runtime_scope_assignment::prove_current_incarnation(&mut tx, owner.node).await? {
+                        return Ok(false);
+                    }
+                    sqlx::query("SELECT game_server_save_publish_due(encode($1,'hex')::uuid,$2::text::numeric,$3,$4)")
+                        .bind(world.as_bytes().as_slice()).bind(owner.epoch.to_string())
+                        .bind(cleanup.enabled).bind(cleanup.policy.clean_protection_zones)
+                        .execute(&mut *tx).await?;
+                    let work: bool = sqlx::query_scalar("SELECT EXISTS (
+                        SELECT 1 FROM game_server_save_occurrences s
+                        LEFT JOIN game_server_save_channels c ON c.occurrence_id=s.occurrence_id AND c.channel_id=encode($2,'hex')::uuid
+                        WHERE s.world_id=encode($1,'hex')::uuid AND s.reset_epoch=$3::text::numeric AND s.cleanup_enabled
+                          AND (c.state='frozen' OR c.state IS NULL))")
+                        .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
+                        .bind(owner.epoch.to_string()).fetch_one(&mut *tx).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(work)
+                })
+            })
+            .await
+    }
+
+    /// Freeze one cohort or settle one complete tree. Every pass re-proves the
+    /// current owner before acquiring the physical Item lock, including replay.
+    pub async fn run_server_save_sweep(
+        &self,
+        owner: &ServerSaveOwner<'_>,
+        permit: &SpellLanePermit,
+        facts: &impl GroundSweepFacts,
+    ) -> Result<(), DurabilityError> {
+        let mut context = (owner, permit, facts);
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, |holder, deadline, context| {
+                Box::pin(async move {
+                    let (owner, permit, facts) = *context;
+                    let binding = facts.binding();
+                    let scope = RuntimeScopeRefV1::Channel {
+                        world_id: binding.world,
+                        channel_id: binding.channel,
+                    };
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_creature_event_scope_in_transaction(
+                        &mut tx,
+                        permit,
+                        owner.node,
+                        scope,
+                        binding.generation,
+                    )
+                    .await
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                    let pinned: bool = sqlx::query_scalar(
+                        "SELECT game_server_save_pin(encode($1,'hex')::uuid,
+                   encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6)",
+                    )
+                    .bind(binding.world.as_bytes().as_slice())
+                    .bind(binding.channel.as_bytes().as_slice())
+                    .bind(owner.epoch.to_string())
+                    .bind(owner.epoch_map_revision)
+                    .bind(owner.server_digest.as_slice())
+                    .bind(&binding.frame)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    if !pinned {
+                        return Ok(());
+                    }
+                    sqlx::query("SET LOCAL jit = off").execute(&mut *tx).await?;
+                    sqlx::query("SET LOCAL plan_cache_mode = force_generic_plan")
+                        .execute(&mut *tx)
+                        .await?;
+                    let pass = SweepPass {
+                        owner,
+                        binding,
+                        facts,
+                    };
+                    pass.advance(&mut tx).await?;
+                    commit_semantic_transaction(tx, deadline).await
+                })
+            })
+            .await
+    }
+}
+
+struct SweepPass<'a, F> {
+    owner: &'a ServerSaveOwner<'a>,
+    binding: &'a GroundSweepBinding,
+    facts: &'a F,
+}
+
+impl<F: GroundSweepFacts> SweepPass<'_, F> {
+    async fn advance(&self, tx: &mut Transaction<'_, Postgres>) -> Result<(), DurabilityError> {
+        let next: Option<(String, Option<String>, bool)> = sqlx::query_as(
+            "SELECT s.occurrence_id::text,c.state,s.clean_protection_zones
+             FROM game_server_save_occurrences s
+             LEFT JOIN game_server_save_channels c ON c.occurrence_id=s.occurrence_id AND c.channel_id=encode($2,'hex')::uuid
+             WHERE s.world_id=encode($1,'hex')::uuid AND s.reset_epoch=$3::text::numeric AND s.cleanup_enabled
+               AND (s.map_revision,s.server_digest,s.frame_digest)=($4,$5,$6)
+               AND (c.state='frozen' OR c.state IS NULL)
+             ORDER BY (c.state IS NULL AND clock_timestamp()<s.freeze_until) DESC NULLS LAST,s.scheduled_at
+             LIMIT 1")
+            .bind(self.binding.world.as_bytes().as_slice())
+            .bind(self.binding.channel.as_bytes().as_slice())
+            .bind(self.owner.epoch.to_string()).bind(self.owner.epoch_map_revision)
+            .bind(self.owner.server_digest.as_slice()).bind(&self.binding.frame)
+            .fetch_optional(&mut **tx).await?;
+        let Some((occurrence, state, clean_protection_zones)) = next else {
+            return Ok(());
+        };
+        let policy = GroundSweepPolicy {
+            clean_protection_zones,
+        };
+        if state.is_some() {
+            self.settle(tx, &occurrence, policy).await?;
+        } else {
+            self.freeze(tx, &occurrence, policy).await?;
+        }
+        Ok(())
+    }
+
+    async fn freeze(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        occurrence: &str,
+        policy: GroundSweepPolicy,
+    ) -> Result<(), DurabilityError> {
+        let state: String = sqlx::query_scalar(
+            "INSERT INTO game_server_save_channels(occurrence_id,channel_id,state)
+             SELECT occurrence_id,encode($2,'hex')::uuid,
+               CASE WHEN clock_timestamp()<freeze_until THEN 'frozen' ELSE 'missed' END
+             FROM game_server_save_occurrences WHERE occurrence_id=$1::uuid RETURNING state",
+        )
+        .bind(occurrence)
+        .bind(self.binding.channel.as_bytes().as_slice())
+        .fetch_one(&mut **tx)
+        .await?;
+        if state == "missed" {
+            return Ok(());
+        }
+        let mut after = None;
+        loop {
+            let (entries, next) = census_page(
+                tx,
+                self.facts,
+                policy,
+                CensusPosition::After(after),
+                NonZeroU16::MAX,
+            )
+            .await?;
+            let entries = entries.into_iter().map(|(entry, evidence)| {
+                let (disposition, reason) = match &entry.disposition {
+                    GroundSweepDisposition::Eligible(tree) if tree.len() < 256 => ("pending", None),
+                    GroundSweepDisposition::Eligible(_) => ("unknown", Some("TreeWorkLimit".into())),
+                    GroundSweepDisposition::Preserved(reason) => ("preserved", Some(format!("{reason:?}"))),
+                    GroundSweepDisposition::Unknown(reason) => ("unknown", Some(format!("{reason:?}"))),
+                };
+                json!({"item_id":hex(&entry.root.item_id),"evidence":evidence,"disposition":disposition,"reason":reason})
+            }).collect::<Vec<_>>();
+            sqlx::query("INSERT INTO game_server_save_ground(occurrence_id,channel_id,item_id,evidence,disposition,reason)
+                SELECT $1::uuid,encode($2,'hex')::uuid,item_id,evidence,disposition,reason FROM
+                  jsonb_to_recordset($3) AS e(item_id uuid,evidence jsonb,disposition text,reason text)")
+                .bind(occurrence).bind(self.binding.channel.as_bytes().as_slice()).bind(json!(entries))
+                .execute(&mut **tx).await?;
+            if next.is_none() {
+                break;
+            }
+            after = next;
+        }
+        // Even a census whose pages ran past the deadline leaves no cohort.
+        let in_window: bool = sqlx::query_scalar(
+            "SELECT clock_timestamp()<freeze_until FROM game_server_save_occurrences WHERE occurrence_id=$1::uuid")
+            .bind(occurrence).fetch_one(&mut **tx).await?;
+        if !in_window {
+            return Err(DurabilityError::Unavailable);
+        }
+        self.complete_if_settled(tx, occurrence).await
+    }
+
+    async fn settle(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        occurrence: &str,
+        policy: GroundSweepPolicy,
+    ) -> Result<(), DurabilityError> {
+        let channel = self.binding.channel.as_bytes().as_slice();
+        let candidate: Option<(String, Value)> = sqlx::query_as(
+            "SELECT item_id::text,evidence FROM game_server_save_ground
+             WHERE occurrence_id=$1::uuid AND channel_id=encode($2,'hex')::uuid AND disposition='pending'
+             ORDER BY item_id LIMIT 1 FOR UPDATE")
+            .bind(occurrence).bind(channel).fetch_optional(&mut **tx).await?;
+        if let Some((item, evidence)) = candidate {
+            let locked: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING (item_instance_id,world_id)
+                 WHERE g.item_instance_id=$1::uuid AND to_jsonb(i)=$2::jsonb->'item' AND to_jsonb(g)=$2::jsonb->'ground'
+                 FOR UPDATE OF i,g)")
+                .bind(&item).bind(&evidence).fetch_one(&mut **tx).await?;
+            let reason = if locked {
+                self.recheck(tx, &item, &evidence, policy).await?
+            } else {
+                Some("PlacementOrItemChanged".into())
+            };
+            if let Some(reason) = reason {
+                sqlx::query("UPDATE game_server_save_ground SET disposition='skipped',reason=$4
+                   WHERE occurrence_id=$1::uuid AND channel_id=encode($2,'hex')::uuid AND item_id=$3::uuid")
+                    .bind(occurrence).bind(channel).bind(&item).bind(reason).execute(&mut **tx).await?;
+            } else {
+                sqlx::query("SELECT game_server_save_retire_tree($1::uuid,encode($2,'hex')::uuid,$3::uuid,$4::text::numeric)")
+                    .bind(occurrence).bind(channel).bind(&item).bind(self.binding.generation.to_string())
+                    .execute(&mut **tx).await?;
+            }
+        }
+        self.complete_if_settled(tx, occurrence).await
+    }
+
+    async fn recheck(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        item: &str,
+        evidence: &Value,
+        policy: GroundSweepPolicy,
+    ) -> Result<Option<String>, DurabilityError> {
+        // Lock even a descendant whose revision changed. The re-read classifies
+        // the whole tree after those locks and the same scope lock as pickup/drop.
+        sqlx::query("SELECT i.item_instance_id FROM game_item_instances i
+            JOIN jsonb_to_recordset($1::jsonb->'tree') AS t(item_id uuid) ON t.item_id=i.item_instance_id
+            ORDER BY i.item_instance_id FOR UPDATE OF i")
+            .bind(evidence).fetch_all(&mut **tx).await?;
+        let id = uuid_text(item)?;
+        let (mut entries, _) = census_page(
+            tx,
+            self.facts,
+            policy,
+            CensusPosition::Exact(id),
+            NonZeroU16::MIN,
+        )
+        .await?;
+        Ok(match entries.pop() {
+            Some((entry, current)) if entry.root.item_id == id => match entry.disposition {
+                GroundSweepDisposition::Eligible(_) if &current == evidence => None,
+                GroundSweepDisposition::Eligible(_) => Some("TreeChanged".into()),
+                GroundSweepDisposition::Preserved(reason) => Some(format!("{reason:?}")),
+                GroundSweepDisposition::Unknown(reason) => Some(format!("{reason:?}")),
+            },
+            _ => Some("PlacementOrItemChanged".into()),
+        })
+    }
+
+    async fn complete_if_settled(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        occurrence: &str,
+    ) -> Result<(), DurabilityError> {
+        sqlx::query("UPDATE game_server_save_channels c SET state='complete'
+            WHERE c.occurrence_id=$1::uuid AND c.channel_id=encode($2,'hex')::uuid AND c.state='frozen'
+            AND NOT EXISTS(SELECT 1 FROM game_server_save_ground g
+                WHERE (g.occurrence_id,g.channel_id)=(c.occurrence_id,c.channel_id) AND g.disposition='pending')")
+            .bind(occurrence).bind(self.binding.channel.as_bytes().as_slice())
+            .execute(&mut **tx).await?;
+        Ok(())
+    }
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
