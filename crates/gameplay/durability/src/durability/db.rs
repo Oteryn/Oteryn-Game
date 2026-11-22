@@ -1835,6 +1835,12 @@ impl DurabilityRoot {
         self.is_ready() && self.holder_priority.background_can_attempt(Instant::now())
     }
 
+    /// Subscribe before checking readiness. Returns published with `notify_waiters`
+    /// are observable from creation of the future, before its first poll.
+    pub fn holder_return_notification(&self) -> impl Future<Output = ()> + '_ {
+        self.holder_returned.notified()
+    }
+
     /// Waits for the retry of a step that found the holder busy (NODEBOOT-1). The retry starts
     /// as soon as the holder is returned to idle, but not before `earliest`, and no later than
     /// `latest`. A holder idle already means the step failed for another reason: the retry then

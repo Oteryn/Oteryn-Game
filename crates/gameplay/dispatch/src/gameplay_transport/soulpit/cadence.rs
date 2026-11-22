@@ -6,10 +6,10 @@ use oteryn_foundation::CancellationToken;
 use std::time::Duration;
 use tokio::time::Instant;
 
-async fn wait_for_discovery_retry(
+async fn wait_for_discovery_retry<F: Future<Output = ()>>(
     deadline: Instant,
     ready: impl Fn() -> bool,
-    mut wait_for_holder: impl AsyncFnMut(Instant, Instant),
+    holder_returned: impl Fn() -> F,
 ) {
     loop {
         let now = Instant::now();
@@ -17,10 +17,32 @@ async fn wait_for_discovery_retry(
             return;
         }
         let latest = (now + Duration::from_micros(READ_RETRY_MICROS)).min(deadline);
-        wait_for_holder(now, latest).await;
+        // Subscribe before sampling readiness so a return on either side of
+        // the subscription is visible to this retry.
+        let returned = holder_returned();
         if ready() {
             return;
         }
+        let _ = tokio::time::timeout_at(latest, returned).await;
+    }
+}
+
+async fn wait_for_wake<F: Future<Output = ()>>(
+    wake: SoulpitWake,
+    global_due: u64,
+    now_micros: u64,
+    ready: impl Fn() -> bool,
+    holder_returned: impl Fn() -> F,
+) {
+    let due = wake
+        .scheduled_due()
+        .map_or(global_due, |due| due.min(global_due));
+    let deadline = Instant::now() + Duration::from_micros(due.saturating_sub(now_micros));
+    if matches!(wake, SoulpitWake::DiscoveryBusy { .. }) {
+        // Readiness is a hint. The next pass still has to obtain its own grant.
+        wait_for_discovery_retry(deadline, ready, holder_returned).await;
+    } else {
+        tokio::time::sleep_until(deadline).await;
     }
 }
 
@@ -53,32 +75,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.runtime.lock().await.retire_owner_cycle();
                 return RespawnExit::StaleOwner;
             }
-            let (deadline, busy) = match wake {
-                SoulpitWake::Scheduled(due) => (due, false),
-                SoulpitWake::DiscoveryBusy { room_due, .. } => (room_due, true),
-            };
             // Crystal 201189f data/scripts/globalevents/encounters.lua:12. The activity
             // owner also wakes exactly for the separate four-second spawn and ten-minute
             // kick events; only global ticks may clear a wave after its 4.5-second gate.
-            let due = deadline.map_or(global_due, |deadline| deadline.min(global_due));
-            let delay = Duration::from_micros(due.saturating_sub(self.owner_now().get()));
-            let deadline = Instant::now() + delay;
-            let idle = async {
-                if busy {
-                    // The discovery grant and transition guard are gone. Readiness is
-                    // only a hint for the next pass, which must obtain its own grant.
-                    wait_for_discovery_retry(
-                        deadline,
-                        || self.root.background_holder_ready(),
-                        async |earliest, latest| {
-                            self.root.wait_holder_retry(earliest, latest).await
-                        },
-                    )
-                    .await;
-                } else {
-                    tokio::time::sleep_until(deadline).await;
-                }
-            };
+            let idle = wait_for_wake(
+                wake,
+                global_due,
+                self.owner_now().get(),
+                || self.root.background_holder_ready(),
+                || self.root.holder_return_notification(),
+            );
             if stopping_first(idle, shutdown).await.is_none() {
                 return RespawnExit::Shutdown;
             }
@@ -91,6 +97,43 @@ mod tests {
     use super::*;
     use std::cell::Cell;
     use tokio::sync::Notify;
+
+    #[tokio::test(start_paused = true)]
+    async fn busy_discovery_without_rooms_retries_at_the_next_backoff() {
+        let start = Instant::now();
+        let returned = Notify::new();
+        wait_for_wake(
+            SoulpitWake::DiscoveryBusy {
+                room_due: None,
+                refused_at: 0,
+            },
+            1_000_000,
+            0,
+            || false,
+            || returned.notified(),
+        )
+        .await;
+        let backoff = Duration::from_micros(READ_RETRY_MICROS);
+        assert!(start.elapsed() >= backoff && start.elapsed() < backoff + Duration::from_millis(2));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn busy_discovery_retries_immediately_if_holder_returned_before_wait() {
+        let start = Instant::now();
+        let returned = Notify::new();
+        let wake = SoulpitWake::DiscoveryBusy {
+            room_due: None,
+            refused_at: 0,
+        };
+        tokio::time::advance(Duration::from_millis(4)).await;
+        returned.notify_waiters();
+        let returned_at = Instant::now();
+
+        wait_for_wake(wake, 1_000_000, 4_000, || true, || returned.notified()).await;
+
+        assert_eq!(Instant::now(), returned_at);
+        assert_eq!(start.elapsed(), Duration::from_millis(4));
+    }
 
     #[test]
     fn busy_discovery_retries_once_after_holder_return_or_ready_backoff()
@@ -111,9 +154,7 @@ mod tests {
                     wait_for_discovery_retry(
                         start + 5 * backoff,
                         || ready.get(),
-                        async |_, latest| {
-                            let _ = tokio::time::timeout_at(latest, returned.notified()).await;
-                        },
+                        || returned.notified(),
                     )
                     .await;
                     attempts.set(attempts.get() + 1);
