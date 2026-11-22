@@ -71,6 +71,30 @@ enum Case {
     CrystalCapacity,
     OldQuote,
     ReceiptRecovery,
+    RestoreReceiptGeneration,
+    ClaimReceipt,
+    LastSlot,
+    InterruptedMint,
+}
+
+#[test]
+fn store_unanswered_purchase_reserves_the_last_inbox_slot() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-last-slot", || {
+        scenario_with_answer(Case::LastSlot)
+    })
+}
+
+#[test]
+fn store_interrupted_mint_retries_with_a_new_wire_command() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-interrupted-mint", || {
+        scenario_with_answer(Case::InterruptedMint)
+    })
 }
 
 #[test]
@@ -110,6 +134,22 @@ fn store_receipt_is_republished_without_repeating_the_purchase() -> TestResult {
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("store-receipt-recovery", || {
         scenario_with_answer(Case::ReceiptRecovery)
+    })
+}
+
+#[test]
+fn store_worker_finishes_platform_claim_for_committed_delivery() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-claim", || {
+        scenario_with_answer(Case::ClaimReceipt)
+    })
+}
+
+#[test]
+fn store_worker_republishes_a_retained_receipt_after_restore() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-recovery-generation", || {
+        scenario_with_answer(Case::RestoreReceiptGeneration)
     })
 }
 
@@ -249,6 +289,102 @@ fn scenario_with_answer(case: Case) -> TestResult {
         )
         .ok_or("selection")?;
 
+        if matches!(case, Case::LastSlot) {
+            ledger.lock().expect("ledger").balance = 2_000;
+            for seed in 60..79 {
+                assert_eq!(
+                    purchase(&owner, &mut admitted, purchase_request(seed, SWORD, 25)?).await?.code,
+                    wire::StorePurchaseCode::Accepted,
+                );
+            }
+            assert_eq!(count(&harness, "SELECT count(*) FROM game_item_character_inbox_locations").await?, 19);
+            let request = purchase_request(80, SWORD, 25)?;
+            ledger.lock().expect("ledger").fail_before_debit = true;
+            assert_eq!(serve(&owner, &mut admitted, std::slice::from_ref(&request)).await?, [(CommandStatus::Rejected, Vec::new())]);
+            ledger.lock().expect("ledger").fail_before_debit = false;
+            let other = purchase(&owner, &mut admitted, purchase_request(81, SWORD, 25)?).await?;
+            let retry = purchase(&owner, &mut admitted, request).await?;
+            assert_eq!((other.code, retry.code), (wire::StorePurchaseCode::OfferUnavailable, wire::StorePurchaseCode::Accepted));
+            assert_eq!(count(&harness, "SELECT count(*) FROM game_item_character_inbox_locations").await?, 20);
+            assert_eq!(ledger.lock().expect("ledger").debits.len(), 20);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
+        if matches!(case, Case::InterruptedMint) {
+            sqlx::raw_sql(
+                "CREATE FUNCTION fail_store_commit() RETURNS trigger LANGUAGE plpgsql AS
+                $$ BEGIN RAISE EXCEPTION 'fixture interruption after preparation'; END; $$;
+                CREATE TRIGGER fail_store_commit BEFORE INSERT ON store_delivery_receipts
+                FOR EACH ROW EXECUTE FUNCTION fail_store_commit();"
+            ).execute(&harness.pool).await?;
+            let request = purchase_request(80, SWORD, 25)?;
+            assert_eq!(serve(&owner, &mut admitted, std::slice::from_ref(&request)).await?, [(CommandStatus::Rejected, Vec::new())]);
+            assert_eq!(count(&harness, "SELECT count(*) FROM game_reward_claim_inbox_mint_reservations").await?, 1);
+            assert_eq!(count(&harness, "SELECT count(*) FROM store_delivery_receipts").await?, 0);
+            sqlx::query("DROP TRIGGER fail_store_commit ON store_delivery_receipts").execute(&harness.pool).await?;
+            let resumed_request = purchase_request(81, SWORD, 25)?;
+            let retry = purchase(&owner, &mut admitted, resumed_request.clone()).await?;
+            assert_eq!(retry.code, wire::StorePurchaseCode::Accepted);
+            assert_eq!(purchase(&owner, &mut admitted, resumed_request).await?, retry);
+            assert_eq!(swords(&harness).await?, 1);
+            assert_eq!(ledger.lock().expect("ledger").debits, [25]);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
+        if matches!(case, Case::RestoreReceiptGeneration | Case::ClaimReceipt) {
+            let claim = matches!(case, Case::ClaimReceipt);
+            {
+                let mut platform = ledger.lock().expect("ledger");
+                platform.fail_receipt = true;
+                platform.advertise_claims = claim;
+            }
+            let result = purchase(&owner, &mut admitted, purchase_request(80, SWORD, 25)?).await?;
+            assert_eq!(result.code, wire::StorePurchaseCode::Accepted);
+            let pending = owner.root.list_unacknowledged_store_receipts(1).await.map_err(debug)?;
+            assert_eq!(pending.len(), 1);
+            if !claim {
+                // Simulate a reconciled successor installed after recovering this
+                // backup, retaining the same committed Store delivery and outbox.
+                let mut tx = harness.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+                let next: String = sqlx::query_scalar(
+                    "UPDATE game_character_recovery_admissions
+                     SET recovery_generation=recovery_generation+1
+                     RETURNING recovery_generation::text",
+                ).fetch_one(&mut *tx).await?;
+                tx.commit().await?;
+                ledger.lock().expect("ledger").recovery_generation = Some(next);
+            }
+            let ready = {
+                let mut platform = ledger.lock().expect("ledger");
+                platform.fail_receipt = false;
+                platform.receipt_ready.clone()
+            };
+            let worker = crate::gameplay_transport::run_store_receipt_outbox(
+                owner.root,
+                owner.character,
+                StoreClient::new(Box::new(FakePlatform(ledger.clone())), "oteryn-game/store-consumer".into()),
+            );
+            let published = tokio::select! {
+                () = worker => false,
+                observed = tokio::time::timeout(std::time::Duration::from_secs(2), ready.notified()) => observed.is_ok(),
+            };
+            assert!(published, "worker must publish the pending receipt");
+            assert_eq!(ledger.lock().expect("ledger").claims, usize::from(claim));
+            assert_eq!(swords(&harness).await?, 1);
+            assert_eq!(ledger.lock().expect("ledger").debits, [25]);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
         if matches!(case, Case::ReceiptRecovery) {
             ledger.lock().expect("ledger").fail_receipt = true;
             let result = purchase(&owner, &mut admitted, purchase_request(80, "store:exercise-wraps", 25)?).await?;
@@ -321,7 +457,7 @@ fn scenario_with_answer(case: Case) -> TestResult {
         assert_eq!(values.len(), 1, "{values:?}");
         assert_eq!(values[0].0, CommandStatus::Accepted, "{values:?}");
         let page = wire::decode_catalogue_page(&values[0].1).map_err(debug)?;
-        assert_eq!(page.catalog_revision, "728b1173634c4da6ca09f44953eab1246701478b0cf11f9759b02e7f191e49da");
+        assert_eq!(page.catalog_revision, crate::gameplay_transport::store::active_catalogue_revision());
         assert_eq!((page.offers.len(), page.total_coins, page.transferable_coins), (24, 60, 60));
         let sword = page
             .offers
@@ -582,7 +718,6 @@ async fn verify_crystal_charge_purchases(
                 ("strong-health-keg", 25904, 53),
                 ("strong-mana-keg", 25909, 43),
                 ("supreme-health-keg", 25907, 288),
-                ("ultimate-health-keg", 25906, 175),
                 ("ultimate-mana-keg", 25911, 202),
                 ("ultimate-spirit-keg", 25914, 202),
             ][..],
@@ -665,7 +800,9 @@ async fn verify_crystal_charge_purchases(
             );
         }
     }
-    assert_eq!(count(harness, inbox_count).await? - initial, 14);
-    assert_eq!(ledger.lock().expect("ledger").purchases, 14);
+    assert_eq!(count(harness, inbox_count).await? - initial, 13);
+    let unavailable = purchase(owner, admitted, purchase_request(seed, "store:ultimate-health-keg", 175)?).await?;
+    assert_eq!(unavailable.code, wire::StorePurchaseCode::OfferUnavailable);
+    assert_eq!(ledger.lock().expect("ledger").purchases, 13);
     Ok(())
 }

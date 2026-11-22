@@ -28,13 +28,7 @@ async fn can_receive_item(
     weights: &dyn ItemWeightLookup,
     definition: &TypedDefinitionRef,
 ) -> Result<bool, DurabilityError> {
-    // Crystal items.xml StoreInbox23396 has20 slots. Outstanding lamp reservations consume
-    // eligibility too, so two accepted Hireling requests cannot both reserve its last slot.
-    let occupied:i64=sqlx::query_scalar(
-        "SELECT (SELECT count(*) FROM game_item_character_inbox_locations WHERE character_id=encode($1,'hex')::uuid) \
-         +(SELECT count(*) FROM game_hireling_store_reservations WHERE character_id=encode($1,'hex')::uuid AND state=1 AND kind=1)",
-    ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
-    if occupied >= 20 {
+    if inbox_occupancy(tx, fence.character_id.as_bytes()).await? >= 20 {
         return Ok(false);
     }
     let Ok(unit) = weights.weight_of(definition) else {
@@ -59,23 +53,38 @@ async fn can_receive_item(
         .is_some_and(|total| total <= capacity))
 }
 
+/// Entries and pending paid Store reservations consume the same 20 slots.
+pub(super) async fn inbox_occupancy(
+    tx: &mut Transaction<'_, Postgres>,
+    character: &[u8; 16],
+) -> Result<i64, DurabilityError> {
+    Ok(sqlx::query_scalar(
+        "SELECT (SELECT count(*) FROM game_item_character_inbox_locations WHERE character_id=encode($1,'hex')::uuid)
+         +(SELECT count(*) FROM game_hireling_store_reservations WHERE character_id=encode($1,'hex')::uuid AND state=1 AND kind=1)
+         +(SELECT count(*) FROM game_store_item_reservations WHERE character_id=encode($1,'hex')::uuid)",
+    ).bind(character.as_slice()).fetch_one(&mut **tx).await?)
+}
+
 impl super::super::DurabilityRoot {
-    /// Validate a fresh Store item's capacity and Inbox room under the current buyer fence.
+    /// Reserve one Inbox slot together with the exact Platform request journal.
     #[allow(clippy::too_many_arguments, reason = "the buyer, session and active item definition are independent authorities")]
-    pub async fn store_item_fits_before_debit(
+    pub async fn reserve_store_item_purchase(
         &self,
         authority: &super::super::character_authority::ReconciledCharacterAuthority<'_, '_>,
         node: &super::super::runtime_scope_assignment::NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
-        account: [u8; 16],
-        origin: [u8; 16],
+        request: super::PurchaseRequest,
         definition: TypedDefinitionRef,
         weights: &dyn ItemWeightLookup,
-    ) -> Result<bool, super::StoreDurabilityError> {
+    ) -> Result<Option<super::PurchaseRequestState>, super::StoreDurabilityError> {
         use super::super::character_authority::assert_recovery_fence;
         use super::super::db::{begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations};
-        use super::storage::{StoreDurabilityError, account_matches, assert_store_fence};
+        use super::storage::{PurchaseRequestState, StoreDurabilityError, account_matches, assert_store_fence};
 
+        request.validate()?;
+        if request.character_id != *fence.character_id.as_bytes() {
+            return Err(StoreDurabilityError::AuthorityRejected);
+        }
         let recovery = authority.record_for(self).map_err(|_| StoreDurabilityError::AuthorityRejected)?;
         let node = node.clone();
         let mut weights = weights;
@@ -83,15 +92,33 @@ impl super::super::DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
-            if !assert_store_fence(&mut tx, &fence, &node, Some(origin)).await?
-                || !account_matches(&mut tx, &fence, &account).await?
+            if !assert_store_fence(&mut tx, &fence, &node, None).await?
+                || !account_matches(&mut tx, &fence, &request.account_id).await?
             {
                 return Ok(Err(StoreDurabilityError::AuthorityRejected));
             }
-            super::hireling_reservation::lock_character(&mut tx, *fence.character_id.as_bytes()).await?;
-            let fits = can_receive_item(&mut tx, &fence, *weights, &definition).await?;
+            super::hireling_reservation::lock_character(&mut tx, request.character_id).await?;
+            let state = match super::purchase::record_request(&mut tx, &request).await {
+                Ok(state) => state,
+                Err(error) => return Ok(Err(error)),
+            };
+            if state == PurchaseRequestState::Sent {
+                let held: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_store_item_reservations WHERE purchase_request_id=encode($1,'hex')::uuid)",
+                ).bind(request.purchase_request_id.as_slice()).fetch_one(&mut *tx).await?;
+                if !held {
+                    if !can_receive_item(&mut tx, &fence, *weights, &definition).await? {
+                        return Ok(Ok(None));
+                    }
+                    sqlx::query(
+                        "INSERT INTO game_store_item_reservations(purchase_request_id,character_id)
+                         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid)"
+                    ).bind(request.purchase_request_id.as_slice()).bind(request.character_id.as_slice())
+                        .execute(&mut *tx).await?;
+                }
+            }
             commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(fits))
+            Ok(Ok(Some(state)))
         })).await?
     }
 }

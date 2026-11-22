@@ -11,13 +11,17 @@ default charges, so charged offers must agree with those defaults.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
+import runpy
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "rulesets/economy/store/catalogue.json"
+PLATFORM_OUT = OUT.with_name("platform-catalogue.json")
 PROFILES = ROOT / "content/items/definitions/spell-native-profiles.json"
 CANARY_COMMIT = "52550d5e"
 SOURCE = "data/modules/scripts/gamestore/catalog/consumables_exercise_weapons.lua"
@@ -73,6 +77,57 @@ def with_expansion(catalogue: dict) -> dict:
     return catalogue | {"offers": offers}
 
 
+def refresh_crystal_extract(lua: Path, items_xml: Path) -> None:
+    """Capture the fields Crystal's charged purchase dispatch actually reads."""
+    extract = json.loads(CRYSTAL_CHARGED.read_bytes())
+    raw = lua.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != extract["source"]["sha256"]:
+        raise ValueError("Crystal charged offers source digest mismatch")
+    lines = raw.decode().splitlines()
+    for row in extract["offers"]:
+        body = []
+        for line in lines[row["source_line"] - 1 :]:
+            if line.strip() == "},":
+                break
+            body.append(line)
+        block = "\n".join(body)
+        if f'name = "{row["title"]}"' not in block:
+            raise ValueError(f"Crystal charged offer source line drift: {row['title']}")
+        for field in ("charges", "count"):
+            value = re.search(rf"^\s*{field}\s*=\s*(\d+),$", block, re.MULTILINE)
+            if value:
+                row[field] = int(value[1])
+            else:
+                row.pop(field, None)
+    item_source = runpy.run_path(
+        str(
+            ROOT / "tools/content-schema/native-gameplay/build_spell_item_identities.py"
+        )
+    )
+    raw = items_xml.read_bytes()
+    if (
+        extract["source"]["commit"] != item_source["INDEPENDENT_CRYSTAL_PIN"]
+        or hashlib.sha256(raw).hexdigest() != item_source["INDEPENDENT_CRYSTAL_XML_SHA"]
+    ):
+        raise ValueError("Crystal converter item source digest mismatch")
+    converter_ids = {
+        row["item_key"].rsplit(".i", 1)[1]
+        for row in extract["offers"]
+        if row["title"].endswith("Converter")
+    }
+    weights = {}
+    for item in ET.fromstring(raw).findall("item"):
+        if item.get("id") in converter_ids:
+            weight = item.find("attribute[@key='weight']")
+            weights[item.get("id")] = (
+                int(weight.attrib["value"]) if weight is not None else 0
+            )
+    if not converter_ids or set(weights) != converter_ids:
+        raise ValueError("Crystal converter item definitions missing")
+    extract["converter_weights"] = weights
+    CRYSTAL_CHARGED.write_text(json.dumps(extract, indent=2) + "\n", encoding="utf-8")
+
+
 def with_crystal_charged(catalogue: dict, items: dict[str, tuple[str, int]]) -> dict:
     extract = json.loads(CRYSTAL_CHARGED.read_text(encoding="utf-8"))
     source = catalogue["source"].copy()
@@ -81,6 +136,10 @@ def with_crystal_charged(catalogue: dict, items: dict[str, tuple[str, int]]) -> 
     keys = {row["key"] for row in offers}
     crystal_keys = []
     for row in extract["offers"]:
+        # Crystal dispatch reads only charges. A donor row that supplies count
+        # instead has no deliverable purchase and must stay off the active list.
+        if "charges" not in row:
+            continue
         key = "store:" + row["title"].lower().replace(" ", "-")
         item_key = row["item_key"]
         admitted = items.get(item_key)
@@ -194,10 +253,71 @@ def build(lua: str) -> dict:
     return with_expansion(catalogue)
 
 
+def platform_catalogue(catalogue: dict) -> bytes:
+    """Project all enabled quotes onto Platform's exact S-5 import shape."""
+    catalogues = [
+        catalogue,
+        *(
+            json.loads(OUT.with_name(f"{name}.json").read_bytes())
+            for name in ("cosmetics", "hirelings")
+        ),
+    ]
+    current_offers = sorted(
+        (
+            row
+            for document in catalogues
+            for row in document["offers"]
+            if row.get("enabled", True)
+        ),
+        key=lambda row: row["key"],
+    )
+    if len({row["key"] for row in current_offers}) != len(current_offers):
+        raise ValueError("duplicate offer across Store catalogues")
+    offers = []
+    for row in current_offers:
+        kind = "ITEM"
+        product = "item_grant"
+        revision = "1"
+        grant = row.get("unlock_key", row["key"])
+        if item := row.get("item"):
+            grant = item["key"]
+            revision = item["revision"].removeprefix("definition-r")
+        elif preview := row.get("preview"):
+            if preview["kind"] in (2, 3):
+                kind = "COSMETIC"
+                product = "outfit_unlock" if preview["kind"] == 2 else "mount_unlock"
+        offers.append(
+            {
+                "offer_key": row["key"],
+                "currency": "COINS",
+                "unit_price": str(row["price"]),
+                "max_quantity": 1,
+                "purchasable": True,
+                "units": [
+                    {
+                        "product_id": f"oteryn.store.{product}",
+                        "product_version": "1",
+                        "unit_kind": kind,
+                        "grant_key": grant,
+                        "grant_revision": revision,
+                        "quantity": 1,
+                    }
+                ],
+            }
+        )
+    return json.dumps(
+        {"contract_version": 1, "offers": offers}, separators=(",", ":")
+    ).encode()
+
+
 def check() -> list[str]:
     catalogue = json.loads(OUT.read_text(encoding="utf-8"))
     items = admitted_items()
     errors = []
+    if not PLATFORM_OUT.is_file() or PLATFORM_OUT.read_bytes() != platform_catalogue(
+        catalogue
+    ):
+        errors.append("Platform active catalogue needs regeneration")
     keys = [offer["key"] for offer in catalogue["offers"]]
     if keys != sorted(set(keys)) or not keys:
         errors.append("offer keys are not unique and sorted")
@@ -227,7 +347,10 @@ def main() -> int:
     parser.add_argument("--canary", type=Path)
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--refresh-owner-offers", action="store_true")
+    parser.add_argument("--crystal-extract", nargs=2, type=Path, metavar=("LUA", "XML"))
     args = parser.parse_args()
+    if args.crystal_extract:
+        refresh_crystal_extract(*args.crystal_extract)
     if args.canary:
         lua = (args.canary / SOURCE).read_text(encoding="utf-8")
         OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -236,6 +359,8 @@ def main() -> int:
         catalogue = json.loads(OUT.read_text(encoding="utf-8"))
         catalogue = with_crystal_charged(with_expansion(catalogue), admitted_items())
         OUT.write_text(json.dumps(catalogue, indent=2) + "\n", encoding="utf-8")
+    if args.canary or args.refresh_owner_offers:
+        PLATFORM_OUT.write_bytes(platform_catalogue(json.loads(OUT.read_bytes())))
     errors = check()
     for error in errors:
         print(error, file=sys.stderr)

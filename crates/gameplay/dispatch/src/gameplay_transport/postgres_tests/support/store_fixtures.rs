@@ -36,7 +36,13 @@ pub(super) struct Ledger {
     pub(super) intents: BTreeMap<String, serde_json::Value>,
     pub(super) receipts: usize,
     pub(super) fail_receipt: bool,
+    pub(super) recovery_generation: Option<String>,
+    pub(super) advertise_claims: bool,
+    pub(super) advertise_deliveries: bool,
+    pub(super) claims: usize,
+    pub(super) receipt_ready: Arc<tokio::sync::Notify>,
     pub(super) malformed: bool,
+    pub(super) fail_before_debit: bool,
     pub(super) answers: BTreeMap<String, (String, serde_json::Value)>,
 }
 
@@ -60,6 +66,9 @@ impl StoreTransport for FakePlatform {
                 platform_balance(&request, ledger.balance)
             }
             Operation::PurchaseStoreOfferV1 => {
+                if ledger.fail_before_debit {
+                    return Box::pin(async { Err(TransportFailure::Unavailable) });
+                }
                 ledger.purchases += 1;
                 let request_id = request["purchase_request_id"].as_str().expect("purchase id").to_owned();
                 if let Some((original, answer)) = ledger.answers.get(&request_id) {
@@ -87,6 +96,17 @@ impl StoreTransport for FakePlatform {
                     answer
                 }
             }
+            Operation::ListPendingStoreOperationsV1 => {
+                let entries = ledger.intents.values().filter(|intent| {
+                    (intent["operation_kind"] == "CLAIM" && ledger.claims == 0
+                        || intent["operation_kind"] == "DELIVER" && ledger.advertise_deliveries && ledger.receipts == 0)
+                        && request["after_source_revision"] == "0"
+                }).map(|intent| serde_json::json!({
+                    "operation_kind":intent["operation_kind"], "operation_id":intent["operation_id"],
+                    "source_revision":intent["source_revision"]
+                })).collect::<Vec<_>>();
+                serde_json::json!({"contract_version":1,"pending":entries})
+            }
             Operation::ReadStoreOperationIntentV1 => {
                 let operation = request["operation_id"].as_str().expect("operation");
                 ledger.intents[operation].clone()
@@ -97,7 +117,29 @@ impl StoreTransport for FakePlatform {
                 if ledger.fail_receipt {
                     return Box::pin(async { Err(TransportFailure::Unavailable) });
                 }
-                ledger.receipts += 1;
+                if let Some(generation) = &ledger.recovery_generation
+                    && request["recovery_generation"] != generation.as_str()
+                {
+                    return Box::pin(async { Err(TransportFailure::Conflict) });
+                }
+                if request["operation_kind"] == "CLAIM" {
+                    assert_eq!(request["minted_quantity"], 1);
+                    ledger.claims += 1;
+                    ledger.receipt_ready.notify_one();
+                } else {
+                    ledger.receipts += 1;
+                    if ledger.advertise_claims {
+                        let mut claim = ledger.intents[request["operation_id"].as_str().expect("delivery")].clone();
+                        let id = uuid(&id(112));
+                        claim["operation_id"] = id.clone().into();
+                        claim["operation_kind"] = "CLAIM".into();
+                        claim["source_revision"] = "2".into();
+                        claim["delivery_operation_id"] = request["operation_id"].clone();
+                        ledger.intents.insert(id, claim);
+                    } else {
+                        ledger.receipt_ready.notify_one();
+                    }
+                }
                 serde_json::json!({"contract_version":1,"result":"accepted"})
             }
             _ => return Box::pin(async { Err(TransportFailure::NotFound) }),
@@ -180,7 +222,7 @@ pub(super) fn purchase_request(seed: u8, offer: &str, price: u64) -> TestResult<
     let request = wire::StorePurchaseRequest {
         purchase_request_id: id(seed),
         offer_key: offer.into(),
-        catalog_revision: "728b1173634c4da6ca09f44953eab1246701478b0cf11f9759b02e7f191e49da".into(),
+        catalog_revision: crate::gameplay_transport::store::active_catalogue_revision().into(),
         price,
         currency: "TIBIA_COIN".into(),
     };
@@ -219,17 +261,29 @@ pub(super) fn platform_answer(request: &serde_json::Value, accepted: Option<(&st
         answer["currency"] = request["currency"].clone();
         answer["total_price"] = (request["unit_price"].as_str().expect("unit price").parse::<u64>().expect("amount") * request["quantity"].as_u64().expect("quantity")).to_string().into();
         answer["available_after"] = balance.to_string().into();
-        answer["units"] = serde_json::json!([{"unit_kind":"ITEM","entitlement_id":operation,"delivery_operation_id":operation}]);
+        answer["units"] = serde_json::json!([{"unit_kind":platform_intent(request, operation, order)["unit_kind"],"entitlement_id":operation,"delivery_operation_id":operation}]);
     }
     answer
 }
 
 pub(super) fn platform_intent(request: &serde_json::Value, operation: &str, order: &str) -> serde_json::Value {
-    serde_json::json!({"contract_version":1,"operation_kind":"DELIVER","issuer_authority":"OTERYN_PLATFORM_STORE_AUTHORITY","source_revision":"1","operation_id":operation,"order_id":order,"entitlement_id":operation,"account_id":request["account_id"],"product_id":"oteryn.store.item_grant","product_version":"1","unit_kind":"ITEM","catalog_revision":request["catalog_revision"],"offer_key":request["offer_key"],"grant_key":"item:test","grant_revision":"1","quantity":1,"issued_at_source":"1","audience":"OTERYN_GAME_STORE"})
+    let unit_kind = if request["catalog_revision"] == crate::gameplay_transport::store::active_catalogue_revision()
+        && request["offer_key"].as_str().and_then(crate::content::store_cosmetics::offer).is_some() {
+        "COSMETIC"
+    } else {
+        "ITEM"
+    };
+    serde_json::json!({"contract_version":1,"operation_kind":"DELIVER","issuer_authority":"OTERYN_PLATFORM_STORE_AUTHORITY","source_revision":"1","operation_id":operation,"order_id":order,"entitlement_id":operation,"account_id":request["account_id"],"product_id":"oteryn.store.item_grant","product_version":"1","unit_kind":unit_kind,"catalog_revision":request["catalog_revision"],"offer_key":request["offer_key"],"grant_key":"item:test","grant_revision":"1","quantity":1,"issued_at_source":"1","audience":"OTERYN_GAME_STORE"})
 }
 
 pub(super) fn platform_bytes(v: &serde_json::Value) -> Vec<u8> {
-    let fields = if v.get("operation_kind").is_some() {
+    let fields = if v.get("pending").is_some() {
+        "contract_version pending"
+    } else if v["operation_kind"] == "CLAIM" && v.get("issuer_authority").is_some() {
+        "contract_version operation_kind issuer_authority source_revision operation_id delivery_operation_id entitlement_id account_id product_id product_version unit_kind grant_key grant_revision quantity issued_at_source audience"
+    } else if v.get("operation_kind").is_some() && v.get("issuer_authority").is_none() {
+        "operation_kind operation_id source_revision"
+    } else if v.get("operation_kind").is_some() {
         "contract_version operation_kind issuer_authority source_revision operation_id order_id entitlement_id account_id product_id product_version unit_kind catalog_revision offer_key grant_key grant_revision quantity issued_at_source audience"
     } else if v["operation"] == "PurchaseStoreOfferV1" {
         "contract_version operation source_authority purchase_request_id account_id character_id world_id catalog_revision offer_key currency unit_price quantity"

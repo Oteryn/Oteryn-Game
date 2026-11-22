@@ -4069,6 +4069,7 @@ async fn boot_and_serve(
     };
     let receipts = crate::gameplay_transport::run_store_receipt_outbox(
         root,
+        authority,
         crate::native_admission_source::store::StoreClient::new(
             Box::new(
                 crate::native_admission_source::store::MtlsStoreTransport::new(

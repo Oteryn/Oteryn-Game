@@ -1,5 +1,5 @@
 //! S-5 shared offer constraints, not a price-list producer or a full schema validator.
-use super::{CATALOGUE, rules};
+use super::{CATALOGUE, COSMETIC_CATALOGUE, HIRELING_CATALOGUE, rules};
 use serde::Deserialize;
 use std::collections::BTreeSet;
 
@@ -79,6 +79,27 @@ fn store_catalogue_offers_conform_to_platform_s5_price_list() -> TestResult {
         s5_currency(offer.currency),
         Some(offer.price_coins),
     ))));
+    Ok(())
+}
+
+#[test]
+fn active_platform_import_covers_every_dispatch_quote() -> TestResult {
+    let bytes = include_bytes!("../../../../../../rulesets/economy/store/platform-catalogue.json");
+    let active: PlatformPriceList = serde_json::from_slice(bytes)?;
+    let revision = super::active_catalogue_revision();
+    let mut quoted = BTreeSet::new();
+    for catalogue in [&CATALOGUE, &COSMETIC_CATALOGUE, &HIRELING_CATALOGUE] {
+        let catalogue = catalogue.as_ref().ok_or("dispatch catalogue")?;
+        assert_eq!(catalogue.rules.revision(), revision);
+        for offer in catalogue.entries() {
+            let imported = active.offers.iter().find(|row| row.offer_key == offer.key)
+                .ok_or_else(|| format!("Platform import is missing {}", offer.key))?;
+            assert_eq!(imported.currency, "COINS");
+            assert_eq!(imported.unit_price.parse::<u64>()?, offer.price_coins);
+            assert!(quoted.insert(&offer.key));
+        }
+    }
+    assert_eq!(quoted.len(), active.offers.len());
     Ok(())
 }
 

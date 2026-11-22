@@ -6517,7 +6517,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/illuminated/programme",
-          "minimum": 2,
+          "minimum": 0,
           "maximum": 2,
           "set": 2,
           "preserve": true
@@ -6537,7 +6537,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/illuminated/programme",
-          "minimum": 1,
+          "minimum": 0,
           "maximum": 1,
           "set": 1,
           "preserve": true
@@ -6577,7 +6577,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/illuminated/programme",
-          "minimum": 1,
+          "minimum": 0,
           "maximum": 1,
           "set": 1,
           "preserve": true
@@ -6597,7 +6597,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/questpc7/illuminated/programme",
-          "minimum": 2,
+          "minimum": 0,
           "maximum": 2,
           "set": 2,
           "preserve": true

@@ -114,11 +114,7 @@ async fn deliver(
     let receipt = owner.deliver_prey_expansion(admitted, crate::durability::prey::PreyStoreDelivery {
         operation_id, account_id, world_id, fulfilment_unit_id: intent.entitlement_id.clone(),
     }).await?;
-    let bytes = platform.lock().await.delivery_receipt(&intent, &receipt.recovery_generation, &receipt.decided_at).ok()?;
-    if platform.lock().await.publish_receipt(&bytes).await.is_ok() {
-        let _ = owner.root.mark_store_receipt_acknowledged(operation_id).await;
-    }
-    Some(())
+    publish(owner, platform, operation_id, &intent, &receipt).await
 }
 
 #[cfg(test)]

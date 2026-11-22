@@ -22,7 +22,6 @@
         "store:strong-health-keg",
         "store:strong-mana-keg",
         "store:supreme-health-keg",
-        "store:ultimate-health-keg",
         "store:ultimate-mana-keg",
         "store:ultimate-spirit-keg"
       ]
@@ -489,19 +488,6 @@
         "charges": 500
       },
       "source_line": 642
-    },
-    {
-      "key": "store:ultimate-health-keg",
-      "category": "consumables.kegs",
-      "title": "Ultimate Health Keg",
-      "price": 175,
-      "currency": "TIBIA_COIN",
-      "item": {
-        "key": "oteryn:item.tibia.i25906",
-        "revision": "definition-r1",
-        "charges": 500
-      },
-      "source_line": 651
     },
     {
       "key": "store:ultimate-mana-keg",

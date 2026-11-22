@@ -435,7 +435,9 @@ def append_eligibility_starts(root, callbacks, offers, inputs, pin):
                 topic = 101 + addon
                 stage = {
                     "track": track,
-                    "minimum": addon,
+                    # Ownership guards on confirmation order the account-wide rewards.
+                    # Another character on the account may be at the start of this commission.
+                    "minimum": 0,
                     "maximum": addon,
                     "set": addon + 1,
                 }

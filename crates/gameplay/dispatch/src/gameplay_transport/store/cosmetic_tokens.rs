@@ -56,6 +56,7 @@ pub(super) async fn purchase(
             journal,
             request.offer_key,
             request.catalog_revision,
+            native.clone(),
         )
         .await
         .ok()

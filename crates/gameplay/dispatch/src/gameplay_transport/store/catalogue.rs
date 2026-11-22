@@ -75,9 +75,14 @@ pub(super) struct RuntimeCatalogue {
 impl RuntimeCatalogue {
     /// `None` for anything but a closed, non-empty v1 document of positive Tibia Coin prices.
     pub(super) fn from_json(bytes: &[u8]) -> Option<Self> {
+        Self::from_json_with_revision(bytes, None)
+    }
+
+    pub(super) fn from_json_with_revision(bytes: &[u8], active_revision: Option<&str>) -> Option<Self> {
         let mut value: serde_json::Value = serde_json::from_slice(bytes).ok()?;
-        let revision = catalogue_revision(&mut value)?;
+        let document_revision = catalogue_revision(&mut value)?;
         let document: Document = serde_json::from_value(value).ok()?;
+        let revision = active_revision.map_or(document_revision, str::to_owned);
         if document.schema != "OTERYN_STORE_RUNTIME_CATALOGUE/v1" || document.offers.is_empty() {
             return None;
         }

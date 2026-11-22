@@ -18,7 +18,7 @@ fn cosmetic_tokens_real_dispatch_debits_character_and_unlocks_once() -> TestResu
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e_fixtures::scenario_thread::run("cosmetic-tokens", || scenario(true, false))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cosmetic-tokens", || scenario(true, false, None))
 }
 
 #[test]
@@ -26,7 +26,7 @@ fn cosmetic_tokens_real_dispatch_coin_payment_grants_and_replays() -> TestResult
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e_fixtures::scenario_thread::run("cosmetic-coins", || scenario(false, false))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cosmetic-coins", || scenario(false, false, None))
 }
 
 #[test]
@@ -35,11 +35,66 @@ fn cosmetic_tokens_replay_answer_from_previous_catalogue() -> TestResult {
         return Ok(());
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("cosmetic-tokens-old-quote", || {
-        scenario(true, true)
+        scenario(true, true, None)
     })
 }
 
-fn scenario(tokens: bool, previous_revision: bool) -> TestResult {
+#[derive(Clone, Copy)]
+enum Regression {
+    Abandoned,
+    LegacyRefusal,
+    PaidBeforeGrant,
+    OfflinePaid,
+    Transfer,
+    Earned,
+    AccountOwnedToken,
+}
+
+fn regression(name: &str, case: Regression) -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
+        scenario(false, false, Some(case))
+    })
+}
+
+#[test]
+fn coin_cosmetic_recovers_abandoned_confirmation_under_a_new_id() -> TestResult {
+    regression("cosmetic-abandoned", Regression::Abandoned)
+}
+
+#[test]
+fn coin_cosmetic_legacy_refusal_releases_offer_for_a_new_id() -> TestResult {
+    regression("cosmetic-legacy-refusal", Regression::LegacyRefusal)
+}
+
+#[test]
+fn coin_cosmetic_paid_grant_recovers_under_a_new_id() -> TestResult {
+    regression("cosmetic-paid-grant", Regression::PaidBeforeGrant)
+}
+
+#[test]
+fn coin_cosmetic_worker_recovers_before_game_grant() -> TestResult {
+    regression("cosmetic-offline-paid", Regression::OfflinePaid)
+}
+
+#[test]
+fn coin_cosmetic_stays_with_the_paid_account_after_transfer() -> TestResult {
+    regression("cosmetic-transfer", Regression::Transfer)
+}
+
+#[test]
+fn already_earned_mount_refuses_coin_payment() -> TestResult {
+    regression("cosmetic-earned", Regression::Earned)
+}
+
+#[test]
+fn account_owned_coin_cosmetic_refuses_token_payment_on_another_character() -> TestResult {
+    regression("cosmetic-account-owned-token", Regression::AccountOwnedToken)
+}
+
+fn scenario(tokens: bool, previous_revision: bool, regression: Option<Regression>) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_appearance(admin, "cosmetic_tokens").await?;
         prepare_current_session(&harness).await?;
@@ -147,6 +202,13 @@ fn scenario(tokens: bool, previous_revision: bool) -> TestResult {
                 wire::encode_purchase_request(request).map_err(debug)?,
             ))
         };
+        if let Some(case) = regression {
+            cosmetic_regression(case, &harness, &owner, &mut admitted, &ledger, request).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let earned =
             if tokens {
                 let result = serve(&owner, &mut admitted, &[command(&request)?]).await?;
@@ -256,6 +318,7 @@ fn scenario(tokens: bool, previous_revision: bool) -> TestResult {
                     account_id, character_id: *fence.character_id.as_bytes(), binding,
                 },
                 previous.offer_key.clone(), previous.catalog_revision.clone(),
+                active.native_gameplay().and_then(|state| state.cosmetics()).ok_or("cosmetics")?.clone(),
             ).await.map_err(debug)?;
             assert_eq!(committed.code, wire::StorePurchaseCode::Accepted);
             let replay = serve(&owner, &mut admitted, &[command(&previous)?]).await?;
@@ -410,6 +473,166 @@ fn scenario(tokens: bool, previous_revision: bool) -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+async fn cosmetic_regression(
+    case: Regression,
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    ledger: &Arc<SyncMutex<Ledger>>,
+    mut request: wire::StorePurchaseRequest,
+) -> TestResult {
+    use super::store_fixtures::purchase;
+    let command = |request: &wire::StorePurchaseRequest| -> TestResult<_> {
+        Ok((185, wire::encode_purchase_request(request).map_err(debug)?))
+    };
+    let character = *admitted.item_fence.ok_or("fence")?.character_id.as_bytes();
+    let account = admitted.controller.ok_or("controller")?.account_id;
+    match case {
+        Regression::Earned => {
+            let source: serde_json::Value = serde_json::from_slice(include_bytes!(
+                "../../../../../../tools/content-schema/native-gameplay/item-cosmetic-actions-native.json"
+            ))?;
+            let lottery = source["rules"].as_array().ok_or("rules")?.iter()
+                .find(|r| r["item_id"] == 37746).ok_or("lottery")?;
+            let grant = lottery["choices"].as_array().ok_or("choices")?.iter()
+                .find(|r| r["feedback"].as_str().is_some_and(|text| text.contains("Armoured War Horse")))
+                .and_then(|row| row["grants"][0].as_str()).ok_or("earned grant")?;
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+            sqlx::query(
+                "WITH receipt AS (
+                   INSERT INTO game_account_appearance_unlock_receipts
+                   VALUES(uuidv7(),encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,'item_action',$4)
+                   RETURNING account_id,unlock_key,grant_occurrence_id
+                 )
+                 INSERT INTO game_account_appearance_unlocks SELECT * FROM receipt"
+            ).bind(account.as_slice()).bind(grant).bind(source["provenance"].as_str())
+                .bind(character.as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+            let key = "store:mount:armoured-war-horse";
+            let offer = crate::content::store_cosmetics::offer(key).ok_or("mount offer")?;
+            request.offer_key = key.into();
+            request.price = offer.price;
+            let result = purchase(owner, admitted, command(&request)?).await?;
+            assert_eq!(result.code, wire::StorePurchaseCode::OfferUnavailable);
+            assert!(ledger.lock().map_err(|_| "ledger")?.debits.is_empty());
+        }
+        Regression::AccountOwnedToken => {
+            let accepted = purchase(owner, admitted, command(&request)?).await?;
+            assert_eq!(accepted.code, wire::StorePurchaseCode::Accepted);
+            // Retain the paid account grant with a different character as its
+            // historical recipient. Give the current character enough tokens.
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+            for sql in [
+                "UPDATE game_character_store_cosmetics SET character_id=encode($1,'hex')::uuid",
+                "UPDATE store_delivery_receipts SET character_id=encode($1,'hex')::uuid",
+                "UPDATE store_purchase_requests SET character_id=encode($1,'hex')::uuid",
+            ] {
+                sqlx::query(sql).bind(id(93).as_slice()).execute(&mut *tx).await?;
+            }
+            sqlx::query(
+                "INSERT INTO game_character_cosmetic_tokens(character_id,world_id,balance,last_claim_id)
+                 VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,uuidv7())"
+            ).bind(character.as_slice()).bind(admitted.world_id.as_bytes().as_slice())
+                .bind(i64::try_from(request.price)?).execute(&mut *tx).await?;
+            tx.commit().await?;
+            request.purchase_request_id = id(81);
+            request.currency = "COSMETIC_TOKEN".into();
+            let result = purchase(owner, admitted, (6188, wire::encode_purchase_request(&request).map_err(debug)?)).await?;
+            assert_eq!(result.code, wire::StorePurchaseCode::OfferUnavailable);
+            let spends: i64 = sqlx::query_scalar("SELECT count(*) FROM game_cosmetic_token_purchases")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(spends, 0);
+        }
+        Regression::Transfer => {
+            use crate::domain::appearance::{AccountUnlocks, AppearanceContent, EarnedCosmetics, UnlockFact};
+            let accepted = purchase(owner, admitted, command(&request)?).await?;
+            assert_eq!(accepted.code, wire::StorePurchaseCode::Accepted);
+            let new_account = id(95);
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+            for sql in [
+                "UPDATE game_character_roots SET account_id=encode($1,'hex')::uuid WHERE character_id=encode($2,'hex')::uuid",
+                "UPDATE game_durability_reconnect_sessions SET account_id=encode($1,'hex')::uuid WHERE character_id=encode($2,'hex')::uuid",
+            ] {
+                sqlx::query(sql).bind(new_account.as_slice()).bind(character.as_slice()).execute(&mut *tx).await?;
+            }
+            tx.commit().await?;
+            let fence = crate::gameplay_transport::character_gameplay_fence::current(owner, admitted.game_session_id, false)
+                .await.ok_or("new owner's fence")?;
+            let content = owner.active_generation.and_then(|g| g.native_gameplay())
+                .and_then(|g| g.cosmetics()).ok_or("cosmetics")?;
+            let state = owner.root.read_current_character_appearance_state(
+                owner.character, owner.holder, fence, content.earned_grant_keys(),
+            ).await.map_err(debug)?;
+            let ownership = EarnedCosmetics { content, facts: &state.earned };
+            assert_eq!(ownership.outfit(&"oteryn:outfit.field_surgeon".into()), UnlockFact::Absent);
+            let mut controller = admitted.controller.ok_or("controller")?;
+            controller.account_id = new_account;
+            admitted.controller = Some(controller);
+            ledger.lock().map_err(|_| "ledger")?.balance = 1_000;
+            request.purchase_request_id = id(81);
+            let accepted = purchase(owner, admitted, command(&request)?).await?;
+            assert_eq!(accepted.code, wire::StorePurchaseCode::Accepted);
+        }
+        Regression::Abandoned | Regression::LegacyRefusal | Regression::PaidBeforeGrant | Regression::OfflinePaid => {
+            let paid = matches!(case, Regression::PaidBeforeGrant | Regression::OfflinePaid);
+            if paid {
+                sqlx::raw_sql(
+                    "CREATE FUNCTION fail_cosmetic_grant() RETURNS trigger LANGUAGE plpgsql AS
+                    $$ BEGIN RAISE EXCEPTION 'fixture interruption before cosmetic grant'; END; $$;
+                    CREATE TRIGGER fail_cosmetic_grant BEFORE INSERT ON store_delivery_receipts
+                    FOR EACH ROW EXECUTE FUNCTION fail_cosmetic_grant();"
+                ).execute(&harness.pool).await?;
+            } else {
+                ledger.lock().map_err(|_| "ledger")?.fail_before_debit = true;
+            }
+            let first = serve(owner, admitted, &[command(&request)?]).await?;
+            assert_eq!(first, [(CommandStatus::Rejected, Vec::new())]);
+            if paid {
+                assert_eq!(ledger.lock().map_err(|_| "ledger")?.debits, [request.price]);
+                sqlx::query("DROP TRIGGER fail_cosmetic_grant ON store_delivery_receipts").execute(&harness.pool).await?;
+            } else {
+                ledger.lock().map_err(|_| "ledger")?.fail_before_debit = false;
+            }
+            if matches!(case, Regression::OfflinePaid) {
+                let ready = {
+                    let mut platform = ledger.lock().map_err(|_| "ledger")?;
+                    platform.advertise_deliveries = true;
+                    platform.receipt_ready.clone()
+                };
+                let worker = crate::gameplay_transport::run_store_receipt_outbox(
+                    owner.root, owner.character, StoreClient::new(Box::new(FakePlatform(ledger.clone())), "oteryn-game/store-consumer".into()),
+                );
+                let published = tokio::select! {
+                    () = worker => false,
+                    signal = tokio::time::timeout(std::time::Duration::from_secs(10), ready.notified()) => signal.is_ok(),
+                };
+                assert!(published, "a disconnected buyer's paid cosmetic must be granted");
+                let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM store_delivery_receipts")
+                    .fetch_one(&harness.pool).await?;
+                assert_eq!(receipts, 1);
+                assert_eq!(ledger.lock().map_err(|_| "ledger")?.debits, [request.price]);
+                return Ok(());
+            }
+            if matches!(case, Regression::LegacyRefusal) {
+                let refusal = serde_json::to_vec(&serde_json::json!({
+                    "result":"INSUFFICIENT_BALANCE","order_id":null,"operation_ids":[]
+                }))?;
+                sqlx::query("UPDATE store_purchase_requests SET state=2,answer=$2 WHERE purchase_request_id=encode($1,'hex')::uuid")
+                    .bind(request.purchase_request_id.as_slice()).bind(refusal).execute(&harness.pool).await?;
+            }
+            request.purchase_request_id = id(81);
+            let recovered = purchase(owner, admitted, command(&request)?).await?;
+            assert_eq!(recovered.code, wire::StorePurchaseCode::Accepted);
+            assert_eq!(purchase(owner, admitted, command(&request)?).await?, recovered);
+            assert_eq!(ledger.lock().map_err(|_| "ledger")?.debits, [request.price]);
+        }
+    }
+    Ok(())
 }
 
 async fn buy_catalogue_expansion(

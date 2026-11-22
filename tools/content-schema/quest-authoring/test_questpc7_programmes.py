@@ -655,13 +655,45 @@ class WaylandProgramme(unittest.TestCase):
                     [
                         {
                             "track": "oteryn:quest-progress/questpc7/illuminated/programme",
-                            "minimum": stage,
+                            "minimum": 0,
                             "maximum": stage,
                             "set": stage + 1,
                         }
                     ],
                 )
                 self.assertEqual(exchange.get("completes", False), name == "halo")
+
+    def test_wayland_commission_can_continue_with_account_owned_parts(self):
+        offers = json.loads(
+            (q.ROOT / "content/quests/shared-reward-offers.json").read_text()
+        )["offers"]
+        npc = "oteryn:npc.wayland_smythers"
+        intro = next(
+            row
+            for row in self.callbacks["callbacks"]
+            if row["npc"] == npc and not row["take"]
+        )
+        start = intro["storage"][0]["set"]
+        for name in ("insignia", "halo"):
+            with self.subTest(exchange=name):
+                confirm = next(
+                    row
+                    for row in self.callbacks["callbacks"]
+                    if row["npc"] == npc and row["key"].endswith("-" + name)
+                )
+                selection = next(
+                    row
+                    for row in offers
+                    if row["npc"] == npc and row["keywords"] == [name]
+                )
+                self.assertTrue(confirm["requires_outfits"])
+                self.assertTrue(confirm["forbids_addons"])
+                if name == "halo":
+                    self.assertTrue(confirm["requires_addons"])
+                for row in (selection, confirm):
+                    stage = row["storage"][0]
+                    self.assertLessEqual(stage["minimum"], start)
+                    self.assertLessEqual(start, stage["maximum"])
 
     def test_wayland_selection_only_opens_the_confirmation_topic(self):
         offers = json.loads(

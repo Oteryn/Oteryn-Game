@@ -29,10 +29,11 @@ pub(super) async fn read(
             .collect();
     // Token grants are local. A committed Platform delivery proves account ownership, even
     // if the buyer has since changed worlds or been retired. The grant list bounds the union.
-    let store: Vec<String> = sqlx::query_scalar("SELECT offer_key FROM game_character_store_cosmetics \
-        WHERE character_id=encode($1,'hex')::uuid \
-          AND world_id=(SELECT world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid) \
-          AND offer_key=ANY($2::text[]) AND operation_id IS NOT NULL \
+    let store: Vec<String> = sqlx::query_scalar("SELECT g.offer_key FROM game_character_store_cosmetics g \
+        JOIN game_cosmetic_token_purchases t USING(purchase_id,character_id,world_id) \
+        WHERE g.character_id=encode($1,'hex')::uuid \
+          AND g.world_id=(SELECT world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid) \
+          AND g.offer_key=ANY($2::text[]) AND g.operation_id=t.purchase_id \
         UNION \
         SELECT requested.offer_key FROM unnest($2::text[]) AS requested(offer_key) \
         JOIN store_delivery_receipts r ON r.entitlement_key='store-cosmetic:'||requested.offer_key \

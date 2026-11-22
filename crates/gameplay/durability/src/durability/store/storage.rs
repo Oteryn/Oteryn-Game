@@ -165,9 +165,7 @@ impl DurabilityRoot {
             // A rejected wire command is sequenced. Its native preparation remains durable,
             // so another real command needs its own attempt without rebinding that reservation.
             // The Platform operation, lamp identity and Store receipt remain unchanged.
-            transaction_id: hireling.as_ref().map_or(operation_id, |_| {
-                hireling_attempt_id(operation_id, plan.command)
-            }),
+            transaction_id: store_attempt_id(operation_id, plan.command),
             source_binding: digest.finalize().into(),
             item_instance_ids: vec![plan.item_instance_id],
         };
@@ -412,7 +410,22 @@ async fn write_delivery(
         )
         .await?;
     }
-    let native_transaction = hireling.map(|_| hireling_attempt_id(operation_id, plan.command));
+    if hireling.is_none() {
+        super::hireling_reservation::lock_character(tx, plan.character_id).await?;
+        if let Some(request) = plan.purchase_request_id {
+            sqlx::query(
+            "DELETE FROM game_store_item_reservations r USING store_purchase_requests p
+             WHERE r.purchase_request_id=p.purchase_request_id AND p.purchase_request_id=encode($1,'hex')::uuid
+               AND p.account_id=encode($2,'hex')::uuid AND p.state=2
+               AND (convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids') ? $3",
+        ).bind(request.as_slice()).bind(plan.account_id.as_slice()).bind(uuid_string(&operation_id))
+                .execute(&mut **tx).await?;
+        }
+        if super::hireling_capacity::inbox_occupancy(tx, &plan.character_id).await? > 20 {
+            return Err(StoreDurabilityError::AuthorityRejected);
+        }
+    }
+    let native_transaction = Some(store_attempt_id(operation_id, plan.command));
     write_receipt(
         tx,
         recovery,
@@ -478,7 +491,7 @@ pub(super) async fn write_receipt(
 
 /// Native work is bounded per real CommandRef; a fresh wire retry does not reset or change an
 /// earlier preparation. Stable Store operation/item identities still admit only one winner.
-fn hireling_attempt_id(operation: [u8; 16], command: crate::foundation::CommandRef) -> [u8; 16] {
+fn store_attempt_id(operation: [u8; 16], command: crate::foundation::CommandRef) -> [u8; 16] {
     use sha2::{Digest, Sha256};
     let digest = Sha256::new()
         .chain_update(b"oteryn:store-hireling-inbox-attempt:v1\0")
@@ -548,16 +561,16 @@ mod tests {
             ))
         };
         let operation = uuid(1);
-        let original = hireling_attempt_id(operation, command(2, 1)?);
+        let original = store_attempt_id(operation, command(2, 1)?);
         assert!(uuid_v7(&original));
         assert_ne!(original, operation);
-        assert_eq!(original, hireling_attempt_id(operation, command(2, 1)?));
+        assert_eq!(original, store_attempt_id(operation, command(2, 1)?));
         assert_ne!(
             original,
-            hireling_attempt_id(operation, command(2, (1_u64 << 40) + 1)?)
+            store_attempt_id(operation, command(2, (1_u64 << 40) + 1)?)
         );
-        assert_ne!(original, hireling_attempt_id(operation, command(3, 1)?));
-        assert_ne!(original, hireling_attempt_id(uuid(4), command(2, 1)?));
+        assert_ne!(original, store_attempt_id(operation, command(3, 1)?));
+        assert_ne!(original, store_attempt_id(uuid(4), command(2, 1)?));
         Ok(())
     }
 }

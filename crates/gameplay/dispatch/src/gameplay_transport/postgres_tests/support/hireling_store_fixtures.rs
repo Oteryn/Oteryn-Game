@@ -24,7 +24,7 @@ use std::collections::BTreeMap;
 
 use std::sync::{Arc,Mutex as SyncMutex};
 
-const REVISION:&str="e7e06a2b1ce23df40cc05be37882eb4b2d4139a5bbc112abd893e8eb526d890d";
+
 
 pub(super) const LAMP:&str="oteryn:item.tibia.i29432";
 
@@ -103,7 +103,7 @@ pub(super) async fn serve(owner:&ComposedFreshAdmission<'_, '_, '_>,admitted:&mu
 }
 
 pub(super) fn command(seed:u8,offer:u16,price:u64,custom:Option<wire::StoreHirelingCustomization>)->TestResult<(u32,Vec<u8>)> {
-    let request=wire::StorePurchaseRequest{purchase_request_id:id(seed),offer_key:format!("store:hireling:{offer}"),catalog_revision:REVISION.into(),price,currency:"TIBIA_COIN".into()};
+    let request=wire::StorePurchaseRequest{purchase_request_id:id(seed),offer_key:format!("store:hireling:{offer}"),catalog_revision:crate::gameplay_transport::store::active_catalogue_revision().into(),price,currency:"TIBIA_COIN".into()};
     let bytes=if let Some(custom)=custom {wire::encode_hireling_purchase_request(&request,&custom)}else{wire::encode_purchase_request(&request)}.map_err(debug)?;
     Ok((wire::COMMAND_TYPE_STORE_PURCHASE,bytes))
 }

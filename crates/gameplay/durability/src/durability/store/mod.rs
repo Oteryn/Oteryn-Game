@@ -17,6 +17,7 @@ mod storage;
 pub use codec::{
     DeliveryIdentity, DeliveryPlan, DeliveryReceipt, PurchaseRequest, StoreValidationError,
 };
+pub use cosmetic_tokens::{PaidStoreCosmeticIntent, PendingStorePurchase};
 pub use hireling_model::{
     HirelingServiceDeliveryPlan, HirelingStoreAction, HirelingStorePurchase,
     canonical_hireling_name,
