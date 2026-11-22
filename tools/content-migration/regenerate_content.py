@@ -802,9 +802,11 @@ def main() -> int:
         if not args.skip_checks:
             run(["python3", "tools/content-migration/register_spell_families.py", "--check"])
         return 0
+    from travel_route_corrections import project_routes
     if args.check:
         if args.resolve or args.skip_checks or args.no_stage:
             parser.error("--check cannot be combined with mutation options")
+        project_routes(ROOT, WORLD, check=True)
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
                 run(command)
@@ -834,6 +836,7 @@ def main() -> int:
     questpc7_thaian_authoring.install(ROOT)
     from buddel_travel import install_buddel
     install_buddel(ROOT, WORLD)
+    project_routes(ROOT, WORLD)
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()

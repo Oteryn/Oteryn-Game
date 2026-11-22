@@ -326,16 +326,39 @@ mod tests {
             };
             assert_eq!(row.keyword, keyword);
             assert_eq!(serde_json::json!(row.price), source["selected_fare"]);
-            assert_eq!(serde_json::json!(row.premium), source["selected_premium"]);
+            // Crystal 201189f8 melian.lua:69, pino.lua:85 and tanyt.lua:85 register
+            // Marapur for free accounts. The native map admits the tile one step north.
+            let marapur = matches!(
+                row.key.as_str(),
+                "oteryn:service.travel.melian/marapur"
+                    | "oteryn:service.travel.pino/marapur"
+                    | "oteryn:service.travel.tanyt/marapur"
+            );
+            if marapur {
+                assert!(!row.premium, "{}", row.key);
+                assert_eq!(row.y, 32_766, "{}", row.key);
+            } else {
+                assert_eq!(serde_json::json!(row.premium), source["selected_premium"]);
+                assert_eq!(serde_json::json!(row.y), source["destination"]["y"]);
+            }
             assert_eq!(serde_json::json!(row.x), source["destination"]["x"]);
-            assert_eq!(serde_json::json!(row.y), source["destination"]["y"]);
             assert_eq!(serde_json::json!(row.floor), source["destination"]["z"]);
             let facts = &evidence["facts"];
             assert_eq!(row.carpet, facts["transport"]["value"] == "carpet");
-            if row.carpet {
+            if row.carpet && !marapur {
                 assert!(row.premium, "{}", row.key);
             }
-            if facts["quest_requirements"]["value"] != serde_json::json!([])
+            // Sebastian's exact storage is authored on the Service route. Crystal
+            // Tonar (tonar.lua:100) and the three Marapur registrations have no quest gate.
+            if marapur
+                || matches!(
+                    row.key.as_str(),
+                    "oteryn:service.travel.sebastian/nargor"
+                        | "oteryn:service.travel.tonar/passage"
+                )
+            {
+                assert!(!row.held, "{}", row.key);
+            } else if facts["quest_requirements"]["value"] != serde_json::json!([])
                 || !facts["travel_guard_conditions"]["value"].is_null()
             {
                 assert!(row.held, "{}", row.key);
