@@ -3,6 +3,11 @@ use super::*;
 use oteryn_session::{EntityDetail, VisibleAppearance};
 
 impl Scene {
+    #[cfg(bevy_shell)]
+    pub(crate) fn container_flag(&self, appearance: u16) -> Option<bool> {
+        self.cache.container_flag(appearance)
+    }
+
     pub(crate) fn item_multi_use(&mut self, id: u16) -> bool {
         self.cache.begin(
             self.world.atlas(),

@@ -92,6 +92,11 @@ fn managed_container_menu_opens_the_selected_live_inventory_container()
         false,
     );
     assert!(link.inventory_select(backpack.handle));
+    let other = oteryn_session::ItemEntry {handle: 11.try_into()?, ..backpack};
+    outbox.inventory_initialize(Some(oteryn_session::CharacterInventory {
+        main_backpack: Some(backpack), entries: vec![other], ..Default::default()
+    }), false);
+    assert!(link.inventory_select(other.handle));
     assert!(!link.discovery_action(98, 9, &[], 0));
     assert!(link.discovery_action(98, 7, &[], 0));
     assert!(link.discovery_action(98, 9, &[], 0));
