@@ -87,7 +87,7 @@ async fn exercise(
         &Offering {
             position: ORIGIN,
             item: "oteryn:item.tibia.i3031".into(),
-            count: 25,
+            count: 50,
         },
         77,
         true,
@@ -98,6 +98,7 @@ async fn exercise(
 
     let mut id = 6301;
     for (desired, streak) in [
+        (std::cmp::Ordering::Less, 0),
         (std::cmp::Ordering::Greater, 1),
         (std::cmp::Ordering::Equal, 1),
         (std::cmp::Ordering::Less, 0),
@@ -145,10 +146,10 @@ async fn exercise(
     )
     .fetch_one(&harness.pool)
     .await?;
-    assert_eq!(fees, (1, 25));
+    assert_eq!(fees, (2, 50));
     let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key LIKE 'oteryn:quest-reward/kissing-a-pig/zebron-%'")
         .fetch_one(&harness.pool).await?;
-    assert_eq!(receipts, 5);
+    assert_eq!(receipts, 6);
     assert_eq!(
         super::questpc7_outfit_items_fixtures::quantity(harness, 3031).await?,
         0

@@ -43,6 +43,8 @@ async fn qualify(harness: &Harness) -> TestResult {
       VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,$3,$3,$3,session_user,1)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(digest.as_slice())
         .execute(&harness.pool).await?;
+    // Replacement closes the predecessor readiness row at the next generation.
+    reset_fixture::publish_ready(harness, 1).await?;
     reset_fixture::seed_retiring(&harness.pool, world).await?;
     reset_fixture::replace(harness, world, channel, &harness.node).await?;
     let mut tx = harness.pool.begin().await?;

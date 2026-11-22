@@ -66,7 +66,7 @@ impl NpcConversations {
         command: u64,
     ) -> Result<(), String> {
         let mut sessions = self.sessions.lock().map_err(|_| "sessions")?;
-        let state = &mut sessions.get_mut(&session).ok_or("session")?.quest_dialogue;
+        let state = &mut sessions.entry(session).or_default().quest_dialogue;
         if command == 0 || state.interrupt_after_commit.is_some() {
             return Err("fault already armed or invalid command".into());
         }

@@ -47,8 +47,11 @@ enum Scene {
 
 fn run_scene(scene: Scene) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
-        let h =
-            Harness::create_with_admission_seed(admin, "map_item_trigger", false, false).await?;
+        // The seal goes into the backpack, so pickup preflight needs the actual
+        // durable level to derive carry capacity. A Ground-only move does not.
+        let initialized = matches!(scene, Scene::Parchment);
+        let h = Harness::create_with_admission_seed(admin, "map_item_trigger", initialized, false)
+            .await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h

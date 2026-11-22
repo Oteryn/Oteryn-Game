@@ -50,11 +50,13 @@ async fn qualify(h: &Harness) -> TestResult {
     let active = controller.active().ok_or("active bundle content")?;
     let native = active.native_gameplay().ok_or("native Item policy")?;
     let index = native.item_index().ok_or("active Item definition index")?;
-    let bundle = crate::map::spell_tiles::tests::vertical_movement::world(world, channel);
+    // A different tile in this bundle is a House. Its presence must not make
+    // the qualified public drop's House status unknown.
+    let bundle = super::house_wire_bundle::house_bundle(world, channel)?;
     let start = crate::content::NativeEntryStart {
-        x: 10,
-        y: 10,
-        floor: 6,
+        x: 2,
+        y: 0,
+        floor: 7,
     };
     let entry = entry.qualified_room();
     let room = entry
@@ -163,6 +165,12 @@ async fn seed(
     let client = room.compiled().client_digest();
     let frame = room.frame_binding().digest();
     let epoch_map = room.movement_cells().scope().map_revision.as_str();
+    let start = room.entry_start();
+    let position = crate::durability::map_item_mint_audit::map_item_spatial_position(
+        u16::try_from(start.x)?,
+        u16::try_from(start.y)?,
+        i8::try_from(-start.floor)?,
+    );
     let mut tx = h.pool.begin().await?;
     sqlx::query("INSERT INTO game_content_activations
         (world_id,channel_id,activation_sequence,server_artifact_digest,client_artifact_digest,frame_binding_digest,issued_by,issued_at)
@@ -176,7 +184,7 @@ async fn seed(
         (world_id,reset_epoch,scheduled_at,freeze_until,map_revision,server_digest,frame_digest,cleanup_enabled,clean_protection_zones)
         SELECT world_id,reset_epoch,clock_timestamp()-interval '1 second',clock_timestamp()+interval '10 minutes',
           map_revision,server_digest,frame_digest,true,true FROM game_world_reset_epochs").execute(&mut *tx).await?;
-    // Provision a typed, non-authored Item and the ordinary player drop codec.
+    // Provision a typed, non-authored Item and the ordinary player drop codec with the signed bundle floor.
     // All retirement and readback proofs are enabled in subsequent transactions.
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -196,7 +204,7 @@ async fn seed(
         spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal)
         VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,$4,$5,$6,'sha256:'||encode($7,'hex'),$8,1)")
         .bind(id(101).as_slice()).bind(world.as_slice()).bind(channel.as_slice())
-        .bind([0_u8,0,0,10,0,0,0,10,0,6].as_slice())
+        .bind(position)
         .bind([crate::durability::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX,id(101).as_slice()].concat())
         .bind(map).bind(server.as_slice()).bind(frame.as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;

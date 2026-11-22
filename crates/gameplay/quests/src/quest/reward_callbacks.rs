@@ -1153,6 +1153,8 @@ fn validate_document_with_capacity(
                 && c.counter.is_none()
                 && !c.value_only_guarded()
                 && !c.is_save_restart_only()
+                // A lost, paid dice round must settle even at a zero streak.
+                && !(c.dice_outcome == Some(DiceOutcome::Loss) && c.fee.is_some())
                 && c.storage
                     .iter()
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))

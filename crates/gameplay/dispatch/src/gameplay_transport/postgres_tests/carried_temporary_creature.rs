@@ -15,7 +15,7 @@ const ORIGIN: Position = Position {
     y: 31677,
     floor: -15,
 };
-const ITEM: &str = "oteryn:item.tibia.i130";
+const ITEM: &str = "oteryn:item.tibia.i3031";
 const CAT: &str = "oteryn:creature.cat";
 
 #[test]
@@ -36,8 +36,8 @@ async fn exercise(
     admitted: &AdmittedSession,
     harness: &super::fixture::Harness,
 ) -> TestResult {
-    // Crystal gives Kitty's lifetime. Main can carry the quest's exploding cookie
-    // and has a Cat policy. The content binding supplies the actual item and creature.
+    // Crystal supplies Kitty's lifetime. This synthetic carried-use binding
+    // uses the generation's admitted gold coin and Cat to exercise the runtime owner.
     let quest = "oteryn:quest.what_a_foolish_quest";
     let track = "oteryn:quest-progress/what-a-foolish/cat-basket";
     let source = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/what_a_foolish_quest/action_cat_basket.lua:18-39";
