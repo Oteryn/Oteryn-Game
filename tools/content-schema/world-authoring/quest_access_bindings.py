@@ -23,7 +23,9 @@ def capture_sources(source_root):
     import lua_tables
 
     requested = {
-        "lever.lua": {"LeverUnique": {30004, 30005, *range(30018, 30024), 30025, 30030, 30034}},
+        "lever.lua": {
+            "LeverUnique": {30004, 30005, *range(30018, 30024), 30025, 30030, 30034}
+        },
         "tile.lua": {
             "TileUnique": {25010, 25031, 25032, *range(25034, 25038)},
             "TileAction": {25019, 25020, 25021, 50022, *range(50308, 50312)},

@@ -15,34 +15,36 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                 .item_on_target
                 .as_ref()
                 .is_some_and(|tool| tool.selected_instance)
-                && matches!(
-                    callback.key.as_str(),
-                    "oteryn:quest-callback/authored-repenters-fill-vial"
-                        | "oteryn:quest-callback/authored-repenters-mushroom-01"
-                        | "oteryn:quest-callback/authored-repenters-mushroom-02"
-                        | "oteryn:quest-callback/authored-repenters-mushroom-03"
-                        | "oteryn:quest-callback/authored-repenters-mushroom-04"
-                        | "oteryn:quest-callback/authored-repenters-mushroom-05"
-                        | "oteryn:quest-callback/authored-repenters-mushroom-06"
-                        | "oteryn:quest-callback/authored-repenters-mushroom-07"
-                        | "oteryn:quest-callback/authored-repenters-mushroom-08"
-                        | "oteryn:quest-callback/authored-repenters-mushroom-09"
-                        | "oteryn:quest-callback/authored-repenters-mushroom-10"
-                        | "oteryn:quest-callback/authored-repenters-mushroom-11"
-                        | "oteryn:quest-callback/authored-repenters-mushroom-12"
-                        | "oteryn:quest-callback/authored-repenters-refill-vial"
-                        | "oteryn:quest-callback/authored-venore-machine-1"
-                        | "oteryn:quest-callback/authored-venore-machine-2"
-                        | "oteryn:quest-callback/authored-venore-machine-3"
-                        | "oteryn:quest-callback/authored-venore-machine-4"
-                        | "oteryn:quest-callback/authored-venore-machine-5"
-                        | "oteryn:quest-callback/authored-venore-machine-6"
-                        | "oteryn:quest-callback/authored-venore-machine-7"
-                        | "oteryn:quest-callback/authored-venore-machine-8"
-                        | "oteryn:quest-callback/authored-venore-machine-9"
-                        | "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
-                        | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
-                ))
+                && ((callback.requires_world_admission
+                    && callback.quest == "oteryn:quest.the_explorer_society_quest")
+                    || matches!(
+                        callback.key.as_str(),
+                        "oteryn:quest-callback/authored-repenters-fill-vial"
+                            | "oteryn:quest-callback/authored-repenters-mushroom-01"
+                            | "oteryn:quest-callback/authored-repenters-mushroom-02"
+                            | "oteryn:quest-callback/authored-repenters-mushroom-03"
+                            | "oteryn:quest-callback/authored-repenters-mushroom-04"
+                            | "oteryn:quest-callback/authored-repenters-mushroom-05"
+                            | "oteryn:quest-callback/authored-repenters-mushroom-06"
+                            | "oteryn:quest-callback/authored-repenters-mushroom-07"
+                            | "oteryn:quest-callback/authored-repenters-mushroom-08"
+                            | "oteryn:quest-callback/authored-repenters-mushroom-09"
+                            | "oteryn:quest-callback/authored-repenters-mushroom-10"
+                            | "oteryn:quest-callback/authored-repenters-mushroom-11"
+                            | "oteryn:quest-callback/authored-repenters-mushroom-12"
+                            | "oteryn:quest-callback/authored-repenters-refill-vial"
+                            | "oteryn:quest-callback/authored-venore-machine-1"
+                            | "oteryn:quest-callback/authored-venore-machine-2"
+                            | "oteryn:quest-callback/authored-venore-machine-3"
+                            | "oteryn:quest-callback/authored-venore-machine-4"
+                            | "oteryn:quest-callback/authored-venore-machine-5"
+                            | "oteryn:quest-callback/authored-venore-machine-6"
+                            | "oteryn:quest-callback/authored-venore-machine-7"
+                            | "oteryn:quest-callback/authored-venore-machine-8"
+                            | "oteryn:quest-callback/authored-venore-machine-9"
+                            | "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
+                            | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
+                    )))
             || rottin_walls::accepts(callback)
             || callback.effects.place_item == Some(12187)
             || matches!(
@@ -98,6 +100,32 @@ mod tests {
                 assert!(accepts(callback), "unrouted task tool {}", callback.key);
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn explorer_society_selected_tools_reach_the_fenced_world_owner() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let tools: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| callback.quest == "oteryn:quest.the_explorer_society_quest")
+            .filter(|callback| {
+                callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|tool| tool.selected_instance)
+            })
+            .collect();
+        assert_eq!(tools.len(), 11);
+        let unrouted: Vec<_> = tools
+            .iter()
+            .filter(|callback| !callback.requires_world_admission || !accepts(callback))
+            .map(|callback| callback.key.as_str())
+            .collect();
+        assert!(
+            unrouted.is_empty(),
+            "unrouted Explorer Society tools: {unrouted:?}"
+        );
         Ok(())
     }
 

@@ -11,7 +11,8 @@
     "content/creatures/definitions/spell-native-profiles.json#exact-ordinary-creature-corpse-bindings",
     "imports/canary/items-xml/items.xml#corpse-capacity-and-decay",
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/{acolyte,adept,enlightened,novice}_of_the_cult.lua",
-    "imports/canary/items-xml/items.xml#36498,36540,36936,37349"
+    "imports/canary/items-xml/items.xml#36498,36540,36936,37349",
+    "imports/canary/items-xml/items.xml#4991-4993: Explorer Society Butterfly Hunt"
   ],
   "capacity_projections": [
     {
@@ -46,6 +47,7 @@
     "oteryn:creature.acolyte_of_the_cult": 18038,
     "oteryn:creature.adept_of_the_cult": 18030,
     "oteryn:creature.behemoth": 5999,
+    "oteryn:creature.blue_butterfly": 4993,
     "oteryn:creature.bonebeast": 6030,
     "oteryn:creature.dipthrah": 6031,
     "oteryn:creature.dworc_voodoomaster": 6055,
@@ -56,7 +58,9 @@
     "oteryn:creature.morguthis": 6025,
     "oteryn:creature.novice_of_the_cult": 18186,
     "oteryn:creature.omruc": 6025,
+    "oteryn:creature.purple_butterfly": 4992,
     "oteryn:creature.rahemos": 6031,
+    "oteryn:creature.red_butterfly": 4991,
     "oteryn:creature.rotworm": 5967,
     "oteryn:creature.souleater": 11675,
     "oteryn:creature.thalas": 6025,

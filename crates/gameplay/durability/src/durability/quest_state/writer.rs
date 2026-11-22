@@ -1654,6 +1654,9 @@ impl DurabilityRoot {
                         keys.extend(callback.requires.iter().map(|r| r.track.as_str()));
                         keys.extend(callback.participants.iter().flat_map(oteryn_gameplay_quests::quest::reward_callbacks::QuestParticipant::tracks));
                     }
+                    if quest == venore_predecessor::QUEST {
+                        keys.extend([venore_predecessor::STAGE, venore_predecessor::LAST_REPORT]);
+                    }
                     keys.sort_unstable(); keys.dedup();
                     let rows = sqlx::query(
                         "SELECT track_key, quest_key, value FROM game_character_quest_tracks \
@@ -1782,6 +1785,7 @@ impl DurabilityRoot {
                     } else { grizzly_plan.as_ref().map_or_else(
                         || keys.iter().copied().filter(|key| reward_callback.as_ref().is_none_or(|c|
                             !c.requires.iter().any(|r| r.track == *key)))
+                            .filter(|key| ![venore_predecessor::STAGE, venore_predecessor::LAST_REPORT].contains(key))
                             .filter(|key| transition.effects.iter().any(|effect| effect.track.as_str() == *key)
                                 || !catalogue.completion_tracks(quest).any(|read| read == *key)).collect(),
                         |plan| plan.changes.iter().map(|change| change.track.as_str()).collect(),

@@ -42,17 +42,26 @@ def overlay_outputs(outputs, root=world.ROOT):
             raise ValueError(f"Spirit pickup region drift: {path}")
         sector = (y // 32 % 8) * 8 + x // 32 % 8
         tiles = dict(sectors)[sector]
-        (_, _, _, house, _, entries), = [tile for tile in tiles if tile[:2] == (x, y)]
+        ((_, _, _, house, _, entries),) = [tile for tile in tiles if tile[:2] == (x, y)]
         expected = base + ((item,) if previous else ())
-        if house or entries != [(indices[appearance], 0, None) for appearance in expected]:
+        if house or entries != [
+            (indices[appearance], 0, None) for appearance in expected
+        ]:
             raise ValueError(f"Spirit pickup stack drift at {(x, y, z)}")
         if previous:
             continue
         entries.append((indices[item], 0, None))
-        raw = codec.encode_region(z, rx, ry, {
-            local: codec.encode_sector_tiles(rx * 8 + local % 8, ry * 8 + local // 8, tiles)
-            for local, tiles in sectors
-        })
+        raw = codec.encode_region(
+            z,
+            rx,
+            ry,
+            {
+                local: codec.encode_sector_tiles(
+                    rx * 8 + local % 8, ry * 8 + local // 8, tiles
+                )
+                for local, tiles in sectors
+            },
+        )
         outputs[path] = raw
         regions[path]["sha256"] = hashlib.sha256(raw).hexdigest()
         regions[path]["items"] += 1

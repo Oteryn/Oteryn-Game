@@ -1289,6 +1289,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
         - count(authored, "items_added")
         - jimmy_stub["items"]
         - count(summary.get("source", {}).get("spirit_will_pickups", {}), "items_added")
+        - count(summary.get("source", {}).get("quest_chests", {}), "wiki_items_added")
         - count(drafted, "replaced_items_added")
         + count(replace, "items_removed")
         + count(rework, "replaced_items_removed")

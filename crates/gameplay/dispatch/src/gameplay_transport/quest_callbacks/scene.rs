@@ -11,7 +11,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(scene) = &callback.effects.scene else {
             return Ok(None);
         };
-        let edits = if close { &scene.close } else { &scene.open };
+        let (edits, opposite) = if close {
+            (&scene.close, &scene.open)
+        } else {
+            (&scene.open, &scene.close)
+        };
         let evacuations = if close {
             &scene.evacuate_close
         } else {
@@ -54,6 +58,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Err(UseDisposition::Rejected);
                 }
                 if first.is_none() {
+                    if edit.create.is_none()
+                        && opposite.iter().any(|other| {
+                            other.position == edit.position && other.create == Some(appearance)
+                        })
+                    {
+                        mutations.push(QuestSceneMutation::RemoveCreated {
+                            position: at,
+                            appearance,
+                            allow_missing: edit.allow_missing,
+                        });
+                        continue;
+                    }
                     if edit.allow_missing {
                         continue;
                     }

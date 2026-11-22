@@ -154,6 +154,18 @@ impl super::DurabilityRoot {
                         &catalogue, &callback.quest, &pin.definition_hash,
                     );
                 }
+                use oteryn_gameplay_quests::quest::venore_predecessor;
+                let mut legacy = std::collections::BTreeMap::new();
+                if callback.quest == venore_predecessor::QUEST {
+                    let stage: Option<i64> = sqlx::query_scalar(
+                        "SELECT value FROM game_character_quest_tracks
+                         WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3",
+                    ).bind(fence.character_id.as_bytes().as_slice()).bind(venore_predecessor::STAGE)
+                        .bind(&callback.quest).fetch_optional(&mut *tx).await?;
+                    if let Some(stage) = stage {
+                        legacy.insert(venore_predecessor::STAGE.to_owned(), stage);
+                    }
+                }
                 for storage in &callback.storage {
                     let Some(track) = catalogue.track(&storage.track).filter(|track| track.quest == callback.quest) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
@@ -164,6 +176,7 @@ impl super::DurabilityRoot {
                     ).bind(fence.character_id.as_bytes().as_slice()).bind(&storage.track)
                         .bind(&callback.quest).fetch_optional(&mut *tx).await?;
                     let value = value.or_else(|| historical_defaults?.get(&storage.track).copied())
+                        .or_else(|| venore_predecessor::inherited_value(&storage.track, &legacy))
                         .unwrap_or(track.initial);
                     if !(storage.minimum..=storage.maximum).contains(&value) {
                         return Ok(Ok(false));

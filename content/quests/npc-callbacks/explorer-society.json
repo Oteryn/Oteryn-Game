@@ -3632,6 +3632,202 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/uzgod.lua:116-122"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/collect/butterfly-purple",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "collect"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i4863",
+      "creature_target": "oteryn:creature.purple_butterfly",
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4863",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i4864",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You collect the sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_butterfly.lua:3-8"
+      ],
+      "corpse_target": {
+        "appearance": 4992,
+        "maximum_age_ms": 60000
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/collect/butterfly-blue",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "collect"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i4863",
+      "creature_target": "oteryn:creature.blue_butterfly",
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4863",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i4865",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You collect the sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_butterfly.lua:9-14"
+      ],
+      "corpse_target": {
+        "appearance": 4993,
+        "maximum_age_ms": 60000
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/collect/butterfly-red",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "collect"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i4863",
+      "creature_target": "oteryn:creature.red_butterfly",
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 15,
+          "maximum": 15,
+          "set": 16
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 15,
+          "maximum": 15,
+          "set": 16
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4863",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i4866",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You collect the sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_butterfly.lua:15-20"
+      ],
+      "corpse_target": {
+        "appearance": 4991,
+        "maximum_age_ms": 60000
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/explorer-society/collect/ectoplasm",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "collect"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i4852",
+      "creature_target": "oteryn:creature.ghost",
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 45,
+          "maximum": 45,
+          "set": 46
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 45,
+          "maximum": 45,
+          "set": 46
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4852",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i4853",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You collect the sample."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_ectoplasm_container.lua:13-20"
+      ],
+      "corpse_target": {
+        "appearance": 4094,
+        "maximum_age_ms": 310000
+      }
     }
   ]
 }

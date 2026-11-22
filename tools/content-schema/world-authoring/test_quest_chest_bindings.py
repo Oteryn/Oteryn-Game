@@ -48,7 +48,9 @@ class QuestChestBindings(unittest.TestCase):
                     _, _, _, sectors = codec.decode_region(
                         world.with_name(name).read_bytes()
                     )
-                    regions[name] = {tile[:2]: tile[-1] for _, tiles in sectors for tile in tiles}
+                    regions[name] = {
+                        tile[:2]: tile[-1] for _, tiles in sectors for tile in tiles
+                    }
                 actual = [
                     (attrs or {}).get(attr)
                     for index, depth, attrs in regions[name][(x, y)]

@@ -41,7 +41,7 @@ use std::sync::Arc;
 use oteryn_gameplay_quests::quest::{
     QUESTGATE0_RL_10, QUESTSTATE0_RL_01, QUESTSTATE0_RL_05, QUESTSTATE0_RL_07,
     QUESTSTATE0_RL_08_STATES, QUESTSTATE0_RL_08_TRACKS, QuestRefusal, QuestStateCatalogue,
-    QuestTrackChange, valid_quest_key,
+    QuestTrackChange, valid_quest_key, venore_predecessor,
 };
 use oteryn_simulation_determinism::ExactI64;
 use sha2::{Digest, Sha256};
@@ -376,6 +376,8 @@ impl QuestStateCopy {
                         catalogue, &track.quest, &state.definition_hash))
                     .and_then(|defaults| defaults.get(&track.key))
                     .copied().unwrap_or(track.initial);
+                let initial = venore_predecessor::inherited_value(&track.key, &self.tracks)
+                    .unwrap_or(initial);
                 (initial != -1).then_some((track.key.clone(), initial))
             }).collect();
         if self.tracks.len().saturating_add(missing.len()) > QUESTSTATE0_RL_08_TRACKS {

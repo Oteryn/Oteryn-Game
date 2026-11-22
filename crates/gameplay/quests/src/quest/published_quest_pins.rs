@@ -135,6 +135,42 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
 // new rules bound to the new hash. Existing absent-track defaults did not change.
 const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
+    // Captured by quest_definition_hashes on main 9295760b3 and the reviewed route definitions.
+    (
+        "oteryn:quest.authored.kingdom_of_kormarak_quest",
+        hash(b"299da386ca452bd3715cefe2ff71405897dda80a5198e725f06596c4b0e1120c"),
+        &[hash(
+            b"2d7f93ccfa1ffea4e4e881645c2d031f52d4508348efd3ce863603c51f029553",
+        )],
+    ),
+    (
+        "oteryn:quest.authored.mastermind_potion_quest",
+        hash(b"9de149d1bcedb6d2c7c7b06c20a7924e1f76646a913e680cce3962fbb8d7daa3"),
+        &[hash(
+            b"092155f83fe1b21c345c6f8a4b1eff439f42861a4eeaa0643a17f51cffd3a603",
+        )],
+    ),
+    (
+        "oteryn:quest.authored.mystery_of_the_valley_quest",
+        hash(b"c2f0f0fdeb2d28b4a746e7117d844cb26dddc553f2c081b54df2b81815b040de"),
+        &[hash(
+            b"9262faea34889f6fa7f476319d0abf7fe0e51934d80cf77809d1b07ade66baa8",
+        )],
+    ),
+    (
+        "oteryn:quest.hunter_outfits_quest",
+        hash(b"f1857cd86d557a97d58f8a180b0e8919ab24c5866bd61ab675f65780b435a42c"),
+        &[hash(
+            b"8fb20493f47ae0a1444ff5cb584e14d408b8b6435aabf0175c1118703ff43d6c",
+        )],
+    ),
+    (
+        "oteryn:quest.mad_mage_room_quest",
+        hash(b"cfa1db835dd1b1ef55b513276870506dd0cf38587ee1667b32f8d062243486f6"),
+        &[hash(
+            b"bee52340c68d21b8b93951a9a6944572162e714538ca745766eb88414f5d630e",
+        )],
+    ),
     // Predecessors measured on main 3e0991642 with quest_definition_hashes.
     (
         "oteryn:quest.authored.venore_daily_tasks_quest",

@@ -119,6 +119,40 @@
       ],
       "reply": [
         "Can you solve my riddle? Give me the correct answer and I will give you something."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner/payments",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "riddle",
+        "key"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "You have already paid for the key. Are you sure you want it?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner/payments",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
       ]
     },
     {
