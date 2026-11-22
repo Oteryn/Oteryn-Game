@@ -1,5 +1,4 @@
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
-use crate::map::view::MapFacts;
 use super::fixture::{Harness, debug, id};
 
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
