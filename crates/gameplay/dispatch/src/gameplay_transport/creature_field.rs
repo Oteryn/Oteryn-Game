@@ -24,15 +24,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut plans = Vec::new();
         let mut source_players = Vec::new();
 
-        let creatures = runtime.visible_entities().creatures;
+        let mut creatures = runtime.visible_entities().creatures;
+        map.retain_creature_field_candidates(runtime, &mut creatures)
+            .await
+            .map_err(|_| DurabilityError::Unavailable)?;
         // Passive source creatures are outside the AI table, but still own field conditions.
         let positions = creatures
             .iter()
             .map(|visible| visible.position)
             .collect::<Vec<_>>();
-        map.prefetch_empty_tiles(runtime, &positions)
-            .await
-            .map_err(|_| DurabilityError::Unavailable)?;
+        if !positions.is_empty() {
+            map.prefetch_empty_tiles(runtime, &positions)
+                .await
+                .map_err(|_| DurabilityError::Unavailable)?;
+        }
         for visible in creatures {
             let Ok(snapshot) = runtime.companion_snapshot(visible.actor) else {
                 continue;

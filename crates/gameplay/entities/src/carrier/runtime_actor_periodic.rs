@@ -56,6 +56,20 @@ pub struct CreaturePeriodicImpact {
     pub healing: u64,
 }
 impl ChannelRuntimeV1 {
+    /// Read the exact slot without cloning its conditions or committed field entry.
+    /// An entry needs cleanup even when its initial tick was already consumed or refused.
+    pub fn has_creature_periodic_state(&self, actor: ExactActorRef) -> bool {
+        let Ok(index) = self.carrier.validate_ref(&self.continuity, actor.0) else {
+            return false;
+        };
+        matches!(
+            &self.carrier.slots[index],
+            Slot::CreatureOccupied { generation, committed, companion: Some(state), .. }
+                if *generation == actor.0.actor_local_generation.0
+                    && (committed.field_entry.is_some() || state.conditions.has_periodic_state())
+        )
+    }
+
     /// Install entry once per actual position successor, before its due HP
     /// turn. Cancellation between these synchronous owner turns leaves the
     /// initial tick pending in the sole native condition store.

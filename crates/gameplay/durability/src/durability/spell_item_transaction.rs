@@ -3807,6 +3807,41 @@ pub async fn apply_physical_item_line(
     Ok(())
 }
 
+/// Candidate positions only. The caller still reads the current locked stack and
+/// qualifies the full definition and placement before using a recipe.
+pub async fn read_creature_field_positions_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    field_keys: &[&str],
+) -> Result<Option<Vec<Vec<u8>>>> {
+    const MAX_POSITIONS: usize = 4096;
+    check_scope_transaction(tx, authority).await?;
+    let (scope_kind, channel, instance) =
+        super::item_mint::ground_scope_columns(authority.runtime_scope());
+    let positions: Vec<Vec<u8>> = sqlx::query_scalar(
+        "SELECT DISTINCT g.spatial_position \
+         FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) \
+         WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$2 \
+           AND g.channel_id IS NOT DISTINCT FROM encode($3,'hex')::uuid \
+           AND g.instance_id IS NOT DISTINCT FROM encode($4,'hex')::uuid \
+           AND i.lifecycle=1 \
+           AND (octet_length(g.spatial_position)<>10 OR i.definition_production_key=ANY($5::text[])) \
+         LIMIT $6",
+    )
+    .bind(authority.world.as_slice())
+    .bind(scope_kind)
+    .bind(channel.map(|id| id.to_vec()))
+    .bind(instance.map(|id| id.to_vec()))
+    .bind(field_keys)
+    .bind(MAX_POSITIONS as i64 + 1)
+    .fetch_all(&mut **tx)
+    .await?;
+    // An opaque placement or a larger result cannot prove absence at any cell.
+    // Preserve the existing per-tile validation path in either case.
+    Ok((positions.len() <= MAX_POSITIONS && positions.iter().all(|at| at.len() == 10))
+        .then_some(positions))
+}
+
 /// Empty-cell projection for a read-only creature pass holding the scope Item lock.
 /// Occupied cells still require the complete current Item qualification below.
 /// The SQL projection retains at most 257 occupied addresses for 256 requested cells.

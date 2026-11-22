@@ -1,5 +1,5 @@
 //! A mutable bundle stack does not hide the retained zone from the real creature field owner.
-use super::fixture::{Harness, debug, id, run};
+use super::fixture::{Harness, debug, id};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
@@ -11,30 +11,69 @@ use oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntr
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum FieldCase {
+    BundleZones,
+    StepOff,
+    NoField,
+}
+
 #[test]
 fn creature_field_bundle_pickupable_stack_keeps_current_zone_and_residual_ticks_postgres()
 -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, FieldCase::BundleZones)
+}
+
+#[test]
+fn creature_field_step_off_keeps_due_ticks_and_cleans_entry_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, FieldCase::StepOff)
+}
+
+#[test]
+fn creature_without_field_or_conditions_skips_tile_and_zone_reads_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, FieldCase::NoField)
+}
+
+fn run_case(admin: String, case: FieldCase) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(move || -> Result<(), String> {
+            let executor = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|error| error.to_string())?;
+            executor
+                .block_on(Box::pin(scenario(admin, case)))
+                .map_err(|error| error.to_string())
+        })?
         .join()
         .map_err(|_| "creature bundle field scenario panicked")?
         .map_err(Into::into)
 }
 
-fn scenario() -> TestResult {
-    run(async |admin| {
-        let harness =
-            Harness::create_with_admission_seed(admin, "creature_bundle_field", false, false)
-                .await?;
-        let result = exercise(&harness).await;
-        let cleanup = harness.cleanup().await;
-        result?;
-        cleanup
-    })
+async fn scenario(admin: String, case: FieldCase) -> TestResult {
+    let name = match case {
+        FieldCase::BundleZones => "creature_bundle_field",
+        FieldCase::StepOff => "creature_field_step_off",
+        FieldCase::NoField => "creature_field_skip_reads",
+    };
+    let harness = Harness::create_with_admission_seed(admin, name, false, false).await?;
+    let result = exercise(&harness, case).await;
+    let cleanup = harness.cleanup().await;
+    result?;
+    cleanup
 }
 
-async fn exercise(harness: &Harness) -> TestResult {
+async fn exercise(harness: &Harness, case: FieldCase) -> TestResult {
     prepare_current_session(harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
@@ -61,7 +100,12 @@ async fn exercise(harness: &Harness) -> TestResult {
     let states = owner.states.spell_states.lock().await;
     // TEST_PARAMETERS: an existing residual Drown condition distinguishes PZ suppression
     // from ordinary damage. Its native store and due cursor remain the production owners.
-    for (ordinal, actor) in actors.iter().enumerate() {
+    let entered = match case {
+        FieldCase::BundleZones => &actors[..],
+        FieldCase::StepOff => &actors[..1],
+        FieldCase::NoField => &actors[..0],
+    };
+    for (ordinal, actor) in entered.iter().enumerate() {
         let field = CreatureFieldEntry {
             definition: ConditionDefinition::new(
                 "test.bundle.creature.residual",
@@ -96,6 +140,14 @@ async fn exercise(harness: &Harness) -> TestResult {
             1
         );
     }
+    if case == FieldCase::StepOff {
+        let on_field = runtime.read_actor_position(actors[0]).map_err(debug)?;
+        let stepped = runtime
+            .borrow_movement_position()
+            .commit_cardinal(on_field, at(1))
+            .map_err(debug)?;
+        assert_eq!(stepped.position(), at(1));
+    }
     let mut wrong_map = deps.room.map_revision_digest();
     wrong_map[0] ^= 1;
     let mismatch = pin
@@ -127,7 +179,7 @@ async fn exercise(harness: &Harness) -> TestResult {
         &native_health_names,
     );
     let pass = owner.root.try_issue_semantic_pass().map_err(debug)?;
-    pass.run_with_context(&mut context, |holder, deadline, context| {
+    pass.run_with_context(&mut context, move |holder, deadline, context| {
         Box::pin(async move {
             let (
                 owner,
@@ -166,6 +218,43 @@ async fn exercise(harness: &Harness) -> TestResult {
                 .map_err(|_| DurabilityError::Unavailable)?;
             let mut map =
                 CurrentMonsterMap::new(&mut tx, &authority, runtime, room, objects, native);
+            if case != FieldCase::BundleZones {
+                assert_eq!(runtime.visible_entities().creatures.len(), 2);
+                owner
+                    .tick_creature_fields(
+                        &mut map, runtime, states, native, 1_000_000, native_health_names,
+                    )
+                    .await?;
+                match case {
+                    FieldCase::StepOff => {
+                        assert_eq!(map.field_read_counts_for_test(), [1, 1, 1]);
+                        let after = runtime
+                            .companion_snapshot(actors[0])
+                            .map_err(|_| DurabilityError::Unavailable)?;
+                        assert!(after.health < before[0], "the first residual was due");
+                        let after_first_tick = after.health;
+                        assert_eq!(after.state.conditions.instances()[0].remaining_total(), 5);
+                        owner
+                            .tick_creature_fields(
+                                &mut map, runtime, states, native, 2_000_000, native_health_names,
+                            )
+                            .await?;
+                        let after = runtime
+                            .companion_snapshot(actors[0])
+                            .map_err(|_| DurabilityError::Unavailable)?;
+                        assert!(after.health < after_first_tick, "the last residual was due");
+                        assert!(!runtime.has_creature_periodic_state(actors[0]));
+                    }
+                    FieldCase::NoField => {
+                        assert_eq!(map.field_read_counts_for_test(), [0, 0, 0]);
+                    }
+                    FieldCase::BundleZones => {}
+                }
+                assert!(map.validate_transaction(runtime).await);
+                drop(map);
+                tx.rollback().await?;
+                return Ok(());
+            }
             for (x, pz) in [(2, false), (3, true)] {
                 assert_eq!(
                     room.movement_cells().spell_tiles().lookup(
