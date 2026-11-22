@@ -979,8 +979,10 @@ mod e2ef1 {
                 return Ok(());
             }
             if result != UseDisposition::Exhausted || tokio::time::Instant::now() >= deadline {
+                let from = client.world_spatial().actor_position;
+                let detail = client.session_mut().last_refusal_detail();
                 return Err(format!(
-                    "door {object:?} revision={revision}: {result:?}, wanted {expected:?}"
+                    "door {object:?} revision={revision} from {from:?}: {result:?}, wanted {expected:?}; detail={detail:?}"
                 )
                 .into());
             }
@@ -1077,11 +1079,25 @@ mod e2ef1 {
             (AuthoredClosedDoor::KeyUnlocked, "unlocked-key-door"),
         ] {
             let result: TestResult = async {
+                // Crystal 201189f8 CustomDoorTable includes the town gates 2177/2179.
+                // The runtime can also report Plain for a key door without both closed forms.
                 let object = approach(
                     client,
                     world,
                     objects,
-                    |o| o.kind == ObjectKind::Door(kind),
+                    |o| {
+                        o.kind == ObjectKind::Door(kind)
+                            && (kind != AuthoredClosedDoor::Plain
+                                || world
+                                    .base()
+                                    .tile(o.at.x, o.at.y, o.at.floor)
+                                    .and_then(|tile| tile.appearance(o.ordinal))
+                                    .is_some_and(|id| matches!(id, 2177 | 2179))
+                                    && crate::map::view::placement_key(o.at, o.ordinal)
+                                        .is_some_and(|key| {
+                                            world.facts().opening_door_enterable(world.base(), key)
+                                        }))
+                    },
                     1,
                     |_, _| true,
                 )
@@ -1161,10 +1177,7 @@ mod e2ef1 {
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent).map_err(|e| format!("rope intent: {e:?}"))?;
-        let result = client
-            .session_mut()
-            .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
-            .await?;
+        let result = client.session_mut().world_context_use(&payload).await?;
         if result.status != CommandStatus::Accepted
             || decode_use_result(&result.payload).map_err(|e| format!("rope result: {e:?}"))?
                 != UseDisposition::Committed
