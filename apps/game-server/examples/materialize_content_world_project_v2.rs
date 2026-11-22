@@ -2,6 +2,8 @@
 mod cake_creature_admission;
 #[path = "support/item_fx_audio_raw_import.rs"]
 mod item_fx_audio_raw_import;
+#[path = "support/orc_sam_backpack_admission.rs"]
+mod orc_sam_backpack_admission;
 #[path = "npc_materializer/preserved_display_names.rs"]
 mod preserved_display_names;
 
@@ -442,9 +444,12 @@ fn limits() -> ProjectEvidenceLimits {
             + NPC_RECORDS
             + 62
             + (NPC_BULK_COUNT + NPC_BULK_MORE_COUNT) * 2
-            + cake_creature_admission::RECORD_DELTA,
+            + cake_creature_admission::RECORD_DELTA
+            + orc_sam_backpack_admission::RECORD_DELTA,
         // The four monster-full-mechanics batches add four sources and reimport states.
-        max_import_records: 30 + cake_creature_admission::IMPORT_DELTA,
+        max_import_records: 30
+            + cake_creature_admission::IMPORT_DELTA
+            + orc_sam_backpack_admission::IMPORT_DELTA,
         max_reimport_states: ENCOUNTER_COUNT + item_fx_audio_raw_import::STATE_COUNT + 4,
     }
 }
@@ -465,7 +470,9 @@ fn main_world_limits() -> ProjectEvidenceLimits {
         // E06 mints 68 client-only Crystal market Items into the committed world.
         max_reference_records: 62_886,
         max_reimport_states: 404,
-        max_import_records: 30 + cake_creature_admission::IMPORT_DELTA,
+        max_import_records: 30
+            + cake_creature_admission::IMPORT_DELTA
+            + orc_sam_backpack_admission::IMPORT_DELTA,
         ..limits()
     }
 }
@@ -549,8 +556,11 @@ fn reconciled_limits() -> ProjectEvidenceLimits {
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT
             + 26_194
             + 2_564
-            + cake_creature_admission::RECORD_DELTA,
-        max_import_records: 30 + cake_creature_admission::IMPORT_DELTA,
+            + cake_creature_admission::RECORD_DELTA
+            + orc_sam_backpack_admission::RECORD_DELTA,
+        max_import_records: 30
+            + cake_creature_admission::IMPORT_DELTA
+            + orc_sam_backpack_admission::IMPORT_DELTA,
         max_reimport_states: 404,
         ..limits()
     }
@@ -3191,6 +3201,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         apply_item_market_crystal_parity(&mut draft)?;
         apply_current_power_ring(&mut draft)?;
         cake_creature_admission::apply(&mut draft)?;
+        orc_sam_backpack_admission::apply(&mut draft)?;
         preserved_display_names::apply(&mut draft.state.declarations)?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
         // This fresh output contains only the base package just materialized above.
@@ -3502,6 +3513,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     apply_arbaziloth_loot(&mut draft)?;
     apply_official_creature_balance(&mut draft)?;
     cake_creature_admission::apply(&mut draft)?;
+    orc_sam_backpack_admission::apply(&mut draft)?;
     preserved_display_names::apply(&mut draft.state.declarations)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {

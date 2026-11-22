@@ -48,7 +48,7 @@ def read_canonical(path):
 
 
 def union_profiles(active, presentations, canonical_rows, declarations, *,
-                   preserve_existing_display_aliases=False):
+                   preserve_existing_display_aliases=False, display_aliases=None):
     if active.get('schema') != 'OTERYN_NATIVE_CREATURE_PROFILES/v1' or presentations.get('schema') != 'OTERYN_NATIVE_PRESENTATION_PROFILES/v1':
         raise ValueError('native profile schema required')
     result = copy.deepcopy(active)
@@ -65,6 +65,7 @@ def union_profiles(active, presentations, canonical_rows, declarations, *,
     # with equal names. Preserve those rows exactly; new names still cannot alias.
     if len(names) != len(result['records']) and not preserve_existing_display_aliases:
         raise ValueError('duplicate active Creature display name')
+    display_aliases = display_aliases or {}
     appended = []
     for row in canonical_rows:
         definition = row['definition']
@@ -72,9 +73,9 @@ def union_profiles(active, presentations, canonical_rows, declarations, *,
         if target['key'] in keys:
             continue
         name = fold_name(row['authoring']['profile']['details']['display_name'])
-        if name in names:
-            # Native name resolution forbids aliases. Keep the serving actor's
-            # exact identity/name; retain the excluded source row in proof.
+        if name in names and display_aliases.get(target['key']) != names[name]['key']:
+            # A source-attested variant names its existing display peer explicitly.
+            # Unqualified collisions stay out of the active provider.
             continue
         behavior = profiles[identity(definition['behavior'])]
         presentation = profiles[identity(definition['presentation'])]

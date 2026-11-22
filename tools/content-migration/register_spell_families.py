@@ -411,7 +411,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     baseline = spell_import.baseline_outputs(root)
     generated = baseline
     generated = current_sources.outputs(root, generated)
-    from compose_monster_current_sources import compose
+    from compose_monster_current_sources import ORC_SAM_CREATURE, admit_orc_sam_corpse, compose
     generated = compose(root, baseline, generated)
     import engenc2_fugue_profile
     engenc2_fugue_profile.admit(root, generated, spell_import.canonical_bytes)
@@ -718,6 +718,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import protected_loot_yields
     protected_loot_yields.admit(root, items, provider_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
+    if any(row["profile"]["target"]["key"] == ORC_SAM_CREATURE for row in creatures["records"]):
+        admit_orc_sam_corpse(root, items, provider_order)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
