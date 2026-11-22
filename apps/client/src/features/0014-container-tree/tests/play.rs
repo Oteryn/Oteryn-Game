@@ -249,7 +249,9 @@ fn container_action_slot_opens_and_closes_the_assigned_handle() -> Result<(), Bo
         if opened {
             outbox.container_result(Some(oteryn_session::container_tree::ContainerViewOutcome::Opened));
         }
-        let views = if opened {vec![ContainerView {view_id: 3, container_handle: item.handle, parent_handle: None, capacity:20, entries:vec![], browse:None}]} else {vec![]};
+        let mut views = if opened {vec![ContainerView {view_id: 3, container_handle: item.handle, parent_handle: None, capacity:20, entries:vec![], browse:None}]} else {vec![]};
+        views.push(ContainerView {view_id:4, container_handle:20.try_into()?, parent_handle:None, capacity:20,
+            entries:vec![oteryn_session::ItemEntry {handle:2.try_into()?, ..item}], browse:None});
         outbox.container_initialize(Some(ContainerViews {views}));
         link.cast_spell_slot(NonZeroU32::MIN);
         let expected = if opened { ContainerViewIntent::Close {view_id:3} } else {ContainerViewIntent::Open {handle:item.handle, replace_view:None}};

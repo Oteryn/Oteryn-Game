@@ -141,6 +141,11 @@ fn hotkey_use_with_crosshair_arms_mode()
             health_percent: 100,
         },
     };
+    // An open ground bag may expose the same object definition, but cannot supply the shortcut.
+    outbox.container_initialize(Some(oteryn_session::container_tree::ContainerViews {views: vec![
+        oteryn_session::container_tree::ContainerView {view_id:4,container_handle:20.try_into()?,
+            parent_handle:None, capacity:20, entries:vec![item(2)?], browse:None}
+    ]}));
     let position = own.position;
     crate::play::mailbox::lock(&link.mailbox).bar_actions.cursor = Some((
         Target::Position(position),
@@ -153,6 +158,7 @@ fn hotkey_use_with_crosshair_arms_mode()
     assert!(matches!(commands.try_recv()?, PlayCommand::WorldContext(command)
         if command.target == Target::Position(position) && command.action == Action::UseOn(99u64.try_into()?)));
     assert!(!link.use_with_armed());
+    outbox.container_initialize(Some(Default::default()));
     crate::play::mailbox::lock(&link.mailbox).world_context.pending = false;
     outbox.hotkey_own_actor(Some(own));
     assert!(link.custom_hotkey_action(

@@ -396,17 +396,18 @@ fn activate_inner(
             }
         }
         BarAction::ToggleContainer { definition } => {
-            let open_view = super::item_actions::visible_items(mailbox)
-                .filter(|item| item.item_definition_ref == definition)
-                .find_map(|item| mailbox.containers.views.as_ref()?.views.iter()
+            let carried = super::item_actions::carried_items(mailbox);
+            let mut matching = carried.iter().filter(|item| item.item_definition_ref == definition);
+            let open_view = matching.clone().find_map(|item| {
+                mailbox.containers.views.as_ref()?.views.iter()
                     .find(|view| view.container_handle == item.handle && view.browse.is_none())
-                    .map(|view| view.view_id));
+                    .map(|view| view.view_id)
+            });
             let intent = if let Some(view) = open_view {
                 if !mailbox.containers.activate(view) { return true; }
                 mailbox.containers.close()
             } else {
-                item_source(mailbox, definition, None).map(|item| item.handle)
-                    .and_then(|handle| mailbox.containers.open(handle, None))
+                matching.next().and_then(|item| mailbox.containers.open(item.handle, None))
             };
             if let Some(intent) = intent {
                 if commands.send(crate::combat_input::PlayCommand::ContainerView(intent)).is_ok() {
