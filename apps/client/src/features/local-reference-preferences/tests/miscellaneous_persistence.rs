@@ -254,7 +254,7 @@ fn c2d_sign_out_queues_session_options_without_contention() -> TestResult {
     let temp = Temp::new()?;
     let mut state = SettingsState::new(Some(temp.preferences()));
     state.use_background_preferences();
-    state.disable_remember_device();
+    state.disable_remember_device()?;
     assert!(state.local_preference_writes_pending());
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
     while state.local_preference_writes_pending() {
@@ -263,5 +263,77 @@ fn c2d_sign_out_queues_session_options_without_contention() -> TestResult {
         std::thread::yield_now();
     }
     assert!(!MiscellaneousPreferences::read(&temp.sidecar())?.remember_device);
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+#[test]
+fn picker_opt_out_survives_process_exit() -> TestResult {
+    opt_out_survives_process_exit(false)
+}
+
+#[cfg(bevy_shell)]
+#[test]
+fn settings_opt_out_survives_process_exit() -> TestResult {
+    opt_out_survives_process_exit(true)
+}
+
+#[cfg(bevy_shell)]
+fn opt_out_survives_process_exit(settings: bool) -> TestResult {
+    const CHILD_PATH: &str = "OTERYN_TEST_LOCKED_OPT_OUT_PATH";
+    if let Some(path) = std::env::var_os(CHILD_PATH) {
+        let path = PathBuf::from(path);
+        if settings {
+            let mut state = SettingsState::new(Some(path));
+            state.disable_remember_device()?;
+            drop(state);
+        } else {
+            let mut config = crate::reentry::Reentry::device_test_config(
+                path.with_extension("device"),
+                "https://localhost:1",
+            )?;
+            config.preference_path = Some(path);
+            config.record_picker_opt_out()?;
+        }
+        return Ok(());
+    }
+    let temp = Temp::new()?;
+    MiscellaneousPreferences {
+        remember_device: true,
+        confirm_exit: false,
+        ..Default::default()
+    }
+    .save(&temp.sidecar())?;
+    let held = crate::atomic_file::lock(&temp.sidecar())?;
+    let mut child = std::process::Command::new(std::env::current_exe()?);
+    child
+        .arg(std::thread::current().name().ok_or("missing test name")?)
+        .arg("--exact")
+        .env(CHILD_PATH, temp.preferences());
+
+    let mut child = child.spawn()?;
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        if let Some(status) = child.try_wait()? {
+            assert!(status.success());
+            break;
+        }
+        if std::time::Instant::now() >= deadline {
+            child.kill()?;
+            child.wait()?;
+            return Err("shutdown blocked on the session options lock".into());
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    assert!(!MiscellaneousPreferences::read(&temp.sidecar())?.remember_device);
+    drop(held);
+    let restored = SettingsState::new(Some(temp.preferences()))
+        .preferences
+        .miscellaneous;
+    assert!(!restored.remember_device, "settings path = {settings}");
+    assert!(!restored.confirm_exit);
+    let persisted: MiscellaneousPreferences =
+        serde_json::from_slice(&std::fs::read(temp.sidecar())?)?;
+    assert_eq!(persisted, restored);
     Ok(())
 }

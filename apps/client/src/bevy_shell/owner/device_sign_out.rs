@@ -69,8 +69,10 @@ impl HostOwner {
             .and_then(Reentry::config_for_forget)
             .cloned()
         else {
-            self.settings.disable_remember_device();
-            self.apply_forget(action);
+            match self.settings.disable_remember_device() {
+                Ok(()) => self.apply_forget(action),
+                Err(error) => self.forget_failed(action, error),
+            }
             return;
         };
         let worker_config = config.clone();
@@ -120,10 +122,9 @@ impl HostOwner {
                 .worker
                 .join()
                 .unwrap_or_else(|_| Err("Device writer stopped".into()));
-            if let Err(error) = result {
+            if let Err(error) = result.and_then(|()| self.settings.disable_remember_device()) {
                 self.forget_failed(intent.action, error);
             } else {
-                self.settings.disable_remember_device();
                 let current = self
                     .entry
                     .as_ref()
