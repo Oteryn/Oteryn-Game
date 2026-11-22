@@ -11,7 +11,7 @@ pub const ITEM_STACK_DEFAULT_SUCCESSOR8_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json"
 );
 pub const ITEM_STACK_DEFAULT_SUCCESSOR8_PACKET_SHA256: &str =
-    "56bb177fee68ba89a5f322ed3ba219ad79e3a7818f28cf4e52a625f2e7f6e8c3";
+    "499cc18d5905789c94cf3980c763c94fe01ae3ebbc32d661ba1d49ceadb979a4";
 
 fn validate_targets<'a>(
     identities: impl Iterator<Item = &'a DefinitionIdentityDocument>,

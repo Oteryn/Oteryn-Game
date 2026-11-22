@@ -13,6 +13,37 @@ fn druid_outfit_contacts_are_admitted_at_the_source_cells() -> TestResult {
     admitted_at("oteryn:npc.a_majestic_warwolf", (33355, 31991, 8))
 }
 
+#[test]
+fn nightmare_exchange_contact_is_admitted_at_the_source_cell() -> TestResult {
+    let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
+    let candidates: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        root.join("tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json"),
+    )?)?;
+    let key = "oteryn:npc.the_dream_master";
+    let candidate = candidates["candidates"]
+        .as_array()
+        .ok_or("NPC candidates")?
+        .iter()
+        .find(|candidate| candidate["identity"]["key"] == key)
+        .ok_or("Dream Master placement candidate")?;
+    let [placement] = candidate["placements"]
+        .as_array()
+        .ok_or("Dream Master source placements")?
+        .as_slice()
+    else {
+        return Err("expected one Dream Master source placement".into());
+    };
+    let cell: SourceCell = serde_json::from_value(placement["position"].clone())?;
+    admitted_at(key, (cell.x, cell.y, cell.z))
+}
+
+#[derive(serde::Deserialize)]
+struct SourceCell {
+    x: u16,
+    y: u16,
+    z: u8,
+}
+
 fn admitted_at(key: &str, cell: (u16, u16, u8)) -> TestResult {
     let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
     let project = oteryn_world_bundle_compiler::source::project_regions(
