@@ -1,12 +1,63 @@
 //! Pinned source selectors -> literal USE -> existing once-claim owner -> full
 //! container custody, key/achievement facts, replay and atomic refusal.
-use super::quest_container_chests_fixtures::{Case, execute};
+use super::quest_container_chests_fixtures::{Case, ForgemasterAccessPolicy, execute};
 
 use super::TestResult;
 
 #[test]
 fn quest_authored_placement_without_legacy_uid_mints_once_and_replays() -> TestResult {
     execute(Case::Authored, "QUESTPC8_AUTHORED_PLACEMENT")
+}
+
+#[test]
+fn nrwicked_forgemaster_use_refuses_an_unguarded_claim() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    execute(Case::Forgemaster, "NRWICKED_FORGEMASTER")
+}
+
+#[test]
+fn nrwicked_forgemaster_claims_one_of_eleven_after_verified_access() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    execute(
+        Case::ForgemasterChoices {
+            policy: ForgemasterAccessPolicy::Verified,
+        },
+        "NRWICKED_FORGEMASTER_CHOICES",
+    )
+}
+
+#[test]
+fn nrwicked_forgemaster_refuses_a_chest_without_the_shared_claim_marker() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    execute(
+        Case::ForgemasterChoices {
+            policy: ForgemasterAccessPolicy::SeparateRewardMarkers,
+        },
+        "NRWICKED_FORGEMASTER_MISSING_MARKER",
+    )
+}
+
+#[test]
+fn nrwicked_forgemaster_refuses_access_without_the_unlocked_door_stage() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    execute(
+        Case::ForgemasterChoices {
+            policy: ForgemasterAccessPolicy::AccessFlagOnly,
+        },
+        "NRWICKED_FORGEMASTER_ACCESS_FLAG_ONLY",
+    )
 }
 
 #[test]

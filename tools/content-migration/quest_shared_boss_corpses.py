@@ -1,6 +1,7 @@
 """Exact source bodies of the already active shared reward-boss policies."""
 BODIES = {
     'an_observer_eye': 5995,
+    'arbaziloth': 50029,
     'armenius_creature': 6006,
     'grand_mother_foulscale': 5973,
     'orshabaal': 5995,
