@@ -488,6 +488,32 @@ fn encounter_owned_point_stays_out_of_the_world_bundle() -> TestResult {
 }
 
 #[test]
+fn excluded_points_do_not_make_world_spawns_weighted() -> TestResult {
+    let mut families = cobra_scout_families()?;
+    let rat = "oteryn:creature.rat";
+    families
+        .creatures
+        .insert(rat.into(), creature("All", false));
+    let mut spawns: serde_json::Value = serde_json::from_slice(&shard(4, 60_000))?;
+    let points = &mut spawns["records"][0]["declaration"]["points"];
+    points[0]["creature"] = COBRA_SCOUT.into();
+    points[2]["owner"] = "Encounter".into();
+    points[2]["weight"] = 5.into();
+    points[3]["creature"] = "oteryn:creature.unbound".into();
+    points[3]["weight"] = 7.into();
+    families.add_spawns(&serde_json::to_vec(&spawns)?)?;
+
+    let (regions, palette) = (regions()?, palette());
+    let compiled = compile(&input(&regions, &palette, &families), &Resolver)?;
+    let bundle = bundle::read(&compiled.bytes)?;
+    let admitted = &bundle.spawns.sources[0].points;
+    assert_eq!(admitted.len(), 2);
+    assert!(admitted.iter().all(|point| point.weight.is_none()));
+    assert_eq!(compiled.spawns.dropped.len(), 2);
+    Ok(())
+}
+
+#[test]
 fn the_source_shard_checks_its_bounds_before_it_holds_anything() {
     let add = |points, ms| Families::default().add_spawns(&shard(points, ms));
     assert!(add(spawn::MAX_POINTS_PER_SOURCE, 1_000).is_ok());

@@ -553,8 +553,7 @@ fn spawns_with(
     for (key, (source, points)) in kept {
         let (cx, cy, cz) = source.centre;
         let floor = native_floor(cz)?;
-        let weighted_cells: BTreeSet<_> = source
-            .points
+        let weighted_cells: BTreeSet<_> = points
             .iter()
             .filter(|point| point.weight.is_some())
             .map(|point| point.cell)

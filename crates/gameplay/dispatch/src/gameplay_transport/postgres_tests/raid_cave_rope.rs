@@ -5,18 +5,21 @@ use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
 #[test]
 fn man_in_the_cave_ropes_a_player_stepping_below_him() -> TestResult {
-    run(true)
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, true)
 }
 
 #[test]
 fn man_in_the_cave_ignores_the_hole_without_a_live_boss() -> TestResult {
-    run(false)
-}
-
-fn run(boss_present: bool) -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    run(admin, false)
+}
+
+fn run(admin: String, boss_present: bool) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("man-in-the-cave", move || {
         crate::bestiary_postgres_harness::runtime()?.block_on(async {
             let h = Harness::create_with_admission_seed(admin, "cave_rope", false, false).await?;

@@ -643,11 +643,11 @@ a committed claim. It adds no wire payload or Platform authority.
 
 ### Weighted ordinary spawn points
 
-An ordinary `Spawn.Source` point can declare a positive u32 `weight`. Points with the
-same position within that source form one spawn cell when any entry has a weight.
-An omitted weight in that cell defaults to 1. The source's first entry at the
-position supplies the cell's order and its last admitted ordinary entry supplies
-the cell's respawn delay. Source ordering and unweighted points retain their
+An ordinary `Spawn.Source` point can declare a positive u32 `weight`. Admitted
+ordinary points at the same position within that source form one spawn cell when
+any of them has a weight. An omitted weight in that cell defaults to 1. The first
+admitted ordinary entry at the position supplies the cell's order, and the last
+supplies its respawn delay. Source ordering and unweighted points retain their
 existing interpretation.
 
 A weighted point writes zero in the delay field, tag byte 3, then its positive
