@@ -2,6 +2,7 @@
 
 Use --preproduction to emit populated records for offline Platform compatibility.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -16,56 +17,101 @@ from pathlib import Path
 def build(root: Path, output: Path, *, preproduction: bool = False) -> str:
     root = root.resolve()
     output = output.resolve()
+    # Read the original object and tree identified by the attested commit SHA.
+    git_env = {**os.environ, "GIT_NO_REPLACE_OBJECTS": "1"}
     revision = subprocess.check_output(
-        ["git", "rev-parse", "HEAD"], cwd=root, text=True
+        ["git", "rev-parse", "HEAD"], cwd=root, env=git_env, text=True
     ).strip()
     generated_at = subprocess.check_output(
-        ["git", "show", "-s", "--format=%cI", revision], cwd=root, text=True
+        ["git", "show", "-s", "--format=%cI", revision],
+        cwd=root,
+        env=git_env,
+        text=True,
     ).strip()
-    generated_at = datetime.fromisoformat(generated_at).astimezone(timezone.utc).strftime(
-        "%Y-%m-%dT%H:%M:%SZ"
+    generated_at = (
+        datetime.fromisoformat(generated_at)
+        .astimezone(timezone.utc)
+        .strftime("%Y-%m-%dT%H:%M:%SZ")
     )
 
     with tempfile.TemporaryDirectory(prefix="oteryn-public-catalog-") as temporary:
         checkout = Path(temporary) / "checkout"
         subprocess.run(
-            ["git", "-c", "core.hooksPath=/dev/null", "-c", "core.autocrlf=false",
-             "worktree", "add", "--quiet", "--detach", checkout, revision],
-            cwd=root, check=True,
+            [
+                "git",
+                "-c",
+                "core.hooksPath=/dev/null",
+                "-c",
+                "core.autocrlf=false",
+                "worktree",
+                "add",
+                "--quiet",
+                "--detach",
+                checkout,
+                revision,
+            ],
+            cwd=root,
+            env=git_env,
+            check=True,
         )
         try:
             # The world, adapter, workspace dependencies and producer all come
             # from the captured commit, even if the caller's checkout moves.
             source = Path(temporary) / "native-input.json"
-            cargo_env = os.environ.copy()
-            target_dir = Path(cargo_env.get("CARGO_TARGET_DIR", "target"))
-            cargo_env["CARGO_TARGET_DIR"] = str((root / target_dir).resolve())
+            # Give this invocation its own executable path through launch.
+            target_dir = Path(temporary) / "target"
             command = [
-                "cargo", "run", "--locked", "--quiet", "-p", "oteryn-gameplay-content",
-                "--bin", "oteryn-game-platform-catalog", "--",
-                "content/world", revision, generated_at,
+                "cargo",
+                "run",
+                "--locked",
+                "--quiet",
+                "-p",
+                "oteryn-gameplay-content",
+                "--bin",
+                "oteryn-game-platform-catalog",
+                "--target-dir",
+                target_dir,
+                "--",
+                "content/world",
+                revision,
+                generated_at,
             ]
             if preproduction:
                 command.append("--preproduction")
             with source.open("wb") as stream:
-                subprocess.run(command, cwd=checkout, env=cargo_env, stdout=stream, check=True)
+                subprocess.run(command, cwd=checkout, stdout=stream, check=True)
             return subprocess.check_output(
-                [sys.executable, "-I", "tools/game-platform-catalog/producer.py",
-                 "produce", source, output],
-                cwd=checkout, text=True,
+                [
+                    sys.executable,
+                    "-I",
+                    "tools/game-platform-catalog/producer.py",
+                    "produce",
+                    source,
+                    output,
+                ],
+                cwd=checkout,
+                text=True,
             ).strip()
         finally:
             subprocess.run(
-                ["git", "worktree", "remove", "--force", checkout], cwd=root, check=True
+                ["git", "worktree", "remove", "--force", checkout],
+                cwd=root,
+                env=git_env,
+                check=True,
             )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
-    parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
-    parser.add_argument("--preproduction", action="store_true",
-                        help="emit populated records for offline compatibility")
+    parser.add_argument(
+        "--root", type=Path, default=Path(__file__).resolve().parents[2]
+    )
+    parser.add_argument(
+        "--preproduction",
+        action="store_true",
+        help="emit populated records for offline compatibility",
+    )
     args = parser.parse_args()
     try:
         print(build(args.root, args.output, preproduction=args.preproduction))
