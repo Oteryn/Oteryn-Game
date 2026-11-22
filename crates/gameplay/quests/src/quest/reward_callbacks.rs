@@ -2348,7 +2348,7 @@ mod tests {
                 "oteryn:quest.the_ice_islands_quest",
                 // M47 counters retain -1; distinct native seals also bind their
                 // separately owned painted-target counter and source callbacks.
-                "e19d9874e5fbbb7457dac108c15e182a2f8074121797f31ae3ea1c5b8dab1a8c",
+                "299b92c459921a7f30b4128518dc869fc7e7f6de3d50dbcf3be09ee05dcb44c0",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",

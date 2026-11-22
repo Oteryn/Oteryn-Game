@@ -395,7 +395,8 @@ def outputs(
 
         static_files = activity_static.outputs()
         for name in (
-            *activity_static.SHARDS.values(), *activity_static.TRAVERSAL_SHARDS.values()
+            *activity_static.SHARDS.values(),
+            *activity_static.TRAVERSAL_SHARDS.values(),
         ):
             files[name] = static_files[name]
         files[activity_static.REGISTRY] = static_files[activity_static.REGISTRY]

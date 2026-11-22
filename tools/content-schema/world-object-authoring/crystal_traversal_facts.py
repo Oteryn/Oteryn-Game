@@ -37,7 +37,9 @@ def records(appearances: dict, members: set):
             or flags.get("flags.unpass")
             or flags.get("flags.bank")
         ):
-            raise ValueError(f"traversal appearance is not a walkable fixture: {identifier}")
+            raise ValueError(
+                f"traversal appearance is not a walkable fixture: {identifier}"
+            )
         record = world_objects.build_world_object(
             identifier,
             f"oteryn:item.tibia.i{identifier}",
@@ -49,8 +51,12 @@ def records(appearances: dict, members: set):
         result.append(record)
         del record["provenance"]["item_pointer"]
         blocks_projectile = bool(flags.get("flags.unsight"))
-        record["collision"]["blocks_projectile"] = world_objects.known(blocks_projectile)
-        record["provenance"]["fields"]["collision.blocks_projectile"] = ["appearance:flags.unsight"]
+        record["collision"]["blocks_projectile"] = world_objects.known(
+            blocks_projectile
+        )
+        record["provenance"]["fields"]["collision.blocks_projectile"] = [
+            "appearance:flags.unsight"
+        ]
         static.append(
             {
                 "source_item_id": identifier,
@@ -69,6 +75,7 @@ def records(appearances: dict, members: set):
         )
     return result, static
 
+
 # Existing B3 ground at the south-stair and west-stair sources and landings.
 GROUND_IDS = (53234, 53254, 54049, 54052, 54061)
 
@@ -80,7 +87,12 @@ def grounds(appearances: dict, members: set):
             raise ValueError(f"missing official stair ground appearance {identifier}")
         appearance = appearances[identifier]
         record = world_objects.build_terrain(
-            identifier, f"oteryn:item.tibia.i{identifier}", "ground", None, appearance, SOURCE
+            identifier,
+            f"oteryn:item.tibia.i{identifier}",
+            "ground",
+            None,
+            appearance,
+            SOURCE,
         )
         known = world_objects.known
         if (
@@ -88,7 +100,9 @@ def grounds(appearances: dict, members: set):
             or record["walkable"] != known(True)
             or not appearance["flags"].get("flags.unmove")
         ):
-            raise ValueError(f"stair ground is not an immovable walkable bank: {identifier}")
+            raise ValueError(
+                f"stair ground is not an immovable walkable bank: {identifier}"
+            )
         del record["provenance"]["item_pointer"]
         result.append(record)
     return result

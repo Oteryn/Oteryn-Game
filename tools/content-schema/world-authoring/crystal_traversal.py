@@ -16,6 +16,7 @@ OTBM_SHA256 = "c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85"
 INDEX = "content/world/placements/index.json"
 SOURCE = "crystal_traversal"
 METADATA_CAPTURE = "tools/content-schema/world-authoring/samples/source-capture-v1.json"
+BASE_CAPTURE = "tools/content-schema/world-authoring/samples/world-base-capture-v1.json"
 TRANSITIONS = "content/world/transitions/index.json"
 FAMILY = "Transition.Teleport"
 # (source, appearance, previous destination, donor destination, donor ground).
@@ -30,7 +31,9 @@ TELEPORTS = (
 def transition(at, item, destination):
     x, y, z = at
     key = f"oteryn:transition.teleport.x{x}_y{y}_z{z}"
-    binding = metadata.binding("Transition", key, metadata.MAP_NAMESPACE, f"{x},{y},{z}:{item}")
+    binding = metadata.binding(
+        "Transition", key, metadata.MAP_NAMESPACE, f"{x},{y},{z}:{item}"
+    )
     binding["source_revision"] = REVISION
     return {
         "declaration": {
@@ -48,14 +51,17 @@ def transition(at, item, destination):
 def donor_transitions():
     return {
         row["declaration"]["identity"]["key"]: row
-        for row in (
-            transition(at, item, to) for at, item, _, to, _ in TELEPORTS
-        )
+        for row in (transition(at, item, to) for at, item, _, to, _ in TELEPORTS)
     }
 
 
 def proof():
-    return {"revision": REVISION, "path": metadata.OTBM, "sha256": OTBM_SHA256, "items_added": 1}
+    return {
+        "revision": REVISION,
+        "path": metadata.OTBM,
+        "sha256": OTBM_SHA256,
+        "items_added": 1,
+    }
 
 
 def donor_delta(summary):
@@ -71,7 +77,9 @@ def patch_tile(items, palette, slot, previous, to, ground):
     identifier = palette[slot]["source_item_id"]
     if not items or palette[items[0][0]]["source_item_id"] != ground:
         raise ValueError(f"teleport {identifier} source ground differs")
-    matches = [i for i, (index, depth, _) in enumerate(items) if index == slot and depth == 0]
+    matches = [
+        i for i, (index, depth, _) in enumerate(items) if index == slot and depth == 0
+    ]
     if not matches and identifier == 775:
         return [*items, (slot, 0, {"teleport": to})], 1
     if len(matches) != 1:
@@ -85,21 +93,30 @@ def patch_tile(items, palette, slot, previous, to, ground):
 
 
 def placement_outputs(root, outputs):
-    index = json.loads((root / INDEX).read_bytes())
+    def read(path):
+        return outputs[path] if path in outputs else (root / path).read_bytes()
+
+    index = json.loads(read(INDEX))
+    summary = json.loads(read(BASE_CAPTURE))
     palette = index["palette"]
     slots = {row["source_item_id"]: at for at, row in enumerate(palette)}
     regions = defaultdict(dict)
     for (x, y, z), item, previous, to, ground in TELEPORTS:
         if palette[slots[item]]["key"] != f"oteryn:item.tibia.i{item}":
             raise ValueError(f"teleport Item identity differs: {item}")
-        regions[codec.region_name(z, x // 256, y // 256)][x, y] = (slots[item], previous, to, ground)
-    applied = 0
+        regions[codec.region_name(z, x // 256, y // 256)][x, y] = (
+            slots[item],
+            previous,
+            to,
+            ground,
+        )
+    applied = attributes = disk_delta = 0
     for row in index["regions"]:
         name = Path(row["path"]).name
         if name not in regions:
             continue
         pending = regions.pop(name)
-        raw = (root / row["path"]).read_bytes()
+        raw = read(row["path"])
         if hashlib.sha256(raw).hexdigest() != row["sha256"]:
             raise ValueError(f"teleport region digest differs: {name}")
         z, rx, ry, sectors = codec.decode_region(raw)
@@ -109,7 +126,12 @@ def placement_outputs(root, outputs):
             for i, (x, y, flags, house, zones, items) in enumerate(tiles):
                 edit = pending.pop((x, y), None)
                 if edit is not None:
+                    before = sum("teleport" in (attrs or {}) for _, _, attrs in items)
                     items, delta = patch_tile(items, palette, *edit)
+                    attributes += (
+                        sum("teleport" in (attrs or {}) for _, _, attrs in items)
+                        - before
+                    )
                     tiles[i] = (x, y, flags, house, zones, items)
                     added += delta
             sx, sy = rx * 8 + local % 8, ry * 8 + local // 8
@@ -120,37 +142,59 @@ def placement_outputs(root, outputs):
         row["sha256"] = hashlib.sha256(new).hexdigest()
         row["items"] += added
         applied += added
+        disk_delta += len(new) - len(raw)
         outputs[row["path"]] = new
     if regions or applied != (0 if SOURCE in index["source"] else 1):
         raise ValueError("Crystal traversal placement scope differs")
     index["totals"]["items"] += applied
     index["source"][SOURCE] = proof()
     outputs[INDEX] = metadata.canonical(index)
+    summary["source"][SOURCE] = proof()
+    summary["totals"]["items"] += applied
+    summary["palette"]["families"]["item"]["occurrences"] += applied
+    summary["item_attributes"]["teleport"] += attributes
+    summary["bytes_on_disk"] += disk_delta
+    outputs[BASE_CAPTURE] = metadata.canonical(summary)
 
 
-def transition_outputs(root, outputs):
-    index = json.loads((root / TRANSITIONS).read_bytes())
-    old_paths = set(index["shards"])
-    records = {}
-    for path in old_paths:
-        for row in json.loads((root / path).read_bytes())["records"]:
-            records[row["declaration"]["identity"]["key"]] = row
+def patch_transitions(rows):
+    records = {row["declaration"]["identity"]["key"]: row for row in rows}
     replacements = donor_transitions()
     for source, item, previous, destination, _ in TELEPORTS:
         replacement = transition(source, item, destination)
         key = replacement["declaration"]["identity"]["key"]
         original = records.get(key)
         if original != replacement:
-            expected = None if previous is None else transition(source, item, previous)["declaration"]
+            expected = (
+                None
+                if previous is None
+                else transition(source, item, previous)["declaration"]
+            )
             if (original and original["declaration"]) != expected:
                 raise ValueError(f"{key}: previous transition differs")
     records.update(replacements)
-    ordered = metadata.unique(list(records.values()), FAMILY)
-    outputs.update(metadata.shard_files(FAMILY, ordered, source=index["source"]))
+    return metadata.unique(list(records.values()), FAMILY)
+
+
+def transition_capture(capture, records):
+    capture["families"][FAMILY] = len(records)
+    counts = Counter(row["declaration"]["object"]["family"] for row in records)
+    capture["teleport_object_families"] = {
+        key: counts[key] for key in ("Item", "Terrain", "WorldObject")
+    }
+
+
+def transition_outputs(root, outputs):
+    index = json.loads((root / TRANSITIONS).read_bytes())
+    old_paths = set(index["shards"])
+    records = patch_transitions(
+        row
+        for path in old_paths
+        for row in json.loads((root / path).read_bytes())["records"]
+    )
+    outputs.update(metadata.shard_files(FAMILY, records, source=index["source"]))
     capture = json.loads((root / METADATA_CAPTURE).read_bytes())
-    capture["families"][FAMILY] = len(ordered)
-    counts = Counter(row["declaration"]["object"]["family"] for row in ordered)
-    capture["teleport_object_families"] = {key: counts[key] for key in ("Item", "Terrain", "WorldObject")}
+    transition_capture(capture, records)
     outputs[METADATA_CAPTURE] = metadata.canonical(capture)
     return old_paths - outputs.keys()
 

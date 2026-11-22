@@ -95,6 +95,28 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
             hash(b"8a188b5b0b564e34830783f89b5b1a24cc00eb29a1639495bdfb8a7124b584af"),
         ],
     ),
+    // Captured by quest_definition_hashes from dc4f1b293 and its content successor.
+    (
+        "oteryn:quest.mad_mage_room_quest",
+        hash(b"6272a77fbda7ea9fe3083f0a08d94c06d4ce8152a80e42ef9a5cc6a42077a5c6"),
+        &[hash(
+            b"bee52340c68d21b8b93951a9a6944572162e714538ca745766eb88414f5d630e",
+        )],
+    ),
+    (
+        "oteryn:quest.the_gravedigger_of_drefia_quest",
+        hash(b"35fe5d0a0cff3a0feee0c14d2d1c8a81bc1c86a3f676a450a33903202d0c7586"),
+        &[hash(
+            b"08c3c13a5037239a0a9d19a9b41f8b4ac6846d4569fe74897edbd10bc36a50d2",
+        )],
+    ),
+    (
+        "oteryn:quest.troll_sabotage_quest",
+        hash(b"c9006bbddd470649f4f287c4fcc2861ae637cd7306146a7a70101da8d5f7382b"),
+        &[hash(
+            b"f20fac3b939f0dbc0553079fd2894eb82c2e098e82944370cfecf0c150c49d96",
+        )],
+    ),
 ];
 
 pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> DefinitionHash {
@@ -107,14 +129,15 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
     for &(quest, current, previous) in GAMEPLAY_PREDECESSORS {
         if catalogue.definition_hash(quest) == Some(current) {
-            catalogue
-                .predecessors
-                .entry(quest.into())
-                .or_default()
-                .extend(previous.iter().map(|&hash| NpcDefinitionPredecessor {
-                    hash,
-                    defaults: Default::default(),
-                }));
+            let retained = catalogue.predecessors.entry(quest.into()).or_default();
+            for &hash in previous {
+                if !retained.iter().any(|entry| entry.hash == hash) {
+                    retained.push(NpcDefinitionPredecessor {
+                        hash,
+                        defaults: Default::default(),
+                    });
+                }
+            }
         }
     }
 }

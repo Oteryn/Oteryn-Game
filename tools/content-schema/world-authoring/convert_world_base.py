@@ -1213,6 +1213,10 @@ def build(
     m01c_key_doors.overlay_outputs(
         out, capture_bytes=blobs.get(m01c_key_doors.CAPTURE.as_posix())
     )
+    if hashlib.sha256(blobs[OTBM]).hexdigest() == metadata.SOURCE["files"][0]["sha256"]:
+        import crystal_traversal
+
+        crystal_traversal.placement_outputs(ROOT, out)
     return out
 
 

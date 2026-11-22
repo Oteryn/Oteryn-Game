@@ -282,6 +282,11 @@ fn cwdoor_svargrond_roof_loads_qualified_routes() -> TestResult {
             )
         );
     }
+    let legacy = BTreeMap::from([("oteryn:quest-progress/storage/41174".to_owned(), 8)]);
+    let route = world_callbacks::select_storage_phase(&routes, &legacy, catalogue.catalogue())?
+        .ok_or("legacy honorary roof phase")?;
+    assert_eq!(route.teleport, Some(roof));
+    assert!(route.is_read_only());
     loaded_bindings("roof", 1)
 }
 
@@ -292,10 +297,27 @@ fn cwdoor_drefia_switch_loads_quest_use() -> TestResult {
     let callbacks = world_callbacks::load()?;
     let route = callbacks
         .iter()
-        .find(|row| row.key == "oteryn:quest-callback/drefia-palanca")
+        .find(|row| row.key == "oteryn:quest-callback/gravedigger-switch")
         .ok_or("Drefia switch")?;
     assert_eq!(route.trigger, world_callbacks::Trigger::Use);
     assert_eq!(route.selector.action, Some(4650));
+    let candidates = callbacks
+        .iter()
+        .filter(|row| {
+            row.trigger == world_callbacks::Trigger::Use
+                && row.selector.action == route.selector.action
+                && row
+                    .selector
+                    .position
+                    .is_none_or(|position| Some(position) == route.selector.position)
+                && row
+                    .selector
+                    .appearance
+                    .is_none_or(|appearance| Some(appearance) == route.selector.appearance)
+        })
+        .map(|row| row.key.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(candidates, [route.key.as_str()]);
     assert_eq!(route.success_message.as_deref(), Some("<sizzle> <fizz>"));
     let [before, after] = route.storage.as_slice() else {
         return Err("two Drefia progress facts".into());

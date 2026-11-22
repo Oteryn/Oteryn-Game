@@ -1,7 +1,7 @@
 //! M33: one physical STEP selector may serve provably disjoint read-only phases.
 //! Feaster chosen recipe s2/s6; retained questpc7 route at 2caf66704f73,
 //! content/quests/questpc7-world-callbacks.json, programme 0 versus 5.
-use super::{ActorKind, Callback, Trigger};
+use super::{ActorKind, Callback, Storage, Trigger};
 use crate::quest::QuestStateCatalogue;
 use std::collections::BTreeMap;
 
@@ -13,9 +13,9 @@ pub(super) fn disjoint(a: &Callback, b: &Callback) -> bool {
         && a.actor_kind == ActorKind::Player
         && b.actor_kind == ActorKind::Player
         && a.storage.iter().any(|left| {
-            left.preserve
+            (left.preserve || left.read_only)
                 && b.storage.iter().any(|right| {
-                    right.preserve
+                    (right.preserve || right.read_only)
                         && left.track == right.track
                         && (left.maximum < right.minimum || right.maximum < left.minimum)
                 })
@@ -45,6 +45,7 @@ pub fn select_storage_phase<'a>(
         let eligible = callback.storage.iter().all(|guard| {
             values
                 .get(&guard.track)
+                .or_else(|| values.get(legacy_read_track(guard)?))
                 .copied()
                 .or_else(|| catalogue.track(&guard.track).map(|track| track.initial))
                 .is_some_and(|value| (guard.minimum..=guard.maximum).contains(&value))
@@ -72,9 +73,9 @@ pub fn exclusive(left: &Callback, right: &Callback) -> bool {
         && left.selector == right.selector
         && left.quest == right.quest
         && left.storage.iter().any(|a| {
-            (a.preserve || source_trial)
+            (a.preserve || a.read_only || source_trial)
                 && right.storage.iter().any(|b| {
-                    (b.preserve || source_trial)
+                    (b.preserve || b.read_only || source_trial)
                         && a.track == b.track
                         && (a.maximum < b.minimum || b.maximum < a.minimum)
                 })
@@ -85,12 +86,20 @@ pub fn matches(callback: &Callback, tracks: &BTreeMap<String, i64>) -> bool {
     callback
         .storage
         .iter()
-        .filter(|guard| guard.preserve)
+        .filter(|guard| guard.preserve || guard.read_only)
         .all(|guard| {
             tracks
                 .get(&guard.track)
+                .or_else(|| tracks.get(legacy_read_track(guard)?))
                 .is_some_and(|value| (guard.minimum..=guard.maximum).contains(value))
         })
+}
+
+/// The roof portal reads the same imported Barbarian Test storage as citizenship.
+pub fn legacy_read_track(guard: &Storage) -> Option<&'static str> {
+    use crate::quest::barbarian_mead;
+    (guard.read_only && guard.track == barbarian_mead::TRACKS[0])
+        .then_some(barbarian_mead::LEGACY_QUESTLINE)
 }
 
 /// Retained chosen-programme witness produced by questpc7's authoring tool at2caf6670.
