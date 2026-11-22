@@ -698,6 +698,10 @@ pub(super) fn offer(
     if owner.bundle_map().is_none() || owner.training_context().is_none() {
         return base;
     }
+    with_training_offer(base)
+}
+
+fn with_training_offer(base: &'static [OfferedCapability]) -> &'static [OfferedCapability] {
     type Cache = Vec<(&'static [OfferedCapability], &'static [OfferedCapability])>;
     static CACHE: std::sync::Mutex<Cache> = std::sync::Mutex::new(Vec::new());
     let Ok(mut cache) = CACHE.lock() else {
@@ -707,19 +711,17 @@ pub(super) fn offer(
         return offer;
     }
     let mut offer = base.to_vec();
-    offer.push(OfferedCapability {
-        id: CAPABILITY_TRAINING_V1,
-        requires: &[4, 18, 21],
-    });
-    let choice = OfferedCapability {
-        id: CAPABILITY_OFFLINE_TRAINING_CHOICE_V1,
-        requires: &[CAPABILITY_TRAINING_V1],
-    };
-    let index = offer
-        .iter()
-        .position(|entry| entry.id > choice.id)
-        .unwrap_or(offer.len());
-    offer.insert(index, choice);
+    offer.extend([
+        OfferedCapability {
+            id: CAPABILITY_TRAINING_V1,
+            requires: &[4, 18, 21],
+        },
+        OfferedCapability {
+            id: CAPABILITY_OFFLINE_TRAINING_CHOICE_V1,
+            requires: &[CAPABILITY_TRAINING_V1],
+        },
+    ]);
+    offer.sort_unstable_by_key(|entry| entry.id);
     let offer = Box::leak(offer.into_boxed_slice());
     cache.push((base, offer));
     offer
@@ -728,6 +730,33 @@ pub(super) fn offer(
 #[cfg(test)]
 mod tests {
     use super::TrainingRuntime;
+
+    #[test]
+    fn fully_offered_bundle_can_negotiate_its_panel_capabilities() -> Result<(), String> {
+        use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
+        use crate::gameplay_transport::{
+            capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES, store::with_store_offer,
+            world_required_capabilities::BoundRequiredCapabilities,
+        };
+        let id = [1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16];
+        let scope = RuntimeScopeRefV1::channel(
+            WorldId::decode(&id).map_err(|error| format!("{error:?}"))?,
+            ChannelId::decode(&id).map_err(|error| format!("{error:?}"))?,
+        );
+        let offers = with_store_offer(
+            super::with_training_offer(BUNDLE_WORLD_OFFERED_CAPABILITIES),
+            true,
+        );
+        let requirements =
+            BoundRequiredCapabilities::for_channel_boot(&[], scope, 1, "policy-1", offers)
+                .map_err(|error| format!("{error:?}"))?;
+        let supported: Vec<u32> = offers.iter().map(|offer| offer.id).collect();
+        let authenticated = requirements
+            .authenticate_support(&supported)
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(authenticated.selected().as_slice(), supported);
+        Ok(())
+    }
 
     #[test]
     fn shipped_training_is_enabled_without_environment_opt_in() -> Result<(), &'static str> {
