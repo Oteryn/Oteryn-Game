@@ -416,6 +416,67 @@
           "outfit": "oteryn:outfit.knight",
           "addons": 1
         }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet",
+          "minimum": -1,
+          "maximum": 6
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/knight-sword-full-outfit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.morgan",
+      "keywords": [
+        "knight's sword"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_sword",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5892",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5880",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.knight",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/in_shining_armor",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/morgan.lua:sha256:fbef2b0d61842368915e506ff5d2e1e96f00a3f55bb3cad4ee97178824832610",
+        "https://tibia.fandom.com/index.php?curid=62856&oldid=753037"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.knight",
+          "addons": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet",
+          "minimum": 7,
+          "maximum": 7
+        }
       ]
     },
     {
@@ -459,6 +520,64 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_2",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l1-warmaster-crest-full-outfit",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 60,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 27,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i10199",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.warmaster",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/master_of_war",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd",
+        "https://tibia.fandom.com/index.php?curid=62865&oldid=753026"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_2",
+          "minimum": 1,
+          "maximum": 1
+        }
       ]
     },
     {
@@ -502,6 +621,64 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_1",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l1-warmaster-tribal-full-outfit",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 61,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 27,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i10198",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.warmaster",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/master_of_war",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd",
+        "https://tibia.fandom.com/index.php?curid=62865&oldid=753026"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_1",
+          "minimum": 1,
+          "maximum": 1
+        }
       ]
     },
     {
@@ -538,6 +715,57 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit_1",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l1-wayfarer-cape-full-outfit",
+      "quest": "oteryn:quest.wayfarer_outfits_quest",
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i11701",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.wayfarer",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/peazzekeeper",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
+        "https://tibia.fandom.com/index.php?curid=62873&oldid=753184"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit_1",
+          "minimum": 1,
+          "maximum": 1
+        }
       ]
     },
     {
@@ -574,6 +802,57 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l1-wayfarer-hat-full-outfit",
+      "quest": "oteryn:quest.wayfarer_outfits_quest",
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i11700",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.wayfarer",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/peazzekeeper",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
+        "https://tibia.fandom.com/index.php?curid=62873&oldid=753184"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit",
+          "minimum": 1,
+          "maximum": 1
+        }
       ]
     },
     {
@@ -699,12 +978,13 @@
         "outfit": "oteryn:outfit.yalaharian",
         "addons": 1
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/yalahari_of_wisdom",
       "reply": [
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/palimuth.lua:sha256:643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/palimuth.lua:sha256:643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db",
+        "https://tibia.fandom.com/index.php?curid=62819&oldid=753357"
       ],
       "present": [
         {
@@ -743,12 +1023,13 @@
         "outfit": "oteryn:outfit.yalaharian",
         "addons": 2
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/yalahari_of_power",
       "reply": [
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/palimuth.lua:sha256:643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/palimuth.lua:sha256:643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db",
+        "https://tibia.fandom.com/index.php?curid=62818&oldid=753121"
       ],
       "present": [
         {
@@ -2683,6 +2964,65 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/broken_servant_sentry.lua:sha256:d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-elementalist-cap-full-outfit",
+      "quest": "oteryn:quest.elementalist_outfits_quest",
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "cap",
+        "mage"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12599",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.elementalist",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/mystic_fabric_magic",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/broken_servant_sentry.lua:sha256:d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+        "https://tibia.fandom.com/index.php?curid=62867&oldid=844815"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/addon2",
+          "minimum": 1,
+          "maximum": 1
+        }
       ]
     },
     {
@@ -2727,6 +3067,65 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/broken_servant_sentry.lua:sha256:d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-elementalist-staff-full-outfit",
+      "quest": "oteryn:quest.elementalist_outfits_quest",
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "staff",
+        "spike"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12803",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.elementalist",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/mystic_fabric_magic",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/broken_servant_sentry.lua:sha256:d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
+        "https://tibia.fandom.com/index.php?curid=62867&oldid=844815"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/addon1",
+          "minimum": 1,
+          "maximum": 1
+        }
       ]
     },
     {
@@ -3738,6 +4137,69 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ariella.lua:sha256:90cd51edf9d8829e054e2bfa38cbf61aa3bece945b56ceb60e9cb9a346c95a56"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": -1,
+          "maximum": 4
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l4-pirate-hat-full-outfit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ariella",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6101",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6102",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6100",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6099",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.pirate",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/swashbuckler",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ariella.lua:sha256:90cd51edf9d8829e054e2bfa38cbf61aa3bece945b56ceb60e9cb9a346c95a56",
+        "https://tibia.fandom.com/index.php?curid=62885&oldid=753261"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": 5,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -4185,12 +4647,13 @@
         "outfit": "oteryn:outfit.norseman",
         "addons": 2
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/out_in_the_snowstorm",
       "reply": [
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hjaern.lua:sha256:4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hjaern.lua:sha256:4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466",
+        "https://tibia.fandom.com/index.php?curid=62872&oldid=752988"
       ],
       "participants": [
         {
@@ -4308,7 +4771,59 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/miraia.lua:sha256:7114cc53c7119cd7a42947a5be07611956e11e7f7c8833f68197f136be5e353f"
       ],
-      "creation_sex": "female"
+      "creation_sex": "female",
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": -1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-female-blue-cloth-full-outfit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5912",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.oriental",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/one_thousand_and_one",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/miraia.lua:sha256:7114cc53c7119cd7a42947a5be07611956e11e7f7c8833f68197f136be5e353f",
+        "https://tibia.fandom.com/index.php?curid=62871&oldid=753214"
+      ],
+      "creation_sex": "female",
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l5-oriental-female-comb",
@@ -4345,7 +4860,59 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ishina.lua:sha256:9eb2e869db4d0dfad8f04fc171773dcf9045e35647bd4069f9e9b18dc0513c71"
       ],
-      "creation_sex": "female"
+      "creation_sex": "female",
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": -1,
+          "maximum": 4
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-female-comb-full-outfit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ishina",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5945",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.oriental",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/one_thousand_and_one",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ishina.lua:sha256:9eb2e869db4d0dfad8f04fc171773dcf9045e35647bd4069f9e9b18dc0513c71",
+        "https://tibia.fandom.com/index.php?curid=62871&oldid=753214"
+      ],
+      "creation_sex": "female",
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 5,
+          "maximum": 5
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l5-oriental-female-first-start",
@@ -4574,7 +5141,59 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/razan.lua:sha256:c12e695654ada3a5f4b1775657835fa18e5957b0870e735803a5ead2e7483acb"
       ],
-      "creation_sex": "male"
+      "creation_sex": "male",
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": -1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-male-blue-cloth-full-outfit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5912",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.oriental",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/one_thousand_and_one",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/razan.lua:sha256:c12e695654ada3a5f4b1775657835fa18e5957b0870e735803a5ead2e7483acb",
+        "https://tibia.fandom.com/index.php?curid=62871&oldid=753214"
+      ],
+      "creation_sex": "male",
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l5-oriental-male-comb",
@@ -4611,7 +5230,59 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/habdel.lua:sha256:0666e7207a7fd9565f5311ffc3d87f9b138c858117d802c089a7d00c727c7b78"
       ],
-      "creation_sex": "male"
+      "creation_sex": "male",
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": -1,
+          "maximum": 4
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l5-oriental-male-comb-full-outfit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.habdel",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5945",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.oriental",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/one_thousand_and_one",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/habdel.lua:sha256:0666e7207a7fd9565f5311ffc3d87f9b138c858117d802c089a7d00c727c7b78",
+        "https://tibia.fandom.com/index.php?curid=62871&oldid=753214"
+      ],
+      "creation_sex": "male",
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 5,
+          "maximum": 5
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l5-oriental-male-first-start",
@@ -5178,12 +5849,13 @@
         "outfit": "oteryn:outfit.beggar",
         "addons": 2
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/life_on_the_streets",
       "reply": [
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/simon_the_beggar.lua:84-222:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74",
+        "https://tibia.fandom.com/index.php?curid=62859&oldid=753124"
       ],
       "requires_premium": true
     },
@@ -6089,6 +6761,71 @@
       ],
       "requires_actor_conditions": [
         "fire"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon",
+          "minimum": -1,
+          "maximum": 7
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l7-assassin-second-full-outfit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.atrad",
+      "keywords": [
+        "nose ring",
+        "ring"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/atrad",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_second_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5804",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5930",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.assassin",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/swift_death",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/atrad.lua:60-105:sha256:ffdc0e1b8d0d5455be4be4c6875b3f832dca3a488440ed08020bfa20bd7bde01",
+        "https://tibia.fandom.com/index.php?curid=62886&oldid=753279"
+      ],
+      "requires_actor_conditions": [
+        "fire"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon",
+          "minimum": 8,
+          "maximum": 8
+        }
       ]
     },
     {
@@ -6261,6 +6998,57 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/erayo.lua:57-114:sha256:dc6c54417c8bfdd32abcea9f068322f17d029c4d7722f1acfdeb6cd795a4c48f"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_second_addon",
+          "minimum": -1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l7-assassin-yarn-full-outfit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.erayo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5886",
+          "count": 10
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.assassin",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/swift_death",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/erayo.lua:57-114:sha256:dc6c54417c8bfdd32abcea9f068322f17d029c4d7722f1acfdeb6cd795a4c48f",
+        "https://tibia.fandom.com/index.php?curid=62886&oldid=753279"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_second_addon",
+          "minimum": 2,
+          "maximum": 2
+        }
       ]
     },
     {
@@ -6841,6 +7629,79 @@
             "value": 0
           }
         }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_sword",
+          "minimum": -1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l7-knight-helmet-reward-full-outfit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.sam",
+      "keywords": [
+        "adorn",
+        "outfit",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/mission_helmet",
+          "minimum": -1,
+          "maximum": 6,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/ref",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.knight",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/in_shining_armor",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sam.lua:67-88:sha256:ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b",
+        "https://tibia.fandom.com/index.php?curid=62856&oldid=753037"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 7201
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_sword",
+          "minimum": 2,
+          "maximum": 2
+        }
       ]
     },
     {
@@ -7223,6 +8084,67 @@
           "addons": 1,
           "sex": "female"
         }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": -1,
+          "maximum": 4
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-hunter-gloves-full-outfit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/hunting_with_style",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/legola.lua:sha256:26084a8748e9d3a01d59745bb30e67fb3610924430ce86034828c893c9b8dfc2",
+        "https://tibia.fandom.com/index.php?curid=62855&oldid=753202"
+      ],
+      "requires_premium": true,
+      "outfits": [
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 2,
+          "sex": "male"
+        },
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 1,
+          "sex": "female"
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": 5,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -7275,6 +8197,74 @@
           "outfit": "oteryn:outfit.hunter",
           "addons": 2,
           "sex": "female"
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-hunter-hat-full-outfit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5887",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5888",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5889",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/hunting_with_style",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef",
+        "https://tibia.fandom.com/index.php?curid=62855&oldid=753202"
+      ],
+      "outfits": [
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 1,
+          "sex": "male"
+        },
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 2,
+          "sex": "female"
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1
         }
       ]
     },
@@ -8648,6 +9638,52 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/morgan.lua:sha256:fbef2b0d61842368915e506ff5d2e1e96f00a3f55bb3cad4ee97178824832610"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon",
+          "minimum": -1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/pirate-sabre-full-outfit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.morgan",
+      "keywords": [
+        "firebird"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.pirate",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/swashbuckler",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/morgan.lua:sha256:fbef2b0d61842368915e506ff5d2e1e96f00a3f55bb3cad4ee97178824832610",
+        "https://tibia.fandom.com/index.php?curid=62885&oldid=753261"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon",
+          "minimum": 2,
+          "maximum": 2
+        }
       ]
     },
     {
@@ -8673,7 +9709,7 @@
         "outfit": "oteryn:outfit.barbarian",
         "addons": 1
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/brutal_politeness",
       "reply": [
         "Axe is done! For you. Take. Wear like me."
       ],
@@ -9532,6 +10568,12 @@
             "value": 0
           }
         }
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/wild_warrior",
+          "target": 2
+        }
       ]
     },
     {
@@ -9794,6 +10836,12 @@
         {
           "outfit": "oteryn:outfit.warrior",
           "addons": 2
+        }
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/wild_warrior",
+          "target": 2
         }
       ]
     },
