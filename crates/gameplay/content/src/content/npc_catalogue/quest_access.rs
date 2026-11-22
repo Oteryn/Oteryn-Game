@@ -100,7 +100,10 @@ fn parse(text: &str) -> Result<Catalogue, &'static str> {
                 || !key(&rule.track, "oteryn:quest-progress/")
                 || rule.minimum < 0
                 || rule.minimum > rule.maximum
-                || rule.source_callback != "CALLBACK_ON_TRADE_REQUEST"
+                || !matches!(
+                    rule.source_callback.as_str(),
+                    "CALLBACK_ON_TRADE_REQUEST" | "QUEST_REWARD_ROOM"
+                )
                 || rule.source_predicate.operator != "=="
                 || rule.source_predicate.storage.is_empty()
                 || rule.source_predicate.storage.len() > 160
@@ -163,13 +166,21 @@ fn retained_offers(
     rule: &AccessRule,
 ) -> Result<Vec<ProjectV2ServiceOffer>, &'static str> {
     let ProjectV2Declaration::Service {
-        identity, fields, ..
+        identity,
+        fields,
+        offers: canonical,
+        ..
     } = declaration
     else {
         return Err("native service access declaration");
     };
     if identity.key != rule.service || identity.revision != "definition-r1" {
         return Err("native service access identity");
+    }
+    // The source room gate qualifies Black Bert's existing executable service.
+    // The trade writer still validates every tuple against the canonical catalogue.
+    if rule.source_callback == "QUEST_REWARD_ROOM" {
+        return Ok(canonical.clone());
     }
     let mut offers = BTreeSet::new();
     for field in fields
@@ -315,6 +326,9 @@ pub(super) fn declarations(
     };
     let mut projected = Vec::new();
     for rule in &catalogue.rules {
+        if rule.source_callback == "QUEST_REWARD_ROOM" {
+            continue;
+        }
         let linked = records.iter().any(|(reference, declaration)| {
             reference.family == ProjectV2Family::Npc && reference.key == rule.npc
                 && matches!(declaration, ProjectV2Declaration::Npc { services, .. }

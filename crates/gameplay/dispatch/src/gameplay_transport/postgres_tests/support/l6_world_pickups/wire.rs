@@ -31,6 +31,17 @@ pub(super) async fn pickup(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
 ) -> TestResult {
+    pickup_at(owner, admitted, super::RUBY, "oteryn:item.tibia.i3030", 1, true).await
+}
+
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn pickup_at(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    position: oteryn_gameplay_quests::quest::world_callbacks::Position,
+    item: &str,
+    quantity: u32,
+    check_ruby_layers: bool,
+) -> TestResult {
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
@@ -38,7 +49,7 @@ pub(super) async fn pickup(
     let reference = native
         .item_index()
         .ok_or("native Item index")?
-        .definition_ref("Item", "oteryn:item.tibia.i3030", "definition-r1")
+        .definition_ref("Item", item, "definition-r1")
         .ok_or("ruby reference")?;
     let initial = *admitted;
     let first = initial.continuity.next_command_id;
@@ -87,24 +98,23 @@ pub(super) async fn pickup(
             .tiles
             .iter()
             .find(|tile| {
-                tile.position.x == 32437 && tile.position.y == 32174 && tile.position.floor == 15
+                tile.position.x == i32::from(position.x) && tile.position.y == i32::from(position.y)
+                    && tile.position.floor == -i16::from(position.floor)
             })
             .ok_or("native ruby map tile")?;
-        assert_eq!(
-            tile.items.len(),
-            3,
-            "source ground, ruby and Fire Field remain layered"
-        );
-        let ruby = &tile.items[1];
-        assert_eq!(ruby.definition, MapDefinition::Item(reference));
-        assert_eq!(ruby.count, 1);
-        let MapOrigin::Handle(handle) = ruby.origin else {
-            return Err("ruby is not a physical pickup handle".into());
+        let entry = tile.items.iter()
+            .find(|entry| entry.definition == MapDefinition::Item(reference))
+            .ok_or("source item in map snapshot")?;
+        assert_eq!(entry.count, quantity);
+        let MapOrigin::Handle(handle) = entry.origin else {
+            return Err("source item is not a physical pickup handle".into());
         };
-        assert!(
-            !matches!(tile.items[2].origin, MapOrigin::Handle(_)),
-            "the source Fire Field is not loot"
-        );
+        if check_ruby_layers {
+            assert_eq!(tile.items.len(), 3, "source ground, ruby and Fire Field remain layered");
+            assert_eq!(entry, &tile.items[1]);
+            assert!(!matches!(tile.items[2].origin, MapOrigin::Handle(_)),
+                "the source Fire Field is not loot");
+        }
         let payload = encode_item_move_intent(&ItemMoveIntent {
             source: ItemHandle::new(handle.get()).ok_or("ruby handle")?,
             destination: ItemMoveDestination::MainBackpack,

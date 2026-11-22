@@ -1,0 +1,1752 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "recipe_sha256": "fb88ed145c1bfe46f7ad2b45f1c4c353dfe817e47447baf055ca63b285396aa3",
+      "admission": {
+        "minimum_level": 0,
+        "premium": true,
+        "prerequisites": []
+      },
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 22
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/door",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission01",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission02",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission03",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission05",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 4
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission08",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 9
+        }
+      ],
+      "stages": [
+        {
+          "key": "join-offer",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/join-offer",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "join",
+                "thieves"
+              ],
+              "topic": 0,
+              "next_topic": 1,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 0
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Would you like to join the Thieves Guild?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "join",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/join",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 1,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Welcome. Ask me for a mission when you are ready."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "tusk-mission",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/tusk-mission",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission01",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Collect ten elephant tusks and bring them to me."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "deliver-tusks-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/deliver-tusks-report",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 2,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Have you finished your mission?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "deliver-tusks",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/deliver-tusks",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 2,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission01",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i3044",
+                  "count": 10
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The guild accepts your delivery."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "vase-mission",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/vase-mission",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission02",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Take a lock pick to Sarina’s shop and bring me her vase."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "climb-vine",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/the-thieves-guild/climb-vine",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32337,
+                  "y": 31814,
+                  "floor": -7
+                },
+                "appearance": 7890
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32336,
+                "y": 31813,
+                "floor": -6
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 4
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_climbing_vine.lua:1-26",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "leave-by-vine",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/the-thieves-guild/leave-by-vine",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32337,
+                  "y": 31814,
+                  "floor": -6
+                },
+                "appearance": 7891
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32337,
+                "y": 31815,
+                "floor": -7
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 5
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_climbing_vine.lua:1-26",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "lift-vase",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/the-thieves-guild/lift-vase",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32337,
+                  "y": 31812,
+                  "floor": -6
+                },
+                "appearance": 7892
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission02",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "offerings": [],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i7889",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "selected_instance": true,
+                "reusable": true
+              },
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/lock_pick.lua:1-23",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i227",
+                  "count": 1
+                }
+              },
+              "requires_world_admission": true,
+              "success_message": "Your lock pick opened the chest!"
+            }
+          }
+        },
+        {
+          "key": "break-lock-pick",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/the-thieves-guild/break-lock-pick",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "trigger": "use",
+              "selector": {
+                "native": {
+                  "position": {
+                    "x": 32337,
+                    "y": 31812,
+                    "floor": -6
+                  },
+                  "appearance": 7892,
+                  "ordinal": 1
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 4
+                }
+              ],
+              "offerings": [],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i7889",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "selected_instance": true,
+                "reusable": false
+              },
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/lock_pick.lua:1-23",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "requires_world_admission": true,
+              "success_message": "Your lock pick broke."
+            }
+          }
+        },
+        {
+          "key": "deliver-vase-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/deliver-vase-report",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 3,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 5
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Have you finished your mission?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "deliver-vase",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/deliver-vase",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 3,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 6
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission02",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i227",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The guild accepts your delivery."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "invitation-mission",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/invitation-mission",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 6,
+                  "maximum": 6,
+                  "set": 7
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission03",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Ask Oswald for an invitation to the king’s ball."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "invitation-offer",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/invitation-offer",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.oswald",
+              "keywords": [
+                "invitation"
+              ],
+              "topic": 0,
+              "next_topic": 1,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 7,
+                  "maximum": 7,
+                  "set": 7
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Why should I give you an invitation?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/oswald.lua:89-119",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "invitation-price",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/invitation-price",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.oswald",
+              "keywords": [
+                "yes",
+                "gold"
+              ],
+              "topic": 1,
+              "next_topic": 3,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 7,
+                  "maximum": 7,
+                  "set": 7
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "I can arrange an invitation for one thousand gold."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/oswald.lua:89-119",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "buy-invitation",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/buy-invitation",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.oswald",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 3,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 7,
+                  "maximum": 7,
+                  "set": 8
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission03",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i7933",
+                "count": 1
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Here is your invitation."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/oswald.lua:89-119",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "fee": {
+                "gold": 1000,
+                "include_bank": true
+              }
+            }
+          }
+        },
+        {
+          "key": "deliver-invitation-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/deliver-invitation-report",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 4,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 8,
+                  "maximum": 8,
+                  "set": 8
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Have you finished your mission?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "deliver-invitation",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/deliver-invitation",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 4,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 8,
+                  "maximum": 8,
+                  "set": 9
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission03",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 5
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i7933",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The guild accepts your delivery."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "goblet-mission",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/goblet-mission",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 9,
+                  "maximum": 9,
+                  "set": 10
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission05",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Recover the goblet from the smugglers in Tiquanda."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "deliver-goblet-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/deliver-goblet-report",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 6,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 10,
+                  "maximum": 10,
+                  "set": 10
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Have you finished your mission?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "deliver-goblet",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/deliver-goblet",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 6,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 10,
+                  "maximum": 10,
+                  "set": 11
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission05",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 6
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i7870",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The guild accepts your delivery."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "required_claims": [
+                "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.golden_goblet"
+              ]
+            }
+          }
+        },
+        {
+          "key": "fish-mission",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/fish-mission",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 11,
+                  "maximum": 11,
+                  "set": 12
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Bring me Theodore Loveless’ goldfish."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "letter-offer",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/letter-offer",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.herbert",
+              "keywords": [
+                "letter"
+              ],
+              "topic": 0,
+              "next_topic": 1,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 12,
+                  "maximum": 12,
+                  "set": 12
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "I cannot give you Chantalle’s letter."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/herbert.lua:60-78",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "letter-price",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/letter-price",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.herbert",
+              "keywords": [
+                "gold"
+              ],
+              "topic": 1,
+              "next_topic": 2,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 12,
+                  "maximum": 12,
+                  "set": 12
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "How about one thousand gold?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/herbert.lua:60-78",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "buy-letter",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/buy-letter",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.herbert",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 2,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 12,
+                  "maximum": 12,
+                  "set": 13
+                }
+              ],
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i7940",
+                "count": 1
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You may deliver this letter to Chantalle."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/herbert.lua:60-78",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "fee": {
+                "gold": 1000,
+                "include_bank": true
+              }
+            }
+          }
+        },
+        {
+          "key": "necklace-offer",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/necklace-offer",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.carina",
+              "keywords": [
+                "precious necklace"
+              ],
+              "topic": 0,
+              "next_topic": 1,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 13,
+                  "maximum": 13,
+                  "set": 13
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The precious necklace costs five thousand gold."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carina.lua:61-75",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "present": [
+                {
+                  "item": "oteryn:item.tibia.i7940",
+                  "count": 1
+                }
+              ],
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "buy-necklace",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/buy-necklace",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.carina",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 1,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 13,
+                  "maximum": 13,
+                  "set": 14
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i7940",
+                  "count": 1
+                }
+              ],
+              "give": {
+                "item": "oteryn:item.tibia.i7939",
+                "count": 1
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Here is the necklace."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carina.lua:61-75",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "fee": {
+                "gold": 5000,
+                "include_bank": true
+              }
+            }
+          }
+        },
+        {
+          "key": "exchange-key",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/exchange-key",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.chantalle",
+              "keywords": [
+                "key"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 14,
+                  "maximum": 14,
+                  "set": 15
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i7939",
+                  "count": 1
+                }
+              ],
+              "give": {
+                "item": "oteryn:item.tibia.i7934",
+                "count": 1
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The necklace for Loveless’ room key. Here you are."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chantalle.lua:62-87",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "unlock-room",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/the-thieves-guild/unlock-room",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "trigger": "use",
+              "selector": {
+                "native": {
+                  "position": {
+                    "x": 32359,
+                    "y": 32787,
+                    "floor": -6
+                  },
+                  "appearance": 7941,
+                  "ordinal": 1
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32359,
+                "y": 32788,
+                "floor": -6
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 15,
+                  "maximum": 15,
+                  "set": 16
+                }
+              ],
+              "offerings": [],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i7934",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "selected_instance": true,
+                "reusable": false
+              },
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_key.lua:1-15",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "requires_world_admission": true
+            }
+          }
+        },
+        {
+          "key": "take-fish",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/the-thieves-guild/take-fish",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32359,
+                  "y": 32791,
+                  "floor": -6
+                },
+                "appearance": 7936
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 16,
+                  "maximum": 16,
+                  "set": 17
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4556-4560",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i7936",
+                  "count": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "key": "leave-room",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/the-thieves-guild/leave-room",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32359,
+                  "y": 32787,
+                  "floor": -6
+                },
+                "appearance": 7941
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32359,
+                "y": 32786,
+                "floor": -6
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 17,
+                  "maximum": 17,
+                  "set": 18
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_door.lua:1-13",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "present": [
+                {
+                  "item": "oteryn:item.tibia.i7936",
+                  "count": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "deliver-fish-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/deliver-fish-report",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 7,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 18,
+                  "maximum": 18,
+                  "set": 18
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Have you finished your mission?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "deliver-fish",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/deliver-fish",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 7,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 18,
+                  "maximum": 18,
+                  "set": 19
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+                  "minimum": 6,
+                  "maximum": 6,
+                  "set": 8
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i7936",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The guild accepts your delivery."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "note-mission",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/note-mission",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 19,
+                  "maximum": 19,
+                  "set": 20
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission08",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i7873",
+                "count": 1
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Place our message between the trophies in the Dark Cathedral."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "place-note",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/the-thieves-guild/place-note",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32598,
+                  "y": 32381,
+                  "floor": -10
+                },
+                "appearance": 1451
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 20,
+                  "maximum": 20,
+                  "set": 21
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission08",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "offerings": [],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i7873",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "selected_instance": true,
+                "reusable": false
+              },
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_note.lua:1-27",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "requires_world_admission": true
+            }
+          }
+        },
+        {
+          "key": "final-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/final-report",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 9,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 21,
+                  "maximum": 21,
+                  "set": 21
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Have you finished your mission?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ],
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "complete",
+          "completes": true,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/the-thieves-guild/complete",
+              "quest": "oteryn:quest.the_thieves_guild_quest",
+              "npc": "oteryn:npc.dorian",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 9,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/the-thieves-guild/stage",
+                  "minimum": 21,
+                  "maximum": 21,
+                  "set": 22
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission08",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline",
+                  "minimum": 8,
+                  "maximum": 8,
+                  "set": 9
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/door",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You can trade with Black Bert upstairs and collect your prize in the room to the left."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+                "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler"
+              ]
+            }
+          }
+        }
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:61-225",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:1780-1796",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2623-2665",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/black_bert.lua:157-208"
+      ]
+    }
+  ]
+}

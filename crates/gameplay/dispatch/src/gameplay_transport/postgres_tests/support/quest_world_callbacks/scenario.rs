@@ -23,6 +23,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let thieves = name == super::super::thieves_guild_journey::NAME;
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
@@ -452,6 +453,8 @@ fn scenario_case(
             name.strip_suffix("-level49").unwrap_or(name)
         } else if name == "giant-smithhammer-asymmetric" {
             "giant-smithhammer"
+        } else if thieves {
+            "fish-napping-key"
         } else if name == "authored-trader" {
             "authored-trader-package"
         } else if elemental_pin
@@ -655,7 +658,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals_fixtures::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if thieves {
+        super::super::thieves_guild_journey::world()?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals_fixtures::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
@@ -1547,7 +1552,7 @@ fn scenario_case(
                 6
             } else if name == "authored-magic-sword" {
                 9
-            } else if name == "authored-trader" {
+            } else if thieves || name == "authored-trader" {
                 7
             } else if name == "authored-treasure-island" {
                 3
@@ -1883,7 +1888,8 @@ fn scenario_case(
                 "source eligibility uses the actual durable starting level"
             );
         }
-        if name == "nx6-wayfarer"
+        if thieves
+            || name == "nx6-wayfarer"
             || qm03
             || m07_too_hot
             || mead
@@ -2808,6 +2814,10 @@ fn scenario_case(
                 &h,
             ))
             .await?;
+        } else if thieves {
+            Box::pin(super::super::thieves_guild_journey::exercise(
+                &mut owner, &mut admitted, &h,
+            )).await?;
         } else if name == "authored-trader" {
             Box::pin(super::super::questpc8_trader::exercise(
                 &mut owner,

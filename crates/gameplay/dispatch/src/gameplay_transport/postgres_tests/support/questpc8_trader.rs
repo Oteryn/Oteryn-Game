@@ -34,9 +34,22 @@ async fn sell_intent(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     npc: EntityRef,
 ) -> TestResult<oteryn_protocol_oteryn::npc_service::NpcTradeIntent> {
-    use oteryn_protocol_oteryn::npc_service::{NpcTradeIntent, NpcTradeSide};
+    use oteryn_protocol_oteryn::npc_service::NpcTradeSide;
+    let intent = trade_intent(owner, npc, "oteryn:npc.rashid", "oteryn:item.tibia.i3364", NpcTradeSide::Sell).await?;
+    assert_eq!(intent.expected_unit_price, 30000);
+    Ok(intent)
+}
+
+pub(super) async fn trade_intent(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    npc: EntityRef,
+    key: &str,
+    item: &str,
+    side: oteryn_protocol_oteryn::npc_service::NpcTradeSide,
+) -> TestResult<oteryn_protocol_oteryn::npc_service::NpcTradeIntent> {
+    use oteryn_protocol_oteryn::npc_service::NpcTradeIntent;
     let book = owner.states.chat.npc_talk().ok_or("NPC book")?;
-    let entry = book.get("oteryn:npc.rashid").ok_or("Rashid")?;
+    let entry = book.get(key).ok_or("NPC trade service")?;
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
@@ -71,10 +84,8 @@ async fn sell_intent(
     .ok_or("item index")?;
     let (offer_index, (shown, _)) = oteryn_gameplay_npc::npc_command::projected(&eligible, index)
         .enumerate()
-        .find(|(_, (_, source))| source.item.key == "oteryn:item.tibia.i3364")
-        .ok_or("Golden Legs source SELL offer")?;
-    assert_eq!(shown.side, NpcTradeSide::Sell);
-    assert_eq!(shown.unit_price, 30000);
+        .find(|(_, (shown, source))| source.item.key == item && shown.side == side)
+        .ok_or("source trade offer")?;
     Ok(NpcTradeIntent {
         npc_actor: npc,
         catalogue_revision: book.catalogue_revision(),
@@ -253,7 +264,7 @@ async fn talk(
     Ok(())
 }
 
-async fn say(
+pub(super) async fn say(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -263,7 +274,7 @@ async fn say(
     talk(owner, admitted, npc, next, texts, NpcIntentDisposition::Ok).await
 }
 
-async fn teleport(
+pub(super) async fn teleport(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     destination: MovementLocalPosition,
@@ -289,7 +300,7 @@ async fn teleport(
     Ok(())
 }
 
-async fn visit(
+pub(super) async fn visit(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     key: &str,
@@ -317,7 +328,7 @@ async fn visit(
     Ok(entity)
 }
 
-async fn prepare_item(
+pub(super) async fn prepare_item(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     item: u32,

@@ -285,7 +285,7 @@ async fn conversation(
 
 /// Real command 8 after command 7 opens the standard window. A fixture-only point change
 /// between those commands proves that the display cache is never mutation authority.
-pub(super) async fn trade(
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn trade(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,

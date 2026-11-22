@@ -8,6 +8,8 @@ use oteryn_gameplay_quests::quest::world_callbacks::Position;
 #[path = "l6_world_pickups/wire.rs"]
 mod wire;
 
+pub(super) use wire::pickup_at;
+
 #[path = "l6_world_pickups/world.rs"]
 mod world;
 

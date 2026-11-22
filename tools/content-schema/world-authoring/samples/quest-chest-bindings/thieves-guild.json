@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_oasis",
+      "position": [
+        33131,
+        32661,
+        7
+      ],
+      "appearance": 2473,
+      "unique": 6271,
+      "source_line": 2623
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_book",
+      "position": [
+        32367,
+        31781,
+        8
+      ],
+      "appearance": 2473,
+      "unique": 6272,
+      "source_line": 2630
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.golden_goblet",
+      "position": [
+        32551,
+        32652,
+        10
+      ],
+      "appearance": 2469,
+      "unique": 6273,
+      "source_line": 2637
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.compromising_letter",
+      "position": [
+        32902,
+        32143,
+        4
+      ],
+      "appearance": 2433,
+      "unique": 6274,
+      "source_line": 2644
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_end",
+      "position": [
+        32309,
+        32209,
+        8
+      ],
+      "appearance": 2434,
+      "unique": 6275,
+      "source_line": 2651
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_end",
+      "position": [
+        32309,
+        32211,
+        8
+      ],
+      "appearance": 2434,
+      "unique": 6276,
+      "source_line": 2658
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_end",
+      "position": [
+        32309,
+        32213,
+        8
+      ],
+      "appearance": 2434,
+      "unique": 6277,
+      "source_line": 2665
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": [
+    {
+      "position": [
+        32981,
+        31760,
+        9
+      ],
+      "appearance": 6264,
+      "action": 1040,
+      "source_line": 76,
+      "claims": [
+        "oteryn:reward-claim.kv.orcfortress1",
+        "oteryn:reward-claim.kv.orcfortress2",
+        "oteryn:reward-claim.kv.orcfortress3"
+      ]
+    }
+  ]
+}

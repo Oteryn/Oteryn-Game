@@ -75,6 +75,9 @@ IDS |= {22082}
 IDS |= {3443}
 # M44: source flower harvest and the two remaining native pagoda offerings.
 IDS |= {21389, 21466}
+# Crystal 201189f8 Dorian, Oswald, Herbert, Carina, Chantalle and Black Bert:
+# keep the existing item identities and qualify only missing portable custody.
+IDS |= {130, 7873, 7889, 7933, 7936, 7939, 7940}
 IDS |= questl2_ready.ITEMS
 # Already present in main f5b584ef1's native provider; the existing cohort
 # cardinality includes these six shells, even when a source fact is refined.

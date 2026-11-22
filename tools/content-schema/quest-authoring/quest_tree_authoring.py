@@ -158,7 +158,19 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
                 raise ValueError(f'{key}: committed claim owner does not match source quest: {ref["key"]}')
             canonical.append({'family': 'RewardClaim', **copy.deepcopy(claim['identity'])})
             if claim.get('definition_profile') == 'authored_variant_v1':
-                issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
+                # UID 6272 already executes through the native authored-text chest owner.
+                # Keep the original variant and its SOURCE evidence, and admit only this
+                # exact source-proven native projection with no remaining data holds.
+                native = claim.get('native_contents')
+                thieves_book_lowered = (
+                    key == 'oteryn:quest.the_thieves_guild_quest'
+                    and claim['identity']['key'] == 'oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_book'
+                    and not claim['data_holds']
+                    and hashlib.sha256(compact(native).encode('utf-8')).hexdigest()
+                    == 'c8f3451cdd6cfc42836542ad5ec06c5650180ab60292b514294d3c5a873db7a0'
+                )
+                if not thieves_book_lowered:
+                    issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
                 categories = {hold['category'] for hold in claim['data_holds']}
                 categories.update(claim.get('_source_hold_categories', []))
                 if claim.get('_source_baseline_item_hold'):

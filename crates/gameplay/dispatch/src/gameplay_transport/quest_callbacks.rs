@@ -465,6 +465,26 @@ pub(super) fn step_command(
         .map(|id| CommandRef::new(session, id))
 }
 
+const SARINA_VASE: &str = "oteryn:quest-callback/the-thieves-guild/lift-vase";
+const SARINA_PICK_BREAK: &str = "oteryn:quest-callback/the-thieves-guild/break-lock-pick";
+
+fn sarina_lock_pick_opens(command: UseCommand) -> bool {
+    use sha2::{Digest, Sha256};
+    // Crystal 201189f8 data-global/scripts/actions/tools/lock_pick.lua:8:
+    // the retained pick opens the vase chest on 30 of 100 equally likely rolls.
+    let mut entropy = Sha256::new()
+        .chain_update(b"oteryn.thieves-guild.sarina-lock-pick.v1")
+        .chain_update(command.game_session_id.as_bytes())
+        .chain_update(command.command_id.to_be_bytes())
+        .finalize();
+    loop {
+        if let Some(roll) = entropy.iter().copied().find(|&byte| byte < 200) {
+            return roll % 100 < 30;
+        }
+        entropy = Sha256::digest(entropy);
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Resolve a closed transport's reserved USE before the session stream can reopen.
     /// Historical receipt recovery does not grant player control or install a projection.
@@ -997,6 +1017,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
+        if selected
+            .iter()
+            .any(|callback| callback.key == SARINA_PICK_BREAK)
+        {
+            // The same command always selects the same durable transition,
+            // including when a committed reply must be reconciled after EOF.
+            let discarded = if sarina_lock_pick_opens(command) {
+                SARINA_PICK_BREAK
+            } else {
+                SARINA_VASE
+            };
+            selected.retain(|callback| callback.key != discarded);
+        }
         let source_trial = selected
             .iter()
             .any(|c| c.effects.target_transform.is_some());
