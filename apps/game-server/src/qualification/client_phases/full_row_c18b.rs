@@ -62,8 +62,12 @@ impl Attempt {
         let (status, evidence_value) = match result {
             Ok(()) => ("PASS", "position-casts-refusal-fresh-admission".into()),
             Err(error) => {
+                let error = error.to_string().replace(['\n', '\r'], " ");
+                evidence(&format!(
+                    "C18B_GAP step={} observed={} need={error}",
+                    self.step, self.observed
+                ));
                 let error: String = error
-                    .to_string()
                     .chars()
                     .map(|character| {
                         if character.is_ascii_alphanumeric() || "_-.,:=[]/".contains(character) {
@@ -155,6 +159,31 @@ fn cast_payment(
     })
 }
 
+fn require_crosshair_casts(successful: usize, refusals: &[String]) -> TestResult {
+    if !refusals.is_empty() {
+        return Err(format!(
+            "POSITION cast coverage {successful}/{}; refused={}; source:crates/gameplay/dispatch/src/gameplay_transport/ordinary_combat/prepare.rs:282",
+            SPELLS.len(),
+            refusals.join(", ")
+        ).into());
+    }
+    Ok(())
+}
+
+fn outside_protection_zone(world: &BundleWorld, at: TilePos) -> bool {
+    world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .is_some_and(|tile| !tile.protection_zone())
+}
+
+fn crosshair_tile(world: &BundleWorld, from: TilePos) -> Option<TilePos> {
+    [StepDirection::East, StepDirection::North, StepDirection::West, StepDirection::South]
+        .into_iter()
+        .filter_map(|direction| destination(world, from, direction))
+        .find(|at| at.floor == from.floor && outside_protection_zone(world, *at))
+}
+
 async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -170,19 +199,17 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
 
     attempt.at("walk-out-of-pz");
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
+        outside_protection_zone(world, at) && crosshair_tile(world, at).is_some()
     })
-    .ok_or("needs-reachable-non-pz-tile")?;
+    .ok_or("needs-reachable-non-pz-tile-with-adjacent-position-target")?;
     walk(&mut client, world, &path).await?;
-    attempt.observed(client.world_spatial().actor_position);
-
     let here = client.world_spatial().actor_position;
+    attempt.observed(here);
+    let target_tile = crosshair_tile(world, tile(here)?)
+        .ok_or("adjacent-position-target-absent-at-acknowledged-caster-position")?;
     let target = SpellTarget::Position(SpellTargetPosition {
-        x: here.x.saturating_add(1),
-        y: here.y,
+        x: i32::from(target_tile.x),
+        y: i32::from(target_tile.y),
         floor: here.floor,
     });
     let mut successful = None;
@@ -227,11 +254,9 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
             refusals.push(format!("{words}:{:?}", outcome.disposition));
         }
     }
+    attempt.observed(&refusals);
     let Some((spell, index)) = successful else {
-        attempt.observed(refusals);
-        return Err(
-            "server-must-provide-legitimate-player-progression-to-one-crosshair-spell".into(),
-        );
+        return require_crosshair_casts(0, &refusals);
     };
 
     attempt.at("out-of-range-refusal");
@@ -283,12 +308,22 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
     {
         return Err("needs-new-session-with-retained-position-and-vitals".into());
     }
-    Ok(())
+    attempt.at("crosshair-position-casts");
+    attempt.observed(&refusals);
+    require_crosshair_casts(SPELLS.len() - refusals.len(), &refusals)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn partial_crosshair_casts_leave_a_named_gap() {
+        let refused = "exori mas amp pug:LevelTooLow".to_owned();
+        let result = require_crosshair_casts(SPELLS.len() - 1, std::slice::from_ref(&refused));
+        assert!(result.is_err_and(|error| error.to_string().contains(&refused)));
+        assert!(require_crosshair_casts(SPELLS.len(), &[]).is_ok());
+    }
 
     #[test]
     fn required_crosshair_spells_are_indexed() -> TestResult {

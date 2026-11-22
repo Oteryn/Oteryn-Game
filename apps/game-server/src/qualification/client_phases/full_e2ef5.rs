@@ -61,8 +61,8 @@ const HASTE_ACTIONS: &[&str] = &[
 pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
     // An error, including admission failure, belongs to one row only.
     for (id, actions, tag, limit) in [
-        ("C17a", HASTE_ACTIONS, 0xa4, 140),
-        ("C17c", ILLUSION_ACTIONS, 0xa1, 220),
+        ("C17a", HASTE_ACTIONS, 0xa4, 340),
+        ("C17c", ILLUSION_ACTIONS, 0xa1, 420),
     ] {
         let mut row = Row::new(id, actions);
         let watch = row.0.watch();
@@ -77,7 +77,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
                     let result = if id == "C17a" {
                         haste(&mut row, &mut client, clients, world).await
                     } else {
-                        illusion(&mut row, &mut client, clients).await
+                        illusion(&mut row, &mut client, clients, world).await
                     };
                     completed = true;
                     result
@@ -154,6 +154,30 @@ async fn level(client: &mut DevClientSession) -> TestResult<u32> {
         return Err("C17c player level query refused".into());
     }
     level_from_stats(&result.payload, general_stats::selected(client))
+}
+
+pub(super) async fn earn_spell_level(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    required_level: u32,
+) -> TestResult<u32> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    loop {
+        let observed_level = level(client).await?;
+        if observed_level >= required_level {
+            return Ok(observed_level);
+        }
+        verdict::Harness::global().bounded_wait(deadline, "earned-spell-level");
+        let kill = tokio::time::timeout_at(deadline, player_corpse(client, world, &[])).await;
+        let failure = match kill {
+            Ok(Ok(_)) => continue,
+            Ok(Err(error)) => error.to_string(),
+            Err(_) => "rat hunt exceeded the 180s progression budget".to_owned(),
+        };
+        return Err(format!(
+            "earned-spell-level: observed_level={observed_level} required_level={required_level}; rat kill unavailable: {failure}; source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/spells.rs:225"
+        ).into());
+    }
 }
 
 async fn say(
@@ -252,6 +276,7 @@ async fn illusion(
     row: &mut Row,
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
+    world: &BundleWorld,
 ) -> TestResult {
     let input = native_input()?;
     let book = native_spell_book()?;
@@ -301,7 +326,7 @@ async fn illusion(
     if baseline == expected {
         return Err("C17c baseline already has rat appearance; cast would be unproven".into());
     }
-    let player_level = level(client).await?;
+    let player_level = earn_spell_level(client, world, spell.level).await?;
     let before = client
         .actor_vitals()
         .copied()
@@ -310,7 +335,7 @@ async fn illusion(
     let cast_started = tokio::time::Instant::now();
     let cast = say(client, words).await?;
     if cast.status != CommandStatus::Accepted || cast.disposition != ChatDisposition::Ok {
-        return Err(format!("C17c legitimate player cast refused: status={:?} disposition={:?}; observed_level={player_level} required_level={} observed_mana={} required_mana={mana} required_vocations={:?}; ordinary starter has no journey to a qualifying vocation/level; source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/spells.rs:225", cast.status, cast.disposition, spell.level, before.mana, spell.vocations).into());
+        return Err(format!("C17c legitimate player cast refused: status={:?} disposition={:?}; observed_level={player_level} required_level={} observed_mana={} required_mana={mana} required_vocations={:?}; source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/spells.rs:225", cast.status, cast.disposition, spell.level, before.mana, spell.vocations).into());
     }
     if player_level < spell.level {
         return Err("C17c server accepted illusion below its required level".into());
@@ -711,10 +736,7 @@ async fn haste(
                 .ok_or("C17a invalid speed condition duration")?;
         Ok(Duration::from_millis(ms))
     };
-    let player_level = level(client).await?;
-    if player_level < haste.level {
-        return Err(format!("C17a player level frame={player_level}, Haste requires level {}, Strong Haste requires level {}; this packet has no legitimate advancement/vocation journey; source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/spells.rs:225", haste.level, strong.level).into());
-    }
+    let player_level = earn_spell_level(client, world, haste.level.max(strong.level)).await?;
     let haste_duration = duration(haste)?;
     let strong_duration = duration(strong)?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
@@ -1112,75 +1134,103 @@ pub(super) async fn acquire_rune(
             .map(|path| (npc, path))
         })
         .min_by_key(|(_, path)| path.len());
-    let Some((npc, path)) = selected else {
+    let Some((npc, _)) = selected else {
         let balances = runtime::balances(client.session_mut()).await?;
         return Err(format!("rune {id} acquisition blocked: no player-walk route within the admitted town window to a compiled-world seller; eligible_sellers={sellers:?}; observed_balances={balances:?}; carried_quantity={}; no item mint or remote vendor interaction; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", rune_quantity(client, reference)?).into());
     };
-    walk(client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Npc
-                    && npc.placements.iter().any(|p| {
-                        entity.position.x == i32::from(p.x)
-                            && entity.position.y == i32::from(p.y)
-                            && entity.position.floor == basis.floor(p.floor)
-                    })
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    loop {
+        let vendor_route = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            npc.placements.iter().any(|placement| {
+                placement.floor == at.floor
+                    && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
             })
-        })
-        .map(|entry| entry.entity)
-        .ok_or("rune vendor not visible at compiled placement")?;
-    for text in ["hi", "trade"] {
-        let reply = runtime::talk(
+        }).ok_or_else(|| format!("rune {id}: return walking route to {} unavailable", npc.key))?;
+        walk(client, world, &vendor_route).await?;
+        let actor = client
+            .world_entities()
+            .and_then(|entities| {
+                entities.iter().find(|entity| {
+                    entity.kind == oteryn_dev_client::EntityKind::Npc
+                        && npc.placements.iter().any(|p| {
+                            entity.position.x == i32::from(p.x)
+                                && entity.position.y == i32::from(p.y)
+                                && entity.position.floor == basis.floor(p.floor)
+                        })
+                })
+            })
+            .map(|entry| entry.entity)
+            .ok_or("rune vendor not visible at compiled placement")?;
+        for text in ["hi", "trade"] {
+            let reply = runtime::talk(
+                client.session_mut(),
+                &wire::NpcTalkIntent {
+                    npc_actor: actor,
+                    text: text.into(),
+                },
+            )
+            .await?;
+            if reply != wire::NpcIntentDisposition::Ok {
+                return Err(format!("rune {id} vendor {} {text} refused: {reply:?}", npc.key).into());
+            }
+        }
+        let delta = client
+            .session_mut()
+            .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
+            .await?;
+        let window = wire::decode_npc_trade_window(&delta.payload)
+            .map_err(|error| format!("rune shop decode: {error:?}"))?;
+        let (offer_index, offer) = window
+            .offers
+            .iter()
+            .enumerate()
+            .find(|(_, offer)| {
+                offer.side == wire::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()
+            })
+            .ok_or_else(|| format!("rune {id} not offered by live vendor {}", npc.key))?;
+        let before = rune_quantity(client, reference)?;
+        let balances = runtime::balances(client.session_mut()).await?;
+        client.take_events();
+        let reply = runtime::buy(
             client.session_mut(),
-            &wire::NpcTalkIntent {
+            &wire::NpcTradeIntent {
                 npc_actor: actor,
-                text: text.into(),
+                catalogue_revision: window.open.ok_or("rune shop closed")?.1,
+                offer_index: u32::try_from(offer_index)?,
+                side: offer.side,
+                quantity: 2,
+                expected_unit_price: offer.unit_price,
             },
         )
         .await?;
         if reply != wire::NpcIntentDisposition::Ok {
-            return Err(format!("rune {id} vendor {} {text} refused: {reply:?}", npc.key).into());
+            let price = u64::from(offer.unit_price) * 2;
+            if reply == wire::NpcIntentDisposition::Rejected
+                && balances.is_some_and(|gold| gold.carried_gold.saturating_add(gold.bank_gold) < price)
+            {
+                verdict::Harness::global().bounded_wait(deadline, "rune-purchase-funds");
+                let hunt = async {
+                    travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+                    client_hunt::hunt(client).await
+                };
+                match tokio::time::timeout_at(deadline, hunt).await {
+                    Ok(Ok(())) => continue,
+                    Ok(Err(error)) => {
+                        return Err(format!("rune {id} funds: real hunt/loot failed: {error}; vendor={} price={price} observed_balances={balances:?}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:385", npc.key).into());
+                    }
+                    Err(_) => {
+                        return Err(format!("rune {id} funds: hunt budget exhausted; vendor={} price={price} observed_balances={balances:?}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:385", npc.key).into());
+                    }
+                }
+            }
+            return Err(format!("rune {id} player purchase refused by {}: {reply:?}; quantity=2 unit_price={} observed_balances={balances:?} carried_quantity={before}; no earned funds or rune were granted by this journey; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", npc.key, offer.unit_price).into());
         }
+        let expected = before
+            .checked_add(u64::from(offer.count) * 2)
+            .ok_or("rune quantity overflow")?;
+        let sequence = inventory_quantity(client, reference, expected).await?;
+        return Ok((reference, sequence));
     }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
-        .await?;
-    let window = wire::decode_npc_trade_window(&delta.payload)
-        .map_err(|error| format!("rune shop decode: {error:?}"))?;
-    let (offer_index, offer) = window
-        .offers
-        .iter()
-        .enumerate()
-        .find(|(_, offer)| {
-            offer.side == wire::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()
-        })
-        .ok_or_else(|| format!("rune {id} not offered by live vendor {}", npc.key))?;
-    let before = rune_quantity(client, reference)?;
-    let balances = runtime::balances(client.session_mut()).await?;
-    client.take_events();
-    let reply = runtime::buy(
-        client.session_mut(),
-        &wire::NpcTradeIntent {
-            npc_actor: actor,
-            catalogue_revision: window.open.ok_or("rune shop closed")?.1,
-            offer_index: u32::try_from(offer_index)?,
-            side: offer.side,
-            quantity: 2,
-            expected_unit_price: offer.unit_price,
-        },
-    )
-    .await?;
-    if reply != wire::NpcIntentDisposition::Ok {
-        return Err(format!("rune {id} player purchase refused by {}: {reply:?}; quantity=2 unit_price={} observed_balances={balances:?} carried_quantity={before}; no earned funds or rune were granted by this journey; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", npc.key, offer.unit_price).into());
-    }
-    let expected = before
-        .checked_add(u64::from(offer.count) * 2)
-        .ok_or("rune quantity overflow")?;
-    let sequence = inventory_quantity(client, reference, expected).await?;
-    Ok((reference, sequence))
 }
 
 async fn inventory_quantity(
@@ -1778,9 +1828,9 @@ async fn combat_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
             let mut client = connect_character(clients, tag, usize::from(id != "C17d")).await?;
             let mut peer_cancelled = false;
             let mut completed = false;
-            let deadline = format!("{id} 240s journey deadline; required actions unproven");
+            let deadline = format!("{id} 420s journey deadline; required actions unproven");
             let result = watch
-                .bound(Duration::from_secs(240), deadline, async {
+                .bound(Duration::from_secs(420), deadline, async {
                     let result = if id == "C18a" {
                         directional_aim(&mut row, &mut client, clients, world).await
                     } else {
@@ -1903,6 +1953,9 @@ async fn combat_access(
             } else {
                 "sorcerer"
             };
+            earn_spell_level(client, world, spell.level.max(8))
+                .await
+                .map_err(|error| format!("{refusal}; player progression: {error}"))?;
             if let Err(blocker) = player_first_vocation(client, world, vocation).await {
                 return Err(format!("{refusal}; player prerequisite route: {blocker}").into());
             }
@@ -3036,6 +3089,9 @@ async fn summon_rat(
             reply.disposition, spell.level, vitals.mana, spell.vocations
         );
         if attempt == 0 && try_vocation {
+            earn_spell_level(client, world, spell.level.max(8))
+                .await
+                .map_err(|error| format!("{blocker}; player progression: {error}"))?;
             player_first_vocation(client, world, "sorcerer")
                 .await
                 .map_err(|error| format!("{blocker}; player vocation route: {error}"))?;

@@ -59,6 +59,17 @@ fn decode_progress(payload: &[u8], vocation_selected: bool) -> TestResult<Progre
     Ok(value)
 }
 
+fn adjacent_hunt_target(
+    entity: &oteryn_dev_client::WorldSpatialEntity,
+    at: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+) -> bool {
+    entity.kind == oteryn_dev_client::EntityKind::Creature
+        && entity.position.floor == at.floor
+        && entity.position.x.abs_diff(at.x).max(entity.position.y.abs_diff(at.y)) <= 1
+        && entity.display_name.as_ref().and_then(|name| name.as_str().ok())
+            .is_some_and(|name| name.eq_ignore_ascii_case("Rat"))
+}
+
 async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -88,11 +99,7 @@ async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult 
     let target = client
         .world_entities()
         .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Creature
-                    && entity.position.floor == at.floor
-                    && entity.position.x.abs_diff(at.x).max(entity.position.y.abs_diff(at.y)) <= 1
-            })
+            entities.iter().find(|entity| adjacent_hunt_target(entity, at))
         })
         .copied()
         .ok_or("step-3 rat spawn reached but no adjacent creature frame observed")?;
@@ -227,6 +234,35 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hunt_targets_the_adjacent_rat_only() -> TestResult {
+        use oteryn_dev_client::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
+        use oteryn_protocol_oteryn::{
+            entity_names::EntityDisplayName, world_spatial::ActorPosition,
+        };
+
+        let at = ActorPosition { x: 100, y: 100, floor: -7 };
+        let mut creature = WorldSpatialEntity {
+            motion: None,
+            display_name: Some(EntityDisplayName::new("Rat").map_err(|error| format!("{error:?}"))?),
+            kind: EntityKind::Creature,
+            entity: EntityRef { identity: [7; 16], generation: 1 },
+            position: ActorPosition { x: 101, ..at },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        };
+        assert!(adjacent_hunt_target(&creature, at));
+        creature.position.x = 102;
+        assert!(!adjacent_hunt_target(&creature, at));
+        creature.position.x = 101;
+        creature.display_name = Some(EntityDisplayName::new("Cave Rat").map_err(|error| format!("{error:?}"))?);
+        assert!(!adjacent_hunt_target(&creature, at));
+        Ok(())
+    }
 
     #[test]
     fn general_stats_decoder_reads_xp_level_and_stamina() -> TestResult {

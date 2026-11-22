@@ -80,10 +80,10 @@ impl Row {
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
     let result =
-        match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(&mut row, clients))).await {
+        match verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(&mut row, clients))).await {
             Ok(result) => result,
             Err(_) => Err(
-                "step=journey observed=timeout-after-180s need=responsive-spell/AI/visibility-path"
+                "step=journey observed=timeout-after-360s need=responsive-spell/AI/visibility-path"
                     .into(),
             ),
         };
@@ -188,6 +188,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut caster = connect_character(clients, 0xb1, 1).await?;
+    let book = spell_book()?;
+    let spell = book
+        .spoken("utana vid")
+        .ok_or("step=cast observed=words-unresolved need=Invisibility-catalog")?
+        .spell;
+    let crate::spell::ManaCost::Fixed(cost) = spell.mana else {
+        return Err("step=cast observed=non-fixed-mana need=assertable-cost".into());
+    };
+    full_e2ef5::earn_spell_level(&mut caster, world, spell.level)
+        .await
+        .map_err(|error| format!("step=invisibility-access spell=utana vid: {error}"))?;
     let mut observer = connect_character(clients, 0xb2, 0).await?;
     travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let caster_tile = tile(caster.world_spatial().actor_position)?;
@@ -259,14 +270,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("player-targets-visible", selected.result_server_sequence)?;
     observer.session_mut().attack_target(None).await?;
-    let book = spell_book()?;
-    let spell = book
-        .spoken("utana vid")
-        .ok_or("step=cast observed=words-unresolved need=Invisibility-catalog")?
-        .spell;
-    let crate::spell::ManaCost::Fixed(cost) = spell.mana else {
-        return Err("step=cast observed=non-fixed-mana need=assertable-cost".into());
-    };
     let before = caster
         .actor_vitals()
         .copied()
