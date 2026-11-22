@@ -1,4 +1,4 @@
-//! One Inbox mint for the daily temple scroll. Winter Update 2026 retired the item picker,
+//! One atomic Inbox mint for the daily temple scrolls. Winter Update 2026 retired the item picker,
 //! so no selected consumable or exercise weapon is minted (migration 1711 keeps history).
 use super::{
     DurabilityError,
@@ -14,34 +14,33 @@ pub(super) async fn mint(
     request: DailyRewardClaimRequest,
     day: u8,
     temple: u8,
-) -> Result<Option<String>, DurabilityError> {
+) -> Result<Vec<String>, DurabilityError> {
     if temple == 0 {
-        return Ok(None);
+        return Ok(Vec::new());
     }
-    let lines = [(25718_u32, u32::from(temple))];
     let mut ids = Vec::new();
     let mut strings = Vec::new();
     let mut outputs = Vec::new();
-    for (line, (source, quantity)) in lines.iter().enumerate() {
+    for line in 0..u32::from(temple) {
         let text: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
             .fetch_one(&mut ***tx)
             .await?;
         ids.push(uuid_text(&text)?);
         strings.push(text);
         outputs.push(RewardClaimInboxMintOutput {
-            source_line: line as u32,
+            source_line: line,
             item: ItemDefinitionFacts {
                 weight: None,
                 definition: TypedDefinitionRef {
                     family: "Item".into(),
-                    production_key: format!("oteryn:item.tibia.i{source}"),
+                    production_key: "oteryn:item.tibia.i25718".into(),
                     revision_ref: "definition-r1".into(),
                 },
                 stack: ItemStackClass::NonStackable,
                 container_capacity: None,
                 container_slot_equip_pattern: false,
             },
-            quantity: *quantity,
+            quantity: 1,
             key_number: None,
         });
     }
@@ -89,5 +88,5 @@ pub(super) async fn mint(
     for item in &strings {
         sqlx::query("INSERT INTO public.game_item_bindings(item_instance_id,world_id,character_id,cause) VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,'DAILY_REWARD')").bind(item).bind(world_id.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).execute(&mut ***tx).await?;
     }
-    Ok(strings.first().cloned())
+    Ok(strings)
 }

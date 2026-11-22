@@ -4,6 +4,7 @@ use super::DurabilityError;
 use super::daily_reward_claim::DailyRewardClaimRequest;
 use super::item_mint_audit::Type2Transaction;
 use super::item_transfer::CurrentCharacterItemFence;
+use oteryn_gameplay_progression::daily_reward::DailyRewardSet;
 use sqlx::{Postgres, Row, Transaction};
 
 pub(super) async fn grant(
@@ -11,14 +12,25 @@ pub(super) async fn grant(
     fence: CurrentCharacterItemFence,
     request: DailyRewardClaimRequest,
     day: u8,
-    premium: bool,
+    reward: DailyRewardSet,
 ) -> Result<(), DurabilityError> {
     let character = fence.character_id.as_bytes().as_slice();
     let world = fence.runtime_scope.world_id();
     let claim = request.transaction_id.as_slice();
-    let reward = oteryn_gameplay_progression::daily_reward::reward_for_day(day, premium)
-        .ok_or(DurabilityError::InvalidStoredState)?;
-    let temple = super::daily_reward_picked_items::mint(
+    let mut line: i16 = 0;
+    for (kind, quantity) in [
+        ("BOUNTY_REROLL", reward.bounty_reroll_tokens),
+        ("COSMETIC_TOKEN", reward.cosmetic_tokens),
+    ] {
+        if quantity == 0 {
+            continue;
+        }
+        grant_balance(tx, fence, request, kind, quantity).await?;
+        sqlx::query("INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id) VALUES(encode($1,'hex')::uuid,$2,$3,$4,'DELIVERED',encode($1,'hex')::uuid)")
+            .bind(claim).bind(line).bind(kind).bind(i32::from(quantity)).execute(&mut ***tx).await?;
+        line += 1;
+    }
+    let scrolls = super::daily_reward_picked_items::mint(
         tx,
         fence,
         request,
@@ -26,34 +38,15 @@ pub(super) async fn grant(
         reward.temple_teleport_scrolls,
     )
     .await?;
-    let mut line: i16 = 0;
-    for (kind, quantity) in [
-        ("BOUNTY_REROLL", reward.bounty_reroll_tokens),
-        ("COSMETIC_TOKEN", reward.cosmetic_tokens),
-        ("TEMPLE_SCROLL", reward.temple_teleport_scrolls),
-    ] {
-        if quantity == 0 {
-            continue;
-        }
-        let item = if kind == "TEMPLE_SCROLL" {
-            temple.clone()
-        } else {
-            grant_balance(tx, fence, request, kind, quantity).await?;
-            None
-        };
-        sqlx::query("INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,definition,quantity,status,delivering_transaction_id,item_instance_id) VALUES(encode($1,'hex')::uuid,$2,$3,CASE WHEN $3='TEMPLE_SCROLL' THEN 'oteryn:item.tibia.i25718' END,$4,'DELIVERED',encode($1,'hex')::uuid,$5::uuid)")
-            .bind(claim).bind(line).bind(kind).bind(i32::from(quantity)).bind(item.as_deref())
-            .execute(&mut ***tx).await?;
-        // WU26-06: the delivered scroll vanishes seven days later through the existing Item
-        // deadline owner (docs/contracts/TEMPLE_TELEPORT_SCROLL_V1.md; migration 2762).
-        if let Some(item) = &item {
-            super::item_use::temple_scroll::schedule_delivered_scroll(
-                tx,
-                item,
-                &request.transaction_id,
-            )
-            .await?;
-        }
+    for item in scrolls {
+        sqlx::query("INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,definition,quantity,status,delivering_transaction_id,item_instance_id) VALUES(encode($1,'hex')::uuid,$2,'TEMPLE_SCROLL','oteryn:item.tibia.i25718',1,'DELIVERED',encode($1,'hex')::uuid,$3::text::uuid)")
+            .bind(claim).bind(line).bind(&item).execute(&mut ***tx).await?;
+        super::item_use::temple_scroll::schedule_delivered_scroll(
+            tx,
+            &item,
+            &request.transaction_id,
+        )
+        .await?;
         line += 1;
     }
     if reward.prey_wildcards > 0 {

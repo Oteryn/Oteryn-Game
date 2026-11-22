@@ -2404,7 +2404,15 @@ pub fn record_creature_kill(
         }
     }
     if let Some((kind, _)) = forge_kind {
-        let Some(amount) = kind.experience(row.xp_amount.get()) else {
+        let amount = if oteryn_gameplay_foundation::scheduled_events::current_rates()
+            .exaltation_overload
+            .is_some()
+        {
+            kind.overload_experience(row.xp_amount.get())
+        } else {
+            kind.experience(row.xp_amount.get())
+        };
+        let Some(amount) = amount else {
             refuse("forge_xp_overflow", &creature);
             return;
         };

@@ -473,6 +473,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     offence.critical_damage = offence.critical_damage.saturating_add(1_000);
                 }
             }
+            if let Some(state) = states.get(&runtime, entry.actor, entry.session)
+                && let Some(
+                    oteryn_gameplay_domain::domain::condition::ConditionValues::Attributes {
+                        critical_chance_percent,
+                        critical_extra_percentage_points,
+                        ..
+                    },
+                ) = state.owned_conditions().attributes_at(now.get())
+            {
+                offence.critical_chance = offence.critical_chance.max(
+                    u16::try_from(critical_chance_percent.saturating_mul(100))
+                        .unwrap_or(u16::MAX)
+                        .saturating_sub(500),
+                );
+                offence.critical_damage = offence.critical_damage.saturating_add(
+                    u16::try_from(critical_extra_percentage_points.saturating_mul(100))
+                        .unwrap_or(u16::MAX),
+                );
+            }
             let cleaves = if offence.cleave > 0 {
                 equipped_offence::cleave_targets(entry, &selected, &runtime, room, now)
             } else {
@@ -1596,6 +1615,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        if hit.magnitude > 0
+            && states
+                .get(runtime, hit.target, target_session)
+                .is_some_and(|state| {
+                    equipped_offence::ruse(
+                        state,
+                        root,
+                        super::swing_occurrence(hit.actor, hit.lineage, hit.ordinal, b"pvp-ruse"),
+                    )
+                })
+        {
+            if !hit.extension {
+                publish_hit_sound(states, runtime, content, hit.actor, &hit.weapon);
+            }
+            train_pvp_swing(states, runtime, content, &hit, 0, now, trained);
+            return;
+        }
         let mut vitals = PlayerBiteVitals {
             quest_sessions: Some(&self.states.quest_sessions),
             charm: None,

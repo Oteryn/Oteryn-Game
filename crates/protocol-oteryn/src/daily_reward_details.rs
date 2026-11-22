@@ -46,12 +46,12 @@ impl Details {
         out.extend(self.epoch.to_le_bytes());
         for day in self.days {
             for t in [day.free, day.premium] {
-                if t.cosmetic_tokens > 10
-                    || t.prey_wildcards > 2
-                    || t.temple_scrolls > 1
-                    || t.bounty_tokens > 1
+                if t.cosmetic_tokens > 20
+                    || t.prey_wildcards > 4
+                    || t.temple_scrolls > 2
+                    || t.bounty_tokens > 2
                     || !matches!(t.xp_percent, 0 | 10 | 20 | 25 | 50)
-                    || !matches!(t.xp_minutes, 0 | 30 | 45 | 60)
+                    || !matches!(t.xp_minutes, 0 | 30 | 45 | 60 | 90 | 120)
                     || (t.xp_percent == 0) != (t.xp_minutes == 0)
                 {
                     return Err("invalid tier");

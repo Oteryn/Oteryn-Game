@@ -131,6 +131,15 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
             return false;
         };
         charm.base_damage = base_damage;
+        if self
+            .states
+            .get(runtime, target, session)
+            .is_some_and(|state| {
+                super::equipped_offence::ruse(state, &charm.root, charm.occurrence)
+            })
+        {
+            return true;
+        }
         charm_combat::evaluate(
             self.states,
             runtime,

@@ -22,7 +22,7 @@ pub(super) fn attacker_offence(
 /// before the target's defence, armor or the PvP halving. The caller supplies the attack's
 /// shared tagged critical draw; target-specific damage draws remain independent. EQMOD2 then
 /// draws the tier/amplified fatal hit and adds its rounded 60% bonus. `None` when a required draw cannot be made (fail closed).
-pub(super) fn critical_swing(
+pub(in crate::gameplay_transport) fn critical_swing(
     offence: &EquippedOffence,
     root: &GameplayDecisionRoot,
     attacker: ExactActorRef,
@@ -31,7 +31,11 @@ pub(super) fn critical_swing(
     damage: i64,
     critical_roll: u64,
 ) -> Option<i64> {
-    if damage <= 0 || (!offence.rolls_critical() && offence.weapon_tier == 0) {
+    let bonus = oteryn_gameplay_foundation::scheduled_events::current_rates()
+        .exaltation_overload
+        .map_or(0, |event| event.onslaught_permyriad());
+    let rolls_fatal = offence.weapon_tier > 0 || bonus > 0;
+    if damage <= 0 || (!offence.rolls_critical() && !rolls_fatal) {
         return Some(damage);
     }
     let damage = u32::try_from(damage).ok()?;
@@ -40,7 +44,7 @@ pub(super) fn critical_swing(
     } else {
         damage
     };
-    let damage = if offence.weapon_tier > 0 {
+    let damage = if rolls_fatal {
         let roll = swing_draw(
             root,
             attacker,
@@ -51,11 +55,114 @@ pub(super) fn critical_swing(
             0,
             10_000,
         )?;
-        offence.fatal(damage, u64::try_from(roll).ok()?)
+        offence.fatal_with_bonus(damage, u64::try_from(roll).ok()?, bonus)
     } else {
         damage
     };
     Some(i64::from(damage))
+}
+
+/// Crystal game.cpp:7226-7234 checks one Ruse draw before ordinary mitigation.
+pub(in crate::gameplay_transport) fn ruse(
+    state: &crate::spell::cast::PlayerSpellState,
+    root: &GameplayDecisionRoot,
+    occurrence: DecisionOccurrenceId,
+) -> bool {
+    let Some(event) =
+        oteryn_gameplay_foundation::scheduled_events::current_rates().exaltation_overload
+    else {
+        return false;
+    };
+    let bonus = u64::from(event.ruse_permyriad());
+    if bonus == 0 {
+        return false;
+    }
+    let threshold = state.equipped_ruse_chance() + bonus;
+    oteryn_simulation_determinism::deterministic_decision_u64(root, occurrence, "attack.ruse", 0)
+        .is_ok_and(|draw| draw % 10_001 < threshold)
+}
+
+impl ChannelAttackStates {
+    /// Crystal player.cpp:10489-10517 runs Transcendence on the player's combat
+    /// cadence. The server keeps one deterministic draw per two-second slot.
+    pub(in crate::gameplay_transport) fn trigger_forge_avatar(
+        &self,
+        state: &mut crate::spell::cast::PlayerSpellState,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+        digest: &[u8; 32],
+    ) {
+        use crate::spell::Vocation;
+        use crate::spell::combat_batch::{AvatarState, OwnerCombatChange};
+        use oteryn_gameplay_domain::domain::condition::ConflictKey;
+        use sha2::{Digest, Sha256};
+
+        const CADENCE_MICROS: u64 = 2_000_000;
+        // Crystal config.lua.dist:230 and player_wheel.cpp:3295-3330.
+        const DURATION_MS: u64 = 7_000;
+
+        let Some(event) =
+            oteryn_gameplay_foundation::scheduled_events::current_rates().exaltation_overload
+        else {
+            return;
+        };
+        let recent_attack = self
+            .party_attack_state(actor, session)
+            .is_some_and(|attack| attack.swung_within_interval(now, CADENCE_MICROS))
+            || state.forge_spell_attack_within(now.get(), CADENCE_MICROS);
+        if (now.get() % CADENCE_MICROS) >= 1_000_000
+            || !recent_attack
+            || state
+                .owned_conditions()
+                .active_at(ConflictKey::Attributes, now.get())
+                .is_some_and(|condition| condition.definition().key() == "spell.avatar.attributes")
+        {
+            return;
+        }
+        let threshold =
+            state.equipped_transcendence_chance() + u64::from(event.transcendence_permyriad());
+        let hash = Sha256::new()
+            .chain_update(b"oteryn:forge-avatar:v1")
+            .chain_update(session.as_bytes())
+            .chain_update(actor.placement_identity())
+            .chain_update((now.get() / CADENCE_MICROS).to_be_bytes())
+            .finalize();
+        let mut occurrence = [0; 16];
+        occurrence.copy_from_slice(&hash[..16]);
+        let root = GameplayDecisionRoot::from_bytes(*digest);
+        if !oteryn_simulation_determinism::deterministic_decision_u64(
+            &root,
+            DecisionOccurrenceId::from_bytes(occurrence),
+            "attack.transcendence",
+            0,
+        )
+        .is_ok_and(|draw| draw % 10_001 < threshold)
+        {
+            return;
+        }
+        // The vocation avatar appearances are the same as the qualified native spells.
+        let outfit_look_type = match state.character_facts().vocation {
+            Vocation::Knight | Vocation::EliteKnight => 1593,
+            Vocation::Paladin | Vocation::RoyalPaladin => 1594,
+            Vocation::Sorcerer | Vocation::MasterSorcerer => 1595,
+            Vocation::Druid | Vocation::ElderDruid => 1596,
+            Vocation::Monk | Vocation::ExaltedMonk => 1823,
+            Vocation::None => return,
+        };
+        let now_ms = now.get().div_ceil(1_000);
+        let _ = crate::spell::actor_conditions::apply_combat_change(
+            state,
+            &OwnerCombatChange::Avatar(AvatarState {
+                expires_ms: now_ms.saturating_add(DURATION_MS),
+                outfit_look_type,
+                incoming_reduction_percent: 15,
+                critical_chance_percent: 100,
+                critical_extra_percentage_points: 15,
+            }),
+            now_ms,
+        );
+    }
 }
 
 /// Only an applied owner receipt permits leech. The admitted attack supplies
