@@ -56,7 +56,7 @@ impl WindowLayout {
 
     #[cfg(bevy_shell)]
     pub(crate) fn save_edits(&self, path: &Path, before: &Self) -> io::Result<()> {
-        let _lock = crate::atomic_file::try_lock(path)?;
+        let _lock = crate::atomic_file::lock(path)?;
         let mut active = match Self::load(path) {
             Err(error) if error.kind() == io::ErrorKind::InvalidData => {
                 crate::atomic_file::preserve_malformed(path)?;

@@ -9,10 +9,11 @@ use std::{
     mem::{size_of, zeroed},
     os::windows::{
         ffi::OsStrExt,
+        fs::{MetadataExt, OpenOptionsExt},
         io::{AsRawHandle, FromRawHandle, OwnedHandle},
     },
     path::Path,
-    ptr::{null, null_mut},
+    ptr::null_mut,
 };
 use windows_sys::Win32::{
     Foundation::{INVALID_HANDLE_VALUE, LocalFree},
@@ -28,8 +29,8 @@ use windows_sys::Win32::{
     },
     Storage::FileSystem::{
         BY_HANDLE_FILE_INFORMATION, CreateFileW, FILE_APPEND_DATA, FILE_ATTRIBUTE_DIRECTORY,
-        FILE_ATTRIBUTE_REPARSE_POINT, FILE_FLAG_OPEN_REPARSE_POINT, FILE_READ_ATTRIBUTES,
-        FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_TYPE_DISK, FILE_WRITE_DATA,
+        FILE_ATTRIBUTE_REPARSE_POINT, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT,
+        FILE_READ_ATTRIBUTES, FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_TYPE_DISK, FILE_WRITE_DATA,
         GetFileInformationByHandle, GetFileType, OPEN_ALWAYS, READ_CONTROL,
     },
     System::Threading::{GetCurrentProcess, OpenProcessToken},
@@ -100,8 +101,33 @@ fn sid_string(sid: PSID) -> io::Result<String> {
     }
 }
 
+// Hold each checked directory without write or delete sharing until the final
+// open, so the path cannot be redirected between inspection and creation.
+fn guard_parents(path: &Path) -> io::Result<Vec<File>> {
+    let parents: Vec<_> = path.ancestors().skip(1).collect();
+    parents
+        .into_iter()
+        .rev()
+        .map(|parent| {
+            let directory = File::options()
+                .access_mode(FILE_READ_ATTRIBUTES)
+                .share_mode(FILE_SHARE_READ)
+                .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
+                .open(parent)?;
+            let attributes = directory.metadata()?.file_attributes();
+            if attributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)
+                != FILE_ATTRIBUTE_DIRECTORY
+            {
+                return Err(io::ErrorKind::PermissionDenied.into());
+            }
+            Ok(directory)
+        })
+        .collect()
+}
+
 fn open_with_descriptor(path: &Path, append: bool, descriptor: &str) -> io::Result<File> {
     let path = std::path::absolute(path)?;
+    let _parents = guard_parents(&path)?;
     let mut path: Vec<u16> = path.as_os_str().encode_wide().collect();
     if path.contains(&0) {
         return Err(io::ErrorKind::InvalidInput.into());

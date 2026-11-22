@@ -19,35 +19,22 @@ impl SettingsState {
         };
         let path = base.with_extension("session-options.json");
         let baseline = self.session_baseline.clone();
-        let result = match crate::atomic_file::try_lock(&path) {
-            Ok(lock) => disable_remember_device_locked(&path, &baseline, lock),
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                let previous = self.session_save.take();
-                self.session_save = Some(
-                    bevy_tasks::IoTaskPool::get_or_init(|| {
-                        bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
-                    })
-                    .spawn(async move {
-                        let earlier = match previous {
-                            Some(previous) => previous.await,
-                            None => Ok(()),
-                        };
-                        let current = crate::atomic_file::lock(&path)
-                            .and_then(|lock| disable_remember_device_locked(&path, &baseline, lock))
-                            .map_err(|error| error.to_string());
-                        earlier.and(current)
-                    }),
-                );
-                return;
-            }
-            Err(error) => Err(error),
-        };
-        if let Err(error) = result {
-            self.feedback = lfmt!(
-                "Applied for this session; could not save: {error}",
-                error = error
-            );
-        }
+        let previous = self.session_save.take();
+        self.session_save = Some(
+            bevy_tasks::IoTaskPool::get_or_init(|| {
+                bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+            })
+            .spawn(async move {
+                let earlier = match previous {
+                    Some(previous) => previous.await,
+                    None => Ok(()),
+                };
+                let current = crate::atomic_file::wait_for_lock(&path)
+                    .and_then(|lock| disable_remember_device_locked(&path, &baseline, lock))
+                    .map_err(|error| error.to_string());
+                earlier.and(current)
+            }),
+        );
     }
 
     pub(super) fn persist_preferences(
@@ -71,7 +58,7 @@ impl SettingsState {
             }
             let (complete, saved) = tokio::sync::oneshot::channel();
             store
-                .apply_then(preferences.clone(), move |success| {
+                .apply_then(preferences.clone(), true, move |success| {
                     let _ = complete.send(success);
                 })
                 .map_err(|error| error.to_string())?;

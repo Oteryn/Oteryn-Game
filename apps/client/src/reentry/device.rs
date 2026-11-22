@@ -108,6 +108,18 @@ impl Reentry {
             .is_some_and(|config| crate::web_links::open(config, link))
     }
 
+    #[cfg(bevy_shell)]
+    pub(crate) fn config_for_forget(&self) -> Option<&crate::NativeLoginConfig> {
+        self.client.native_login.as_ref()
+    }
+
+    pub(crate) fn cancel_after_sign_out(&mut self) {
+        if let Some(config) = &self.client.native_login {
+            config.training_queue.clear();
+        }
+        self.cancel_entry();
+    }
+
     pub fn native_sign_out(
         &mut self,
     ) -> Result<
@@ -115,10 +127,7 @@ impl Reentry {
         oteryn_platform_client::native_login::NativeLoginError,
     > {
         let result = self.forget_native_session()?;
-        if let Some(config) = &self.client.native_login {
-            config.training_queue.clear();
-        }
-        self.cancel_entry();
+        self.cancel_after_sign_out();
         Ok(result)
     }
     /// Explicit native sign-out; normal game logout keeps a remembered login available.
@@ -145,21 +154,29 @@ impl Reentry {
                 .unwrap_or_default()
         });
         options.remember_device = false;
+        let target = config.clone();
+        Ok(Some(self.finish_recorded_forget(target)))
+    }
+
+    pub(crate) fn finish_recorded_forget(
+        &mut self,
+        config: crate::NativeLoginConfig,
+    ) -> watch::Receiver<Option<bool>> {
         let runtime = &self.client.runtime;
         if let Some(previous) = self
             .revocations
             .iter_mut()
-            .find(|previous| previous.matches(config))
+            .find(|previous| previous.matches(&config))
         {
             if previous.finished().is_some() {
-                *previous = Revocation::start(Arc::new(config.clone()), runtime);
+                *previous = Revocation::start(Arc::new(config), runtime);
             }
-            return Ok(Some(previous.result.clone()));
+            return previous.result.clone();
         }
-        let revocation = Revocation::start(Arc::new(config.clone()), runtime);
+        let revocation = Revocation::start(Arc::new(config), runtime);
         let result = revocation.result.clone();
         self.revocations.push(revocation);
-        Ok(Some(result))
+        result
     }
 
     pub(super) fn revocation_for_entry(&mut self) -> Option<watch::Receiver<Option<bool>>> {

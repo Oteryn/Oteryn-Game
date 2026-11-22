@@ -279,6 +279,15 @@ fn window_geometry_survives_restart_and_rejects_bad_bounds() -> TestResult {
     Ok(())
 }
 
+fn settle_geometry(app: &mut App) {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    while app.world().resource::<LayoutStore>().writing.is_some() {
+        assert!(std::time::Instant::now() < deadline);
+        app.update();
+        std::thread::yield_now();
+    }
+}
+
 #[test]
 fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
     let fixture = tempfile::tempdir()?;
@@ -312,6 +321,7 @@ fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
     window.position = WindowPosition::At(IVec2::new(40, 80));
     window.resolution = (1280, 900).into();
     app.update();
+    settle_geometry(&mut app);
     let mut restarted = app_with(LayoutStore::load(Some(path.clone())));
     let mut sizes = handles(&mut restarted)
         .into_iter()
@@ -327,6 +337,7 @@ fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
         let mut window = windows.single_mut(app.world_mut())?;
         window.resolution = (width, height).into();
         app.update();
+        settle_geometry(&mut app);
         assert_eq!(
             LayoutStore::load(Some(path.clone())).window(),
             Some([40, 80, width as i32, height as i32])
@@ -336,6 +347,7 @@ fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
     window.resolution.set_scale_factor(2.);
     window.resolution.set_physical_resolution(2400, 1400);
     app.update();
+    settle_geometry(&mut app);
     let mut restart = App::new();
     restart.add_plugins(LayoutStore::load(Some(path.clone())).primary_window_plugin());
     let mut primary = restart
@@ -360,13 +372,16 @@ fn failed_layout_save_retries_after_directory_recovers() -> TestResult {
 
     let path = dir.join("layout.json");
     let mut app = app_with(LayoutStore::load(Some(path.clone())));
+    settle_geometry(&mut app);
     std::fs::remove_file(&dir)?;
     app.update();
+    settle_geometry(&mut app);
     assert!(!path.exists(), "retry must back off");
     app.world_mut()
         .resource_mut::<Time<Real>>()
         .advance_by(std::time::Duration::from_secs(1));
     app.update();
+    settle_geometry(&mut app);
     assert!(WindowLayout::load(&path)?.bounds("console").is_some());
     Ok(())
 }
@@ -450,5 +465,24 @@ fn unversioned_logical_bounds_keep_their_size_at_double_dpi() -> TestResult {
         Some([40, 80, 2400, 1400])
     );
     std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn c2d_held_geometry_lock_allows_frames_while_save_waits() -> TestResult {
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("window.json");
+    let held = crate::atomic_file::lock(&path)?;
+    let mut app = app_with(LayoutStore::load(Some(path.clone())));
+    app.update();
+    assert!(!path.exists());
+    drop(held);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    while !path.exists() {
+        assert!(std::time::Instant::now() < deadline);
+        app.update();
+        std::thread::yield_now();
+    }
+    assert!(WindowLayout::load(&path)?.bounds("console").is_some());
     Ok(())
 }

@@ -513,7 +513,8 @@ fn review_3376_login_defers_contended_writes_to_a_worker() -> TestResult {
     state.form.settings = visible.clone();
     state.show();
     let held = crate::atomic_file::lock(&path)?;
-    assert!(state.start_save().is_none());
+    state.start_save();
+    assert!(state.save_pending());
     assert!(state.form.message().contains("Waiting to save"));
     assert!(!path.exists());
     drop(held);
@@ -527,5 +528,48 @@ fn review_3376_login_defers_contended_writes_to_a_worker() -> TestResult {
     };
     assert_eq!(config.platform_url, visible.platform_url);
     assert!(path.is_file());
+    Ok(())
+}
+
+#[test]
+fn c2d_login_preserves_invalid_document() -> TestResult {
+    let temp = Temp::new()?;
+    let path = temp.join("native-login.json");
+    std::fs::write(&path, b"{")?;
+    let mut state = LoginState::default();
+    state.load(Some(path.clone()), |_| None);
+    state.show();
+    state.form.settings = settings(&temp)?;
+    state.submit()?;
+    assert_eq!(std::fs::read(path.with_added_extension("malformed"))?, b"{");
+    Ok(())
+}
+
+#[test]
+fn c2d_uncontended_login_queues_save() -> TestResult {
+    let temp = Temp::new()?;
+    let mut state = LoginState::default();
+    state.load(Some(temp.join("native-login.json")), |_| None);
+    state.show();
+    state.form.settings = settings(&temp)?;
+    state.start_save();
+    assert!(state.save_pending());
+    Ok(())
+}
+
+#[test]
+fn c2a_sign_out_disarms_contended_login_save() -> TestResult {
+    let temp = Temp::new()?;
+    let path = temp.join("login.json");
+    let mut owner = HostOwner::new(None)?;
+    owner.configure_login(Some(path.clone()), |_| None);
+    owner.request_login();
+    owner.login.form.settings = settings(&temp)?;
+    let lock = crate::atomic_file::lock(&path)?;
+    owner.submit_login();
+    assert!(owner.login.save_pending());
+    owner.sign_out_device();
+    drop(lock);
+    assert!(!owner.login.save_pending());
     Ok(())
 }

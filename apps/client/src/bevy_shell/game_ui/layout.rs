@@ -28,6 +28,7 @@ pub(in crate::bevy_shell) struct LayoutStore {
     layout: WindowLayout,
     baseline: WindowLayout,
     pending_save: bool,
+    writing: Option<bevy_tasks::Task<std::io::Result<WindowLayout>>>,
     #[cfg(test)]
     rejection_count: usize,
     retry_after: std::time::Duration,
@@ -44,7 +45,12 @@ impl LayoutStore {
             path,
             baseline: layout.clone(),
             layout,
-            ..default()
+            pending_save: false,
+            writing: None,
+            #[cfg(test)]
+            rejection_count: 0,
+            retry_after: Default::default(),
+            rejected: Default::default(),
         }
     }
     pub(in crate::bevy_shell) fn primary_window_plugin(&self) -> WindowPlugin {
@@ -128,6 +134,26 @@ impl LayoutStore {
     }
 }
 
+impl Drop for LayoutStore {
+    fn drop(&mut self) {
+        if let Some(task) = self.writing.take() {
+            match bevy_tasks::block_on(task) {
+                Ok(before) => self.baseline = before,
+                Err(error) => {
+                    self.pending_save = true;
+                    eprintln!("Could not save window geometry: {error}");
+                }
+            }
+        }
+        if self.pending_save
+            && let Some(path) = &self.path
+            && let Err(error) = self.layout.save_edits(path, &self.baseline)
+        {
+            eprintln!("Could not flush window geometry: {error}");
+        }
+    }
+}
+
 #[derive(Component, Clone, Copy)]
 pub(super) struct Splitter {
     id: &'static str,
@@ -198,20 +224,38 @@ fn remember(
         ];
         store.remember_bounds(WINDOW, bounds);
     }
-    if store.pending_save
-        && time.elapsed() >= store.retry_after
-        && let Some(path) = &store.path
+    if let Some(result) = store
+        .writing
+        .as_mut()
+        .and_then(bevy_tasks::futures::check_ready)
     {
-        match store.layout.save_edits(path, &store.baseline) {
-            Ok(()) => {
-                store.baseline = store.layout.clone();
-                store.pending_save = false;
-            }
+        store.writing = None;
+        match result {
+            Ok(baseline) => store.baseline = baseline,
             Err(error) => {
+                store.pending_save = true;
                 store.retry_after = time.elapsed() + std::time::Duration::from_secs(1);
                 leprintln!("Could not save window layout: {error}", error = error);
             }
         }
+    }
+    if store.pending_save
+        && store.writing.is_none()
+        && time.elapsed() >= store.retry_after
+        && let Some(path) = store.path.clone()
+    {
+        let edited = store.layout.clone();
+        let before = store.baseline.clone();
+        store.pending_save = false;
+        store.writing = Some(
+            bevy_tasks::IoTaskPool::get_or_init(|| {
+                bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+            })
+            .spawn(async move {
+                edited.save_edits(&path, &before)?;
+                Ok(edited)
+            }),
+        );
     }
 }
 fn maintain(
