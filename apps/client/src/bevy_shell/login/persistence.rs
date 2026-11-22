@@ -34,6 +34,7 @@ impl LoginState {
         };
         self.record_edits();
         let edited_fields = self.edited_fields;
+        let env_fallback = self.env_fallback;
         let visible = self.form.settings.clone();
         if let Err(error) = visible.validate() {
             self.form.feedback(error);
@@ -49,7 +50,7 @@ impl LoginState {
             if let Some(previous) = previous {
                 let _ = previous.task.await;
             }
-            edited.save_fields(&path, edited_fields)
+            edited.save_fields(&path, edited_fields, env_fallback)
         });
         self.saving = Some(PendingSave {
             task,

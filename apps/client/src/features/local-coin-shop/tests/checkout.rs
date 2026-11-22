@@ -365,3 +365,70 @@ fn overlapping_purchases_send_one_post_until_response() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn fresh_grant_filters_previously_accepted_order() -> TestResult {
+    checkout_refresh_case(true)
+}
+
+#[test]
+fn earlier_order_cannot_replace_just_purchased_checkout() -> TestResult {
+    checkout_refresh_case(false)
+}
+
+fn checkout_refresh_case(deny_lookup: bool) -> TestResult {
+    test_thread(move || {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let next = mock.token(&client)?;
+        let browser: Browser = Arc::new(|_| true);
+        let execute = |view: &mut View, action, grant| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                grant,
+                &browser,
+                CancellationToken::new(),
+            ));
+        };
+        let purchase = || Action::Purchase {
+            package_id: PACKAGE.into(),
+            confirmed: true,
+        };
+        let mut first = View::new(None);
+        execute(&mut first, Action::Refresh, &token);
+        mock.with_coins(|c| {
+            c.drop_after_create = !deny_lookup;
+            c.hide_recent_orders = !deny_lookup;
+        })?;
+        execute(&mut first, purchase(), &token);
+        let original = mock
+            .with_coins(|c| c.orders.keys().next().cloned())?
+            .ok_or("order")?;
+        let mut fresh = View::with_prior(None, first.prior.clone());
+        if deny_lookup {
+            let listed = mock
+                .with_coins(|c| c.orders.remove(&original))?
+                .ok_or("listed order")?;
+            mock.with_coins(|c| c.orders.insert("stale-index".into(), listed))?;
+            execute(&mut fresh, Action::Refresh, &next);
+            assert!(!format!("{fresh:?}").contains(&original));
+            assert!(fresh.can_purchase(PACKAGE));
+        } else {
+            execute(&mut fresh, Action::Refresh, &next);
+            mock.with_coins(|c| {
+                c.hide_recent_orders = false;
+                c.drop_after_create = false;
+            })?;
+            execute(&mut fresh, purchase(), &next);
+            assert_eq!(mock.with_coins(|c| c.orders.len())?, 2);
+            assert_ne!(
+                fresh.order.as_ref().ok_or("active order")?.request_id,
+                original
+            );
+        }
+        Ok(())
+    })
+}

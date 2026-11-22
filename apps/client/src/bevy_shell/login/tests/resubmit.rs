@@ -102,3 +102,30 @@ fn failed_resubmission_retries_the_submitted_gateway() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn submit_repairs_empty_saved_gateway_from_environment() -> TestResult {
+    let temp = Temp::new()?;
+    let path = temp.join("login.json");
+    let mut original = settings(&temp)?;
+    let gateway = std::mem::take(&mut original.gateway_url);
+    std::fs::write(&path, serde_json::to_vec(&original)?)?;
+    let mut owner = HostOwner::new(None)?;
+    owner.configure_login(Some(path.clone()), |key| {
+        (key == "OTERYN_GATEWAY_URL").then(|| gateway.clone())
+    });
+    owner.request_login();
+    owner.submit_login();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    loop {
+        if let Some((config, _)) = owner.login.poll_save() {
+            assert_eq!(config.gateway_url, gateway);
+            break;
+        }
+        assert!(owner.login.save_pending(), "{}", owner.login.form.message());
+        assert!(std::time::Instant::now() < deadline);
+        std::thread::yield_now();
+    }
+    assert_eq!(LoginSettings::load(&path)?.gateway_url, gateway);
+    Ok(())
+}

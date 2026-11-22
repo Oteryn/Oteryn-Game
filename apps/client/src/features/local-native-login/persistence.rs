@@ -15,10 +15,15 @@ impl LoginSettings {
     }
 
     pub fn save(&self, path: &Path) -> Result<(), String> {
-        self.save_fields(path, [true; 6])
+        self.save_fields(path, [true; 6], [false; 6])
     }
 
-    pub(crate) fn save_fields(&self, path: &Path, edited: [bool; 6]) -> Result<(), String> {
+    pub(crate) fn save_fields(
+        &self,
+        path: &Path,
+        edited: [bool; 6],
+        env_fallback: [bool; 6],
+    ) -> Result<(), String> {
         let _lock = crate::atomic_file::lock(path).map_err(|_| Self::save_error())?;
         self.validate()?;
         let error = Self::save_error;
@@ -28,7 +33,16 @@ impl LoginSettings {
                     let submitted = self.values();
                     let disk = active.values();
                     Self::from_stored_values(std::array::from_fn(|i| {
-                        if edited[i] { submitted[i] } else { disk[i] }.to_owned()
+                        if edited[i]
+                            || (env_fallback[i]
+                                && (disk[i].is_empty()
+                                    || Self::validate_field(i, disk[i]).is_err()))
+                        {
+                            submitted[i]
+                        } else {
+                            disk[i]
+                        }
+                        .to_owned()
                     }))
                 }
                 Err(_) => {

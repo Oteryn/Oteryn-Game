@@ -1,7 +1,9 @@
 use crate::CLIENT_BUILD;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::Arc;
+#[cfg(test)]
+use std::sync::Mutex;
 use std::time::Duration;
 
 const HELPER_OBSERVATION: Duration = Duration::from_secs(3);
@@ -34,14 +36,25 @@ impl SystemBrowser {
     }
 }
 
-// Close and OS spawn share this gate. Callback execution and child observation never hold it.
 #[derive(Default)]
 pub(crate) struct BrowserEpoch {
-    spawn: Mutex<()>,
+    #[cfg(test)]
+    spawn_for_test: Option<Arc<dyn Fn() -> std::io::Result<std::process::Child> + Send + Sync>>,
     ended: CancellationToken,
 }
 
 impl BrowserEpoch {
+    fn spawn_helper(
+        &self,
+        command: &mut std::process::Command,
+    ) -> std::io::Result<std::process::Child> {
+        #[cfg(test)]
+        if let Some(spawn) = &self.spawn_for_test {
+            return spawn();
+        }
+        command.spawn()
+    }
+
     #[cfg(bevy_shell)]
     pub(crate) fn cancellation(&self) -> CancellationToken {
         self.ended.clone()
@@ -62,7 +75,6 @@ impl BrowserEpoch {
     }
 
     pub(crate) fn close(&self) {
-        let _spawn = self.spawn.lock().unwrap_or_else(PoisonError::into_inner);
         self.ended.cancel();
     }
 }
@@ -188,6 +200,10 @@ fn deliver_system_url(
         BrowserPlatform::Unix
     };
     let mut command = browser_command(platform, url);
+    command
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
     let worker_cancel = cancel.cloned();
     let worker_epoch = epoch.clone();
     let worker_scope = workers.clone();
@@ -195,13 +211,6 @@ fn deliver_system_url(
     let worker = std::thread::Builder::new()
         .name("browser-helper".into())
         .spawn(move || {
-            let shutdown = worker_scope
-                .spawn
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner);
-            let gate = worker_epoch
-                .as_ref()
-                .map(|scope| scope.spawn.lock().unwrap_or_else(PoisonError::into_inner));
             let cancelled = || {
                 worker_scope.ended.is_cancelled()
                     || worker_cancel
@@ -214,16 +223,9 @@ fn deliver_system_url(
             if cancelled() {
                 return;
             }
-            let Ok(mut child) = command
-                .stdin(std::process::Stdio::null())
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
-                .spawn()
-            else {
+            let Ok(mut child) = worker_scope.spawn_helper(&mut command) else {
                 return;
             };
-            drop(gate);
-            drop(shutdown);
             let deadline = std::time::Instant::now() + HELPER_OBSERVATION;
             let mut pending = Some(result);
             while !cancelled() {
@@ -411,6 +413,42 @@ mod browser_command_tests {
                 assert_eq!(arguments, [url]);
             }
         }
+    }
+
+    #[test]
+    fn shutdown_returns_during_helper_launch() -> Result<(), Box<dyn std::error::Error>> {
+        let (start, started) = std::sync::mpsc::channel();
+        let (release, resume) = std::sync::mpsc::channel();
+        let resume = Mutex::new(resume);
+        let workers = Arc::new(BrowserEpoch {
+            spawn_for_test: Some(Arc::new(move || {
+                let _ = start.send(());
+                if let Ok(receiver) = resume.lock() {
+                    let _ = receiver.recv_timeout(Duration::from_secs(5));
+                }
+                Err(std::io::Error::other("launch failed"))
+            })),
+            ..Default::default()
+        });
+        let helper = workers.clone();
+        let system = SystemBrowser {
+            opener: Arc::new(move |url| deliver_system_url(url, &helper, None, None)),
+            workers,
+        };
+        let browser = system.opener.clone();
+        let launch = std::thread::spawn(move || browser("about:blank"));
+        started.recv_timeout(Duration::from_secs(5))?;
+        let (done, closed) = std::sync::mpsc::channel();
+        let closer = std::thread::spawn(move || {
+            system.shutdown();
+            let _ = done.send(());
+        });
+        let result = closed.recv_timeout(Duration::from_secs(1));
+        release.send(())?;
+        closer.join().map_err(|_| "shutdown panicked")?;
+        assert!(!launch.join().map_err(|_| "launch panicked")?);
+        result?;
+        Ok(())
     }
 
     #[test]

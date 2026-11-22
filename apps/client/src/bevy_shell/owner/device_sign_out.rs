@@ -16,6 +16,12 @@ pub(super) struct PendingIntent {
 
 impl HostOwner {
     pub fn cancel_login(&mut self) {
+        if self.phase == Phase::Closed {
+            return;
+        }
+        if let Some(entry) = &mut self.entry {
+            entry.cancel_browser_delivery();
+        }
         if self.entry.as_ref().is_some_and(Reentry::can_cancel_entry) {
             self.queue_forget(ForgetAction::CancelLogin);
         } else {
@@ -460,5 +466,49 @@ fn cancel_reserves_picker_request_until_worker_finishes() -> Result<(), Box<dyn 
         SelectionAction::Cancel
     );
     assert!(owner.play.is_none());
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn close_and_cancel_fence_login_links_before_forget_finishes()
+-> Result<(), Box<dyn std::error::Error>> {
+    for close in [false, true] {
+        let folder = tempfile::tempdir()?;
+        let config = Reentry::device_test_config(folder.path().into(), "https://localhost:1")?;
+        let mut owner = HostOwner::new(None)?;
+        let entry = owner.entry.as_mut().ok_or("entry")?;
+        assert!(entry.configure(config));
+        entry.arm_cancel_fixture();
+        let (epoch, _) = entry
+            .start_web_link(crate::web_links::WebLink::CookiePolicy)
+            .ok_or("link")?;
+        if close {
+            owner.queue_forget(ForgetAction::CancelPicker(1));
+            let intent = owner.forget_intent.take().ok_or("forget intent")?;
+            let (release, wait) = std::sync::mpsc::channel();
+            owner.forget_intent = Some(PendingIntent {
+                worker: std::thread::spawn(move || {
+                    wait.recv_timeout(std::time::Duration::from_secs(5))
+                        .map_err(|error| error.to_string())?;
+                    intent.worker.join().map_err(|_| "forget worker panicked")?
+                }),
+                ..intent
+            });
+            owner.close();
+            owner.cancel_login();
+            let (after_close, _) = owner
+                .entry
+                .as_ref()
+                .ok_or("closing entry")?
+                .start_web_link(crate::web_links::WebLink::CookiePolicy)
+                .ok_or("link")?;
+            assert!(after_close.is_cancelled());
+            release.send(())?;
+        } else {
+            owner.cancel_login();
+        }
+        assert!(epoch.is_cancelled());
+    }
     Ok(())
 }

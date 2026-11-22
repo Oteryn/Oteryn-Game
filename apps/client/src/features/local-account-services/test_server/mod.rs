@@ -273,7 +273,7 @@ impl Authority {
             && let Some(id) = target.strip_prefix("/api/v1/native-account/bazaar/commands/")
         {
             if let Some((_, receipt)) = self.commands.get_mut(id) {
-                if receipt.state == OperationState::Pending {
+                if receipt.state == OperationState::Pending && !self.pending_first {
                     receipt.state = OperationState::Committed;
                     receipt.receipt_id = Some(id.into());
                     receipt.charged_coins = 50;

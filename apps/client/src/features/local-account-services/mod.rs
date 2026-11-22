@@ -95,21 +95,11 @@ impl View {
         cancel: CancellationToken,
     ) {
         for listed in std::mem::take(&mut page.recent_operations) {
-            let receipt = if self.prior.contains(&listed.request_id)
-                && self
-                    .pending
-                    .as_ref()
-                    .is_none_or(|p| p.request_id != listed.request_id)
-            {
-                let Ok(verified) = client
-                    .bazaar_status(token, &listed.request_id, cancel.clone())
-                    .await
-                else {
-                    continue;
-                };
-                verified
-            } else {
-                listed
+            let Ok(receipt) = client
+                .bazaar_status(token, &listed.request_id, cancel.clone())
+                .await
+            else {
+                continue;
             };
             if self.prior.contains(&receipt.request_id)
                 || self

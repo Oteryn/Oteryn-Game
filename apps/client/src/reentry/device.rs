@@ -45,6 +45,15 @@ impl Revocation {
 }
 
 impl Reentry {
+    #[cfg(bevy_shell)]
+    pub(crate) fn close_browser_epoch(&self) {
+        self.browser_delivery.close();
+    }
+
+    pub(crate) fn cancel_browser_delivery(&mut self) {
+        std::mem::take(&mut self.browser_delivery).close();
+    }
+
     pub(crate) fn can_cancel_entry(&self) -> bool {
         self.state == EntryState::Entering
             && self
@@ -58,8 +67,8 @@ impl Reentry {
         if !self.can_cancel_entry() {
             return false;
         }
+        self.cancel_browser_delivery();
         if let Some(token) = &self.attempt_cancellation {
-            std::mem::take(&mut self.browser_delivery).close();
             token.cancel();
         }
         if let Some(config) = &self.client.native_login {

@@ -192,21 +192,11 @@ async fn refresh(
         })
         .collect();
     for listed in std::mem::take(&mut catalogue.recent_orders) {
-        let order = if view.prior.contains(&listed.request_id)
-            && view
-                .pending
-                .as_ref()
-                .is_none_or(|p| p.request_id != listed.request_id)
-        {
-            let Ok(verified) = client
-                .coin_order_status(token, &listed.request_id, cancel.clone())
-                .await
-            else {
-                continue;
-            };
-            verified
-        } else {
-            listed
+        let Ok(order) = client
+            .coin_order_status(token, &listed.request_id, cancel.clone())
+            .await
+        else {
+            continue;
         };
         catalogue.recent_orders.push(order);
     }
@@ -223,7 +213,8 @@ async fn refresh(
         accept(view, order.clone())?;
     }
     for order in &catalogue.recent_orders {
-        if view.prior.contains(&order.request_id) && view.pending.is_none() {
+        if view.order.is_none() && view.pending.is_none() && view.prior.contains(&order.request_id)
+        {
             accept(view, order.clone())?;
         }
     }

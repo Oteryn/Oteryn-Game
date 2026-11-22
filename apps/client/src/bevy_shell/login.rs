@@ -31,6 +31,7 @@ pub(super) struct LoginState {
     path: Option<PathBuf>,
     shown_settings: LoginSettings,
     edited_fields: [bool; 6],
+    env_fallback: [bool; 6],
     pending_submit: Option<submission::Pending>,
     saving: Option<persistence::PendingSave>,
 }
@@ -45,6 +46,7 @@ impl Default for LoginState {
             path: None,
             shown_settings: LoginSettings::default(),
             edited_fields: [false; 6],
+            env_fallback: [false; 6],
             pending_submit: None,
             saving: None,
         }
@@ -56,7 +58,8 @@ impl LoginState {
             .as_ref()
             .map_or_else(|| Ok(LoginSettings::default()), |p| LoginSettings::load(p));
         let error = loaded.as_ref().err().cloned();
-        self.shown_settings = loaded.unwrap_or_default().with_env(lookup);
+        (self.shown_settings, self.env_fallback) =
+            loaded.unwrap_or_default().with_env_fields(lookup);
         self.form = LoginForm::new(self.shown_settings.clone());
         self.edited_fields.fill(false);
         if let Some(error) = error {

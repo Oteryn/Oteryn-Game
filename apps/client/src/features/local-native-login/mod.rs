@@ -73,40 +73,58 @@ impl LoginSettings {
 
     /// Explicit environment values seed/override saved settings, including on first run.
     pub fn with_env(self, lookup: impl Fn(&str) -> Option<String>) -> Self {
-        Self::from_values(std::array::from_fn(|index| {
-            lookup(FIELDS[index].1).unwrap_or_else(|| self.values()[index].to_owned())
-        }))
+        self.with_env_fields(lookup).0
+    }
+
+    pub(crate) fn with_env_fields(
+        self,
+        lookup: impl Fn(&str) -> Option<String>,
+    ) -> (Self, [bool; 6]) {
+        let mut supplied = [false; 6];
+        let settings = Self::from_values(std::array::from_fn(|index| {
+            let value = lookup(FIELDS[index].1);
+            supplied[index] = value.is_some();
+            value.unwrap_or_else(|| self.values()[index].to_owned())
+        }));
+        (settings, supplied)
     }
 
     pub fn validate(&self) -> Result<(), String> {
+        for (index, value) in self.values().iter().enumerate() {
+            Self::validate_field(index, value)?;
+        }
+        Ok(())
+    }
+
+    fn validate_field(index: usize, value: &str) -> Result<(), String> {
         // Gameplay trust is validated after the Gateway grant.
-        for (index, value) in self.values().iter().take(5).enumerate() {
-            if (value.trim().is_empty() && ![3, 4].contains(&index))
+        if index < 5
+            && ((value.trim().is_empty() && index < 3)
                 || value.contains('\0')
-                || value.len() > 4096
-            {
-                return Err(lfmt!(
-                    "Enter a valid {}.",
-                    oteryn_client_ui::localization::tr(FIELDS[index].0)
-                ));
-            }
+                || value.len() > 4096)
+        {
+            return Err(lfmt!(
+                "Enter a valid {}.",
+                oteryn_client_ui::localization::tr(FIELDS[index].0)
+            ));
         }
-        for (label, value) in [
-            (tr!("Platform"), &self.platform_url),
-            (tr!("Gateway"), &self.gateway_url),
-        ] {
-            // URLs are public settings, never a place for credentials or tokens.
-            if value.contains(['@', '?', '#'])
+        // URLs are public settings, never a place for credentials or tokens.
+        if index < 2
+            && (value.contains(['@', '?', '#'])
                 || value.chars().any(char::is_whitespace)
-                || PlatformClientConfig::new(value).is_err()
-            {
-                return Err(lfmt!(
-                    "{label} URL: use HTTPS (HTTP only on loopback), without credentials, query or fragment.",
-                    label = label
-                ));
-            }
+                || PlatformClientConfig::new(value).is_err())
+        {
+            let label = if index == 0 {
+                tr!("Platform")
+            } else {
+                tr!("Gateway")
+            };
+            return Err(lfmt!(
+                "{label} URL: use HTTPS (HTTP only on loopback), without credentials, query or fragment.",
+                label = label
+            ));
         }
-        if !self.character_id.is_empty() && parse_uuid_v7(&self.character_id).is_none() {
+        if index == 4 && !value.is_empty() && parse_uuid_v7(value).is_none() {
             return Err(tr!("Character: enter a canonical lowercase UUIDv7.").into());
         }
         Ok(())

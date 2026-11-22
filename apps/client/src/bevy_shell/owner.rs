@@ -461,6 +461,9 @@ impl HostOwner {
         );
     }
     pub fn close(&mut self) {
+        if let Some(entry) = &self.entry {
+            entry.close_browser_epoch();
+        }
         if self.phase == Phase::Closed {
             return;
         }
