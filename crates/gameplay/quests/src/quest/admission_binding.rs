@@ -94,6 +94,12 @@ fn registry() -> Result<&'static Registry, String> {
             // Kesar's real final report shares the mission track protected by
             // Fugue's native kill. Only its complete gated operation may finish it.
             add(super::hero_of_bounac::transition(), false, true)?;
+            // Rottin's accepted dialogue resets the counter protected by the wall actions.
+            add(
+                super::classic_dialogue::rottin_wall_reset_transition()?,
+                false,
+                false,
+            )?;
             add(super::arena_completion::transition()?, false, true)?;
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
@@ -167,7 +173,17 @@ pub fn validate_for_catalogue(
                         stage.trigger,
                         super::authored_bindings::Trigger::MapUse { .. }
                             | super::authored_bindings::Trigger::StepIn { .. }
-                    );
+                    ) || match &stage.trigger {
+                        super::authored_bindings::Trigger::NpcDialogue {
+                            callback,
+                            alternatives,
+                        } => std::iter::once(callback.as_ref())
+                            .chain(alternatives.iter())
+                            .any(|reward| {
+                                reward.key == transition.key && reward.world_claim.is_some()
+                            }),
+                        _ => false,
+                    };
                     return if world == world_context && transition == &expected {
                         Ok(())
                     } else {
