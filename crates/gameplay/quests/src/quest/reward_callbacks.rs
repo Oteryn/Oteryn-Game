@@ -440,10 +440,45 @@ impl RewardCallback {
             && !self.take.is_empty()
             && self.give.is_some()
     }
+    /// The lost-item turns reuse the normal reward writer with stricter custody.
+    pub fn recovery_item(&self) -> Option<&str> {
+        let suffix = self
+            .key
+            .strip_prefix("oteryn:quest-reward/qc-twenty-miles-recover-")?;
+        let item = match suffix {
+            "skull" => "oteryn:item.tibia.i21770",
+            "cursed-gold" => "oteryn:item.tibia.i21746",
+            "wedding-ring" => "oteryn:item.tibia.i21745",
+            "blue-slab" | "blue-slab-after-report" => "oteryn:item.tibia.i21753",
+            "yellow-slab" | "yellow-slab-after-report" => "oteryn:item.tibia.i21861",
+            "red-slab" => "oteryn:item.tibia.i21862",
+            "sea-ear" | "sea-ear-after-report" => "oteryn:item.tibia.i21754",
+            "time-compass" => "oteryn:item.tibia.i21795",
+            _ => return None,
+        };
+        (self.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest"
+            && self.npc == "oteryn:npc.guardian_of_the_deep_seas"
+            && self.per_occurrence_mint
+            && self.take.is_empty()
+            && self.give.as_ref().is_some_and(|reward| {
+                reward.item == item
+                    && reward.count == 1
+                    && reward.contents.is_empty()
+                    && reward.additional.is_empty()
+            })
+            && matches!(self.storage.as_slice(), [stage] if
+                stage.track == "oteryn:quest-progress/qc/twenty_miles/stage" && stage.preserve)
+            && matches!(self.state_ops.as_slice(), [StateOperation {
+                track, from: StateCondition::Any, effect: StateMutation::Add { value: 1 },
+            }] if track == "oteryn:quest-progress/qc/twenty_miles/replacements"))
+        .then_some(item)
+    }
+
     fn value_only_guarded(&self) -> bool {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
-        temporal_payment::guarded(self)
+        self.recovery_item().is_some()
+            || temporal_payment::guarded(self)
             || (self.repeatable
                 && (!self.take.is_empty() || self.fee.is_some())
                 && (self.give.is_some() || self.experience.is_some()))
@@ -509,6 +544,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qc-programmes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qc-twenty-miles.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/sinatuki.json"),
@@ -1628,6 +1664,31 @@ pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
                 ("oteryn:quest-progress/m09/treasure/telescope", -1),
             ],
         ),
+        // The pre-withdrawal definition from ff6a482f7.
+        (
+            "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+            [
+                0x95, 0x57, 0x24, 0xdf, 0xc1, 0xc9, 0xb0, 0x39, 0x2d, 0x23, 0xea, 0xa2, 0x2a, 0x2b,
+                0x77, 0x1f, 0x73, 0x9e, 0x36, 0x7e, 0x9b, 0x7a, 0x07, 0xf2, 0xa7, 0xd7, 0x5e, 0x52,
+                0x4b, 0xfe, 0x3f, 0x3c,
+            ],
+            &[
+                ("oteryn:quest-progress/qc/twenty_miles/access_birthing", -1),
+                (
+                    "oteryn:quest-progress/qc/twenty_miles/access_sunken_city",
+                    -1,
+                ),
+                ("oteryn:quest-progress/qc/twenty_miles/access_west", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile1", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile2", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile3", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile4", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile5", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/skulls", 0),
+                ("oteryn:quest-progress/qc/twenty_miles/slabs", 0),
+                ("oteryn:quest-progress/qc/twenty_miles/stage", -1),
+            ],
+        ),
     ];
     for &(quest, hash, defaults) in PREVIOUS {
         if active
@@ -2375,7 +2436,7 @@ mod tests {
         // shared-reward-callbacks.json has 207 existing rows plus the generated
         // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
         // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 238 + 59 + 130 + 1 + 1);
+        assert_eq!(load()?.len(), 238 + 59 + 130 + 1 + 1 + 29);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

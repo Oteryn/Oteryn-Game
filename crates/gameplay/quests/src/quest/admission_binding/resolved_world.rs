@@ -8,6 +8,26 @@ pub fn validate_resolved_world(
     callbacks: &[world_callbacks::Callback],
 ) -> Result<(), String> {
     let published = registry()?;
+    // Published transitions also require a structurally valid supplied registry.
+    // The catalogue's immutable composition already passed both bounds and closure.
+    let composed = catalogue.authored_world_callbacks();
+    if !composed.is_some_and(|registered| std::ptr::eq(registered, callbacks))
+        && (callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS
+            || callbacks
+                .iter()
+                .map(|callback| &callback.key)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != callbacks.len()
+            || callbacks
+                .iter()
+                .filter(|callback| !published.owners.contains_key(&callback.key))
+                .count()
+                > world_callbacks::MAX_CALLBACKS)
+        && composed != Some(callbacks)
+    {
+        return Err("resolved World source bounds".into());
+    }
     if published.owners.contains_key(&transition.key) {
         return validate_for_catalogue(catalogue, transition, world_context);
     }
@@ -21,18 +41,6 @@ pub fn validate_resolved_world(
                 }
             }
         }
-    }
-    // The exact immutable catalogue registry already passed both composition bounds.
-    // Independently resolved inputs still share the boot and per-source bounds.
-    if (callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS
-        || callbacks
-            .iter()
-            .filter(|callback| !published.owners.contains_key(&callback.key))
-            .count()
-            > world_callbacks::MAX_CALLBACKS)
-        && catalogue.authored_world_callbacks() != Some(callbacks)
-    {
-        return Err("resolved World source bounds".into());
     }
     let mut owned = None;
     let mut protected = BTreeSet::new();
@@ -86,9 +94,10 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
-        assert_eq!(base.len(), 1009);
+        // Twenty Miles adds 44 restored entries and 30 review routes.
+        assert_eq!(base.len(), 1009 + 44 + 30);
         assert_eq!(bindings.world_callbacks().count(), 50);
-        assert_eq!(callbacks.len(), 1059);
+        assert_eq!(callbacks.len(), 1059 + 44 + 30);
         let expected: BTreeSet<_> = base
             .iter()
             .chain(bindings.world_callbacks())

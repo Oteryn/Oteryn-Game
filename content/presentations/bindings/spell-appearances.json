@@ -13002,6 +13002,45 @@
         }
       },
       "qualification_sha256": "18c15a2531baba2fec904a5e6267baaff142d28ca0d5637d65b0cd23a72a1133"
+    },
+    {
+      "outfit_key": "oteryn:outfit.source.crystal.look267",
+      "outfit_revision": "source-outfit-r1",
+      "look_type": 267,
+      "colours": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "addons": 0,
+      "mount_key": null,
+      "creature": null,
+      "source": {
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data/scripts/movements/swimming.lua",
+        "git_blob": "3f0e485ee1367710f48de364e3e1094d85044a31",
+        "sha256": "dd459cb10e0475729ad62cbdf1ab2d5f70df05b891179843a7ebcc0e33168766",
+        "explicit_fields": {
+          "lookType": 267
+        },
+        "defaulted_fields": [
+          "lookAddons",
+          "lookBody",
+          "lookFeet",
+          "lookHead",
+          "lookLegs",
+          "lookMount",
+          "lookTypeEx"
+        ],
+        "default_source": {
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "src/creatures/creatures_definitions.hpp",
+          "git_blob": "fc4ae0cf45a56ee7c363b0f452acfb14cbd3c63a",
+          "sha256": "8fbc70bf2416b6e76f17cce3dc1b075f8a5451f0f85b522b0a4ae34cf2cccf94"
+        }
+      },
+      "qualification_sha256": "77000963de188c7a0e5f58a2dcd1363d58a19ae6512de5bc9ccc99febe9381d3"
     }
   ],
   "schema": "OTERYN_NATIVE_SPELL_APPEARANCES/v1"

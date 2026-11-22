@@ -140,7 +140,7 @@ impl super::DurabilityRoot {
                      FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
                 ).bind(fence.character_id.as_bytes().as_slice()).bind(&callback.quest)
                     .fetch_optional(&mut *tx).await?;
-                if let Some(pin) = pin {
+                let defaults = if let Some(pin) = pin {
                     let pin = super::quest_state::QuestStateRecord {
                         pinned_content_revision: pin.try_get("pinned_content_revision")?,
                         definition_hash: pin.try_get::<Vec<u8>, _>("definition_hash")?.try_into()
@@ -150,8 +150,31 @@ impl super::DurabilityRoot {
                     if !read_only_pin_allows(&pin, &catalogue, &callback.quest)? {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
                     }
+                    oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+                        &catalogue, &callback.quest, &pin.definition_hash,
+                    )
+                } else {
+                    None
+                };
+                use oteryn_gameplay_quests::quest::world_callbacks::phase;
+                if let Some(required) = phase::sea_ear_route(&callback) {
+                    let carried: bool = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM game_quest_callback_carried(
+                            encode($1,'hex')::uuid,encode($2,'hex')::uuid) c
+                         JOIN game_item_instances i ON i.item_instance_id=c.item
+                         WHERE i.lifecycle=1 AND i.definition_family='Item'
+                           AND i.definition_production_key=$3)",
+                    ).bind(fence.character_id.as_bytes().as_slice())
+                        .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                        .bind(phase::SEA_EAR_ITEM).fetch_one(&mut *tx).await?;
+                    if carried != required {
+                        return Ok(Ok(false));
+                    }
                 }
                 for storage in &callback.storage {
+                    if storage.track == phase::SEA_EAR_TRACK && phase::sea_ear_route(&callback).is_some() {
+                        continue; // This route reads live custody instead of the issuance flag.
+                    }
                     let Some(track) = catalogue.track(&storage.track).filter(|track| track.quest == callback.quest) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
@@ -160,7 +183,11 @@ impl super::DurabilityRoot {
                          WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3",
                     ).bind(fence.character_id.as_bytes().as_slice()).bind(&storage.track)
                         .bind(&callback.quest).fetch_optional(&mut *tx).await?;
-                    if !(storage.minimum..=storage.maximum).contains(&value.unwrap_or(track.initial)) {
+                    let initial = defaults
+                        .and_then(|defaults| defaults.get(&storage.track))
+                        .copied()
+                        .unwrap_or(track.initial);
+                    if !(storage.minimum..=storage.maximum).contains(&value.unwrap_or(initial)) {
                         return Ok(Ok(false));
                     }
                 }
@@ -181,7 +208,14 @@ fn read_only_pin_allows(
         .ok_or(DurabilityError::InvalidStoredState)?;
     // QUEST-STATE-0 §6: unchanged definitions retain their historical content
     // pin; completed quests keep access even when the definition changes.
-    Ok(stored.definition_hash == current_hash || stored.completed)
+    Ok(stored.definition_hash == current_hash
+        || stored.completed
+        || oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+            catalogue,
+            quest,
+            &stored.definition_hash,
+        )
+        .is_some())
 }
 
 struct Input {

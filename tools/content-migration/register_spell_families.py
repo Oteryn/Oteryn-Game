@@ -77,6 +77,28 @@ COIN_ADMISSION = {
 }
 
 
+def admit_swimming_appearance(root, generated):
+    # The Sea Ear route lands on swimming ground. Retain its exact Crystal outfit.
+    appearance_path = spell_import.PROVIDER_DESTINATIONS["spell_appearances"]
+    appearances = json.loads(generated[appearance_path])
+    swimming = json.loads((root / 'tools/content-schema/native-gameplay/qc-swimming-appearance.json').read_bytes())['record']
+    qualification = swimming.get('qualification_sha256')
+    payload = {key: value for key, value in swimming.items() if key != 'qualification_sha256'}
+    encoded_record = json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+    if (qualification != '77000963de188c7a0e5f58a2dcd1363d58a19ae6512de5bc9ccc99febe9381d3'
+            or hashlib.sha256(encoded_record.encode()).hexdigest() != qualification):
+        raise ValueError('QC_SWIMMING_APPEARANCE_QUALIFICATION')
+    existing = [row for row in appearances['records'] if row['outfit_key'] == swimming['outfit_key']]
+    if existing and existing != [swimming]:
+        raise ValueError('QC_SWIMMING_APPEARANCE_CONFLICT')
+    if not existing:
+        appearances['records'].append(swimming)
+        generated[appearance_path] = (json.dumps(appearances, ensure_ascii=False, indent=2) + '\n').encode()
+        manifest = json.loads(generated[NATIVE_MANIFEST])
+        manifest['spell_appearances']['sha256'] = hashlib.sha256(generated[appearance_path]).hexdigest()
+        generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
+
+
 def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
     # A matching hash of an old key file is not a complete current registry.
     # This projection shares the staged canonical Item owner; it never creates
@@ -703,6 +725,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import soul_war_appearance_profiles
     soul_war_appearance_profiles.admit(
         root, generated, spell_import.PROVIDER_DESTINATIONS["spell_appearances"], NATIVE_MANIFEST)
+    admit_swimming_appearance(root, generated)
     # Owner-authored quest variants retain admitted attack closures, with no donor identity.
     import engenc_elemental_profiles
     creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
