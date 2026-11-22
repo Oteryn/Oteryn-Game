@@ -38,6 +38,27 @@ macro_rules! composed_methods {
 pub(super) use composed_methods;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn cyclopedia_movement_speed(
+        &self,
+        admitted: AdmittedSession,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> Option<wire::MovementSpeed> {
+        let actor = admitted.runtime_actor?;
+        let session = admitted.game_session_id;
+        let equipment = self.observe_movement_equipment(actor, session).await?;
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        let state = states.get(&runtime, actor, session)?;
+        let delta = equipment.observed_delta(&runtime, &states, actor, fence)?;
+        let current = super::actor_spell::actor_movement::spell_state_speed(
+            &runtime, state, actor, session, self.owner_now().get(), Some(delta), true,
+        )?;
+        Some(wire::MovementSpeed {
+            current,
+            base: u16::try_from(state.owned_base_speed()).ok()?,
+        })
+    }
+
     pub(super) async fn cyclopedia_character_wire(
         &self,
         admitted: AdmittedSession,
@@ -306,7 +327,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     extension.deaths = None;
                 }
-                view.encode_extended(&extension).map_err(|_| ())
+                let mut bytes = view.encode_extended(&extension).map_err(|_| ())?;
+                if request.tab == wire::CharacterTab::GeneralStats
+                    && admitted.continuity.selected_capabilities
+                        .contains(wire::CAPABILITY_CYCLOPEDIA_MOVEMENT_SPEED_V1)
+                {
+                    let speed = if target == fence.character_id {
+                        self.cyclopedia_movement_speed(admitted, fence).await
+                    } else {
+                        None
+                    };
+                    wire::MovementSpeed::encode_suffix(speed, &mut bytes);
+                }
+                Ok(bytes)
             }
             _ => Err(()),
         }

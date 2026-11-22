@@ -137,6 +137,8 @@ fn scenario(position_before_change: bool) -> TestResult {
                 .bind(id(112).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
             sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,8,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
                 .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(112).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'none',0,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,1,encode($2,'hex')::uuid) ON CONFLICT DO NOTHING")
+                .bind(id(41).as_slice()).bind(id(30).as_slice()).execute(&mut *tx).await?;
             tx.commit().await?;
             let mut writer = harness.pool.begin().await?;
             sqlx::query("SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR UPDATE")
@@ -166,6 +168,40 @@ fn scenario(position_before_change: bool) -> TestResult {
                 "forecast equipment must be available under the same lock"
             );
             writer.rollback().await?;
+            use super::cyclopedia_fixtures::support::exchange;
+            use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+            let offers = [
+                OfferedCapability { id: 199, requires: &[] },
+                OfferedCapability { id: 603, requires: &[199] },
+            ];
+            let mut stats = admitted;
+            stats.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
+            stats.continuity.selected_capabilities = SelectedCapabilities::select(&offers, &[199])
+                .ok_or("legacy cyclopedia capability")?;
+            let request = [1, 0, 0, 1];
+            let (status, before) = exchange(&owner, &mut stats, 1, 388, &request).await?;
+            assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+            stats.continuity.selected_capabilities = SelectedCapabilities::select(&offers, &[199, 603])
+                .ok_or("speed capability")?;
+            let (status, after) = exchange(&owner, &mut stats, 2, 388, &request).await?;
+            assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+            assert_eq!(after.get(..before.len()), Some(before.as_slice()));
+            let [1, current_lo, current_hi, base_lo, base_hi] =
+                after.get(before.len()..).ok_or("speed suffix")?
+            else {
+                return Err("missing current and base movement speed".into());
+            };
+            let current = u16::from_le_bytes([*current_lo, *current_hi]);
+            let base = u16::from_le_bytes([*base_lo, *base_hi]);
+            let state_base = {
+                let runtime = dependencies.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                states.get(&runtime, dependencies.actor, admitted.game_session_id)
+                    .ok_or("movement owner")?.owned_base_speed()
+            };
+            assert_eq!(u32::from(base), state_base);
+            assert!(current > base, "the equipped boots contribute to current speed");
+
             assert_mismatched_interpretation(&harness, &owner, &dependencies).await?;
         }
         let entity = appearance::EntityRef {

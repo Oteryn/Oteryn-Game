@@ -113,9 +113,9 @@ pub(super) const BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES: &[OfferedCapability]
 
 /// Bound of one session's selection. A test keeps the production offered set within it.
 /// CAPCAP-1 raised it from 32 to 64, CAPCAP-2 to 112, CAPCAP-4 to 128 and the WU26 native-client
-/// batch to 160. The rule-violation and Store Home offers require room for the configured bundle
-/// offer and its conditional presentation capabilities. The bound stays below the protocol
-/// capability count (256, CAPCAP-3), so a closure beyond it fails as `SelectionUnavailable`.
+/// batch to 160. The configured Bundle World offer with Training, Store, rule-violation,
+/// character panels and conditional presentation capabilities requires more room.
+/// A selection larger than this bound fails as `SelectionUnavailable`.
 pub const SELECTED_CAPACITY: usize = 168;
 const _: () = assert!(SELECTED_CAPACITY < oteryn_protocol_oteryn::MAX_CAPABILITY_COUNT);
 

@@ -192,6 +192,9 @@ pub(super) fn meaningful(
         56 => oteryn_protocol_oteryn::house::decode_house_intent(command.payload).is_ok(),
         60 => oteryn_protocol_oteryn::staff::decode_envelope(command.payload).is_ok(),
         66 => loop_training::decode_offline_training(command.payload).is_ok(),
+        loop_training::COMMAND_TYPE_OFFLINE_TRAINING_CHOOSE => {
+            loop_training::decode_offline_training_skill(command.payload).is_ok()
+        }
         68 => oteryn_protocol_oteryn::guild_bank::decode_guild_bank_intent(command.payload).is_ok(),
         73 => oteryn_protocol_oteryn::cyclopedia::decode_request(
             command.command_type,

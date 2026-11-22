@@ -183,7 +183,7 @@ fn baseline_speed(
 /// its spell conditions' `SPEED` deltas, and the equipment speed. On qualified source ground
 /// the equipment speed must come from the persisted-equipment owner, so an unavailable read
 /// refuses the step; elsewhere it is 0 until that owner is composed (SPEED-1 §4.1).
-fn spell_state_speed(
+pub(in crate::gameplay_transport) fn spell_state_speed(
     runtime: &ChannelRuntimeV1,
     state: &crate::spell::cast::PlayerSpellState,
     actor: ExactActorRef,
