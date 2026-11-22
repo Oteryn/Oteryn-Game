@@ -370,7 +370,11 @@ fn scenario_with_voice(
         let award = match before {
             3696 | 3702 => Some(("oteryn:achievement/nothing_can_stop_me", 100, "oteryn:terrain-tool")),
             3653 => Some(("oteryn:achievement/happy_farmer", 200, "oteryn:item-craft")),
-            5463 => Some(("oteryn:achievement/natural_sweetener", 50, "oteryn:item-craft")),
+            5463 | 5464 => Some((
+                "oteryn:achievement/natural_sweetener",
+                50,
+                "oteryn:item-craft",
+            )),
             _ => None,
         };
         if let Some((key, total, _)) = award {

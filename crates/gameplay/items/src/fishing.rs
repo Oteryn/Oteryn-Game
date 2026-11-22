@@ -223,7 +223,12 @@ pub fn gathering_yield(row: GatheringYield, roll: u32) -> Option<u16> {
     ((1..=100_000).contains(&roll) && roll <= row.threshold).then_some(row.item)
 }
 
-/// A successful sculpture stays on the map; only skins/dust/fish enter inventory.
+/// Both tools share the ice and marble recipes. The caller owns target custody.
+pub const fn is_sculpture(tool: u16, target: u16) -> bool {
+    matches!(tool, 5908 | 5942) && matches!(target, 7441 | 7442 | 7444 | 7445 | 10426)
+}
+
+/// An ice success replaces the target, while marble mints a separate figurine.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct GatheringAttempt {
     pub after: Option<u16>,
@@ -302,6 +307,17 @@ pub fn gathering_attempt(
             }
         }
     })
+}
+
+/// Crystal 201189f, Global skinning.lua:10-14,176-181.
+pub fn marble_inscription(item: u16, sculptor: &str) -> Option<String> {
+    let template = match item {
+        10429 => "This little figurine of Tibiasula was masterfully sculpted by |PLAYERNAME|.",
+        10428 => "This little figurine made by |PLAYERNAME| has some room for improvement.",
+        10427 => "This shoddy work was made by |PLAYERNAME|.",
+        _ => return None,
+    };
+    Some(template.replace("|PLAYERNAME|", sculptor))
 }
 
 pub const WATER: [u16; 26] = [

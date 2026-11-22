@@ -10582,10 +10582,11 @@
           }
         }
       ],
-      "achievement_progress": [
+      "requires": [
         {
-          "key": "oteryn:achievement/wild_warrior",
-          "target": 2
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_sword_addon",
+          "minimum": -1,
+          "maximum": 1
         }
       ]
     },
@@ -10851,10 +10852,11 @@
           "addons": 2
         }
       ],
-      "achievement_progress": [
+      "requires": [
         {
-          "key": "oteryn:achievement/wild_warrior",
-          "target": 2
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": -1,
+          "maximum": 6
         }
       ]
     },

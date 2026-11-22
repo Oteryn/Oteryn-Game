@@ -215,19 +215,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let (station, map_target) = {
             if let Some(station) = request.station.clone() {
-                (
-                    station,
-                    (
-                        MapEntryKey::Base(0),
-                        0,
-                        false,
-                        crate::map::overlay::TilePos {
-                            x: 0,
-                            y: 0,
-                            floor: 0,
-                        },
-                    ),
-                )
+                (station, None)
             } else {
                 let mut runtime = self.runtime.lock().await;
                 let index = pinned_index(&runtime, self.active_generation)?;
@@ -283,7 +271,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
                 (
                     super::item_look::typed_definition(index, reference)?,
-                    map_target,
+                    Some(map_target),
                 )
             }
         };
@@ -292,10 +280,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut fishing_skill = 10;
         // Fishing is the same durable consume/mint owner as cooking, but keeps the rod and
         // consumes a worm only after the skill-scaled catch succeeds.
-        if request
-            .station
-            .as_ref()
-            .is_some_and(|s| oteryn_gameplay_items::fishing::is_water(&s.production_key))
+        if let Some((_, _, _, target_pos)) = map_target
+            && request
+                .station
+                .as_ref()
+                .is_some_and(|s| oteryn_gameplay_items::fishing::is_water(&s.production_key))
         {
             let inventory = self
                 .root
@@ -309,7 +298,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .chain(inventory.nested.iter().map(|(_, entry)| entry));
             let water_key = &request.station.as_ref()?.production_key;
             let target_id = item_id(water_key)?;
-            let target_pos = map_target.3;
             let mechanical_sewer = oteryn_gameplay_items::fishing::is_yalahar_sewer_water(
                 target_id,
                 target_pos.x,
@@ -409,7 +397,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .station
             .as_ref()
             .and_then(|s| item_id(&s.production_key));
-        if let (Some(tool), Some(target_id)) = (tool, target_id)
+        if let Some((MapEntryKey::Base(key), revision, invalid, _)) = map_target
+            && let (Some(tool), Some(target_id)) = (tool, target_id)
             && let Some(tool_id) = item_id(&tool.item.definition.production_key)
             && let Some(attempt) = oteryn_gameplay_items::event_planting::planting_attempt(
                 tool_id, target_id,
@@ -431,9 +420,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let seed_attempt =
                 oteryn_gameplay_items::event_planting::planting_attempt(tool_id, target_id);
-            let (MapEntryKey::Base(key), revision, invalid, _) = map_target else {
-                return None;
-            };
             if invalid {
                 return disposition(UseDisposition::NothingToUse);
             }
@@ -531,30 +517,7 @@ fn item_id(key: &str) -> Option<u16> {
     key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()
 }
 
-pub(in crate::gameplay_transport) fn gathering_roll(
-    digest: [u8; 32],
-    session: crate::foundation::GameSessionId,
-    command_id: u64,
-    intent: &[u8],
-) -> Option<u32> {
-    let digest = Sha256::new()
-        .chain_update(b"oteryn.gathering.yield.v1")
-        .chain_update(session.as_bytes())
-        .chain_update(command_id.to_be_bytes())
-        .chain_update(intent)
-        .chain_update(digest)
-        .finalize();
-    let mut occurrence = [0; 16];
-    occurrence.copy_from_slice(&digest[..16]);
-    let draw = deterministic_decision_u64(
-        &GameplayDecisionRoot::from_bytes(digest.into()),
-        DecisionOccurrenceId::from_bytes(occurrence),
-        "gathering.yield",
-        0,
-    )
-    .ok()?;
-    u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).ok()
-}
+pub(in crate::gameplay_transport) use crate::durability::item_craft::gathering_roll;
 
 #[cfg(test)]
 #[path = "item_craft_crystal_parity_tests.rs"]

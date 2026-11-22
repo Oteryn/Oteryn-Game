@@ -31,6 +31,7 @@ use super::character_progression::uuid_text;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::reward_claim_mint::RewardClaimFenceChecked;
 use crate::domain::CharacterId;
+use sha2::{Digest, Sha256};
 use sqlx::Row;
 
 pub use oteryn_gameplay_progression::account_achievement::*;
@@ -293,6 +294,58 @@ pub(super) async fn grant_missing(
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
     Ok(())
+}
+
+impl DurabilityRoot {
+    /// Settle the source-qualified Oberon death for one captured damage contributor.
+    /// The native death and current session must belong to the same owner generation.
+    pub async fn grant_oberon_death_achievements(
+        &self,
+        authority: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        node: &super::runtime_scope_assignment::NodeIncarnationProof,
+        fence: super::item_transfer::CurrentCharacterItemFence,
+        death: crate::foundation::CreatureDeathOccurrenceKey,
+    ) -> std::result::Result<(), DurabilityError> {
+        if death.runtime_scope() != fence.runtime_scope
+            || death.scope_ownership_generation() != fence.scope_ownership_generation
+        {
+            return Ok(());
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    super::character_authority::assert_recovery_fence(&mut tx, &recovery).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    if super::character_progression::assert_item_only_fence(&mut tx, &fence, &node)
+                        .await?
+                        .is_ok()
+                    {
+                        let occurrence = Sha256::new()
+                            .chain_update(fence.character_id.as_bytes())
+                            .chain_update(death.native_bytes())
+                            .finalize();
+                        grant_missing(
+                            &mut tx,
+                            fence.character_id,
+                            &[
+                                "oteryn:achievement/master_debater",
+                                "oteryn:achievement/millennial_falcon",
+                            ],
+                            "oteryn:oberon-death",
+                            &occurrence,
+                        )
+                        .await?;
+                    }
+                    super::db::commit_semantic_transaction(tx, deadline).await
+                })
+            })
+            .await
+    }
 }
 
 /// Count one event toward `key` for the Character and grant it when the count reaches `total`.

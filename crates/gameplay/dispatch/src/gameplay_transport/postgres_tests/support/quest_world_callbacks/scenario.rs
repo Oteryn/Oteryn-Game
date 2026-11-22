@@ -23,6 +23,12 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let past_oberon_objective = name == "authored-secret-library-completed-oberon";
+    let name = if past_oberon_objective {
+        "authored-secret-library"
+    } else {
+        name
+    };
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
@@ -1552,7 +1558,7 @@ fn scenario_case(
             } else if name == "authored-treasure-island" {
                 3
             } else if name == "authored-secret-library" {
-                5
+                5 + usize::from(past_oberon_objective)
             } else if matches!(name, "authored-anniversary" | "authored-venore") {
                 12
             } else if super::super::qh_authored_cases_fixtures::is_city(name) {
@@ -2827,6 +2833,7 @@ fn scenario_case(
                 &mut owner,
                 &mut admitted,
                 &h,
+                past_oberon_objective,
             ))
             .await?;
         } else if name == "authored-anniversary" {

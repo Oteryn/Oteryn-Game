@@ -184,6 +184,12 @@ fn other_outfit_addon(key: &str) -> Option<(&'static str, i64)> {
         "l8-hunter-gloves" => (
             "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon", 5,
         ),
+        "qb-warrior-shoulder" => (
+            "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_sword_addon", 2,
+        ),
+        "qb-warrior-sword" => (
+            "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon", 7,
+        ),
         _ => return None,
     })
 }

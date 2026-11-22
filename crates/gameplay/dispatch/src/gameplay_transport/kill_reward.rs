@@ -136,6 +136,7 @@ pub struct PendingKillSettlement {
     pub activity_at_death:
         Option<Vec<oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity>>,
     pub damage_shares: Vec<crate::foundation::RewardDamageShare>,
+    oberon_recipients: Vec<CapturedRewardPrincipal>,
     /// PREY-DIFF: freeze selection and access on the lethal turn; retries must not
     /// re-evaluate a later Premium state or attribute this kill to a successor.
     pub(super) prey_checkpoint: Option<crate::durability::prey::PreyCheckpoint>,
@@ -263,6 +264,7 @@ impl PendingKillSettlement {
             activity_observed_at: observed_at,
             activity_at_death: None,
             damage_shares: Vec::new(),
+            oberon_recipients: Vec::new(),
             world_change: None,
             prey_checkpoint: None,
             forge: None,
@@ -2056,6 +2058,11 @@ pub fn record_creature_kill(
         refuse("damage_shares_unavailable", &creature);
         return;
     };
+    let oberon_recipients = if wild && creature == "oteryn:creature.grand_master_oberon" {
+        capture_oberon_recipients(runtime, target)
+    } else {
+        Vec::new()
+    };
     if !top.is_gone()
         && let Some(states) = sink.prey
     {
@@ -2176,6 +2183,7 @@ pub fn record_creature_kill(
             // no fallback invents XP, a loot table, corpse Item or Bestiary race.
             let boss = sink.rewards.boss(&creature);
             if !overlord
+                && oberon_recipients.is_empty()
                 && boss.is_none()
                 && (top.present().is_none()
                     || !super::grizzly_kills::tracks_creature(&creature)
@@ -2213,6 +2221,7 @@ pub fn record_creature_kill(
                             activity_observed_at: observed_at,
                             activity_at_death: None,
                             damage_shares,
+                            oberon_recipients: Vec::new(),
                             world_change,
                             prey_checkpoint,
                             forge: None,
@@ -2313,6 +2322,7 @@ pub fn record_creature_kill(
             // steps use actual damaging players independently of corpse MINT
             // qualification. Preserve the native lethal ledger on the rowless path.
             entry.damage_shares = damage_shares;
+            entry.oberon_recipients = oberon_recipients;
             // Only the actual lethal producer supplies the retained Instance clock.
             entry.activity_death = activity_death;
             entry.world_change = world_change;
@@ -2616,6 +2626,7 @@ pub fn record_creature_kill(
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
         damage_shares,
+        oberon_recipients,
         prey_checkpoint,
         facts,
         creature,
@@ -3377,6 +3388,67 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 }
+/// Crystal's killingLibrary event reads Player IDs from the physical damage map.
+fn capture_oberon_recipients(
+    runtime: &ChannelRuntimeV1,
+    target: ExactActorRef,
+) -> Vec<CapturedRewardPrincipal> {
+    let Ok(census) = runtime.positioned_actor_census() else {
+        return Vec::new();
+    };
+    runtime
+        .all_source_player_damage_shares(target)
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|share| {
+            let session = census
+                .iter()
+                .find(|(actor, _, _)| *actor == share.actor)
+                .and_then(|(_, _, session)| *session)?;
+            let lease = runtime.bound_attacker_lease(share.actor, session).ok()?;
+            (share.total > 0 && lease.character_id() == share.character).then_some(
+                CapturedRewardPrincipal {
+                    character: share.character,
+                    lease_generation: lease.generation(),
+                    session,
+                    actor: share.actor,
+                },
+            )
+        })
+        .collect()
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn credit_oberon_achievements(&self, entry: &PendingKillSettlement) -> bool {
+        for recipient in &entry.oberon_recipients {
+            let fence = match self.current_quest_fence(recipient.session).await {
+                Ok(Some(fence)) => fence,
+                Ok(None) => continue,
+                Err(()) => return false,
+            };
+            if fence.character_id.as_bytes() != recipient.character.as_bytes()
+                || fence.character_lease_generation != recipient.lease_generation
+            {
+                continue;
+            }
+            if self
+                .root
+                .grant_oberon_death_achievements(
+                    self.character,
+                    self.holder,
+                    fence.item_fence(),
+                    entry.facts.death,
+                )
+                .await
+                .is_err()
+            {
+                return false;
+            }
+        }
+        true
+    }
+}
+
 /// Copied Soul War onDeath settles XP before the ordinary drain can take the
 /// death. Run the same victory/chest prerequisites first, including the exact
 /// late-death classification; the XP transaction keeps its victory gate.
@@ -3403,7 +3475,9 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
         if entry.soulpit_experience.is_some() {
             return self.settle_soulpit(entry).await;
         }
-        if !super::hive_shared_kills::settle(self.admission, entry, self.fence).await {
+        if !self.admission.credit_oberon_achievements(entry).await
+            || !super::hive_shared_kills::settle(self.admission, entry, self.fence).await
+        {
             return SettleReport {
                 verdict: SettleVerdict::Retry,
                 no_progression: false,

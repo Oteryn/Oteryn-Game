@@ -12,14 +12,20 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::CommandRef;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
+use oteryn_gameplay_items::fishing;
 use oteryn_gameplay_items::item_craft::{
-    carried_cooking_conversion_with_quantity, cooking_conversion, fishing_conversion,
+    CookingConversion, carried_cooking_conversion_with_quantity, cooking_conversion,
+    fishing_conversion,
 };
 use oteryn_gameplay_items::reward_bag::{
     is_reward_bag_output, reward_bag_conversion, reward_bag_draw,
 };
 use oteryn_protocol_oteryn::world_object::UseDisposition;
+use oteryn_simulation_determinism::{
+    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use sqlx::Row;
 
 pub(crate) mod audit;
@@ -280,16 +286,22 @@ async fn write_with_skinning<C: ItemLoopContent>(
     } else {
         None
     };
-    let consumes_source = skinning.is_none()
+    let carried_sculpture = request.ingredient.is_some()
+        && request.gathering.is_none()
+        && request.tool.is_none()
+        && source_item_id(&definition)
+            .zip(request.station.as_ref().and_then(source_item_id))
+            .is_some_and(|(tool, target)| fishing::is_sculpture(tool, target));
+    let consumes_source = !carried_sculpture
+        && skinning.is_none()
         && request
             .gathering
             .as_ref()
             .is_none_or(|g| g.attempt.consumes_bait);
     let mut ingredient_count = 1_i64;
-    let mut ingredient_weight = 0_u64;
-    let mut retires_ingredient = false;
     let mut ingredient_debit = 1_u32;
     let mut ingredient_consumed = None;
+    let mut carried_attempt = None;
     let conversion = if let Some(prepared) = &skinning {
         Some(oteryn_gameplay_items::item_craft::CookingConversion {
             recipe: prepared.conversion.recipe.clone(),
@@ -365,39 +377,19 @@ async fn write_with_skinning<C: ItemLoopContent>(
         {
             return Ok(UseDisposition::StaleState);
         }
-        let outputs = gathering
-            .attempt
-            .yield_item
-            .map(|id| {
-                let record = native.item_policy_for_source_id(u32::from(id))?.record();
-                Some((
-                    TypedDefinitionRef {
-                        family: record.production_definition.family.clone(),
-                        production_key: record.production_definition.production_key.clone(),
-                        revision_ref: record.production_definition.revision_ref.clone(),
-                    },
-                    1,
-                ))
-            })
-            .into_iter()
-            .collect::<Option<Vec<_>>>();
-        outputs.map(
-            |outputs| oteryn_gameplay_items::item_craft::CookingConversion {
-                recipe: if soil_is_qualified
-                    && definition.production_key == "oteryn:item.tibia.i945"
-                {
-                    "oteryn:elemental_energy_soil.crystal"
-                } else if soil_is_qualified {
-                    "oteryn:elemental_soil.crystal"
-                } else if seed_is_qualified {
-                    "oteryn:planting.crystal"
-                } else {
-                    "oteryn:gathering.crystal"
-                }
-                .into(),
-                outputs,
-            },
-        )
+        gathering_outputs(native, gathering.attempt.yield_item).map(|outputs| CookingConversion {
+            recipe: if soil_is_qualified && definition.production_key == "oteryn:item.tibia.i945" {
+                "oteryn:elemental_energy_soil.crystal"
+            } else if soil_is_qualified {
+                "oteryn:elemental_soil.crystal"
+            } else if seed_is_qualified {
+                "oteryn:planting.crystal"
+            } else {
+                "oteryn:gathering.crystal"
+            }
+            .into(),
+            outputs,
+        })
     } else {
         match (&request.station, request.tool) {
             (Some(station), Some(tool_id)) => {
@@ -436,6 +428,28 @@ async fn write_with_skinning<C: ItemLoopContent>(
                         };
                         let quantity =
                             u32::try_from(row.try_get::<i64, _>("quantity").ok()?).ok()?;
+                        if carried_sculpture {
+                            if &target != station {
+                                return None;
+                            }
+                            let input = source_item_id(&target)?;
+                            let tool = source_item_id(&definition)?;
+                            let roll = gathering_roll(
+                                native.source_digest(),
+                                fence.game_session_id,
+                                request.command.command_id().get(),
+                                &request.intent,
+                            )?;
+                            let attempt = fishing::gathering_attempt(tool, input, 10, 1, roll)?;
+                            let outputs =
+                                gathering_outputs(native, attempt.after.or(attempt.yield_item))?;
+                            ingredient_consumed = Some((target, quantity == 1));
+                            carried_attempt = Some((input, attempt));
+                            return Some(CookingConversion {
+                                recipe: "oteryn:sculpture.carried".into(),
+                                outputs,
+                            });
+                        }
                         let resolved = carried_cooking_conversion_with_quantity(
                             native,
                             &definition,
@@ -445,12 +459,10 @@ async fn write_with_skinning<C: ItemLoopContent>(
                             ),
                             quantity,
                         )?;
-                        let weight = content.loop_facts(&target)?.weight?;
+                        content.loop_facts(&target)?.weight?;
                         ingredient_count = i64::from(resolved.target_debit);
-                        ingredient_weight = u64::from(weight) * u64::from(resolved.target_debit);
-                        retires_ingredient = quantity == resolved.target_debit;
                         ingredient_debit = resolved.target_debit;
-                        ingredient_consumed = Some((target.clone(), quantity == ingredient_debit));
+                        ingredient_consumed = Some((target, quantity == ingredient_debit));
                         Some(resolved.conversion)
                     })
                 } else {
@@ -708,11 +720,51 @@ async fn write_with_skinning<C: ItemLoopContent>(
             .execute(&mut ***tx)
             .await?;
     }
+    let gathering_award = request
+        .gathering
+        .as_ref()
+        .map(|g| (g.mutation.tool_key.as_str(), g.mutation.before, g.attempt))
+        .or_else(|| {
+            carried_attempt.map(|(input, attempt)| {
+                (
+                    definition.production_key.as_str(),
+                    u32::from(input),
+                    attempt,
+                )
+            })
+        });
+    let figurine = gathering_award
+        .filter(|(_, before, _)| *before == 10426)
+        .and_then(|(_, _, attempt)| attempt.yield_item);
+    let inscription = if let Some(figurine) = figurine {
+        let name: String = sqlx::query_scalar(
+            "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .fetch_one(&mut ***tx)
+        .await?;
+        fishing::marble_inscription(figurine, &name)
+    } else {
+        None
+    };
     for output in outputs {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,$3::uuid)")
             .bind(&output).bind(world.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
         sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,($1->>'ordinal')::numeric,$5::uuid)")
             .bind(&output).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(&parent).bind(&transaction).execute(&mut ***tx).await?;
+        if let Some(inscription) = &inscription {
+            let item = output["item"]
+                .as_str()
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            super::item_text::initialize_authored_reward_text(
+                tx,
+                super::item_mint::uuid_text(item)?,
+                super::item_mint::uuid_text(&transaction)?,
+                inscription,
+                occurred,
+            )
+            .await?;
+        }
     }
     if conversion.recipe == "oteryn:planting.crystal"
         && request
@@ -737,14 +789,8 @@ async fn write_with_skinning<C: ItemLoopContent>(
     // The successful yield, counter and grant share the craft receipt transaction.
     // Exact replay returned before this writer, so a retry never advances the counter.
     use oteryn_gameplay_progression::achievement_granters;
-    let achievement = if let Some(gathering) = &request.gathering {
-        let tool = gathering.mutation.tool_key.as_str();
-        let (award, progress) = match (
-            tool,
-            gathering.mutation.before,
-            gathering.attempt.after,
-            gathering.attempt.yield_item,
-        ) {
+    let achievement = if let Some((tool, before, attempt)) = gathering_award {
+        let (award, progress) = match (tool, before, attempt.after, attempt.yield_item) {
             // Crystal 201189f8, skinning.lua:153-191. Earlier stages or
             // lower-quality figurines do not earn either sculpture award.
             ("oteryn:item.tibia.i5908" | "oteryn:item.tibia.i5942", 7445, Some(7446), None) => (
@@ -759,8 +805,13 @@ async fn write_with_skinning<C: ItemLoopContent>(
             // counts successful scythe and sickle harvests. The Global sickle
             // operates on 5463, per data/scripts/actions/tools/sickle.lua:4-7.
             (_, 3653, Some(3651), Some(3605)) => (None, Some(achievement_granters::HAPPY_FARMER)),
-            (_, 5463, Some(5462), Some(5466)) => (None, Some(achievement_granters::NATURAL_SWEETENER)),
-            _ => (None, achievement_granters::gathering(tool, gathering.attempt.yield_item)),
+            (_, 5463, Some(5462), Some(5466)) | (_, 5464, Some(5463), Some(5466)) => {
+                (None, Some(achievement_granters::NATURAL_SWEETENER))
+            }
+            _ => (
+                None,
+                achievement_granters::gathering(tool, attempt.yield_item),
+            ),
         };
         if let Some(key) = award {
             super::account_achievement::grant_missing(
@@ -799,6 +850,64 @@ async fn write_with_skinning<C: ItemLoopContent>(
             .await?;
     }
     Ok(UseDisposition::Committed)
+}
+
+fn gathering_outputs(
+    native: &NativeGameplayState,
+    output: Option<u16>,
+) -> Option<Vec<(TypedDefinitionRef, u32)>> {
+    let Some(item) = output else {
+        return Some(Vec::new());
+    };
+    let definition = &native
+        .item_policy_for_source_id(u32::from(item))?
+        .record()
+        .production_definition;
+    Some(vec![(
+        TypedDefinitionRef {
+            family: definition.family.clone(),
+            production_key: definition.production_key.clone(),
+            revision_ref: definition.revision_ref.clone(),
+        },
+        1,
+    )])
+}
+
+/// Shared deterministic draw for map and carried gathering targets.
+pub fn gathering_roll(
+    digest: [u8; 32],
+    session: crate::foundation::GameSessionId,
+    command_id: u64,
+    intent: &[u8],
+) -> Option<u32> {
+    let digest = Sha256::new()
+        .chain_update(b"oteryn.gathering.yield.v1")
+        .chain_update(session.as_bytes())
+        .chain_update(command_id.to_be_bytes())
+        .chain_update(intent)
+        .chain_update(digest)
+        .finalize();
+    let mut occurrence = [0; 16];
+    occurrence.copy_from_slice(&digest[..16]);
+    let draw = deterministic_decision_u64(
+        &GameplayDecisionRoot::from_bytes(digest.into()),
+        DecisionOccurrenceId::from_bytes(occurrence),
+        "gathering.yield",
+        0,
+    )
+    .ok()?;
+    u32::try_from(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
+        draw, 1, 100_000,
+    ))
+    .ok()
+}
+
+fn source_item_id(definition: &TypedDefinitionRef) -> Option<u16> {
+    definition
+        .production_key
+        .strip_prefix("oteryn:item.tibia.i")?
+        .parse()
+        .ok()
 }
 
 fn ingredient_fluid_subtype(stored: Option<i16>) -> Option<u32> {

@@ -2114,11 +2114,6 @@ impl DurabilityRoot {
                     }
                     if let QuestCause::CreatureDeath(death) = request.cause {
                         let awards: &[&str] = match request.transition_key.as_str() {
-                            // Crystal 201189f the_secret_library_quest/creaturescripts_kill.lua:16,31-33.
-                            "oteryn:quest-death/authored-secret-library-oberon" => &[
-                                "oteryn:achievement/master_debater",
-                                "oteryn:achievement/millennial_falcon",
-                            ],
                             // TibiaWiki curid=88950, oldid=1064484.
                             "oteryn:quest-death/questpc7-grave-scarlett_etzel" => &[
                                 "oteryn:achievement/a_study_in_scarlett",

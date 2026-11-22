@@ -1155,13 +1155,10 @@ def build():
             }
         elif name in ('l6-citizen-rook-backpack', 'qb-citizen-backpack'):
             callback['account_reservation'] = {'action': 'finish', 'key': backpack}
-    # Crystal records one event on each completed Warrior addon (Cornelia:82, Morgan:106).
-    for callback in callbacks:
-        if callback['key'] in ('oteryn:quest-reward/qb-warrior-shoulder', 'oteryn:quest-reward/qb-warrior-sword'):
-            callback['achievement_progress'] = [{'key':'oteryn:achievement/wild_warrior','target':2}]
     # The donor exposes these additive rewards in either order. Use the other
     # hand-in's existing terminal track so characters with one older addon qualify.
     by_name = {callback['key'].rsplit('/', 1)[-1]: callback for callback in callbacks}
+    warrior_completions = []
     for achievement, page, revision, rewards in [
         ('hunting_with_style', 62855, 753202, [('l8-hunter-hat', 'hunter_hat_addon'), ('l8-hunter-gloves', 'addon_glove')]),
         ('in_shining_armor', 62856, 753037, [('knight-sword', 'addon_sword'), ('l7-knight-helmet-reward', 'addon_helmet')]),
@@ -1172,6 +1169,15 @@ def build():
         ('peazzekeeper', 62873, 753184, [('l1-wayfarer-cape', 'wayfarer_outfit'), ('l1-wayfarer-hat', 'wayfarer_outfit_1')]),
         ('swift_death', 62886, 753279, [('l7-assassin-yarn', 'assassin_first_addon'), ('l7-assassin-second', 'assassin_second_addon')]),
         ('swashbuckler', 62885, 753261, [('pirate-sabre', 'pirate_sabre_addon'), ('l4-pirate-hat', 'pirate_hat_addon')]),
+        (
+            "wild_warrior",
+            None,
+            None,
+            [
+                ("qb-warrior-shoulder", "warrior_shoulder_addon"),
+                ("qb-warrior-sword", "warrior_sword_addon"),
+            ],
+        ),
     ]:
         for (name, _), (other, completion) in (rewards, rewards[::-1]):
             original = by_name[name]
@@ -1181,14 +1187,20 @@ def build():
             finishing.setdefault('requires', []).append(requirement(earned['track'], earned['set']))
             finishing['key'] += '-full-outfit'
             finishing['achievement'] = 'oteryn:achievement/'+achievement
-            finishing['sources'].append(f'https://tibia.fandom.com/index.php?curid={page}&oldid={revision}')
-            callbacks.append(finishing)
+            if page is not None:
+                finishing['sources'].append(f'https://tibia.fandom.com/index.php?curid={page}&oldid={revision}')
+            if achievement == "wild_warrior":
+                warrior_completions.append(finishing)
+            else:
+                callbacks.append(finishing)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises})
     battle_mage_document = {'schema':1,'callbacks':sorted(battle_mage_completions,key=lambda c:c['key'])}
     validate_callbacks(battle_mage_document)
+    warrior_document = {"schema": 1, "callbacks": sorted(warrior_completions, key=lambda c: c["key"])}
+    validate_callbacks(warrior_document)
     validate_callbacks({'schema':1,'callbacks':fibula_callbacks})
     validate_callbacks({'schema':1,'callbacks':l13_callbacks})
     validate_callbacks({'schema':1,'callbacks':programme_callbacks})
@@ -1204,6 +1216,7 @@ def build():
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises}),
             'content/quests/npc-callbacks/battle-mage-completions.json': encoded(battle_mage_document),
+            "content/quests/npc-callbacks/warrior-completions.json": encoded(warrior_document),
             'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'callbacks':fibula_callbacks}),
             'content/quests/npc-callbacks/l13-outfits.json': encoded({'schema':1,'callbacks':l13_callbacks}),
             'content/quests/npc-callbacks/questpc7-programmes.json': encoded({'schema':1,'callbacks':programme_callbacks}),

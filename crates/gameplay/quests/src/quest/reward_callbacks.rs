@@ -571,9 +571,38 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
+    WARRIOR_COMPLETIONS,
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
 ];
+
+const WARRIOR_COMPLETIONS: &str =
+    include_str!("../../../../../content/quests/npc-callbacks/warrior-completions.json");
+
+/// The two completion branches add transitions without changing any prior track defaults.
+pub(super) fn retain_warrior_reward_predecessor(
+    catalogue: &mut QuestStateCatalogue,
+) -> Result<(), String> {
+    let quest = "oteryn:quest.outfit_and_addon_quests";
+    let mut previous = catalogue.transitions.clone();
+    for callback in parse(WARRIOR_COMPLETIONS)? {
+        if previous.remove(&callback.key).is_none()
+            || previous.remove(&reward_rule_key(&callback)?).is_none()
+        {
+            return Err(format!("missing Warrior completion {}", callback.key));
+        }
+    }
+    let hash = super::definition_hash(quest, &catalogue.tracks, &previous);
+    catalogue
+        .predecessors
+        .entry(quest.into())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash,
+            defaults: BTreeMap::new(),
+        });
+    Ok(())
+}
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
 pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
@@ -1323,6 +1352,14 @@ fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
     }
 }
 
+fn reward_rule_key(callback: &RewardCallback) -> Result<String, String> {
+    let digest: String = Sha256::digest(value_plan(callback)?)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    Ok(format!("oteryn:quest-reward-rule/{digest}"))
+}
+
 /// Declare authored bounds before world and death adapters validate their stages.
 /// Their complete rewards and provenance are still installed by `extend` afterward.
 pub(crate) fn declare_tracks(
@@ -1589,17 +1626,12 @@ fn extend_callbacks(
 
         // Value participants are part of the pinned quest contract. Reply copy and
         // source citations remain journal metadata and do not invalidate progress.
-        let value_plan = value_plan(callback)?;
-        let digest: String = Sha256::digest(value_plan)
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect();
         if (!callback.storage.is_empty() || !callback.state_ops.is_empty())
             && published_markers::needs_marker(callback, &published)
         {
             transitions.push(QuestTransition {
                 world_change: None,
-                key: format!("oteryn:quest-reward-rule/{digest}"),
+                key: reward_rule_key(callback)?,
                 quest: callback.quest.clone(),
                 effects: vec![QuestEffect {
                     track: callback
@@ -2306,11 +2338,6 @@ mod tests {
                 .iter()
                 .find(|callback| callback.key == format!("oteryn:quest-reward/{name}"))
                 .ok_or(name)?;
-            let [progress] = callback.achievement_progress.as_slice() else {
-                return Err(format!("{name} should advance exactly one achievement"));
-            };
-            assert_eq!(progress.key, "oteryn:achievement/wild_warrior");
-            assert_eq!(progress.target, 2);
             assert!(
                 callback.cosmetic_targets().any(
                     |reward| reward.outfit == "oteryn:outfit.warrior" && reward.addons == addon
@@ -2355,6 +2382,13 @@ mod tests {
             );
         }
         for (achievement, pairs) in [
+            (
+                "wild_warrior",
+                [
+                    ("qb-warrior-shoulder", "qb-warrior-sword"),
+                    ("qb-warrior-sword", "qb-warrior-shoulder"),
+                ],
+            ),
             (
                 "swift_death",
                 [
@@ -2644,7 +2678,7 @@ mod tests {
         // Shared rewards contain 238 existing rows plus 18 full-outfit reward branches.
         // The final terms cover Rottin Wood, the Forgemaster's routes, Forbidden Fruit,
         // and the two Battle Mage completion routes.
-        assert_eq!(load()?.len(), 256 + 59 + 125 + 1 + 1 + 13 + 12 + 1 + 2);
+        assert_eq!(load()?.len(), 256 + 59 + 125 + 1 + 1 + 13 + 12 + 1 + 2 + 2);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -3547,8 +3581,8 @@ mod outfit_reward_predecessor_tests {
                 .iter()
                 .filter(|callback| callback.quest == QUEST)
                 .count(),
-            // 112 retained rows, 31 QB rows and 12 new full-outfit branches.
-            155
+            // 112 retained rows, 31 QB rows and 14 full-outfit branches.
+            157
         );
         document.callbacks.retain(|callback| {
             !is_qb_outfit_extension(callback) && !callback.key.ends_with("-full-outfit")
