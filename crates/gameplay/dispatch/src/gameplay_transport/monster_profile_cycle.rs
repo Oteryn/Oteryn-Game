@@ -5,7 +5,11 @@ use crate::content::{QualifiedNativeEntryRoom, native_gameplay::NativeGameplaySt
 use crate::foundation::ChannelRuntimeV1;
 use crate::movement::monster_map::CurrentMonsterMap;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
+use std::time::Instant;
 
 mod bloodjaw_targeting;
 pub(super) mod native_callbacks;
@@ -15,6 +19,80 @@ pub(in crate::gameplay_transport) mod rotten_area;
 pub(super) mod rotten_waves;
 pub(super) mod source_heals;
 mod source_items;
+
+struct PhaseUsage {
+    elapsed_ns: AtomicU64,
+    count: AtomicU64,
+}
+
+impl PhaseUsage {
+    const fn new() -> Self {
+        Self {
+            elapsed_ns: AtomicU64::new(0),
+            count: AtomicU64::new(0),
+        }
+    }
+
+    fn start(&self) -> PhaseTimer<'_> {
+        PhaseTimer(self, Instant::now())
+    }
+}
+
+struct PhaseTimer<'a>(&'a PhaseUsage, Instant);
+
+impl Drop for PhaseTimer<'_> {
+    fn drop(&mut self) {
+        let elapsed_ns = u64::try_from(self.1.elapsed().as_nanos()).unwrap_or(u64::MAX);
+        self.0.elapsed_ns.fetch_add(elapsed_ns, Ordering::Relaxed);
+        self.0.count.fetch_add(1, Ordering::Relaxed);
+    }
+}
+
+static BEGIN_AND_SCOPE: PhaseUsage = PhaseUsage::new();
+static REFERENCE_PARTIES: PhaseUsage = PhaseUsage::new();
+static SESSION_READ: PhaseUsage = PhaseUsage::new();
+static DOOR_AND_MAP: PhaseUsage = PhaseUsage::new();
+static AI_PROFILE: PhaseUsage = PhaseUsage::new();
+static COMMIT_OR_ROLLBACK: PhaseUsage = PhaseUsage::new();
+
+fn report_profile_phases() {
+    use oteryn_error_codes::{FieldValue, Level, Line, emit};
+
+    // One cumulative snapshot per completed pass, after the holder is returned.
+    // Retain nanosecond precision until the run report converts to milliseconds.
+    let mut line = Line::new(Level::Info, "durability", "monster_profile_pass_phases");
+    for (phase, elapsed_field, count_field) in [
+        (
+            &BEGIN_AND_SCOPE,
+            "begin_and_scope_ns",
+            "begin_and_scope_count",
+        ),
+        (
+            &REFERENCE_PARTIES,
+            "reference_parties_ns",
+            "reference_parties_count",
+        ),
+        (&SESSION_READ, "session_read_ns", "session_read_count"),
+        (&DOOR_AND_MAP, "door_and_map_ns", "door_and_map_count"),
+        (&AI_PROFILE, "ai_profile_ns", "ai_profile_count"),
+        (
+            &COMMIT_OR_ROLLBACK,
+            "commit_or_rollback_ns",
+            "commit_or_rollback_count",
+        ),
+    ] {
+        line = line
+            .field(
+                elapsed_field,
+                FieldValue::U64(phase.elapsed_ns.load(Ordering::Relaxed)),
+            )
+            .field(
+                count_field,
+                FieldValue::U64(phase.count.load(Ordering::Relaxed)),
+            );
+    }
+    emit("oteryn-game-server", &line);
+}
 
 pub(super) fn publish_native_facing(
     runtime: &mut ChannelRuntimeV1,
@@ -286,10 +364,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 native_pending.as_ref(),
                 native_health_names,
             );
-            pass.run_with_context(&mut context, move |holder, deadline, context| {
+            let result = pass.run_with_context(&mut context, move |holder, deadline, context| {
             Box::pin(async move {
                 let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names) =
                     context;
+                let begin_and_scope = BEGIN_AND_SCOPE.start();
                 let mut tx = begin_spell_owner_transaction(holder, deadline).await.inspect_err(|_| {
                     #[cfg(test)]
                     native_owner_turn(room, "profile_transaction", "begin_refused");
@@ -311,6 +390,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     native_owner_turn(room, "profile_transaction", "scope_refused");
                 })
                 .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                drop(begin_and_scope);
                 // Deferred source tasks precede fresh movement/thinks. Read the
                 // same current party basis only when their retained older casts
                 // can need it, then release this read transaction after one task.
@@ -321,7 +401,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             if creature.details.as_ref().is_some_and(|details| details.reference_level_overrides.iter()
                                 .any(|area| area.party_mode == crate::content::ProjectV2ReferenceLevelPartyMode::LowestMember)))
                     });
-                    physical_spell::read_reference_parties(&mut tx, &authority, owner.root, runtime, states, required).await
+                    let reference_parties = REFERENCE_PARTIES.start();
+                    let parties = physical_spell::read_reference_parties(&mut tx, &authority, owner.root, runtime, states, required).await;
+                    drop(reference_parties);
+                    parties
                 } else { Default::default() };
                 let source_instance = matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
                     && room.source_world().is_some();
@@ -329,6 +412,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let wave_enabled = source_instance
                     && states.rotten_waves.observe_source_attempt(runtime);
                 let wave_taints = if wave_enabled && wave_boss_present {
+                    let _session_read = SESSION_READ.start();
                     let sessions = runtime.positioned_actor_census()
                         .inspect_err(|_| {
                             #[cfg(test)]
@@ -343,9 +427,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         native_owner_turn(room, "profile_transaction", "taints_refused");
                     }).map_err(|_| crate::durability::DurabilityError::Unavailable)?
                 } else { Vec::new() };
+                let door_and_map = DOOR_AND_MAP.start();
                 let objects = owner.door.lock().await;
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
+                drop(door_and_map);
+                let ai_profile = AI_PROFILE.start();
                 map.bind_source_ground_steps(Arc::clone(&states.spite_steps.creatures), owner.reset_epoch)
                     .inspect_err(|_| {
                         #[cfg(test)]
@@ -368,11 +455,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         native_owner_turn(room, "profile_source", if complete { "work_map_refused" } else { "work_unfinished" });
                         return Err(crate::durability::DurabilityError::Unavailable);
                     }
+                    drop(ai_profile);
                     drop(map);
+                    let finish_transaction = COMMIT_OR_ROLLBACK.start();
                     tx.rollback().await.inspect_err(|_| {
                         #[cfg(test)]
                         native_owner_turn(room, "profile_transaction", "work_rollback_refused");
                     }).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                    drop(finish_transaction);
                     // Immediate continuation names actual remaining source/AI
                     // work; it does not replace a source timer deadline.
                     #[cfg(test)]
@@ -536,11 +626,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if !map.validate_transaction(runtime).await {
                         return Err(crate::durability::DurabilityError::Unavailable);
                     }
+                    drop(ai_profile);
                     drop(map);
                     crate::durability::quest_state::rotten_flame::capture_bak_first_think_in_transaction(
                         &mut tx, owner.holder, &claim,
                     ).await?;
+                    let finish_transaction = COMMIT_OR_ROLLBACK.start();
                     tx.commit().await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                    drop(finish_transaction);
                     return Ok((Some(0), Vec::new(), Vec::new(), false));
                 }
                 let published_soul_war_world = owner.active_generation
@@ -552,6 +645,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // cohort finishes. This branch issued no physical/Quest
                     // writes. Drop the existing read transaction, then perform
                     // the detached scoped read outside runtime/state guards.
+                    drop(ai_profile);
                     drop(map);
                     drop(tx);
                     return Ok((Some(0),Vec::new(),Vec::new(), false));
@@ -566,6 +660,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if primal_pending.is_none() {
                         states.primal_callbacks.prepare_normal_shared(pending.shared_batch())
                             .map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                        drop(ai_profile);
                         drop(map); drop(tx);
                         return Ok((Some(0),Vec::new(),Vec::new(), false));
                     }
@@ -740,16 +835,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if !map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
+                drop(ai_profile);
                 drop(map);
                 let needs_reference_parties = native.creature_profiles().records.iter().any(|record| {
                     matches!(&record.profile.data, crate::content::ProjectV2AuthoringProfileData::Creature(creature)
                         if creature.details.as_ref().is_some_and(|details| details.reference_level_overrides.iter()
                             .any(|area| area.party_mode == crate::content::ProjectV2ReferenceLevelPartyMode::LowestMember)))
                 });
+                let reference_parties = REFERENCE_PARTIES.start();
                 let parties = physical_spell::read_reference_parties(
                     &mut tx, &authority, owner.root, runtime, states, needs_reference_parties,
                 )
                 .await;
+                drop(reference_parties);
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 map.bind_source_ground_steps(Arc::clone(&states.spite_steps.creatures), owner.reset_epoch)
@@ -787,18 +885,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .chain(states.monster_spells.next_windup_due_time().map(|due| due.get()))
                     .chain(states.monster_chains.as_ref().and_then(|owner| owner.next_due_time()).map(|due| due.get()))
                     .min();
+                let finish_transaction = COMMIT_OR_ROLLBACK.start();
                 tx.rollback()
                     .await
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                drop(finish_transaction);
                 Ok((next_due, proposals, native_actors, true))
             })
         })
-        .await
-        .inspect_err(|_| {
-            #[cfg(test)]
-            native_owner_turn(room, "profile_transaction", "pass_refused");
-        })
-        .map_err(|_| ())?
+        .await;
+            report_profile_phases();
+            result
+                .inspect_err(|_| {
+                    #[cfg(test)]
+                    native_owner_turn(room, "profile_transaction", "pass_refused");
+                })
+                .map_err(|_| ())?
         };
         // A due-only turn can finish while an older cancelled pass already owns
         // its Item suffix. Do not acknowledge that suffix with empty results.

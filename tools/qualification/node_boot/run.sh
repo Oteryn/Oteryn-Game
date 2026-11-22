@@ -1075,6 +1075,19 @@ stage() { # name prerequisite... -- function
     durability_report_lines < "$node_log" 2>/dev/null | grep -oE 'DURABILITY_HOLDER_USAGE caller=[^ ]+ passes=[0-9]+ held_ms=[0-9]+ refused=[0-9]+' \
         | awk '{split($2,c,"=");split($3,p,"=");split($4,h,"=");split($5,r,"=");P[c[2]]+=p[2];H[c[2]]+=h[2];R[c[2]]+=r[2]} END {for (k in H) print H[k], P[k], R[k], k}' \
         | sort -rn | head -n 30 || true
+    echo "--- monster profile pass phases over the run"
+    # Snapshots are cumulative and can reach stderr out of order across channels.
+    grep -oE 'module=durability event=monster_profile_pass_phases .*' "$node_log" 2>/dev/null \
+        | awk '{
+            for (i = 3; i <= NF; i++) {
+                split($i, field, "=")
+                value = field[2] + 0
+                phase = field[1]
+                if (sub(/_ns$/, "", phase) && (!(phase in NS) || value > NS[phase])) NS[phase] = value
+                if (sub(/_count$/, "", phase) && value > C[phase]) C[phase] = value
+            }
+        } END {for (phase in NS) printf "total_ms=%.0f count=%.0f phase=%s\n", int(NS[phase] / 1000000), C[phase], phase}' \
+        | sort -t= -k2,2nr || true
     echo "--- node message kinds"
     sed -E 's/ts=[0-9]+ //; s/trace=[0-9a-f-]+ //; s/[0-9]+/N/g' "$node_log" 2>/dev/null | cut -c1-140 | sort | uniq -c | sort -rn | head -n 40 || true
     echo "--- node admission and session events"
