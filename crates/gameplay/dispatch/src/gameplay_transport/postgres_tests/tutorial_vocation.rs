@@ -12,6 +12,16 @@ fn tutorial_vocation_offer_and_submit_real_dispatch() -> TestResult {
 }
 
 #[test]
+fn tutorial_vocation_can_choose_again_after_a_missing_kit_revision() -> TestResult {
+    vocation_scenario(Case::MissingKitRevision)
+}
+
+#[test]
+fn tutorial_vocation_releases_the_spell_lane_during_readback() -> TestResult {
+    vocation_scenario(Case::Readback)
+}
+
+#[test]
 fn tutorial_vocation_waits_for_main_backpack() -> TestResult {
     vocation_scenario(Case::MissingBag)
 }
@@ -95,6 +105,8 @@ fn committed_dawnport_trial_pools_survive_a_live_installation_miss() -> TestResu
 enum Case {
     Ordinary,
     MissingBag,
+    MissingKitRevision,
+    Readback,
     Retained,
     Uninstalled,
     Capacity,
@@ -116,6 +128,7 @@ fn vocation_scenario(case: Case) -> TestResult {
     let post_commit = matches!(case, Case::Uninstalled | Case::RetainedMovement | Case::RetainedBusy | Case::RetainedBacktrack | Case::RetainedStationary | Case::RetainedCleared | Case::RetainedResumed | Case::UncommittedPools | Case::FailedInitialProjection | Case::RetainedGone | Case::UncommittedStationaryCache | Case::TrialRefillBeforeInstall);
     let retained = case == Case::Retained || post_commit;
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("POSTGRES_CASE_SKIPPED {}: OTERYN_TEST_POSTGRES_ADMIN_URL is absent", module_path!());
         return Ok(());
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("tutorial-vocation", move || {
@@ -251,6 +264,18 @@ fn vocation_scenario(case: Case) -> TestResult {
                     .0,
                 CommandStatus::Rejected
             );
+            if case == Case::MissingKitRevision {
+                use crate::gameplay_transport::tutorial_vocation::MISSING_KIT_REVISION;
+                use oteryn_gameplay_items::starter_grant::newhaven_starter_items;
+                let missing = newhaven_starter_items("knight")
+                    .ok_or("knight kit")?.iter()
+                    .find(|item| !newhaven_starter_items("paladin").is_some_and(|kit| {
+                        kit.iter().any(|other| other.tibia_id == item.tibia_id)
+                    }))
+                    .ok_or("knight-only item")?.tibia_id;
+                assert!(MISSING_KIT_REVISION.scope(missing, owner.tutorial_vocation_wire(admitted, &[1])).await.is_none());
+                assert!(owner.states.tutorial_sessions.vocation(admitted.game_session_id).map_err(debug)?.is_none());
+            }
             if case == Case::MissingBag {
                 move_fixture_bag(&h, 41, 98).await?;
                 assert!(
@@ -316,6 +341,7 @@ fn vocation_scenario(case: Case) -> TestResult {
                         fence,
                     ));
                     assert_eq!(owner.write_due_last_positions(true).await, 0);
+                    assert!(owner.last_position_cached_for_test(session));
                     move_tutorial_actor(&deps, landing.x + 1).await?;
                 }
                 assert!(owner.states.tutorial_sessions.retain_vocation(
@@ -346,11 +372,11 @@ fn vocation_scenario(case: Case) -> TestResult {
                         .map_err(|()| "retained choice")?.ok_or("retained choice")?;
                     assert!(owner.save_first_vocation_vitals(deps.actor, session, old, &retained.request.before).await);
                     if case == Case::RetainedBacktrack {
+                        assert!(!owner.last_position_cached_for_test(session));
+                        assert_eq!(saved_tutorial_x(&h).await?, landing.x + 1);
                         move_tutorial_actor(&deps, landing.x).await?;
                         assert_eq!(owner.write_due_last_positions(true).await, 0);
-                        let saved: i32 = sqlx::query_scalar("SELECT tile_x FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
-                            .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
-                        assert_eq!(saved, landing.x);
+                        assert_eq!(saved_tutorial_x(&h).await?, landing.x);
                         drop(owner);
                         drop(authority);
                         drop(seal);
@@ -449,9 +475,28 @@ fn vocation_scenario(case: Case) -> TestResult {
                         return h.cleanup().await;
                     }
                     let mut slot = owner.revision_sequencer.acquire(old.character_id).await;
-                    commit_retained_npc_vocation(
-                        &mut slot, owner.root, owner.character, owner.holder, &retained, formula,
-                    ).await.map_err(debug)?;
+                    if matches!(case, Case::RetainedMovement | Case::Uninstalled | Case::RetainedCleared | Case::RetainedResumed) {
+                        use crate::durability::character_revision_sequencer::NewhavenBuildContext;
+                        use crate::durability::starter_grant::NewhavenKit;
+                        use crate::gameplay_transport::{
+                            item_ref_admission::NativeItemWeights, tutorial_vocation::newhaven_kit_definitions,
+                        };
+                        let native = active.native_gameplay().ok_or("native gameplay")?;
+                        let definitions = newhaven_kit_definitions(native, retained.request.after.vocation())
+                            .ok_or("kit definitions")?;
+                        slot.commit_newhaven_build(
+                            owner.root, owner.character, owner.holder, retained.fence, retained.request.clone(),
+                            NewhavenBuildContext {
+                                formula,
+                                kit: NewhavenKit { content: &NativeItemWeights(native), definitions: &definitions },
+                            },
+                        ).await.map_err(debug)?;
+                        assert_eq!(kit_grant_count(&h).await?, i64::try_from(definitions.len())?);
+                    } else {
+                        commit_retained_npc_vocation(
+                            &mut slot, owner.root, owner.character, owner.holder, &retained, formula,
+                        ).await.map_err(debug)?;
+                    }
                     drop(slot);
                     // Stop at the same state a failed post-commit read leaves behind:
                     // the refill has committed while the live actor still has 1 HP.
@@ -469,17 +514,21 @@ fn vocation_scenario(case: Case) -> TestResult {
                             entered.notified().await;
                             let result = async {
                                 if clear {
-                                    let slot = owner.revision_sequencer.acquire(old.character_id).await;
-                                    owner.states.tutorial_sessions.clear_vocation(session, retained.request.occurrence);
-                                    drop(slot);
+                                    assert_eq!(owner.tutorial_vocation_wire(admitted, &[]).await, Some(vec![0, 4]));
+                                    assert!(owner.states.tutorial_sessions.vocation(session).map_err(debug)?.is_none());
                                 } else {
-                                    // Publish the one durable fact that changes at resume. The
-                                    // full resume path also waits for the revision lane, held by
-                                    // the old periodic writer until after this boundary.
-                                    sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1 WHERE game_session_id=encode($1,'hex')::uuid")
-                                        .bind(session.as_bytes().as_slice()).execute(&h.pool).await?;
-                                    let current = owner.current_quest_fence(session).await.map_err(|()| "successor fence")?.ok_or("successor fence")?;
-                                    assert_eq!(current.connection_generation.get(), old.connection_generation.get() + 1);
+                                    owner.states.command_ingress.admit(session);
+                                    assert_eq!(owner.lose_control(admitted, std::time::Duration::ZERO, None).await, ControlLossResult::Recorded);
+                                    let token = super::house_transfer_fixtures::RecoverySource::token(88)?;
+                                    let resumed = owner.resume_session(ResumeAttempt {
+                                        game_session_id: session,
+                                        recovery_material: token.as_bytes(),
+                                        transport: crate::foundation::AuthenticatedTransportRefV1::decode(&[88; 16]).map_err(debug)?,
+                                        last_applied_server_sequence: admitted.continuity.server_sequence,
+                                        supported_capabilities: admitted.continuity.selected_capabilities.as_slice(),
+                                    }).await.map_err(debug)?;
+                                    assert_eq!(resumed.game_session_id, session);
+                                    assert_eq!(resumed.continuity.connection_generation, old.connection_generation.get() + 1);
                                 }
                                 Ok::<_, Box<dyn std::error::Error>>(())
                             }.await;
@@ -490,13 +539,16 @@ fn vocation_scenario(case: Case) -> TestResult {
                             tokio::join!(write, change)
                         }).await?;
                         changed?;
-                        let (health, _, sequence) = saved_vitals(&h).await?;
                         if clear {
                             assert_eq!(failures, 0);
-                            assert_eq!(health, 1);
+                            assert_eq!(saved_tutorial_x(&h).await?, landing.x + 1);
+                            let at_maximum: bool = sqlx::query_scalar(
+                                "SELECT health IS NULL AND mana IS NULL FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid",
+                            ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+                            assert!(at_maximum, "the recapture sees the installed maximum pools");
                         } else {
                             assert_eq!(failures, 1);
-                            assert_eq!(sequence, refill.2, "old capture cannot write under the resumed fence");
+                            assert_eq!(saved_vitals(&h).await?, refill, "the old capture cannot write under the resumed fence");
                         }
                         drop(owner);
                         drop(authority);
@@ -506,10 +558,16 @@ fn vocation_scenario(case: Case) -> TestResult {
                     if matches!(case, Case::RetainedBusy | Case::RetainedStationary) {
                         if case == Case::RetainedBusy {
                             move_tutorial_actor(&deps, landing.x + 1).await?;
+                            let checked = owner.last_position_checked_for_test(session).ok_or("tracked actor")?;
                             let slot = owner.revision_sequencer.acquire(old.character_id).await;
-                            assert_eq!(owner.write_due_last_positions(true).await, 1);
+                            let failures = tokio::time::timeout(
+                                std::time::Duration::from_millis(500), owner.write_due_last_positions(true),
+                            ).await?;
+                            assert_eq!(failures, 1);
+                            assert_eq!(owner.last_position_checked_for_test(session), Some(checked));
                             drop(slot);
                             assert_eq!(owner.write_due_last_positions(true).await, 0);
+                            assert_eq!(saved_tutorial_x(&h).await?, landing.x + 1);
                         } else {
                             let checked = owner.last_position_checked_for_test(session).ok_or("tracked actor")?;
                             assert_eq!(owner.write_due_last_positions(true).await, 0);
@@ -531,7 +589,12 @@ fn vocation_scenario(case: Case) -> TestResult {
                                 movement.commit_cardinal(at, crate::foundation::MovementLocalPosition { x, ..at.position() }).map_err(debug)?;
                             }
                             if logout {
-                                let _ = owner.logout_session(admitted).await;
+                                assert_eq!(
+                                    owner.logout_session(admitted).await,
+                                    crate::gameplay_transport::logout::LogoutReply::Result(
+                                        oteryn_protocol_oteryn::logout::LogoutResult::Accepted,
+                                    ),
+                                );
                             } else {
                                 assert_eq!(owner.write_due_last_positions(true).await, 0);
                             }
@@ -584,14 +647,15 @@ fn vocation_scenario(case: Case) -> TestResult {
                 let mut blocker = h.pool.begin().await?;
                 sqlx::query("LOCK TABLE game_character_last_positions IN ACCESS EXCLUSIVE MODE")
                     .execute(&mut *blocker).await?;
+                let blocker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()").fetch_one(&mut *blocker).await?;
                 {
                 let choice = owner.tutorial_vocation_wire(admitted, &[4]);
                 tokio::pin!(choice);
                 let waiting = async {
                     loop {
                         let waiting: bool = sqlx::query_scalar(
-                            "SELECT EXISTS(SELECT 1 FROM pg_locks WHERE relation='game_character_last_positions'::regclass AND NOT granted)",
-                        ).fetch_one(&h.pool).await?;
+                            "SELECT EXISTS(SELECT 1 FROM pg_locks WHERE relation='game_character_last_positions'::regclass AND database=(SELECT oid FROM pg_database WHERE datname=current_database()) AND NOT granted AND $1=ANY(pg_blocking_pids(pid)))",
+                        ).bind(blocker_pid).fetch_one(&h.pool).await?;
                         if waiting {
                             return Ok::<_, sqlx::Error>(());
                         }
@@ -603,9 +667,37 @@ fn vocation_scenario(case: Case) -> TestResult {
                     result = &mut choice => return Err(format!("choice finished before the vitals write: {result:?}").into()),
                 }
                 assert!(owner.last_position_capture_is_held(session).await);
+                let failures = tokio::time::timeout(
+                    std::time::Duration::from_millis(500), owner.write_due_last_positions(true),
+                ).await?;
+                assert_eq!(failures, 1, "the busy revision slot must leave the position due");
                 blocker.rollback().await?;
                 assert!(choice.await.is_some());
                 }
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
+            if case == Case::Readback {
+                use crate::gameplay_transport::tutorial_vocation::VOCATION_READBACK_PAUSE;
+                let entered = std::sync::Arc::new(tokio::sync::Notify::new());
+                let proceed = std::sync::Arc::new(tokio::sync::Notify::new());
+                let choose = VOCATION_READBACK_PAUSE.scope(
+                    (entered.clone(), proceed.clone()), owner.tutorial_vocation_wire(admitted, &[4]),
+                );
+                let check = async {
+                    entered.notified().await;
+                    let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
+                    drop(permit);
+                    proceed.notify_one();
+                    Ok::<_, Box<dyn std::error::Error>>(())
+                };
+                let (selected, checked) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                    tokio::join!(choose, check)
+                }).await?;
+                checked?;
+                assert_eq!(selected, Some(vec![0, 4]));
                 drop(owner);
                 drop(authority);
                 drop(seal);
@@ -621,6 +713,9 @@ fn vocation_scenario(case: Case) -> TestResult {
             .await?;
             assert_eq!(status, CommandStatus::Accepted, "submit Paladin");
             assert_eq!(selected, [0, 4]);
+            let expected_kit = oteryn_gameplay_items::starter_grant::newhaven_starter_items("paladin")
+                .ok_or("paladin kit")?;
+            assert_eq!(kit_grant_count(&h).await?, i64::try_from(expected_kit.len())?);
             let build = h
                 .root
                 .read_character_build_state(&authority, fence.character_id)
@@ -666,8 +761,6 @@ fn vocation_scenario(case: Case) -> TestResult {
             if retained {
                 assert_eq!(occurrences[0], id(88));
             }
-            let grants: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_starter_grants WHERE template_key LIKE 'oteryn:starter.newhaven.%'").fetch_one(&h.pool).await?;
-            assert!(grants > 0, "the accepted profession kit is granted");
             if let Some(directory) = std::env::var_os("OTERYN_TUTORIAL_VOCATION_CAPTURE") {
                 let directory = std::path::Path::new(&directory);
                 std::fs::create_dir_all(directory)?;
@@ -760,4 +853,14 @@ async fn fill_nested_fixture(h: &Harness, fill: bool) -> TestResult {
     }
     tx.commit().await?;
     Ok(())
+}
+
+async fn kit_grant_count(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT count(*) FROM game_character_starter_grants WHERE character_id=encode($1,'hex')::uuid AND template_key LIKE 'oteryn:starter.newhaven.%'")
+        .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
+}
+
+async fn saved_tutorial_x(h: &Harness) -> TestResult<i32> {
+    Ok(sqlx::query_scalar("SELECT tile_x FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }

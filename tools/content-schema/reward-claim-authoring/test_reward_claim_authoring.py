@@ -408,7 +408,7 @@ def test_the_committed_content_binds_exact_source_chest_transitions() -> None:
                        "griffinshield1", "griffinshield2", "griffinshield3",
                        "katanacorpse1", "katanacorpse2", "longsword1", "longsword2", "longsword3",
                        "madmageroom1", "madmageroom2", "madmageroom3",
-                       "minohell1", "minohell2", "minohell3")
+                       "minohell1", "minohell2", "minohell3", "legiondawnport", "witch_house_quest")
     }
     expected_claim_sets.update({
         "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards." + marker:
@@ -425,7 +425,9 @@ def test_the_committed_content_binds_exact_source_chest_transitions() -> None:
             {"oteryn:quest-transition/" + marker + "/chest"}
         for marker in ("quest/u6_1/emperors_cookies/rewards/cookies", "quest/key/id3802",
                        "quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs",
-                       "quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum")
+                       "quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum",
+                       "quest/u7_6/explorer_society/skull_of_ratha/bag1",
+                       "quest/u7_6/explorer_society/skull_of_ratha/bag2")
     })
     # M35 routes these exact groups through native mint receipts, not the
     # legacy chest-transition owner (test_engclaim_m35.py verifies that split).
@@ -504,6 +506,24 @@ def test_poison_daggers_target_correction_bounds() -> None:
     suite.run(result)
     assert result.wasSuccessful(), result.errors + result.failures
 
+
+
+def test_committed_content_carries_tibia_global_corrections() -> None:
+    """Wiki revs cited in global_corrections.py; donor facts stay in the pilot."""
+    records = {r["definition"]["identity"]["key"]: r["definition"]
+               for p in json.loads((rca.ROOT / rca.INDEX_PATH).read_text())["shards"]
+               for r in json.loads((rca.ROOT / p).read_text())["records"]}
+
+    def pairs(key):
+        [placement] = records["oteryn:reward-claim." + key]["placements"]
+        return [[int(q["item"]["key"].rsplit(".i", 1)[1]), q["count"]]
+                for q in placement["reward"]["items"]]
+
+    assert pairs("kv.captain_iglues") == [[3579, 2]]
+    assert pairs("kv.powerring1") == [[3050, 1]]
+    assert pairs("kv.fireaxe1") == [[3098, 1], [3085, 1], [3028, 7]]
+    assert pairs("kv.fireaxe2") == [[3320, 1]]
+    assert pairs("quest.key.id4502") == [[2970, 1], [3031, 33], [3147, 1], [3298, 4], [3384, 1]]
 
 if __name__ == "__main__":
     for name, test in sorted(globals().items()):

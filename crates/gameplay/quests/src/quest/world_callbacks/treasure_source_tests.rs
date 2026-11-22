@@ -5,11 +5,20 @@ fn m09_wiki_cache_admission_binds_exact_reward_and_once_track() -> Result<(), St
     let callbacks = parse(include_str!(
         "../../../../../../content/quests/world-callbacks/m09-treasure.json"
     ))?;
-    assert_eq!(callbacks.len(), 2);
+    assert_eq!(callbacks.len(), 3);
+    let telescope = callbacks[0]
+        .effects
+        .item_reward
+        .clone()
+        .ok_or("telescope reward")?;
     for callback in callbacks {
         assert!(treasure_source::admitted(&callback));
         let mut changed = callback.clone();
-        changed.effects.item_reward.as_mut().ok_or("reward")?.count += 1;
+        if let Some(reward) = changed.effects.item_reward.as_mut() {
+            reward.count += 1;
+        } else {
+            changed.effects.item_reward = Some(telescope.clone());
+        }
         assert!(!treasure_source::admitted(&changed));
         let mut changed = callback.clone();
         changed.storage[0].set = 0;

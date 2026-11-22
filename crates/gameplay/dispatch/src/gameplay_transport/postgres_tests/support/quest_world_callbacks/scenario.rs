@@ -77,7 +77,10 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = m03_use
+    let pinned_qc_world = name.starts_with("m09-treasure-")
+        || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
+    let native_crop = pinned_qc_world
+        || m03_use
         || qd_world
         || engenc_asura
         || m49
@@ -125,6 +128,10 @@ fn scenario_case(
             y: 32167,
             floor: -8,
         }
+    } else if super::super::qc_lizard_sanctuary_fixtures::matches_world(name) {
+        super::super::qc_lizard_sanctuary_fixtures::START
+    } else if super::super::qh_authored_cases_fixtures::is_dig(name) {
+        super::super::qh_authored_cases_fixtures::dig_start()
     } else if qd_world {
         super::super::qd_world_fixtures::start(name)?
     } else if engenc_asura {
@@ -370,6 +377,8 @@ fn scenario_case(
         super::super::qm03_world_admission_fixtures::callback(name)?
     } else if draconia_escape {
         super::super::draconia_escape_fixtures::authored_callback()?
+    } else if super::super::qh_authored_cases_fixtures::is_case(name) {
+        super::super::qh_authored_cases_fixtures::callback(name)?
     } else if elvenbane {
         callback("elvenbane-basement-entry")?
     } else if native_signs || diprath_room {
@@ -938,6 +947,8 @@ fn scenario_case(
             )
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
+            || super::super::qc_chests_fixtures::matches(name)
+            || super::super::qc_lizard_sanctuary_fixtures::matches_world(name)
             || name.starts_with("engoutfit-")
             || name == "engitem-targuna-selected-tool"
             || name == "engitem-native-seal-paint"
@@ -1025,7 +1036,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m03_use {
+        let world = if pinned_qc_world {
+            super::super::qc_pinned_world::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native pinned world policies")?,
+            )?
+        } else if m03_use {
             super::super::qengine_m03_use_fixtures::world(
                 generation
                     .native_gameplay()
@@ -1241,6 +1258,11 @@ fn scenario_case(
         } else if mead {
             super::super::l6_mead_fixtures::world(
                 generation.native_gameplay().ok_or("native Mead policies")?,
+            )?
+        } else if super::super::qh_authored_cases_fixtures::is_case(name) {
+            super::super::qh_authored_cases_fixtures::world(
+                name,
+                generation.native_gameplay().ok_or("qh native policies")?,
             )?
         } else {
             world
@@ -1533,6 +1555,9 @@ fn scenario_case(
                 5
             } else if matches!(name, "authored-anniversary" | "authored-venore") {
                 12
+            } else if super::super::qh_authored_cases_fixtures::is_city(name) {
+                // One player plus Iriana and Jimmy for Top of the City.
+                3
             } else if name == "authored-torch" {
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
@@ -2671,6 +2696,11 @@ fn scenario_case(
         } else if name == "questpc7-friends" {
             super::super::questpc7_friends_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if super::super::qc_lizard_sanctuary_fixtures::matches_world(name) {
+            Box::pin(super::super::qc_lizard_sanctuary_fixtures::exercise(
+                &mut owner, &mut admitted, &h, &callback, trigger,
+            ))
+            .await?;
         } else if name == "questpc7-golden" {
             super::super::questpc7_golden_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
@@ -2681,6 +2711,15 @@ fn scenario_case(
                 &h,
                 deps.actor,
                 fence,
+                &callback,
+                trigger,
+            ))
+            .await?;
+        } else if super::super::qc_chests_fixtures::matches(name) {
+            Box::pin(super::super::qc_chests_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
                 &callback,
                 trigger,
             ))
@@ -2820,6 +2859,14 @@ fn scenario_case(
         } else if let Some(route) = super::super::questpc8_retrieval_routes_fixtures::route(name) {
             Box::pin(super::super::questpc8_retrieval_routes_fixtures::exercise(
                 route,
+                &mut owner,
+                &mut admitted,
+                &h,
+            ))
+            .await?;
+        } else if super::super::qh_authored_cases_fixtures::is_case(name) {
+            Box::pin(super::super::qh_authored_cases_fixtures::exercise(
+                name,
                 &mut owner,
                 &mut admitted,
                 &h,

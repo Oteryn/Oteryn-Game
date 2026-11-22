@@ -27,9 +27,17 @@ impl SettingsState {
         );
         #[cfg(bevy_shell)]
         if self.background_preferences {
-            let selected = self.outgoing_stores.iter().position(|store| store.at_path(&path))
+            let selected = self
+                .outgoing_stores
+                .iter()
+                .position(|store| store.at_path(&path))
                 .map(|index| self.outgoing_stores.swap_remove(index))
-                .unwrap_or_else(|| PreferenceStore::load_in_background(path.clone(), character.map(|_| base.clone())));
+                .unwrap_or_else(|| {
+                    PreferenceStore::load_in_background(
+                        path.clone(),
+                        character.map(|_| base.clone()),
+                    )
+                });
             let mut preferences = selected.preferences().clone();
             preferences.miscellaneous = self.preferences.miscellaneous;
             if let Some(store) = self.store.replace(selected).filter(PreferenceStore::saving) {
@@ -45,7 +53,11 @@ impl SettingsState {
         let missing = !path.exists();
         let mut selected = Self::new(Some(path.clone()));
         #[cfg(bevy_shell)]
-        let missing = match self.outgoing_stores.iter().position(|store| store.at_path(&path)) {
+        let missing = match self
+            .outgoing_stores
+            .iter()
+            .position(|store| store.at_path(&path))
+        {
             Some(index) => {
                 let store = self.outgoing_stores.swap_remove(index);
                 selected.preferences = store.preferences().clone();
@@ -61,6 +73,11 @@ impl SettingsState {
         }
         // Session choices remain under the original local base across actor namespaces.
         selected.base_path = Some(base.clone());
+        selected.session_baseline = self.session_baseline.clone();
+        #[cfg(bevy_shell)]
+        {
+            selected.remember_epoch = self.remember_epoch.clone();
+        }
         selected.preferences.miscellaneous = self.preferences.miscellaneous;
         if character.is_some() && missing {
             match PreferenceStore::load(base.clone()) {
@@ -99,7 +116,9 @@ impl SettingsState {
 fn leaving_character_reports_its_failed_mark_save() -> Result<(), Box<dyn std::error::Error>> {
     use std::time::{Duration, Instant};
 
-    bevy_tasks::IoTaskPool::get_or_init(|| bevy_tasks::TaskPoolBuilder::new().num_threads(1).build());
+    bevy_tasks::IoTaskPool::get_or_init(|| {
+        bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+    });
     let folder = tempfile::tempdir()?;
     let base = folder.path().join("preferences.json");
     let identity = [1; 16];

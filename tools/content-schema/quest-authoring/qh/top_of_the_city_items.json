@@ -1,0 +1,11 @@
+{
+  "quest": "oteryn:quest.authored.top_of_the_city_quest",
+  "purpose": "Physical custody for the two carried exchange items of the authored Top of the City binding (content/quests/authored-bindings/top_of_the_city_quest.json).",
+  "items": [
+    "oteryn:item.tibia.i8772",
+    "oteryn:item.tibia.i8773"
+  ],
+  "sources": [
+    "https://tibia.fandom.com/index.php?curid=31073&oldid=1050120"
+  ]
+}

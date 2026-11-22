@@ -33,27 +33,45 @@ pub fn configure(root: &Path, out: &Path) -> Result<(), Box<dyn Error>> {
     emit_cargo_directive("rerun-if-changed", static_owner.display());
     let mounts = out.join("postgres_tests_mounts.rs");
     let source = fs::read_to_string(&mounts)?;
-    let mut entries = Vec::new();
+    let mut groups = Vec::new();
+    let mut reward_claim_group = Vec::new();
+    let mut reward_claim_bytes = 0;
     let mut lines = source.lines();
     while let Some(path_line) = lines.next() {
         let module = lines.next().ok_or("expected a module after #[path]")?;
         let (path, _) = path_attribute(path_line).ok_or("expected a mount path")?;
-        entries.push((source_bytes(Path::new(path))?, path_line, module));
+        let bytes = source_bytes(Path::new(path))?;
+        // The reward USE proof pins qready1_reward_claims.rs. Keep its callers
+        // in the same shard so that the proof-bearing source stays intact.
+        if matches!(
+            module,
+            "mod m35_claim_sets;"
+                | "mod qa_global_reward_corrections;"
+                | "mod qready1_reward_claims;"
+        ) {
+            reward_claim_group.push((path_line, module));
+            reward_claim_bytes += bytes;
+        } else {
+            groups.push((bytes, vec![(path_line, module)]));
+        }
     }
-    entries.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.2.cmp(b.2)));
+    if !reward_claim_group.is_empty() {
+        groups.push((reward_claim_bytes, reward_claim_group));
+    }
+    groups.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1[0].1.cmp(b.1[0].1)));
 
     // Reserve room for the explicit test mounts in the primary shard. Common support is
     // the same size in every shard and does not affect assignment.
     let mut sizes = vec![0; count];
     sizes[0] = source_bytes(&static_owner)?;
     let mut kept = Vec::new();
-    for (bytes, path, module) in entries {
+    for (bytes, group) in groups {
         let lightest = (0..count)
             .min_by_key(|&i| (sizes[i], i))
             .ok_or("expected at least one shard")?;
         sizes[lightest] += bytes;
         if lightest + 1 == shard {
-            kept.push((path, module));
+            kept.extend(group);
         }
     }
     kept.sort_unstable();

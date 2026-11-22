@@ -990,11 +990,12 @@
         "contents": []
       },
       "outfit": null,
-      "achievement": null,
+      "achievement": "oteryn:achievement/blessed",
       "reply": [
         "The ten-part prayer has blessed your wooden stake."
       ],
       "sources": [
+        "https://tibia.fandom.com/index.php?title=Blessed!&oldid=844049",
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:1-186:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
       ]

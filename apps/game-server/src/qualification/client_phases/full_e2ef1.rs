@@ -4,6 +4,17 @@ use super::*;
 #[path = "provision.rs"]
 mod original;
 
+pub(super) async fn with_peer_liveness<T>(
+    client: &mut oteryn_dev_client::DevClientSession,
+    work: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    super::mp::observations::while_servicing_liveness(work, async || {
+        client.service_liveness(Duration::from_millis(25)).await?;
+        Ok(())
+    })
+    .await?
+}
+
 pub(super) fn item_index() -> TestResult<crate::content::item_ref::ItemDefinitionIndex> {
     original::item_index()
 }
@@ -344,7 +355,7 @@ mod e2ef1 {
         checks.pass("autowalk", goal);
         autowalk(client, start).await?;
         target_command(client, &[16, 1]).await?;
-        stable(client, 1500).await?;
+        with_peer_liveness(peer, stable(client, 1500)).await?;
         if client.world_spatial().actor_position == position(start, basis) {
             return Err("STOP did not interrupt an unfinished route".into());
         }
@@ -366,7 +377,7 @@ mod e2ef1 {
             ) == 3
         })
         .ok_or("follow peer approach")?;
-        walk(peer, world, &path).await?;
+        with_peer_liveness(client, walk(peer, world, &path)).await?;
         let reference = own(peer)?.entity;
         until_with_peer(client, peer, |c| {
             c.world_entities()
@@ -386,7 +397,7 @@ mod e2ef1 {
         let follower_at = tile(client.world_spatial().actor_position)?;
         let path = route(world, peer_at, |at| distance(at, follower_at) == 4)
             .ok_or("moving follow target lane")?;
-        walk(peer, world, &path).await?;
+        with_peer_liveness(client, walk(peer, world, &path)).await?;
         let peer_at = tile(peer.world_spatial().actor_position)?;
         until_with_peer(client, peer, |c| {
             tile(c.world_spatial().actor_position)
@@ -394,7 +405,7 @@ mod e2ef1 {
         })
         .await?;
         target_command(client, &[16, 1]).await?;
-        stable(client, 1500).await?;
+        with_peer_liveness(peer, stable(client, 1500)).await?;
         checks.pass("follow", (reference, client.world_spatial()));
         Ok(())
     }
@@ -1155,7 +1166,13 @@ mod e2ef1 {
                 ..Checks::default()
             };
             let mut peer = if matches!(*row, "M01" | "M04") {
-                Some(connect_character(clients, 0xa0 + u8::try_from(ordinal)?, 0).await?)
+                Some(
+                    with_peer_liveness(
+                        &mut client,
+                        connect_character(clients, 0xa0 + u8::try_from(ordinal)?, 0),
+                    )
+                    .await?,
+                )
             } else {
                 None
             };
@@ -1202,19 +1219,24 @@ mod e2ef1 {
             let old_session = client.join_snapshot().game_session_id;
             let mut peer_durable = true;
             if let Some(mut peer) = peer.take() {
-                let saved = peer.world_spatial().actor_position;
-                let previous = peer.join_snapshot().game_session_id;
-                if *row != "M04" || !checks.passed.contains("push-player") {
+                peer_durable = with_peer_liveness(&mut client, async {
+                    let saved = peer.world_spatial().actor_position;
+                    let previous = peer.join_snapshot().game_session_id;
+                    if *row != "M04" || !checks.passed.contains("push-player") {
+                        logout(&mut peer).await?;
+                    }
+                    drop(peer);
+                    let mut peer =
+                        connect_character(clients, 0xc0 + u8::try_from(ordinal)?, 0).await?;
+                    let durable = peer.world_spatial().actor_position == saved
+                        && peer.join_snapshot().game_session_id != previous;
+                    let back =
+                        route(world, tile(saved)?, |at| at == TOWN).ok_or("peer return route")?;
+                    walk(&mut peer, world, &back).await?;
                     logout(&mut peer).await?;
-                }
-                drop(peer);
-                let mut peer = connect_character(clients, 0xc0 + u8::try_from(ordinal)?, 0).await?;
-                peer_durable &= peer.world_spatial().actor_position == saved
-                    && peer.join_snapshot().game_session_id != previous;
-                let back =
-                    route(world, tile(saved)?, |at| at == TOWN).ok_or("peer return route")?;
-                walk(&mut peer, world, &back).await?;
-                logout(&mut peer).await?;
+                    Ok(durable)
+                })
+                .await?;
             }
             match cleanup {
                 Some(deadline) => logout_by(&mut client, deadline).await?,

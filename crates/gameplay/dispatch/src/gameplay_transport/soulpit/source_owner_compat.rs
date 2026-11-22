@@ -6,9 +6,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         now: u64,
         global: bool,
     ) -> Result<Option<u64>, ()> {
-        super::handoff_owner::NativeSoulpitHandoff
+        Ok(super::handoff_owner::NativeSoulpitHandoff
             .drive_soulpit(self, now, global)
-            .await
+            .await?
+            .scheduled_due())
     }
     pub(in crate::gameplay_transport) async fn drive_one_soulpit(
         &self,

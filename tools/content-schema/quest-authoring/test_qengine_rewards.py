@@ -113,7 +113,7 @@ class QuestRewards(unittest.TestCase):
         doc=self.author['document']
         mounts={row['key']:row for row in doc['mounts']}
         mappings={row['grant_key']:row for row in doc['grant_mappings']}
-        self.assertEqual(len(mounts),250)
+        self.assertEqual(len(mounts),252)
         taming=json.loads((q.ROOT/'content/cosmetics/taming.json').read_bytes())
         for rule in taming:
             self.assertIn(rule['mount_key'],mounts)

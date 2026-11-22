@@ -27,6 +27,7 @@ use oteryn_game_server::content::{
     ReimportDecision, ReimportFieldState, capture_world_project,
     item_abilities::apply_equip_abilities_v1, npc_catalogue_preproduction_limits,
 };
+use oteryn_game_server::content::{DefinitionReferenceDocument, LootEntryDocument};
 use oteryn_gameplay_content_promotion::content::{
     CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256, CW2_B1_DONOR_EPOCH2_MINTED_COUNT,
     CW2_B1_DONOR_EPOCH2_REVISION, CW2_B1_FULL_ITEM_REVISION, R7_P04_GOLD_COIN_EVIDENCE_PACKET,
@@ -3080,6 +3081,43 @@ fn refresh_item_forge289_mapper(
     Ok(())
 }
 
+// Crystal 201189f8, data-global/monster/quests/no_rest_for_the_wicked/arbaziloth.lua:87-142.
+// Enraged has no native Creature binding. The inferniarch weapons on lines 132-142
+// lack admitted carried Item profiles. Both literal 237 rolls are intentional.
+fn apply_arbaziloth_loot(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error::Error>> {
+    let donor: Vec<(u32, u32, u32)> = serde_json::from_slice(include_bytes!(
+        "../../../tools/content-schema/monster-authoring/samples/arbaziloth-crystal-201189f8-loot.json"
+    ))?;
+    let entries = draft
+        .core
+        .records
+        .iter_mut()
+        .find_map(|record| match record {
+            ProjectReferenceRecord::Loot {
+                identity, entries, ..
+            } if identity.key == "oteryn:loot.creature.arbaziloth" => Some(entries),
+            _ => None,
+        })
+        .ok_or("Arbaziloth loot definition missing")?;
+    *entries = donor
+        .into_iter()
+        .map(|(id, chance, max_count)| LootEntryDocument {
+            item: DefinitionReferenceDocument {
+                family: "Item".to_owned(),
+                key: format!("oteryn:item.tibia.i{id}"),
+                revision: "definition-r1".to_owned(),
+            },
+            min_count: 1,
+            max_count,
+            probability_ppm: Some(chance * 10),
+            children: Vec::new(),
+            unique: false,
+            subtype: None,
+        })
+        .collect();
+    Ok(())
+}
+
 /// The immutable predecessor predates the Monk update; carry the current paired wiki fact
 /// forward without changing any other known ability or the historical promotion chain.
 fn apply_current_power_ring(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error::Error>> {
@@ -3147,6 +3185,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?;
         let mut draft = captured.migrate_to_v2();
         refresh_item_forge289_mapper(&mut draft.core.imports)?;
+        apply_arbaziloth_loot(&mut draft)?;
         apply_official_creature_balance(&mut draft)?;
         apply_item_drown_protection(&mut draft)?;
         apply_item_market_crystal_parity(&mut draft)?;
@@ -3460,6 +3499,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // BED-CONTENT-1: after the NPC chain, whose stages pin the complete reference.json digest of
     // their predecessor; a bed group added earlier would drift every one of those pins.
     promote_beds(&mut draft)?;
+    apply_arbaziloth_loot(&mut draft)?;
     apply_official_creature_balance(&mut draft)?;
     cake_creature_admission::apply(&mut draft)?;
     preserved_display_names::apply(&mut draft.state.declarations)?;

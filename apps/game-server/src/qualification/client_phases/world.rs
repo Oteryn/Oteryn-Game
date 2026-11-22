@@ -461,6 +461,31 @@ fn route(
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
 ) -> Option<Vec<StepDirection>> {
+    route_avoiding(world, from, goal, |_| true)
+}
+
+fn route_avoiding(
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    available: impl Fn(TilePos) -> bool,
+) -> Option<Vec<StepDirection>> {
+    find_route(from, goal, |at, direction| {
+        let next = destination(world, at, direction)?;
+        (next.x.abs_diff(from.x) <= 160
+            && next.y.abs_diff(from.y) <= 160
+            && next.floor.abs_diff(from.floor) <= 2
+            && available(next))
+        .then_some(next)
+    })
+    .ok()
+}
+
+fn find_route(
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+) -> Result<Vec<StepDirection>, usize> {
     let mut queue = VecDeque::from([from]);
     let mut parents = BTreeMap::from([(from, None)]);
     while let Some(at) = queue.pop_front() {
@@ -472,7 +497,7 @@ fn route(
                 cursor = *previous;
             }
             path.reverse();
-            return Some(path);
+            return Ok(path);
         }
         for direction in [
             StepDirection::North,
@@ -480,21 +505,16 @@ fn route(
             StepDirection::South,
             StepDirection::West,
         ] {
-            let Some(next) = destination(world, at, direction) else {
+            let Some(next) = landing(at, direction) else {
                 continue;
             };
-            if next.x.abs_diff(from.x) > 160
-                || next.y.abs_diff(from.y) > 160
-                || next.floor.abs_diff(from.floor) > 2
-                || parents.contains_key(&next)
-            {
-                continue;
+            if let std::collections::btree_map::Entry::Vacant(entry) = parents.entry(next) {
+                entry.insert(Some((at, direction)));
+                queue.push_back(next);
             }
-            parents.insert(next, Some((at, direction)));
-            queue.push_back(next);
         }
     }
-    None
+    Err(parents.len())
 }
 
 /// Use the production floor resolver over the production bundle's collision facts.

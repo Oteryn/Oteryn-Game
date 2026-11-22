@@ -1,4 +1,7 @@
-use crate::play::{PlayLink, PlayView, mailbox::lock};
+use crate::play::{
+    PlayLink, PlayView,
+    mailbox::{Mailbox, lock},
+};
 
 impl PlayLink {
     /// chsw (capabilities 512 and 513): the World's Channels from the directory. Party, VIP and
@@ -11,42 +14,29 @@ impl PlayLink {
     ) {
         use oteryn_client_ui::channel_switch::{ChannelRow, PvpType};
         use oteryn_platform_contracts::DirectoryPvpType;
-        let parsed: Vec<_> = channels
-            .iter()
-            .filter_map(|channel| {
-                Some((
-                    oteryn_platform_client::native_login::parse_uuid_v7(&channel.id)?,
-                    channel,
-                ))
-            })
-            .collect();
-        let names: oteryn_client_ui::social_channel::ChannelNames = parsed
-            .iter()
-            .map(|(id, channel)| (*id, channel.name.clone()))
-            .collect();
         let mut mailbox = lock(&self.mailbox);
-        mailbox.guild.channel_names.clone_from(&names);
-        mailbox.party.channel_names = names;
-        character.clone_into(&mut mailbox.channel_switch_character);
-        mailbox.channel_switch.current =
+        character.clone_into(&mut mailbox.connection.channel_character);
+        mailbox.connection.channel_current =
             oteryn_platform_client::native_login::parse_uuid_v7(current);
-        mailbox.party.own_channel = mailbox.channel_switch.current;
-        // Ping per Channel needs a Platform endpoint and full a capacity: both stay "—"/false;
-        // the online count arrives with command 6251.
-        mailbox.channel_switch.rows = parsed
-            .into_iter()
-            .map(|(channel, choice)| ChannelRow {
-                channel,
-                name: choice.name.clone(),
-                pvp: Some(match choice.pvp_type {
-                    DirectoryPvpType::OptionalPvp => PvpType::OptionalPvp,
-                    DirectoryPvpType::OpenPvp => PvpType::OpenPvp,
-                }),
-                ping_ms: None,
-                online: None,
-                full: false,
+        // Load and ping are observations of the current scope, so start with directory rows.
+        mailbox.connection.channel_rows = channels
+            .iter()
+            .filter_map(|choice| {
+                let channel = oteryn_platform_client::native_login::parse_uuid_v7(&choice.id)?;
+                Some(ChannelRow {
+                    channel,
+                    name: choice.name.clone(),
+                    pvp: Some(match choice.pvp_type {
+                        DirectoryPvpType::OptionalPvp => PvpType::OptionalPvp,
+                        DirectoryPvpType::OpenPvp => PvpType::OpenPvp,
+                    }),
+                    ping_ms: None,
+                    online: None,
+                    full: false,
+                })
             })
             .collect();
+        mailbox.project_world_channels();
     }
 
     #[must_use]
@@ -63,6 +53,25 @@ impl PlayLink {
         )
     }
 }
+impl Mailbox {
+    pub(in crate::play) fn project_world_channels(&mut self) {
+        self.channel_switch
+            .rows
+            .clone_from(&self.connection.channel_rows);
+        self.channel_switch.current = self.connection.channel_current;
+        self.party.own_channel = self.connection.channel_current;
+        self.party.channel_names = self
+            .connection
+            .channel_rows
+            .iter()
+            .map(|row| (row.channel, row.name.clone()))
+            .collect();
+        self.guild
+            .channel_names
+            .clone_from(&self.party.channel_names);
+    }
+}
+
 impl PlayView {
     pub fn served_channel_text(&self) -> Option<String> {
         self.served_channel

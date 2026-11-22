@@ -984,7 +984,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "3e3a78732a69be44fe11e3df17171973d4714f52155e2ca757be029133e196d2"
+          "sha256": "47e9d5b54eb9cc3de65a88bc53e178ba36da10dffa4a5d1f0f4643a678908c36"
         },
         {
           "creates_canonical_identities": false,
@@ -1055,7 +1055,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6570,
+          "record_count": 6576,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1063,7 +1063,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "c7899eabd2b334b41f02d7a93272f07d0f4e14e333af1c27701e94cea3cb454a"
+          "sha256": "a5db7fd03aff178fe60ffbe4de19feb0a97b6ee535fe2537bbae854d660d4ed6"
         },
         {
           "creates_canonical_identities": false,

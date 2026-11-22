@@ -1,0 +1,19 @@
+{
+  "id": 515,
+  "name": "HOUSE_GUILD_ACL_V1",
+  "constant": "house::CAPABILITY_HOUSE_GUILD_ACL_V1",
+  "requires": [
+    49
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    6252
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

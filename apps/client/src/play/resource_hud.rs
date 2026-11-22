@@ -32,6 +32,15 @@ pub(super) struct MailboxState {
     pending: bool,
     stamina: Option<u16>,
 }
+impl MailboxState {
+    pub(super) fn new(selected: bool) -> Self {
+        Self {
+            selected,
+            ..Self::default()
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub(super) struct ViewState {
     active: bool,
@@ -94,10 +103,7 @@ impl PlayLink {
 }
 impl Outbox {
     pub(super) fn hud_stamina_initialize(&self, selected: bool) {
-        lock(&self.0).hud_resource = MailboxState {
-            selected,
-            ..Default::default()
-        };
+        lock(&self.0).hud_resource = MailboxState::new(selected);
     }
     pub(super) fn hud_stamina_result(&self, result: &oteryn_session::GatedCommandResult) {
         use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, apply_result};

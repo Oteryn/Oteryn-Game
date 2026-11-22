@@ -16,23 +16,29 @@ pub(super) enum Case {
     DepotSearch,
     Hireling,
     HotkeyEquip,
+    HotkeyEquipOpenPvp,
     ItemForge,
     Store,
 }
 
 pub(super) fn scenario(case: Case) -> TestResult {
     let started = std::time::Instant::now();
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         eprintln!(
             "CLIENT-E2E-1 {case:?}: elapsed={:?}; SKIPPED (no PostgreSQL admin route); no database evidence",
             started.elapsed()
         );
         return Ok(());
-    }
+    };
+    scenario_with_admin(case, admin)
+}
+
+pub(super) fn scenario_with_admin(case: Case, admin: String) -> TestResult {
+    let started = std::time::Instant::now();
     let result = std::thread::Builder::new()
         .name(format!("client-e2e-{case:?}"))
         .stack_size(256 << 20)
-        .spawn(move || body(case).map_err(|error| error.to_string()))?
+        .spawn(move || body(case, admin).map_err(|error| error.to_string()))?
         .join()
         .unwrap_or_else(|_| Err("CLIENT-E2E-1 scenario panicked".to_owned()));
     eprintln!(
@@ -42,8 +48,8 @@ pub(super) fn scenario(case: Case) -> TestResult {
     result.map_err(Into::into)
 }
 
-fn body(case: Case) -> TestResult {
-    run(async |admin| {
+fn body(case: Case, admin: String) -> TestResult {
+    run(async move |_| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "client_e2e", true, false).await?;
         prepare_current_session(&h).await?;
@@ -200,7 +206,10 @@ fn body(case: Case) -> TestResult {
             Case::DailyBoost => 151,
             Case::DepotSearch => 153,
             Case::Hireling => 165,
-            Case::HotkeyEquip => 179,
+            Case::HotkeyEquip => wire::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
+            Case::HotkeyEquipOpenPvp => {
+                wire::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1
+            }
             Case::ItemForge => 152,
             Case::Store => 154,
         };
@@ -234,6 +243,9 @@ fn body(case: Case) -> TestResult {
             Case::DepotSearch => super::depot_search::exercise(&h, &owner, &mut admitted).await?,
             Case::Hireling => super::hireling::exercise(&h, &owner, &mut admitted).await?,
             Case::HotkeyEquip => super::hotkey_equip::exercise(&h, &owner, &mut admitted).await?,
+            Case::HotkeyEquipOpenPvp => {
+                super::hotkey_equip::exercise_open_pvp(&h, &owner, admitted).await?;
+            }
             Case::ItemForge => super::item_forge::exercise(&h, &owner, &mut admitted).await?,
             Case::Store => super::store::exercise(&h, &owner, &mut admitted).await?,
         }

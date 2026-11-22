@@ -185,9 +185,11 @@ impl Outbox {
             panel.feedback = tr!("Invalid appearance catalogue").into();
         }
     }
-    pub(in crate::play) fn appearance_events(&self, events: &[oteryn_session::SessionEvent]) {
-        let mut shared = lock(&self.0);
-        let panel = &mut shared.properties.appearance;
+}
+
+impl crate::play::mailbox::Mailbox {
+    pub(in crate::play) fn appearance_events(&mut self, events: &[oteryn_session::SessionEvent]) {
+        let panel = &mut self.properties.appearance;
         if !panel.selected {
             return;
         }
@@ -210,6 +212,7 @@ impl Outbox {
         }
     }
 }
+
 #[cfg(test)]
 #[path = "tests/e2e_s06.rs"]
 mod e2e_s06;

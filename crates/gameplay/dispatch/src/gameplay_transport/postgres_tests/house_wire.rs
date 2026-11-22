@@ -150,9 +150,10 @@ fn resume(admitted: &mut AdmittedSession, ended: AdmittedSession) {
 }
 #[test]
 fn house_wire_postgres_real_dispatch_acl_notice_replay_reload_and_fences() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario().map_err(|e| e.to_string()))?
@@ -519,6 +520,7 @@ fn scenario() -> TestResult {
         );
         // Field 11 carries the qualified Guildhall class (enum value 3).
         assert!(guildhall_page.windows(2).any(|field| field == [88, 3]));
+        verify_guild_acl(&h, &restarted, &mut admitted).await?;
         drop(replayed);
         drop(restarted);
         drop(owner);
@@ -526,4 +528,144 @@ fn scenario() -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+// Both principals pass through command ingress and the canonical House grant reader.
+async fn verify_guild_acl(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_guilds(guild_id,world_id,name,state,formation_deadline,revision,created_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'House Guild',2,9999999999999,1,1)")
+        .bind(id(90).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,1,'Leader'),(encode($1,'hex')::uuid,2,'Member')")
+        .bind(id(90).as_slice()).execute(&mut *tx).await?;
+    let actor = id(91);
+    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision) SELECT encode($1,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
+        .bind(actor.as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,1)")
+        .bind(actor.as_slice()).bind(id(90).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[6, 49, 515])
+            .ok_or("House guild ACL capability")?;
+    for (revision, rule, expected_role) in [
+        (5, "@House Guild", Some("GUEST")),
+        (6, "Leader@House Guild", None),
+        (7, "Member@House Guild", Some("GUEST")),
+    ] {
+        let mut replacement = Vec::new();
+        scalar(&mut replacement, 1, 1);
+        scalar(&mut replacement, 2, revision);
+        bytes(&mut replacement, 3, rule.as_bytes());
+        assert_eq!(
+            send(owner, admitted, 6252, &intent(4, &replacement)).await?,
+            (
+                CommandStatus::Accepted,
+                wire::encode_house_result(wire::HouseDisposition::Ok, revision + 1)
+            )
+        );
+        assert_eq!(guild_house_role(h, actor).await?.as_deref(), expected_role);
+    }
+
+    let mut position = Vec::new();
+    scalar(&mut position, 1, 6);
+    scalar(&mut position, 2, 0);
+    scalar(&mut position, 3, 14);
+    let mut door = Vec::new();
+    bytes(&mut door, 1, &position);
+    scalar(&mut door, 2, 8);
+    let mut selectors = Vec::new();
+    bytes(&mut selectors, 1, b"Member@House Guild");
+    bytes(&mut door, 4, &selectors);
+    assert_eq!(
+        send(owner, admitted, 56, &intent(5, &door)).await?,
+        (
+            CommandStatus::Accepted,
+            wire::encode_house_result(wire::HouseDisposition::Ok, 9)
+        )
+    );
+    assert_eq!(guild_house_lists(h, actor).await?, ["door:6:0:-7", "guest"]);
+
+    let mut tx = h.pool.begin().await?;
+    // Administrative fixture edits reproduce a rename and a replacement at
+    // the same rank level without involving a second guild transport session.
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_guild_ranks SET name='Veteran' WHERE guild_id=encode($1,'hex')::uuid AND level=2")
+        .bind(id(90).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    assert_eq!(guild_house_role(h, actor).await?.as_deref(), Some("GUEST"));
+    assert_eq!(guild_house_lists(h, actor).await?, ["door:6:0:-7", "guest"]);
+
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM game_guild_ranks WHERE guild_id=encode($1,'hex')::uuid AND level=2")
+        .bind(id(90).as_slice())
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,2,'Veteran')")
+        .bind(id(90).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    assert_eq!(guild_house_role(h, actor).await?, None);
+    assert!(guild_house_lists(h, actor).await?.is_empty());
+    verify_guild_acl_write_fence(h, admitted).await
+}
+
+async fn guild_house_role(h: &Harness, actor: [u8; 16]) -> TestResult<Option<String>> {
+    Ok(sqlx::query_scalar(
+        "SELECT game_house_access_grant(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid)",
+    )
+    .bind(id(42).as_slice())
+    .bind(HOUSE)
+    .bind(actor.as_slice())
+    .fetch_one(&h.pool)
+    .await?)
+}
+
+async fn guild_house_lists(h: &Harness, actor: [u8; 16]) -> TestResult<Vec<String>> {
+    Ok(sqlx::query_scalar("SELECT list_key FROM game_house_acl_member_lists(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid) ORDER BY list_key")
+        .bind(id(42).as_slice()).bind(HOUSE).bind(actor.as_slice()).fetch_all(&h.pool).await?)
+}
+
+async fn verify_guild_acl_write_fence(h: &Harness, admitted: &AdmittedSession) -> TestResult {
+    let writable: bool = sqlx::query_scalar(
+        "SELECT has_table_privilege('oteryn_game_runtime','game_house_acl_guild_ranks','INSERT,UPDATE,DELETE')",
+    ).fetch_one(&h.pool).await?;
+    assert!(!writable);
+    let fence = admitted.item_fence.ok_or("house ACL item fence")?;
+    let actor = id(41);
+    let current = fence.connection_generation.get();
+    for (generation, revision, expected) in [
+        (
+            current + 1,
+            10_i64,
+            "House guild ACL needs its original current session",
+        ),
+        (current, 9, "House ACL lacks current owner receipt"),
+    ] {
+        let mut tx = h.pool.begin().await?;
+        let session = admitted.game_session_id.as_bytes().as_slice();
+        sqlx::query("INSERT INTO game_house_management_receipts(game_session_id,command_id,character_id,world_id,house_key,request_binding,result_revision,action_kind,list_key) VALUES(encode($1,'hex')::uuid,10000,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,decode(repeat('01',32),'hex'),$5,1,'guest')")
+            .bind(session).bind(actor.as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(revision)
+            .execute(&mut *tx).await?;
+        let error = sqlx::query("SELECT game_house_management_guild_acl_advance(encode($1,'hex')::uuid,10000,$2::text::numeric,'[]'::jsonb)")
+            .bind(session).bind(generation.to_string()).execute(&mut *tx).await
+            .expect_err("unfenced House guild ACL");
+        let error = error
+            .as_database_error()
+            .ok_or("expected House ACL database refusal")?;
+        assert_eq!(error.code().as_deref(), Some("23514"));
+        assert_eq!(error.message(), expected);
+        tx.rollback().await?;
+    }
+    Ok(())
 }

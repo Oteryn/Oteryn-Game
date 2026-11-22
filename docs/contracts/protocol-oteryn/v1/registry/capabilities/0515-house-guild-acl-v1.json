@@ -1,0 +1,15 @@
+{
+  "id": 515,
+  "name": "HOUSE_GUILD_ACL_V1",
+  "owner_decision": "S05 server package",
+  "owner": "House management",
+  "requires": [
+    49
+  ],
+  "command_types": [
+    6252
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES where the House owner has a bundle map."
+}
