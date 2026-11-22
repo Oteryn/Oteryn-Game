@@ -75,7 +75,7 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
 const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     (
         "oteryn:quest.factions",
-        hash(b"01570cc2129645571d90b2c42b611558d5943c19441c53ae7bc6545a4784404a"),
+        hash(b"16a0ebe1810d54cdaa467424e4e3f0ab02fa4a4b8a728d7aea33706c9957d738"),
         &[hash(
             b"2bcb10953ae9889273762889d224e7f8f6d2d91fcb100c6a74a033227134c210",
         )],
@@ -102,6 +102,13 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
             hash(b"8a188b5b0b564e34830783f89b5b1a24cc00eb29a1639495bdfb8a7124b584af"),
         ],
     ),
+    (
+        "oteryn:quest.tibia_tales",
+        hash(b"8d57876f51450399a161496c4b34d1ab16ccf7f57b3102302774cd5f05585e45"),
+        &[hash(
+            b"8d75517e41359a25abea653c8fd44fa5b4d2768c1470d9acaa9442b73f543065",
+        )],
+    ),
     // The native crypt and parcel extensions preserve saves from 3e0991642.
     (
         "oteryn:quest.too_hot_to_handle_quest",
@@ -115,13 +122,6 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
         hash(b"fd8a39997df088fbcbe3dd14aafb92bbd84280756eb3b1cee95c4c9bd04950f8"),
         &[hash(
             b"e83857acbdc70f0e3398417dd50fb1a0cae5d864dd580a6653dea645cd2f2a32",
-        )],
-    ),
-    (
-        "oteryn:quest.tibia_tales",
-        hash(b"4b54400fde0e3f1513f342352f381fa00ca2005dba2e51cd5b707cb2ed1fc8c0"),
-        &[hash(
-            b"8d75517e41359a25abea653c8fd44fa5b4d2768c1470d9acaa9442b73f543065",
         )],
     ),
 ];

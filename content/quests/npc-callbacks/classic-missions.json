@@ -4,12 +4,13 @@
     {
       "key": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest/questline",
       "quest": "oteryn:quest.tibia_tales",
-      "initial": -1,
+      "initial": 0,
       "min": -1,
       "max": 2,
       "writable": true,
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1027-1029"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1027-1029",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/budrik.lua:60-75:sha256:0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5"
       ]
     },
     {
@@ -107,6 +108,11 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/to_appease_the_mighty_quest",
           "minimum": 0,
           "maximum": 0
         }
@@ -246,7 +252,7 @@
         {
           "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest",
           "minimum": -1,
-          "maximum": 0,
+          "maximum": -1,
           "set": 1
         },
         {

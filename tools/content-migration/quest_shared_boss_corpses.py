@@ -2,7 +2,6 @@
 BODIES = {
     'an_observer_eye': 5995,
     'arbaziloth': 50029,
-
     'arachir_the_ancient_one': 8109,
     'armenius_creature': 6006,
     'diblis_the_fair': 8109,

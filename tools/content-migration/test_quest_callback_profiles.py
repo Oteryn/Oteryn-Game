@@ -361,15 +361,21 @@ class QuestCallbackProfiles(unittest.TestCase):
                 for placement in record['definition'].get('native_contents', {}).get('placements', []):
                     expected.add(placement['root']['key'])
                     expected.update(child['item']['key'] for child in placement['contents'])
-        # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
-        # 3083), with 3083 also used by Triangle Tower; retain the complete closure.
-        self.assertEqual(len(expected), 160)
+        # Count distinct chest identities and the Grizzly icon. The Ornamented
+        # Shield bag and Triangle Tower both use Garlic Necklace 3083.
+        self.assertEqual(len(expected), 159)
         # Goblin Temple adds pan3466 and snowball2992; vial2874 was already present.
         self.assertTrue({'oteryn:item.tibia.i3466','oteryn:item.tibia.i2992'} <= expected)
         # Draconia adds the one-charge ice rapier and serpent sword to full bags.
         self.assertTrue({'oteryn:item.tibia.i3284', 'oteryn:item.tibia.i3297'} <= expected)
-        # Fire Axe adds the already-admitted dragon necklace and Fire Axe to bags.
-        self.assertTrue({'oteryn:item.tibia.i3085', 'oteryn:item.tibia.i3320'} <= expected)
+        # Fire Axe's chest bag holds the dragon necklace. The separate pile of
+        # bones grants the axe through the direct reward path.
+        self.assertIn('oteryn:item.tibia.i3085', expected)
+        axe = 'oteryn:item.tibia.i3320'
+        self.assertNotIn(axe, expected)
+        self.assertTrue(rows[axe]['admission']['materializable'])
+        self.assertIn('CharacterInventory', rows[axe]['admission']['legal_destinations'])
+        self.assertEqual(rows[axe]['production_binding']['target']['key'], axe)
         # Dreamer adds certificate, bread and the source-selected wine vial to the exact closure.
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (6498, 3602, 2874)} <= expected)
         # Desert2 adds exactly its three previously absent child identities;

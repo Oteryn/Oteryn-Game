@@ -38,7 +38,6 @@ ADDITIONAL_ACTIONS = (
     *(("teleport.lua", "TeleportAction", aid, "action") for aid in (64120, 64121)),
 )
 
-
 TIBIA_TALES_SPECS = (
     *(("item.lua", "ItemAction", action, "action") for action in range(4207, 4224)),
     ("item.lua", "ItemAction", 25018, "action"),
@@ -88,11 +87,12 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
                     if node != 3142:
                         raise ValueError("Key 3142 source storage changed")
                 # False selectors target the existing source ground or door.
-                item = group["itemId"] or (104 if selector == 25018 else {
-                    "LevelDoorAction": 5102,
-                    "KeyDoorAction": 6248,
-                    "TilePickAction": 355,
-                }[table])
+                item = group["itemId"] or {
+                    ("ItemAction", 25018): 104,
+                    ("KeyDoorAction", "Storage.Quest.Key.ID3142"): 6248,
+                    ("LevelDoorAction", 1070): 5102,
+                    ("TilePickAction", 101): 355,
+                }[(table, selector)]
                 rows.append(
                     {
                         "position": cell,

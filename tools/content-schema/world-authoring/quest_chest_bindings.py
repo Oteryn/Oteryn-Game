@@ -285,7 +285,6 @@ def capture(source_root, selected, root=ROOT):
                     pilot, source_reward, items
                 )
 
-            pilot = definition.get("provenance", {}).get("pilot_key")
             if pilot in itemhold_charge_precedence.CASES and len(source_reward) == 1:
                 (number, amount), = source_reward
                 item_key = f"oteryn:item.tibia.i{number}"

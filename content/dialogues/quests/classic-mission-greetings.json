@@ -35,6 +35,9 @@
       "walkaway": "Farewell.",
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ubaid.lua:59-89"
+      ],
+      "greeting_words": [
+        "djanni'hah"
       ]
     }
   ]

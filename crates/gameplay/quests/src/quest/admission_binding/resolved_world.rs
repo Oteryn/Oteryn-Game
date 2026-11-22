@@ -86,10 +86,10 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
-        // #3319 adds ten callbacks. The crypt repair journey adds twelve.
-        assert_eq!(base.len(), 1_024);
+        // The package adds 69 distinct routes on top of the published 1,012.
+        assert_eq!(base.len(), 1_081);
         assert_eq!(bindings.world_callbacks().count(), 31);
-        assert_eq!(callbacks.len(), 1_055);
+        assert_eq!(callbacks.len(), 1_112);
         assert!(callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS);
         let expected: BTreeSet<_> = base
             .iter()

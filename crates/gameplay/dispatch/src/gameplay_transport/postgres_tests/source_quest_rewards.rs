@@ -1,6 +1,6 @@
 //! T..Z reward claims: source placements -> wire USE -> durable custody and replay.
 //! This certifies the reward path, not any untested access puzzle or NPC mission.
-use super::source_quest_rewards_fixtures::{legacy_world_owned};
+use super::source_quest_rewards_fixtures::{OUTFOX_CLAIM, accept_outfox_mission, legacy_world_owned};
 
 use super::fixture::{Harness, debug, id, run};
 use super::quest_callbacks_fixtures::{source_world_positions, wire_use_targets_retained};
@@ -166,6 +166,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 .collect::<Vec<_>>()
         );
         let world_owned = legacy_world_owned(&chest.claim)?;
+        let outfox = chest.claim == OUTFOX_CLAIM;
         let catalogue = if bound.served.iter().any(|claim| {
             claim.key.as_str() == chest.claim
                 && claim
@@ -356,6 +357,9 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                     MovementLocalPosition { x, ..at }
                 );
             }
+            if !cold && outfox {
+                accept_outfox_mission(&mut owner, &mut stream).await?;
+            }
             let expected = if cold {
                 vec![(CommandStatus::Accepted, UseDisposition::Committed)]
             } else {
@@ -363,7 +367,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 // chest with its "it is empty" refusal, a Rejected command
                 // with a Rejected disposition (as quest_container_chests
                 // asserts); a RewardClaim chest owner reports NothingToUse.
-                let repeated = if world_owned {
+                let repeated = if world_owned && !outfox {
                     (CommandStatus::Rejected, UseDisposition::Rejected)
                 } else {
                     (CommandStatus::Accepted, UseDisposition::NothingToUse)
@@ -537,7 +541,19 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 // A World callback's storage write is one receipt; only a
                 // placement quest transition consumes a claim obligation.
                 let obligations = i64::from(!world_owned);
-                assert_eq!(quest_counts, (1, obligations, 0), "{}", chest.claim);
+                let receipts = 1 + i64::from(outfox);
+                assert_eq!(quest_counts, (receipts, obligations, 0), "{}", chest.claim);
+                if outfox {
+                    let keys: Vec<String> = sqlx::query_scalar(
+                        "SELECT transition_key FROM game_character_quest_receipts ORDER BY transition_key",
+                    )
+                    .fetch_all(&h.pool)
+                    .await?;
+                    assert_eq!(keys, [
+                        oteryn_gameplay_quests::quest::world_callbacks::OUTFOX_CACHE,
+                        "oteryn:quest-reward/tibia-tales/outfox-accept",
+                    ]);
+                }
             }
         }
         drop(authority);

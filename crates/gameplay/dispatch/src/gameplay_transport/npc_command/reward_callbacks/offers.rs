@@ -16,11 +16,11 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
         include_str!("../../../../../../../content/quests/npc-offers/newhaven-gustavo.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qd-steal-from-thieves.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/quest-contacts.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-m10.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/quest-contacts.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/tibia-tales.json"),
         include_str!("../../../../../../../content/quests/npc-offers/too-hot-to-handle.json"),
         include_str!("../../../../../../../content/quests/npc-offers/tower-defence.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/tibia-tales.json"),
         include_str!("../../../../../../../content/quests/npc-offers/vampire-hunter.json"),
     ] {
         let document: Offers = serde_json::from_str(source).ok()?;

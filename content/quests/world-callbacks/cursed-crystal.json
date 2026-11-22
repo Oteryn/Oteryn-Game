@@ -13,7 +13,7 @@
         },
         "unique": null,
         "action": 25018,
-        "appearance": 19387
+        "appearance": null
       },
       "lever": null,
       "reversible": false,
@@ -30,7 +30,8 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:29",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2021-2033:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
       ],
       "effects": {
         "teleport_effect": 11
@@ -48,7 +49,7 @@
         },
         "unique": null,
         "action": 25018,
-        "appearance": 19387
+        "appearance": null
       },
       "lever": null,
       "reversible": false,
@@ -65,7 +66,8 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:31",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2021-2033:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
       ],
       "effects": {
         "teleport_effect": 11
@@ -83,7 +85,7 @@
         },
         "unique": null,
         "action": 25018,
-        "appearance": 19387
+        "appearance": null
       },
       "lever": null,
       "reversible": false,
@@ -100,7 +102,8 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:33",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2021-2033:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
       ],
       "effects": {
         "teleport_effect": 11
@@ -118,7 +121,7 @@
         },
         "unique": null,
         "action": 25018,
-        "appearance": 19387
+        "appearance": null
       },
       "lever": null,
       "reversible": false,
@@ -135,7 +138,8 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:35",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2021-2033:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
       ],
       "effects": {
         "teleport_effect": 11

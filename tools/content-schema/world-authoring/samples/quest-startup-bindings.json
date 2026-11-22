@@ -25,10 +25,6 @@
       "sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
     },
     {
-      "path": "data/libs/tables/doors.lua",
-      "sha256": "6b22b5c4c213ef5a3f18fab43ea61acca7be227c06eb99bbc25d1a8d3e75112c"
-    },
-    {
       "path": "data-global/startup/tables/door_key.lua",
       "sha256": "e5368703030072fcb400980274408ee2cbcfa51a6bf7d435da3dc2c9fcd2438b"
     },
@@ -43,9 +39,133 @@
     {
       "path": "data-global/startup/tables/chest.lua",
       "sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4"
+    },
+    {
+      "path": "data/libs/tables/doors.lua",
+      "sha256": "6b22b5c4c213ef5a3f18fab43ea61acca7be227c06eb99bbc25d1a8d3e75112c"
     }
   ],
   "bindings": [
+    {
+      "position": [
+        31973,
+        32905,
+        10
+      ],
+      "item": 104,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
+    {
+      "position": [
+        31973,
+        32905,
+        11
+      ],
+      "item": 104,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
+    {
+      "position": [
+        32009,
+        32928,
+        9
+      ],
+      "item": 104,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
+    {
+      "position": [
+        32009,
+        32928,
+        10
+      ],
+      "item": 104,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
+    {
+      "position": [
+        32017,
+        32917,
+        10
+      ],
+      "item": 104,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
+    {
+      "position": [
+        32017,
+        32918,
+        10
+      ],
+      "item": 104,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
+    {
+      "position": [
+        32306,
+        31821,
+        9
+      ],
+      "item": 622,
+      "attribute": "action",
+      "action": 4207,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 454
+    },
+    {
+      "position": [
+        32306,
+        31822,
+        9
+      ],
+      "item": 622,
+      "attribute": "action",
+      "action": 4207,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 454
+    },
+    {
+      "position": [
+        32450,
+        32044,
+        8
+      ],
+      "item": 6248,
+      "attribute": "action",
+      "action": 3142,
+      "source": "data-global/startup/tables/door_key.lua",
+      "line": 202
+    },
+    {
+      "position": [
+        32467,
+        31970,
+        5
+      ],
+      "item": 2469,
+      "attribute": "unique",
+      "action": 6257,
+      "source": "data-global/startup/tables/chest.lua",
+      "line": 2583
+    },
     {
       "position": [
         32573,
@@ -57,6 +177,18 @@
       "action": 30034,
       "source": "data-global/startup/tables/lever.lua",
       "line": 1022
+    },
+    {
+      "position": [
+        32774,
+        32289,
+        10
+      ],
+      "item": 355,
+      "attribute": "action",
+      "action": 101,
+      "source": "data-global/startup/tables/tile_pick.lua",
+      "line": 6
     },
     {
       "position": [
@@ -108,6 +240,30 @@
     },
     {
       "position": [
+        33152,
+        32866,
+        8
+      ],
+      "item": 2772,
+      "attribute": "action",
+      "action": 5633,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 80
+    },
+    {
+      "position": [
+        33188,
+        31688,
+        6
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4208,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 462
+    },
+    {
+      "position": [
         33190,
         31684,
         14
@@ -117,6 +273,30 @@
       "action": 1070,
       "source": "data-global/startup/tables/door_level.lua",
       "line": 152
+    },
+    {
+      "position": [
+        33190,
+        31691,
+        6
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4209,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 466
+    },
+    {
+      "position": [
+        33192,
+        31688,
+        6
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4210,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 470
     },
     {
       "position": [
@@ -132,6 +312,162 @@
     },
     {
       "position": [
+        33196,
+        31691,
+        6
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4211,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 474
+    },
+    {
+      "position": [
+        33197,
+        31687,
+        6
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4212,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 478
+    },
+    {
+      "position": [
+        33202,
+        31689,
+        6
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4213,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 482
+    },
+    {
+      "position": [
+        33203,
+        31677,
+        6
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4218,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 502
+    },
+    {
+      "position": [
+        33203,
+        31682,
+        6
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4216,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 494
+    },
+    {
+      "position": [
+        33203,
+        31687,
+        6
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4214,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 486
+    },
+    {
+      "position": [
+        33204,
+        31688,
+        6
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4215,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 490
+    },
+    {
+      "position": [
+        33205,
+        31680,
+        6
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4217,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 498
+    },
+    {
+      "position": [
+        33210,
+        31670,
+        7
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4219,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 506
+    },
+    {
+      "position": [
+        33215,
+        31667,
+        7
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4220,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 510
+    },
+    {
+      "position": [
+        33217,
+        31661,
+        7
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4223,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 522
+    },
+    {
+      "position": [
+        33219,
+        31671,
+        7
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4221,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 514
+    },
+    {
+      "position": [
+        33223,
+        31665,
+        7
+      ],
+      "item": 1979,
+      "attribute": "action",
+      "action": 4222,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 518
+    },
+    {
+      "position": [
         33290,
         31785,
         13
@@ -141,54 +477,6 @@
       "action": 9715,
       "source": "data-global/startup/tables/item.lua",
       "line": 1689
-    },
-    {
-      "position": [
-        33498,
-        32613,
-        8
-      ],
-      "item": 10840,
-      "attribute": "unique",
-      "action": 35020,
-      "source": "data-global/startup/tables/teleport.lua",
-      "line": 596
-    },
-    {
-      "position": [
-        32450,
-        32044,
-        8
-      ],
-      "item": 6248,
-      "attribute": "action",
-      "action": 3142,
-      "source": "data-global/startup/tables/door_key.lua",
-      "line": 202
-    },
-    {
-      "position": [
-        32774,
-        32289,
-        10
-      ],
-      "item": 355,
-      "attribute": "action",
-      "action": 101,
-      "source": "data-global/startup/tables/tile_pick.lua",
-      "line": 6
-    },
-    {
-      "position": [
-        33152,
-        32866,
-        8
-      ],
-      "item": 2772,
-      "attribute": "action",
-      "action": 5633,
-      "source": "data-global/startup/tables/lever.lua",
-      "line": 80
     },
     {
       "position": [
@@ -420,303 +708,15 @@
     },
     {
       "position": [
-        31973,
-        32905,
-        10
+        33498,
+        32613,
+        8
       ],
-      "item": 104,
-      "attribute": "action",
-      "action": 25018,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 2022
-    },
-    {
-      "position": [
-        31973,
-        32905,
-        11
-      ],
-      "item": 104,
-      "attribute": "action",
-      "action": 25018,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 2022
-    },
-    {
-      "position": [
-        32009,
-        32928,
-        9
-      ],
-      "item": 104,
-      "attribute": "action",
-      "action": 25018,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 2022
-    },
-    {
-      "position": [
-        32009,
-        32928,
-        10
-      ],
-      "item": 104,
-      "attribute": "action",
-      "action": 25018,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 2022
-    },
-    {
-      "position": [
-        32017,
-        32917,
-        10
-      ],
-      "item": 104,
-      "attribute": "action",
-      "action": 25018,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 2022
-    },
-    {
-      "position": [
-        32017,
-        32918,
-        10
-      ],
-      "item": 104,
-      "attribute": "action",
-      "action": 25018,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 2022
-    },
-    {
-      "position": [
-        32306,
-        31821,
-        9
-      ],
-      "item": 622,
-      "attribute": "action",
-      "action": 4207,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 454
-    },
-    {
-      "position": [
-        32306,
-        31822,
-        9
-      ],
-      "item": 622,
-      "attribute": "action",
-      "action": 4207,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 454
-    },
-    {
-      "position": [
-        32467,
-        31970,
-        5
-      ],
-      "item": 2469,
+      "item": 10840,
       "attribute": "unique",
-      "action": 6257,
-      "source": "data-global/startup/tables/chest.lua",
-      "line": 2583
-    },
-    {
-      "position": [
-        33188,
-        31688,
-        6
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4208,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 462
-    },
-    {
-      "position": [
-        33190,
-        31691,
-        6
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4209,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 466
-    },
-    {
-      "position": [
-        33192,
-        31688,
-        6
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4210,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 470
-    },
-    {
-      "position": [
-        33196,
-        31691,
-        6
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4211,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 474
-    },
-    {
-      "position": [
-        33197,
-        31687,
-        6
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4212,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 478
-    },
-    {
-      "position": [
-        33202,
-        31689,
-        6
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4213,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 482
-    },
-    {
-      "position": [
-        33203,
-        31677,
-        6
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4218,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 502
-    },
-    {
-      "position": [
-        33203,
-        31682,
-        6
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4216,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 494
-    },
-    {
-      "position": [
-        33203,
-        31687,
-        6
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4214,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 486
-    },
-    {
-      "position": [
-        33204,
-        31688,
-        6
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4215,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 490
-    },
-    {
-      "position": [
-        33205,
-        31680,
-        6
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4217,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 498
-    },
-    {
-      "position": [
-        33210,
-        31670,
-        7
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4219,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 506
-    },
-    {
-      "position": [
-        33215,
-        31667,
-        7
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4220,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 510
-    },
-    {
-      "position": [
-        33217,
-        31661,
-        7
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4223,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 522
-    },
-    {
-      "position": [
-        33219,
-        31671,
-        7
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4221,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 514
-    },
-    {
-      "position": [
-        33223,
-        31665,
-        7
-      ],
-      "item": 1979,
-      "attribute": "action",
-      "action": 4222,
-      "source": "data-global/startup/tables/item.lua",
-      "line": 518
+      "action": 35020,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 596
     }
   ]
 }

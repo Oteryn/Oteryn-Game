@@ -63,7 +63,7 @@ mod guarded_routes;
 mod ice_islands_tests;
 mod imported_explore;
 mod legacy_world_claims;
-pub use legacy_world_claims::{legacy_world_claim, legacy_world_source_unique};
+pub use legacy_world_claims::{OUTFOX_CACHE, legacy_world_claim, legacy_world_source_unique};
 mod live_admission;
 mod native_trials;
 #[cfg(test)]
@@ -783,9 +783,6 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/qc-chests.json"
     ))?);
     callbacks.extend(parse(include_str!(
-        "../../../../../content/quests/world-callbacks/tibia-tales.json"
-    ))?);
-    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qc-lizard-sanctuary.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -802,13 +799,16 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/feaster-phase-routes.json"
     ))?);
     callbacks.extend(parse(include_str!(
-        "../../../../../content/quests/world-callbacks/rottin-wood.json"
-    ))?);
-    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/quest-contacts.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/rottin-wood.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/threatened-dreams-mosaic-treasure.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/tibia-tales.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/too-hot-repairs.json"

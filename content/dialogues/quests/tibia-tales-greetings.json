@@ -14,21 +14,6 @@
       "walkaway": "Farewell."
     },
     {
-      "npc": "oteryn:npc.melchior",
-      "greet": "Greetings, traveler. What would you like to know?",
-      "farewell": "Farewell.",
-      "walkaway": "Farewell."
-    },
-    {
-      "npc": "oteryn:npc.ubaid",
-      "greet": "You know our greeting. Speak your business.",
-      "farewell": "Farewell.",
-      "walkaway": "Farewell.",
-      "greeting_words": [
-        "djanni'hah"
-      ]
-    },
-    {
       "npc": "oteryn:npc.umar",
       "greet": "You know our greeting. What brings you to our fortress?",
       "farewell": "Farewell.",

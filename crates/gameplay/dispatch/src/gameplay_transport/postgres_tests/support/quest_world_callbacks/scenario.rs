@@ -1597,6 +1597,14 @@ fn scenario_case(
             } else if name == "authored-torch" {
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
+                // Fourteen contacts and the player share this fixture world.
+                15
+            } else if tower_defence {
+                4
+            } else if too_hot_research {
+                3
+            } else if name == "classic-quests-npc" {
+                6
             } else if classic_npc || qd_world {
                 5
             } else if monk {

@@ -231,17 +231,6 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2582-2589:sha256:7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4"
       ]
-    },
-    {
-      "writable": true,
-      "key": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest/questline",
-      "quest": "oteryn:quest.tibia_tales",
-      "initial": 0,
-      "min": 0,
-      "max": 2,
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/budrik.lua:60-75:sha256:0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5"
-      ]
     }
   ],
   "callbacks": [
@@ -365,6 +354,13 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/melchior.lua:67-80:sha256:1ec7aa8fc1a9b1f972239df7299911f72976aadeacae6c011fd49bc5033383df"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/to_appease_the_mighty_quest",
+          "minimum": 1,
+          "maximum": 4
+        }
       ]
     },
     {
@@ -719,7 +715,7 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest/questline",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 0,
           "set": 1
         },

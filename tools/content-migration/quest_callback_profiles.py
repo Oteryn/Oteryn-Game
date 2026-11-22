@@ -190,9 +190,9 @@ def requested_keys(root, extra_keys=()):
 
 def _requested_inputs(root, extra_keys=()):
     # Retain both the selected startup source cohort and authored callback custody.
-    sys.path.insert(0, str(root / 'tools/content-schema/world-authoring'))
+    sys.path.insert(0, str((root / 'tools/content-schema/world-authoring').resolve()))
     from quest_chest_bindings import panpipe_key_claim, verified_source_charges
-    sys.path.insert(0, str(root / 'tools/content-schema/reward-claim-authoring'))
+    sys.path.insert(0, str((root / 'tools/content-schema/reward-claim-authoring').resolve()))
     import container_native
 
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
@@ -210,7 +210,7 @@ def _requested_inputs(root, extra_keys=()):
         for callback in json.loads(path.read_bytes())['callbacks']:
             authored_callbacks.append(callback)
             reward = callback.get('give') or callback.get('effects', {}).get('item_reward')
-            if (reward and callback['key']
+            if (reward and callback.get('key')
                     != 'oteryn:quest-reward/their-masters-voice-slime-gobbler'):
                 # Their Master's Voice already admits the Slime Gobbler through the
                 # World Change overlay. Its newly published NPC shares that custody.

@@ -1330,7 +1330,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Ok(mut pending)=self.states.quest_callbacks.records.lock(){pending.remove(&session);}
                     return UseDisposition::Committed;
                 }
-                Ok(_) | Err(_) => {
+                refusal => {
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
                         objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))
                     {
@@ -1338,6 +1338,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                         pending.remove(&session);
+                    }
+                    if callback.key == world_callbacks::OUTFOX_CACHE
+                        && matches!(refusal, Ok(QuestTransitionOutcome::Refused(
+                            oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch
+                        )))
+                        && let Ok(Some(claim)) = world_callbacks::legacy_world_claim(callback)
+                        && self.root.reward_claim_is_claimed(
+                            self.character, self.holder, fence.item_fence(), claim.key.clone()
+                        ).await.is_ok_and(|claimed| claimed)
+                    {
+                        return UseDisposition::NothingToUse;
                     }
                     // Returning STEP callbacks emit their refusal after restoring
                     // the origin in refuse_quest_step. Only one owner emits it.

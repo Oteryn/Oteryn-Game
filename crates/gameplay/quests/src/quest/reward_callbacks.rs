@@ -546,38 +546,37 @@ struct Document {
 
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/classic-missions.json"),
+    include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
-    include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m09-rookie.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m20-cursed-crystal-recipes.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m39-stories.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"),
     include_str!("../../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
-    // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
+    include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/quest-contacts.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/vampire-hunter.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/quest-contacts.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/tibia-tales.json"),
     include_str!("../../../../../content/quests/npc-callbacks/too-hot-to-handle.json"),
     include_str!("../../../../../content/quests/npc-callbacks/tower-defence.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/tibia-tales.json"),
-    include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
-    include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/vampire-hunter.json"),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
@@ -2393,9 +2392,8 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing and 31 QB routes. The final two terms are
-        // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12 + 6);
+        // Every source shard and the Kingsday journal contribute 505 callbacks.
+        assert_eq!(load()?.len(), 505);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
