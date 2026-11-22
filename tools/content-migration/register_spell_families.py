@@ -717,6 +717,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     admit_dream_courts_supplies(root, items)
     import protected_loot_yields
     protected_loot_yields.admit(root, items, provider_order)
+    import cloot2_item_admissions
+    cloot2_item_admissions.admit(root, items, provider_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
