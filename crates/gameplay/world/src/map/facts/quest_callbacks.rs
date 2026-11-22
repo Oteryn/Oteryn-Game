@@ -1223,6 +1223,7 @@ impl BundleFacts {
             states.movement_items.remove(&pos);
         }
         states.changed.remove(&key);
+        states.actions.remove(&key);
         states.movement_decays.retain(|(_, entry), _| *entry != key);
         states.movement_sequence = sequence;
         true

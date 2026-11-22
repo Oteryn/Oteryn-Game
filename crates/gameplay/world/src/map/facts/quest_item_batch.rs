@@ -12,6 +12,29 @@ pub struct QuestMapItemMove {
     pub appearance: u16,
 }
 
+const SHRINE_UNLIT: u16 = 50242;
+const SHRINE_LIT: u16 = 50244;
+
+impl QuestMapItemMove {
+    fn arrival_appearance(&self) -> u16 {
+        // Crystal 201189f8, the_way_of_the_monk/monk_shrine_reset.lua:3-10.
+        if self.from != self.to
+            && self.entry.facts.appearance_id == SHRINE_LIT
+            && self.appearance == SHRINE_LIT
+        {
+            SHRINE_UNLIT
+        } else {
+            self.appearance
+        }
+    }
+
+    fn carries_shrine_action(&self) -> bool {
+        matches!(self.entry.facts.appearance_id, SHRINE_LIT | SHRINE_UNLIT)
+            && matches!(self.arrival_appearance(), SHRINE_LIT | SHRINE_UNLIT)
+            && self.from != self.to
+    }
+}
+
 fn source_key(source: view::EntrySource) -> Option<u64> {
     match source {
         view::EntrySource::Base { placement_key, .. } => Some(placement_key),
@@ -108,7 +131,7 @@ impl BundleFacts {
         }
         // Qualification here lets the caller reject before moving any occupants.
         for movement in &batch {
-            let after = self.movement_item_facts(movement.appearance)?;
+            let after = self.movement_item_facts(movement.arrival_appearance())?;
             if movement.entry.facts.pickupable
                 || after.pickupable
                 || self.override_blocks(after).is_none()
@@ -158,7 +181,7 @@ impl BundleFacts {
                 || view::compose_into(base, None, &pinned, movement.from, &mut observed).is_err()
                 || !observed.contains(&movement.entry)
                 || !self
-                    .movement_item_facts(movement.appearance)
+                    .movement_item_facts(movement.arrival_appearance())
                     .is_some_and(|f| !f.pickupable && self.override_blocks(f).is_some())
             {
                 return false;
@@ -170,7 +193,7 @@ impl BundleFacts {
         }
         observed.retain(|entry| !moves.iter().any(|m| m.entry.source == entry.source));
         for movement in moves.iter().filter(|m| m.to == destination) {
-            let Some(after) = self.movement_item_facts(movement.appearance) else {
+            let Some(after) = self.movement_item_facts(movement.arrival_appearance()) else {
                 return false;
             };
             observed.push(view::ComposedEntry {
@@ -203,7 +226,11 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
-        if !states.has_capacity(moves.len() * 4) {
+        let shrine_actions = moves
+            .iter()
+            .filter(|movement| movement.carries_shrine_action())
+            .count();
+        if !states.has_capacity(moves.len() * 4 + shrine_actions) {
             return false;
         }
         let pinned = PinnedFacts {
@@ -238,7 +265,7 @@ impl BundleFacts {
             {
                 return false;
             }
-            let Some(mut after) = self.movement_item_facts(movement.appearance) else {
+            let Some(mut after) = self.movement_item_facts(movement.arrival_appearance()) else {
                 return false;
             };
             if after.pickupable || self.override_blocks(after).is_none() {
@@ -310,6 +337,17 @@ impl BundleFacts {
             let Some(new_key) = source_key(source) else {
                 return false;
             };
+            if movement.carries_shrine_action() {
+                let action = states.actions.get(&key).copied().unwrap_or_else(|| {
+                    self.placements
+                        .binary_search_by_key(&key, |(key, _)| *key)
+                        .ok()
+                        .and_then(|index| self.placements[index].1.attrs.action)
+                });
+                if let Some(action) = action {
+                    staged.actions.insert(new_key, Some(action));
+                }
+            }
             staged
                 .changed
                 .insert(new_key, (movement.expected_revision + 1, after));
