@@ -664,5 +664,8 @@ mod qb_barbarian_npcs;
 #[path = "npcs/qb_outfit_npcs.rs"]
 mod qb_outfit_npcs;
 
+#[path = "npcs/regional_placements.rs"]
+mod regional_placements;
+
 #[path = "npcs/regional_population.rs"]
 mod regional_population;

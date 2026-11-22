@@ -474,6 +474,10 @@ impl NpcTalkBook {
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
                 .any(|service| service.bank);
+            let regional_dialogue = npc
+                .bank_dialogue
+                .as_ref()
+                .filter(|_| literal_contacts::regional(&reference.key));
             let regional = regional_contacts::get(&reference.key);
             let mut journal_fallback = false;
             let mut regional_source = false;
@@ -842,6 +846,24 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if let Some(dialogue) = regional_dialogue {
+                let focus_line = |lines: &[String], default: &str| match lines {
+                    [line] => line.clone(),
+                    _ => default.into(),
+                };
+                (
+                    focus_line(&dialogue.greet, "Greetings, |PLAYERNAME|."),
+                    focus_line(&dialogue.farewell, "Good bye, |PLAYERNAME|."),
+                    None,
+                    dialogue
+                        .keywords
+                        .iter()
+                        .filter(|keyword| {
+                            literal_keyword(keyword) && !keyword.reply[0].contains("|TIME|")
+                        })
+                        .cloned()
+                        .collect(),
+                )
             } else {
                 continue;
             };
@@ -873,6 +895,7 @@ impl NpcTalkBook {
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank
+                        || regional_dialogue.is_some()
                         || regional.is_some()
                         || regional_source
                         || literal_contacts::greeting(&reference.key).is_some()
@@ -904,6 +927,14 @@ impl NpcTalkBook {
                         regional_walkaway
                             .or_else(|| isle_messages.map(|messages| messages.walkaway))
                             .or_else(|| reward_messages.map(|messages| messages.walkaway.clone()))
+                            .or_else(|| {
+                                regional_dialogue.map(|dialogue| {
+                                    match dialogue.walkaway.as_slice() {
+                                        [line] => line.clone(),
+                                        _ => "Good bye.".into(),
+                                    }
+                                })
+                            })
                             .or_else(|| {
                                 regional.map(|contact| {
                                     contact
