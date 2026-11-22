@@ -137,6 +137,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
         .ok()?;
         let (claim, bound) = resolved.canonical?;
+        // The tower's authored final USE owns this same once claim and its progress.
+        if claim.key.as_str()
+            == oteryn_gameplay_quests::quest::world_callbacks::SERPENTINE_PEARL_CLAIM
+        {
+            return Some(outcome(UseDisposition::Rejected));
+        }
         let mut quest_transition = bound.placement.quest_transition.clone();
         match oteryn_gameplay_quests::quest::completion_sets::mint_transition_for_claim(
             claim.key.as_str(),
