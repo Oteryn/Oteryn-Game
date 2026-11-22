@@ -13,7 +13,7 @@
 //! 6. Logout the watcher, make a fresh admission, and `Query` again; expect the durable entry,
 //!    group, comment/icon/notify assignment and revision to match the pre-logout view.
 //! 7. Send `GroupRemove` while the entry still uses that group; expect code 1 and a query delta
-//!    removing the group from both the catalogue and entry, then logout both characters normally.
+//!    removing the group from both the catalogue and entry. Remove the entry itself, then logout.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::vip::{self, vip as wire};
@@ -31,6 +31,7 @@ const ACTIONS: &[&str] = &[
     "login-notification",
     "fresh-admission-durability",
     "group-remove",
+    "entry-remove",
     "logout",
 ];
 
@@ -464,6 +465,34 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass("group-remove", remove.revision);
+    let removed = ok(
+        &mut watcher,
+        &request(wire::Operation::Remove, entry, ""),
+        "entry-remove",
+    )
+    .await?;
+    let queried = ok(
+        &mut watcher,
+        &request(wire::Operation::Query, removed.revision, ""),
+        "query-after-entry-remove",
+    )
+    .await?;
+    if removed.revision <= remove.revision
+        || queried.revision != removed.revision
+        || !view(&queried, "query-after-entry-remove")?["entries"]
+            .as_array()
+            .is_some_and(|entries| {
+                entries
+                    .iter()
+                    .all(|item| item["number"].as_u64() != Some(entry))
+            })
+    {
+        return Err(
+            "step=entry-remove observed=stale-revision-or-listed-entry need=durable-entry-removal"
+                .into(),
+        );
+    }
+    row.pass("entry-remove", removed.revision);
     logout(&mut watcher, "watcher-final-logout").await?;
     logout(&mut target, "target-final-logout").await?;
     row.pass("logout", "both-accepted");
@@ -473,6 +502,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn complete_vip_lifecycle_removes_the_entry_before_logout() {
+        assert!(ACTIONS.ends_with(&["group-remove", "entry-remove", "logout"]));
+    }
 
     #[test]
     fn verdict_needs_every_unique_action() {

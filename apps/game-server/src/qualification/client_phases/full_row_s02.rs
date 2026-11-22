@@ -241,6 +241,10 @@ async fn logout(client: &mut DevClientSession, budget: Duration) -> TestResult {
     }
 }
 
+fn invitation_retained(view: &PartyResult, handle: u64) -> bool {
+    view.invitations.iter().any(|entry| entry.handle == handle)
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -291,12 +295,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("invite-shields", (reply, ai, bi));
 
+    let immune_until = tokio::time::Instant::now() + Duration::from_secs(11);
+    while tokio::time::Instant::now() < immune_until {
+        pump(&mut a, &mut b).await?;
+    }
     set_open_attack(&mut a).await?;
     let before = *b.actor_vitals().ok_or("step 3 victim vitals absent")?;
     let attack = a.session_mut().attack_target(Some(&b_ref)).await?;
     if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!(
-            "step 3 attack observed reply={attack:?}; need Open-PvP eligible provisioned players"
+            "step=aggression-white-skull observed={attack:?} need=two-player-combat-on-open-pvp-node source=tools/qualification/node_boot/run.sh:1552"
         )
         .into());
     }
@@ -323,7 +331,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let (_, retained) = party(&mut b, None).await?;
     if refused != PartyDisposition::Rejected
         || !refused_view.members.is_empty()
-        || retained.invitations.is_empty()
+        || !invitation_retained(&retained, handle)
     {
         return Err(format!(
             "step 4 join guard reply={refused:?} view={refused_view:?} retained={retained:?}"
@@ -409,6 +417,23 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn guard_must_retain_the_invitation_that_was_refused() {
+        let mut view = PartyResult::refused(PartyDisposition::Ok);
+        view.invitations
+            .push(oteryn_protocol_oteryn::party::PartyEntry {
+                handle: 17,
+                name: "Peer".into(),
+                leader: false,
+                list: Vec::new(),
+                expires_at: 1,
+                party_spell_remaining_ms: None,
+                channel: None,
+            });
+        assert!(invitation_retained(&view, 17));
+        assert!(!invitation_retained(&view, 18));
+    }
+
     #[test]
     fn row_requires_every_numbered_step() {
         assert_eq!(STEPS.len(), 6);

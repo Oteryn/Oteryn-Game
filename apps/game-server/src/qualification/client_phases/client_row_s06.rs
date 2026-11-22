@@ -3,7 +3,7 @@
 //! with new colours; the raw `gated_snapshot` payloads (`s06-before.bin`, `s06-after.bin`) and the
 //! raw command results (`s06-commit.bin`, `s06-refusal.bin`) are written byte for byte, and
 //! `s06-expected.txt` holds the selection, the committed revision and the content revision.
-//! Mount taming is not driven here: the full row's taming step needs content the world lacks.
+//! The full row drives the separate Hunter loot and War Bear taming journey.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::appearance;
@@ -93,6 +93,15 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         Ok(appearance::ChangeResult::Committed(value)) if status == CommandStatus::Accepted => value,
         observed => return Err(format!("step=select status={status:?} result={observed:?}").into()),
     };
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err(
+            "step=appearance-capture expected accepted logout before durable snapshot".into(),
+        );
+    }
+    drop(client);
+    let mut client = connect_world(clients, 0x6a).await?;
     let (after_bytes, after) = raw_snapshot(&mut client)?;
     if after.catalogue.selected.as_ref().map(|s| &s.selection) != Some(&selection)
         || after.catalogue.root_revision != committed

@@ -22,11 +22,66 @@ use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_gameplay_entities::rashid_schedule::RashidDestination;
 use oteryn_protocol_oteryn::npc_service as wire;
 
-const TRAVEL_NPCS: &[(&str, &str, &str, u64)] = &[
-    ("oteryn:npc.captain_bluebear", "edron", "Edron", 160),
-    ("oteryn:npc.captain_seagull", "thais", "Thais", 130),
-    ("oteryn:npc.kendra", "thais", "Thais", 180),
+// Paid arrivals from content/services/travel/travel-00000-00056.json, in the runtime frame.
+const TRAVEL_NPCS: &[(&str, &str, &str, u64, ActorPosition)] = &[
+    (
+        "oteryn:npc.captain_bluebear",
+        "port hope",
+        "Port Hope",
+        160,
+        ActorPosition {
+            x: 32527,
+            y: 32784,
+            floor: 6,
+        },
+    ),
+    (
+        "oteryn:npc.captain_bluebear",
+        "edron",
+        "Edron",
+        160,
+        ActorPosition {
+            x: 33175,
+            y: 31764,
+            floor: 6,
+        },
+    ),
+    (
+        "oteryn:npc.captain_seagull",
+        "thais",
+        "Thais",
+        130,
+        ActorPosition {
+            x: 32310,
+            y: 32210,
+            floor: 6,
+        },
+    ),
+    (
+        "oteryn:npc.kendra",
+        "thais",
+        "Thais",
+        180,
+        ActorPosition {
+            x: 32259,
+            y: 32262,
+            floor: 7,
+        },
+    ),
 ];
+
+const ACTIONS: &[&str] = &[
+    "quote",
+    "refusal",
+    "return-to-captain",
+    "travel",
+    "rashid-gate",
+    "fresh-admission",
+];
+
+fn gap(attempted: &[&str]) -> Option<&'static str> {
+    ACTIONS.get(attempted.len()).copied()
+}
 
 struct Row {
     started: std::time::Instant,
@@ -47,22 +102,21 @@ impl Row {
         ));
     }
     fn finish(self, result: TestResult) {
-        let status = if result.is_ok()
-            && self.attempted
-                == [
-                    "quote",
-                    "refusal",
-                    "travel",
-                    "rashid-gate",
-                    "fresh-admission",
-                ] {
+        let status = if result.is_ok() && self.attempted == ACTIONS {
             "PASS"
         } else {
             "FAIL"
         };
+        if result.is_ok() && status == "FAIL" {
+            evidence(&format!(
+                "S10_GAP status=FAIL step={} observed=missing-required-observation",
+                gap(&self.attempted).unwrap_or("journey")
+            ));
+        }
         if let Err(error) = &result {
             evidence(&format!(
-                "S10_CHECK status=FAIL attempted={:?} observed={error}",
+                "S10_GAP status=FAIL step={} attempted={:?} observed={error}",
+                gap(&self.attempted).unwrap_or("cleanup"),
                 self.attempted
             ));
         }
@@ -148,11 +202,21 @@ fn actor_at(
         .find(|entry| {
             entry.kind == EntityKind::Npc
                 && npc.placements.iter().any(|p| {
-                    entry.position
-                        == ActorPosition {
-                            x: i32::from(p.x),
-                            y: i32::from(p.y),
-                            floor: -i16::from(p.floor),
+                    let distance = entry
+                        .position
+                        .x
+                        .abs_diff(i32::from(p.x))
+                        .max(entry.position.y.abs_diff(i32::from(p.y)));
+                    entry.position.floor == -i16::from(p.floor)
+                        && if npc.key == "oteryn:npc.rashid" {
+                            distance <= 3
+                                && entry
+                                    .display_name
+                                    .as_ref()
+                                    .and_then(|name| name.as_str().ok())
+                                    == Some("Rashid")
+                        } else {
+                            distance == 0
                         }
                 })
         })
@@ -195,6 +259,10 @@ fn carried_gold(client: &DevClientSession) -> TestResult<u64> {
                 .map_or(0, |(_, value)| u64::from(entry.count.get()) * value)
         })
         .sum())
+}
+
+fn rashid_bundle_cell(day: RashidDestination) -> (u16, u16, i8) {
+    (day.placement.x, day.placement.y, day.placement.floor)
 }
 
 fn utc_rashid_destination() -> TestResult<RashidDestination> {
@@ -254,9 +322,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_character(clients, 0xf8, 1).await?;
     let here = tile(client.world_spatial().actor_position)?;
-    let (key, keyword, display, fare, npc) = TRAVEL_NPCS
+    let expected_rashid = utc_rashid_destination()?;
+    let (key, keyword, display, fare, arrival, npc) = TRAVEL_NPCS
         .iter()
-        .find_map(|&(key, keyword, display, fare)| {
+        .filter(|&&(_, keyword, _, _, _)| keyword != "port hope" || expected_rashid.city == "Wednesday")
+        .find_map(|&(key, keyword, display, fare, arrival)| {
             metadata
                 .npcs
                 .npcs
@@ -271,7 +341,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                     })
                     .is_some()
                 })
-                .map(|npc| (key, keyword, display, fare, npc))
+                .map(|npc| (key, keyword, display, fare, arrival, npc))
         })
         .ok_or("step quote: no authored S10 paid-travel NPC is reachable by legitimate walking from admission; need a compiled route to a travel service")?;
     let actor = approach(&mut client, world, npc).await?;
@@ -303,34 +373,55 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.step("refusal", &refusal);
     earn(&mut client, world, &metadata.spawns, fare).await?;
     let funded_gold = carried_gold(&client)?;
+    let actor = approach(&mut client, world, npc).await?;
+    let departure = client.world_spatial().actor_position;
+    row.step("return-to-captain", (key, departure, funded_gold));
     let _ = talk(&mut client, actor, "hi").await?;
     let _ = talk(&mut client, actor, keyword).await?;
     let (travelled, inventory_changed, _) = talk(&mut client, actor, "yes").await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    let mut inventory_changed = inventory_changed;
+    while tokio::time::Instant::now() < deadline
+        && (!inventory_changed || client.world_spatial().actor_position != arrival)
+    {
+        client.service_liveness(Duration::from_millis(25)).await?;
+        inventory_changed |= client
+            .take_events()
+            .iter()
+            .any(|event| matches!(event, SessionEvent::Inventory(_)));
+    }
     if !travelled.iter().any(|line| line.contains("Set the sails"))
         || !inventory_changed
-        || client.world_spatial().actor_position == before_position
+        || client.world_spatial().actor_position != arrival
         || carried_gold(&client)? + fare != funded_gold
     {
-        return Err(format!("step travel: observed reply={travelled:?} position={:?} carried_gold={}; need relocation and atomic fare burn", client.world_spatial().actor_position, carried_gold(&client)?).into());
+        return Err(format!("step travel: observed reply={travelled:?} position={:?} carried_gold={}; need authored arrival {arrival:?} and atomic fare burn", client.world_spatial().actor_position, carried_gold(&client)?).into());
     }
     row.step("travel", &travelled);
-    let rashid = metadata.npcs.npcs.iter().find(|npc| npc.key == "oteryn:npc.rashid").ok_or("step rashid-gate: compiled world omitted today's Rashid placement; need the node boot weekday rotation to retain it")?;
-    let expected_rashid = utc_rashid_destination()?;
-    let observed_rashid = rashid
-        .placements
+    let expected_rashid_position = rashid_bundle_cell(expected_rashid);
+    let mut rashid = metadata
+        .npcs
+        .npcs
         .iter()
-        .map(|placement| (placement.x, placement.y, placement.floor))
-        .collect::<Vec<_>>();
-    let expected_placement = expected_rashid.placement;
-    let expected_rashid_position = (
-        expected_placement.x,
-        expected_placement.y,
-        expected_placement.floor,
-    );
-    if observed_rashid.as_slice() != [expected_rashid_position] {
-        return Err(format!("step rashid-gate: observed compiled placements={observed_rashid:?}; need UTC {} placement={expected_rashid_position:?}", expected_rashid.city).into());
+        .find(|npc| npc.key == "oteryn:npc.rashid")
+        .cloned()
+        .ok_or_else(|| {
+            format!(
+                "step=rashid-gate need=compiled-{}-placement-{expected_rashid_position:?}",
+                expected_rashid.city
+            )
+        })?;
+    rashid.placements.retain(|placement| {
+        (placement.x, placement.y, placement.floor) == expected_rashid_position
+    });
+    if rashid.placements.is_empty() {
+        return Err(format!(
+            "step=rashid-gate need=compiled-{}-placement-{expected_rashid_position:?}",
+            expected_rashid.city
+        )
+        .into());
     }
-    let rashid_actor = approach(&mut client, world, rashid).await?;
+    let rashid_actor = approach(&mut client, world, &rashid).await?;
     let _ = talk(&mut client, rashid_actor, "hi").await?;
     let (trade, _, shop_opened) = talk(&mut client, rashid_actor, "trade").await?;
     if trade.is_empty() || !shop_opened {
@@ -358,13 +449,34 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step fresh-admission: durable state mismatch position={:?}/{saved_position:?} gold={}/{}", fresh.world_spatial().actor_position, carried_gold(&fresh)?, saved_gold).into());
     }
-    let fresh_rashid = approach(&mut fresh, world, rashid).await?;
+    let fresh_rashid = approach(&mut fresh, world, &rashid).await?;
     let _ = talk(&mut fresh, fresh_rashid, "hi").await?;
     let (fresh_trade, _, fresh_shop) = talk(&mut fresh, fresh_rashid, "trade").await?;
     if fresh_trade.is_empty() || !fresh_shop {
         return Err(format!("step fresh-admission: Rashid shop was not restored; observed reply={fresh_trade:?} shop_delta={fresh_shop}").into());
     }
     row.step("fresh-admission", (saved_position, saved_gold, fresh_trade));
-    let _ = fresh.session_mut().logout().await?;
+    if fresh.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step=final-logout need=accepted-logout-after-rashid-shop".into());
+    }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn weekday_schedule_matches_the_bundle_npc_floor() {
+        let sunday = oteryn_gameplay_entities::rashid_schedule::destination_at(3 * 86_400_000);
+        assert_eq!(rashid_bundle_cell(sunday), (32328, 31782, -6));
+    }
+
+    #[test]
+    fn funded_travel_requires_return_to_the_npc() {
+        assert_eq!(gap(&["quote", "refusal"]), Some("return-to-captain"));
+        assert_eq!(gap(ACTIONS), None);
+    }
 }

@@ -13,8 +13,8 @@
 //! 5. Reopen World and send distinct player room lines until the shared spam gate returns `Muted`
 //!    with a positive wait; require every OK reply to have its exact line delta and the refused
 //!    line to produce none.
-//! 6. Log out and freshly admit the same provisioned character; require a new game session, the
-//!    World room still open, and another World line still refused as `Muted` with a positive wait.
+//! 6. Log out and freshly admit the same character. Require a new game session with its
+//!    own room membership. Reopen World and check whether the prior mute still refuses speech.
 
 use super::*;
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, ChatRoom, DevClientSession};
@@ -89,6 +89,10 @@ async fn send_line(client: &mut DevClientSession, room: ChatRoom, text: &str) ->
         return Err(format!("step 2 send {room:?}: observed reply {reply:?}; server must relay an admitted public line").into());
     }
     wait_for(client, |client| has_line(client, room, text)).await
+}
+
+fn same_chat_session(before: &[u8; 16], after: &[u8; 16]) -> bool {
+    before == after
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -168,15 +172,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     drop(client);
     let mut client = connect_character(clients, 0xc5, 0).await?;
-    if client.join_snapshot().game_session_id == old_session
-        || !client
-            .chat_log()
-            .is_some_and(|log| log.rooms().contains(ChatRoom::World))
+    if same_chat_session(
+        old_session.as_bytes(),
+        client.join_snapshot().game_session_id.as_bytes(),
+    ) {
+        return Err("step 6 fresh admission: reused the muted game session".into());
+    }
+    if client
+        .chat_log()
+        .is_none_or(|log| log.rooms().contains(ChatRoom::World))
     {
         return Err(
-            "step 6 fresh admission: new session or retained World room state missing".into(),
+            "step 6 fresh admission: expected a fresh CHAT room set with World closed".into(),
         );
     }
+    open(&mut client, ChatRoom::World).await?;
     let text = "S04c relog muted";
     let reply = client
         .chat(&ChatIntent::Room {
@@ -185,9 +195,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         })
         .await?;
     if reply.disposition != ChatDisposition::Muted || reply.wait_seconds == 0 {
-        return Err(format!("step 6 fresh-admission mute: observed reply {reply:?}, line_delta={}; server must retain mute and refuse without a line", has_line(&client, ChatRoom::World, text)).into());
+        return Err(format!("step=public-mute-after-fresh-admission observed={reply:?} need=durable-spam-mute source=crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs:201").into());
     }
     require_no_line(&mut client, ChatRoom::World, text).await?;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step 6 logout: server refused fresh-session logout".into());
+    }
     Ok(())
 }
 
@@ -221,6 +236,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn fresh_chat_session_is_distinct_from_the_muted_session() {
+        assert!(same_chat_session(&[1; 16], &[1; 16]));
+        assert!(!same_chat_session(&[1; 16], &[2; 16]));
+    }
+
     #[test]
     fn scenario_covers_all_four_public_rooms() {
         assert_eq!(ROOMS.len(), 4);
