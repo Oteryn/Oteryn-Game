@@ -31,6 +31,8 @@ def source_qualified_item_references(reference, root):
     conditional(records, root)
     movement(records, root)
     terminal(records, root)
+    from fourth_quarter_corpses import extend_item_references
+    extend_item_references(root, records)
     from qready1_cradle_item_profiles import extend_records as cradle
     cradle(records, root)
     from cake_bridge_reference import extend_records as cake_bridge

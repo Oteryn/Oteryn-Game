@@ -292,6 +292,8 @@ def materialize_item_tree(reference, declarations, editor, sources):
     extend_boss_movement_references(item_records, ROOT)
     from boss_corpse_terminal_reference import extend_records as extend_corpse_terminal_reference
     extend_corpse_terminal_reference(item_records, ROOT)
+    from fourth_quarter_corpses import extend_item_references
+    extend_item_references(ROOT, item_records)
     from qready1_cradle_item_profiles import extend_records as extend_cradle_references
     extend_cradle_references(item_records, ROOT)
     from cake_bridge_reference import extend_records as extend_cake_bridge_reference

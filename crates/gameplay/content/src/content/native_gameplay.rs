@@ -25,7 +25,8 @@ use super::model::ContentError;
 use super::production::CompiledFirstProductionContent;
 use super::project::{
     ProjectV2AppearanceSelection, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData,
-    ProjectV2DefinitionRef, ProjectV2Family,
+    ProjectV2DefinitionRef, ProjectV2Family, ProjectV2SourceIdentityBinding,
+    ProjectV2SourceIdentityDisposition,
 };
 use super::spell_data::{SpellBook, executable_catalog};
 use crate::content::creature_policy::{CompiledCreaturePolicies, CompiledCreaturePolicy};
@@ -69,6 +70,10 @@ pub const MAGIC_V8: &[u8; 8] = b"OTNGP08\0";
 /// V8 plus the thirteenth permanent-cosmetics section (D1093). This is a binary layout
 /// prerequisite, not a gameplay dependency between cosmetics and loot.
 pub const MAGIC_V9: &[u8; 8] = b"OTNGP09\0";
+pub(super) const FOURTH_QUARTER_CORPSE_SOURCE: &str = include_str!(
+    "../../../../../tools/content-schema/native-gameplay/fourth-quarter-corpse-source.json"
+);
+
 pub const MAX_ARTIFACT_BYTES: usize = 88 * 1024 * 1024;
 pub fn is_envelope(bytes: &[u8]) -> bool {
     bytes.starts_with(MAGIC)
@@ -1285,6 +1290,30 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             .is_some()
         {
             return Err(invalid("W02 Sugar corpse identity collision"));
+        }
+        #[derive(Deserialize)]
+        struct CorpseSource {
+            source_revision: String,
+            new_item_bindings: Vec<u32>,
+        }
+        let corpse_source: CorpseSource = serde_json::from_str(FOURTH_QUARTER_CORPSE_SOURCE)
+            .map_err(|_| invalid("fourth-quarter corpse binding facts"))?;
+        for item in corpse_source.new_item_bindings {
+            let binding = ProjectV2SourceIdentityBinding {
+                source_key: "oteryn:source.crystalserver".to_owned(),
+                source_revision: corpse_source.source_revision.clone(),
+                identity_namespace: "ots/item_server_id".to_owned(),
+                external_id: item.to_string(),
+                target: ProjectV2DefinitionRef {
+                    family: ProjectV2Family::Item,
+                    key: format!("oteryn:item.tibia.i{item}"),
+                    revision: "definition-r1".to_owned(),
+                },
+                disposition: ProjectV2SourceIdentityDisposition::Exact,
+            };
+            if admitted.insert(item.to_string(), binding).is_some() {
+                return Err(invalid("fourth-quarter corpse binding collision"));
+            }
         }
         let cradle_profiles = qready1_cradle::profiles()?;
         for (id, record) in &cradle_profiles {

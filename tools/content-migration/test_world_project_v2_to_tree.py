@@ -384,6 +384,8 @@ def test_package_tree_contract():
             42851,
             42853,
             43625,
+            35136,
+            35686,
             40016,
             40598,
             40601,
@@ -422,6 +424,20 @@ def test_package_tree_contract():
             ), error
         else:
             raise AssertionError("changed Cradle reference accepted")
+    # The two exact corpse references only grant identity at the tree boundary.
+    tampered = copy.deepcopy(reference)
+    tampered["records"].extend(copy.deepcopy(expected_items[len(legacy_items) :]))
+    next(
+        row
+        for row in tampered["records"]
+        if row["identity"]["key"] == "oteryn:item.tibia.i35136"
+    )["materializable"] = True
+    try:
+        source_qualified_item_references(tampered, ROOT)
+    except ValueError as error:
+        assert str(error) == "Invalid corpse reference 35136", error
+    else:
+        raise AssertionError("changed source-qualified corpse reference accepted")
     # Match the materializer's source-proven, exact Primal empty-loot admission.
     # Its witness rejects changed identities and every nonempty or unrelated Loot.
     from primal_reference_overlay import apply_reference
