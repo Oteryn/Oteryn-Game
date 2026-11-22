@@ -108,10 +108,19 @@ fn scenario(canonical: bool) -> TestResult {
             tx.commit().await?;
         }
 
-        let combat_room = activation_pin.qualified_room().bundle_view(
-            cells.clone(), activation_pin.frame_binding().digest(), world.map_revision_digest(),
-            crate::content::NativeEntryStart { x: 1, y: 0, floor: 7 },
-        ).ok_or("Cyclopedia combat room")?;
+        let combat_room = activation_pin
+            .qualified_room()
+            .bundle_view(
+                cells.clone(),
+                activation_pin.frame_binding().digest(),
+                world.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: 1,
+                    y: 0,
+                    floor: 7,
+                },
+            )
+            .ok_or("Cyclopedia combat room")?;
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -484,8 +493,14 @@ fn scenario(canonical: bool) -> TestResult {
         .bind(id(41).as_slice())
         .fetch_one(&h.pool)
         .await?;
-        assert!(advanced > 0, "native discovery committed a Character revision");
-        assert!(unchanged > 0, "repeated Start retained a non-advancing receipt");
+        assert!(
+            advanced > 0,
+            "native discovery committed a Character revision"
+        );
+        assert!(
+            unchanged > 0,
+            "repeated Start retained a non-advancing receipt"
+        );
         // Simulate process state replacement and a lost ACK. The Channel keeps the GameSession's
         // command stream (SESSION-INGRESS-1), which replays the retained result; the same
         // command still reaches PostgreSQL through the native receipt.
