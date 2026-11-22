@@ -210,7 +210,7 @@ async fn install(
         .collect();
     npcs.sort_by(|a, b| a.key.cmp(&b.key));
     let table = if production {
-        super::paradox_tower_journey::placements()?
+        super::paradox_tower_journey_fixtures::placements()?
     } else {
         NpcPlacementTable { npcs }
     };
@@ -404,7 +404,7 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("POSTGRES_DATABASE_READY l6_paradox_story version={version}");
-    let journey = name == super::paradox_tower_journey::NAME;
+    let journey = name == super::paradox_tower_journey_fixtures::NAME;
     let npcs = install(owner, admitted, journey).await?;
     let mut selected = admitted
         .continuity
@@ -423,7 +423,7 @@ pub(super) async fn exercise(
             .ok_or("NPC capabilities")?;
     super::l6_paradox_fixtures::raise_level(owner, admitted, authority, h, 30).await?;
     let carried = if journey {
-        Some(super::paradox_tower_journey::carried(owner, admitted, h).await?)
+        Some(super::paradox_tower_journey_fixtures::carried(owner, admitted, h).await?)
     } else {
         None
     };
@@ -447,7 +447,7 @@ pub(super) async fn exercise(
     assert_eq!(progress(h).await?, 1);
     if let Some(before) = &carried {
         assert_eq!(
-            super::paradox_tower_journey::carried(owner, admitted, h).await?,
+            super::paradox_tower_journey_fixtures::carried(owner, admitted, h).await?,
             *before
         );
     }
@@ -487,7 +487,7 @@ pub(super) async fn exercise(
         );
         if let Some(before) = &carried {
             assert_eq!(
-                super::paradox_tower_journey::carried(owner, admitted, h).await?,
+                super::paradox_tower_journey_fixtures::carried(owner, admitted, h).await?,
                 *before
             );
         }
@@ -528,7 +528,7 @@ pub(super) async fn exercise(
     assert_eq!(progress(h).await?, 5);
     if let Some(before) = &carried {
         assert_eq!(
-            super::paradox_tower_journey::carried(owner, admitted, h).await?,
+            super::paradox_tower_journey_fixtures::carried(owner, admitted, h).await?,
             *before
         );
     }

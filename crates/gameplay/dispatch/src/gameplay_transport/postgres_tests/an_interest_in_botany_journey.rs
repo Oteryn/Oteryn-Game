@@ -11,14 +11,18 @@ use crate::foundation::{
     ChannelRuntimeV1, MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements,
 };
 use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::quest_log::QuestLogLines;
 use crate::map::overlay::TilePos;
-use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
+use oteryn_gameplay_quests::quest::{
+    loader::load_embedded_quest_state, log::loader::load_embedded_quest_log,
+    world_callbacks::{Offering, Position},
+};
 use oteryn_gameplay_world::map::view::MapFacts;
 use oteryn_protocol_oteryn::{
     npc_service::{
         NpcIntentDisposition, NpcTalkIntent, decode_npc_intent_result, encode_npc_talk_intent,
     },
-    quest_log::{QuestLogQuery, decode_quest_log, encode_quest_log_query},
+    quest_log::{QuestLogQuery, QuestLogView, decode_quest_log, encode_quest_log_query},
     world_object::{
         MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
         encode_item_use_intent, encode_use_intent,
@@ -99,7 +103,9 @@ fn botany_sampling_accepts_a_web_already_burned_by_another_player() -> TestResul
 
 fn journey(web_already_burned: bool) -> TestResult {
     run(async move |admin| {
-        let catalogue = super::quest_container_chests_fixtures::embedded_catalogue()?;
+        let lowered = load_embedded_quest_state("content-1").map_err(debug)?;
+        let journal = load_embedded_quest_log(&lowered)?;
+        let catalogue = Arc::new(lowered.catalogue().clone());
         assert!(
             catalogue.authored_bindings().is_some_and(|bindings| {
                 bindings.quests.iter().any(|quest| quest.quest == QUEST)
@@ -189,6 +195,8 @@ fn journey(web_already_burned: bool) -> TestResult {
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
             owner.quest_catalogue = Some(Arc::clone(&catalogue));
+            let log_lines = QuestLogLines::new(journal.content).ok_or("Botany journal line bounds")?;
+            owner.quest_log_content = Some(log_lines.clone());
             deps.initialize(&owner).await;
             admit(&mut owner, &mut admitted, Arc::clone(&talk_book)).await?;
             for (index, tool) in [KNIFE, FIRE_BUG].into_iter().enumerate() {
@@ -206,6 +214,7 @@ fn journey(web_already_burned: bool) -> TestResult {
             reconnected.active_generation = Some(generation);
             reconnected.movement_cells = (&cells).into();
             reconnected.quest_catalogue = Some(catalogue);
+            reconnected.quest_log_content = Some(log_lines);
             deps.initialize(&reconnected).await;
             admit(&mut reconnected, &mut admitted, talk_book).await?;
             assert_eq!(speak(&mut reconnected, &mut admitted, npc, "hi").await?, NpcIntentDisposition::Ok);
@@ -307,7 +316,7 @@ async fn admit(
         owner.owner_now(),
     );
     owner.states.chat.set_npc_service(admitted.game_session_id);
-    super::qd_world_fixtures::select_talk_capabilities(owner, admitted, &[3, 4, 6, 15, 16])
+    super::qd_world_fixtures::select_talk_capabilities(owner, admitted, &[3, 4, 6, 11, 15, 16])
 }
 
 async fn exercise(
@@ -569,7 +578,11 @@ async fn log(
     let command = admitted.continuity.next_command_id;
     let query = encode_quest_log_query(&QuestLogQuery::ListOnly).map_err(debug)?;
     let reply = wire(owner, admitted, command, 22, query).await?;
-    Ok(decode_quest_log(&reply).map_err(debug)?)
+    let log = decode_quest_log(&reply).map_err(debug)?;
+    if !matches!(&log.view, Some(QuestLogView::List(_))) {
+        return Err("Botany journal list response".into());
+    }
+    Ok(log)
 }
 
 async fn checkpoint(

@@ -10,7 +10,7 @@ use crate::content::{CollisionClass, LogicalCell};
 use crate::durability::{fresh_admission::FreshAdmissionStore, item_mint::TypedDefinitionRef};
 use crate::foundation::ChannelRuntimeV1;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
-use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use crate::gameplay_transport::quest_log::QuestLogLines;
 use crate::map::{
