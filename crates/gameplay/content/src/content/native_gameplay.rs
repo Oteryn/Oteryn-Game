@@ -2244,6 +2244,281 @@ mod tests {
     };
     use serde_json::Value;
     #[test]
+    fn crystal_equipment_first_quarter_loads_weapon_and_armor_claims() -> Result<(), ContentError> {
+        use crate::content::ReferenceItemField as F;
+        use oteryn_gameplay_domain::domain::equipment_policy_abi::{
+            EquipmentBaseVocation, EquipmentPolicyLookup,
+        };
+
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let supplied =
+            NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))?;
+        let (controller, _) = test_support::try_activate_input(test_source(1)?.world_id, &supplied)
+            .unwrap_or_else(|error| panic!("Crystal equipment production activation: {error:?}"));
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or_else(|| invalid("Crystal equipment active content"))?;
+        let facts: Value = serde_json::from_slice(
+            &std::fs::read(root.join("imports/crystalserver/facts/equipment-audit-quarter-1.json"))
+                .expect("Crystal equipment facts"),
+        )
+        .expect("Crystal equipment JSON");
+        let rows = facts["records"].as_array().expect("Crystal equipment rows");
+        assert_eq!(rows.len(), 182);
+        let mut usable = 0;
+        for row in rows {
+            let id = row["id"].as_u64().expect("donor item ID");
+            let key = format!("oteryn:item.tibia.i{id}");
+            let equipment = native.equipment_policy(&key, "definition-r1");
+            if row.get("held").is_some() {
+                assert!(
+                    equipment.is_none_or(|policy| policy
+                        .claims()
+                        .iter()
+                        .all(|(_, claim)| claim.is_err())),
+                    "{key}"
+                );
+                continue;
+            }
+            let policy = native
+                .item_policy(&key, "definition-r1")
+                .unwrap_or_else(|| panic!("missing Crystal equipment record {key}"));
+            let record = policy.record();
+            assert!(record.admission.materializable, "{key}");
+            assert_eq!(
+                record.admission.legal_destinations,
+                [
+                    NativeItemDestination::CharacterInventory,
+                    NativeItemDestination::Ground
+                ],
+                "{key}"
+            );
+            assert_eq!(
+                record.admission.stack_class,
+                NativeItemStackClass::NonStackable,
+                "{key}"
+            );
+            assert_eq!(record.semantics.container, F::NotApplicable, "{key}");
+            let attributes = &row["attributes"];
+            let number = |name: &str| {
+                attributes[name]
+                    .as_str()
+                    .map(|value| value.parse::<i32>().expect("numeric XML fact"))
+            };
+            assert!(
+                matches!(&record.semantics.physical, F::Known(physical)
+                if physical.weight == F::Known(number("weight").expect("donor weight") as u32)
+                   && physical.movable == F::Known(true) && physical.pickupable == F::Known(true)),
+                "{key}"
+            );
+
+            let kind = attributes["weapontype"].as_str();
+            let slot = match (id, attributes["slot"].as_str(), kind) {
+                (9020, _, _) => None,
+                (3101, _, _) | (_, _, Some("shield" | "spellbook")) => Some(6),
+                (_, Some("head"), _) | (14258, _, _) => Some(1),
+                (_, Some("armor"), _) => Some(2),
+                (_, Some("legs"), _) => Some(3),
+                (_, Some("feet"), _) => Some(4),
+                (_, Some("necklace"), _) => Some(7),
+                (_, Some("ring"), _) => Some(8),
+                (_, Some("hand"), _) | (_, _, Some(_)) => Some(5),
+                _ => panic!("Crystal equipment source slot {key}"),
+            };
+            let equipment = equipment.unwrap_or_else(|| panic!("missing equipment policy {key}"));
+            let mut claims = equipment
+                .claims()
+                .iter()
+                .filter_map(|(slot, claim)| claim.as_ref().ok().map(|claim| (*slot, claim)));
+            let Some(slot) = slot else {
+                assert!(claims.next().is_none(), "{key}");
+                continue;
+            };
+            usable += 1;
+            let (actual_slot, claim) = claims
+                .next()
+                .unwrap_or_else(|| panic!("missing eligible equipment slot for {key}"));
+            assert_eq!(actual_slot, slot, "{key}");
+            assert!(claims.next().is_none(), "{key}");
+            let two_handed = attributes["slottype"] == "two-handed";
+            let quiver_compatible = two_handed && kind == Some("distance");
+            assert_eq!(
+                claim.slots,
+                if two_handed && !quiver_compatible {
+                    vec![5, 6]
+                } else {
+                    vec![slot]
+                },
+                "{key}"
+            );
+            assert_eq!(
+                claim.groups,
+                if quiver_compatible || slot == 6 {
+                    vec!["oteryn:equipment-group.non_quiver_left_hand"]
+                } else {
+                    vec![]
+                },
+                "{key}"
+            );
+            assert_eq!(
+                i32::from(claim.level),
+                number("level").unwrap_or(if id == 14258 { 150 } else { 0 }),
+                "{key}"
+            );
+            let vocations = attributes["vocation"].as_str().unwrap_or_default();
+            for (name, vocation) in [
+                ("Druid", EquipmentBaseVocation::Druid),
+                ("Knight", EquipmentBaseVocation::Knight),
+                ("Monk", EquipmentBaseVocation::Monk),
+                ("Paladin", EquipmentBaseVocation::Paladin),
+                ("Sorcerer", EquipmentBaseVocation::Sorcerer),
+                ("None", EquipmentBaseVocation::None),
+            ] {
+                assert_eq!(
+                    claim.vocations.contains(&vocation),
+                    vocations
+                        .split(", ")
+                        .any(|source| source.split(';').next() == Some(name)),
+                    "{key} {name}"
+                );
+            }
+            let semantics = serde_json::to_value(&record.semantics).expect("loaded semantics");
+            if kind.is_some() || id == 3101 {
+                let weapon = &semantics["weapon"]["value"];
+                for (name, field) in [
+                    ("attack", "attack"),
+                    ("defense", "defense"),
+                    ("extradef", "extra_defense"),
+                ] {
+                    assert_eq!(
+                        weapon[field]["value"],
+                        number(name).unwrap_or_default(),
+                        "{key} {field}"
+                    );
+                }
+            }
+            if let Some(armor) = number("armor") {
+                assert_eq!(
+                    semantics["protection"]["value"]["armor"]["value"], armor,
+                    "{key}"
+                );
+            }
+            assert_eq!(
+                record.attributes.speed_bonus,
+                Some(number("speed").unwrap_or_default()),
+                "{key}"
+            );
+            for (source, kind) in [
+                ("absorbpercentdeath", "DEATH"),
+                ("absorbpercentdrown", "DROWN"),
+                ("absorbpercentenergy", "ENERGY"),
+                ("absorbpercentfire", "FIRE"),
+                ("absorbpercentholy", "HOLY"),
+                ("absorbpercentice", "ICE"),
+                ("absorbpercentphysical", "PHYSICAL"),
+                ("absorbpercentpoison", "EARTH"),
+                ("fieldabsorbpercentfire", "FIRE_FIELD"),
+            ] {
+                if let Some(percent) = number(source) {
+                    let resistances = semantics["protection"]["value"]["resistances"]["value"]
+                        .as_array()
+                        .expect("equipment resistances");
+                    assert!(
+                        resistances.iter().any(|entry| {
+                            entry["kind"] == kind
+                                && entry["percent"]["value"]
+                                    == serde_json::json!({
+                                        "numerator": percent, "denominator": 1
+                                    })
+                        }),
+                        "{key} {kind}"
+                    );
+                }
+            }
+            for (source, kind) in [
+                ("magiclevelpoints", "MAGIC_LEVEL_POINTS"),
+                ("skillaxe", "SKILL_AXE"),
+                ("skillclub", "SKILL_CLUB"),
+                ("skilldist", "SKILL_DISTANCE"),
+                ("skillshield", "SKILL_SHIELD"),
+                ("skillsword", "SKILL_SWORD"),
+            ] {
+                if let Some(points) = number(source) {
+                    let modifiers = semantics["skill_modifiers"]["value"]["modifiers"]["value"]
+                        .as_array()
+                        .expect("equipment skill modifiers");
+                    assert!(
+                        modifiers.iter().any(|entry| {
+                            entry["kind"] == kind && entry["parameter"]["value"]["value"] == points
+                        }),
+                        "{key} {kind}"
+                    );
+                }
+            }
+            if matches!(kind, Some("distance" | "wand")) {
+                let ranged =
+                    serde_json::to_value(&record.authoring.ranged).expect("loaded ranged profile");
+                assert_eq!(
+                    ranged["range_cells"],
+                    number("range").expect("range"),
+                    "{key}"
+                );
+                if kind == Some("wand") {
+                    assert_eq!(
+                        ranged["mana_per_shot"],
+                        number("mana").expect("mana"),
+                        "{key}"
+                    );
+                    assert_eq!(
+                        ranged["damage_min"],
+                        number("fromdamage").expect("damage minimum"),
+                        "{key}"
+                    );
+                    assert_eq!(
+                        ranged["damage_max"],
+                        number("todamage").expect("damage maximum"),
+                        "{key}"
+                    );
+                } else {
+                    assert_eq!(
+                        ranged["ammunition"],
+                        attributes["ammotype"]
+                            .as_str()
+                            .expect("ammunition")
+                            .to_uppercase(),
+                        "{key}"
+                    );
+                }
+            }
+        }
+        assert_eq!(usable, 149);
+        for (base, active, duration) in [(6299, 6300, 480_000), (9019, 9018, 3_600_000)] {
+            let base_key = format!("oteryn:item.tibia.i{base}");
+            let active_key = format!("oteryn:item.tibia.i{active}");
+            let carried = &native
+                .item_policy(&base_key, "definition-r1")
+                .expect("carried timed form")
+                .record()
+                .semantics;
+            assert!(
+                matches!(&carried.use_transform, F::Known(transforms) if transforms.targets.iter().any(|transform|
+                transform.kind == crate::content::ReferenceTransformKind::Equip &&
+                matches!(&transform.target, F::Known(target) if target.key == active_key)))
+            );
+            let worn = &native
+                .item_policy(&active_key, "definition-r1")
+                .expect("worn timed form")
+                .record()
+                .semantics;
+            assert!(matches!(&worn.temporal, F::Known(temporal) if
+                temporal.consumption_mode == F::Known(crate::content::ReferenceTemporalMode::AuthoritativeActiveTimeBudget) &&
+                temporal.duration == F::Known(crate::content::ReferenceMilliseconds(duration))));
+        }
+        Ok(())
+    }
+
+    #[test]
     fn m25_complete_canonical_item_policies_qualify_before_boss_admission()
     -> Result<(), ContentError> {
         let world = test_source(1)?.world_id;
