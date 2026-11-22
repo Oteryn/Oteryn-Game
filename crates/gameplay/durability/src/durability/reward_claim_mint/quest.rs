@@ -626,7 +626,55 @@ pub(crate) async fn give_world(
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice())
         .bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan)
         .bind(transaction.as_slice()).execute(&mut **tx).await?;
+    if reward.item == "oteryn:item.tibia.i4837" {
+        schedule_ice_sample(tx, admission.native, &reward.item, transaction).await?;
+    }
     Ok(true)
+}
+
+async fn schedule_ice_sample(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    native: &NativeGameplayState,
+    item: &str,
+    transaction: [u8; 16],
+) -> std::result::Result<(), DurabilityError> {
+    use oteryn_gameplay_content::content::{
+        ReferenceItemField::{Known, NotApplicable},
+        ReferenceItemTemporal, ReferenceMilliseconds, ReferenceTemporalMode,
+    };
+    let policy = native
+        .item_policy(item, "definition-r1")
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let Known(ReferenceItemTemporal {
+        consumption_mode: Known(ReferenceTemporalMode::DurableAbsoluteDeadline),
+        duration: Known(ReferenceMilliseconds(duration)),
+        decay_target: NotApplicable,
+        stop_duration: Known(false),
+    }) = &policy.record().semantics.temporal
+    else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    let scheduled = sqlx::query(
+        "INSERT INTO game_spell_item_temporal_schedules(
+            item_instance_id,source_transaction_id,source_ordinal,duration_millis,
+            expires_at_unix_ms,definition_family,definition_production_key,
+            definition_revision,content_digest
+         )
+         SELECT i.item_instance_id,r.transaction_id,1,$2,r.occurred_at+$2,i.definition_family,
+                i.definition_production_key,i.definition_revision_ref,$3
+         FROM game_reward_claim_mint_receipts r JOIN game_item_instances i USING(item_instance_id)
+         WHERE r.transaction_id=$1 AND i.definition_production_key=$4",
+    )
+    .bind(sqlx::types::Uuid::from_bytes(transaction))
+    .bind(i64::try_from(*duration).map_err(|_| DurabilityError::InvalidStoredState)?)
+    .bind(native.source_digest().as_slice())
+    .bind(item)
+    .execute(&mut **tx)
+    .await?;
+    if scheduled.rows_affected() != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(())
 }
 
 #[allow(

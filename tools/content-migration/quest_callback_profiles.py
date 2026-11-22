@@ -46,6 +46,7 @@ EXPLORER_SAMPLE_WEIGHTS = {f'oteryn:item.tibia.i{number}': weights for number, w
     (4864, (700, 800)), (4865, (700, 800)), (4866, (700, 800)),
     (4868, (1800, 2000)), (4869, (1800, 2000)), (4870, (1800, 2000)),
 )}
+ICE_SAMPLE = "oteryn:item.tibia.i4837"
 EXPLORER_TRACING_SHEETS = {'oteryn:item.tibia.i4842', 'oteryn:item.tibia.i4843'}
 # Orc powder already uses the world-change Item owner, later in native composition.
 EXPLORER_WORLD_CHANGE_ITEMS = {'oteryn:item.tibia.i13974'}
@@ -222,7 +223,6 @@ def _requested_inputs(root, extra_keys=()):
     sys.path.insert(0, str(root / 'tools/content-schema/world-authoring'))
     from quest_chest_bindings import numbered_key_claim, supported_claim
     sys.path.insert(0, str(root / 'tools/content-schema/reward-claim-authoring'))
-    import container_native
 
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
@@ -237,9 +237,7 @@ def _requested_inputs(root, extra_keys=()):
     quest_content_items = {key for callback in quest_content for key in callback_items(callback)}
     quest_content_items.difference_update(EXPLORER_WORLD_CHANGE_ITEMS)
     keys.update(quest_content_items)
-    # The icicle already has physical admission and source duration. Its terminal
-    # inventory decay is separate from this custody projection.
-    authored_keys.update(quest_content_items - {'oteryn:item.tibia.i4837'})
+    authored_keys.update(quest_content_items - {ICE_SAMPLE})
     # Executable authored callbacks use the same exact canonical/native Item
     # qualification as source chests. Include every output, never a partial bag.
     for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json'):
@@ -600,6 +598,37 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
         else:
             record = canonical_native_profile(root, definition, matches, source_items)
             document['records'].append(record)
+        if key == ICE_SAMPLE:
+            source_id = matches[0]["external_id"]
+            expiry = [
+                field
+                for item in source_items
+                if item.get("id") == source_id
+                for field in item.findall("attribute")
+                if field.get("key") in ("duration", "decayTo", "stopduration")
+            ]
+            fields = {field.get("key"): field.get("value") for field in expiry}
+            duration = record["semantics"]["temporal"].get("value", {}).get("duration")
+            if (
+                len(expiry) != 2
+                or fields.keys() != {"duration", "decayTo"}
+                or fields["decayTo"] != "0"
+                or duration
+                != {"state": "KNOWN", "value": 1000 * int(fields["duration"])}
+            ):
+                raise ValueError("EXPLORER_ICE_SAMPLE_EXPIRY_DRIFT")
+            record["semantics"]["temporal"] = {
+                "state": "KNOWN",
+                "value": {
+                    "consumption_mode": {
+                        "state": "KNOWN",
+                        "value": "DURABLE_ABSOLUTE_DEADLINE",
+                    },
+                    "duration": duration,
+                    "stop_duration": {"state": "KNOWN", "value": False},
+                    "decay_target": {"state": "NOT_APPLICABLE"},
+                },
+            }
         if key == 'oteryn:item.tibia.i2969':
             # A Prisoner's numbered reward uses the ordinary NPC MINT owner,
             # which requires an explicit Key type. Fill the unknown field from

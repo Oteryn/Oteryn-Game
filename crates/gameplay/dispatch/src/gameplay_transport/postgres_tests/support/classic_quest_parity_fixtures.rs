@@ -329,6 +329,31 @@ pub(super) async fn access_exercise(
             "SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1",
         ).bind(&reward.item).fetch_one(&h.pool).await?;
         assert_eq!(sample, 1);
+        let (duration, from_mint, terminal): (i64, i64, bool) = sqlx::query_as(
+            "SELECT p.duration_millis,p.expires_at_unix_ms-r.occurred_at,p.target_family IS NULL
+             FROM game_spell_item_temporal_schedules p
+             JOIN game_reward_claim_mint_receipts r ON r.transaction_id=p.source_transaction_id
+             WHERE p.definition_production_key=$1",
+        )
+        .bind(&reward.item)
+        .fetch_one(&h.pool)
+        .await?;
+        let native = owner
+            .active_generation
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or("native")?;
+        let policy = native
+            .item_policy(&reward.item, "definition-r1")
+            .ok_or("sample policy")?;
+        use oteryn_gameplay_content::content::{ReferenceItemField::Known, ReferenceMilliseconds};
+        let Known(temporal) = &policy.record().semantics.temporal else {
+            return Err("missing native sample timer".into());
+        };
+        let Known(ReferenceMilliseconds(expected)) = &temporal.duration else {
+            return Err("missing native sample duration".into());
+        };
+        let expected = i64::try_from(*expected)?;
+        assert_eq!((duration, from_mint, terminal), (expected, expected, true));
         for track in &callback.storage {
             let value: i64 = sqlx::query_scalar(
                 "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",

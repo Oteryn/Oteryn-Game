@@ -340,7 +340,12 @@ pub(super) async fn consume_reward_inputs(
     keys.extend(callback.inventory.iter().map(|rule| rule.item.as_str()));
     keys.sort_unstable();
     keys.dedup();
-    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[])
+        AND NOT EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules p
+            WHERE p.item_instance_id=i.item_instance_id
+              AND p.definition_production_key='oteryn:item.tibia.i4837'
+              AND p.expires_at_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint)
+        ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
     if let Some(use_) = carried_use {
         let selected = sqlx::types::Uuid::from_bytes(use_.source).to_string();
