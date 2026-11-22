@@ -9,11 +9,11 @@
 //!    ATTACK again and require the Ok intent reply but no damage presentation, mana debit, or
 //!    inventory change during a complete attack interval (the server's no-ammunition refusal).
 //! 3. Equip the Wand of Vortex, send ATTACK against a live rat, and require the Ok reply, an exact
-//!    two-mana debit, and attributed energy-coloured target damage without inventory consumption.
+//!    two-mana debit, attributed energy-coloured damage without inventory consumption, and kill XP.
 //! 4. Equip the Snakebite Rod, send ATTACK against a live rat, and require the Ok reply, an exact
-//!    two-mana debit, and attributed earth-coloured target damage without inventory consumption.
+//!    two-mana debit, attributed earth-coloured damage without inventory consumption, and kill XP.
 //! 5. Stop attacking, logout, freshly admit the character, and require a new game session plus
-//!    the durable zero-arrow count, owned bow/wand/rod, and both wand/rod mana payments.
+//!    the durable zero-arrow count, owned bow/wand/rod, mana, and accumulated kill XP.
 
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
@@ -35,12 +35,23 @@ struct Row {
     started: std::time::Instant,
     step: usize,
 }
+fn durable_rewards_match(earned_xp: u64, admitted_xp: u64) -> bool {
+    earned_xp == admitted_xp
+}
+
 impl Row {
     fn pass(&mut self, step: usize, observed: impl std::fmt::Debug) {
         self.step = step;
         evidence(&format!("C02_CHECK step={step} PASS observed={observed:?}"));
     }
     fn finish(self, result: TestResult) {
+        let result = result.and_then(|()| {
+            if self.step == 5 {
+                Ok(())
+            } else {
+                Err("missing-required-ranged-step".into())
+            }
+        });
         if let Err(error) = &result {
             evidence(&format!(
                 "C02_GAP step={} observed={error} need=accepted-native-reply-and-required-exact-deltas",
@@ -69,7 +80,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: std::time::Instant::now(),
         step: 0,
     };
-    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(420),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(format!("timeout-after-step-{}", row.step).into()),
@@ -128,7 +143,7 @@ async fn wait_count(
     }
 }
 
-async fn earn_gold(
+pub(super) async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
@@ -278,6 +293,35 @@ async fn buy(
     .await
 }
 
+async fn clear_bow_offhand(client: &mut DevClientSession) -> TestResult {
+    let inventory = client.inventory().ok_or("bow-offhand-inventory-absent")?;
+    let Some(offhand) = inventory
+        .equipment
+        .iter()
+        .find(|entry| entry.slot == EquipmentSlot::LeftHand)
+    else {
+        return Ok(());
+    };
+    let handle = offhand.item.handle;
+    let moved = client
+        .move_item(&items::ItemMoveIntent {
+            source: handle,
+            destination: items::ItemMoveDestination::MainBackpack,
+        })
+        .await?;
+    if moved.outcome != items::ItemMoveOutcome::Moved
+        || client.inventory().is_none_or(|view| {
+            view.equipment
+                .iter()
+                .any(|entry| entry.slot == EquipmentSlot::LeftHand)
+                || !view.entries.iter().any(|entry| entry.handle == handle)
+        })
+    {
+        return Err(format!("clear-bow-offhand:reply={moved:?}").into());
+    }
+    Ok(())
+}
+
 async fn equip(client: &mut DevClientSession, key: NonZeroU32, slot: EquipmentSlot) -> TestResult {
     let reply = client
         .move_item(&items::ItemMoveIntent {
@@ -321,12 +365,20 @@ fn target(client: &DevClientSession) -> TestResult<oteryn_dev_client::EntityRef>
         .map(|e| e.entity)
         .ok_or_else(|| "live-target-absent".into())
 }
+fn target_health(client: &DevClientSession, target: oteryn_dev_client::EntityRef) -> Option<u8> {
+    match client.world_entities()?.get(&target)?.detail {
+        oteryn_dev_client::EntityDetail::Actor { health_percent, .. } => Some(health_percent),
+        _ => None,
+    }
+}
+
 async fn attack_damage(
     client: &mut DevClientSession,
     color: Option<PresentationColor>,
 ) -> TestResult<(u64, u32, u32)> {
     let attacker = own(client)?;
     let victim = target(client)?;
+    let before_health = target_health(client, victim).ok_or("target-health-absent")?;
     let before_mana = client
         .actor_vitals()
         .ok_or("pre-attack-vitals-absent")?
@@ -337,19 +389,37 @@ async fn attack_damage(
         return Err(format!("attack-reply={reply:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
+    let mut damage_sequence = None;
     loop {
         client.service_liveness(Duration::from_millis(40)).await?;
         for event in client.take_events() {
-            if let SessionEvent::Presentation(delta) = event && delta.value.iter().any(|e| matches!(e.kind, PresentationEventKind::ValueText { attacker: Some(a), target: t, primary, secondary, .. } if a == attacker && t == victim && primary.value > 0 && color.is_none_or(|c| primary.color == c || secondary.is_some_and(|v| v.color == c)))) { let after = client.actor_vitals().ok_or("post-damage-vitals-absent")?.mana; return Ok((delta.server_sequence,before_mana,after)); }
+            if let SessionEvent::Presentation(delta) = event
+                && delta.value.iter().any(|event| matches!(event.kind,
+                    PresentationEventKind::ValueText { attacker: Some(a), target: t, primary, secondary, .. }
+                        if a == attacker && t == victim && primary.value > 0
+                            && color.is_none_or(|c| primary.color == c || secondary.is_some_and(|v| v.color == c))))
+            {
+                damage_sequence = Some(delta.server_sequence);
+            }
+        }
+        if let Some(sequence) = damage_sequence
+            && target_health(client, victim).is_none_or(|health| health < before_health)
+        {
+            let after = client
+                .actor_vitals()
+                .ok_or("post-damage-vitals-absent")?
+                .mana;
+            return Ok((sequence, before_mana, after));
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("damage-timeout:attacker={attacker:?}:target={victim:?}:color={color:?}:reply={reply:?}").into());
+            return Err(format!("damage-or-hp-delta-timeout:attacker={attacker:?}:target={victim:?}:color={color:?}:reply={reply:?}").into());
         }
     }
 }
 async fn bow_shot(client: &mut DevClientSession, arrows: NonZeroU32) -> TestResult<(u64, u64)> {
     let attacker = own(client)?;
     let victim = target(client)?;
+    let before_health = target_health(client, victim).ok_or("bow-target-health-absent")?;
     let before = count(client, arrows)?;
     client.take_events();
     let reply = client.session_mut().attack_target(Some(&victim)).await?;
@@ -376,7 +446,10 @@ async fn bow_shot(client: &mut DevClientSession, arrows: NonZeroU32) -> TestResu
                 _ => {}
             }
         }
-        if inventory_sequence != 0 && damage_sequence != 0 {
+        if inventory_sequence != 0
+            && damage_sequence != 0
+            && target_health(client, victim).is_none_or(|health| health < before_health)
+        {
             return Ok((inventory_sequence, damage_sequence));
         }
         if count(client, arrows)? + 1 < before {
@@ -421,19 +494,27 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xc2).await?;
-    earn_gold(&mut client, world, &metadata.spawns, 1430).await?;
+    earn_gold(&mut client, world, &metadata.spawns, 1430)
+        .await
+        .map_err(|error| format!("fund-ranged-kit: {error}"))?;
     let mut purchase_sequences = Vec::new();
     for (id, n) in [(BOW, 1), (ARROW, 10), (WAND, 1), (ROD, 1)] {
-        purchase_sequences.push(buy(&mut client, world, &metadata.npcs, id, n).await?);
+        purchase_sequences.push(
+            buy(&mut client, world, &metadata.npcs, id, n)
+                .await
+                .map_err(|error| format!("purchase-item-{id}: {error}"))?,
+        );
     }
     row.pass(1, purchase_sequences);
     let bow = reference(BOW)?;
     let arrow = reference(ARROW)?;
     let wand = reference(WAND)?;
     let rod = reference(ROD)?;
+    clear_bow_offhand(&mut client).await?;
     equip(&mut client, bow, EquipmentSlot::RightHand).await?;
     equip(&mut client, arrow, EquipmentSlot::Ammo).await?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    let bow_xp_before = experience(&mut client).await?;
     let damage = bow_shot(&mut client, arrow).await?;
     stop(&mut client).await?;
     while count(&client, arrow)? > 0 {
@@ -441,10 +522,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         consume_one_arrow(&mut client, arrow).await?;
     }
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    let bow_xp = experience(&mut client).await?;
+    if bow_xp <= bow_xp_before {
+        return Err(
+            format!("bow-kill-unproven:arrows-exhausted:xp={bow_xp_before}->{bow_xp}").into(),
+        );
+    }
     let state = client.inventory().cloned();
     let mana = client.actor_vitals().ok_or("no-ammo-vitals-absent")?.mana;
     client.take_events();
     let refusal_target = target(&client)?;
+    let refusal_health =
+        target_health(&client, refusal_target).ok_or("no-ammo-target-health-absent")?;
     let refusal_attacker = own(&client)?;
     let refusal = client
         .session_mut()
@@ -456,6 +545,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     client.service_liveness(Duration::from_millis(2200)).await?;
     let attributed=client.take_events().iter().any(|e| matches!(e,SessionEvent::Presentation(d) if d.value.iter().any(|p| matches!(p.kind,PresentationEventKind::ValueText{attacker:Some(a),..} if a==refusal_attacker))));
     if attributed
+        || target_health(&client, refusal_target) != Some(refusal_health)
         || client.actor_vitals().is_none_or(|v| v.mana != mana)
         || client.inventory() != state.as_ref()
     {
@@ -464,7 +554,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         );
     }
     stop(&mut client).await?;
-    row.pass(2, (damage, refusal.disposition));
+    row.pass(2, (damage, refusal.disposition, bow_xp));
     equip(&mut client, wand, EquipmentSlot::RightHand).await?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let wand_count = count(&client, wand)?;
@@ -473,33 +563,87 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("wand-cost-or-custody:observed={wand_hit:?}").into());
     }
-    stop(&mut client).await?;
-    row.pass(3, wand_hit);
-    equip(&mut client, rod, EquipmentSlot::RightHand).await?;
+    let wand_xp = finish_kill(&mut client, bow_xp, "wand").await?;
+    row.pass(3, (wand_hit, wand_xp));
+    equip(&mut client, rod, EquipmentSlot::RightHand)
+        .await
+        .map_err(|error| {
+            format!("equip-Snakebite-Rod-{ROD}: {error}; need=rod-eligible-druid-level-6")
+        })?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let rod_count = count(&client, rod)?;
     let rod_hit = attack_damage(&mut client, Some(PresentationColor::LightGreen)).await?;
     if rod_hit.1.checked_sub(SHOT_MANA) != Some(rod_hit.2) || count(&client, rod)? != rod_count {
         return Err(format!("rod-cost-or-custody:observed={rod_hit:?}").into());
     }
-    stop(&mut client).await?;
-    row.pass(4, rod_hit);
-    let expected_mana = rod_hit.2;
+    let rod_xp = finish_kill(&mut client, wand_xp, "rod").await?;
+    row.pass(4, (rod_hit, rod_xp));
     let old = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
+    let expected_mana = client.actor_vitals().ok_or("logout-vitals-absent")?.mana;
     drop(client);
     let mut fresh = connect_world(clients, 0xc3).await?;
+    let admitted_xp = experience(&mut fresh).await?;
     if fresh.join_snapshot().game_session_id == old
+        || !durable_rewards_match(rod_xp, admitted_xp)
         || count(&fresh, arrow)? != 0
         || [bow, wand, rod]
             .into_iter()
             .any(|k| count(&fresh, k).ok() != Some(1))
         || fresh.actor_vitals().is_none_or(|v| v.mana != expected_mana)
     {
-        return Err("fresh-admission-durable-state-mismatch".into());
+        return Err(
+            format!("fresh-admission-durable-state-mismatch:xp={rod_xp}->{admitted_xp}").into(),
+        );
     }
-    row.pass(5, (fresh.join_snapshot().game_session_id, expected_mana));
+    row.pass(
+        5,
+        (
+            fresh.join_snapshot().game_session_id,
+            expected_mana,
+            admitted_xp,
+        ),
+    );
     logout(&mut fresh).await
+}
+
+async fn experience(client: &mut DevClientSession) -> TestResult<u64> {
+    use oteryn_protocol_oteryn::cyclopedia_character as wire;
+    let tab = wire::CharacterTab::GeneralStats as u8;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[tab, 0, 0, 50],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted || reply.payload.first() != Some(&tab) {
+        return Err(format!("GeneralStats refused: {reply:?}").into());
+    }
+    Ok(u64::from_le_bytes(
+        reply
+            .payload
+            .get(1..9)
+            .ok_or("GeneralStats XP missing")?
+            .try_into()?,
+    ))
+}
+
+async fn finish_kill(client: &mut DevClientSession, before: u64, weapon: &str) -> TestResult<u64> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    loop {
+        let xp = experience(client).await?;
+        if xp > before {
+            stop(client).await?;
+            return Ok(xp);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("{weapon}-kill-unproven:xp={before}->{xp}:deadline=20s").into());
+        }
+        client.service_liveness(Duration::from_millis(250)).await?;
+        client.take_events();
+    }
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -519,6 +663,12 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn c02_rejects_lost_kill_experience_after_readmission() {
+        assert!(durable_rewards_match(105, 105));
+        assert!(!durable_rewards_match(105, 100));
+    }
+
     #[test]
     fn ranged_ids_are_distinct_and_resolve() -> TestResult {
         let ids = [BOW, ARROW, WAND, ROD].map(reference);
