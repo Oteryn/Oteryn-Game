@@ -249,10 +249,11 @@ fn rejected_party_invite_preserves_foundation_receipt_without_query() -> Result<
             );
             Ok::<_, BoxError>(())
         });
-        let reply = client::send(&mut session, &invite).await;
+        let reply = client::send_with_receipt(&mut session, &invite).await;
         drop(session);
         server.await??;
-        let reply = reply?;
+        let (command_id, reply) = reply?;
+        assert_eq!(command_id, 7);
         assert_eq!(reply.status, CommandStatus::Rejected);
         assert!(reply.operation.is_empty());
         assert_eq!(reply.view, None);

@@ -367,15 +367,17 @@ fn plan_round(
 ) -> Vec<(usize, StepDirection)> {
     let mut reserved = BTreeSet::new();
     let mut steps = Vec::new();
-    for (index, route) in routes.iter_mut().enumerate() {
+    for index in 0..routes.len() {
         let at = positions[index];
-        if at == route.goal {
+        let goal = routes[index].goal;
+        if at == goal {
             continue;
         }
         let available_landing = |at, direction| {
             landing(at, direction)
                 .filter(|&next| tile_available(positions, index, next) && !reserved.contains(&next))
         };
+        let route = &mut routes[index];
         if route
             .remaining
             .front()
@@ -384,19 +386,45 @@ fn plan_round(
         {
             // A peer can block the original path or reserve its next tile this round.
             // Replan around it, or wait if that peer must move before we can continue.
-            let Ok(path) = find_route(at, |at| at == route.goal, available_landing) else {
+            let Ok(path) = find_route(at, |at| at == goal, available_landing) else {
                 continue;
             };
             route.remaining = path.into();
         }
-        if let Some((direction, next)) = route
+        let Some((direction, next)) = route
             .remaining
-            .pop_front()
-            .and_then(|direction| available_landing(at, direction).map(|next| (direction, next)))
+            .front()
+            .and_then(|&direction| available_landing(at, direction).map(|next| (direction, next)))
+        else {
+            continue;
+        };
+        // Parking at a goal can seal a junction. Let a peer cross first if
+        // that peer can reach its goal now and every such route uses this tile.
+        if next == goal
+            && routes.iter().enumerate().any(|(peer, route)| {
+                let start = positions[peer];
+                if peer == index || start == route.goal {
+                    return false;
+                }
+                let usable = |at, direction| {
+                    landing(at, direction).filter(|&tile| {
+                        tile_available(positions, peer, tile) && !reserved.contains(&tile)
+                    })
+                };
+                find_route(
+                    start,
+                    |at| at == route.goal,
+                    |at, direction| usable(at, direction).filter(|&tile| tile != next),
+                )
+                .is_err()
+                    && find_route(start, |at| at == route.goal, usable).is_ok()
+            })
         {
-            reserved.insert(next);
-            steps.push((index, direction));
+            continue;
         }
+        routes[index].remaining.pop_front();
+        reserved.insert(next);
+        steps.push((index, direction));
     }
     steps
 }
@@ -414,7 +442,10 @@ pub(super) async fn walk_group(
             remaining: path.into(),
         })
         .collect();
+    // Replanning can change a route but cannot extend the walk's round limit.
+    const MAX_ROUNDS: usize = 4096;
     let mut seen = BTreeSet::new();
+    let mut rounds_left = MAX_ROUNDS;
     loop {
         let positions = positions(bots)?;
         if routes
@@ -424,8 +455,24 @@ pub(super) async fn walk_group(
         {
             return Ok(());
         }
-        if !seen.insert(positions.clone()) {
-            return Err(format!("MP group route revisited positions={positions:?}").into());
+        rounds_left = rounds_left.checked_sub(1).ok_or_else(|| {
+            format!("MP group route exhausted {MAX_ROUNDS} rounds;positions={positions:?}")
+        })?;
+        let remaining: Vec<Vec<u8>> = routes
+            .iter()
+            .map(|route| {
+                route
+                    .remaining
+                    .iter()
+                    .map(|&direction| direction as u8)
+                    .collect()
+            })
+            .collect();
+        if !seen.insert((positions.clone(), remaining)) {
+            return Err(format!(
+                "MP group route revisited positions and routes;positions={positions:?}"
+            )
+            .into());
         }
         let steps = plan_round(&mut routes, &positions, |at, direction| {
             destination(world, at, direction)
@@ -464,13 +511,14 @@ async fn step_confirmed(
                 return TestResult::Ok(());
             }
             if outcome.disposition != StepDisposition::Rejected || after != origin {
-                return Err(format!("MP movement refused;{context};reply={outcome:?}").into());
+                return Err(format!("movement refused;reply={outcome:?}").into());
             }
             pump(bots).await?;
         }
     })
     .await
-    .map_err(|_| format!("MP movement deadline;{context}"))??;
+    .map_err(|_| format!("MP movement deadline;{context}"))?
+    .map_err(|error| format!("MP movement failed;{context};error={error}"))?;
     // A server-confirmed tile change is real progress of the running row.
     verdict::Harness::global().progress("walk");
     Ok(())
@@ -744,6 +792,45 @@ mod movement_tests {
             [(0, StepDirection::East), (1, StepDirection::South)],
             "the second bot must route around the first bot's reserved landing"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn group_planner_leaves_the_t_junction_open_until_the_peer_crosses() -> TestResult {
+        let cell = |x, y| TilePos { x, y, floor: 7 };
+        let junction = cell(1, 0);
+        let stem = cell(1, 1);
+        let goals = [junction, cell(0, 0)];
+        let corridor = [goals[1], junction, cell(2, 0), stem];
+        let landing = |at: TilePos, direction: StepDirection| {
+            let (dx, dy) = direction.delta();
+            let next = cell(
+                u16::try_from(i32::from(at.x) + dx).ok()?,
+                u16::try_from(i32::from(at.y) + dy).ok()?,
+            );
+            corridor.contains(&next).then_some(next)
+        };
+        let mut positions = [stem, corridor[2]];
+        let mut routes = [
+            GroupRoute {
+                goal: goals[0],
+                remaining: VecDeque::from([StepDirection::North]),
+            },
+            GroupRoute {
+                goal: goals[1],
+                remaining: VecDeque::from([StepDirection::West; 2]),
+            },
+        ];
+        for expected in [
+            (1, StepDirection::West),
+            (1, StepDirection::West),
+            (0, StepDirection::North),
+        ] {
+            assert_eq!(plan_round(&mut routes, &positions, landing), [expected]);
+            let (index, direction) = expected;
+            positions[index] = landing(positions[index], direction).ok_or("missing landing")?;
+        }
+        assert_eq!(positions, goals);
         Ok(())
     }
 }
