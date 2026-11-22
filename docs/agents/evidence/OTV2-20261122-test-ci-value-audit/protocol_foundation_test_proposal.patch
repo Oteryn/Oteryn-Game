@@ -1,0 +1,78 @@
+--- a/crates/identity/src/lib.rs
++++ b/crates/identity/src/lib.rs
+@@ -375 +375 @@
+-    fn pkce_is_deterministic_and_redacted() -> Result<(), IdentityError> {
++    fn pkce_matches_fixed_s256_vector_and_redacts_verifier() -> Result<(), IdentityError> {
+@@ -377 +377,9 @@
+-        assert!(material.challenge().len() >= 43);
++        // Fixed values calculated independently with standard Base64url and SHA-256.
++        assert_eq!(
++            material.verifier().expose(),
++            "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc"
++        );
++        assert_eq!(
++            material.challenge(),
++            "3Ev4DHdHPRMPoN6GukAY_pi7IUAF5qWJHRK6kURvnoE"
++        );
+--- a/crates/protocol-oteryn/src/daily_boost.rs
++++ b/crates/protocol-oteryn/src/daily_boost.rs
+@@ -38,28 +37,0 @@
+-fn decode_view(mut bytes: &[u8]) -> Result<DailyBoostView, DailyBoostCodecError> {
+-    fn take(bytes: &mut &[u8]) -> Result<String, DailyBoostCodecError> {
+-        let (&len, rest) = bytes.split_first().ok_or(DailyBoostCodecError)?;
+-        let (value, rest) = rest
+-            .split_at_checked(usize::from(len))
+-            .ok_or(DailyBoostCodecError)?;
+-        *bytes = rest;
+-        if value.is_empty() {
+-            return Err(DailyBoostCodecError);
+-        }
+-        String::from_utf8(value.to_vec()).map_err(|_| DailyBoostCodecError)
+-    }
+-    let (epoch, rest) = bytes.split_at_checked(8).ok_or(DailyBoostCodecError)?;
+-    bytes = rest;
+-    let reset_epoch = u64::from_be_bytes(epoch.try_into().map_err(|_| DailyBoostCodecError)?);
+-    let creature_key = take(&mut bytes)?;
+-    let boss_key = take(&mut bytes)?;
+-    if !bytes.is_empty() {
+-        return Err(DailyBoostCodecError);
+-    }
+-    Ok(DailyBoostView {
+-        reset_epoch,
+-        creature_key,
+-        boss_key,
+-    })
+-}
+-
+-#[cfg(test)]
+@@ -70 +42 @@
+-    fn query_and_view_round_trip() -> Result<(), DailyBoostCodecError> {
++    fn query_and_view_match_the_documented_wire_layout() -> Result<(), DailyBoostCodecError> {
+@@ -79 +51,7 @@
+-        assert_eq!(decode_view(&encoded), Ok(view));
++        // docs/contracts/protocol-oteryn/v1/daily-boost-v1.md: u64 big endian,
++        // then two nonempty UTF-8 keys, each prefixed by its u8 byte length.
++        const EXPECTED: &[u8] = &[
++            0, 0, 0, 0, 0, 0, 0, 9, 3, b'r', b'a', b't', 9, b'f', b'e', b'r',
++            b'u', b'm', b'b', b'r', b'a', b's',
++        ];
++        assert_eq!(encoded.as_slice(), EXPECTED);
+--- a/crates/protocol-oteryn/src/guild_war.rs
++++ b/crates/protocol-oteryn/src/guild_war.rs
+@@ -139 +139,4 @@
+-        assert!(decode_guild_war_intent(&[0; 65]).is_err());
++        assert_eq!(
++            decode_guild_war_intent(&[0; 65]),
++            Err(CyclopediaWireError::LimitExceeded)
++        );
+--- a/crates/gameplay/foundation/src/scheduled_events.rs
++++ b/crates/gameplay/foundation/src/scheduled_events.rs
+@@ -382,8 +381,0 @@
+-    fn w05d_annual_calendar_retains_holiday_sources_for_production() -> Result<(), ScheduleError> {
+-        let schedule = Schedule::parse(SCHEDULE)?;
+-        assert!(format!("{schedule:?}").contains("halloween"));
+-        assert!(format!("{schedule:?}").contains("piece_of_cake"));
+-        Ok(())
+-    }
+-
+-    #[test]

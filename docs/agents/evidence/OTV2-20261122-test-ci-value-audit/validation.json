@@ -1,0 +1,289 @@
+{
+  "phase": "AUTHORING prepublication; exact candidate qualification is separate",
+  "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "observed_at": "2026-11-22T22:54:23.050004+00:00",
+  "checks": [
+    {
+      "name": "repository_policy",
+      "argv": [
+        "python",
+        "tools/repository/validate_repository_policy.py"
+      ],
+      "exit_code": 0,
+      "seconds": 3.126,
+      "stdout": "Post-merge exact-candidate routing regressions PASS\nRepository policy validation passed (23 files, 78 workflows).\n",
+      "stderr": ""
+    },
+    {
+      "name": "workflow_pins",
+      "argv": [
+        "python",
+        "tools/repository/refresh_ci_workflow_pins.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 0.06,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "agent_governance",
+      "argv": [
+        "python",
+        "tools/agents/validate_governance.py"
+      ],
+      "exit_code": 1,
+      "seconds": 0.424,
+      "stdout": "",
+      "stderr": "Governance validation failed:\nE8001 GOVERNANCE_CHECK_FAILED: active task packet docs/agents/tasks/active/OTV2-20261122-test-ci-value-audit.md must name a positive issue or pr\n",
+      "disposition": "Resolved by binding the task to the newly created canonical GitHub issue #3429; see subsequent passing check."
+    },
+    {
+      "name": "agent_tests",
+      "argv": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/agents/tests"
+      ],
+      "exit_code": 0,
+      "seconds": 0.689,
+      "stdout": "",
+      "stderr": ".......................................................................................................................................\n----------------------------------------------------------------------\nRan 135 tests in 0.478s\n\nOK\n"
+    },
+    {
+      "name": "node_boot_diagnostics",
+      "argv": [
+        "python",
+        "tools/qualification/node_boot/test_diagnostics.py"
+      ],
+      "exit_code": 0,
+      "seconds": 2.921,
+      "stdout": "",
+      "stderr": "................................................\n----------------------------------------------------------------------\nRan 48 tests in 2.833s\n\nOK\n"
+    },
+    {
+      "name": "node_boot_full_discovery",
+      "argv": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/qualification/node_boot",
+        "-p",
+        "test_*.py"
+      ],
+      "exit_code": 1,
+      "seconds": 4.856,
+      "stdout": "",
+      "stderr": ".........................................................................EEEEE.EE.........\n======================================================================\nERROR: test_empty_reply_is_diagnosed (test_provision.ProvisionTests.test_empty_reply_is_diagnosed)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 72, in test_empty_reply_is_diagnosed\n    self.exchange(b\"\")\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 24, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_oversized_reply_diagnostic_contains_only_64_source_bytes (test_provision.ProvisionTests.test_oversized_reply_diagnostic_contains_only_64_source_bytes)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 64, in test_oversized_reply_diagnostic_contains_only_64_source_bytes\n    self.exchange(b\"x\" * 64 + b\"Y\")\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 24, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_qualified_reply_is_accepted (test_provision.ProvisionTests.test_qualified_reply_is_accepted)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 47, in test_qualified_reply_is_accepted\n    self.exchange(b\"qualified\\n\")\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 24, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_refusal_retains_the_exact_node_answer (test_provision.ProvisionTests.test_refusal_retains_the_exact_node_answer)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 51, in test_refusal_retains_the_exact_node_answer\n    self.exchange(b\"rejected\\n\")\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 24, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_reply_diagnostic_escapes_control_and_non_ascii_bytes (test_provision.ProvisionTests.test_reply_diagnostic_escapes_control_and_non_ascii_bytes)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 56, in test_reply_diagnostic_escapes_control_and_non_ascii_bytes\n    self.exchange(b\"rejected\\n\\x1b[31m\\xff\\r\")\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 24, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_refusal_retains_the_exact_node_answer (test_provision.SpawnTests.test_refusal_retains_the_exact_node_answer)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 111, in test_refusal_retains_the_exact_node_answer\n    self.exchange(b\"rejected reason=unknown_creature\\n\")\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 83, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_spawned_reply_is_returned (test_provision.SpawnTests.test_spawned_reply_is_returned)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 107, in test_spawned_reply_is_returned\n    self.assertEqual(self.exchange(reply), f\"spawned {self.IDENTITY} 7\")\n                     ^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/qualification/node_boot/test_provision.py\", line 83, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n----------------------------------------------------------------------\nRan 90 tests in 4.724s\n\nFAILED (errors=7)\n"
+    },
+    {
+      "name": "craft_discovery",
+      "argv": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/craft-authoring",
+        "-p",
+        "test_tainted_souls.py"
+      ],
+      "exit_code": 0,
+      "seconds": 1.011,
+      "stdout": "",
+      "stderr": ".......\n----------------------------------------------------------------------\nRan 7 tests in 0.599s\n\nOK\n"
+    },
+    {
+      "name": "craft_direct",
+      "argv": [
+        "python",
+        "tools/content-schema/craft-authoring/test_tainted_souls.py"
+      ],
+      "exit_code": 0,
+      "seconds": 1.027,
+      "stdout": "",
+      "stderr": ".......\n----------------------------------------------------------------------\nRan 7 tests in 0.585s\n\nOK\n"
+    },
+    {
+      "name": "shell_syntax",
+      "argv": [
+        "bash",
+        "-n",
+        "tools/qualification/node_boot/run.sh"
+      ],
+      "exit_code": 0,
+      "seconds": 0.003,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "ci_unique_cases",
+      "argv": [
+        "python",
+        "/workspace/scratch/23c09bc1235f/Oteryn-Game/docs/agents/evidence/OTV2-20261122-test-ci-value-audit/ci_dedup_probe.py",
+        "/workspace/scratch/23c09bc1235f/Oteryn-Game",
+        "/workspace/scratch/23c09bc1235f/Oteryn-Game/docs/agents/evidence/OTV2-20261122-test-ci-value-audit/root_ci_final.json"
+      ],
+      "exit_code": 0,
+      "seconds": 7.232,
+      "stdout": "::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n{\n  \"source_root\": \"/workspace/scratch/23c09bc1235f/Oteryn-Game\",\n  \"elapsed_seconds\": 7.159700342000178,\n  \"scope\": \"Actual affected unittest cases; sibling plain-main suites excluded from this focused probe.\",\n  \"executions_including_nested_cases\": 42,\n  \"unique_case_count\": 42,\n  \"modules\": [\n    {\n      \"module\": \"test_validate_pr_gate_pg_sim\",\n      \"top_level_tests\": 17,\n      \"executions_including_nested_cases\": 17,\n      \"failures\": 0,\n      \"errors\": 0,\n      \"skipped\": 0\n    },\n    {\n      \"module\": \"test_run_rust_fast_archive\",\n      \"top_level_tests\": 9,\n      \"executions_including_nested_cases\": 9,\n      \"failures\": 0,\n      \"errors\": 0,\n      \"skipped\": 0\n    },\n    {\n      \"module\": \"test_agent_governance_pr_targets\",\n      \"top_level_tests\": 5,\n      \"executions_including_nested_cases\": 5,\n      \"failures\": 0,\n      \"errors\": 0,\n      \"skipped\": 0\n    },\n    {\n      \"module\": \"test_main_job_applicability\",\n      \"top_level_tests\": 10,\n      \"executions_including_nested_cases\": 10,\n      \"failures\": 0,\n      \"errors\": 0,\n      \"skipped\": 0\n    },\n    {\n      \"module\": \"test_merge_authority_applicability\",\n      \"top_level_tests\": 1,\n      \"executions_including_nested_cases\": 1,\n      \"failures\": 0,\n      \"errors\": 0,\n      \"skipped\": 0\n    }\n  ]\n}\n",
+      "stderr": ".................\n----------------------------------------------------------------------\nRan 17 tests in 3.379s\n\nOK\n.........\n----------------------------------------------------------------------\nRan 9 tests in 0.713s\n\nOK\n.....\n----------------------------------------------------------------------\nRan 5 tests in 0.034s\n\nOK\n..........\n----------------------------------------------------------------------\nRan 10 tests in 2.792s\n\nOK\n.\n----------------------------------------------------------------------\nRan 1 test in 0.206s\n\nOK\n"
+    },
+    {
+      "name": "agent_governance_after_issue_binding",
+      "argv": [
+        "python",
+        "tools/agents/validate_governance.py"
+      ],
+      "exit_code": 0,
+      "stdout": "Governance validation passed for Oteryn/Oteryn-Game.\nValidated 22 required policy documents and 9 project lanes.\n",
+      "stderr": ""
+    },
+    {
+      "name": "reliability_checklist_path_routing",
+      "argv": [
+        "python",
+        "tools/repository/reliability_checklist.py",
+        "--paths",
+        ".github/workflows/agent-governance.yml",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/README.md",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/ai_bootstrap_dedup.patch",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/blackbox_baseline_signature.patch",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/blackbox_findings.md",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/blackbox_inventory.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/blackbox_oracle_repro.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/blackbox_oracle_repro.py",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/blackbox_repros.py",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/blackbox_repros_baseline.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/blackbox_repros_proposal.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/ci_dedup_A.patch",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/ci_dedup_B.patch",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/ci_dedup_entrypoints.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/ci_dedup_probe.py",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/ci_dedup_summary.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/ci_lane_findings.md",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/ci_lane_inventory.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/ci_snapshot/label_mutation_probe.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/ci_snapshot/selected_recent_runs.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/ci_snapshot/workflow_live_state.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/client_review_checkpoint.py",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/client_test_findings.md",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/client_test_review_manifest.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/client_test_reviewed_files.tsv",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/code_review_findings.md",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/craft_discovery_comparison.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/craft_tests_dedup.patch",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/node_boot_discovery_after.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/node_boot_discovery_before.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/peer_review_evidence/baseline_collection.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/peer_review_evidence/c1_fixed/bounded_tests.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/peer_review_evidence/c1_fixed/collection.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/peer_review_evidence/c1_fixed/signature_cases.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/peer_review_evidence/c1_fixed/source_manifest.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/peer_review_evidence/craft_ast.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/peer_review_evidence/direct.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/peer_review_evidence/discovery.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/peer_review_evidence/malformed_baseline_stage.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/peer_review_evidence/original_code_review_findings.md",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/peer_review_evidence/signature_cases.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/peer_review_evidence/source_manifest.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/peer_review_evidence/stage_malformed_repro.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/protocol_foundation_case_inventory.tsv",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/protocol_foundation_case_inventory_summary.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/protocol_foundation_findings.md",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/protocol_foundation_oracle_evidence.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/protocol_foundation_remaining.tsv",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/protocol_foundation_reviewed_scopes.tsv",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/protocol_foundation_test_proposal.patch",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/python_shadowed_tests.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/root_ci_after.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/root_ci_before.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/root_ci_final.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/scan_protocol_oracles.py",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/scan_test_value.py",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/test_value_findings.md",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/test_value_inventory.tsv",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/test_value_inventory_summary.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/test_value_remaining_queue.tsv",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/test_value_semantic_reviews.tsv",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/test_value_workspace_members.tsv",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/validation.json",
+        "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/verify_craft_discovery.py",
+        "docs/agents/tasks/active/OTV2-20261122-test-ci-value-audit.md",
+        "tools/content-schema/craft-authoring/test_tainted_souls.py",
+        "tools/qualification/node_boot/known_fail_rows.txt",
+        "tools/qualification/node_boot/run.sh",
+        "tools/qualification/node_boot/test_diagnostics.py",
+        "tools/qualification/node_boot/test_node_boot_tools.py",
+        "tools/repository/test_agent_governance_pr_targets.py",
+        "tools/repository/test_validate_pr_gate_pg_sim.py"
+      ],
+      "exit_code": 0,
+      "stdout": "Reliability checklist: 3 item(s) match this diff.\n\n- [ci-control-plane] Workflow or repository-tool change\n  matched: path .github/workflows/agent-governance.yml\n  check:   python3 tools/repository/validate_repository_policy.py and every tools/repository/test_*.py; timeouts, budgets and recursion limits change only with the owner's consent\n  source:  .claude/skills/oteryn-dev/references/ci-merge.md#how-the-gate-works-now\n- [node-boot-harness] Node boot harness change\n  matched: path tools/qualification/node_boot/known_fail_rows.txt\n  check:   bash -n tools/qualification/node_boot/run.sh, python3 tools/qualification/node_boot/test_diagnostics.py, python3 tools/qualification/node_boot/test_matrix.py when present, and python3 tools/repository/test_heavy_gate.py\n  source:  .claude/skills/oteryn-dev/references/local-checks.md#jobs-that-only-run-after-the-merge\n- [governance] Agent governance files\n  matched: path docs/agents/evidence/OTV2-20261122-test-ci-value-audit/README.md\n  check:   python3 tools/agents/validate_governance.py and python3 -m unittest discover -s tools/agents/tests\n  source:  .claude/skills/oteryn-dev/references/local-checks.md#order-cheapest-first\n",
+      "stderr": ""
+    },
+    {
+      "name": "staged_whitespace",
+      "argv": [
+        "git",
+        "diff",
+        "--cached",
+        "--check"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "final_agent_governance",
+      "argv": [
+        "python",
+        "tools/agents/validate_governance.py"
+      ],
+      "exit_code": 0,
+      "stdout": "Governance validation passed for Oteryn/Oteryn-Game.\nValidated 22 required policy documents and 9 project lanes.\n",
+      "stderr": ""
+    },
+    {
+      "name": "bb02_proposal_apply_check",
+      "argv": [
+        "git",
+        "apply",
+        "--unidiff-zero",
+        "--check",
+        "/workspace/scratch/23c09bc1235f/Oteryn-Game/docs/agents/evidence/OTV2-20261122-test-ci-value-audit/aggregate_completeness_proposal.patch"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "limitations": [
+    "No Cargo/rustc or PowerShell installed",
+    "No live PG/game/Platform/Windows/GPU qualification",
+    "AF_UNIX creation denied in seven unchanged provision tests; full discovery is not green"
+  ],
+  "node_boot_final_execution": {
+    "collected": 90,
+    "passed": 83,
+    "assertion_failures": 0,
+    "errors": 7,
+    "skipped": 0,
+    "error_cause": "AF_UNIX socket creation denied with EPERM in unmodified provision tests"
+  },
+  "repository_entrypoint_sweep": {
+    "count": 32,
+    "passed": 30,
+    "not_qualified": [
+      "test_check_dispatch_pg_shards.py: rustc absent",
+      "test_validate_merge_group_pg_sim.py: pwsh absent"
+    ],
+    "evidence": "repository_suite.json",
+    "independent_classification": "repository_suite_failure_review.json"
+  }
+}

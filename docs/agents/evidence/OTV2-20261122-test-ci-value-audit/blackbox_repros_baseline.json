@@ -1,0 +1,23 @@
+{
+  "source_directory": "/workspace/scratch/23c09bc1235f/Oteryn-Game",
+  "synthetic_reproducers": [
+    {
+      "kind": "baseline_signature",
+      "process_exit": 0,
+      "known_root": "E01/greet",
+      "observed_root": "E01/relog-bank-balance",
+      "actual_stage_status": "PASS",
+      "output": "::group::stage audit\nSEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 evidence=synthetic-new-regression cause=assertion root=E01/relog-bank-balance\n::endgroup::\nNODE_BOOT_KNOWN_FAIL audit rows=E01.full\n--- session close events behind failed e2e rows\nAUDIT_STAGE_STATUS=PASS\n",
+      "stderr": ""
+    },
+    {
+      "kind": "aggregate_scenario_identity",
+      "requested_batch": "206:1",
+      "expected_from_audited_dispatch": "S09.client",
+      "observed": "I01.full PASS",
+      "shard_passed": true,
+      "summary_problems": [],
+      "markdown": "## Node boot shards\n\n| shard | result | exit | minutes | scenarios | PASS | FAIL | MISSING | other |\n|---|---|---|---|---|---|---|---|---|\n| rows-206-207 | NODE_BOOT_PASS | 0 | 0.1 | 1 | 1 | 0 | 0 | 0 |\n"
+    }
+  ]
+}

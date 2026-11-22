@@ -11,11 +11,7 @@ import tempfile
 import time
 import unittest
 
-# The workflows run this file only; it carries the node boot tool tests with it.
-from test_node_boot_tools import (  # noqa: F401
-    FailureSummaryTests, KnobTests, PgObserveTests, ReuseTests, SeamPassThroughTests,
-    StageDumpTests, TimelineTests,
-)
+import test_node_boot_tools
 
 SOURCE = Path(__file__).resolve().with_name('run.sh')
 # An explicit source path also runs the same fixture against a saved baseline.
@@ -408,24 +404,28 @@ stage seam_stages -- blocked
 
 
 class KnownFailRowsTests(unittest.TestCase):
-    """A FAIL row fails its stage unless known_fail_rows.txt lists it."""
+    """Only the recorded cause/root of a listed FAIL row is baseline debt."""
 
     def rows(self, log, status, known):
         helpers = '\n'.join(re.search(rf"(?m)^{name}\(\).*$", TEXT).group(0) for name in ('stage_rows', 'known_rows'))
+        helpers += '\n' + function('stage_fail_rows')
         with tempfile.TemporaryDirectory() as tmp:
             Path(tmp, 'stage.log').write_text(log)
             Path(tmp, 'known.txt').write_text(known)
             script = (helpers + '\nstage_rows "$1/stage.log" "$2" | grep -vxFf <(known_rows "$1/known.txt") | paste -sd, - || true\n'
                       'stage_rows "$1/stage.log" "$2" | grep -xFf <(known_rows "$1/known.txt") | paste -sd, - || true\n')
+            if status == 'FAIL':
+                script = (helpers + '\nstage_fail_rows "$1/stage.log" "$1/known.txt" new\n'
+                          'stage_fail_rows "$1/stage.log" "$1/known.txt" known\n')
             out = subprocess.run(['bash', '-c', 'set -Eeuo pipefail\n' + script, 'x', tmp, status],
                                  capture_output=True, text=True, check=True).stdout.split('\n')
         return out[0], out[1]
 
     def test_new_failure_is_not_hidden_and_known_failure_is_listed(self):
-        log = ('SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1 cause=assertion\n'
+        log = ('SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1 cause=assertion root=C01.full/admission\n'
                'SEAM_EVIDENCE e2e_all scenario=Q01a.full status=FAIL seconds=1 cause=assertion\n'
                'SEAM_EVIDENCE e2e_all scenario=C03.full status=PASS seconds=1\n')
-        known = '# comment\n\nC01.full assertion at C01.full/admission\nC03.full flaky\n'
+        known = '# comment\n\nC01.full assertion at C01.full/admission\nC03.full assertion at C03.full/baseline\n'
         self.assertEqual(self.rows(log, 'FAIL', known), ('Q01a.full', 'C01.full'))
         self.assertEqual(self.rows(log, 'PASS', known)[1], 'C03.full')
 
@@ -438,6 +438,72 @@ class KnownFailRowsTests(unittest.TestCase):
         rows = [line.split(None, 1) for line in listed if line.strip() and not line.startswith('#')]
         self.assertTrue(all(len(row) == 2 and row[0].endswith('.full') for row in rows))
         self.assertEqual(len({row[0] for row in rows}), len(rows))
+
+    def test_same_row_new_root_or_cause_is_not_baselined(self):
+        known = 'E01.full assertion at E01/greet; retained source comment\n'
+        for suffix in ('cause=assertion root=E01/relog-bank-balance',
+                       'cause=transport root=E01/greet'):
+            with self.subTest(suffix=suffix):
+                log = f'SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 {suffix}\n'
+                self.assertEqual(self.rows(log, 'FAIL', known), ('E01.full', ''))
+
+    def test_unclassified_failure_is_not_baselined(self):
+        known = 'E01.full assertion at E01/greet\n'
+        log = 'SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1\n'
+        self.assertEqual(self.rows(log, 'FAIL', known), ('E01.full', ''))
+
+    def test_ambiguous_or_nonterminal_failure_signature_is_not_baselined(self):
+        known = 'E01.full assertion at E01/greet\n'
+        verdict = 'SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1'
+        signature = 'cause=assertion root=E01/greet'
+        for log in (
+            f'{verdict} {signature} cause=transport',
+            f'{verdict} {signature} root=E01/relog',
+            f'{verdict} cause=transport {signature}',
+            f'{verdict} root=E01/relog {signature}',
+            f'{verdict} {signature} trailing=detail',
+            f'{signature} {verdict}',
+        ):
+            with self.subTest(log=log):
+                self.assertEqual(self.rows(log + '\n', 'FAIL', known), ('E01.full', ''))
+
+    def test_malformed_or_duplicate_baseline_fails_closed(self):
+        log = 'SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet\n'
+        for known in ('E01.full\n',
+                      'E01.full assertion at E01/greet\nE01.full assertion at E01/greet\n',
+                      'E01.full assertion at E01/greet extra-field\n'):
+            with self.subTest(known=known):
+                with self.assertRaises(subprocess.CalledProcessError):
+                    self.rows(log, 'FAIL', known)
+
+    def test_exact_signature_and_known_remarks_are_preserved(self):
+        known = 'E01.full assertion at E01/greet; source:unchanged.rs:1\n'
+        log = 'SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 evidence=detail cause=assertion root=E01/greet\n'
+        self.assertEqual(self.rows(log, 'FAIL', known), ('', 'E01.full'))
+
+    def test_known_then_new_failure_of_same_row_is_new(self):
+        known = 'E01.full assertion at E01/greet\n'
+        log = ('SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet\n'
+               'SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/relog\n')
+        self.assertEqual(self.rows(log, 'FAIL', known), ('E01.full', ''))
+
+    def test_current_baseline_preserves_all_recorded_signatures(self):
+        known = SOURCE.with_name('known_fail_rows.txt').read_text()
+        entries = [re.fullmatch(r'([^ ]+) ([a-z-]+) at ([^;\s]+)(?:;.*)?', line)
+                   for line in known.splitlines() if line.strip() and not line.startswith('#')]
+        self.assertTrue(all(entries))
+        log = ''.join(f'SEAM_EVIDENCE e2e_all scenario={entry[1]} status=FAIL seconds=1 '
+                      f'cause={entry[2]} root={entry[3]}\n' for entry in entries)
+        self.assertEqual(self.rows(log, 'FAIL', known),
+                         ('', ','.join(sorted(entry[1] for entry in entries))))
+
+
+def load_tests(loader, tests, pattern):
+    # Workflows invoke this module directly. Discovery finds the sibling module
+    # itself, so include it only for a direct run and never maintain a class list.
+    if pattern is None:
+        tests.addTests(loader.loadTestsFromModule(test_node_boot_tools))
+    return tests
 
 
 if __name__ == '__main__':

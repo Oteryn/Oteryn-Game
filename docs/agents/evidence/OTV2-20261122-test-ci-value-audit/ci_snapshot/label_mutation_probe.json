@@ -1,0 +1,16 @@
+[
+  {
+    "label_only_mutation": false,
+    "tests_run": 1,
+    "failures": 0,
+    "errors": 0,
+    "message": null
+  },
+  {
+    "label_only_mutation": true,
+    "tests_run": 1,
+    "failures": 1,
+    "errors": 0,
+    "message": "AssertionError: 4 != 5"
+  }
+]

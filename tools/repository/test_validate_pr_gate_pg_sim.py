@@ -620,16 +620,6 @@ sudo() { echo "sudo $*"; }
         self.assertIn('Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target")) / "nextest/rust-fast/junit.xml"',
                       self.worker_source)
         self.assertIn('junit.unlink(missing_ok=True)', self.worker_source)
-        # Execute the archived worker's stale-JUnit cases, including a complete
-        # test failure, runner error and process termination. Warm artifacts
-        # above remain untouched; only stale evidence is discarded.
-        spec = importlib.util.spec_from_file_location("worker_regressions", ROOT / "tools/repository/test_run_rust_fast_archive.py")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        stale_case = module.ArchiveShard("test_test_failures_complete_but_runner_errors_cannot_reuse_a_stale_report")
-        result = unittest.TestResult()
-        stale_case.run(result)
-        self.assertTrue(result.wasSuccessful(), result.errors + result.failures)
 
     def test_no_workflows(self):
         self.module.MERGE_GATE = Path("/nonexistent/oteryn-pr.yml")
@@ -665,14 +655,7 @@ def main() -> int:
     result = unittest.TextTestRunner(verbosity=1).run(unittest.defaultTestLoader.loadTestsFromTestCase(QualificationPlacementTests))
     if not result.wasSuccessful():
         return 1
-    # Keep real registered-target, Windows native failure, risk and content
-    # routing regressions on their owning existing MQ/routing entry points.
-    for filename in ("test_validate_merge_group_pg_sim.py", "test_classify_pr_test_lanes.py", "test_classify_content_routing.py"):
-        spec = importlib.util.spec_from_file_location("qualification_regressions", VALIDATOR.with_name(filename))
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        if module.main() != 0:
-            return 1
+    # The merge-gate repository-test sweep runs the sibling entry points once.
     return 0
 
 

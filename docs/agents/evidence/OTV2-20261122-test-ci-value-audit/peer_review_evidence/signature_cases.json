@@ -1,0 +1,189 @@
+[
+  {
+    "name": "exact",
+    "expected": "known",
+    "actual": "known",
+    "matches_expectation": true,
+    "rc": 0,
+    "stdout": "\nE01.full\n",
+    "stderr": "",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet",
+    "baseline": "E01.full assertion at E01/greet; recorded evidence\n"
+  },
+  {
+    "name": "changed_cause",
+    "expected": "new",
+    "actual": "new",
+    "matches_expectation": true,
+    "rc": 0,
+    "stdout": "E01.full\n\n",
+    "stderr": "",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=transport root=E01/greet",
+    "baseline": "E01.full assertion at E01/greet; recorded evidence\n"
+  },
+  {
+    "name": "changed_root",
+    "expected": "new",
+    "actual": "new",
+    "matches_expectation": true,
+    "rc": 0,
+    "stdout": "E01.full\n\n",
+    "stderr": "",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/relog",
+    "baseline": "E01.full assertion at E01/greet; recorded evidence\n"
+  },
+  {
+    "name": "missing_signature",
+    "expected": "new",
+    "actual": "new",
+    "matches_expectation": true,
+    "rc": 0,
+    "stdout": "E01.full\n\n",
+    "stderr": "",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1",
+    "baseline": "E01.full assertion at E01/greet; recorded evidence\n"
+  },
+  {
+    "name": "missing_root",
+    "expected": "new",
+    "actual": "new",
+    "matches_expectation": true,
+    "rc": 0,
+    "stdout": "E01.full\n\n",
+    "stderr": "",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion",
+    "baseline": "E01.full assertion at E01/greet; recorded evidence\n"
+  },
+  {
+    "name": "known_then_new",
+    "expected": "new",
+    "actual": "new",
+    "matches_expectation": true,
+    "rc": 0,
+    "stdout": "E01.full\n\n",
+    "stderr": "",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet\nSEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/relog",
+    "baseline": "E01.full assertion at E01/greet; recorded evidence\n"
+  },
+  {
+    "name": "known_then_unclassified",
+    "expected": "new",
+    "actual": "new",
+    "matches_expectation": true,
+    "rc": 0,
+    "stdout": "E01.full\n\n",
+    "stderr": "",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet\nSEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1",
+    "baseline": "E01.full assertion at E01/greet; recorded evidence\n"
+  },
+  {
+    "name": "duplicate_complete_signature",
+    "expected": "new",
+    "actual": "new",
+    "matches_expectation": true,
+    "rc": 0,
+    "stdout": "E01.full\n\n",
+    "stderr": "",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet cause=transport root=E01/greet",
+    "baseline": "E01.full assertion at E01/greet; recorded evidence\n"
+  },
+  {
+    "name": "duplicate_cause_only",
+    "expected": "new",
+    "actual": "known",
+    "matches_expectation": false,
+    "rc": 0,
+    "stdout": "\nE01.full\n",
+    "stderr": "",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet cause=transport",
+    "baseline": "E01.full assertion at E01/greet; recorded evidence\n"
+  },
+  {
+    "name": "duplicate_root_only",
+    "expected": "new",
+    "actual": "known",
+    "matches_expectation": false,
+    "rc": 0,
+    "stdout": "\nE01.full\n",
+    "stderr": "",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet root=E01/relog",
+    "baseline": "E01.full assertion at E01/greet; recorded evidence\n"
+  },
+  {
+    "name": "prefix_known_changed_suffix",
+    "expected": "new",
+    "actual": "known",
+    "matches_expectation": false,
+    "rc": 0,
+    "stdout": "\nE01.full\n",
+    "stderr": "",
+    "log": "cause=assertion root=E01/greet SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=transport",
+    "baseline": "E01.full assertion at E01/greet; recorded evidence\n"
+  },
+  {
+    "name": "unknown_row",
+    "expected": "new",
+    "actual": "new",
+    "matches_expectation": true,
+    "rc": 0,
+    "stdout": "E02.full\n\n",
+    "stderr": "",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E02.full status=FAIL seconds=1 cause=assertion root=E01/greet",
+    "baseline": "E01.full assertion at E01/greet; recorded evidence\n"
+  },
+  {
+    "name": "empty_baseline",
+    "expected": "new",
+    "actual": "new",
+    "matches_expectation": true,
+    "rc": 0,
+    "stdout": "E01.full\n\n",
+    "stderr": "",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet",
+    "baseline": ""
+  },
+  {
+    "name": "invalid_baseline",
+    "expected": "error",
+    "actual": "error",
+    "matches_expectation": true,
+    "rc": 1,
+    "stdout": "",
+    "stderr": "invalid or duplicate known-failure entry\n",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet",
+    "baseline": "E01.full flaky\n"
+  },
+  {
+    "name": "duplicate_baseline",
+    "expected": "error",
+    "actual": "error",
+    "matches_expectation": true,
+    "rc": 1,
+    "stdout": "",
+    "stderr": "invalid or duplicate known-failure entry\n",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet",
+    "baseline": "E01.full assertion at E01/greet; recorded evidence\nE01.full assertion at E01/greet; recorded evidence\n"
+  },
+  {
+    "name": "invalid_baseline_empty_log",
+    "expected": "error",
+    "actual": "error",
+    "matches_expectation": true,
+    "rc": 1,
+    "stdout": "",
+    "stderr": "invalid or duplicate known-failure entry\n",
+    "log": "",
+    "baseline": "E01.full flaky\n"
+  },
+  {
+    "name": "comments_whitespace",
+    "expected": "known",
+    "actual": "known",
+    "matches_expectation": true,
+    "rc": 0,
+    "stdout": "\nE01.full\n",
+    "stderr": "",
+    "log": "SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet",
+    "baseline": "\n  # comment\n  E01.full assertion at E01/greet; recorded evidence \n"
+  }
+]

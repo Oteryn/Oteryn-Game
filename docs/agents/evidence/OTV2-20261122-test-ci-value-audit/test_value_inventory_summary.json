@@ -1,0 +1,3307 @@
+{
+  "head": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "method": "Static source inventory, not Cargo/unittest runtime discovery or semantic review. Hints are candidates, not defects.",
+  "tracked_paths": 34299,
+  "scoped_source_files": {
+    ".rs": 9742,
+    ".py": 1908
+  },
+  "test_bearing_files": 5437,
+  "rust_test_attributes": 18270,
+  "python_test_definitions": 6749,
+  "groups": {
+    "apps/client": {
+      "files": 649,
+      "rs_files": 649,
+      "rust_test_attributes": 2519,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 44,
+      "env_gate_hint": 44,
+      "historical_name_hint": 0
+    },
+    "apps/game-server": {
+      "files": 529,
+      "rs_files": 529,
+      "rust_test_attributes": 2605,
+      "python_test_definitions": 0,
+      "ignored_attributes": 11,
+      "source_text_reference_hint": 65,
+      "env_gate_hint": 63,
+      "historical_name_hint": 4
+    },
+    "crates/admin/agent": {
+      "files": 3,
+      "rs_files": 3,
+      "rust_test_attributes": 7,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 2,
+      "env_gate_hint": 2,
+      "historical_name_hint": 0
+    },
+    "crates/admin/contracts": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 4,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 1,
+      "historical_name_hint": 0
+    },
+    "crates/client-assets": {
+      "files": 7,
+      "rs_files": 7,
+      "rust_test_attributes": 31,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/client-domain": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 1,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/client-runtime": {
+      "files": 34,
+      "rs_files": 34,
+      "rust_test_attributes": 59,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 8,
+      "env_gate_hint": 8,
+      "historical_name_hint": 0
+    },
+    "crates/client-simulation": {
+      "files": 4,
+      "rs_files": 4,
+      "rust_test_attributes": 12,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/client-ui": {
+      "files": 277,
+      "rs_files": 277,
+      "rust_test_attributes": 729,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 50,
+      "env_gate_hint": 49,
+      "historical_name_hint": 0
+    },
+    "crates/client-ui-bevy": {
+      "files": 3,
+      "rs_files": 3,
+      "rust_test_attributes": 7,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/diagnostics": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 2,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/error-codes": {
+      "files": 9,
+      "rs_files": 9,
+      "rust_test_attributes": 28,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 1,
+      "historical_name_hint": 0
+    },
+    "crates/foundation": {
+      "files": 2,
+      "rs_files": 2,
+      "rust_test_attributes": 3,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/admission-evidence": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 1,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 1
+    },
+    "crates/gameplay/character-recovery-fence": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 8,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/characters": {
+      "files": 6,
+      "rs_files": 6,
+      "rust_test_attributes": 44,
+      "python_test_definitions": 0,
+      "ignored_attributes": 1,
+      "source_text_reference_hint": 2,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/combat": {
+      "files": 11,
+      "rs_files": 11,
+      "rust_test_attributes": 54,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 4,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/combat-rules": {
+      "files": 14,
+      "rs_files": 14,
+      "rust_test_attributes": 86,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 4,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/content": {
+      "files": 112,
+      "rs_files": 112,
+      "rust_test_attributes": 467,
+      "python_test_definitions": 0,
+      "ignored_attributes": 1,
+      "source_text_reference_hint": 28,
+      "env_gate_hint": 3,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/content-promotion": {
+      "files": 27,
+      "rs_files": 27,
+      "rust_test_attributes": 112,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 2,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/dispatch": {
+      "files": 1336,
+      "rs_files": 1336,
+      "rust_test_attributes": 4589,
+      "python_test_definitions": 0,
+      "ignored_attributes": 16,
+      "source_text_reference_hint": 93,
+      "env_gate_hint": 416,
+      "historical_name_hint": 2
+    },
+    "crates/gameplay/domain": {
+      "files": 40,
+      "rs_files": 40,
+      "rust_test_attributes": 224,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 5,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/durability": {
+      "files": 277,
+      "rs_files": 277,
+      "rust_test_attributes": 965,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 17,
+      "env_gate_hint": 8,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/economy": {
+      "files": 16,
+      "rs_files": 16,
+      "rust_test_attributes": 49,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/encounter-rules": {
+      "files": 16,
+      "rs_files": 16,
+      "rust_test_attributes": 80,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/encounters": {
+      "files": 51,
+      "rs_files": 51,
+      "rust_test_attributes": 225,
+      "python_test_definitions": 0,
+      "ignored_attributes": 7,
+      "source_text_reference_hint": 7,
+      "env_gate_hint": 3,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/entities": {
+      "files": 75,
+      "rs_files": 75,
+      "rust_test_attributes": 448,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 1,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/foundation": {
+      "files": 32,
+      "rs_files": 32,
+      "rust_test_attributes": 395,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/housing": {
+      "files": 14,
+      "rs_files": 14,
+      "rust_test_attributes": 37,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/items": {
+      "files": 41,
+      "rs_files": 41,
+      "rust_test_attributes": 204,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 6,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/monster-ai": {
+      "files": 32,
+      "rs_files": 32,
+      "rust_test_attributes": 171,
+      "python_test_definitions": 0,
+      "ignored_attributes": 4,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 4,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/native-admission-source": {
+      "files": 23,
+      "rs_files": 23,
+      "rust_test_attributes": 243,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 12,
+      "env_gate_hint": 1,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/node-files": {
+      "files": 2,
+      "rs_files": 2,
+      "rust_test_attributes": 8,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/npc": {
+      "files": 13,
+      "rs_files": 13,
+      "rust_test_attributes": 56,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 4,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/progression": {
+      "files": 35,
+      "rs_files": 35,
+      "rust_test_attributes": 178,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 6,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/quests": {
+      "files": 203,
+      "rs_files": 203,
+      "rust_test_attributes": 816,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 63,
+      "env_gate_hint": 1,
+      "historical_name_hint": 2
+    },
+    "crates/gameplay/social": {
+      "files": 27,
+      "rs_files": 27,
+      "rust_test_attributes": 189,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 2,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/social-rules": {
+      "files": 13,
+      "rs_files": 13,
+      "rust_test_attributes": 66,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/source-critical-baseline": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 2,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/spell": {
+      "files": 51,
+      "rs_files": 51,
+      "rust_test_attributes": 358,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 17,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/spell-rules": {
+      "files": 16,
+      "rs_files": 16,
+      "rust_test_attributes": 69,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 4,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/weather": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 10,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/world": {
+      "files": 65,
+      "rs_files": 65,
+      "rust_test_attributes": 317,
+      "python_test_definitions": 0,
+      "ignored_attributes": 1,
+      "source_text_reference_hint": 4,
+      "env_gate_hint": 2,
+      "historical_name_hint": 0
+    },
+    "crates/gameplay/world-change": {
+      "files": 12,
+      "rs_files": 12,
+      "rust_test_attributes": 49,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 3,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/identity": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 7,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/input-actions": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 11,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/input-platform": {
+      "files": 5,
+      "rs_files": 5,
+      "rust_test_attributes": 23,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/ntp-clock": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 3,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/platform-client": {
+      "files": 15,
+      "rs_files": 15,
+      "rust_test_attributes": 76,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 2,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/platform-contracts": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 1,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/protocol-oteryn": {
+      "files": 234,
+      "rs_files": 234,
+      "rust_test_attributes": 920,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 63,
+      "env_gate_hint": 1,
+      "historical_name_hint": 0
+    },
+    "crates/renderer": {
+      "files": 8,
+      "rs_files": 8,
+      "rust_test_attributes": 49,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/session": {
+      "files": 133,
+      "rs_files": 133,
+      "rust_test_attributes": 302,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 61,
+      "env_gate_hint": 64,
+      "historical_name_hint": 0
+    },
+    "crates/session-tcp": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 3,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/simulation-determinism": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 7,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/synthetic-assets": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 1,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/task-supervisor": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 10,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/test-support": {
+      "files": 2,
+      "rs_files": 2,
+      "rust_test_attributes": 13,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "crates/world-bundle": {
+      "files": 6,
+      "rs_files": 6,
+      "rust_test_attributes": 17,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "deploy/oracle": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 6,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 1,
+      "historical_name_hint": 0
+    },
+    "deploy/synology-game": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 17,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 1,
+      "historical_name_hint": 0
+    },
+    "tests/pre-native-client": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 1,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 1
+    },
+    "tests/security/auth": {
+      "files": 4,
+      "rs_files": 4,
+      "rust_test_attributes": 13,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 2,
+      "historical_name_hint": 0
+    },
+    "tools/agents": {
+      "files": 8,
+      "py_files": 8,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 135,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 3,
+      "env_gate_hint": 1,
+      "historical_name_hint": 0
+    },
+    "tools/architecture": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 40,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/architecture-check": {
+      "files": 7,
+      "rs_files": 7,
+      "rust_test_attributes": 56,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 2,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/ci": {
+      "files": 5,
+      "py_files": 5,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 33,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 5,
+      "env_gate_hint": 4,
+      "historical_name_hint": 0
+    },
+    "tools/client-assets": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 3,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/client-ui-reference": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 20,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 1,
+      "historical_name_hint": 0
+    },
+    "tools/combat-parity": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 11,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-census": {
+      "files": 23,
+      "py_files": 23,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 67,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 5,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-format-spike": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 16,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 1
+    },
+    "tools/content-migration": {
+      "files": 213,
+      "py_files": 213,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 1394,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 169,
+      "env_gate_hint": 10,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/achievement-authoring": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 11,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/area-authoring": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/character-progression": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 19,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/charm-authoring": {
+      "files": 3,
+      "py_files": 3,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 49,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 3,
+      "env_gate_hint": 1,
+      "historical_name_hint": 1
+    },
+    "tools/content-schema/condition-authoring": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 12,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/cosmetics-authoring": {
+      "files": 5,
+      "py_files": 5,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 31,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 3,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/craft-authoring": {
+      "files": 3,
+      "py_files": 3,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 21,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/encounter-authoring": {
+      "files": 5,
+      "py_files": 5,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 42,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 5,
+      "env_gate_hint": 2,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/encounters": {
+      "files": 5,
+      "py_files": 5,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 20,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 3,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/house-authoring": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 19,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/imbuement-authoring": {
+      "files": 14,
+      "py_files": 14,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 259,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 10,
+      "env_gate_hint": 0,
+      "historical_name_hint": 7
+    },
+    "tools/content-schema/item-authoring": {
+      "files": 46,
+      "py_files": 46,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 394,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 31,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/map-content-linking": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 7,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/monster-authoring": {
+      "files": 29,
+      "py_files": 29,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 258,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 16,
+      "env_gate_hint": 12,
+      "historical_name_hint": 1
+    },
+    "tools/content-schema/native-gameplay": {
+      "files": 51,
+      "py_files": 51,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 265,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 36,
+      "env_gate_hint": 5,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/npc-authoring": {
+      "files": 22,
+      "py_files": 22,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 238,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 14,
+      "env_gate_hint": 1,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/proficiency-authoring": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 11,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/quest-authoring": {
+      "files": 213,
+      "py_files": 213,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 1522,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 134,
+      "env_gate_hint": 26,
+      "historical_name_hint": 2
+    },
+    "tools/content-schema/reward-claim-authoring": {
+      "files": 11,
+      "py_files": 11,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 121,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 9,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/spell-authoring": {
+      "files": 33,
+      "py_files": 33,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 357,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 19,
+      "env_gate_hint": 4,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/starter-kit-authoring": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 4,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/step-speed": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 5,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/store-authoring": {
+      "files": 3,
+      "py_files": 3,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 7,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 3,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/test_materialized_authored_props.py": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 6,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/test_validate_full_game_content_tree.py": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/test_validate_item_master_schema.py": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/wheel-authoring": {
+      "files": 11,
+      "py_files": 11,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 137,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 7,
+      "env_gate_hint": 0,
+      "historical_name_hint": 1
+    },
+    "tools/content-schema/world-authoring": {
+      "files": 18,
+      "py_files": 18,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 264,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 16,
+      "env_gate_hint": 3,
+      "historical_name_hint": 0
+    },
+    "tools/content-schema/world-object-authoring": {
+      "files": 12,
+      "py_files": 12,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 58,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 12,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/contracts": {
+      "files": 4,
+      "py_files": 4,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 15,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 4,
+      "env_gate_hint": 1,
+      "historical_name_hint": 0
+    },
+    "tools/dev-client": {
+      "files": 9,
+      "rs_files": 9,
+      "rust_test_attributes": 40,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 2,
+      "env_gate_hint": 2,
+      "historical_name_hint": 0
+    },
+    "tools/errors": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 15,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/fnd02-terminal-outcome-retention-evidence": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 14,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 1
+    },
+    "tools/game-atlas-appearances": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 8,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/game-atlas-creature-gameplay": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/game-atlas-creatures": {
+      "files": 2,
+      "py_files": 2,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/game-atlas-farm-intelligence": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 10,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/game-atlas-fullworld-source": {
+      "files": 2,
+      "py_files": 2,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 14,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/game-atlas-outfit-spatial": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/game-atlas-semantic-search": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/game-atlas-thais-fixture": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 8,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/game-platform-catalog": {
+      "files": 7,
+      "py_files": 7,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 26,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 4,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/merge-driver": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 12,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/monster-lab": {
+      "files": 5,
+      "py_files": 5,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 51,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 2,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/next-wave-limit-evidence": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 11,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 1
+    },
+    "tools/oteryn-game-ops-top": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 1,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/player-bots": {
+      "files": 2,
+      "rs_files": 2,
+      "rust_test_attributes": 12,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/qualification": {
+      "files": 20,
+      "py_files": 20,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 194,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 16,
+      "env_gate_hint": 6,
+      "historical_name_hint": 1
+    },
+    "tools/reference-spatial-resource-profile": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 4,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/reference-world-corridor-census": {
+      "files": 14,
+      "py_files": 14,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 116,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 4,
+      "env_gate_hint": 0,
+      "historical_name_hint": 1
+    },
+    "tools/repository": {
+      "files": 32,
+      "py_files": 32,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 336,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 29,
+      "env_gate_hint": 17,
+      "historical_name_hint": 0
+    },
+    "tools/runtime-actor-resource-evidence": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 14,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 1
+    },
+    "tools/synthetic-client-harness": {
+      "files": 31,
+      "rs_files": 31,
+      "rust_test_attributes": 73,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/test_redact_ci_log.py": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 2,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/tibia-worldmap-reconstruction": {
+      "files": 1,
+      "py_files": 1,
+      "rust_test_attributes": 0,
+      "python_test_definitions": 21,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 0,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    },
+    "tools/world-bundle-compiler": {
+      "files": 34,
+      "rs_files": 33,
+      "rust_test_attributes": 89,
+      "python_test_definitions": 10,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 3,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0,
+      "py_files": 1
+    },
+    "tools/world-project-v2-scale-measurement": {
+      "files": 1,
+      "rs_files": 1,
+      "rust_test_attributes": 4,
+      "python_test_definitions": 0,
+      "ignored_attributes": 0,
+      "source_text_reference_hint": 1,
+      "env_gate_hint": 0,
+      "historical_name_hint": 0
+    }
+  },
+  "workspace_member_count": 68,
+  "workspace_members": [
+    {
+      "path": "crates/admin/agent",
+      "package": "oteryn-admin-agent",
+      "source_files": {
+        ".rs": 11
+      },
+      "test_inventory": {
+        "files": 3,
+        "rs_files": 3,
+        "rust_test_attributes": 7,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 2,
+        "env_gate_hint": 2,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/admin/contracts",
+      "package": "oteryn-admin-contracts",
+      "source_files": {
+        ".rs": 6
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 4,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 1,
+        "env_gate_hint": 1,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/dispatch",
+      "package": "oteryn-gameplay-dispatch",
+      "source_files": {
+        ".rs": 2750,
+        ".py": 2
+      },
+      "test_inventory": {
+        "files": 1336,
+        "rs_files": 1336,
+        "rust_test_attributes": 4589,
+        "python_test_definitions": 0,
+        "ignored_attributes": 16,
+        "source_text_reference_hint": 93,
+        "env_gate_hint": 416,
+        "historical_name_hint": 2
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/npc",
+      "package": "oteryn-gameplay-npc",
+      "source_files": {
+        ".rs": 25
+      },
+      "test_inventory": {
+        "files": 13,
+        "rs_files": 13,
+        "rust_test_attributes": 56,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 4,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/entities",
+      "package": "oteryn-gameplay-entities",
+      "source_files": {
+        ".rs": 153
+      },
+      "test_inventory": {
+        "files": 75,
+        "rs_files": 75,
+        "rust_test_attributes": 448,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 1,
+        "env_gate_hint": 1,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/social-rules",
+      "package": "oteryn-gameplay-social-rules",
+      "source_files": {
+        ".rs": 21
+      },
+      "test_inventory": {
+        "files": 13,
+        "rs_files": 13,
+        "rust_test_attributes": 66,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 1,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/encounter-rules",
+      "package": "oteryn-gameplay-encounter-rules",
+      "source_files": {
+        ".rs": 24
+      },
+      "test_inventory": {
+        "files": 16,
+        "rs_files": 16,
+        "rust_test_attributes": 80,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 1,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/spell-rules",
+      "package": "oteryn-gameplay-spell-rules",
+      "source_files": {
+        ".rs": 23
+      },
+      "test_inventory": {
+        "files": 16,
+        "rs_files": 16,
+        "rust_test_attributes": 69,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 4,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/combat-rules",
+      "package": "oteryn-gameplay-combat-rules",
+      "source_files": {
+        ".rs": 28
+      },
+      "test_inventory": {
+        "files": 14,
+        "rs_files": 14,
+        "rust_test_attributes": 86,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 4,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/housing",
+      "package": "oteryn-gameplay-housing",
+      "source_files": {
+        ".rs": 23
+      },
+      "test_inventory": {
+        "files": 14,
+        "rs_files": 14,
+        "rust_test_attributes": 37,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/quests",
+      "package": "oteryn-gameplay-quests",
+      "source_files": {
+        ".rs": 309
+      },
+      "test_inventory": {
+        "files": 203,
+        "rs_files": 203,
+        "rust_test_attributes": 816,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 63,
+        "env_gate_hint": 1,
+        "historical_name_hint": 2
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/economy",
+      "package": "oteryn-gameplay-economy",
+      "source_files": {
+        ".rs": 27
+      },
+      "test_inventory": {
+        "files": 16,
+        "rs_files": 16,
+        "rust_test_attributes": 49,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/items",
+      "package": "oteryn-gameplay-items",
+      "source_files": {
+        ".rs": 63
+      },
+      "test_inventory": {
+        "files": 41,
+        "rs_files": 41,
+        "rust_test_attributes": 204,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 6,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/progression",
+      "package": "oteryn-gameplay-progression",
+      "source_files": {
+        ".rs": 45
+      },
+      "test_inventory": {
+        "files": 35,
+        "rs_files": 35,
+        "rust_test_attributes": 178,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 6,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/characters",
+      "package": "oteryn-gameplay-characters",
+      "source_files": {
+        ".rs": 9
+      },
+      "test_inventory": {
+        "files": 6,
+        "rs_files": 6,
+        "rust_test_attributes": 44,
+        "python_test_definitions": 0,
+        "ignored_attributes": 1,
+        "source_text_reference_hint": 2,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/social",
+      "package": "oteryn-gameplay-social",
+      "source_files": {
+        ".rs": 66
+      },
+      "test_inventory": {
+        "files": 27,
+        "rs_files": 27,
+        "rust_test_attributes": 189,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 2,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/monster-ai",
+      "package": "oteryn-gameplay-monster-ai",
+      "source_files": {
+        ".rs": 68
+      },
+      "test_inventory": {
+        "files": 32,
+        "rs_files": 32,
+        "rust_test_attributes": 171,
+        "python_test_definitions": 0,
+        "ignored_attributes": 4,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 4,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/encounters",
+      "package": "oteryn-gameplay-encounters",
+      "source_files": {
+        ".rs": 120
+      },
+      "test_inventory": {
+        "files": 51,
+        "rs_files": 51,
+        "rust_test_attributes": 225,
+        "python_test_definitions": 0,
+        "ignored_attributes": 7,
+        "source_text_reference_hint": 7,
+        "env_gate_hint": 3,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/spell",
+      "package": "oteryn-gameplay-spell",
+      "source_files": {
+        ".rs": 90
+      },
+      "test_inventory": {
+        "files": 51,
+        "rs_files": 51,
+        "rust_test_attributes": 358,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 17,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/combat",
+      "package": "oteryn-gameplay-combat",
+      "source_files": {
+        ".rs": 28
+      },
+      "test_inventory": {
+        "files": 11,
+        "rs_files": 11,
+        "rust_test_attributes": 54,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 4,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/world",
+      "package": "oteryn-gameplay-world",
+      "source_files": {
+        ".rs": 111
+      },
+      "test_inventory": {
+        "files": 65,
+        "rs_files": 65,
+        "rust_test_attributes": 317,
+        "python_test_definitions": 0,
+        "ignored_attributes": 1,
+        "source_text_reference_hint": 4,
+        "env_gate_hint": 2,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/durability",
+      "package": "oteryn-gameplay-durability",
+      "source_files": {
+        ".rs": 963
+      },
+      "test_inventory": {
+        "files": 277,
+        "rs_files": 277,
+        "rust_test_attributes": 965,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 17,
+        "env_gate_hint": 8,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/content",
+      "package": "oteryn-gameplay-content",
+      "source_files": {
+        ".rs": 197
+      },
+      "test_inventory": {
+        "files": 112,
+        "rs_files": 112,
+        "rust_test_attributes": 467,
+        "python_test_definitions": 0,
+        "ignored_attributes": 1,
+        "source_text_reference_hint": 28,
+        "env_gate_hint": 3,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/content-promotion",
+      "package": "oteryn-gameplay-content-promotion",
+      "source_files": {
+        ".rs": 36
+      },
+      "test_inventory": {
+        "files": 27,
+        "rs_files": 27,
+        "rust_test_attributes": 112,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 2,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/foundation",
+      "package": "oteryn-gameplay-foundation",
+      "source_files": {
+        ".rs": 54
+      },
+      "test_inventory": {
+        "files": 32,
+        "rs_files": 32,
+        "rust_test_attributes": 395,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 1,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/domain",
+      "package": "oteryn-gameplay-domain",
+      "source_files": {
+        ".rs": 70
+      },
+      "test_inventory": {
+        "files": 40,
+        "rs_files": 40,
+        "rust_test_attributes": 224,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 5,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "apps/client",
+      "package": "oteryn-client",
+      "source_files": {
+        ".rs": 1400
+      },
+      "test_inventory": {
+        "files": 649,
+        "rs_files": 649,
+        "rust_test_attributes": 2519,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 44,
+        "env_gate_hint": 44,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "apps/game-server",
+      "package": "oteryn-game-server",
+      "source_files": {
+        ".rs": 1149
+      },
+      "test_inventory": {
+        "files": 529,
+        "rs_files": 529,
+        "rust_test_attributes": 2605,
+        "python_test_definitions": 0,
+        "ignored_attributes": 11,
+        "source_text_reference_hint": 65,
+        "env_gate_hint": 63,
+        "historical_name_hint": 4
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/foundation",
+      "package": "oteryn-foundation",
+      "source_files": {
+        ".rs": 2
+      },
+      "test_inventory": {
+        "files": 2,
+        "rs_files": 2,
+        "rust_test_attributes": 3,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/simulation-determinism",
+      "package": "oteryn-simulation-determinism",
+      "source_files": {
+        ".rs": 1
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 7,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/diagnostics",
+      "package": "oteryn-diagnostics",
+      "source_files": {
+        ".rs": 1
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 2,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/error-codes",
+      "package": "oteryn-error-codes",
+      "source_files": {
+        ".rs": 11
+      },
+      "test_inventory": {
+        "files": 9,
+        "rs_files": 9,
+        "rust_test_attributes": 28,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 1,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/task-supervisor",
+      "package": "oteryn-task-supervisor",
+      "source_files": {
+        ".rs": 1
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 10,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/ntp-clock",
+      "package": "oteryn-ntp-clock",
+      "source_files": {
+        ".rs": 1
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 3,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/client-runtime",
+      "package": "oteryn-client-runtime",
+      "source_files": {
+        ".rs": 101
+      },
+      "test_inventory": {
+        "files": 34,
+        "rs_files": 34,
+        "rust_test_attributes": 59,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 8,
+        "env_gate_hint": 8,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/client-ui",
+      "package": "oteryn-client-ui",
+      "source_files": {
+        ".rs": 907
+      },
+      "test_inventory": {
+        "files": 277,
+        "rs_files": 277,
+        "rust_test_attributes": 729,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 50,
+        "env_gate_hint": 49,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/client-ui-bevy",
+      "package": "oteryn-client-ui-bevy",
+      "source_files": {
+        ".rs": 6
+      },
+      "test_inventory": {
+        "files": 3,
+        "rs_files": 3,
+        "rust_test_attributes": 7,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/platform-contracts",
+      "package": "oteryn-platform-contracts",
+      "source_files": {
+        ".rs": 1
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 1,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/platform-client",
+      "package": "oteryn-platform-client",
+      "source_files": {
+        ".rs": 28
+      },
+      "test_inventory": {
+        "files": 15,
+        "rs_files": 15,
+        "rust_test_attributes": 76,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 2,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/protocol-oteryn",
+      "package": "oteryn-protocol-oteryn",
+      "source_files": {
+        ".rs": 347
+      },
+      "test_inventory": {
+        "files": 234,
+        "rs_files": 234,
+        "rust_test_attributes": 920,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 63,
+        "env_gate_hint": 1,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/session",
+      "package": "oteryn-session",
+      "source_files": {
+        ".rs": 188
+      },
+      "test_inventory": {
+        "files": 133,
+        "rs_files": 133,
+        "rust_test_attributes": 302,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 61,
+        "env_gate_hint": 64,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/session-tcp",
+      "package": "oteryn-session-tcp",
+      "source_files": {
+        ".rs": 3
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 3,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/identity",
+      "package": "oteryn-identity",
+      "source_files": {
+        ".rs": 1
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 7,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 1,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/client-domain",
+      "package": "oteryn-client-domain",
+      "source_files": {
+        ".rs": 3
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 1,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/client-simulation",
+      "package": "oteryn-client-simulation",
+      "source_files": {
+        ".rs": 7
+      },
+      "test_inventory": {
+        "files": 4,
+        "rs_files": 4,
+        "rust_test_attributes": 12,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/input-actions",
+      "package": "oteryn-input-actions",
+      "source_files": {
+        ".rs": 6
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 11,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/input-platform",
+      "package": "oteryn-input-platform",
+      "source_files": {
+        ".rs": 8
+      },
+      "test_inventory": {
+        "files": 5,
+        "rs_files": 5,
+        "rust_test_attributes": 23,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/renderer",
+      "package": "oteryn-renderer",
+      "source_files": {
+        ".rs": 17
+      },
+      "test_inventory": {
+        "files": 8,
+        "rs_files": 8,
+        "rust_test_attributes": 49,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/client-assets",
+      "package": "oteryn-client-assets",
+      "source_files": {
+        ".rs": 21
+      },
+      "test_inventory": {
+        "files": 7,
+        "rs_files": 7,
+        "rust_test_attributes": 31,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/synthetic-assets",
+      "package": "oteryn-synthetic-assets",
+      "source_files": {
+        ".rs": 1
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 1,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/test-support",
+      "package": "oteryn-test-support",
+      "source_files": {
+        ".rs": 5
+      },
+      "test_inventory": {
+        "files": 2,
+        "rs_files": 2,
+        "rust_test_attributes": 13,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/world-bundle",
+      "package": "oteryn-world-bundle",
+      "source_files": {
+        ".rs": 10
+      },
+      "test_inventory": {
+        "files": 6,
+        "rs_files": 6,
+        "rust_test_attributes": 17,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/weather",
+      "package": "oteryn-gameplay-weather",
+      "source_files": {
+        ".rs": 2
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 10,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 1,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/world-change",
+      "package": "oteryn-gameplay-world-change",
+      "source_files": {
+        ".rs": 16
+      },
+      "test_inventory": {
+        "files": 12,
+        "rs_files": 12,
+        "rust_test_attributes": 49,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 3,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/source-critical-baseline",
+      "package": "oteryn-gameplay-source-critical-baseline",
+      "source_files": {
+        ".rs": 1
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 2,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/character-recovery-fence",
+      "package": "oteryn-gameplay-character-recovery-fence",
+      "source_files": {
+        ".rs": 1
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 8,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 1,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/admission-evidence",
+      "package": "oteryn-gameplay-admission-evidence",
+      "source_files": {
+        ".rs": 1
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 1,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 1
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/native-admission-source",
+      "package": "oteryn-gameplay-native-admission-source",
+      "source_files": {
+        ".rs": 49
+      },
+      "test_inventory": {
+        "files": 23,
+        "rs_files": 23,
+        "rust_test_attributes": 243,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 12,
+        "env_gate_hint": 1,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "crates/gameplay/node-files",
+      "package": "oteryn-gameplay-node-files",
+      "source_files": {
+        ".rs": 3
+      },
+      "test_inventory": {
+        "files": 2,
+        "rs_files": 2,
+        "rust_test_attributes": 8,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tests/security/auth",
+      "package": "oteryn-security-auth-tests",
+      "source_files": {
+        ".rs": 7
+      },
+      "test_inventory": {
+        "files": 4,
+        "rs_files": 4,
+        "rust_test_attributes": 13,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 2,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tests/pre-native-client",
+      "package": "oteryn-pre-native-client-tests",
+      "source_files": {
+        ".rs": 1
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 1,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 1
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/architecture-check",
+      "package": "oteryn-architecture-check",
+      "source_files": {
+        ".py": 2,
+        ".rs": 15
+      },
+      "test_inventory": {
+        "files": 7,
+        "rs_files": 7,
+        "rust_test_attributes": 56,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 2,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/synthetic-asset-compiler",
+      "package": "oteryn-synthetic-asset-compiler",
+      "source_files": {
+        ".rs": 1
+      },
+      "test_inventory": {},
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/synthetic-client-harness",
+      "package": "oteryn-synthetic-client-harness",
+      "source_files": {
+        ".rs": 39
+      },
+      "test_inventory": {
+        "files": 31,
+        "rs_files": 31,
+        "rust_test_attributes": 73,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/dev-client",
+      "package": "oteryn-dev-client",
+      "source_files": {
+        ".rs": 12
+      },
+      "test_inventory": {
+        "files": 9,
+        "rs_files": 9,
+        "rust_test_attributes": 40,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 2,
+        "env_gate_hint": 2,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/player-bots",
+      "package": "oteryn-player-bots",
+      "source_files": {
+        ".rs": 2
+      },
+      "test_inventory": {
+        "files": 2,
+        "rs_files": 2,
+        "rust_test_attributes": 12,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 0,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/oteryn-game-ops-top",
+      "package": "oteryn-game-ops-top",
+      "source_files": {
+        ".rs": 1
+      },
+      "test_inventory": {
+        "files": 1,
+        "rs_files": 1,
+        "rust_test_attributes": 1,
+        "python_test_definitions": 0,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 1,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/world-bundle-compiler",
+      "package": "oteryn-world-bundle-compiler",
+      "source_files": {
+        ".py": 2,
+        ".rs": 42
+      },
+      "test_inventory": {
+        "files": 34,
+        "rs_files": 33,
+        "rust_test_attributes": 89,
+        "python_test_definitions": 10,
+        "ignored_attributes": 0,
+        "source_text_reference_hint": 3,
+        "env_gate_hint": 0,
+        "historical_name_hint": 0,
+        "py_files": 1
+      },
+      "semantic_review_status": "UNREVIEWED_STATIC_SCAN"
+    }
+  ],
+  "missing_sources": [],
+  "modified_sources": [],
+  "syntax_errors": [],
+  "python_identical_argument_assertions": [
+    {
+      "path": "tools/content-migration/test_creature_level_rating.py",
+      "line": 26,
+      "test": "test_deterministic",
+      "expression": "self.assertEqual(rating.render(), rating.render())"
+    },
+    {
+      "path": "tools/content-migration/test_npc_quest_binding_stage.py",
+      "line": 309,
+      "test": "test_repeated_stage_is_byte_identical",
+      "expression": "self.assertEqual(q.canonical(q.stage(self.root)), q.canonical(q.stage(self.root)))"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_official_map_markers.py",
+      "line": 28,
+      "test": "test_deterministic_compilation",
+      "expression": "self.assertEqual(m.canonical(self.compile()), m.canonical(self.compile()))"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_completion_import.py",
+      "line": 150,
+      "test": "test_readonly_determinism_and_pinned_input_drift_rejection",
+      "expression": "self.assertEqual(tool.expected(ROOT), tool.expected(ROOT))"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_world_base.py",
+      "line": 163,
+      "test": "test_encoding_is_deterministic",
+      "expression": "self.assertEqual(codec.encode_sector_tiles(0, 0, tiles), codec.encode_sector_tiles(0, 0, tiles))"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_world_base.py",
+      "line": 168,
+      "test": "test_encoding_is_deterministic",
+      "expression": "self.assertEqual(codec.encode_region(0, 0, 0, {0: payload}), codec.encode_region(0, 0, 0, {0: payload}))"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_world_record.py",
+      "line": 152,
+      "test": "test_fixture_converts_to_a_valid_record_with_exact_bounds",
+      "expression": "self.assertEqual(convert.build(self.root), convert.build(self.root))"
+    },
+    {
+      "path": "tools/repository/test_job_result_key.py",
+      "line": 69,
+      "test": "test_deterministic_and_prefixed",
+      "expression": "self.assertEqual(self.key(), self.key())"
+    }
+  ],
+  "python_files_without_unittest_style_definitions": [
+    {
+      "path": "tools/content-census/g4_direct_nonitem_family_crosswalk_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "direct_row",
+        "g4_page",
+        "fake_inputs",
+        "expect_error",
+        "run"
+      ]
+    },
+    {
+      "path": "tools/content-census/g4_item_binding_pilot_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "tools/content-census/g4_item_crystal_binding_generator_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "expect_error",
+        "candidate",
+        "epoch2_alias_gate_and_allocation",
+        "epoch2_committed_output",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/content-census/g4_item_source_capture_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "fixture",
+        "rejects",
+        "refresh_manifest",
+        "run"
+      ]
+    },
+    {
+      "path": "tools/content-census/g4_item_wave1_capture_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "page",
+        "api",
+        "expect_error",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/content-census/g4_item_wave1_stage_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "value",
+        "snapshot",
+        "legacy",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/content-census/g4_non_item_source_capture_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "api_page",
+        "fixture",
+        "g2_fixture",
+        "expect_error",
+        "run"
+      ]
+    },
+    {
+      "path": "tools/content-census/g4_nonitem_revision_revalidation_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "pinned",
+        "current",
+        "expect_error",
+        "expect_api_error",
+        "run"
+      ]
+    },
+    {
+      "path": "tools/content-census/item_id_alias_table_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "expect_error",
+        "alias",
+        "retired",
+        "space",
+        "synthetic_table_checks",
+        "named_keys_from_rust",
+        "committed_table",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/content-census/stage_appearance_tables_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "ev",
+        "v",
+        "b",
+        "record",
+        "run_case",
+        "expect_reject",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/content-census/unknown_closure_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "require_failure",
+        "synthetic_refresh",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/content-census/unknown_disposition_ledger_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "must_fail",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/content-migration/test_m42_cooking_receipt_keys_postgres.py",
+      "has_main_guard": true,
+      "functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "tools/content-schema/area-authoring/test_validate_areas.py",
+      "has_main_guard": true,
+      "functions": [
+        "first",
+        "mutate",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_donor_source_maps.py",
+      "has_main_guard": false,
+      "functions": [
+        "load_tests"
+      ]
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_donor_refinements.py",
+      "has_main_guard": false,
+      "functions": [
+        "load_module",
+        "load_tests"
+      ]
+    },
+    {
+      "path": "tools/content-schema/test_validate_full_game_content_tree.py",
+      "has_main_guard": true,
+      "functions": [
+        "expect_failure",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/content-schema/test_validate_item_master_schema.py",
+      "has_main_guard": true,
+      "functions": [
+        "expect_failure",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/game-atlas-creature-gameplay/self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "_write",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/game-atlas-creatures/animated_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "tools/game-atlas-creatures/self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "build",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/game-atlas-fullworld-source/animated_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "tools/game-atlas-outfit-spatial/self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "v",
+        "vi",
+        "vb",
+        "fixture",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/game-atlas-semantic-search/self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "fixture_creatures",
+        "navigation_payload",
+        "validate_navigation_decoder",
+        "validate_acceptance_fixture",
+        "run"
+      ]
+    },
+    {
+      "path": "tools/reference-world-corridor-census/interaction_binding_catalog_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "observation",
+        "expect_error",
+        "git",
+        "create_game_input_repo",
+        "relative_evidence_path",
+        "verify_storage",
+        "build",
+        "exercise_game_input_provenance",
+        "exercise_parser_active_prefix_provenance",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/reference-world-corridor-census/item_field_verification_self_test.py",
+      "has_main_guard": true,
+      "functions": [
+        "coverage",
+        "profile",
+        "obs",
+        "inputs",
+        "record",
+        "main"
+      ]
+    },
+    {
+      "path": "tools/repository/test_classify_post_merge_lanes.py",
+      "has_main_guard": true,
+      "functions": [
+        "git",
+        "metadata",
+        "event",
+        "classify",
+        "commit_change",
+        "shared_cache_completion_regressions",
+        "main"
+      ]
+    }
+  ],
+  "python_identical_test_bodies": [
+    [
+      {
+        "path": "tools/agents/tests/test_enqueue_readiness.py",
+        "line": 182,
+        "test": "test_unresolved_threads_block",
+        "bytes": 673
+      },
+      {
+        "path": "tools/agents/tests/test_enqueue_readiness.py",
+        "line": 517,
+        "test": "test_unresolved_positive_integer_blocks",
+        "bytes": 673
+      }
+    ],
+    [
+      {
+        "path": "tools/content-census/stage_proficiencies_self_test.py",
+        "line": 85,
+        "test": "test_committed_bytes_regenerate",
+        "bytes": 1092
+      },
+      {
+        "path": "tools/content-census/stage_staticdata_houses_achievements_self_test.py",
+        "line": 89,
+        "test": "test_committed_bytes_regenerate",
+        "bytes": 1092
+      }
+    ],
+    [
+      {
+        "path": "tools/content-schema/craft-authoring/test_tainted_souls.py",
+        "line": 41,
+        "test": "test_source_script_and_nonstackable_output_are_independently_qualified",
+        "bytes": 3197
+      },
+      {
+        "path": "tools/content-schema/craft-authoring/test_tainted_souls.py",
+        "line": 90,
+        "test": "test_source_script_and_nonstackable_output_are_independently_qualified",
+        "bytes": 3197
+      }
+    ],
+    [
+      {
+        "path": "tools/content-schema/craft-authoring/test_tainted_souls.py",
+        "line": 53,
+        "test": "test_invalid_whole_stack_or_output_count_never_generates_a_recipe",
+        "bytes": 3096
+      },
+      {
+        "path": "tools/content-schema/craft-authoring/test_tainted_souls.py",
+        "line": 102,
+        "test": "test_invalid_whole_stack_or_output_count_never_generates_a_recipe",
+        "bytes": 3096
+      }
+    ],
+    [
+      {
+        "path": "tools/content-schema/craft-authoring/test_tainted_souls.py",
+        "line": 65,
+        "test": "test_source_recipe_uses_qm22_capture_target_stack_policy",
+        "bytes": 2472
+      },
+      {
+        "path": "tools/content-schema/craft-authoring/test_tainted_souls.py",
+        "line": 114,
+        "test": "test_source_recipe_uses_qm22_capture_target_stack_policy",
+        "bytes": 2472
+      }
+    ],
+    [
+      {
+        "path": "tools/content-schema/native-gameplay/test_srx3_primal_witness.py",
+        "line": 39,
+        "test": "test_actual_bounded_source_closure_and_full_source_digest_are_retained",
+        "bytes": 298
+      },
+      {
+        "path": "tools/content-schema/native-gameplay/test_srx3_soul_war_witness.py",
+        "line": 38,
+        "test": "test_actual_bounded_source_closure_and_full_source_digest_are_retained",
+        "bytes": 298
+      }
+    ],
+    [
+      {
+        "path": "tools/content-schema/native-gameplay/test_srx3_primal_witness.py",
+        "line": 51,
+        "test": "test_rebound_full_source_digest_cannot_bless_changed_callback_body",
+        "bytes": 1205
+      },
+      {
+        "path": "tools/content-schema/native-gameplay/test_srx3_soul_war_witness.py",
+        "line": 62,
+        "test": "test_rebound_full_source_digest_cannot_bless_changed_callback_body",
+        "bytes": 1205
+      }
+    ],
+    [
+      {
+        "path": "tools/content-schema/native-gameplay/test_srx3_primal_witness.py",
+        "line": 57,
+        "test": "test_unchanged_names_cannot_substitute_donor_identity_or_revision",
+        "bytes": 971
+      },
+      {
+        "path": "tools/content-schema/native-gameplay/test_srx3_soul_war_witness.py",
+        "line": 68,
+        "test": "test_unchanged_names_cannot_substitute_donor_identity_or_revision",
+        "bytes": 971
+      }
+    ],
+    [
+      {
+        "path": "tools/content-schema/native-gameplay/test_srx3_primal_witness.py",
+        "line": 63,
+        "test": "test_missing_or_duplicated_native_participant_is_refused",
+        "bytes": 1372
+      },
+      {
+        "path": "tools/content-schema/native-gameplay/test_srx3_soul_war_witness.py",
+        "line": 74,
+        "test": "test_missing_or_duplicated_native_participant_is_refused",
+        "bytes": 1372
+      }
+    ],
+    [
+      {
+        "path": "tools/content-schema/native-gameplay/test_srx3_ragiaz_spawn.py",
+        "line": 25,
+        "test": "test_unsigned_fixture_cannot_publish_source_evidence",
+        "bytes": 971
+      },
+      {
+        "path": "tools/content-schema/native-gameplay/test_srx3_spite_spawns.py",
+        "line": 46,
+        "test": "test_changed_xml_is_not_accepted_as_pinned_spawn_evidence",
+        "bytes": 971
+      }
+    ],
+    [
+      {
+        "path": "tools/content-schema/quest-authoring/test_npc_progress_retention.py",
+        "line": 65,
+        "test": "test_missing_declaration_keeps_explicit_unknown",
+        "bytes": 872
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_progress_enrichment.py",
+        "line": 62,
+        "test": "test_missing_storage_declaration_fails",
+        "bytes": 872
+      }
+    ],
+    [
+      {
+        "path": "tools/content-schema/quest-authoring/test_quest_explore_area_candidates.py",
+        "line": 116,
+        "test": "test_committed_packet_matches_generator",
+        "bytes": 884
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_quest_reward_only_binding_candidates.py",
+        "line": 100,
+        "test": "test_committed_packet_matches_generator",
+        "bytes": 884
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_quest_talk_npc_candidates.py",
+        "line": 111,
+        "test": "test_committed_packet_matches_generator",
+        "bytes": 884
+      }
+    ],
+    [
+      {
+        "path": "tools/content-schema/quest-authoring/test_questpc2_albinius_rules.py",
+        "line": 11,
+        "test": "test_source_pin_reproduces_exact_runtime_program",
+        "bytes": 648
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_questpc2_gerimor_rules.py",
+        "line": 11,
+        "test": "test_source_pin_reproduces_runtime_assignment_program",
+        "bytes": 648
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_questpc2_gnomus_rules.py",
+        "line": 11,
+        "test": "test_source_pin_reproduces_runtime_program",
+        "bytes": 648
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_questpc2_henricus_rules.py",
+        "line": 11,
+        "test": "test_pinned_source_reproduces_the_exact_runtime_program",
+        "bytes": 648
+      }
+    ]
+  ],
+  "ignored_rust_tests": [
+    {
+      "path": "apps/game-server/src/qualification.rs",
+      "line": 1300,
+      "test": "node_boot_spells_against_running_node",
+      "reason": "requires the disposable node-boot spell topology and Character-owned cast facts"
+    },
+    {
+      "path": "apps/game-server/src/qualification.rs",
+      "line": 1456,
+      "test": "node_boot_seam_against_running_node",
+      "reason": "requires a running node in the disposable WP5 node-boot topology"
+    },
+    {
+      "path": "apps/game-server/src/qualification.rs",
+      "line": 1588,
+      "test": "server_seam_real_owners_over_tcp_tls",
+      "reason": "requires the disposable WP5 Platform + PostgreSQL 18.6 topology"
+    },
+    {
+      "path": "apps/game-server/tests/content_native_entry_room.rs",
+      "line": 130,
+      "test": "platform_issued_world_binds_and_qualifies_the_committed_room",
+      "reason": "requires the Platform-issued receipt from tools/qualification/native_entry_room/run.sh"
+    },
+    {
+      "path": "apps/game-server/tests/integration_rest/map_overlay_channel.rs",
+      "line": 745,
+      "test": "map_overlay_budget_measure",
+      "reason": "budget measurement (ADR-0021 \u00a74.8), run by hand in release mode"
+    },
+    {
+      "path": "apps/game-server/tests/map_load_base.rs",
+      "line": 969,
+      "test": "map_load_budget_compile_the_real_map",
+      "reason": "budget measurement (ADR-0021 \u00a74.8), run by hand in release mode"
+    },
+    {
+      "path": "apps/game-server/tests/map_load_base.rs",
+      "line": 1054,
+      "test": "map_load_budget_measure",
+      "reason": "budget measurement (ADR-0021 \u00a74.8), run by hand in release mode"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "line": 99,
+      "test": "real_platform_producer_decodes_all_four_operations",
+      "reason": "requires the disposable S3-A TLS/FastCGI/MariaDB topology"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "line": 174,
+      "test": "real_platform_producer_reports_revoked_fresh_key",
+      "reason": "requires the disposable S3-A TLS/FastCGI/MariaDB topology"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "line": 203,
+      "test": "real_capacity_two_inflight_rejects_third",
+      "reason": "requires the disposable S3-A TLS/FastCGI/MariaDB topology"
+    },
+    {
+      "path": "apps/game-server/tests/wp5_s3b_composition.rs",
+      "line": 719,
+      "test": "real_owners_compose_fresh_admission_and_fence_replacement",
+      "reason": "requires the disposable S3-B Platform + PostgreSQL 18.6 topology"
+    },
+    {
+      "path": "crates/gameplay/characters/src/speed.rs",
+      "line": 333,
+      "test": "benchmark_canonical_creature_cadence_lookup",
+      "reason": "explicit local bounded kernel benchmark; no owner/world mutations"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay.rs",
+      "line": 2998,
+      "test": "actual_full_manifest_qualifies_source_world_and_all_owner_profiles",
+      "reason": "requires OTERYN_FULL_SPELL_TEST_MANIFEST from the explicit source producer"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/canonical_monster_successor_tests.rs",
+      "line": 178,
+      "test": "canonical_monster_successor_reseal_and_preservation",
+      "reason": "root-only explicit isolated canonical successor qualification"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/hireling.rs",
+      "line": 8,
+      "test": "client_e2e_hireling",
+      "reason": "CLIENT-E2E-1: Hireling Query cannot reach durable read; position.is_some() == dismiss rejects Query (None,false), crates/gameplay/durability/src/durability/house_hireling.rs:14"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/world_map_real_tests.rs",
+      "line": 811,
+      "test": "map_viewport_real_measure",
+      "reason": "measurement (MAP-VIEWPORT-MEASURE-1); run in release"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/world_map_tests.rs",
+      "line": 1497,
+      "test": "map_viewport_measure",
+      "reason": "measurement; run in release"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/world_map_tests.rs",
+      "line": 1507,
+      "test": "map_viewport_measure_production_facts",
+      "reason": "measurement; run in release"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lifted_tests/creature_area_heal_tests.rs",
+      "line": 543,
+      "test": "actual_corrected_native_world_has_1863_hp_catalog_19_area_and_1_project_prophet_membership",
+      "reason": "requires retained current source-corrected native eleven-document capture; run explicitly locally"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_appearance_execution_tests.rs",
+      "line": 322,
+      "test": "appearance_all120_source_bodies_resolve_current_native110_creature10_items",
+      "reason": "requires actual OTERYN_FULL_SPELL_TEST_MANIFEST"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_appearance_execution_tests.rs",
+      "line": 390,
+      "test": "scheduled_appearance_real_player_store_projection_expiry_and_replay",
+      "reason": "requires actual OTERYN_FULL_SPELL_TEST_MANIFEST"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_appearance_execution_tests.rs",
+      "line": 613,
+      "test": "scheduled_appearance_missing_artifact_tile_refusal_wrong_revision_and_stale_owner_no_mutation",
+      "reason": "requires actual OTERYN_FULL_SPELL_TEST_MANIFEST"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_appearance_execution_tests.rs",
+      "line": 695,
+      "test": "source_target_flag_defense_still_mutates_sole_native_creature_slot",
+      "reason": "requires actual OTERYN_FULL_SPELL_TEST_MANIFEST"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_appearance_execution_tests.rs",
+      "line": 758,
+      "test": "appearance_area_late_player_clock_refusal_rolls_back_creature_and_players",
+      "reason": "requires actual OTERYN_FULL_SPELL_TEST_MANIFEST"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_appearance_execution_tests.rs",
+      "line": 873,
+      "test": "mixed_appearance_receipts_keep_longer_player_outfit_and_apply_new_creature_item",
+      "reason": "requires actual OTERYN_FULL_SPELL_TEST_MANIFEST"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lifted_tests/creature_encounter_refusals_tests.rs",
+      "line": 271,
+      "test": "monster_actual_encounter_attacks_are_owned_outside_generic_spell_admission",
+      "reason": "requires actual OTERYN_FULL_SPELL_TEST_MANIFEST"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lifted_tests/monster_combat_lane_defense_composition_tests.rs",
+      "line": 162,
+      "test": "captured_native_defense_proposals_heal_actual_creature_and_invisible_expires_in_perception",
+      "reason": "requires retained frozen eleven-document native project capture; run explicitly locally"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lifted_tests/monster_combat_lane_source_summon_composition_tests.rs",
+      "line": 146,
+      "test": "captured_defense_summon_registers_two_source_children_and_exact_live_health",
+      "reason": "requires retained native11document capture; actual Defense schedule->spawn->native registration"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lifted_tests/monster_combat_lane_source_summon_composition_tests.rs",
+      "line": 357,
+      "test": "captured_source_summon_creates_current_child_schedule_and_inherits_actual_parent_target",
+      "reason": "requires retained exact native project source capture; run locally explicitly"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/bone_overlord/bone_phase_registry.rs",
+      "line": 204,
+      "test": "actual_source_shared_native_hp_generic_pin_phase_and_atomicity",
+      "reason": "Requires retained actual eleven-document native import capture; no synthetic source membership"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/crystal_deaths/crystal_death_composition.rs",
+      "line": 247,
+      "test": "actual_capture_membership_fenced_death_executes_handlers_and_blocks_map_gap",
+      "reason": "Requires retained actual native importer capture; run explicitly, never synthetic source membership"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/crystal_deaths/crystal_death_composition.rs",
+      "line": 572,
+      "test": "actual_capture_projection_hook_executes_boreth_rum_secondary_once_and_refuses_stale_authority",
+      "reason": "Requires retained actual native importer capture and intrinsic native summon owner"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/crystal_deaths/crystal_death_composition.rs",
+      "line": 922,
+      "test": "actual_herald_death_source_produces_stable_request_only_after_projection_and_for_top_character",
+      "reason": "Retained actual eleven-document native source capture; PROJECT Character/runtime positions, not shipping map admission"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane.rs",
+      "line": 1839,
+      "test": "two_real_children_first_registration_failure_keeps_later_child_and_receipts",
+      "reason": "requires retained source project fixture; run explicitly locally"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane.rs",
+      "line": 2043,
+      "test": "actual_source_map_association_admits_native_shared_hp_and_phase",
+      "reason": "Retained actual native eleven-document source capture; isolated PROJECT positions, not donor map admission"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane.rs",
+      "line": 2819,
+      "test": "current_native_registration_rejects_detached_project_before_mutation",
+      "reason": "requires actual staged native manifest and retained eleven-document project"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_monster_melee/tests/native_tests.rs",
+      "line": 425,
+      "test": "actual_full_admitted_melee_sources_resolve_every_authored_index",
+      "reason": "requires actual OTERYN_FULL_SPELL_TEST_MANIFEST from the explicit source producer"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_movement_measure.rs",
+      "line": 5,
+      "test": "creature_movement_rl17_integrated_window_p99",
+      "reason": "RL-17 host measurement; run explicitly with --ignored --nocapture"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_summon.rs",
+      "line": 585,
+      "test": "captured_native_catalog_qualifies_all_authored_summoners_and_spawns_source_child",
+      "reason": "requires retained frozen 11-document source project; run explicitly locally"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_summon.rs",
+      "line": 1567,
+      "test": "captured_all13_defense_instances_qualify_and_actual_source_chance_spawns_current_child",
+      "reason": "requires retained captured11file native source; explicit local source/physical proof"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/spell_tiles.rs",
+      "line": 974,
+      "test": "pinned_bundle_tiles_answer_every_base_tile",
+      "reason": "needs the pinned artifact: OTERYN_PINNED_WORLD_BUNDLE=<pin-check .otwb>"
+    }
+  ]
+}

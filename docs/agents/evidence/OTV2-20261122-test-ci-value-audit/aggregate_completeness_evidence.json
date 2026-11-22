@@ -1,0 +1,21 @@
+{
+  "base_commit": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "patch_lines": 391,
+  "patch_added_lines": 261,
+  "row_contracts": 302,
+  "full_row_contracts": 160,
+  "client_row_contracts": 142,
+  "expected_rows_per_mode": {
+    "reference": 14,
+    "pr": 14,
+    "full": 302
+  },
+  "prebuilt_selection_accepts_all_plans": true,
+  "git_apply_check": true,
+  "plan_sizes_bytes": {
+    "reference": 624,
+    "pr": 1966,
+    "full": 19325
+  },
+  "scope": "required indexed row terminal verdicts only; no group/basic/spells/game-platform completeness claim"
+}

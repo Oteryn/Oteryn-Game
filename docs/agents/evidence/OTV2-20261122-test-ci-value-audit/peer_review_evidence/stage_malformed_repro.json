@@ -1,0 +1,4 @@
+{
+  "duplicate_cause": "::group::stage sample\nSEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet cause=transport\nPG_OBSERVE dump --stage sample --dir /tmp/tmpt2wg_5j9/postgres --activity /tmp/tmpt2wg_5j9/postgres/activity.log\n::endgroup::\nNODE_BOOT_KNOWN_FAIL sample rows=E01.full\n--- session close events behind failed e2e rows\nSTAGE_TEST_STATUS=PASS\n",
+  "duplicate_root": "::group::stage sample\nSEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet root=E01/relog\nPG_OBSERVE dump --stage sample --dir /tmp/tmpkrx7regq/postgres --activity /tmp/tmpkrx7regq/postgres/activity.log\n::endgroup::\nNODE_BOOT_KNOWN_FAIL sample rows=E01.full\n--- session close events behind failed e2e rows\nSTAGE_TEST_STATUS=PASS\n"
+}

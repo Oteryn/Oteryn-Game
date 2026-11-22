@@ -1,0 +1,19 @@
+--- a/apps/game-server/tests/ai_bootstrap.rs
++++ b/apps/game-server/tests/ai_bootstrap.rs
+@@ -1,2 +1 @@
+-#[path = "../../../crates/gameplay/monster-ai/src/ai/mod.rs"]
+-mod ai;
++use oteryn_gameplay_monster_ai::ai;
+--- a/crates/gameplay/monster-ai/src/ai/mod.rs
++++ b/crates/gameplay/monster-ai/src/ai/mod.rs
+@@ -10,4 +10,2 @@
+-//! reason too). It lives next to `ai/` instead of inside it because `tests/ai_bootstrap.rs`
+-//! path-includes this whole module tree as its own standalone crate root
+-//! (the standalone `ai` module, no `foundation`/`content`/`movement` available
+-//! there); see `ai_think.rs`'s module doc for the rest of that reasoning.
++//! reason too). The standalone `tests/ai_bootstrap.rs` integration target consumes this
++//! public library API; it does not compile another copy of the AI unit tests.
+--- a/tools/repository/check_duplicate_test_sources.py
++++ b/tools/repository/check_duplicate_test_sources.py
+@@ -49 +48,0 @@
+-            ("ai_bootstrap", ("crates/gameplay/monster-ai/src/",)),

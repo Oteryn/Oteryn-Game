@@ -1,0 +1,46 @@
+{
+  "base_commit": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "diff_sha256": "cf105002bcde92ce5f54d20727fafd0a4aefd55a4839015abc461920088fb67e",
+  "files": [
+    {
+      "path": ".github/workflows/agent-governance.yml",
+      "sha256": "75d6ee4a1490da097956676424df84d3bac54b95a156a3485615cb194cb0c680",
+      "same_as_original_review": true
+    },
+    {
+      "path": "tools/content-schema/craft-authoring/test_tainted_souls.py",
+      "sha256": "f7a6c2c523017d8f844394694b665e116e4bea07fc146b5cd37350954703ff53",
+      "same_as_original_review": true
+    },
+    {
+      "path": "tools/qualification/node_boot/known_fail_rows.txt",
+      "sha256": "e3b2c660664b8ee202ec011fae0d263bd96655ce668a8322637f9ff70d83619f",
+      "same_as_original_review": true
+    },
+    {
+      "path": "tools/qualification/node_boot/run.sh",
+      "sha256": "1a04c9b505c06bd1e55c16940e40d8173c3865181632c78c36df682e2c145f59",
+      "same_as_original_review": false
+    },
+    {
+      "path": "tools/qualification/node_boot/test_diagnostics.py",
+      "sha256": "d7063119aa3bc94f43ddcb1100da320c2fcf7b14785a38b42f3c71fa896b1002",
+      "same_as_original_review": false
+    },
+    {
+      "path": "tools/qualification/node_boot/test_node_boot_tools.py",
+      "sha256": "7d420d5a7fed9fddb95087c061b01ca30fc89181c08e084194feb0a1c9195d18",
+      "same_as_original_review": false
+    },
+    {
+      "path": "tools/repository/test_agent_governance_pr_targets.py",
+      "sha256": "f726136424f0d367db784abbd9e9adddaef7502a419e1632fef37dc8b4970efe",
+      "same_as_original_review": true
+    },
+    {
+      "path": "tools/repository/test_validate_pr_gate_pg_sim.py",
+      "sha256": "cc74b30dbd55deafc2723b88afecd356d26a70dc1fdc5d1af7bda79efc7ef5f0",
+      "same_as_original_review": true
+    }
+  ]
+}

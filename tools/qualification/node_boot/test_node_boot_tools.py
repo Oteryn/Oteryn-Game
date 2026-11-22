@@ -144,14 +144,29 @@ class KnobTests(unittest.TestCase):
 
 class WorldFixtureTests(unittest.TestCase):
     def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
-        fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
+        fixtures = section('readonly ACCOUNT_ID=', '# Local parallel stacks')
         fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')
         result = bash('set -Eeuo pipefail\nNODE_BOOT_WORLD=1\n' + fixtures
-                      + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
+                      + 'printf "account=%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n'
+                      + 'printf "intent=%s\\n" "${INTENT_OPERATIONS[@]}"\n'
+                      + 'printf "name=%s\\n" "${INTENT_NAMES[@]}"\n'
+                      + 'printf "pvp=%s\\n" "${PVP_ACCOUNT_IDS[@]}"\n'
+                      + 'printf "light=%s\\n" "$LIGHT_ACCOUNT_ID"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 10)
-        self.assertEqual(len(set(accounts)), 10)
+        fields = {}
+        for line in result.stdout.splitlines():
+            key, value = line.split('=', 1)
+            fields.setdefault(key, []).append(value)
+        accounts = fields['account']
+        # Two core, two packet, four party, two sweep and one light-caster fixture.
+        # qualification.rs consumes NODE_BOOT_LIGHT_ACCOUNT_ID for the light journey.
+        self.assertEqual(len(accounts), 11)
+        self.assertEqual(len(set(accounts)), len(accounts))
+        self.assertEqual(len(fields['intent']), len(accounts))
+        self.assertEqual(len(set(fields['intent'])), len(accounts))
+        self.assertEqual(len(fields['name']), len(accounts))
+        self.assertIn(fields['light'][0], accounts)
+        self.assertFalse(set(accounts) & set(fields['pvp']))
 
 
 class ReuseTests(unittest.TestCase):
@@ -286,11 +301,17 @@ class SeamPassThroughTests(unittest.TestCase):
 
 
 class StageDumpTests(unittest.TestCase):
-    def run_stage(self, command):
+    def run_stage(self, command, row=''):
         with tempfile.TemporaryDirectory() as temp:
+            known = Path(temp, 'source/tools/qualification/node_boot/known_fail_rows.txt')
+            known.parent.mkdir(parents=True)
+            known.write_text('E01.full assertion at E01/greet\n')
+            helpers = '\n'.join(re.search(rf'(?m)^{name}\(\).*$', RUN_TEXT).group(0)
+                                for name in ('stage_rows', 'known_rows'))
             script = textwrap.dedent(f'''\
                 set -Eeuo pipefail
                 WORK={temp}; VARS={temp}/vars; : > "$VARS"; node_log={temp}/node.log
+                GAME_SOURCE={temp}/source; : > "$node_log"
                 failed_node_log={temp}/failed-node.log; PG_OBS={temp}/postgres
                 NODE_BOOT_WORLD=0; NODE_BOOT_SPELLS=0; ACTIVE_STAGE=setup
                 RUNTIME_DIAGNOSTICS_PID=""; PG_SAMPLER_PID=4242; PG_CONTAINER=x
@@ -298,16 +319,37 @@ class StageDumpTests(unittest.TestCase):
                 evidence() {{ :; }}; psql_admin() {{ :; }}; docker() {{ :; }}; compose() {{ :; }}
                 durability_report_lines() {{ cat; }}; sleep() {{ :; }}
                 start_runtime_diagnostics() {{ :; }}; stop_runtime_diagnostics() {{ :; }}
+                report_character_authority_failures() {{ :; }}
                 pg_observe() {{ echo "PG_OBSERVE $*"; }}
-                ''') + function('pg_observability_dump') + '\n' + function('stage') + f'\nstage sample -- {command}\n'
-            return bash(script).stdout
+                sample_row() {{ printf '%s\\n' "$STAGE_TEST_ROW"; }}
+                ''') + helpers + '\n' + function('stage_fail_rows') + '\n' + function('pg_observability_dump') + '\n' + function('stage') + f'\nstage sample -- {command}\n'
+            script += 'printf "STAGE_TEST_STATUS=%s\\n" "${STATUS[sample]}"\n'
+            result = bash(script, env={'STAGE_TEST_ROW': row})
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            return result.stdout
 
     def test_each_stage_end_dumps_postgres_and_a_failed_stage_is_verbose(self):
         passed = self.run_stage('true')
         self.assertIn('PG_OBSERVE dump --stage sample --dir ', passed)
         self.assertNotIn('--verbose', passed)
+        self.assertIn('STAGE_TEST_STATUS=PASS', passed)
         failed = self.run_stage('false')
         self.assertRegex(failed, r'PG_OBSERVE dump --stage sample --dir \S+ --activity \S+activity.log --verbose')
+        self.assertIn('STAGE_TEST_STATUS=FAIL(exit 1)', failed)
+
+    def test_successful_process_cannot_hide_a_changed_failure_signature(self):
+        for suffix, expected in (
+            ('cause=assertion root=E01/greet', 'PASS'),
+            ('cause=assertion root=E01/relog-bank-balance', 'FAIL(rows)'),
+            ('cause=transport root=E01/greet', 'FAIL(rows)'),
+            ('cause=assertion root=E01/greet cause=transport', 'FAIL(rows)'),
+            ('cause=assertion root=E01/greet root=E01/relog', 'FAIL(rows)'),
+            ('cause=transport cause=assertion root=E01/greet', 'FAIL(rows)'),
+        ):
+            with self.subTest(suffix=suffix):
+                output = self.run_stage('sample_row',
+                    f'SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 {suffix}')
+                self.assertIn(f'STAGE_TEST_STATUS={expected}', output)
 
 
 class PgSamplerLifecycleTests(unittest.TestCase):

@@ -1,0 +1,14 @@
+[
+  {
+    "case": "invalid",
+    "rc": 1,
+    "stdout": "::group::stage sample\n::endgroup::\n",
+    "stderr": "invalid or duplicate known-failure entry\n"
+  },
+  {
+    "case": "duplicate",
+    "rc": 1,
+    "stdout": "::group::stage sample\n::endgroup::\n",
+    "stderr": "invalid or duplicate known-failure entry\n"
+  }
+]

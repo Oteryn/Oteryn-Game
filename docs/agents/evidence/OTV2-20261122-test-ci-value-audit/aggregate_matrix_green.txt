@@ -1,0 +1,38 @@
+test_basic_pass_runs_on_exactly_one_shard (__main__.CoverageTests.test_basic_pass_runs_on_exactly_one_shard) ... ok
+test_custom_set_splits_groups_and_row_ranges (__main__.CoverageTests.test_custom_set_splits_groups_and_row_ranges) ... ok
+test_full_set_runs_every_group_row_and_mode_once (__main__.CoverageTests.test_full_set_runs_every_group_row_and_mode_once) ... ok
+test_invalid_inputs_fail_the_plan (__main__.CoverageTests.test_invalid_inputs_fail_the_plan) ... ok
+test_pr_set_matches_the_single_machine_row_batch (__main__.CoverageTests.test_pr_set_matches_the_single_machine_row_batch) ... ok
+test_reference_is_one_unchanged_machine (__main__.CoverageTests.test_reference_is_one_unchanged_machine) ... ok
+test_extract_keeps_only_the_closed_vocabulary (__main__.EvidenceTests.test_extract_keeps_only_the_closed_vocabulary) ... ok
+test_redact_drops_secret_bearing_lines (__main__.EvidenceTests.test_redact_drops_secret_bearing_lines) ... ok
+test_redact_keeps_hotkey_event_lines (__main__.EvidenceTests.test_redact_keeps_hotkey_event_lines) ... ok
+test_summary_fails_on_missing_evidence_empty_world_shard_and_missing_status (__main__.EvidenceTests.test_summary_fails_on_missing_evidence_empty_world_shard_and_missing_status) ... ok
+test_summary_passes_complete_evidence_and_reports_overlap (__main__.EvidenceTests.test_summary_passes_complete_evidence_and_reports_overlap) ... ok
+test_summary_reads_a_lone_artifact_extracted_without_its_directory (__main__.EvidenceTests.test_summary_reads_a_lone_artifact_extracted_without_its_directory) ... ok
+test_every_emitted_knob_is_read_by_the_harness (__main__.KnobTests.test_every_emitted_knob_is_read_by_the_harness) ... ok
+test_export_env_writes_only_validated_lines (__main__.KnobTests.test_export_env_writes_only_validated_lines) ... ok
+test_pins_match_the_lanes_that_check_them (__main__.KnobTests.test_pins_match_the_lanes_that_check_them) ... ok
+test_typos_and_unknown_knobs_are_rejected (__main__.KnobTests.test_typos_and_unknown_knobs_are_rejected) ... ok
+test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row (__main__.RequiredRowEvidenceTests.test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row) ... ok
+test_capture_does_not_replace_a_terminal_verdict (__main__.RequiredRowEvidenceTests.test_capture_does_not_replace_a_terminal_verdict) ... ok
+test_complete_terminal_evidence_can_include_extra_bounded_slices (__main__.RequiredRowEvidenceTests.test_complete_terminal_evidence_can_include_extra_bounded_slices) ... ok
+test_duplicate_expected_row_is_not_one_completed_execution (__main__.RequiredRowEvidenceTests.test_duplicate_expected_row_is_not_one_completed_execution) ... ok
+test_existing_failure_and_missing_status_policy_is_not_redefined (__main__.RequiredRowEvidenceTests.test_existing_failure_and_missing_status_policy_is_not_redefined) ... ok
+test_missing_informational_does_not_waive_absent_evidence (__main__.RequiredRowEvidenceTests.test_missing_informational_does_not_waive_absent_evidence) ... ok
+test_non_row_lanes_do_not_claim_indexed_row_coverage (__main__.RequiredRowEvidenceTests.test_non_row_lanes_do_not_claim_indexed_row_coverage) ... ok
+test_other_scenario_cannot_replace_the_selected_row (__main__.RequiredRowEvidenceTests.test_other_scenario_cannot_replace_the_selected_row) ... ok
+test_partially_executed_batch_is_not_complete (__main__.RequiredRowEvidenceTests.test_partially_executed_batch_is_not_complete) ... ok
+test_plan_records_ids_for_all_selected_rows_including_unwrapped_emitters (__main__.RequiredRowEvidenceTests.test_plan_records_ids_for_all_selected_rows_including_unwrapped_emitters) ... ok
+test_reference_requires_its_selected_rows_as_well_as_existing_group_evidence (__main__.RequiredRowEvidenceTests.test_reference_requires_its_selected_rows_as_well_as_existing_group_evidence) ... ok
+test_direct_emitter_contract_must_match_its_source (__main__.RowSourceContractTests.test_direct_emitter_contract_must_match_its_source) ... ok
+test_duplicate_scenario_contract_is_rejected (__main__.RowSourceContractTests.test_duplicate_scenario_contract_is_rejected) ... ok
+test_plan_cannot_drop_or_substitute_one_required_identity (__main__.RowSourceContractTests.test_plan_cannot_drop_or_substitute_one_required_identity) ... ok
+test_selector_outside_the_supported_dispatcher_cannot_disappear_from_plan (__main__.RowSourceContractTests.test_selector_outside_the_supported_dispatcher_cannot_disappear_from_plan) ... ok
+test_unrecognised_dispatch_shape_cannot_disappear_from_plan (__main__.RowSourceContractTests.test_unrecognised_dispatch_shape_cannot_disappear_from_plan) ... ok
+test_workflow_plans_with_this_tool_and_uploads_every_shard (__main__.WorkflowTests.test_workflow_plans_with_this_tool_and_uploads_every_shard) ... ok
+
+----------------------------------------------------------------------
+Ran 33 tests in 3.766s
+
+OK

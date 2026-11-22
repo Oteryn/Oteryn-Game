@@ -1,0 +1,680 @@
+{
+  "observed_at": "2026-11-22T22:12:43.922581+00:00",
+  "sha": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "api_total": 134,
+  "tracked_count": 78,
+  "tracked": [
+    {
+      "path": ".github/workflows/achievement-authoring-schema.yml",
+      "id": 370694598,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/agent-governance.yml",
+      "id": 336912896,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/architecture-semantic-audit.yml",
+      "id": 336912897,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/area-authoring-schema.yml",
+      "id": 371145264,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/auto-archive-merged-tasks.yml",
+      "id": 387568588,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/charm-authoring-schema.yml",
+      "id": 370608904,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/claude-review.yml",
+      "id": 388660610,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/codeql.yml",
+      "id": 336912898,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/codex-review-gate.yml",
+      "id": 419018943,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/content-tree-migration.yml",
+      "id": 367251924,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/content-world-b6-interaction-bindings.yml",
+      "id": 362613860,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/craft-authoring.yml",
+      "id": 392829811,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/full-content-source-discovery.yml",
+      "id": 365772586,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/g4-canonical-worldproject-package-seed.yml",
+      "id": 366671401,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/g4-direct-nonitem-family-crosswalk.yml",
+      "id": 366442979,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/g4-item-binding-pilot.yml",
+      "id": 366440826,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/g4-item-crystal-bindings.yml",
+      "id": 368363105,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/g4-item-source-capture.yml",
+      "id": 366384023,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/g4-item-wave1-capture.yml",
+      "id": 367274713,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/g4-non-item-source-capture.yml",
+      "id": 366412489,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/g4-nonitem-bulk-crosswalk.yml",
+      "id": 366672144,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/g4-nonitem-revision-revalidation.yml",
+      "id": 366481928,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/game-atlas-animated-appearances.yml",
+      "id": 339806640,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/game-atlas-creature-gameplay-profiles.yml",
+      "id": 341810825,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/game-atlas-profile-spike.yml",
+      "id": 336912899,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/game-atlas-semantic-search.yml",
+      "id": 339126894,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/game-atlas-static-creatures.yml",
+      "id": 340040471,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/game-atlas-thais-fixture.yml",
+      "id": 336912901,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/gameplay-server-seam.yml",
+      "id": 365852624,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/global-source-overlap.yml",
+      "id": 365915246,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/house-authoring-schema.yml",
+      "id": 370592796,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/house-tibiawiki-br-capture.yml",
+      "id": 370592794,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/integration-regressions.yml",
+      "id": 415136865,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/integration-shards-dispatch.yml",
+      "id": 417044905,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/item-authoring-schema.yml",
+      "id": 368333263,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/item-content-continuity.yml",
+      "id": 364591846,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/item-content-promotion.yml",
+      "id": 364917621,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/item-content-verification.yml",
+      "id": 364510439,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/item-wiki-first-census.yml",
+      "id": 365451555,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/merge-authority-audit.yml",
+      "id": 336912903,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/merge-gate.yml",
+      "id": 336912904,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/merge-group-gate.yml",
+      "id": 347607242,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/molehill-fallback.yml",
+      "id": 409100331,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/monster-wiki-capture.yml",
+      "id": 368628516,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/native-entry-room-qualification.yml",
+      "id": 367937228,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/node-boot-build.yml",
+      "id": 423914425,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/node-boot-qualification.yml",
+      "id": 366219178,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/node-boot-real-clock-nightly.yml",
+      "id": 415214405,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/npc-tibiawiki-br-capture.yml",
+      "id": 369070053,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/oracle-operations.yml",
+      "id": 386051044,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pg-cargo-dependency-cache.yml",
+      "id": 425216910,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pg-test-rerun.yml",
+      "id": 420211507,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/postgres-test-partitions.yml",
+      "id": 425921499,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pr-postgres-harness.yml",
+      "id": 387474580,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/proficiency-authoring-schema.yml",
+      "id": 371024732,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/quest-authoring-schema.yml",
+      "id": 372209552,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/quest-container-source.yml",
+      "id": 372535598,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/repository-configuration.yml",
+      "id": 336912905,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/reward-claim-authoring.yml",
+      "id": 372237959,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rust-cache-pilot.yml",
+      "id": 374028272,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rust-fast-archive.yml",
+      "id": 426353693,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rust.yml",
+      "id": 336912907,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/source-family-classification.yml",
+      "id": 365949656,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/spell-wiki-capture.yml",
+      "id": 368619750,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/store-authoring-schema.yml",
+      "id": 368943198,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/synology-game-deploy.yml",
+      "id": 376764338,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/synology-game-runner-acceptance.yml",
+      "id": 339913000,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/terminal-branch-lifecycle.yml",
+      "id": 340277139,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/tibia-reference-tools.yml",
+      "id": 336912908,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/tibiacom-snapshot-verify.yml",
+      "id": 368953505,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/unknown-closure.yml",
+      "id": 366672190,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/unknown-disposition-ledger.yml",
+      "id": 365971734,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/wheel-authoring-schema.yml",
+      "id": 372069114,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/world-metadata-authoring.yml",
+      "id": 369476221,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/world-project-package.yml",
+      "id": 414456917,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/worldproject-v2-full-cardinality-scale.yml",
+      "id": 366443433,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/wp5-s3a-real-interop.yml",
+      "id": 364225301,
+      "state": "disabled_manually"
+    },
+    {
+      "path": ".github/workflows/wp5-s3b-composition.yml",
+      "id": 365780764,
+      "state": "disabled_manually"
+    }
+  ],
+  "historical_registered": [
+    {
+      "path": ".github/workflows/agentic-pilot-qualification.yml",
+      "id": 356784468,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/content-quest-01-annihilator-admission-geometry.yml",
+      "id": 363260848,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/content-quest-01-annihilator-map-binding.yml",
+      "id": 363243642,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/dispatch-blaze-benchmark.yml",
+      "id": 425180491,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/dispatch-blaze-canary.yml",
+      "id": 425191513,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/dispatch-compiler-benchmark.yml",
+      "id": 425075352,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/final-cleanup-apply-388.yml",
+      "id": 352495026,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/g4-item-bulk-population.yml",
+      "id": 366674202,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/g4-nonitem-second-source-crosswalk.yml",
+      "id": 366740384,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/item-content-source-role-census.yml",
+      "id": 364926095,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/item-wiki-first-identity-crosswalk.yml",
+      "id": 365538780,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/lib3-cache-pair.yml",
+      "id": 425142457,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/one-off-bootstrap-reconcile.yml",
+      "id": 337079995,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/one-off-dependency-graph-bootstrap.yml",
+      "id": 336925343,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/one-off-migration-cleanup.yml",
+      "id": 336913985,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/one-off-migration-residue-cleanup.yml",
+      "id": 337041004,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/one-off-target-coordinate-reconcile.yml",
+      "id": 336919620,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/oteryn-agentic-pilot-router.lock.yml",
+      "id": 356954294,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/oteryn-agentic-pilot-worker.lock.yml",
+      "id": 356954238,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pr239-final-codex-round8-tests-only.yml",
+      "id": 345424187,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pr239-main-merge-up.yml",
+      "id": 345381071,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pr239-round10-green.yml",
+      "id": 345451057,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pr239-round11-green.yml",
+      "id": 345585623,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pr239-round11-tests.yml",
+      "id": 345583754,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pr239-round12-green.yml",
+      "id": 345739507,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pr239-round8-green.yml",
+      "id": 345427098,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pr239-round9-green-helper.yml",
+      "id": 345439967,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pr239-round9-green.yml",
+      "id": 345441209,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pr3042-native-closure-authoring.yml",
+      "id": 414565694,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/pr3042-native-closure-blob-export.yml",
+      "id": 414603235,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-codex-edge-red-once.yml",
+      "id": 344660136,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-codex-p2-red-once.yml",
+      "id": 344658622,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-codex-p2-repair.yml",
+      "id": 344800093,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-final-codex-fix-once.yml",
+      "id": 344675593,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-final-codex-fix.yml",
+      "id": 345146415,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-final-p2-green-once.yml",
+      "id": 344692757,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-final-p2-green-retry.yml",
+      "id": 344694506,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-final-p2-red-once.yml",
+      "id": 344686916,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-final-review-repair.yml",
+      "id": 346957233,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-final2-codex-fix.yml",
+      "id": 345158130,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-final3-codex-fix.yml",
+      "id": 345168472,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-final4-codex-fix.yml",
+      "id": 345374998,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-final5-codex-fix.yml",
+      "id": 345390497,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-final6-codex-fix.yml",
+      "id": 345401018,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-final6-tests.yml",
+      "id": 345400031,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-identifier-normalization-patch-once.yml",
+      "id": 344649226,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-inline-comment-patch-once.yml",
+      "id": 344634931,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-latest-codex-fix.yml",
+      "id": 345152358,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-latest-review-repair.yml",
+      "id": 346971336,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-markdown-normalization-patch-once.yml",
+      "id": 344624378,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-prompt-sweep-once.yml",
+      "id": 344558407,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-systemic-helper-class-fix-once.yml",
+      "id": 347304375,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/rdc-systemic-semantic-green-once.yml",
+      "id": 347293033,
+      "state": "active"
+    },
+    {
+      "path": ".github/workflows/repository-audit-evidence-20260906.yml",
+      "id": 351705215,
+      "state": "active"
+    },
+    {
+      "path": "dynamic/dependabot/dependabot-updates",
+      "id": 336912981,
+      "state": "active"
+    },
+    {
+      "path": "dynamic/dependabot/update-graph",
+      "id": 367740239,
+      "state": "active"
+    }
+  ]
+}
