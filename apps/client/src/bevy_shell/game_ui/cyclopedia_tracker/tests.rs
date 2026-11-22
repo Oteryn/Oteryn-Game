@@ -627,3 +627,19 @@ fn tracked_boss_opens_matching_catalogue_entry_across_pages() -> TestResult {
     assert_eq!(panel.fields[0], key);
     Ok(())
 }
+
+#[test]
+fn rejected_tracked_boss_request_preserves_feedback_on_next_frame() {
+    let (link, mut commands, outbox) = play_channel();
+    outbox.bevy_bosstiary_initialize();
+    link.boss_encounter_edit(1, "x".repeat(513));
+    assert!(!link.tracked_boss_open("oteryn:creature.ferumbras"));
+    let feedback = link.boss_encounter_panel().feedback;
+    assert!(feedback.is_some());
+    link.boss_encounter_edit(1, String::new());
+    link.tracked_boss_continue();
+    let panel = link.boss_encounter_panel();
+    assert_eq!(panel.feedback, feedback);
+    assert!(panel.tracker_target.is_none());
+    assert!(commands.try_recv().is_err());
+}

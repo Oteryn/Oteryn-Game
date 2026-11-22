@@ -23,9 +23,10 @@ impl PlayLink {
             .cloned()
             .unwrap_or_default();
         browse(panel, &known, BossCategory::All, false);
-        panel.tracker_target = Some(key.to_owned());
         enqueue(&mut mailbox, &self.commands, Intent::Catalogue);
-        mailbox.boss_encounter.pending
+        let panel = &mut mailbox.boss_encounter;
+        panel.tracker_target = panel.pending.then(|| key.to_owned());
+        panel.pending
     }
     #[cfg(bevy_shell)]
     pub(crate) fn tracked_boss_continue(&self) {
@@ -33,6 +34,9 @@ impl PlayLink {
         let panel = &mut mailbox.boss_encounter;
         if panel.tracker_target.is_some() && !panel.pending {
             enqueue(&mut mailbox, &self.commands, Intent::CatalogueNext);
+            if !mailbox.boss_encounter.pending {
+                mailbox.boss_encounter.tracker_target = None;
+            }
         }
     }
     pub fn boss_encounter_browse(&self, search: &str, category: BossCategory, previous: bool) {
