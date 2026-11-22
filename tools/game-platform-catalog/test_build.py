@@ -4,6 +4,7 @@ import hashlib
 import subprocess
 import tempfile
 import unittest
+from collections import Counter
 from pathlib import Path
 
 from producer import build_snapshot, canonical_json_bytes, load_json_file, verify_snapshot, write_snapshot_files
@@ -23,8 +24,24 @@ class PublicViewArtifactTests(unittest.TestCase):
                 )
             snapshot = build_snapshot(load_json_file(source))
             verify_snapshot(snapshot)
-            self.assertEqual(len(snapshot["capability_manifest"]), 8)
-            self.assertTrue(all(row["support"] == "unsupported" for row in snapshot["capability_manifest"]))
+            support = {row["capability_id"]: row["support"] for row in snapshot["capability_manifest"]}
+            completeness = {row["capability_id"]: row["state"] for row in snapshot["completeness_manifest"]}
+            records = snapshot["entities"] + snapshot["relations"]
+            counts = Counter(row["capability_id"] for row in records)
+            self.assertEqual(set(counts), {"item", "creature", "npc", "npc_shop", "creature_loot"})
+            self.assertEqual(len(support), 8)
+            self.assertEqual({cap for cap in support if support[cap] == "supported"}, set(counts))
+            self.assertEqual(completeness["item"], "complete")
+            self.assertEqual(completeness["creature_loot"], "partial")
+            self.assertTrue(all(completeness[cap] == "unknown" for cap in support.keys() - counts.keys()))
+            self.assertTrue(all(row["type"] == row["capability_id"] for row in records))
+            self.assertTrue(all(row["data"]["payload_revision"] == 1 for row in records))
+            item = next(row for row in snapshot["entities"] if row["content_key"] == "oteryn:item.tibia.i1000")
+            self.assertEqual(item["data"], {
+                "payload_revision": 1, "definition_revision": "definition-r1",
+                "materializable": False, "stack_class": "Unknown", "name": "dry grass",
+            })
+            self.assertEqual(snapshot["tombstones"], [])
 
     def test_same_content_produces_identical_bytes_and_transport_digest(self):
         source = load_json_file(Path(__file__).parent / "fixtures/unsupported-native-input.json")

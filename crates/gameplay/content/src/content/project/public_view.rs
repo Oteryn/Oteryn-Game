@@ -1,6 +1,7 @@
 //! Read-only public projection of the exact graph admitted by the server's CONTENT loader.
 //! No donor documents, migration shards or display names are parsed as native authority.
 use super::*;
+use crate::content::ReferenceItemField;
 use serde_json::{Value, json};
 
 pub const CATALOG_CAPABILITIES: [&str; 8] = [
@@ -14,8 +15,7 @@ pub const CATALOG_CAPABILITIES: [&str; 8] = [
     "spell",
 ];
 
-/// Candidate records are useful to Game tools, but are not capability-promotion evidence.
-/// Contract export §15 requires matching Platform payload validation before promotion.
+/// Public projection and private coverage evidence from one admitted WorldProject.
 #[derive(Debug, Serialize)]
 pub struct PublicContentView {
     pub entities: Vec<Value>,
@@ -25,6 +25,8 @@ pub struct PublicContentView {
     pub coverage: Vec<PublicContentCoverage>,
     #[serde(skip)]
     pub field_inventory: BTreeSet<String>,
+    #[serde(skip)]
+    incomplete: BTreeSet<&'static str>,
 }
 
 #[derive(Debug)]
@@ -65,9 +67,24 @@ impl PublicContentView {
             })
             .collect()
     }
-    /// Physical v1 export stays fail-closed until the capability payload contracts and
-    /// matching consumer validators required by §15 exist. Never mislabel candidate facts.
+    /// Emit the Game-owned payloads registered for this profile in export contract §15.
     pub fn native_input(&self, source_revision: &str, generated_at: &str) -> Value {
+        let entities: Vec<_> = self
+            .entities
+            .iter()
+            .filter(|row| {
+                matches!(
+                    row["capability_id"].as_str(),
+                    Some("item" | "creature" | "npc")
+                )
+            })
+            .collect();
+        let supported: BTreeSet<_> = entities
+            .iter()
+            .copied()
+            .chain(&self.relations)
+            .filter_map(|row| row["capability_id"].as_str())
+            .collect();
         json!({
             "authority_epoch": "preproduction-unallocated",
             "source_revision": source_revision,
@@ -75,9 +92,14 @@ impl PublicContentView {
             "ruleset_id": "oteryn:ruleset.public-catalog-candidate",
             "content_profile_id": "oteryn:profile.public-content-view-v1",
             "required_capabilities": [],
-            "capability_manifest": CATALOG_CAPABILITIES.map(|id| json!({"capability_id":id,"support":"unsupported"})),
-            "completeness_manifest": CATALOG_CAPABILITIES.map(|id| json!({"capability_id":id,"state":"unknown"})),
-            "entities": [], "relations": [], "tombstones": []
+            "capability_manifest": CATALOG_CAPABILITIES.map(|id| json!({
+                "capability_id":id,"support":if supported.contains(id) { "supported" } else { "unsupported" }
+            })),
+            "completeness_manifest": CATALOG_CAPABILITIES.map(|id| json!({
+                "capability_id":id,"state":if !supported.contains(id) { "unknown" }
+                    else if self.incomplete.contains(id) { "partial" } else { "complete" }
+            })),
+            "entities": entities, "relations": self.relations, "tombstones": []
         })
     }
 }
@@ -109,6 +131,7 @@ fn project_json<T: Serialize>(value: &T) -> Result<Value, ProjectError> {
 
 fn entity(kind: &str, key: &str, revision: &str, source: &Value, fields: &[&str]) -> Value {
     let mut data = serde_json::Map::new();
+    data.insert("payload_revision".into(), json!(1));
     data.insert("definition_revision".into(), json!(revision));
     for field in fields {
         if let Some(value) = source.get(field) {
@@ -126,6 +149,7 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
         relations: Vec::new(),
         coverage: Vec::new(),
         field_inventory: BTreeSet::new(),
+        incomplete: BTreeSet::new(),
     };
     let state = project
         .v2
@@ -146,8 +170,22 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
             &mut view.field_inventory,
         );
         let kind = match record {
-            ProjectReferenceRecord::Item { .. } => Some("item"),
-            ProjectReferenceRecord::Creature { .. } => Some("creature"),
+            ProjectReferenceRecord::Item {
+                client_projection: ProjectionDocument::ClientSafe,
+                ..
+            } => Some("item"),
+            ProjectReferenceRecord::Creature {
+                client_projection: ProjectionDocument::ClientSafe,
+                ..
+            } => Some("creature"),
+            ProjectReferenceRecord::Item { .. } => {
+                view.incomplete.insert("item");
+                None
+            }
+            ProjectReferenceRecord::Creature { .. } => {
+                view.incomplete.insert("creature");
+                None
+            }
             ProjectReferenceRecord::Ability { .. } => match profiles.get(identity.key.as_str()) {
                 Some(ProjectV2AuthoringProfileData::Ability(profile))
                     if profile.incantation.is_some() =>
@@ -156,8 +194,10 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
                 }
                 _ => None,
             },
-            ProjectReferenceRecord::Loot { .. } => {
-                loot.insert(identity.key.as_str(), raw.clone());
+            ProjectReferenceRecord::Loot {
+                algorithm, entries, ..
+            } => {
+                loot.insert(identity.key.as_str(), (algorithm, entries));
                 None
             }
             _ => None,
@@ -169,12 +209,23 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
                 &identity.revision,
                 &raw,
                 if kind == "item" {
-                    &["materializable", "stack_class", "semantics"]
+                    &["materializable", "stack_class"]
                 } else {
                     &[]
                 },
             );
+            if let ProjectReferenceRecord::Item { semantics, .. } = record
+                && let ReferenceItemField::Known(presentation) = &semantics.presentation
+                && let ReferenceItemField::Known(name) = &presentation.name
+            {
+                projected["data"]["name"] = json!(name);
+            }
             if let Some(profile) = profiles.get(identity.key.as_str()) {
+                if let ProjectV2AuthoringProfileData::Creature(profile) = profile
+                    && let Some(details) = &profile.details
+                {
+                    projected["data"]["name"] = json!(details.display_name);
+                }
                 let profile = project_json(profile)?;
                 let selected = match kind {
                     "creature" => &[
@@ -214,13 +265,14 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
                 "unsupported"
             },
             reason: if kind.is_some() {
-                "candidate public payload; export promotion requires contract §15"
+                "admitted public projection"
             } else {
                 "not a proven public capability payload; retained in server graph"
             },
         });
     }
-    let mut public_npcs = Vec::new();
+    let mut npcs = Vec::new();
+    let mut shop_services = BTreeMap::new();
     for declaration in &state.declarations {
         let raw = project_json(declaration)?;
         let identity = declaration.identity();
@@ -237,14 +289,23 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
                     ..
                 }
             );
+        match declaration {
+            ProjectV2Declaration::Npc { services, .. } => {
+                npcs.push((identity.key.as_str(), services, hidden));
+                if hidden {
+                    view.incomplete.insert("npc");
+                }
+            }
+            ProjectV2Declaration::Service { offers, .. } => {
+                shop_services.insert(identity.key.as_str(), offers);
+            }
+            _ => {}
+        }
         let kind = if hidden {
             None
         } else {
             match declaration {
-                ProjectV2Declaration::Npc { services, .. } => {
-                    public_npcs.push((identity.key.as_str(), services));
-                    Some("npc")
-                }
+                ProjectV2Declaration::Npc { .. } => Some("npc"),
                 ProjectV2Declaration::Quest { .. } => Some("quest"),
                 ProjectV2Declaration::Achievement { .. } => Some("achievement"),
                 _ => None,
@@ -276,7 +337,7 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
             reason: if hidden {
                 "G-2 visibility or secret achievement: never publish identity or references"
             } else if kind.is_some() {
-                "candidate public payload; export promotion requires contract §15"
+                "admitted public projection"
             } else if matches!(declaration, ProjectV2Declaration::Service { routes, .. } if !routes.is_empty()) {
                 // Premium, minimum level and required quest tracks (track, minimum, maximum)
                 // are server-side travel gates. Only shop offers have a public projection below.
@@ -290,26 +351,31 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
         .entities
         .iter()
         .filter(|e| e["type"] == "item")
-        .filter_map(|e| e["content_key"].as_str().map(str::to_owned))
+        .filter_map(|e| e["content_key"].as_str())
         .collect();
-    for (npc, services) in public_npcs {
+    for (npc, services, hidden) in npcs {
         for service in services {
-            let Some(ProjectV2Declaration::Service { offers, .. }) = state
-                .declarations
-                .iter()
-                .find(|d| d.identity().key == service.key)
-            else {
+            let Some(offers) = shop_services.get(service.key.as_str()) else {
+                view.incomplete.insert("npc_shop");
                 continue;
             };
             for (ordinal, offer) in offers.iter().enumerate() {
-                if !items.contains(&offer.item.key) || offer.parity_pending {
+                if hidden
+                    || offer.parity_pending
+                    || !items.contains(offer.item.key.as_str())
+                    || offer
+                        .currency
+                        .as_ref()
+                        .is_some_and(|currency| !items.contains(currency.key.as_str()))
+                {
+                    view.incomplete.insert("npc_shop");
                     continue;
                 }
                 view.relations.push(json!({
                     "type":"npc_shop", "capability_id":"npc_shop",
                     "relation_key":format!("{npc}.shop.{}.row.{ordinal}", service.key.replace(':', ".")),
                     "source":npc,"target":offer.item.key,
-                    "data":{"direction":project_json(&offer.direction)?,"unit_price":offer.unit_price,
+                    "data":{"payload_revision":1,"direction":project_json(&offer.direction)?,"unit_price":offer.unit_price,
                         "count":offer.count,"sub_type":offer.sub_type,
                         "currency":offer.currency.as_ref().map(|currency| &currency.key)}
                 }));
@@ -319,31 +385,47 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
     for record in &project.reference.records {
         let ProjectReferenceRecord::Creature {
             identity,
+            client_projection,
             loot: Some(table),
             ..
         } = record
         else {
             continue;
         };
-        let Some(raw) = loot.get(table.key.as_str()) else {
+        let Some((algorithm, entries)) = loot.get(table.key.as_str()) else {
+            view.incomplete.insert("creature_loot");
             continue;
         };
-        if let Some(entries) = raw["entries"].as_array() {
-            for (ordinal, entry) in entries.iter().enumerate() {
-                let Some(item) = entry["item"]["key"].as_str() else {
-                    continue;
-                };
-                if !items.contains(item)
-                    || entry["children"].as_array().is_some_and(|v| !v.is_empty())
-                {
-                    continue;
-                }
-                view.relations.push(json!({"type":"creature_loot","capability_id":"creature_loot",
-                    "relation_key":format!("{}.loot.{ordinal}", identity.key),
-                    "source":identity.key,"target":item,
-                    "data":{"algorithm":raw["algorithm"],"min_count":entry["min_count"],
-                        "max_count":entry["max_count"],"probability_ppm":entry["probability_ppm"]}}));
+        if entries.is_empty() {
+            continue;
+        }
+        let conditional = matches!(profiles.get(table.key.as_str()), Some(ProjectV2AuthoringProfileData::Loot(profile))
+            if profile.entries.iter().any(|entry| entry.skip_later_same_item_after_success));
+        if !matches!(client_projection, ProjectionDocument::ClientSafe)
+            || !matches!(algorithm, LootAlgorithmDocument::IndependentBernoulliPpm)
+            || conditional
+            || entries.iter().any(|entry| {
+                !entry.children.is_empty()
+                    || entry.unique
+                    || entry.subtype.is_some()
+                    || entry.probability_ppm.is_none()
+            })
+        {
+            view.incomplete.insert("creature_loot");
+            continue;
+        }
+        for (ordinal, entry) in entries.iter().enumerate() {
+            if !items.contains(entry.item.key.as_str()) {
+                view.incomplete.insert("creature_loot");
+                continue;
             }
+            view.relations.push(
+                json!({"type":"creature_loot","capability_id":"creature_loot",
+                "relation_key":format!("{}.loot.{ordinal}", identity.key),
+                "source":identity.key,"target":entry.item.key,
+                "data":{"payload_revision":1,"algorithm":algorithm,"min_count":entry.min_count,
+                    "max_count":entry.max_count,"probability_ppm":entry.probability_ppm}}),
+            );
         }
     }
     for profile in &state.authoring_profiles {
@@ -407,8 +489,7 @@ mod tests {
                 let first = public_content_view(&project)?;
                 let second = public_content_view(&project)?;
                 assert_eq!(serde_json::to_vec(&first)?, serde_json::to_vec(&second)?);
-                // Source display-name provenance is candidate metadata, with export
-                // capabilities still explicitly unsupported below.
+                // Source display-name provenance stays in the field inventory.
                 assert!(first.field_inventory.contains(
                     "declaration.Npc.fields[].field_path=\"oteryn:source.npc.display_name\""));
                 let expected: BTreeMap<String, String> = serde_json::from_str(include_str!(
@@ -447,6 +528,11 @@ mod tests {
                         "fields":[], "visibility":"hidden"
                     }))?);
                 }
+                let candidate_quest = "oteryn:test.public_quest";
+                state.declarations.push(serde_json::from_value(json!({
+                    "kind":"Quest", "identity":{"key":candidate_quest,"revision":"definition-r1"},
+                    "fields":[]
+                }))?);
                 let hidden = public_content_view(&project)?;
                 assert!(
                     first
@@ -469,18 +555,28 @@ mod tests {
                     "d34807f5bd234ee8318e57ba454ba39be0df113d",
                     "2026-11-07T00:00:00Z",
                 );
-                assert!(
-                    hidden_source["entities"]
-                        .as_array()
-                        .is_some_and(Vec::is_empty)
+                let states = |source: &Value| -> Result<BTreeMap<String, String>, serde_json::Error> {
+                    let rows: Vec<BTreeMap<String, String>> =
+                        serde_json::from_value(source["completeness_manifest"].clone())?;
+                    Ok(rows.into_iter().filter_map(|mut row|
+                        Some((row.remove("capability_id")?, row.remove("state")?))).collect())
+                };
+                let first_source = first.native_input(
+                    "d34807f5bd234ee8318e57ba454ba39be0df113d",
+                    "2026-11-07T00:00:00Z",
                 );
-                assert!(
-                    hidden_source["capability_manifest"]
-                        .as_array()
-                        .ok_or("manifest")?
-                        .iter()
-                        .all(|row| row["support"] == "unsupported")
-                );
+                let first_states = states(&first_source)?;
+                let hidden_states = states(&hidden_source)?;
+                for capability in ["npc", "npc_shop"] {
+                    assert_eq!(first_states[capability], "complete");
+                    assert_eq!(hidden_states[capability], "partial");
+                }
+                assert_eq!(hidden_states["quest"], "unknown");
+                assert!(hidden.entities.iter().any(|row| row["content_key"] == candidate_quest));
+                let exported = serde_json::to_string(&hidden_source)?;
+                for key in [&hidden_key, candidate_quest, "oteryn:test.hidden_quest", "oteryn:test.hidden_area"] {
+                    assert!(!exported.contains(key));
+                }
                 Ok(())
             })?
             .join()

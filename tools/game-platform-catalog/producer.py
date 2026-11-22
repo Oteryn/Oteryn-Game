@@ -12,6 +12,7 @@ from typing import Any
 CONTRACT_ID = "oteryn.game-platform-catalog"
 SCHEMA_VERSION = "1.0.0"
 CONTENT_AUTHORITY_ID = "oteryn-native"
+PUBLIC_VIEW_PROFILE = "oteryn:profile.public-content-view-v1"
 KNOWN_CAPABILITIES = frozenset(
     {
         "item",
@@ -369,6 +370,85 @@ def _normalize_tombstones(
     return result
 
 
+def _public_int(value: Any, name: str, minimum: int = 0, maximum: int = MAX_INT) -> None:
+    if type(value) is not int or not minimum <= value <= maximum:
+        raise CatalogValidationError(f"invalid public payload {name}")
+
+
+def _validate_public_view_payloads(
+    entities: list[dict], relations: list[dict], tombstones: list[dict],
+    support: dict[str, str], completeness: dict[str, str],
+) -> None:
+    # These checks apply to the Game-owned public projection profile. Other v1
+    # profiles retain the generic bounded-carrier validation.
+    observed = {row["capability_id"] for row in entities + relations}
+    if observed != {cap for cap, state in support.items() if state == "supported"}:
+        raise CatalogValidationError("public view support must match emitted capabilities")
+    if set(support) != KNOWN_CAPABILITIES or any(completeness[cap] == "unknown" for cap in observed):
+        raise CatalogValidationError("public view requires coverage states for all v1 capabilities")
+    if tombstones:
+        raise CatalogValidationError("public view has no native tombstone source")
+
+    core = {"payload_revision", "definition_revision"}
+    for row in entities:
+        cap, data = row["capability_id"], row["data"]
+        if row["type"] != cap or cap not in {"item", "creature", "npc"}:
+            raise CatalogValidationError("invalid public entity type or capability")
+        if cap == "item":
+            _require_exact_keys(data, "item data", core | {"materializable", "stack_class"}, {"name"})
+            if type(data["materializable"]) is not bool or data["stack_class"] not in (
+                "Unknown", "StackCapable", "NonStackable",
+            ):
+                raise CatalogValidationError("invalid public item payload")
+        elif cap == "creature":
+            stats = {"health", "experience", "speed", "armor"}
+            _require_exact_keys(data, "creature data", core, stats | {"name", "resistances", "immunities"})
+            for field in stats & data.keys():
+                _public_int(data[field], field)
+            for entry in _require_list(data.get("resistances", []), "resistances", MAX_ARRAY_ENTRIES):
+                _require_exact_keys(entry, "resistance", {"damage_type", "percent"})
+                _require_string(entry["damage_type"], "resistance damage_type")
+                percent = _require_exact_keys(entry["percent"], "percent", {"numerator", "denominator"})
+                _public_int(percent["numerator"], "numerator", -MAX_INT - 1)
+                _public_int(percent["denominator"], "denominator", 1)
+            for immunity in _require_list(data.get("immunities", []), "immunities", MAX_ARRAY_ENTRIES):
+                _require_string(immunity, "immunity")
+        else:
+            _require_exact_keys(data, "npc data", core)
+        _require_string(data["definition_revision"], "definition_revision")
+        _public_int(data["payload_revision"], "payload_revision", 1, 1)
+        if "name" in data:
+            _require_string(data["name"], "name")
+
+    entity_kinds = {row["content_key"]: row["capability_id"] for row in entities}
+    for row in relations:
+        cap, data = row["capability_id"], row["data"]
+        source_kind = {"creature_loot": "creature", "npc_shop": "npc"}.get(cap)
+        if (row["type"] != cap or source_kind is None
+                or entity_kinds[row["source"]] != source_kind or entity_kinds.get(row["target"]) != "item"):
+            raise CatalogValidationError("invalid public relation capability or endpoint type")
+        if cap == "creature_loot":
+            _require_exact_keys(data, "loot data", {"payload_revision", "algorithm", "min_count", "max_count", "probability_ppm"})
+            if data["algorithm"] != "IndependentBernoulliPpm":
+                raise CatalogValidationError("invalid public loot algorithm")
+            _public_int(data["min_count"], "min_count")
+            _public_int(data["max_count"], "max_count", data["min_count"])
+            _public_int(data["probability_ppm"], "probability_ppm", 0, 1_000_000)
+        else:
+            _require_exact_keys(data, "shop data", {"payload_revision", "direction", "unit_price", "count", "sub_type", "currency"})
+            if data["direction"] not in ("BuyFromPlayer", "SellToPlayer"):
+                raise CatalogValidationError("invalid public shop direction")
+            _public_int(data["unit_price"], "unit_price")
+            for field in ("count", "sub_type"):
+                if data[field] is not None:
+                    _public_int(data[field], field)
+            if data["currency"] is not None:
+                currency = _require_string(data["currency"], "currency", CONTENT_KEY_RE)
+                if entity_kinds.get(currency) != "item":
+                    raise CatalogValidationError("public shop currency must reference an exported item")
+        _public_int(data["payload_revision"], "payload_revision", 1, 1)
+
+
 def _normalize_source(source: Any) -> tuple[dict, str]:
     required = {
         "authority_epoch",
@@ -416,6 +496,8 @@ def _normalize_source(source: Any) -> tuple[dict, str]:
     tombstones = _normalize_tombstones(
         source["tombstones"], support, completeness, entity_keys
     )
+    if content_profile_id == PUBLIC_VIEW_PROFILE:
+        _validate_public_view_payloads(entities, relations, tombstones, support, completeness)
     semantic = {
         "contract_id": CONTRACT_ID,
         "schema_version": SCHEMA_VERSION,

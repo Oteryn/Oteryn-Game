@@ -4,10 +4,11 @@ This directory contains the schema-v1 deterministic producer/validator for `docs
 
 `build.py /tmp/game-platform-catalog.json` invokes the shared Rust CONTENT
 loader/view and this validator without retaining a normalized input file.
-See [CATALOG-CONTRACT-NOTES.md](../../docs/reference/CATALOG-CONTRACT-NOTES.md)
-for the visibility rules, CI step and explicit payload-promotion blockers.
-The resulting physical artifact currently remains `unsupported/unknown` for
-every capability; the candidate view is not a populated Platform catalogue.
+The build emits the revision 1 public WorldProject payloads described in
+[the export contract](../../docs/contracts/OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md#public-worldproject-payloads-revision-1).
+Support follows the records actually emitted. Completeness follows the admitted
+source coverage, including omissions for visibility and unsupported row shapes.
+The artifact pins `source_revision` and the UTC commit timestamp to HEAD.
 The Rust filesystem adapter runs on Linux, matching the existing CONTENT
 capture boundary. Test discovery requires Cargo and the repository's existing
 `jsonschema` schema-tool dependency; the Python producer itself remains portable.
@@ -42,11 +43,12 @@ python -m unittest discover -s tools/game-platform-catalog -p "test_*.py" -v
 
 The tests cover deterministic ordering, semantic and artifact digests, stable native identity, manifest alignment, capability taxonomy, duplicate/dangling/contradictory records, tombstone completeness, strict JSON, hard bounds and provenance integrity.
 
-## Current content status
+## Fixtures
 
-The committed unsupported fixture is intentionally non-activatable. At its pinned Game revision, this task does not claim a complete native item, creature, loot, NPC/shop, spell, quest or achievement inventory.
-
-A later Game-owned adapter may populate supported capabilities only from canonical native content evidence. Changing a capability from `unsupported/unknown` to `supported/complete` requires task-specific proof; this producer never infers that transition from an empty or legacy dataset.
+`unsupported-native-input.json` is the negative-semantics fixture.
+`supported-native-input.json` samples admitted public records using the exact
+payload revision and declares partial coverage for the sampled capabilities.
+Build the full artifact with `build.py` against the desired Game commit.
 
 ## Production boundary
 
