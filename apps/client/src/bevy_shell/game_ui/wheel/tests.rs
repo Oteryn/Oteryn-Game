@@ -70,7 +70,18 @@ fn model() -> WheelPanel {
                 full_slot: vec![],
             })
             .collect(),
-        revelations: vec![],
+        revelations: (0..4)
+            .map(|domain| wire::Revelation {
+                domain,
+                name: format!("Revelation {}", domain + 1),
+                stages: [250, 500, 1000]
+                    .map(|minimum_points| wire::Stage {
+                        minimum_points,
+                        effects: vec![],
+                    })
+                    .to_vec(),
+            })
+            .collect(),
         current: vec![],
         draft: vec![],
     });
