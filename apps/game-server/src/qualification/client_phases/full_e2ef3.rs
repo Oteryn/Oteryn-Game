@@ -327,14 +327,15 @@ const MODULE_ROWS: &[&[&str]] = &[
 ];
 
 fn generic_rows() -> impl Iterator<Item = &'static Row> {
-    ROWS.iter().filter(|row| {
-        !MODULE_ROWS.iter().any(|ids| ids.contains(&row.id))
-    })
+    ROWS.iter()
+        .filter(|row| !MODULE_ROWS.iter().any(|ids| ids.contains(&row.id)))
 }
 
 #[test]
 fn full_e2ef3_reports_each_row_once() {
-    let mut covered: Vec<_> = MODULE_ROWS.iter().flat_map(|ids| ids.iter().copied())
+    let mut covered: Vec<_> = MODULE_ROWS
+        .iter()
+        .flat_map(|ids| ids.iter().copied())
         .chain(generic_rows().map(|row| row.id))
         .collect();
     covered.sort_unstable();

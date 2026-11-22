@@ -1001,12 +1001,7 @@ pub(super) async fn run(
     let cause = verdict::Cause::Precondition {
         name: "quick-loot-client-corpse-uuid".into(),
     };
-    result(
-        I07,
-        started,
-        "",
-        Some(("manual-click", &observed, &cause)),
-    );
+    result(I07, started, "", Some(("manual-click", &observed, &cause)));
 
     let mut client = client.ok_or("E2EF3 connection closed during fresh admission")?;
     // The shared journey's next route starts in town. A failed row still hands

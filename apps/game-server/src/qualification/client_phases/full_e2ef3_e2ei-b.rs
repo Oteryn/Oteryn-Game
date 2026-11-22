@@ -106,23 +106,13 @@ pub(super) async fn run(
     };
     let mut action = "approach-unbound-nonhouse-furniture";
     let result = furniture(&mut client, world, &mut action).await;
-    report(
-        I09,
-        started,
-        action,
-        result.as_ref().err().map(Box::as_ref),
-    );
+    report(I09, started, action, result.as_ref().err().map(Box::as_ref));
 
     let started = std::time::Instant::now();
     let mut action = "write-once-transform";
     let mut logged_out = false;
     let result = documents(&mut client, clients, world, &mut action, &mut logged_out).await;
-    report(
-        I04,
-        started,
-        action,
-        result.as_ref().err().map(Box::as_ref),
-    );
+    report(I04, started, action, result.as_ref().err().map(Box::as_ref));
     if logged_out {
         result?;
     }
