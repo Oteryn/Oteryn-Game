@@ -105,6 +105,25 @@ pub(super) fn route_available(at: TilePos) -> bool {
     })
 }
 
+pub(super) fn occupied_tiles(
+    client: &oteryn_dev_client::DevClientSession,
+) -> std::collections::BTreeSet<TilePos> {
+    client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.others())
+        .filter(|entity| {
+            matches!(
+                entity.kind,
+                oteryn_dev_client::EntityKind::Creature
+                    | oteryn_dev_client::EntityKind::Npc
+                    | oteryn_dev_client::EntityKind::Player
+            )
+        })
+        .filter_map(|entity| tile(entity.position).ok())
+        .collect()
+}
+
 pub(super) fn ordinary_spawn_points(
     table: &oteryn_world_bundle::spawn::Table,
 ) -> impl Iterator<Item = (TilePos, &str)> {

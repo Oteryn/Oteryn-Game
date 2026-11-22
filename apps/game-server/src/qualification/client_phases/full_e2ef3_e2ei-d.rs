@@ -93,18 +93,8 @@ pub(super) async fn run(
             }
         },
     };
-    let setup = (|| -> TestResult<_> {
-        let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-        let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-        let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-        let world = load_world_generation(
-            bytes,
-            &pin,
-            WorldId::decode(&clients.world)?,
-            ChannelId::decode(&clients.channel)?,
-        )?;
-        Ok((metadata, world, provisioning::item_index()?))
-    })();
+    let setup = load_hunt_world(clients)
+        .and_then(|(metadata, world)| Ok((metadata, world, provisioning::item_index()?)));
     match setup {
         Ok((metadata, world, index)) => {
             let result = refine(&mut client, clients, &mut mining, world, &metadata, &index).await;
@@ -119,6 +109,41 @@ pub(super) async fn run(
         }
     }
     Ok(client)
+}
+
+pub(super) fn load_hunt_world(
+    clients: &SeamClients<'_>,
+) -> TestResult<(
+    oteryn_world_bundle::bundle::Visited,
+    &'static QualificationWorld,
+)> {
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world_generation(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    Ok((metadata, world))
+}
+
+pub(super) async fn hunt_for_carried_gold(
+    client: &mut DevClientSession,
+    world: &QualificationWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    gold: NonZeroU32,
+    minimum: u64,
+) -> TestResult {
+    hunt_for(client, world, spawns, 3031, |client| {
+        quantities(client).is_ok_and(|stock| carried_coin_count(&stock, gold) >= minimum)
+    })
+    .await
+}
+
+pub(super) fn carried_coin_count(stock: &BTreeMap<u32, u64>, coin: NonZeroU32) -> u64 {
+    stock.get(&coin.get()).copied().unwrap_or(0)
 }
 
 fn carried(client: &DevClientSession, reference: NonZeroU32) -> Option<items::ItemHandle> {
@@ -217,7 +242,7 @@ pub(super) async fn buy_from_lubo(
     let mut expected = quantities(client)?;
     *expected.entry(item.get()).or_default() += u64::from(quantity) * u64::from(offer.count);
     let cost = u64::from(quantity) * unit_price;
-    let before = expected.get(&coin.get()).copied().unwrap_or(0);
+    let before = carried_coin_count(&expected, coin);
     let after = before
         .checked_sub(cost)
         .ok_or_else(|| format!("Lubo requires {cost} carried gold; observed {before}"))?;
@@ -385,11 +410,7 @@ async fn refine(
     let stone = provisioning::item_reference(index, 10310)?;
     let gold = provisioning::item_reference(index, 3031)?;
     if carried(client, pick).is_none() {
-        hunt_for(client, world, &metadata.spawns, 3031, |client| {
-            quantities(client)
-                .is_ok_and(|stock| stock.get(&gold.get()).is_some_and(|coins| *coins >= 50))
-        })
-        .await?;
+        hunt_for_carried_gold(client, world, &metadata.spawns, gold, 50).await?;
         buy_from_lubo(client, &world.bundle, pick, gold, 1, 50).await?;
     }
     if carried(client, stone).is_none() {
@@ -590,7 +611,6 @@ async fn energy_ring(
 
     check.action = "expiry";
     let previous = quantities(client)?.get(&base.get()).copied().unwrap_or(0);
-    let equipped_after = tokio::time::Instant::now();
     move_ring(
         client,
         paused_handle,
@@ -601,6 +621,7 @@ async fn energy_ring(
         equipped(client, active)
     })
     .await?;
+    let active_observed_at = tokio::time::Instant::now();
     let remaining = paused
         .remaining_ms
         .ok_or("paused timer missing remaining budget")?;
@@ -623,7 +644,7 @@ async fn energy_ring(
         retired,
     )
     .await?;
-    check_ring_age(equipped_after.elapsed(), remaining)?;
+    check_ring_age(active_observed_at, tokio::time::Instant::now(), remaining)?;
     check.action = "relogin-timer";
     rejoin(client, clients).await?;
     retired(client).ok_or_else(|| {
@@ -635,9 +656,14 @@ async fn energy_ring(
     })
 }
 
-fn check_ring_age(elapsed: Duration, remaining_ms: u64) -> TestResult {
+fn check_ring_age(
+    active_observed_at: tokio::time::Instant,
+    retirement_observed_at: tokio::time::Instant,
+    remaining_ms: u64,
+) -> TestResult {
+    let elapsed = retirement_observed_at.duration_since(active_observed_at);
     if elapsed < Duration::from_millis(remaining_ms) {
-        return Err(format!("Energy Ring retired early; active at most {elapsed:?}, restored budget {remaining_ms}ms (timed_item_clock.rs:375)").into());
+        return Err(format!("Energy Ring retired early; observed active interval {elapsed:?}, restored budget {remaining_ms}ms (timed_item_clock.rs:375)").into());
     }
     Ok(())
 }
@@ -712,9 +738,20 @@ async fn observe_shield(
 
 #[test]
 fn ring_cannot_retire_before_restored_budget() {
+    let command_sent = tokio::time::Instant::now();
+    let active = command_sent + Duration::from_millis(100);
     assert!(
-        check_ring_age(Duration::from_millis(299), 300)
+        check_ring_age(active, command_sent + Duration::from_millis(650), 600)
             .is_err_and(|error| error.to_string().contains("Energy Ring retired early"))
     );
-    assert!(check_ring_age(Duration::from_millis(300), 300).is_ok());
+    assert!(check_ring_age(active, active + Duration::from_millis(600), 600).is_ok());
+}
+
+#[test]
+fn lubo_funding_counts_only_carried_gold_coins() -> TestResult {
+    let gold = NonZeroU32::new(3031).ok_or("gold definition")?;
+    assert_eq!(carried_coin_count(&BTreeMap::new(), gold), 0);
+    assert_eq!(carried_coin_count(&BTreeMap::from([(3035, 38)]), gold), 0);
+    assert_eq!(carried_coin_count(&BTreeMap::from([(3031, 38)]), gold), 38);
+    Ok(())
 }

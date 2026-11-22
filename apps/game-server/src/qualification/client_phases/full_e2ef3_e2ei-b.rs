@@ -303,15 +303,17 @@ async fn pick_up(
     at: TilePos,
     appearance: u16,
     definition: NonZeroU32,
-    route_obstacle: &str,
-) -> TestResult<NonZeroU64> {
-    approach(
-        client,
+) -> TestResult<Option<NonZeroU64>> {
+    let from = tile(client.world_spatial().actor_position)?;
+    let Some(path) = route_avoiding(
         world,
-        ("ground document", appearance, at, route_obstacle),
+        from,
         |cell| cell.floor == at.floor && cell.x.abs_diff(at.x).max(cell.y.abs_diff(at.y)) == 1,
-    )
-    .await?;
+        |cell| route_available(cell) && cell != WOLF_STEP_DESTINATION,
+    ) else {
+        return Ok(None);
+    };
+    walk(client, world, &path).await?;
     let item = visible_item(client, at, appearance).await?;
     let MapOrigin::Handle(source) = item.origin else {
         return Err(format!("ground document at {at:?} has no pickup handle: {item:?}").into());
@@ -344,7 +346,7 @@ async fn pick_up(
     if reply.status != CommandStatus::Accepted || reply.outcome != ItemMoveOutcome::Moved {
         return Err(format!("ground pickup {appearance} at {at:?}: {reply:?}").into());
     }
-    wait_carried(client, definition).await
+    wait_carried(client, definition).await.map(Some)
 }
 
 async fn write(
@@ -416,16 +418,45 @@ async fn acquire_document(
     if let Ok(handle) = carried(client, definition) {
         return Ok(handle);
     }
-    match pick_up(client, world, at, appearance, definition, obstacle).await {
-        Ok(handle) => Ok(handle),
-        Err(ground) => {
-            let key = format!("oteryn:item.tibia.i{appearance}");
-            full_e2ef7::acquire(client, world, index, &key, 1)
-                .await
-                .map_err(|trade| format!("ground source={ground}; ordinary NPC trade={trade}"))?;
-            carried(client, definition)
-        }
+    let ground = pick_up(client, world, at, appearance, definition).await;
+    ground_or_trade(ground, async {
+        let key = format!("oteryn:item.tibia.i{appearance}");
+        full_e2ef7::acquire(client, world, index, &key, 1)
+            .await
+            .map_err(|trade| format!("ground source={obstacle}; ordinary NPC trade={trade}"))?;
+        carried(client, definition)
+    })
+    .await
+}
+
+async fn ground_or_trade<T>(
+    ground: TestResult<Option<T>>,
+    trade: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    match ground? {
+        Some(item) => Ok(item),
+        None => trade.await,
     }
+}
+
+#[tokio::test]
+async fn document_trade_cannot_mask_a_failed_ground_assertion() -> TestResult {
+    let traded = std::cell::Cell::new(false);
+    for error in [
+        "MOVE refused despite inventory credit",
+        "wrong ground definition or count",
+    ] {
+        let result = ground_or_trade(Err(error.into()), async {
+            traded.set(true);
+            Ok(1)
+        })
+        .await;
+        assert!(result.is_err_and(|observed| observed.to_string() == error));
+    }
+    assert!(!traded.get());
+    let item = ground_or_trade(Ok(None), async { Ok(1) }).await?;
+    assert_eq!(item, 1);
+    Ok(())
 }
 
 async fn rewrite_parchment(

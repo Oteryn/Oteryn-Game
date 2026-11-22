@@ -323,13 +323,7 @@ async fn reachable_monster(
     let mut searched = Vec::new();
     for _ in 0..3 {
         let from = tile(client.world_spatial().actor_position)?;
-        let occupied: BTreeSet<_> = client
-            .world_entities()
-            .into_iter()
-            .flat_map(|entities| entities.others())
-            .filter(|entity| matches!(entity.kind, EntityKind::Creature | EntityKind::Npc | EntityKind::Player))
-            .filter_map(|entity| tile(entity.position).ok())
-            .collect();
+        let occupied = full_e2ef3::occupied_tiles(client);
         let path = baseline_route(
             world,
             from,
@@ -345,6 +339,25 @@ async fn reachable_monster(
         }
     }
     Err(format!("no live adjacent spawn at compiled approaches {searched:?}").into())
+}
+
+fn live_approach_route(
+    world: &BundleWorld,
+    from: TilePos,
+    target: TilePos,
+    occupied: &BTreeSet<TilePos>,
+) -> Option<Vec<StepDirection>> {
+    route_avoiding(
+        world,
+        from,
+        |cell| {
+            cell != target
+                && cell.floor == target.floor
+                && outside_protection(world, cell)
+                && cell.x.abs_diff(target.x).max(cell.y.abs_diff(target.y)) <= 1
+        },
+        |cell| full_e2ef3::route_available(cell) && cell != target && !occupied.contains(&cell),
+    )
 }
 
 async fn visible_monster(
@@ -373,17 +386,8 @@ async fn visible_monster(
                 if distance <= 1 {
                     return Ok(Some(entity));
                 }
-                let path = route_avoiding(
-                    world,
-                    here,
-                    |cell| {
-                        cell != at
-                            && cell.floor == at.floor
-                            && outside_protection(world, cell)
-                            && cell.x.abs_diff(at.x).max(cell.y.abs_diff(at.y)) <= 1
-                    },
-                    |cell| full_e2ef3::route_available(cell) && cell != at,
-                );
+                let occupied = full_e2ef3::occupied_tiles(client);
+                let path = live_approach_route(world, here, at, &occupied);
                 if let Some(direction) = path.and_then(|path| path.first().copied()) {
                     walk(client, world, &[direction]).await?;
                 }
@@ -829,6 +833,26 @@ mod tests {
             assert_ne!(at, occupied);
         }
         assert_ne!(at, TOWN);
+        let target = full_e2ef3::ordinary_spawn_points(&metadata.spawns)
+            .map(|(spawn, _)| spawn)
+            .find(|spawn| {
+                spawn.floor == at.floor
+                    && at.x.abs_diff(spawn.x).max(at.y.abs_diff(spawn.y)) <= 1
+                    && outside_protection(world, *spawn)
+            })
+            .ok_or("C03 compiled route ended beside no spawn")?;
+        let open = live_approach_route(world, TOWN, target, &BTreeSet::from([target]))
+            .ok_or("C03 live approach has no route from town")?;
+        let blocked = destination(world, TOWN, *open.first().ok_or("C03 approach must move")?)
+            .ok_or("C03 approach first step invalid")?;
+        let alternate = live_approach_route(world, TOWN, target, &BTreeSet::from([target, blocked]))
+            .ok_or("C03 live approach must detour around the other actor")?;
+        let mut cell = TOWN;
+        for step in alternate {
+            cell = destination(world, cell, step).ok_or("C03 live approach step invalid")?;
+            assert_ne!(cell, blocked);
+        }
+
         Ok(())
     }
 

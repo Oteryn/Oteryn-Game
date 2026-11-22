@@ -355,7 +355,11 @@ async fn inventory_journey(
     // fill one without needing five distinct definitions.
     let bags = provisioning::item_reference(&index, 2855)?;
     let coins = provisioning::item_reference(&index, 3031)?;
-    full_e2ef7::earn_gold(client, world, 38).await?;
+    if full_e2ef3_e2ei_d::carried_coin_count(&quantities(client)?, coins) < 38 {
+        let (metadata, hunt_world) = full_e2ef3_e2ei_d::load_hunt_world(clients)?;
+        full_e2ef3_e2ei_d::hunt_for_carried_gold(client, hunt_world, &metadata.spawns, coins, 38)
+            .await?;
+    }
     full_e2ef3_e2ei_d::buy_from_lubo(client, world, bags, coins, 6, 6).await?;
     assert_counts(entries(client)?, bags, &[1; 6])?;
     let bag = matching(entries(client)?, bags)?;

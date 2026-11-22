@@ -32,26 +32,11 @@ pub(super) struct Corpse {
     entity: WorldSpatialEntity,
     handle: ItemHandle,
     pub(super) entries: Vec<ItemEntry>,
-    killed_after: Instant,
+    corpse_observed_at: Instant,
 }
 
 fn nearby(a: TilePos, b: TilePos) -> bool {
     a.floor == b.floor && a.x.abs_diff(b.x).max(a.y.abs_diff(b.y)) <= 1
-}
-
-fn occupied_tiles(client: &DevClientSession) -> BTreeSet<TilePos> {
-    client
-        .world_entities()
-        .into_iter()
-        .flat_map(|entities| entities.others())
-        .filter(|entity| {
-            matches!(
-                entity.kind,
-                EntityKind::Creature | EntityKind::Npc | EntityKind::Player
-            )
-        })
-        .filter_map(|entity| tile(entity.position).ok())
-        .collect()
 }
 
 fn hunt_landing_available(at: TilePos, occupied: &BTreeSet<TilePos>) -> bool {
@@ -298,7 +283,6 @@ impl Hunt<'_> {
         let mut removed = false;
         let mut corpses = Vec::new();
         client.take_events();
-        let killed_after = Instant::now();
         let attack = client
             .session_mut()
             .attack_target(Some(&target.entity))
@@ -331,20 +315,21 @@ impl Hunt<'_> {
                             .value
                             .enter
                             .into_iter()
-                            .filter(|entity| entity.kind == EntityKind::Corpse),
+                            .filter(|entity| entity.kind == EntityKind::Corpse)
+                            .map(|entity| (entity, Instant::now())),
                     );
                 }
             }
             if removed
-                && let Some((corpse, handle)) = corpses
+                && let Some((corpse, handle, corpse_observed_at)) = corpses
                     .iter()
-                    .filter(|corpse| corpse.position == position)
-                    .find_map(|entered| {
+                    .filter(|(corpse, _)| corpse.position == position)
+                    .find_map(|(entered, observed_at)| {
                         let corpse = *client.world_entities()?.get(&entered.entity)?;
                         match corpse.detail {
                             EntityDetail::Object { item_handle, .. }
                             | EntityDetail::ObjectWithAppearance { item_handle, .. } => {
-                                item_handle.map(|handle| (corpse, handle))
+                                item_handle.map(|handle| (corpse, handle, *observed_at))
                             }
                             _ => None,
                         }
@@ -357,7 +342,7 @@ impl Hunt<'_> {
                     return Err(format!("restore fight mode after kill: {restored:?}").into());
                 }
                 verdict::Harness::global().progress("kill");
-                return Ok((corpse, handle, killed_after));
+                return Ok((corpse, handle, corpse_observed_at));
             }
             if Instant::now() >= deadline {
                 let stop = client.session_mut().attack_target(None).await?;
@@ -405,7 +390,7 @@ impl Hunt<'_> {
 
     async fn open(
         client: &mut DevClientSession,
-        (entity, handle, killed_after): (WorldSpatialEntity, ItemHandle, Instant),
+        (entity, handle, corpse_observed_at): (WorldSpatialEntity, ItemHandle, Instant),
     ) -> TestResult<Corpse> {
         let used = client.use_item(handle).await?;
         if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {
@@ -426,7 +411,7 @@ impl Hunt<'_> {
             entity,
             handle,
             entries,
-            killed_after,
+            corpse_observed_at,
         })
     }
 }
@@ -471,11 +456,12 @@ fn loot_deadline() -> Instant {
     deadline
 }
 
-fn check_corpse_age(age: Duration) -> TestResult {
-    // The plain rat corpse uses the legacy 60-second schedule in migration
-    // 1357. Timing from before ATTACK gives a conservative upper bound on age.
+fn check_corpse_age(corpse_observed_at: Instant, retirement_observed_at: Instant) -> TestResult {
+    // Require a full observable lifetime from the matching corpse enter frame.
+    // The plain rat corpse uses the fallback schedule in migration 1357.
+    let age = retirement_observed_at.duration_since(corpse_observed_at);
     if age < Duration::from_secs(60) {
-        return Err(format!("rat corpse retired early; observed at most {age:?}, expected at least 60s (1357_instance_corpse_mint.sql:164)").into());
+        return Err(format!("rat corpse retired early; observed interval {age:?}, expected at least 60s (1357_instance_corpse_mint.sql:164)").into());
     }
     Ok(())
 }
@@ -505,7 +491,7 @@ async fn decay(
         if live.take_events().into_iter().any(|event| matches!(event,
             SessionEvent::WorldSpatialEntities(delta) if delta.value.leave.contains(&corpse.entity.entity)
         )) {
-            check_corpse_age(corpse.killed_after.elapsed())?;
+            check_corpse_age(corpse.corpse_observed_at, Instant::now())?;
             break;
         }
         if Instant::now() >= deadline {
@@ -1218,11 +1204,13 @@ pub(super) async fn run(
 
 #[test]
 fn rat_retirement_rejects_early_removal() {
+    let attack = Instant::now();
+    let corpse = attack + Duration::from_secs(45);
     assert!(
-        check_corpse_age(Duration::from_millis(59_999))
+        check_corpse_age(corpse, attack + Duration::from_secs(65))
             .is_err_and(|error| error.to_string().contains("rat corpse retired early"))
     );
-    assert!(check_corpse_age(Duration::from_secs(60)).is_ok());
+    assert!(check_corpse_age(corpse, corpse + Duration::from_secs(60)).is_ok());
 }
 
 #[test]
