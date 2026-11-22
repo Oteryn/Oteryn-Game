@@ -33,7 +33,7 @@ struct Source {
 static CATALOGUE: LazyLock<Option<Document>> = LazyLock::new(|| {
     let document: Document = serde_json::from_slice(DOCUMENT).ok()?;
     // Catalogue size is independent of the existing 32-offer wire page.
-    (document.offers.len() <= 64 && document.offers.iter().all(|o| o.price > 0)).then_some(document)
+    (document.offers.len() <= 128 && document.offers.iter().all(|o| o.price > 0)).then_some(document)
 });
 pub fn offers() -> Option<&'static [StoreCosmeticOffer]> {
     Some(&CATALOGUE.as_ref()?.offers)
@@ -99,36 +99,34 @@ pub fn unlock(
 #[cfg(test)]
 mod tests {
     #[test]
-    fn admitted_store_price_and_looks_match_proven_reference()
+    fn field_surgeon_store_price_and_looks_match_proven_reference()
     -> Result<(), Box<dyn std::error::Error>> {
         let evidence: serde_json::Value = serde_json::from_slice(include_bytes!(
             "../../../../../docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json"
         ))?;
         let records = evidence["records"].as_array().ok_or("records")?;
-        {
-            let offer = super::offer("store:outfit:field-surgeon").ok_or("Field Surgeon")?;
-            let reference = records
-                .iter()
-                .find(|r| r["facts"]["name"]["value"] == "Field Surgeon")
-                .ok_or("reference")?;
-            assert_eq!(
-                reference["facts"]["full_store_price"]["classification"],
-                "PROVEN"
-            );
-            assert_eq!(
-                reference["facts"]["full_store_price"]["value"].as_u64(),
-                Some(offer.price)
-            );
-            let looks = super::CATALOGUE
-                .as_ref()
-                .ok_or("catalogue")?
-                .source
-                .outfit_looks
-                .get(&offer.unlock_key)
-                .ok_or("looks")?;
-            assert_eq!(reference["facts"]["male_look_type"]["value"], looks[0]);
-            assert_eq!(reference["facts"]["female_look_type"]["value"], looks[1]);
-        }
+        let offer = super::offer("store:outfit:field-surgeon").ok_or("offer")?;
+        let reference = records
+            .iter()
+            .find(|r| r["facts"]["name"]["value"] == "Field Surgeon")
+            .ok_or("reference")?;
+        assert_eq!(
+            reference["facts"]["full_store_price"]["classification"],
+            "PROVEN"
+        );
+        assert_eq!(
+            reference["facts"]["full_store_price"]["value"].as_u64(),
+            Some(offer.price)
+        );
+        let looks = super::CATALOGUE
+            .as_ref()
+            .ok_or("catalogue")?
+            .source
+            .outfit_looks
+            .get(&offer.unlock_key)
+            .ok_or("looks")?;
+        assert_eq!(reference["facts"]["male_look_type"]["value"], looks[0]);
+        assert_eq!(reference["facts"]["female_look_type"]["value"], looks[1]);
         Ok(())
     }
 
@@ -223,7 +221,10 @@ mod tests {
                 assert_eq!(owned.addon(&outfit_key, addon), UnlockFact::Compatible);
             }
         }
-        assert_eq!(offers().ok_or("catalogue")?.len(), expected.len());
+        let offers = offers().ok_or("catalogue")?;
+        assert_eq!(offers.iter().filter(|offer| offer.category == "cosmetics.outfits").count(), expected.len() + 3);
+        assert_eq!(offers.iter().filter(|offer| offer.category == "cosmetics.mounts").count(), 16);
+        assert_eq!(offers.len(), expected.len() + 3 + 16);
         Ok(())
     }
 

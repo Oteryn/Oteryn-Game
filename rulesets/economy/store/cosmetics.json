@@ -1,10 +1,71 @@
 {
   "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
   "source": {
-    "path": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json",
-    "record": "oteryn:content.outfit.field_surgeon_outfits",
-    "revision": "wiki:108239:1181114",
-    "selector": "full_store_price, male_look_type, female_look_type",
+    "crystal": {
+      "catalogue_path": "data/modules/scripts/gamestore/gamestore.lua",
+      "catalogue_sha256": "6affeb63a5d10fbdff1da5311d6db9e37e2097e6f13a2b14e9d2b8e87bca5df7",
+      "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "mount_identity_path": "data/XML/mounts.xml",
+      "mount_identity_sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f",
+      "offer_ordinals": {
+        "store:mount:armoured-war-horse": 111,
+        "store:mount:crimson-ray": 133,
+        "store:mount:death-crawler": 138,
+        "store:mount:desert-king": 139,
+        "store:mount:flamesteed": 155,
+        "store:mount:jade-lion": 178,
+        "store:mount:jade-pincer": 179,
+        "store:mount:nethersteed": 194,
+        "store:mount:shadow-draptor": 221,
+        "store:mount:steelbeak": 231,
+        "store:mount:tombstinger": 237,
+        "store:outfit:arena-champion": 267,
+        "store:outfit:evoker": 278,
+        "store:outfit:grove-keeper": 284,
+        "store:outfit:lupine-warden": 289,
+        "store:outfit:pharaoh": 295,
+        "store:outfit:philosopher": 296,
+        "store:outfit:retro-nobleman": 318,
+        "store:outfit:retro-summoner": 319,
+        "store:outfit:retro-warrior": 320,
+        "store:outfit:royal-pumpkin": 300,
+        "store:outfit:sea-dog": 302,
+        "store:outfit:seaweaver": 303,
+        "store:outfit:spirit-caller": 307,
+        "store:outfit:trophy-hunter": 310,
+        "store:outfit:winter-warden": 313
+      },
+      "outfit_identity_path": "data/XML/outfits.xml",
+      "outfit_identity_sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757",
+      "path": "data/modules/scripts/gamestore/gamestore.lua",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "6affeb63a5d10fbdff1da5311d6db9e37e2097e6f13a2b14e9d2b8e87bca5df7"
+    },
+    "field_surgeon": {
+      "path": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json",
+      "record": "oteryn:content.outfit.field_surgeon_outfits",
+      "revision": "wiki:108239:1181114",
+      "selector": "full_store_price, male_look_type, female_look_type"
+    },
+    "mount_looks": {
+      "oteryn:content.mount.armoured_war_horse": 426,
+      "oteryn:content.mount.battle_werewolf": 1873,
+      "oteryn:content.mount.boisterous_bull": 1672,
+      "oteryn:content.mount.crimson_ray": 521,
+      "oteryn:content.mount.death_crawler": 624,
+      "oteryn:content.mount.desert_king": 572,
+      "oteryn:content.mount.flamesteed": 626,
+      "oteryn:content.mount.jade_lion": 627,
+      "oteryn:content.mount.jade_pincer": 628,
+      "oteryn:content.mount.magma_skull": 1686,
+      "oteryn:content.mount.nethersteed": 629,
+      "oteryn:content.mount.obstinate_ox": 1674,
+      "oteryn:content.mount.shadow_draptor": 427,
+      "oteryn:content.mount.steelbeak": 522,
+      "oteryn:content.mount.surly_steer": 1673,
+      "oteryn:content.mount.tombstinger": 546
+    },
     "outfit_looks": {
       "oteryn:outfit.aerial_disciple": [
         1936,
@@ -162,6 +223,18 @@
         1127,
         1128
       ],
+      "oteryn:outfit.retro_nobleman": [
+        966,
+        967
+      ],
+      "oteryn:outfit.retro_summoner": [
+        964,
+        965
+      ],
+      "oteryn:outfit.retro_warrior": [
+        962,
+        963
+      ],
       "oteryn:outfit.royal_pumpkin": [
         760,
         759
@@ -227,12 +300,7 @@
         852
       ]
     },
-    "mount_looks": {},
-    "crystal": {
-      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-      "path": "data/modules/scripts/gamestore/gamestore.lua",
-      "sha256": "6affeb63a5d10fbdff1da5311d6db9e37e2097e6f13a2b14e9d2b8e87bca5df7"
-    },
+    "path": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json",
     "priced_records": {
       "store:outfit:aerial-disciple": "wiki:/records/0",
       "store:outfit:arbalester": "crystal:2410",
@@ -289,9 +357,254 @@
       "store:outfit:void-master": "crystal:2825",
       "store:outfit:winged-druid": "crystal:2899",
       "store:outfit:winter-warden": "crystal:2834"
+    },
+    "record": "oteryn:content.outfit.field_surgeon_outfits",
+    "revision": "wiki:108239:1181114",
+    "selector": "full_store_price, male_look_type, female_look_type",
+    "tibiawiki_br": {
+      "offer_revisions": {
+        "store:mount:battle-werewolf": {
+          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=427794",
+          "page_id": 65665,
+          "selector": "Infobox_Mount / storevalue",
+          "crystal_mount_id": 245
+        },
+        "store:mount:boisterous-bull": {
+          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=394898",
+          "page_id": 59766,
+          "selector": "Infobox_Mount / storevalue",
+          "crystal_mount_id": 213
+        },
+        "store:mount:magma-skull": {
+          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=405763",
+          "page_id": 61038,
+          "selector": "Infobox_Mount / storevalue",
+          "crystal_mount_id": 220
+        },
+        "store:mount:obstinate-ox": {
+          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=394900",
+          "page_id": 59768,
+          "selector": "Infobox_Mount / storevalue",
+          "crystal_mount_id": 215
+        },
+        "store:mount:surly-steer": {
+          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=394899",
+          "page_id": 59767,
+          "selector": "Infobox_Mount / storevalue",
+          "crystal_mount_id": 214
+        }
+      }
     }
   },
   "offers": [
+    {
+      "key": "store:mount:armoured-war-horse",
+      "category": "cosmetics.mounts",
+      "title": "Armoured War Horse",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.armoured_war_horse",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.armoured_war_horse"
+      },
+      "source_line": 1146
+    },
+    {
+      "key": "store:mount:battle-werewolf",
+      "category": "cosmetics.mounts",
+      "title": "Battle Werewolf",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.battle_werewolf",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.battle_werewolf"
+      },
+      "source_line": 19
+    },
+    {
+      "key": "store:mount:boisterous-bull",
+      "category": "cosmetics.mounts",
+      "title": "Boisterous Bull",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.boisterous_bull",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.boisterous_bull"
+      },
+      "source_line": 17
+    },
+    {
+      "key": "store:mount:crimson-ray",
+      "category": "cosmetics.mounts",
+      "title": "Crimson Ray",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.crimson_ray",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.crimson_ray"
+      },
+      "source_line": 1324
+    },
+    {
+      "key": "store:mount:death-crawler",
+      "category": "cosmetics.mounts",
+      "title": "Death Crawler",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.death_crawler",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.death_crawler"
+      },
+      "source_line": 1364
+    },
+    {
+      "key": "store:mount:desert-king",
+      "category": "cosmetics.mounts",
+      "title": "Desert King",
+      "price": 450,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.desert_king",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.desert_king"
+      },
+      "source_line": 1372
+    },
+    {
+      "key": "store:mount:flamesteed",
+      "category": "cosmetics.mounts",
+      "title": "Flamesteed",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.flamesteed",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.flamesteed"
+      },
+      "source_line": 1502
+    },
+    {
+      "key": "store:mount:jade-lion",
+      "category": "cosmetics.mounts",
+      "title": "Jade Lion",
+      "price": 450,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.jade_lion",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.jade_lion"
+      },
+      "source_line": 1686
+    },
+    {
+      "key": "store:mount:jade-pincer",
+      "category": "cosmetics.mounts",
+      "title": "Jade Pincer",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.jade_pincer",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.jade_pincer"
+      },
+      "source_line": 1694
+    },
+    {
+      "key": "store:mount:magma-skull",
+      "category": "cosmetics.mounts",
+      "title": "Magma Skull",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.magma_skull",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.magma_skull"
+      },
+      "source_line": 17
+    },
+    {
+      "key": "store:mount:nethersteed",
+      "category": "cosmetics.mounts",
+      "title": "Nethersteed",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.nethersteed",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.nethersteed"
+      },
+      "source_line": 1824
+    },
+    {
+      "key": "store:mount:obstinate-ox",
+      "category": "cosmetics.mounts",
+      "title": "Obstinate Ox",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.obstinate_ox",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.obstinate_ox"
+      },
+      "source_line": 17
+    },
+    {
+      "key": "store:mount:shadow-draptor",
+      "category": "cosmetics.mounts",
+      "title": "Shadow Draptor",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.shadow_draptor",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.shadow_draptor"
+      },
+      "source_line": 2040
+    },
+    {
+      "key": "store:mount:steelbeak",
+      "category": "cosmetics.mounts",
+      "title": "Steelbeak",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.steelbeak",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.steelbeak"
+      },
+      "source_line": 2120
+    },
+    {
+      "key": "store:mount:surly-steer",
+      "category": "cosmetics.mounts",
+      "title": "Surly Steer",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.surly_steer",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.surly_steer"
+      },
+      "source_line": 17
+    },
+    {
+      "key": "store:mount:tombstinger",
+      "category": "cosmetics.mounts",
+      "title": "Tombstinger",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.tombstinger",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.tombstinger"
+      },
+      "source_line": 2168
+    },
     {
       "key": "store:outfit:aerial-disciple",
       "category": "cosmetics.outfits",
@@ -798,6 +1111,45 @@
         "key": "oteryn:outfit.pumpkin_mummy"
       },
       "source_line": 2690
+    },
+    {
+      "key": "store:outfit:retro-nobleman",
+      "category": "cosmetics.outfits",
+      "title": "Retro Noble(wo)man",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.retro_nobleman",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.retro_nobleman"
+      },
+      "source_line": 2875
+    },
+    {
+      "key": "store:outfit:retro-summoner",
+      "category": "cosmetics.outfits",
+      "title": "Retro Summoner",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.retro_summoner",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.retro_summoner"
+      },
+      "source_line": 2883
+    },
+    {
+      "key": "store:outfit:retro-warrior",
+      "category": "cosmetics.outfits",
+      "title": "Retro Warrior",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.retro_warrior",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.retro_warrior"
+      },
+      "source_line": 2891
     },
     {
       "key": "store:outfit:royal-pumpkin",
