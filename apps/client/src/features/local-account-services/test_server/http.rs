@@ -36,7 +36,13 @@ impl MockPlatform {
                     state.requests.push(format!("{}\r\n\r\n{body}", headers.collect::<Vec<_>>().join("\r\n")));state.respond(method,target,body,grant,signature)};
                 if status == 0 { continue; }
                 let response = format!("HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{reply}", reply.len());
-                if method == "POST" && target == "/api/v1/native-account/coin-purchases/orders"
+                if method == "GET" && state.lock().ok().and_then(|s| s.held_bazaar_status.clone())
+                    .is_some_and(|id| target.ends_with(&format!("/bazaar/commands/{id}"))) {
+                    tokio::spawn(async move {
+                        let mut byte = [0];
+                        let _ = stream.read(&mut byte).await;
+                    });
+                } else if method == "POST" && target == "/api/v1/native-account/coin-purchases/orders"
                     && let Some((ready, release)) = state.lock().ok().and_then(|mut s| s.hold_coin_response.take())
                 {
                     tokio::spawn(async move {

@@ -55,7 +55,7 @@ impl BrowserEpoch {
         command.spawn()
     }
 
-    #[cfg(bevy_shell)]
+    #[cfg(any(test, bevy_shell))]
     pub(crate) fn cancellation(&self) -> CancellationToken {
         self.ended.clone()
     }

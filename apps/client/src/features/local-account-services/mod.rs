@@ -1,6 +1,7 @@
 //! Native account services run outside an admitted character session.
 mod controller;
 mod session;
+pub(crate) mod status_lookup;
 pub(crate) use session::{PriorRequests, Session};
 #[cfg(test)]
 mod native;
@@ -12,7 +13,10 @@ mod tests;
 use oteryn_foundation::CancellationToken;
 use oteryn_platform_client::native_login::bazaar::*;
 use oteryn_platform_client::native_login::{AccessToken, AttemptRef, NativeLoginClient};
+use oteryn_platform_client::{PlatformClientError::HttpStatus, native_login::NativeLoginError};
 use std::{sync::Arc, time::Instant};
+
+pub(crate) use session::Unverified;
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -54,6 +58,7 @@ pub struct View {
     prior: PriorRequests,
     pending: Option<BazaarRequest>,
     post_refusal_status: Option<u16>,
+    unverified: Unverified,
     unresolved: std::collections::BTreeSet<String>,
     quote_until: Option<Instant>,
 }
@@ -69,6 +74,7 @@ impl Default for View {
             prior: Default::default(),
             pending: None,
             post_refusal_status: None,
+            unverified: Default::default(),
             unresolved: Default::default(),
             quote_until: None,
         }
@@ -76,7 +82,10 @@ impl Default for View {
 }
 impl View {
     pub fn pending(&self) -> bool {
-        self.prior.post_in_flight() || self.pending.is_some() || !self.unresolved.is_empty()
+        self.prior.post_in_flight()
+            || self.pending.is_some()
+            || !self.unresolved.is_empty()
+            || !self.unverified.0.is_empty()
     }
     pub fn can_retry(&self) -> bool {
         self.pending.is_some() && self.post_refusal_status.is_none()
@@ -93,14 +102,28 @@ impl View {
         client: &NativeLoginClient,
         token: &AccessToken,
         cancel: CancellationToken,
+        timeout: std::time::Duration,
     ) {
-        for listed in std::mem::take(&mut page.recent_operations) {
-            let Ok(receipt) = client
-                .bazaar_status(token, &listed.request_id, cancel.clone())
-                .await
-            else {
-                continue;
+        let listed = std::mem::take(&mut page.recent_operations);
+        let lookups = listed
+            .iter()
+            .map(|row| client.bazaar_status(token, &row.request_id, cancel.clone()));
+        let results = status_lookup::collect(lookups, timeout).await;
+        for (row, result) in listed.into_iter().zip(results) {
+            let receipt = match result {
+                Some(Ok(receipt)) => receipt,
+                Some(Err(NativeLoginError::Platform(HttpStatus(403 | 404))))
+                    if row.state != OperationState::Pending =>
+                {
+                    // A stale terminal listing from another grant cannot establish ownership.
+                    continue;
+                }
+                _ => {
+                    self.unverified.0.insert(row.request_id);
+                    continue;
+                }
             };
+            self.unverified.0.remove(&row.request_id);
             if self.prior.contains(&receipt.request_id)
                 || self
                     .pending
@@ -155,7 +178,7 @@ impl View {
     }
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
-        if self.prior.post_in_flight() {
+        if self.prior.post_in_flight() || !self.unverified.0.is_empty() {
             text.push('\n');
             text.push_str(tr!(
                 "Resolve the pending operation before starting another."

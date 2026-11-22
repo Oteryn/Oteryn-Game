@@ -34,7 +34,10 @@ pub(super) async fn execute(
             .bazaar_page(token, view.selected_view, None, cancel.clone())
             .await
         {
-            Ok(page) => view.install_page(page, client, token, cancel).await,
+            Ok(page) => {
+                view.install_page(page, client, token, cancel, status_lookup::TIMEOUT)
+                    .await
+            }
             Err(_) => view.feedback.push_str(tr!(
                 " Balance refresh unavailable; the receipt is retained."
             )),
@@ -60,7 +63,8 @@ async fn apply(
                 .bazaar_page(token, kind, None, cancel.clone())
                 .await?;
             view.feedback = tr!("Server account data refreshed.").into();
-            view.install_page(page, client, token, cancel).await;
+            view.install_page(page, client, token, cancel, status_lookup::TIMEOUT)
+                .await;
             view.selected_view = kind;
             if view.post_refusal_status == Some(403) {
                 view.post_refusal_status = None;
@@ -73,7 +77,8 @@ async fn apply(
                 let page = client
                     .bazaar_page(token, view.selected_view, Some(cursor), cancel.clone())
                     .await?;
-                view.install_page(page, client, token, cancel).await;
+                view.install_page(page, client, token, cancel, status_lookup::TIMEOUT)
+                    .await;
             }
             return Ok(());
         }
@@ -168,11 +173,16 @@ async fn apply(
             return Ok(());
         }
         Action::Status => {
-            if let Some(id) = view.pending_id() {
+            if let Some(id) = view
+                .pending_id()
+                .or_else(|| view.unverified.0.first().map(String::as_str))
+            {
                 match client.bazaar_status(token, id, cancel).await {
                     Ok(receipt) => accept(view, receipt),
                     Err(NativeLoginError::Platform(HttpStatus(404)))
-                        if view.post_refusal_status == Some(409) =>
+                        if view.post_refusal_status == Some(409)
+                            && !view.unverified.0.contains(id)
+                            && !view.unresolved.contains(id) =>
                     {
                         view.prior.reconcile(id);
                         view.pending = None;
@@ -249,6 +259,7 @@ async fn submit(
     Ok(())
 }
 pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
+    view.unverified.0.remove(&receipt.request_id);
     if view.receipt.as_ref().is_some_and(|old| {
         old.request_id == receipt.request_id
             && old.state != OperationState::Pending
