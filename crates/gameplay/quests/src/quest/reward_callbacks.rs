@@ -546,9 +546,9 @@ struct Document {
 
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/classic-quests.json"),
     include_str!("../../../../../content/quests/npc-callbacks/explorer-society.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/classic-quests.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
@@ -2370,8 +2370,8 @@ mod tests {
             (
                 "oteryn:quest.the_ice_islands_quest",
                 // M47 counters retain -1; distinct native seals also bind their
-                // separately owned painted-target counter and source callbacks.
-                "299b92c459921a7f30b4128518dc869fc7e7f6de3d50dbcf3be09ee05dcb44c0",
+                // separately owned painted-target counter and Inukaya sled rides.
+                "fdaedce30df4cf940d0022e341e5c0e9be4025a17564ae8f0fed960e350cfe4e",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",
@@ -2410,10 +2410,12 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing and 31 QB routes. Rottin Wood contributes 13,
-        // the Forgemaster contributes 12, the chosen routes add 18, A Prisoner adds 2, and classic quest contacts add 5.
-        // The shared shard also adds four outfit completion routes.
-        assert_eq!(load()?.len(), (238 + 4) + 59 + 125 + 1 + 1 + 13 + 12 + 18 + 2 + 5);
+        // Outfit completions add four to the shared shard. Package 4 also adds the
+        // chosen routes (18), Prisoner (2), classic contacts (5), Nomads (3) and Explorer Society (85).
+        assert_eq!(
+            load()?.len(),
+            (238 + 4) + 59 + 125 + 1 + 1 + 13 + 12 + 18 + 2 + 5 + 3 + 85
+        );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2441,6 +2443,10 @@ mod tests {
         let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
         assert_eq!(qb.len(), 31);
         let added_keys = [
+            "oteryn:quest-reward/l1-warmaster-crest-complete",
+            "oteryn:quest-reward/l1-warmaster-tribal-complete",
+            "oteryn:quest-reward/l1-wayfarer-cape-complete",
+            "oteryn:quest-reward/l1-wayfarer-hat-complete",
             "oteryn:quest-reward/l2-wizard-flowers",
             "oteryn:quest-reward/l2-wizard-flowers-start",
             "oteryn:quest-reward/l2-wizard-legs",
@@ -2460,7 +2466,7 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 207);
+        assert_eq!(legacy.len(), 207 + 4);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
@@ -3313,8 +3319,8 @@ mod outfit_reward_predecessor_tests {
                 .iter()
                 .filter(|callback| callback.quest == QUEST)
                 .count(),
-            // 112 retained rows plus 31 QB Barbarian/Citizen/Warrior rows.
-            143
+            // 113 retained rows, including the female Hunter hand-in, plus 31 QB rows.
+            144
         );
         document
             .callbacks
@@ -3324,7 +3330,7 @@ mod outfit_reward_predecessor_tests {
             .iter()
             .filter(|callback| callback.quest == QUEST)
             .count();
-        assert_eq!(owned, 112);
+        assert_eq!(owned, 113);
         let participants = document
             .callbacks
             .iter()

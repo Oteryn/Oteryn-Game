@@ -809,7 +809,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    assert_eq!(later_main_profiles, 2597);
+    assert_eq!(later_main_profiles, 2599);
     const QENGINE2_BASE_PROFILES: usize = 53;
     assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 115);
     let baseline = ORIGINAL_PROFILES

@@ -16,8 +16,8 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
-// The Explorer Society and Outlaw Camp cohort adds 25 source callbacks.
-pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1088;
+// Quests package 4 registers 1,094 callbacks before authored World bindings.
+pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1100;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -3155,6 +3155,9 @@ mod disguise_tests {
             .into_iter()
             .find(|c| c.key == "oteryn:quest-callback/authored-venore-machine-9")
             .ok_or("fixture callback")?;
+        // Maintenance now records each machine independently. Exercise the
+        // disguise validator with an earning transition into the test range.
+        callback.storage[0].set = 10;
         let rule = Disguise {
             track: callback.storage[0].track.clone(),
             minimum: 10,

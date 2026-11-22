@@ -376,13 +376,16 @@ class QuestCallbackProfiles(unittest.TestCase):
                     expected.update(child['item']['key'] for child in placement['contents'])
         # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
         # 3083), with 3083 also used by Triangle Tower; retain the complete closure.
-        self.assertEqual(len(expected), 160)
+        self.assertEqual(len(expected), 159)
         # Goblin Temple adds pan3466 and snowball2992; vial2874 was already present.
         self.assertTrue({'oteryn:item.tibia.i3466','oteryn:item.tibia.i2992'} <= expected)
         # Draconia adds the one-charge ice rapier and serpent sword to full bags.
         self.assertTrue({'oteryn:item.tibia.i3284', 'oteryn:item.tibia.i3297'} <= expected)
-        # Fire Axe adds the already-admitted dragon necklace and Fire Axe to bags.
-        self.assertTrue({'oteryn:item.tibia.i3085', 'oteryn:item.tibia.i3320'} <= expected)
+        # Package C retains the dragon necklace in the Fire Axe bag. The axe
+        # keeps independent native admission and is no longer a bag child.
+        fire_axe = 'oteryn:item.tibia.i3320'
+        self.assertIn('oteryn:item.tibia.i3085', expected)
+        self.assertNotIn(fire_axe, expected)
         # Dreamer adds certificate, bread and the source-selected wine vial to the exact closure.
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (6498, 3602, 2874)} <= expected)
         # Desert2 adds exactly its three previously absent child identities;
@@ -396,7 +399,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertIn('oteryn:item.tibia.i3083', expected)
         self.assertTrue({'oteryn:item.tibia.i3084', 'oteryn:item.tibia.i3098',
                          'oteryn:item.tibia.i3077'} <= expected)
-        for key in expected:
+        for key in expected | {fire_axe}:
             row = rows[key]
             self.assertTrue(row['admission']['materializable'], key)
             self.assertIn('CharacterInventory', row['admission']['legal_destinations'], key)

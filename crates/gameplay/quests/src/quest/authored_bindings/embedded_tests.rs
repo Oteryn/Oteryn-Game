@@ -573,8 +573,8 @@ mod main_native_contract {
         // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
         // A Prisoner records apple payments and the one-time key.
-        // Maryza adds the cookbook track.
-        assert_eq!(before.tracks.len(), 2135 + 7 + 2 + 1);
+        // Maryza adds the cookbook track. The remaining package 4 routes add 50 tracks.
+        assert_eq!(before.tracks.len(), 2135 + 7 + 2 + 1 + 50);
         assert_eq!(
             before.track("oteryn:quest-progress/storage/30022"),
             Some(&QuestTrack {

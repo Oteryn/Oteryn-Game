@@ -530,7 +530,7 @@
         "encounter": null
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/47/definition:sha256:aa7c8f0615324ce8dbbdbeba70f8452bd008b3ea67758ca859a3ee5627d43dbd",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/47/definition:sha256:39eaf3649e31312e71eff6833bd148b2c7bf6487adaa179d3db594ebf725e2cb",
         "https://tibia.fandom.com/index.php?curid=23373",
         "tools/content-schema/world-authoring/samples/quest-chest-bindings/classic-quests.json"
       ],
@@ -567,7 +567,7 @@
         "encounter": null
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/49/definition:sha256:aa7c8f0615324ce8dbbdbeba70f8452bd008b3ea67758ca859a3ee5627d43dbd",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/49/definition:sha256:39eaf3649e31312e71eff6833bd148b2c7bf6487adaa179d3db594ebf725e2cb",
         "https://tibia.fandom.com/index.php?curid=29702",
         "tools/content-schema/world-authoring/samples/quest-chest-bindings/classic-quests.json"
       ],

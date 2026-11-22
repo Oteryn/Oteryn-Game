@@ -103,68 +103,62 @@ pub(super) async fn exercise(
     step(owner, admitted, 1, StepDirection::East).await?;
     let mut command = 2;
     assert_eq!(progress(h, route, "stage").await?, 1);
-        let north = TilePos {
-            x: 32757,
-            y: 31953,
-            floor: -9,
-        };
-        let south = TilePos {
-            x: 32757,
-            y: 31957,
-            floor: -9,
-        };
-        let (first, second, first_item, first_stage) = if matches!(route, Route::Voodoo) {
-            walk(owner, admitted, &mut command, 32755, 31954).await?;
-            walk(owner, admitted, &mut command, 32756, 31953).await?;
-        assert_eq!(
-            claim(owner, admitted, &mut command, north, 1).await?,
-            UseDisposition::Rejected
-        );
+    let north = TilePos {
+        x: 32757,
+        y: 31953,
+        floor: -9,
+    };
+    let south = TilePos {
+        x: 32757,
+        y: 31957,
+        floor: -9,
+    };
+    let (first, second, first_item, first_stage) = if matches!(route, Route::Voodoo) {
         walk(owner, admitted, &mut command, 32755, 31954).await?;
         hunt(owner, admitted, "oteryn:creature.witch", 3, command).await?;
-            assert_eq!(progress(h, route, "kills").await?, 3);
-            (north, south, "oteryn:item.tibia.i3209", 2)
-        } else {
-            assert_eq!(progress(h, route, "kills").await?, 0);
-            (south, north, "oteryn:item.tibia.i3046", 3)
-        };
-        walk(
-            owner,
-            admitted,
-            &mut command,
-            i32::from(first.x) - 1,
-            i32::from(first.y),
-        )
-        .await?;
-        assert_eq!(
-            claim(owner, admitted, &mut command, first, 1).await?,
-            UseDisposition::Committed
-        );
-        assert_eq!(progress(h, route, "stage").await?, first_stage);
-        assert_eq!(quantity(h, first_item).await?, 1);
-        assert_eq!(
-            claim(owner, admitted, &mut command, first, 1).await?,
-            UseDisposition::Rejected
-        );
-        let completed: bool = sqlx::query_scalar(
+        assert_eq!(progress(h, route, "kills").await?, 3);
+        (north, south, "oteryn:item.tibia.i3209", 2)
+    } else {
+        assert_eq!(progress(h, route, "kills").await?, 0);
+        (south, north, "oteryn:item.tibia.i3046", 3)
+    };
+    walk(
+        owner,
+        admitted,
+        &mut command,
+        i32::from(first.x) - 1,
+        i32::from(first.y),
+    )
+    .await?;
+    assert_eq!(
+        claim(owner, admitted, &mut command, first, 1).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(progress(h, route, "stage").await?, first_stage);
+    assert_eq!(quantity(h, first_item).await?, 1);
+    assert_eq!(
+        claim(owner, admitted, &mut command, first, 1).await?,
+        UseDisposition::Rejected
+    );
+    let completed: bool = sqlx::query_scalar(
             "SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
         )
         .bind(id(41).as_slice())
         .bind(route.quest())
         .fetch_one(&h.pool)
         .await?;
-        assert!(!completed, "one box does not finish the quest");
-        walk(
-            owner,
-            admitted,
-            &mut command,
-            i32::from(second.x) - 1,
-            i32::from(second.y),
-        )
-        .await?;
-        finish(owner, admitted, h, &mut command, second, 1).await?;
-        assert_eq!(quantity(h, "oteryn:item.tibia.i3209").await?, 1);
-        assert_eq!(quantity(h, "oteryn:item.tibia.i3046").await?, 1);
+    assert!(!completed, "one box does not finish the quest");
+    walk(
+        owner,
+        admitted,
+        &mut command,
+        i32::from(second.x) - 1,
+        i32::from(second.y),
+    )
+    .await?;
+    finish(owner, admitted, h, &mut command, second, 1).await?;
+    assert_eq!(quantity(h, "oteryn:item.tibia.i3209").await?, 1);
+    assert_eq!(quantity(h, "oteryn:item.tibia.i3046").await?, 1);
     assert_eq!(progress(h, route, "stage").await?, 4);
     let complete:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(route.quest()).fetch_one(&h.pool).await?;
     assert!(complete);
@@ -307,7 +301,7 @@ type FixtureObjects = Vec<(u16, u16, Vec<u16>)>;
 
 pub(super) fn world(route: Route) -> TestResult<crate::map::boot::BundleWorld> {
     let a = route.anchor();
-    if !matches!(route, Route::Voodoo) {
+    if !matches!(route, Route::Voodoo | Route::VoodooSouthFirst) {
         let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, _) =
             super::death_ml_loss_composed_fixtures::production_generation_with_pin(
@@ -345,7 +339,9 @@ pub(super) fn world(route: Route) -> TestResult<crate::map::boot::BundleWorld> {
                     floor: -7,
                 },
             ),
-            Route::Voodoo => return Err("expected a native retrieval route".into()),
+            Route::Voodoo | Route::VoodooSouthFirst => {
+                return Err("expected a native retrieval route".into());
+            }
         };
         return super::questpc8_native_slice::world(native, patches, &[], start);
     }

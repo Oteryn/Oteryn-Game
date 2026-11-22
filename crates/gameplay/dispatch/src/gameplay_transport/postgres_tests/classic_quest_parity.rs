@@ -1,4 +1,8 @@
-use super::{TestResult, m06_keys_fixtures::source_key_door};
+use super::{
+    TestResult,
+    m06_keys_fixtures::source_key_door,
+    quest_catalogue_chests_fixtures::{cases, execute_committed},
+};
 
 #[test]
 fn outlaw_camp_key_3303_unlocks_the_mine_door() -> TestResult {
@@ -46,8 +50,6 @@ fn explorer_society_enrollment_unlocks_dwacatra_through_npc_service() -> TestRes
         )
     })
 }
-use super::TestResult;
-use super::quest_catalogue_chests_fixtures::{cases, execute_committed};
 
 #[test]
 fn classic_quest_caches_grant_and_replay_from_committed_sources() -> TestResult {
