@@ -121,6 +121,21 @@ class PartitionPlanTests(unittest.TestCase):
         self.assertEqual(len(all_filters[0] | all_filters[1]), 5)
         self.assertEqual(len(reservations), 1)
 
+    def test_m09_treasure_cases_reserve_all_slots_in_both_dispatch_binaries(self):
+        m09 = planner.EXCLUSIVE_TEST_PREFIXES[0] + "m09_treasure_telescope_once_and_replay"
+        other = "gameplay_transport::monk_save::postgres_tests::m09_other::m09_treasure_case"
+        self.listing("pg-lib", "oteryn-gameplay-dispatch", m09, other)
+        self.listing("pg-lib-1", "oteryn-gameplay-dispatch::oteryn-gameplay-dispatch", m09)
+        with contextlib.redirect_stdout(io.StringIO()):
+            planner.write_partition(self.plan, 0, 1, {}, optional=True)
+        config = tomllib.loads((self.plan / "priority.toml").read_text())
+        self.assertEqual(config["profile"]["default"]["overrides"], [
+            {"filter": f"binary_id(={binary}) & test(={m09})",
+             "threads-required": "num-test-threads"}
+            for binary in ("oteryn-gameplay-dispatch",
+                           "oteryn-gameplay-dispatch::oteryn-gameplay-dispatch")
+        ])
+
     def test_new_rune_cases_use_historical_budget_until_measured(self):
         binary, old = planner.OLD_RUNE_CASE.split(" ", 1)
         name = old.removesuffix("real_dispatch_casts_once_and_reloads_one_debit") + "case"
