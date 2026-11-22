@@ -1,6 +1,66 @@
 //! Store browse view; each product retains its own immutable purchase quote.
 use super::*;
 pub const COMMAND_TYPE: u32 = 6118;
+pub const CAPABILITY_HOME_V1: u32 = 586;
+pub const COMMAND_TYPE_RECENT: u32 = 6335;
+pub const COMMAND_TYPE_BANNERS: u32 = 6336;
+
+const MAX_BANNERS: usize = 8;
+const MAX_BANNER_KEY_BYTES: usize = 64;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Banners {
+    pub delay_seconds: u8,
+    pub images: Vec<String>,
+}
+
+impl Banners {
+    pub fn encode(&self) -> Result<Vec<u8>, StoreWireError> {
+        if self.delay_seconds == 0 || self.images.is_empty() || self.images.len() > MAX_BANNERS {
+            return Err(StoreWireError::Malformed);
+        }
+        let mut out = vec![self.delay_seconds, self.images.len() as u8];
+        for key in &self.images {
+            let Some(name) = key
+                .strip_prefix("home/")
+                .and_then(|key| key.strip_suffix(".png"))
+            else {
+                return Err(StoreWireError::Malformed);
+            };
+            if name.is_empty()
+                || !name
+                    .bytes()
+                    .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_')
+            {
+                return Err(StoreWireError::Malformed);
+            }
+            string(&mut out, key, MAX_BANNER_KEY_BYTES)?;
+        }
+        Ok(out)
+    }
+
+    pub fn decode(bytes: &[u8]) -> Result<Self, StoreWireError> {
+        if bytes.len() > 2 + MAX_BANNERS * (2 + MAX_BANNER_KEY_BYTES) {
+            return Err(StoreWireError::LimitExceeded);
+        }
+        let mut reader = Reader { bytes, at: 0 };
+        let [delay_seconds, count] = reader.take()?;
+        if usize::from(count) > MAX_BANNERS {
+            return Err(StoreWireError::LimitExceeded);
+        }
+        let images = (0..count)
+            .map(|_| reader.text())
+            .collect::<Result<_, _>>()?;
+        reader.end()?;
+        let banners = Self {
+            delay_seconds,
+            images,
+        };
+        banners.encode()?;
+        Ok(banners)
+    }
+}
+
 pub const MAX_CATEGORIES: usize = 64;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Query {

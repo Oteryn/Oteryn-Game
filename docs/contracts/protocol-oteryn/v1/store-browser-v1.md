@@ -60,3 +60,39 @@ not its sorted wire definition reference. Canary `52550d5e`,
 `src/items/items.cpp:153-174` loads item types directly at appearance object IDs.
 An optional trusted catalogue `preview` binding selects an admitted item policy,
 cosmetic key or mount key (kind 1/2/3); it changes artwork only, never delivery.
+
+## Store Home extension
+
+Capability 586 requires selected STORE_V1 (154). It is offered when the existing
+Platform Store client is configured. Command 6118 retains its existing
+semantics and exact wire encoding. The 6335 and 6336 results are solicited only.
+
+### Recent offers request
+
+Command 6335 uses the same SBQ1 request with category `featured`. Search, sort
+and the established bounds apply.
+
+### Recent offers result
+
+The same SBR1 schema. The server intersects existing admitted offers with
+Crystal 201189f8 `data/modules/scripts/gamestore/gamestore.lua`'s active
+`STATE_NEW` rows (Corpsefire Skull and Doom Skull mounts) by trusted mount
+preview key. This matches the current [Tibia Store manual](https://www.tibia.com/gameguides/?subtopic=manual&section=store)
+placement of recent offers on Home. The pinned Oteryn catalogue currently
+admits neither mount, so the recent view returns an empty product list and
+the real Platform balance. Cursors from 6118 cannot be reused on 6335.
+
+### Banners request
+
+Command 6336 takes an empty payload.
+
+### Banners result
+
+A nonzero u8 dwell time in seconds, u8 image count (1–8), then that many
+u16-LE length-prefixed UTF-8 image keys (1–64 bytes including affixes).
+Each key is `home/` followed by lowercase ASCII letters, digits or underscores,
+then `.png`. Keys identify trusted local assets. Do not interpret them as
+filesystem paths or fetch URLs. The client displays the first entry and
+advances in order, wrapping at the end. Crystal 201189f8
+`data/modules/scripts/gamestore/gamestore.lua:12–15` supplies 10 seconds and
+the Armoured Archer and Podium of Tenacity keys in that order.

@@ -3,10 +3,35 @@ use super::*;
 use crate::content::native_gameplay::NativeGameplayState;
 use std::collections::{BTreeMap, BTreeSet};
 use wire::browse::{Artwork, Category, Page, Product, Query};
+
+// Crystal 201189f8, gamestore.lua:12–15. These are opaque asset identifiers.
+pub(super) fn banners() -> wire::browse::Banners {
+    wire::browse::Banners {
+        delay_seconds: 10,
+        images: vec![
+            "home/banner_armouredarcher.png".into(),
+            "home/banner_podiumoftenacity.png".into(),
+        ],
+    }
+}
+
+// Crystal 201189f8, gamestore.lua:1304–1313 and 1378–1387, marks these
+// active mounts New. The commented Magma Skull row is excluded.
+fn recently_added(preview: Option<&(u8, String)>) -> bool {
+    preview.is_some_and(|(kind, key)| {
+        *kind == 3
+            && matches!(
+                key.as_str(),
+                "oteryn:content.mount.corpsefire_skull" | "oteryn:content.mount.doom_skull"
+            )
+    })
+}
+
 pub(super) async fn execute(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     q: &Query,
+    recent: bool,
 ) -> Option<Page> {
     super::gameplay_fence(owner, admitted).await?;
     {
@@ -23,6 +48,9 @@ pub(super) async fn execute(
     let mut products = Vec::new();
     for catalogue in catalogues {
         for offer in catalogue.entries() {
+            if recent && !recently_added(catalogue.preview(&offer.key)) {
+                continue;
+            }
             products.push(Product {
                 category: offer.category.clone(),
                 revision: catalogue.rules.revision().into(),
@@ -36,12 +64,21 @@ pub(super) async fn execute(
             });
         }
     }
-    let ranks = owner
-        .root
-        .store_popularity(products.iter().map(|p| p.offer.offer_key.clone()).collect())
-        .await
-        .ok()?;
-    let mut page = project(products, q, &ranks)?;
+    let ranks = if products.is_empty() {
+        BTreeMap::new()
+    } else {
+        owner
+            .root
+            .store_popularity(products.iter().map(|p| p.offer.offer_key.clone()).collect())
+            .await
+            .ok()?
+    };
+    let cursor_domain = if recent {
+        b"store-recent-v1\0".as_slice()
+    } else {
+        b"store-browse-v1\0"
+    };
+    let mut page = project_in_view(products, q, &ranks, cursor_domain)?;
     // Reuse the accepted Platform balance projection; never synthesize a commercial balance.
     let account = uuid_text(&admitted.controller?.account_id);
     let mut client = owner.store.as_ref()?.lock().await;
@@ -138,10 +175,16 @@ fn title(key: &str) -> String {
         .collect::<Vec<_>>()
         .join(" ")
 }
-pub(super) fn project(
+#[cfg(test)]
+fn project(products: Vec<Product>, q: &Query, ranks: &BTreeMap<String, u64>) -> Option<Page> {
+    project_in_view(products, q, ranks, b"store-browse-v1\0")
+}
+
+fn project_in_view(
     mut products: Vec<Product>,
     q: &Query,
     ranks: &BTreeMap<String, u64>,
+    cursor_domain: &[u8],
 ) -> Option<Page> {
     q.encode().ok()?;
     let mut categories = vec![Category {
@@ -207,7 +250,7 @@ pub(super) fn project(
         order.then_with(|| a.offer.offer_key.cmp(&c.offer.offer_key))
     });
     let mut digest = Sha256::new();
-    digest.update(b"store-browse-v1\0");
+    digest.update(cursor_domain);
     let mut bound = q.clone();
     bound.cursor.clear();
     digest.update(bound.encode().ok()?);

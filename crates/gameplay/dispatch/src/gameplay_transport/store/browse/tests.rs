@@ -77,3 +77,19 @@ fn store_browser_resolves_every_admitted_item_from_active_content()
     }
     Ok(())
 }
+
+#[test]
+fn store_recent_only_matches_donor_marked_mount_bindings() {
+    for key in [
+        "oteryn:content.mount.corpsefire_skull",
+        "oteryn:content.mount.doom_skull",
+    ] {
+        assert!(recently_added(Some(&(3, key.into()))));
+        assert!(!recently_added(Some(&(2, key.into()))));
+    }
+    assert!(!recently_added(Some(&(
+        3,
+        "oteryn:content.mount.magma_skull".into()
+    ))));
+    assert!(!recently_added(None));
+}

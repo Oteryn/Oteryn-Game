@@ -28,6 +28,26 @@ pub struct StorePurchaseResult {
     pub operation_id: Option<[u8; 16]>,
 }
 
+pub const CAPABILITY_NAME_INPUT_V1: u32 = 587;
+pub const COMMAND_TYPE_NAME_INPUT: u32 = 6337;
+pub const MAX_NAME_INPUT_BYTES: usize = 128;
+
+/// Syntax validation is owned by Game's CharacterName policy; this checks only framing.
+pub fn decode_name_input(bytes: &[u8]) -> Result<&str, StoreWireError> {
+    if bytes.len() > MAX_NAME_INPUT_BYTES {
+        return Err(StoreWireError::LimitExceeded);
+    }
+    std::str::from_utf8(bytes).map_err(|_| StoreWireError::Malformed)
+}
+
+pub fn decode_name_input_result(bytes: &[u8]) -> Result<bool, StoreWireError> {
+    match bytes {
+        [0] => Ok(false),
+        [1] => Ok(true),
+        _ => Err(StoreWireError::Malformed),
+    }
+}
+
 pub fn encode_purchase_request(value: &StorePurchaseRequest) -> Result<Vec<u8>, StoreWireError> {
     if !valid_uuid_v7(&value.purchase_request_id)
         || !valid_key(&value.offer_key)
@@ -176,4 +196,26 @@ pub fn decode_purchase_result(input: &[u8]) -> Result<StorePurchaseResult, Store
     };
     encode_purchase_result(&result)?;
     Ok(result)
+}
+
+#[cfg(test)]
+mod name_input_tests {
+    use super::*;
+
+    #[test]
+    fn store_name_input_leaves_character_policy_to_the_server() {
+        assert_eq!(decode_name_input(b"Al Dric"), Ok("Al Dric"));
+        assert_eq!(decode_name_input(b" Al  Dric "), Ok(" Al  Dric "));
+        assert_eq!(decode_name_input(&[0xff]), Err(StoreWireError::Malformed));
+        assert_eq!(
+            decode_name_input(&[b'a'; MAX_NAME_INPUT_BYTES + 1]),
+            Err(StoreWireError::LimitExceeded)
+        );
+        assert_eq!(decode_name_input_result(&[0]), Ok(false));
+        assert_eq!(decode_name_input_result(&[1]), Ok(true));
+        assert_eq!(
+            decode_name_input_result(&[1, 0]),
+            Err(StoreWireError::Malformed)
+        );
+    }
 }

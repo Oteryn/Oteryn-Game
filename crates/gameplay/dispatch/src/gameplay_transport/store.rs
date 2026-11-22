@@ -77,6 +77,17 @@ pub fn with_store_offer(
     if !set.iter().any(|row| row.id == wire::cosmetic_tokens::CAPABILITY) {
         set.push(super::capabilities::OfferedCapability { id: wire::cosmetic_tokens::CAPABILITY, requires: &[wire::CAPABILITY_STORE_V1] });
     }
+    for id in [
+        wire::browse::CAPABILITY_HOME_V1,
+        wire::CAPABILITY_NAME_INPUT_V1,
+    ] {
+        if !set.iter().any(|row| row.id == id) {
+            set.push(super::capabilities::OfferedCapability {
+                id,
+                requires: &[wire::CAPABILITY_STORE_V1],
+            });
+        }
+    }
     set.sort_by_key(|row| row.id);
     let set: Set = Box::leak(set.into_boxed_slice());
     cache.push((base, set));
@@ -165,10 +176,51 @@ pub(super) async fn execute(
             let Some(result) = cosmetic_tokens::purchase(owner, admitted, payload).await else { return REJECTED; };
             wire::encode_purchase_result(&result)
         }
-        wire::browse::COMMAND_TYPE => {
-            let Ok(query)=wire::browse::Query::decode(payload) else {return REJECTED;};
-            let Some(page)=browse::execute(owner,admitted,&query).await else {return REJECTED;};
+        wire::browse::COMMAND_TYPE | wire::browse::COMMAND_TYPE_RECENT => {
+            let recent = command_type == wire::browse::COMMAND_TYPE_RECENT;
+            if recent
+                && !admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(wire::browse::CAPABILITY_HOME_V1)
+            {
+                return REJECTED;
+            }
+            let Ok(query) = wire::browse::Query::decode(payload) else {
+                return REJECTED;
+            };
+            if recent && query.category != "featured" {
+                return REJECTED;
+            }
+            let Some(page) = browse::execute(owner, admitted, &query, recent).await else {
+                return REJECTED;
+            };
             page.encode()
+        }
+        wire::browse::COMMAND_TYPE_BANNERS => {
+            if !payload.is_empty()
+                || !admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(wire::browse::CAPABILITY_HOME_V1)
+            {
+                return REJECTED;
+            }
+            browse::banners().encode()
+        }
+        wire::COMMAND_TYPE_NAME_INPUT => {
+            if !admitted
+                .continuity
+                .selected_capabilities
+                .contains(wire::CAPABILITY_NAME_INPUT_V1)
+            {
+                return REJECTED;
+            }
+            let Ok(name) = wire::decode_name_input(payload) else {
+                return REJECTED;
+            };
+            let valid = crate::domain::character_name::CharacterName::parse(name).is_ok();
+            Ok(vec![u8::from(valid)])
         }
         wire::COMMAND_TYPE_STORE_CATALOGUE_PAGE => {
             let Ok(request) = wire::decode_catalogue_request(payload) else {
