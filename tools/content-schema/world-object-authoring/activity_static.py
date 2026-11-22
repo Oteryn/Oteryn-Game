@@ -10,6 +10,7 @@ import re
 from functools import lru_cache
 from pathlib import Path
 
+import crystal_traversal_facts
 import world_objects
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -267,6 +268,14 @@ SHARDS = {
     "Terrain": "content/world/terrain/terrain-08669-08720.json",
     "WorldObject": "content/world/objects/objects-12932-13108.json",
 }
+TRAVERSAL_SHARDS = {
+    "Terrain": "content/world/terrain/terrain-08751-08755.json",
+    "WorldObject": "content/world/objects/objects-13109-13114.json",
+}
+TRAVERSAL_NOTES = {
+    "Terrain": " Additionally five source-qualified Crystal stair grounds.",
+    "WorldObject": " Additionally six Crystal traversal fixtures.",
+}
 REGISTRY = "content/world/source-static-definitions.json"
 NOTE = " Additionally SRX-3 pinned activity static geometry: 61 Terrain and 177 WorldObject records; no Item aliases."
 
@@ -396,6 +405,38 @@ def preserved_restore_item_pointer(root=ROOT):
 
 
 @lru_cache(maxsize=4)
+def official_appearances(root=ROOT):
+    raw = (root / f"content/assets/files/appearances-{OFFICIAL_SHA}.dat").read_bytes()
+    if hashlib.sha256(raw).hexdigest() != OFFICIAL_SHA:
+        raise ValueError("official appearance artifact digest")
+    appearances = world_objects.engine_items.load_appearance_objects(raw)
+    admitted = json.loads(
+        (root / "imports/official/appearance-membership/admitted.json").read_bytes()
+    )
+    membership = next(
+        row for row in admitted["files"] if row["label"] == "client-15.30"
+    )
+    members_raw = (
+        root / "imports/official/appearance-membership" / membership["manifest"]
+    ).read_bytes()
+    if (
+        hashlib.sha256(members_raw).hexdigest() != membership["manifest_sha256"]
+        or membership["appearances_sha256"] != OFFICIAL_SHA
+    ):
+        raise ValueError("official membership digest")
+    members = {row[0] for row in json.loads(members_raw)["entries"]}
+    return appearances, members
+
+
+@lru_cache(maxsize=4)
+def traversal_records(root=ROOT):
+    appearances, members = official_appearances(root)
+    objects, static = crystal_traversal_facts.records(appearances, members)
+    grounds = crystal_traversal_facts.grounds(appearances, members)
+    return {"WorldObject": objects, "Terrain": grounds}, static
+
+
+@lru_cache(maxsize=4)
 def source_records(root=ROOT):
     """Pure source qualification, independent of joint catalogue publication."""
     restore_pointer = preserved_restore_item_pointer(root)
@@ -445,25 +486,7 @@ def source_records(root=ROOT):
             policies[identifier] = policy
     if policies.keys() != IDENTIFIERS:
         raise ValueError("closed static geometry census")
-    raw = (root / f"content/assets/files/appearances-{OFFICIAL_SHA}.dat").read_bytes()
-    if hashlib.sha256(raw).hexdigest() != OFFICIAL_SHA:
-        raise ValueError("official appearance artifact digest")
-    appearances = world_objects.engine_items.load_appearance_objects(raw)
-    admitted = json.loads(
-        (root / "imports/official/appearance-membership/admitted.json").read_bytes()
-    )
-    membership = next(
-        row for row in admitted["files"] if row["label"] == "client-15.30"
-    )
-    members_raw = (
-        root / "imports/official/appearance-membership" / membership["manifest"]
-    ).read_bytes()
-    if (
-        hashlib.sha256(members_raw).hexdigest() != membership["manifest_sha256"]
-        or membership["appearances_sha256"] != OFFICIAL_SHA
-    ):
-        raise ValueError("official membership digest")
-    members = {row[0] for row in json.loads(members_raw)["entries"]}
+    appearances, members = official_appearances(root)
     source = {
         "engine": "crystal",
         "profile": "OTERYN_ACTIVITY_STATIC_GEOMETRY_201189F/v1",
@@ -596,6 +619,13 @@ def outputs(root=ROOT):
         shared += 1
     if shared != 8:
         raise ValueError("joint static registry shared set changed")
+    traversal, traversal_static = traversal_records(root)
+    for family, rows in traversal.items():
+        files[TRAVERSAL_SHARDS[family]] = encode({"family": family, "records": rows})
+    registry.extend(traversal_static)
+    registry.sort(key=lambda row: row["source_item_id"])
+    terrain_keys.update(row["identity"]["key"] for row in traversal["Terrain"])
+    terrain_keys.update(row["identity"]["key"] for row in traversal_static)
     files[REGISTRY] = encode(
         {
             "schema": "OTERYN_ACTIVITY_STATIC_DEFINITIONS/v1",
@@ -626,6 +656,13 @@ def outputs(root=ROOT):
     placement_path = "content/world/placements/index.json"
     placement = json.loads((root / placement_path).read_bytes())
     compose_placement_palette(placement, registry, soulpit_rows, root)
+    ground_keys = {
+        row["provenance"]["source_item_id"]: row["identity"]["key"]
+        for row in traversal["Terrain"]
+    }
+    for row in placement["palette"]:
+        if row["source_item_id"] in ground_keys:
+            row.update(key=ground_keys[row["source_item_id"]], provisional=False)
     files[placement_path] = encode(placement)
     for family, directory in [("Terrain", "terrain"), ("WorldObject", "objects")]:
         name = f"content/world/{directory}/index.json"
@@ -640,6 +677,8 @@ def outputs(root=ROOT):
         )
         if family == "Terrain":
             marker["notes"] = compose_terrain_notes(marker["notes"])
+        note = TRAVERSAL_NOTES[family]
+        marker["notes"] = marker["notes"].replace(note, "") + note
         files[name] = (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
     return files
 
@@ -712,11 +751,11 @@ def main():
                 previous.unlink()
     for name, raw in planned.items():
         path = ROOT / name
+        if path.is_file() and path.read_bytes() == raw:
+            continue
         if args.check:
-            if not path.exists() or path.read_bytes() != raw:
-                raise SystemExit(f"stale activity static geometry: {name}")
-        else:
-            path.write_bytes(raw)
+            raise SystemExit(f"stale activity static geometry: {name}")
+        path.write_bytes(raw)
 
 
 if __name__ == "__main__":

@@ -394,7 +394,9 @@ def outputs(
         import activity_static
 
         static_files = activity_static.outputs()
-        for name in activity_static.SHARDS.values():
+        for name in (
+            *activity_static.SHARDS.values(), *activity_static.TRAVERSAL_SHARDS.values()
+        ):
             files[name] = static_files[name]
         files[activity_static.REGISTRY] = static_files[activity_static.REGISTRY]
         # The qualified restore target keeps its original base ordinal. Apply
@@ -427,6 +429,8 @@ def outputs(
             name = f"content/world/{directory}/index.json"
             index = json.loads(files[name])
             index["notes"] += activity_static.NOTE
+            if directory == "objects":
+                index["notes"] += activity_static.TRAVERSAL_NOTES["WorldObject"]
             files[name] = (
                 json.dumps(index, indent=2, ensure_ascii=False) + "\n"
             ).encode()
@@ -484,6 +488,7 @@ def outputs(
         index = json.loads(files[index_path])
         index["notes"] += engnpc2_ram_world.NOTE
         index["notes"] = activity_static.compose_terrain_notes(index["notes"])
+        index["notes"] += activity_static.TRAVERSAL_NOTES["Terrain"]
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
@@ -549,6 +554,7 @@ def qualified_shards():
             "content/world/terrain/terrain-08750-08750.json",
             "content/world/objects/objects-12917-12931.json",
             *activity_static.SHARDS.values(),
+            *activity_static.TRAVERSAL_SHARDS.values(),
             feroxa_static.SHARD,
         )
         if (path := ROOT / relative).exists()

@@ -525,6 +525,16 @@ def validate_record(record):
             if record == expected
             else ["static activity geometry differs from its qualified source"]
         )
+    import crystal_traversal_facts
+
+    if (
+        record["provenance"]["source"].get("profile")
+        == crystal_traversal_facts.SOURCE["profile"]
+    ):
+        traversal, _ = activity_static.traversal_records()
+        if record in traversal[family]:
+            return []
+        return ["Crystal traversal fact differs from its source"]
     if "item_pointer" not in record["provenance"]:
         import feroxa_static
 
