@@ -379,10 +379,6 @@ QUALIFIED.update({
         "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
     "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon":
         "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
-    "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1":
-        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
-    "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2":
-        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
     "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.chest_tible":
         "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
     "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_book":
@@ -535,7 +531,6 @@ QUALIFIED.update({
     "oteryn:reward-claim.kv.shamantreasure": "quest_catalogue_chests_qchk7_shaman_treasure_use_replay_and_refusal",
     "oteryn:reward-claim.kv.shortswordbook": "quest_catalogue_chests_qchk7_short_sword_use_replay_and_refusal",
     "oteryn:reward-claim.kv.silverbrooch": "quest_catalogue_chests_qchk7_silver_brooch_use_replay_and_refusal",
-    "oteryn:reward-claim.kv.witch_house_quest": "quest_catalogue_chests_qchk7_unlinked_use_replay_and_refusal",
     "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl": "quest_catalogue_chests_qchk7_serpentine_tower_use_replay_and_refusal",
     "oteryn:reward-claim.quest.u7_8.oriental_outfits.coral_comb": "quest_catalogue_chests_qchk7_oriental_outfits_use_replay_and_refusal",
     "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.bag_book_knife": "quest_catalogue_chests_qchk7_what_a_foolish_use_replay_and_refusal",
