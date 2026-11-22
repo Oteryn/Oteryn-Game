@@ -95,11 +95,24 @@ fn channel_log_control_saves_appends_replaces_and_reports_io_errors() -> Result<
 fn channel_log_is_created_with_owner_only_permissions() -> Result<(), Error> {
     use std::os::unix::fs::PermissionsExt;
 
+    const CHILD_PATH: &str = "OTERYN_TEST_RESTRICTIVE_EXPORT_PATH";
+    if let Some(path) = std::env::var_os(CHILD_PATH) {
+        rustix::process::umask(rustix::fs::Mode::RWXU);
+        let path = std::path::Path::new(&path);
+        let (link, _, _) = play_channel();
+        link.chat_save_log(path, false)?;
+        assert_eq!(std::fs::metadata(path)?.permissions().mode() & 0o777, 0o600);
+        link.chat_save_log(path, true)?;
+        return Ok(());
+    }
     let fixture = tempfile::tempdir()?;
-    let path = fixture.path().join("chat.log");
-    let (link, _, _) = play_channel();
-    link.chat_save_log(&path, true)?;
-    assert_eq!(std::fs::metadata(path)?.permissions().mode() & 0o777, 0o600);
+    let name = std::thread::current();
+    let status = std::process::Command::new(std::env::current_exe()?)
+        .args(["--exact", name.name().ok_or("unnamed test")?])
+        .env(CHILD_PATH, fixture.path().join("chat.log"))
+        .status()?;
+    assert!(status.success());
+    assert!(fixture.path().join("chat.log").is_file());
     Ok(())
 }
 

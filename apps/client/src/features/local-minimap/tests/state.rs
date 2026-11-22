@@ -410,6 +410,23 @@ fn hold_background_save(map: &mut Minimap) -> tokio::sync::oneshot::Sender<()> {
 }
 
 #[cfg(bevy_shell)]
+fn while_writer_is_held(
+    mut map: Minimap,
+    operation: impl FnOnce(&mut Minimap) -> io::Result<()> + Send + 'static,
+) -> Result<Minimap, Box<dyn std::error::Error>> {
+    let release = hold_background_save(&mut map);
+    let (finished, observed) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let result = operation(&mut map);
+        let _ = finished.send((map, result));
+    });
+    let (map, result) = observed.recv_timeout(Duration::from_secs(2))?;
+    release.send(()).map_err(|()| "save worker dropped")?;
+    result?;
+    Ok(map)
+}
+
+#[cfg(bevy_shell)]
 fn poll_mark_save(map: &mut Minimap) -> io::Result<()> {
     let deadline = Instant::now() + Duration::from_secs(2);
     while map.save_task.is_some() {
@@ -433,18 +450,20 @@ fn removing_a_persisted_mark_defers_the_cache_write() -> Result<(), Box<dyn std:
     map.edit_marker(100, 200, 7, "Camp".into(), 0)?;
     let cache = map.path().ok_or("bound cache")?;
     map.enable_background_save();
-    let release = hold_background_save(&mut map);
-    map.remove_marker(100, 200, 7)?;
-    assert!(map.markers.is_empty());
-    assert!(map.save_task.is_some());
-    assert_eq!(
-        Saved::read_from(&cache)?
-            .ok_or("saved cache")?
-            .markers
-            .len(),
-        1
-    );
-    release.send(()).map_err(|()| "save worker dropped")?;
+    let mut map = while_writer_is_held(map, |map| {
+        map.remove_marker(100, 200, 7)?;
+        assert!(map.markers.is_empty());
+        assert!(map.save_task.is_some());
+        let cache = map.path().ok_or_else(|| io::Error::other("bound cache"))?;
+        assert_eq!(
+            Saved::read_from(&cache)?
+                .ok_or_else(|| io::Error::other("saved cache"))?
+                .markers
+                .len(),
+            1
+        );
+        Ok(())
+    })?;
     poll_mark_save(&mut map)?;
     assert!(
         Saved::read_from(&cache)?
@@ -466,12 +485,31 @@ fn creating_and_editing_persisted_marks_defer_the_cache_write()
     map.observe(&joined_window(100, 200));
     let cache = map.path().ok_or("bound cache")?;
     map.enable_background_save();
-    let release = hold_background_save(&mut map);
-    assert!(map.create_mark_at((100, 200, 7))?);
-    map.edit_marker(100, 200, 7, "Camp".into(), 3)?;
-    assert_eq!(map.markers[0].label, "Camp");
-    assert!(!cache.exists());
-    release.send(()).map_err(|()| "save worker dropped")?;
+    let mut map = while_writer_is_held(map, |map| {
+        assert!(map.create_mark_at((100, 200, 7))?);
+        assert!(
+            !map.path()
+                .ok_or_else(|| io::Error::other("bound cache"))?
+                .exists()
+        );
+        Ok(())
+    })?;
+    poll_mark_save(&mut map)?;
+    let created = Saved::read_from(&cache)?.ok_or("created cache")?.markers;
+    assert_eq!(created.len(), 1);
+    assert_eq!(created[0].label, "Mark");
+    let mut map = while_writer_is_held(map, move |map| {
+        map.edit_marker(100, 200, 7, "Camp".into(), 3)?;
+        assert_eq!(map.markers[0].label, "Camp");
+        let cache = map.path().ok_or_else(|| io::Error::other("bound cache"))?;
+        assert_eq!(
+            Saved::read_from(&cache)?
+                .ok_or_else(|| io::Error::other("created cache"))?
+                .markers,
+            created
+        );
+        Ok(())
+    })?;
     poll_mark_save(&mut map)?;
     assert_eq!(
         Saved::read_from(&cache)?.ok_or("saved cache")?.markers[0].label,
@@ -484,7 +522,6 @@ fn creating_and_editing_persisted_marks_defer_the_cache_write()
 #[test]
 fn map_binding_change_does_not_join_the_background_save() -> Result<(), Box<dyn std::error::Error>>
 {
-    use std::sync::mpsc;
     let root = tempfile::tempdir()?;
     let mut map = Minimap::default();
     map.root = Some(root.path().to_path_buf());
@@ -492,26 +529,13 @@ fn map_binding_change_does_not_join_the_background_save() -> Result<(), Box<dyn 
     map.observe(&joined_window(100, 200));
     map.enable_background_save();
     let path = map.path().ok_or("outgoing cache")?;
-    let release = hold_background_save(&mut map);
-    map.edit_marker(100, 200, 7, "Outgoing".into(), 1)?;
-    let (finished, observed) = mpsc::channel();
-    let worker = std::thread::spawn(move || {
+    let _live_map = while_writer_is_held(map, |map| {
+        map.edit_marker(100, 200, 7, "Outgoing".into(), 1)?;
         let mut next = joined_window(100, 200);
         next.header.reset_epoch += 1;
         map.observe(&next);
-        let _ = finished.send(());
-    });
-    let returned = observed.recv_timeout(Duration::from_secs(2));
-    let _ = release.send(());
-    returned?;
-    let deadline = Instant::now() + Duration::from_secs(2);
-    while !worker.is_finished() {
-        if Instant::now() >= deadline {
-            return Err("minimap observer did not finish".into());
-        }
-        std::thread::yield_now();
-    }
-    worker.join().map_err(|_| "minimap observation")?;
+        Ok(())
+    })?;
     let deadline = Instant::now() + Duration::from_secs(2);
     loop {
         if let Some(saved) = Saved::read_from(&path)? {
