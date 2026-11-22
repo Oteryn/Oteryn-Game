@@ -545,11 +545,19 @@ async fn verify_guild_acl(
     sqlx::query("INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,1,'Leader'),(encode($1,'hex')::uuid,2,'Member')")
         .bind(id(90).as_slice()).execute(&mut *tx).await?;
     let actor = id(91);
-    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision) SELECT encode($1,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
+    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($1,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,'House Member' FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
         .bind(actor.as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,1)")
         .bind(actor.as_slice()).bind(id(90).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
+
+    let name: String = sqlx::query_scalar(
+        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(actor.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(name, "House Member");
 
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 49, 515])
