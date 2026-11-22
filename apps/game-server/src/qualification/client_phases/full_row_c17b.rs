@@ -195,7 +195,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let crate::spell::ManaCost::Fixed(cost) = spell.mana else {
         return Err("step=cast observed=non-fixed-mana need=assertable-cost".into());
     };
-    full_e2ef5::prepare_spell_access(&mut caster, world, spell)
+    full_e2ef5::prepare_spell_access(&mut caster, spell)
         .await
         .map_err(|error| format!("step=invisibility-access spell=utana vid: {error}"))?;
     let mut observer = connect_character(clients, 0xb2, 0).await?;

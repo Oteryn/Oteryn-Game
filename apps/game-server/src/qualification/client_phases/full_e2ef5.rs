@@ -94,7 +94,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
                     let result = if id == "C17a" {
                         haste(&mut row, &mut client, clients, world).await
                     } else {
-                        illusion(&mut row, &mut client, clients, world).await
+                        illusion(&mut row, &mut client, clients).await
                     };
                     completed = true;
                     result
@@ -201,11 +201,13 @@ fn require_spell_vocation(spell: &crate::spell::SpellDefinition, vocation: crate
 
 pub(super) async fn prepare_spell_access(
     client: &mut DevClientSession,
-    world: &BundleWorld,
     spell: &crate::spell::SpellDefinition,
 ) -> TestResult<u32> {
     require_spell_vocation(spell, current_vocation(client).await?)?;
-    let level = earn_spell_level(client, world, spell.level).await?;
+    let payload = general_stats_payload(client).await?;
+    let level = level_from_stats(&payload, general_stats::selected(client))?;
+    let xp = u64::from_le_bytes(payload[1..9].try_into()?);
+    require_spell_level(spell, level, xp)?;
     require_premium_spell_access(client, spell)?;
     Ok(level)
 }
@@ -227,28 +229,23 @@ fn require_premium_spell_access(
     Ok(())
 }
 
-pub(super) async fn earn_spell_level(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    required_level: u32,
-) -> TestResult<u32> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
-    loop {
-        let observed_level = level(client).await?;
-        if observed_level >= required_level {
-            return Ok(observed_level);
-        }
-        verdict::Harness::global().bounded_wait(deadline, "earned-spell-level");
-        let kill = tokio::time::timeout_at(deadline, player_corpse(client, world, &[])).await;
-        let failure = match kill {
-            Ok(Ok(_)) => continue,
-            Ok(Err(error)) => error.to_string(),
-            Err(_) => "rat hunt exceeded the 180s progression budget".to_owned(),
-        };
-        return Err(format!(
-            "earned-spell-level: observed_level={observed_level} required_level={required_level}; rat kill unavailable: {failure}; source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/spells.rs:225"
-        ).into());
+fn require_spell_level(spell: &crate::spell::SpellDefinition, observed: u32, xp: u64) -> TestResult {
+    if observed >= spell.level {
+        return Ok(());
     }
+    let section: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../rulesets/character/experience/native-section.json"
+    ))?;
+    let required_xp = section["experience_table"]["levels"]
+        .as_array()
+        .and_then(|levels| levels.iter().find(|entry| entry["level"].as_u64() == Some(u64::from(spell.level))))
+        .and_then(|entry| entry["minimum_experience"].as_str())
+        .ok_or("spell level has no canonical XP threshold")?
+        .parse::<u64>()?;
+    Err(format!(
+        "spell {} needs earned level={} (minimum_xp={required_xp}, xp_shortfall={}); served_level={observed} served_xp={xp} premium_required={}; no qualifying progression route in the reference starter journey; source:rulesets/character/experience/native-section.json",
+        spell.key, spell.level, required_xp.saturating_sub(xp), spell.premium
+    ).into())
 }
 
 async fn say(
@@ -347,7 +344,6 @@ async fn illusion(
     row: &mut Row,
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
-    world: &BundleWorld,
 ) -> TestResult {
     let input = native_input()?;
     let book = native_spell_book()?;
@@ -397,7 +393,7 @@ async fn illusion(
     if baseline == expected {
         return Err("C17c baseline already has rat appearance; cast would be unproven".into());
     }
-    let player_level = prepare_spell_access(client, world, spell).await?;
+    let player_level = prepare_spell_access(client, spell).await?;
     let before = client
         .actor_vitals()
         .copied()
@@ -807,7 +803,7 @@ async fn haste(
                 .ok_or("C17a invalid speed condition duration")?;
         Ok(Duration::from_millis(ms))
     };
-    let player_level = prepare_spell_access(client, world, haste).await?;
+    let player_level = prepare_spell_access(client, haste).await?;
     let haste_duration = duration(haste)?;
     let strong_duration = duration(strong)?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
@@ -869,27 +865,15 @@ async fn haste(
     row.pass("haste-fresh-admission", client.last_server_sequence());
     expire_speed(client, &cells, baseline, started, haste_duration).await?;
     row.pass("haste-expiry", client.last_server_sequence());
-    let strong_level = prepare_spell_access(client, world, strong)
+    prepare_spell_access(client, strong)
         .await
         .map_err(|error| format!("basic Haste lifecycle completed at level {player_level}; Strong Haste access: {error}"))?;
-    let baseline = if strong_level != player_level {
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == cells[0])
-            .ok_or("C17a no return route to the speed corridor after Strong Haste progression")?;
-        walk(client, world, &path).await?;
-        let observed = cadence(client, &cells).await?;
-        if !same_cadence(observed, expected_cadence(None, strong_level, ground)?) {
-            return Err("C17a post-progression baseline differs from the production speed table".into());
-        }
-        observed
-    } else {
-        baseline
-    };
     let recast_started = tokio::time::Instant::now();
     let sequence = cast_support(client, book, "utani hur").await?;
     row.pass("haste-recast", sequence);
     let hasted = cadence(client, &cells).await?;
     if !faster(hasted, baseline)
-        || !same_cadence(hasted, expected_cadence(Some(haste), strong_level, ground)?)
+        || !same_cadence(hasted, expected_cadence(Some(haste), player_level, ground)?)
     {
         return Err("C17a recast did not reapply haste".into());
     }
@@ -913,7 +897,7 @@ async fn haste(
     if !faster(stronger, hasted)
         || !same_cadence(
             stronger,
-            expected_cadence(Some(strong), strong_level, ground)?,
+            expected_cadence(Some(strong), player_level, ground)?,
         )
     {
         return Err("C17a strong haste did not replace haste with a faster condition".into());
@@ -937,6 +921,27 @@ async fn haste(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn reviewed_rat_route_retries_only_a_native_stationary_refusal() {
+        let before = actor_position(TOWN, spatial_basis::Basis::Legacy);
+        let moved = ActorPosition { x: before.x + 1, ..before };
+        assert!(rat_step_blocked(StepDisposition::Rejected, before, before, false));
+        assert!(rat_step_blocked(StepDisposition::Blocked, before, before, false));
+        assert!(!rat_step_blocked(StepDisposition::Rejected, before, moved, false));
+        assert!(!rat_step_blocked(StepDisposition::Rejected, before, before, true));
+        assert!(!rat_step_blocked(StepDisposition::Moved, before, moved, true));
+    }
+
+    #[test]
+    fn reviewed_spell_level_gap_names_canonical_xp_shortfall() -> TestResult {
+        let book = native_spell_book()?;
+        let haste = book.spoken("utani hur").ok_or("Haste absent")?.spell;
+        require_spell_level(haste, 14, 29_900)?;
+        assert!(require_spell_level(haste, 1, 0)
+            .is_err_and(|error| error.to_string().contains("xp_shortfall=29900")));
+        Ok(())
+    }
+
     #[test]
     fn review_spell_vocation_rejects_guaranteed_refusals_before_progression() -> TestResult {
         use crate::spell::Vocation;
@@ -2093,7 +2098,7 @@ async fn combat_access(
     words: &str,
 ) -> TestResult<u64> {
     let spell = book.spoken(words).ok_or("combat spell absent")?.spell;
-    prepare_spell_access(client, world, spell).await?;
+    prepare_spell_access(client, spell).await?;
     non_pz(client, world).await?;
     spell_ready(client, spell).await?;
     Ok(player_spell(
@@ -2616,6 +2621,13 @@ async fn challenge(
         .spoken(words)
         .ok_or("Challenge absent from served book")?
         .spell;
+    let vocation = current_vocation(client).await?;
+    if !spell.vocations.contains(&vocation) {
+        return Err(format!(
+            "Challenge requires an admitted Knight vocation {:?}; character_index=0 served={vocation:?}; reference bootstrap uses one profile for both characters; source:tools/qualification/node_boot/run.sh:1258",
+            spell.vocations
+        ).into());
+    }
     row.pass(
         "player-challenge-access",
         combat_access(client, world, book, words).await?,
@@ -3116,12 +3128,12 @@ async fn summon_rat(
     world: &BundleWorld,
     book: &crate::spell::SpellBook,
     mana: u32,
-    earn_level: bool,
+    check_access: bool,
 ) -> TestResult<(oteryn_dev_client::EntityRef, u64)> {
     let words = "utevo res \"rat\"";
     let spell = book.spoken(words).ok_or("Summon Creature absent")?.spell;
-    if earn_level {
-        prepare_spell_access(client, world, spell).await?;
+    if check_access {
+        prepare_spell_access(client, spell).await?;
     }
     non_pz(client, world).await?;
     spell_ready(client, spell).await?;
@@ -3263,6 +3275,44 @@ fn nearest_named_rat<'a>(
         .map(|(_, entry)| *entry)
 }
 
+fn rat_step_blocked(
+    disposition: StepDisposition,
+    before: ActorPosition,
+    after: ActorPosition,
+    has_spatial_delta: bool,
+) -> bool {
+    matches!(disposition, StepDisposition::Blocked | StepDisposition::Rejected)
+        && before == after
+        && !has_spatial_delta
+}
+
+async fn walk_rat_site(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult<bool> {
+    for &direction in path {
+        let before = client.world_spatial().actor_position;
+        let expected = destination(world, tile(before)?, direction);
+        let outcome = client.step_retrying(direction).await?;
+        let after = client.world_spatial().actor_position;
+        let has_spatial_delta = outcome.world_spatial_delta.is_some();
+        if rat_step_blocked(outcome.disposition, before, after, has_spatial_delta) {
+            evidence(&format!("E2EF5_HUNT site-route-blocked direction={direction:?} from={before:?}"));
+            return Ok(false);
+        }
+        if outcome.disposition != StepDisposition::Moved
+            || !has_spatial_delta
+            || Some(tile(after)?) != expected
+        {
+            return Err(format!("Rat site STEP {direction:?} from={before:?} expected={expected:?} actual={after:?}: {outcome:?}").into());
+        }
+        verdict::Harness::global().progress("walk");
+        client.take_events();
+    }
+    Ok(true)
+}
+
 pub(super) async fn wild_rat(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -3290,13 +3340,22 @@ pub(super) async fn wild_rat(
             if tokio::time::Instant::now() >= deadline {
                 return Err("earned hunt: timed out waiting for a live Rat across reachable compiled spawns".into());
             }
-            let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            let here = tile(client.world_spatial().actor_position)?;
+            let occupied: BTreeSet<_> = client.world_entities().into_iter()
+                .flat_map(|entities| entities.iter())
+                .filter(|entry| entry.kind == oteryn_dev_client::EntityKind::Creature)
+                .filter_map(|entry| tile(entry.position).ok())
+                .collect();
+            let path = route_avoiding(world, here, |at| {
                 at.floor == *floor && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= 1
                     && world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
-            });
+            }, |at| !occupied.contains(&at));
             let Some(path) = path else { continue };
             reachable += 1;
-            walk(client, world, &path).await?;
+            if !walk_rat_site(client, world, &path).await? {
+                client.service_liveness(Duration::from_millis(50)).await?;
+                continue;
+            }
             let visit_deadline = deadline.min(tokio::time::Instant::now() + Duration::from_secs(2));
             loop {
                 let here = client.world_spatial().actor_position;

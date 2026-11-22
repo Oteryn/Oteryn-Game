@@ -216,11 +216,24 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
     let vocation = full_e2ef5::current_vocation(&mut client).await?;
     let plan = crosshair_plan(&book, vocation)?;
     let mut gaps = Vec::new();
+    // Both reference character intents use the same NODE_BOOT_PROFILE
+    // (tools/qualification/node_boot/run.sh:1258).
     for words in SPELLS.into_iter().filter(|words| !plan.contains(words)) {
         let spell = book.spoken(words).ok_or("crosshair spell absent")?.spell;
         gaps.push(format!("{words} requires a separate admitted vocation {:?}; served={vocation:?}", spell.vocations));
     }
-    if plan.is_empty() {
+    let mut eligible = Vec::new();
+    for words in plan {
+        let spell = book.spoken(words).ok_or("crosshair spell absent")?.spell;
+        match full_e2ef5::prepare_spell_access(&mut client, spell).await {
+            Ok(_) => eligible.push(words),
+            Err(error) if verdict::classify(error.as_ref()) == verdict::Cause::Assertion => {
+                gaps.push(format!("{words}: {error}"));
+            }
+            Err(error) => return Err(error),
+        }
+    }
+    if eligible.is_empty() {
         attempt.observed(&gaps);
         full_e2ef5::player_logout(&mut client).await?;
         return require_crosshair_casts(0, &gaps);
@@ -243,7 +256,7 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
     });
     let mut successful = None;
     let mut successful_count = 0;
-    for words in plan {
+    for words in eligible {
         attempt.at("crosshair-position-casts");
         let spell = book
             .spoken(words)

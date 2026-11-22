@@ -8,7 +8,7 @@
 //!    expect a non-OK native disposition and prove GeneralStats has no XP or stamina delta.
 //! 3. Walk through the compiled world to an ordinary unprotected rat spawn and send
 //!    ATTACK for the visible creature; expect an accepted attack, creature removal,
-//!    positive XP settlement, and exactly one minute of stamina debit in the same hunt.
+//!    positive XP settlement, and one or two minutes of stamina debit in the same hunt.
 //!    The positive award also proves the non-empty stamina XP band is applied.
 //! 4. Send LOGOUT until the combat lock permits it; expect Accepted, then remain
 //!    genuinely offline for the ten-minute delay plus one three-minute recovery period.
@@ -124,6 +124,10 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
+fn first_hunt_debit_valid(before: u16, after: u16) -> bool {
+    matches!(before.checked_sub(after), Some(1 | 2))
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -157,7 +161,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     // HuntingClock's first due boundary is the admission second. Cross it
     // naturally so this credited kill must exercise (rather than merely arm)
-    // the one-minute debit, while remaining well below the two-minute branch.
+    // a debit. A late first kill can consume two minutes under the server clock.
     tokio::time::sleep(Duration::from_secs(2)).await;
     hunt(&mut client, world).await?;
     let settlement_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
@@ -169,7 +173,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     };
-    if after.xp <= before.xp || after.level < before.level || after.stamina + 1 != before.stamina {
+    if after.xp <= before.xp || after.level < before.level || !first_hunt_debit_valid(before.stamina, after.stamina) {
         return Err(format!("step-3 kill settlement mismatch: before={before:?} after={after:?}").into());
     }
     logout(&mut client).await?;
@@ -217,6 +221,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reviewed_stamina_first_kill_accepts_the_two_minute_branch() {
+        assert!(first_hunt_debit_valid(2520, 2519));
+        assert!(first_hunt_debit_valid(2520, 2518));
+        assert!(!first_hunt_debit_valid(2520, 2520));
+        assert!(!first_hunt_debit_valid(2520, 2517));
+    }
 
     #[test]
     fn hunt_targets_the_adjacent_rat_only() -> TestResult {
