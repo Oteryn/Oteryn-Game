@@ -1187,7 +1187,7 @@ fn equipment_effects_owner_inactive_skill_rings_take_worn_skill_only_in_ring_slo
 }
 
 #[test]
-fn equipment_effects_owner_staff_native_profile_matches_current_monk_facts() -> TestResult {
+fn equipment_effects_owner_staff_preserves_monk_equipping_and_reads_crystal_stats() -> TestResult {
     let content = native(&input()?)?;
     let policy = content
         .item_policy("oteryn:item.tibia.i3289", "definition-r1")
@@ -1196,8 +1196,8 @@ fn equipment_effects_owner_staff_native_profile_matches_current_monk_facts() -> 
     let weapon = &semantics["weapon"]["value"];
     for (field, value) in [
         ("weapon_type", serde_json::json!("FIST")),
-        ("attack", serde_json::json!(22)),
-        ("defense", serde_json::json!(14)),
+        ("attack", serde_json::json!(10)),
+        ("defense", serde_json::json!(25)),
     ] {
         assert_eq!(
             weapon[field],

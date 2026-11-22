@@ -67,6 +67,22 @@ def registered_source_document(root, document):
         {row['production_definition']['production_key']: row for row in result['records']},
         crystal_ordinary_items.source_records(root),
     )
+    # Replay the late equipped facts on the independent source rows so the
+    # census still compares complete profiles, including combat and Forge.
+    import build_source_item_profiles as source
+    import equipped_combat_forge_profiles as equipped
+    from forge_item_profiles import project
+
+    packet = equipped.load_facts(root)
+    rows = equipped.records(result)
+    for fact in packet['combat']:
+        key = f'{equipped.PREFIX}{fact["id"]}'
+        if key in rows:
+            equipped.apply_combat(rows[key], fact, source)
+    forge = [fact for fact in packet['forge'] if f'{equipped.PREFIX}{fact["id"]}' in rows]
+    if forge:
+        admitted = equipped.forge_owners(root, forge)
+        project({'records': [rows[key] for key in admitted]}, admitted)
     return result
 
 
