@@ -33,9 +33,20 @@ fn hex_bytes(bytes: &[u8]) -> String {
 pub(super) async fn connect_player_caster(
     clients: &SeamClients<'_>,
     required_level: u32,
+    premium_required: bool,
     hunt_budget: Duration,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     let mut client = connect_character(clients, 0x97, LIGHT_CHARACTER).await?;
+    if premium_required
+        && let Err(error) = full_e2ef7::require_current_light_premium(&mut client).await
+    {
+        // The packet capture reuses this Character after the full journey.
+        let cleanup = logout_retrying_busy(&mut client).await;
+        if !matches!(cleanup, Ok((Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted), ..))) {
+            return Err(format!("{error}; personal-light preflight logout: {cleanup:?}").into());
+        }
+        return Err(error);
+    }
     if full_e2ef7::player_level(&mut client).await? < required_level {
         let world = full_e2ef7::qualification_world(clients)?;
         full_e2ef7::earn_player_level(&mut client, world, required_level, hunt_budget).await?;
@@ -44,12 +55,13 @@ pub(super) async fn connect_player_caster(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let required_level = native_spell_book()?
+    let spell = native_spell_book()?
         .spoken(WORDS)
         .ok_or("missing authored Light spell")?
-        .spell
-        .level;
-    let mut client = connect_player_caster(clients, required_level, Duration::from_secs(60)).await?;
+        .spell;
+    let mut client = connect_player_caster(
+        clients, spell.level, spell.premium, Duration::from_secs(60),
+    ).await?;
     let own = *client.world_entities().ok_or("step=entities absent")?.own_identity();
     let before = client
         .session_mut()

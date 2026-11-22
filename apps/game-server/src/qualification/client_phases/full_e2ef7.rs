@@ -1607,6 +1607,98 @@ const PARTY_COST_ACTIONS: &[&str] = &[
     "final-logout",
 ];
 
+const W20B_LEVEL_BUDGET: Duration = Duration::from_secs(150);
+const W20B_HANDOFF_BUDGET: Duration = Duration::from_secs(75);
+
+fn w20b_deadline(exercise: Duration) -> Duration {
+    // Setup and the five later raw admissions all use real time, even with
+    // an accelerated spell clock. Each admission can wait on fixture release
+    // (160s), TCP/TLS and the join snapshot (20s each).
+    let admissions = Duration::from_secs(200) * 6;
+    W20B_LEVEL_BUDGET + W20B_HANDOFF_BUDGET + admissions + exercise
+}
+
+fn light_premium_is_current(overview: &oteryn_protocol_oteryn::premium_overview::Overview) -> bool {
+    overview.state == oteryn_protocol_oteryn::premium_overview::State::Active
+        && overview.valid_for_us > 0
+}
+
+pub(super) async fn require_current_light_premium(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::{character_info, premium_overview};
+    let reply = client.session_mut().gated_command(
+        character_info::CAPABILITY_CHARACTER_INFO_V1,
+        character_info::COMMAND_TYPE_CHARACTER_INFO,
+        &[premium_overview::OPERATION],
+    ).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("personal-light Premium preflight refused: {:?}", reply.status).into());
+    }
+    let overview = premium_overview::Overview::decode(&reply.payload)
+        .ok_or("personal-light Premium preflight returned malformed evidence")?;
+    if !light_premium_is_current(&overview) {
+        return Err(format!(
+            "SERVER-GAP W20b requires live Platform Premium for Ultimate Light: state={:?}, authority_revision={}, valid_for_us={}",
+            overview.state, overview.authority_revision, overview.valid_for_us,
+        ).into());
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod w20b_review_tests {
+    use super::*;
+
+    #[test]
+    fn w20b_review_budget_leaves_the_full_exercise_after_setup() {
+        let exercise = Duration::from_secs(120);
+        assert!(w20b_deadline(exercise) >= W20B_LEVEL_BUDGET + W20B_HANDOFF_BUDGET + exercise);
+    }
+
+    #[test]
+    fn w20b_review_handoff_uses_combat_aware_logout() -> TestResult {
+        let (_, journey) = include_str!("full_e2ef7.rs").split_once(concat!("\nasync fn ", "light_journey("))
+            .ok_or("missing journey")?;
+        let (setup, _) = journey.split_once("row.pass(\"admission\")").ok_or("missing admission")?;
+        assert!(setup.contains(concat!("release_when_", "unlocked(")));
+        Ok(())
+    }
+
+    #[test]
+    fn w20b_review_premium_requires_live_authority() {
+        use oteryn_protocol_oteryn::premium_overview::{Overview, State};
+        let mut overview = Overview {
+            state: State::Active, authority_revision: 1, observed_at_us: 1,
+            expires_at_us: Some(5_000), valid_for_us: 0, features: vec![],
+        };
+        assert!(!light_premium_is_current(&overview));
+        overview.valid_for_us = 100;
+        assert!(light_premium_is_current(&overview));
+        overview.state = State::Revoked;
+        assert!(!light_premium_is_current(&overview));
+    }
+
+    #[test]
+    fn w20b_review_hunt_can_wait_for_respawn_without_extending_budget() -> TestResult {
+        tokio::runtime::Builder::new_current_thread().enable_time().start_paused(true).build()?.block_on(async {
+            let start = tokio::time::Instant::now();
+            let target = wait_for_hunt_target(start + Duration::from_secs(2), async |wait| {
+                tokio::time::sleep(wait).await;
+                Ok((start.elapsed() >= Duration::from_secs(1)).then_some(42))
+            }).await?;
+            assert_eq!(target, 42);
+            let deadline = tokio::time::Instant::now() + Duration::from_millis(1100);
+            let absent = wait_for_hunt_target(deadline, async |wait| {
+                tokio::time::sleep(wait).await;
+                Ok(None::<u32>)
+            }).await;
+            assert!(absent.is_err());
+            let finished = tokio::time::Instant::now();
+            assert!(finished >= deadline && finished - deadline < Duration::from_millis(10));
+            Ok(())
+        })
+    }
+}
+
 async fn additional_rows(clients: &SeamClients<'_>) {
     let mut row = JourneyRow::new("W20b", LIGHT_ACTIONS);
     let mut light = None;
@@ -1614,7 +1706,7 @@ async fn additional_rows(clients: &SeamClients<'_>) {
     let mut completed = false;
     let mut result = watch
         .bound(
-            qualification_deadline(3_300),
+            w20b_deadline(qualification_deadline(3_300).max(Duration::from_secs(240))),
             "personal-light journey exceeded wall-time deadline",
             async {
                 let result = light_journey(&mut row, &mut light, clients).await;
@@ -2320,18 +2412,29 @@ async fn light_journey(
     clients: &SeamClients<'_>,
 ) -> TestResult {
     let book = native_spell_book()?;
-    let required_level = ["utevo lux", "utevo gran lux", "utevo vis lux"]
+    let (required_level, premium_required) = ["utevo lux", "utevo gran lux", "utevo vis lux"]
         .into_iter()
-        .map(|words| {
+        .try_fold((0, false), |(highest, premium), words| {
             book.spoken(words)
-                .map(|entry| entry.spell.level)
+                .map(|entry| (highest.max(entry.spell.level), premium || entry.spell.premium))
                 .ok_or("missing authored personal-light spell")
-        })
-        .try_fold(0, |highest, level| level.map(|level| highest.max(level)))?;
-    let mut player =
-        client_row_w20b::connect_player_caster(clients, required_level, Duration::from_secs(150))
-            .await?;
-    logout(&mut player).await?;
+        })?;
+    let mut player = client_row_w20b::connect_player_caster(
+        clients, required_level, premium_required, W20B_LEVEL_BUDGET,
+    ).await?;
+    let world = qualification_world(clients)?;
+    let from = tile(player.world_spatial().actor_position)?;
+    let protected = |at: TilePos| {
+        world.base().tile(at.x, at.y, at.floor).is_some_and(|t| t.protection_zone())
+    };
+    // Do not wait at a spawn where the replacement rat can restart combat.
+    if let Some(path) = route(world, from, protected) {
+        walk(&mut player, world, &path).await?;
+    }
+    verdict::Harness::global().bounded_wait(
+        tokio::time::Instant::now() + W20B_HANDOFF_BUDGET, "personal-light-combat-release",
+    );
+    release_when_unlocked(&mut player, W20B_HANDOFF_BUDGET).await?;
     drop(player);
     *connection = Some(LightClient::connect(clients, 0xe0).await?);
     row.pass("admission");
@@ -3752,6 +3855,23 @@ async fn hunt_one(client: &mut DevClientSession, world: &BundleWorld) -> TestRes
     acquisition_step("hunt", hunt_one_inner(client, world, None)).await
 }
 
+async fn wait_for_hunt_target<T>(
+    deadline: tokio::time::Instant,
+    mut observe: impl AsyncFnMut(Duration) -> TestResult<Option<T>>,
+) -> TestResult<T> {
+    let mut wait = Duration::ZERO;
+    loop {
+        if let Some(target) = observe(wait).await? {
+            return Ok(target);
+        }
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err("ordinary rat route reached endpoint but no adjacent served Rat frame before the respawn deadline".into());
+        }
+        wait = remaining.min(Duration::from_millis(250));
+    }
+}
+
 async fn hunt_one_inner(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -3805,20 +3925,25 @@ async fn hunt_one_inner(
         Ok(())
     })
     .await?;
-    let at = client.world_spatial().actor_position;
-    let target = client
-        .world_entities()
-        .and_then(|es| {
-            es.iter().find(|e| {
-                e.kind == oteryn_dev_client::EntityKind::Creature
-                    && e.display_name
-                        .is_some_and(|name| name.as_str() == Ok("Rat"))
-                    && e.position.floor == at.floor
-                    && e.position.x.abs_diff(at.x).max(e.position.y.abs_diff(at.y)) <= 1
-            })
-        })
-        .copied()
-        .ok_or("ordinary rat route reached endpoint but no adjacent served Rat frame")?;
+    let respawn_deadline = acquisition_deadline
+        .unwrap_or_else(|| tokio::time::Instant::now() + Duration::from_secs(75));
+    verdict::Harness::global().bounded_wait(respawn_deadline, "ordinary-rat-respawn");
+    let target = wait_for_hunt_target(respawn_deadline, async |wait| {
+        if !wait.is_zero() {
+            client.service_liveness(wait).await?;
+            client.take_events();
+        }
+        let at = client.world_spatial().actor_position;
+        Ok(client.world_entities().and_then(|entities| {
+            entities.iter().find(|entity| {
+                entity.kind == oteryn_dev_client::EntityKind::Creature
+                    && entity.display_name.is_some_and(|name| name.as_str() == Ok("Rat"))
+                    && entity.position.floor == at.floor
+                    && entity.position.x.abs_diff(at.x).max(entity.position.y.abs_diff(at.y)) <= 1
+            }).copied()
+        }))
+    }).await?;
+    verdict::Harness::global().progress("ordinary-rat-target");
     let modes = attacks::FightModes {
         chase: attacks::ChaseMode::Chase,
         ..attacks::FightModes::DEFAULT
