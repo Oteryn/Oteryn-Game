@@ -82,7 +82,9 @@ async fn exercise(h: &Harness) -> TestResult {
         .clone();
     source["active"] = serde_json::json!(true);
     source["inactive_reasons"] = serde_json::json!([]);
-    source["end"] = serde_json::json!({"kind": "despawn_after", "despawn_after_ms": 900_000});
+    // The catalogue normalizes the coincident XML events to warning at 1 s
+    // and spawn at 2 s. The timeout is expressed relative to the last wave.
+    source["end"] = serde_json::json!({"kind": "despawn_after", "despawn_after_ms": 899_000});
     // Use a bounded test chamber on the real crypt map next to the sourced boss
     // position. The production content lane supplies its full lair geometry.
     source["pale_count_lair"] = serde_json::json!({
