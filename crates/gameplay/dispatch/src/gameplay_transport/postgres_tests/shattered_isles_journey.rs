@@ -144,24 +144,24 @@ async fn scenario(admin: String) -> TestResult {
         64,
     )?;
     let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
-    h.root
-        .latch_premium_activation(
-            &activation.activation_id,
-            activation.switch_over_us,
-            activation.switch_over_us + 60_000_000,
-        )
-        .await
-        .map_err(debug)?;
+    let mut future_activation = activation.clone();
+    future_activation.switch_over_us += 120_000_000;
+    let before_activation = SpellPremiumCoordinator::new(
+        Arc::clone(&consumer),
+        Some(Arc::clone(&clock)),
+        Some(future_activation),
+        Some(h.root.clone()),
+    );
     let premium = SpellPremiumCoordinator::new(
         consumer,
         Some(clock),
-        Some(activation),
+        Some(activation.clone()),
         Some(h.root.clone()),
     );
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(generation);
     owner.movement_cells = (&cells).into();
-    owner.premium_coordinator = Some(&premium);
+    owner.premium_coordinator = Some(&before_activation);
     owner.quest_catalogue = Some(Arc::new(source.catalogue().clone()));
     owner.quest_log_content = Some(QuestLogLines::new(journal.content).ok_or("quest journal")?);
     let npcs_catalogue = NpcDataCatalogue::load(
@@ -271,6 +271,18 @@ async fn scenario(admin: String) -> TestResult {
     )
     .await?;
     Box::pin(journey.owner.refresh_level_up_vitals(deps.actor, session)).await;
+    // Legacy Premium travel waives its restriction before activation. A
+    // shipwreck still requires a live entitlement to start the repair quest.
+    journey.confirm_storm_roll(false).await?;
+    h.root
+        .latch_premium_activation(
+            &activation.activation_id,
+            activation.switch_over_us,
+            activation.switch_over_us + 60_000_000,
+        )
+        .await
+        .map_err(debug)?;
+    journey.owner.premium_coordinator = Some(&premium);
     journey.run().await?;
     drop(owner);
     drop(authority);
@@ -391,7 +403,7 @@ impl Journey<'_, '_, '_, '_> {
             .await?;
         self.mission("ocelus", "love poem", "adjinn_in_love", 4, (6119, 1))
             .await?;
-        self.mission("marina", "date", "access_to_laguna_island", 1, (6119, 0))
+        self.mission("marina", "date", "access_to_laguna_island", 1, (6119, 1))
             .await?;
         self.seat((32340, 32540, 7)).await?;
         super::annihilator_route_fixtures::step(self.owner, self.admitted, StepDirection::North)

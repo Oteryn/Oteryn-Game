@@ -564,12 +564,11 @@ pub(super) async fn exercise(
         NpcIntentDisposition::Ok
     );
 
-    assert_eq!(
-        talk(owner, session, angus, "join").await?,
-        NpcIntentDisposition::Rejected
-    );
+    let premium = owner.premium_coordinator.take().ok_or("Premium coordinator")?;
+    let result = talk(owner, session, angus, "join").await;
+    owner.premium_coordinator = Some(premium);
+    assert_eq!(result?, NpcIntentDisposition::Rejected);
     state(h, 0, None, &[]).await?;
-    owner.admit_premium(id(40), session.game_session_id);
 
     let joining = "joining_the_explorers";
     let ice = "the_ice_delivery";

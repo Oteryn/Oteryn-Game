@@ -155,11 +155,6 @@
               "reply": [
                 "A parrot took my ring. Look for its perch and bring a rake."
               ],
-              "minimum_level": 20,
-              "requires_premium": true,
-              "failure_reply": [
-                "Sorry, not possible."
-              ],
               "sources": [
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:61-70"
               ]

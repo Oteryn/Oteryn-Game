@@ -1907,7 +1907,8 @@ fn scenario_case(
                 "source eligibility uses the actual durable starting level"
             );
         }
-        if name == "nx6-wayfarer"
+        if explorer
+            || name == "nx6-wayfarer"
             || qm03
             || m07_too_hot
             || mead

@@ -166,7 +166,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     session,
                     command.command_id,
                 );
-                if storm[0] & 7 == 0 {
+                if storm[0] & 7 == 0 && self.session_premium_gate(session).await.premium_current() {
                     // Tibia's Goroma passage starts at level 20. Apply the
                     // quest's Premium gate only to the shipwreck branch.
                     let mut wreck_route = prompt.route.clone();
