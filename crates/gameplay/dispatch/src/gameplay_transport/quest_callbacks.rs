@@ -102,6 +102,7 @@ struct ObservedWorldCallback {
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
+    temporary: std::sync::Mutex<Vec<creature_effects::TemporaryActor>>,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     encounters: std::sync::Mutex<Vec<encounter::EncounterVisit>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
@@ -149,11 +150,22 @@ impl PendingCallbacks {
 
 impl PendingCallbacks {
     pub(super) fn next_encounter_due_us(&self) -> Option<u64> {
-        self.timed
+        let timed = self
+            .timed
             .lock()
             .ok()?
             .iter()
             .map(|pending| pending.next_due_us())
+            .min();
+        timed
+            .into_iter()
+            .chain(
+                self.temporary
+                    .lock()
+                    .ok()?
+                    .iter()
+                    .map(|entry| entry.expires_at),
+            )
             .min()
     }
 }

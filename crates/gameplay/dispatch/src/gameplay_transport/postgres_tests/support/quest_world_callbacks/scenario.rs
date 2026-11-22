@@ -23,6 +23,7 @@ type CustomCase = for<'a> fn(
     &'a Harness,
 ) -> std::pin::Pin<Box<dyn std::future::Future<Output = TestResult> + 'a>>;
 
+#[allow(dead_code, reason = "the caller tests are mounted in only their PostgreSQL shard")]
 pub(crate) fn npc_scenario(trigger: Position, case: CustomCase) -> TestResult {
     scenario_case("conditional-quest-greetings", trigger, false, None, Some(case))
 }
@@ -949,7 +950,8 @@ fn scenario_case(
         world(&callback, trigger)?
     };
     run(async |admin| {
-        let h = if shared_rewards
+        let h = if custom.is_some()
+            || shared_rewards
             || qengine_reward
             || outfit_world
             || matches!(
@@ -1577,7 +1579,7 @@ fn scenario_case(
                 5
             } else if monk {
                 4
-            } else if callback.effects.encounter.is_some() {
+            } else if custom.is_some() || callback.effects.encounter.is_some() {
                 16
             } else {
                 2

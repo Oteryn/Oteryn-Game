@@ -415,7 +415,6 @@ pub(super) async fn apply(
             reply: step.reply.clone(),
         });
     }
-    let orc_king_greeting = request.transition_key == super::orc_king::CLAIM;
     let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
         .ok()
         .and_then(|callbacks| {
@@ -481,17 +480,24 @@ pub(super) async fn apply(
         eprintln!("quest reward commit: {error:?}");
     }
     let newly_committed = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
-    if newly_committed && orc_king_greeting {
+    let greeting_published = if newly_committed
+        && let Some(callback) = reward_callback
+            .as_ref()
+            .filter(|c| !c.greeting_encounter.is_empty())
+    {
         let mut runtime = admission.runtime.lock().await;
-        super::orc_king::publish(
+        super::greeting_encounter::publish(
             admission,
             &mut runtime,
             actor,
             command,
             &intent,
             &mut rendered,
-        );
-    }
+            callback,
+        )
+    } else {
+        false
+    };
     match outcome {
         Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => {
             #[cfg(test)]
@@ -511,7 +517,7 @@ pub(super) async fn apply(
             admission
                 .refresh_level_up_vitals(actor, command.game_session_id)
                 .await;
-            if newly_committed && orc_king_greeting {
+            if greeting_published {
                 return rendered;
             }
             let runtime = admission.runtime.lock().await;

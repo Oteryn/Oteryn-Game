@@ -159,6 +159,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         };
         let mut runtime = self.runtime.lock().await;
+        self.drain_temporary_quest_creatures(&mut runtime);
         let Some(map) = self.bundle_map() else { return };
         if runtime.owner_fence().is_err()
             || self

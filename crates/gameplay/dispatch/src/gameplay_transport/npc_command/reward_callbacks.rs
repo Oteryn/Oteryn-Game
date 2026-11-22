@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 #[cfg(test)]
 mod any_topic_tests;
+pub(in crate::gameplay_transport) mod dice;
 #[cfg(test)]
 mod fixture_offers;
 mod offer_match;
@@ -149,6 +150,38 @@ pub(super) fn prepare(
                         })
                         && c.requires.iter().all(|r| r.holds(catalogue, tracks))
                 });
+                if let Some(result) = dice::select(command, matching_stage.clone()) {
+                    let Ok(dice::Round {
+                        callback,
+                        player,
+                        npc,
+                    }) = result
+                    else {
+                        return refusal(&["Sorry, not possible.".into()]);
+                    };
+                    if !meets_level(callback.minimum_level)
+                        || !callback.inventory.iter().all(|rule| {
+                            inventory.is_some_and(|facts| rule.holds(&facts.quantities))
+                        })
+                    {
+                        return refusal(&["Sorry, not possible.".into()]);
+                    }
+                    failure_reply = callback.failure_reply.clone();
+                    let player = player.to_string();
+                    let npc = npc.to_string();
+                    return Some(Choice {
+                        transition: Some(callback.key.clone()),
+                        next_topic: Some(Topic::from(callback.next_topic)),
+                        reply: callback
+                            .reply
+                            .iter()
+                            .map(|line| {
+                                line.replace("|PLAYER_ROLL|", &player)
+                                    .replace("|NPC_ROLL|", &npc)
+                            })
+                            .collect(),
+                    });
+                }
                 let mut selected = matching_stage.clone().filter(|c| {
                     c.inventory
                         .iter()
@@ -234,6 +267,8 @@ pub(super) fn prepare(
             // through to an unrelated legacy dialogue with the same text.
             let mut matching = callbacks.iter().filter(|c| {
                 c.carried_item.is_none()
+                    && c.dice_outcome.is_none()
+                    && c.greeting_encounter.is_empty()
                     && c.npc == context.2
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
