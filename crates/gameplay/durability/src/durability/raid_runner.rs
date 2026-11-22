@@ -10,6 +10,7 @@ pub use feroxa_ground::clear_feroxa_ground_batch;
 mod feroxa_map_clock;
 pub use feroxa_map_clock::feroxa_map_elapsed_in_transaction;
 mod live_guard;
+mod pale_count;
 mod pending;
 pub use live_guard::raid_effect_pending_in_transaction;
 
@@ -137,8 +138,8 @@ pub(super) async fn reconcile_deadlines(
         let closed = sqlx::query("UPDATE game_world_raid_firings f SET state=2 WHERE firing_id=encode($1,'hex')::uuid AND state=1 AND EXISTS(SELECT 1 FROM game_world_raid_targets t WHERE t.firing_id=f.firing_id) AND NOT EXISTS(SELECT 1 FROM game_world_raid_targets t LEFT JOIN game_world_raid_channel_runs r USING(firing_id,channel_id) WHERE t.firing_id=f.firing_id AND (r.state IS NULL OR r.state=1)) AND NOT EXISTS(SELECT 1 FROM game_world_raid_effects e WHERE e.firing_id=f.firing_id AND e.state=1 AND e.action_kind<>4)")
             .bind(firing.as_slice()).execute(&mut **tx).await?;
         if closed.rows_affected() != 0 {
-            sqlx::query("UPDATE game_world_raid_scheduler_clocks SET last_end_at_ms=GREATEST(last_end_at_ms,$2) WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=(SELECT reset_epoch FROM game_world_raid_firings WHERE firing_id=encode($3,'hex')::uuid) AND NOT EXISTS(SELECT 1 FROM game_world_raid_firings f JOIN game_world_raid_schedule_sources s USING(world_id,raid_key) WHERE f.firing_id=encode($3,'hex')::uuid AND (s.source_kind<>1 OR f.raid_key=$4))")
-                .bind(world.as_bytes().as_slice()).bind(now_ms).bind(firing.as_slice()).bind(super::raid_schedule::FEROXA_KEY).execute(&mut **tx).await?;
+            sqlx::query("UPDATE game_world_raid_scheduler_clocks SET last_end_at_ms=GREATEST(last_end_at_ms,$2) WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=(SELECT reset_epoch FROM game_world_raid_firings WHERE firing_id=encode($3,'hex')::uuid) AND NOT EXISTS(SELECT 1 FROM game_world_raid_firings f JOIN game_world_raid_schedule_sources s USING(world_id,raid_key) WHERE f.firing_id=encode($3,'hex')::uuid AND (s.source_kind<>1 OR f.raid_key IN ($4,$5)))")
+                .bind(world.as_bytes().as_slice()).bind(now_ms).bind(firing.as_slice()).bind(super::raid_schedule::FEROXA_KEY).bind(super::raid_schedule::GAZ_FIRST_KEY).execute(&mut **tx).await?;
         }
     }
     Ok(())
@@ -377,9 +378,9 @@ impl DurabilityRoot {
             }
             // Serialize the first defeat with phase selection in the World
             // scheduler. Acquire the World lock before the channel-run row.
-            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:raid-world:' || encode(uuid_send(world_id),'hex'),0)) FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid AND raid_key=$2")
+            let gaz_first = sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:raid-world:' || encode(uuid_send(world_id),'hex'),0)) FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid AND raid_key=$2")
                 .bind(identity.firing_id.as_slice()).bind(super::raid_schedule::GAZ_FIRST_KEY)
-                .execute(&mut *tx).await?;
+                .fetch_optional(&mut *tx).await?.is_some();
             let owner: Option<String> = sqlx::query_scalar("SELECT owner_generation::text FROM game_world_raid_channel_runs WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid FOR UPDATE")
                 .bind(identity.firing_id.as_slice()).bind(identity.channel.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             if owner.as_deref() != Some(&identity.generation.get().to_string()) {
@@ -407,8 +408,9 @@ impl DurabilityRoot {
                     .bind(identity.firing_id.as_slice()).bind(identity.channel.as_bytes().as_slice())
                     .bind(effects::small(death.wave)?).bind(effects::small(death.entry)?).bind(effects::small(death.index)?)
                     .execute(&mut *tx).await?;
-                if result.rows_affected() != 0 {
-                    changed = true;
+                let retired = result.rows_affected() != 0;
+                changed |= retired;
+                if retired && gaz_first {
                     sqlx::query(
                         "INSERT INTO game_world_gaz_haragoth_first_defeats(world_id,firing_id)
                          SELECT f.world_id,f.firing_id FROM game_world_raid_firings f

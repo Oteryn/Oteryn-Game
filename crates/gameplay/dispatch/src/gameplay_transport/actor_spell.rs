@@ -114,6 +114,7 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// command, no damage and no credit, and its death record goes with its entry.
 #[derive(Debug)]
 pub struct ChannelSpellStates {
+    pub(super) pale_count_access: Option<super::raid_live_world::PaleCountAccess>,
     #[cfg(test)]
     pub(super) drunk_seed_fixture: Option<[u8; 32]>,
     pub(super) encounter_phases: super::encounter_phases::Registry,
@@ -329,6 +330,7 @@ impl<I, T> PendingSpellMarker<I, T> {
 impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
+            pale_count_access: None,
             #[cfg(test)]
             drunk_seed_fixture: None,
             encounter_phases: Default::default(),

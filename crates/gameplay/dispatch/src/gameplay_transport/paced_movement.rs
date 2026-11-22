@@ -232,7 +232,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map: self.bundle_map(),
             callbacks: self.callback_content(),
         };
-        let blocking: &dyn crate::map::floor::CellBlocker = &callback_portals;
+        let raid_access = super::raid_live_world::PaleCountBlocker {
+            inner: &callback_portals,
+            closed_lair: self.bundle_map().and_then(|_| {
+                super::raid_live_world::PaleCountBlocker::closed_lair(
+                    states.pale_count_access,
+                    runtime.binding().scope_generation(),
+                )
+            }),
+        };
+        let blocking: &dyn crate::map::floor::CellBlocker = &raid_access;
         let equipped_speed_delta = equipment
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));

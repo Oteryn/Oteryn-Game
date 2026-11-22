@@ -14,7 +14,9 @@ fn man_in_the_cave_ignores_the_hole_without_a_live_boss() -> TestResult {
 }
 
 fn run(boss_present: bool) -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     super::kill_reward_e2e_fixtures::scenario_thread::run("man-in-the-cave", move || {
         crate::bestiary_postgres_harness::runtime()?.block_on(async {
             let h = Harness::create_with_admission_seed(admin, "cave_rope", false, false).await?;
@@ -43,7 +45,11 @@ async fn exercise(h: &Harness, boss_present: bool) -> TestResult {
     let evidence = super::house_transfer_fixtures::RecoverySource::start(h).await?;
     super::house_transfer_fixtures::prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
-    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
     let mut owner = deps.owner(h, &authority);
     owner.evidence = &evidence.evidence;
     owner.active_generation = scene.controller.active();
@@ -54,25 +60,46 @@ async fn exercise(h: &Harness, boss_present: bool) -> TestResult {
     let before = {
         let mut runtime = owner.runtime.lock().await;
         if boss_present {
-            runtime.admit_pinned_monster_lab_creature(
-                MovementLocalPosition { x: 32137, y: 31147, floor: 2 },
-                "oteryn:creature.man_in_the_cave",
-                485,
-            ).map_err(debug)?;
+            runtime
+                .admit_pinned_monster_lab_creature(
+                    MovementLocalPosition {
+                        x: 32137,
+                        y: 31147,
+                        floor: 2,
+                    },
+                    "oteryn:creature.man_in_the_cave",
+                    485,
+                )
+                .map_err(debug)?;
         }
         runtime.read_actor_position(actor).map_err(debug)?
     };
-    let (outcome, _) = owner.ordinary_paced_step(
-        actor, admitted.game_session_id, StepDirection::East, Some(before), None,
-    ).await;
+    let (outcome, _) = owner
+        .ordinary_paced_step(
+            actor,
+            admitted.game_session_id,
+            StepDirection::East,
+            Some(before),
+            None,
+        )
+        .await;
     assert_eq!(outcome.disposition, StepDisposition::Moved);
     let runtime = owner.runtime.lock().await;
     let after = runtime.read_actor_position(actor).map_err(debug)?;
     let (y, floor) = if boss_present { (31146, 2) } else { (31147, 3) };
-    assert_eq!(after.position(), MovementLocalPosition { x: 32131, y, floor });
+    assert_eq!(
+        after.position(),
+        MovementLocalPosition { x: 32131, y, floor }
+    );
     let map = owner.bundle_map().ok_or("current World map")?;
-    assert_eq!(map.facts.movement_speech_since(0).iter().any(|(_, speech)| {
-        speech.speaker == actor && speech.text == "You have been roped up!"
-    }), boss_present);
+    assert_eq!(
+        map.facts
+            .movement_speech_since(0)
+            .iter()
+            .any(|(_, speech)| {
+                speech.speaker == actor && speech.text == "You have been roped up!"
+            }),
+        boss_present
+    );
     Ok(())
 }
