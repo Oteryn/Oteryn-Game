@@ -13,55 +13,6 @@ pub trait SourceActorReservationProof: source_reservation_seal::Sealed {
     /// Independently current physical/source binding, excluding commercial re-grants.
     fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool;
 }
-/// A commandless owner event holding a live Player source in a test fixture.
-#[cfg(feature = "test-support")]
-pub fn held_source_reservation_for_test(
-    player: ExactActorRef,
-    session: GameSessionId,
-    event: [u8; 16],
-    binding: [u8; 32],
-) -> impl SourceActorReservationProof {
-    struct HeldSource {
-        player: ExactActorRef,
-        session: GameSessionId,
-        event: [u8; 16],
-        binding: [u8; 32],
-    }
-
-    impl source_reservation_seal::Sealed for HeldSource {}
-
-    impl SourceActorReservationProof for HeldSource {
-        fn owner(&self) -> (ExactActorRef, GameSessionId) {
-            (self.player, self.session)
-        }
-
-        fn event_identity(&self) -> [u8; 16] {
-            self.event
-        }
-
-        fn source_binding_digest(&self) -> [u8; 32] {
-            self.binding
-        }
-
-        fn affected_actors(&self) -> &[ExactActorRef] {
-            &[]
-        }
-
-        fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
-            runtime
-                .player_control_facts(self.player, self.session)
-                .is_ok()
-        }
-    }
-
-    HeldSource {
-        player,
-        session,
-        event,
-        binding,
-    }
-}
-
 /// A world callback owns an actual current scope, never a fabricated player/session.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum SourceReservationOwner {
@@ -826,6 +777,59 @@ impl ChannelRuntimeV1 {
     }
 }
 
+#[cfg(any(test, feature = "test-support"))]
+struct Proof {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    position: crate::MovementPositionSnapshot,
+    affected: Vec<ExactActorRef>,
+    event: [u8; 16],
+    binding: [u8; 32],
+}
+#[cfg(any(test, feature = "test-support"))]
+impl source_reservation_seal::Sealed for Proof {}
+#[cfg(any(test, feature = "test-support"))]
+impl SourceActorReservationProof for Proof {
+    fn owner(&self) -> (ExactActorRef, GameSessionId) {
+        (self.actor, self.session)
+    }
+    fn event_identity(&self) -> [u8; 16] {
+        self.event
+    }
+    fn source_binding_digest(&self) -> [u8; 32] {
+        self.binding
+    }
+    fn affected_actors(&self) -> &[ExactActorRef] {
+        &self.affected
+    }
+    fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
+        runtime.owner_fence().is_ok()
+            && runtime.read_actor_position(self.actor) == Ok(self.position)
+            && runtime
+                .player_control_facts(self.actor, self.session)
+                .is_ok_and(|p| p.control_loss.is_none())
+    }
+}
+
+/// Builds a commandless reservation proof for the fixture's current player position.
+#[cfg(feature = "test-support")]
+pub fn held_source_reservation_for_test(
+    runtime: &ChannelRuntimeV1,
+    player: ExactActorRef,
+    session: GameSessionId,
+    event: [u8; 16],
+    binding: [u8; 32],
+) -> Result<impl SourceActorReservationProof, CarrierError> {
+    Ok(Proof {
+        actor: player,
+        session,
+        position: runtime.read_actor_position(player)?,
+        affected: Vec::new(),
+        event,
+        binding,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]
@@ -839,35 +843,6 @@ mod tests {
     use oteryn_gameplay_foundation::foundation::WorldId;
     fn id(tag: u8) -> [u8; 16] {
         [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
-    }
-    struct Proof {
-        actor: ExactActorRef,
-        session: GameSessionId,
-        position: MovementPositionSnapshot,
-        affected: Vec<ExactActorRef>,
-        event: [u8; 16],
-    }
-    impl source_reservation_seal::Sealed for Proof {}
-    impl SourceActorReservationProof for Proof {
-        fn owner(&self) -> (ExactActorRef, GameSessionId) {
-            (self.actor, self.session)
-        }
-        fn event_identity(&self) -> [u8; 16] {
-            self.event
-        }
-        fn source_binding_digest(&self) -> [u8; 32] {
-            [8; 32]
-        }
-        fn affected_actors(&self) -> &[ExactActorRef] {
-            &self.affected
-        }
-        fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
-            runtime.owner_fence().is_ok()
-                && runtime.read_actor_position(self.actor) == Ok(self.position)
-                && runtime
-                    .player_control_facts(self.actor, self.session)
-                    .is_ok_and(|p| p.control_loss.is_none())
-        }
     }
     #[test]
     fn commandless_original_reserves_real_slots_and_only_exact_prewrite_rollback_releases() {
@@ -911,6 +886,7 @@ mod tests {
             position,
             affected: vec![target],
             event: id(5),
+            binding: [8; 32],
         };
         let mut reserved = runtime.prepare_source_actor_reservation(&proof).unwrap();
         runtime
@@ -947,6 +923,7 @@ mod tests {
             position,
             affected: vec![target],
             event: id(6),
+            binding: [8; 32],
         };
         assert_eq!(
             runtime.validate_source_actor_reservation(&reserved, &foreign),
@@ -997,6 +974,7 @@ mod tests {
             position,
             affected,
             event: id(5),
+            binding: [8; 32],
         };
         let prepared = runtime.prepare_source_actor_reservation(&proof);
         assert!(
@@ -1071,6 +1049,7 @@ mod tests {
             position,
             affected: Vec::new(),
             event: id(5),
+            binding: [8; 32],
         };
         let mut reservation = runtime.prepare_source_actor_reservation(&proof).unwrap();
         runtime
