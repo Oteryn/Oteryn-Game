@@ -316,5 +316,71 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 8192).await?, 50);
     assert_eq!(quantity(h, 8191).await?, 1);
     assert_eq!(experience(h).await?, xp);
+    let mut regressions = Vec::new();
+    for (index, (npc, key, words, inputs, output, expected)) in [
+        (
+            cledwyn,
+            "cledwyn-exchange-30344",
+            vec!["hi", "enchant", "pendulet", "no", "yes"],
+            vec![(29429, 1), (22516, 2)],
+            30344,
+            0,
+        ),
+        (
+            cledwyn,
+            "cledwyn-exchange-30344",
+            vec!["hi", "enchant", "pendulet", "yes, silver tokens"],
+            vec![(29429, 1), (22516, 2)],
+            30344,
+            0,
+        ),
+        (
+            gnomally,
+            "gnomally-exchange-16094",
+            vec!["hi", "muck", "lamp", "yes"],
+            vec![(16128, 15)],
+            16094,
+            1,
+        ),
+        (
+            jorge,
+            "jorge-exchange-23677",
+            vec!["hi", "I'd like a souvenir", "music box"],
+            vec![(19083, 20)],
+            23677,
+            1,
+        ),
+        (
+            jorge,
+            "jorge-exchange-19151",
+            vec!["hi", "souvenir", "music box or abacus"],
+            vec![(19083, 20)],
+            19151,
+            1,
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let initial = quantity(h, output).await?;
+        for (item, count) in inputs {
+            mint(
+                owner,
+                admitted,
+                item,
+                count,
+                950_000 + u64::from(item) * 10 + u64::try_from(index)?,
+            )
+            .await?;
+        }
+        let description = words.join(" / ");
+        wire_conversation(owner, admitted, npc, find(key)?, false, words).await?;
+        let actual = quantity(h, output).await? - initial;
+        if actual != expected {
+            regressions.push(format!("{description}: expected {expected}, got {actual}"));
+        }
+    }
+    assert!(regressions.is_empty(), "{regressions:#?}");
+
     Ok(())
 }

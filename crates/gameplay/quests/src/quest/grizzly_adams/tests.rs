@@ -732,6 +732,72 @@ fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
 }
 
 #[test]
+fn regional_boss_handoffs_remain_refused_without_the_boss_routes() -> Result<(), String> {
+    use crate::quest::reward_callbacks::{load_for, offered_for};
+    let loaded = crate::quest::loader::load_embedded_quest_state("regional-boss-partial")
+        .map_err(|error| format!("{error:?}"))?;
+    let historical = load_for(loaded.catalogue())?;
+    let offered = offered_for(loaded.catalogue())?;
+    for task in ["blue-djinns", "green-djinns", "minotaurs", "necromancers"] {
+        let key = format!("oteryn:quest-reward/hunting-tasks/{task}/report");
+        assert!(
+            historical.iter().any(|callback| callback.key == key),
+            "{key}"
+        );
+        assert!(
+            !offered.iter().any(|callback| callback.key == key),
+            "PARTIAL boss route cannot advance the quota: {key}"
+        );
+    }
+    let pirate_report = offered
+        .iter()
+        .find(|callback| callback.key == "oteryn:quest-reward/hunting-tasks/pirates/report")
+        .ok_or("Pirate quota pays before the boss stage")?;
+    assert!(pirate_report.give.is_some());
+    assert!(pirate_report.experience.is_some());
+    let programme = crate::quest::npc_rules::NpcRuleCatalog::runtime()
+        .map_err(|error| error.to_string())?
+        .admitted_for_npc(&pirate_report.npc, loaded.catalogue())
+        .map_err(|error| error.to_string())?
+        .ok_or("Pirate hunting programme")?;
+    let mut tracks: BTreeMap<_, _> = pirate_report
+        .requires
+        .iter()
+        .map(|requirement| (requirement.track.clone(), requirement.minimum))
+        .collect();
+    tracks.extend(
+        pirate_report
+            .storage
+            .iter()
+            .map(|storage| (storage.track.clone(), storage.set)),
+    );
+    let input = crate::quest::npc_rules::NpcRuleInput {
+        npc: &pirate_report.npc,
+        trigger: crate::quest::npc_rules::NpcRuleTrigger::Say,
+        message: "task",
+        player_name: None,
+        topic: 0,
+        tracks: &tracks,
+        inventory: &Default::default(),
+        now_epoch_seconds: 1_700_000_000,
+        calendar_month: 11,
+        premium_current: true,
+        level: 60,
+        vocation: "oteryn:vocation.knight",
+        sex: 0,
+        outfits: &BTreeMap::new(),
+    };
+    assert!(
+        programme
+            .plan_storage(&input)
+            .map_err(|error| error.to_string())?
+            .is_none(),
+        "PARTIAL pirate repeat requires the original boss route"
+    );
+    Ok(())
+}
+
+#[test]
 fn non_paw_and_fur_tasks_load_with_native_counters_and_journals() -> Result<(), String> {
     let lowered = crate::quest::loader::load_embedded_quest_state("killing-in-the-name-test")
         .map_err(|error| format!("{error:?}"))?;
@@ -745,7 +811,9 @@ fn non_paw_and_fur_tasks_load_with_native_counters_and_journals() -> Result<(), 
         .find(|quest| quest.key == QUEST)
         .ok_or("missing Killing in the Name Of journal")?;
     assert_eq!(journal.missions.len(), 87);
-    let callbacks = crate::quest::reward_callbacks::offered_for(catalogue)?;
+    // Validate retained report transitions as well as live offers. The partial boss
+    // handoffs have a separate admission test.
+    let callbacks = crate::quest::reward_callbacks::load_for(catalogue)?;
     let rules =
         crate::quest::npc_rules::NpcRuleCatalog::runtime().map_err(|error| error.to_string())?;
     for (task, quota, creatures) in [

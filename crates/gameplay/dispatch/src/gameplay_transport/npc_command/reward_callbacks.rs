@@ -32,6 +32,10 @@ pub(super) struct Offer {
     topic: u16,
     #[serde(default)]
     any_topic: bool,
+    #[serde(default)]
+    preserve_topic: bool,
+    #[serde(default)]
+    reward_order: Option<RewardOrder>,
     next_topic: u16,
     storage: Vec<Storage>,
     #[serde(default)]
@@ -41,6 +45,23 @@ pub(super) struct Offer {
     minimum_level: Option<u32>,
     #[serde(default)]
     failure_reply: Vec<String>,
+}
+
+#[derive(Clone, Copy, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+enum RewardOrder {
+    Before,
+    Alongside,
+}
+
+impl Offer {
+    fn choice(&self) -> Choice {
+        Choice {
+            transition: None,
+            next_topic: (!self.preserve_topic).then(|| Topic::from(self.next_topic)),
+            reply: self.reply.clone(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -89,12 +110,12 @@ pub(super) fn prepare(
     )?;
     let text = intent.text.trim().to_ascii_lowercase();
     if text == "no"
-        || (phase == Phase::Offers
-            && !matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
-            && offers
-                .offers
-                .iter()
-                .any(|offer| offer.npc == context.2 && offer.matches_keyword(&text)))
+        || (!matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
+            && offers.offers.iter().any(|offer| {
+                offer.npc == context.2
+                    && (phase == Phase::Offers || offer.reward_order.is_some())
+                    && offer.matches_keyword(&text)
+            }))
     {
         let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
         sessions
@@ -138,6 +159,18 @@ pub(super) fn prepare(
                 })
             };
             if phase == Phase::Rewards {
+                let earlier = offers.offers.iter().find(|offer| {
+                    offer.reward_order.is_some()
+                        && offer.admits(&context.2, topic.number, &text, catalogue, tracks)
+                });
+                if let Some(offer) = earlier {
+                    if !meets_level(offer.minimum_level) {
+                        return refusal(&offer.failure_reply);
+                    }
+                    if offer.reward_order == Some(RewardOrder::Before) {
+                        return Some(offer.choice());
+                    }
+                }
                 let topic = if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN
                     && text == "mission"
                 {
@@ -145,77 +178,83 @@ pub(super) fn prepare(
                 } else {
                     topic.number
                 };
-                let matching_stage = callbacks.iter().filter(|c| {
-                    c.carried_item.is_none()
-                        && c.npc == context.2
-                        && c.topic == topic
-                        && c.matches_keyword(&text)
-                        && eligible(&c.storage)
-                        && c.state_ops
-                            .iter()
-                            .all(|op| op.advisory_holds(catalogue, tracks))
-                        && c.participants.iter().all(|p| {
-                            eligible(&p.storage)
-                                && p.state_ops
-                                    .iter()
-                                    .all(|op| op.advisory_holds(catalogue, tracks))
+                let mut choice = (|| {
+                    let matching_stage = callbacks.iter().filter(|c| {
+                        c.carried_item.is_none()
+                            && c.npc == context.2
+                            && c.topic == topic
+                            && c.matches_keyword(&text)
+                            && eligible(&c.storage)
+                            && c.state_ops
+                                .iter()
+                                .all(|op| op.advisory_holds(catalogue, tracks))
+                            && c.participants.iter().all(|p| {
+                                eligible(&p.storage)
+                                    && p.state_ops
+                                        .iter()
+                                        .all(|op| op.advisory_holds(catalogue, tracks))
+                            })
+                            && c.requires.iter().all(|r| r.holds(catalogue, tracks))
+                    });
+                    let mut selected = matching_stage.clone().filter(|c| {
+                        c.inventory.iter().all(|rule| {
+                            inventory.is_some_and(|facts| rule.holds(&facts.quantities))
                         })
-                        && c.requires.iter().all(|r| r.holds(catalogue, tracks))
-                });
-                let mut selected = matching_stage.clone().filter(|c| {
-                    c.inventory
-                        .iter()
-                        .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
-                });
-                if let Some(callback) = selected.next() {
-                    if selected.next().is_some() {
-                        return None;
+                    });
+                    if let Some(callback) = selected.next() {
+                        if !callback.accepts_npc_match(selected.next().is_some()) {
+                            return None;
+                        }
+                        if !meets_level(callback.minimum_level)
+                            && let Some(mut choice) = refusal(&callback.failure_reply)
+                        {
+                            choice.next_topic = refusal_topic(callback);
+                            return Some(choice);
+                        }
+                        // Without a source refusal line, keep the exact selected
+                        // transition: its locked owner must reject the level gate.
+                        // Falling through would return the ordinary dialogue's Ok.
+                        failure_reply = callback.failure_reply.clone();
+                        clear_topic_on_refusal = callback.clear_topic_on_refusal;
+                        return Some(Choice {
+                            transition: Some(callback.key.clone()),
+                            next_topic: Some(Topic::from(callback.next_topic)),
+                            reply: callback.reply.clone(),
+                        });
                     }
-                    if !meets_level(callback.minimum_level)
+                    // A later stage with the same keyword cannot hide this stage's
+                    // explicit inventory refusal. Successful branches retain priority.
+                    let mut blocked = matching_stage;
+                    if let Some(callback) = blocked.next()
+                        && callback.accepts_npc_match(blocked.next().is_some())
                         && let Some(mut choice) = refusal(&callback.failure_reply)
                     {
                         choice.next_topic = refusal_topic(callback);
                         return Some(choice);
                     }
-                    // Without a source refusal line, keep the exact selected
-                    // transition: its locked owner must reject the level gate.
-                    // Falling through would return the ordinary dialogue's Ok.
-                    failure_reply = callback.failure_reply.clone();
-                    clear_topic_on_refusal = callback.clear_topic_on_refusal;
-                    return Some(Choice {
-                        transition: Some(callback.key.clone()),
-                        next_topic: Some(Topic::from(callback.next_topic)),
-                        reply: callback.reply.clone(),
-                    });
+                    None
+                })();
+                if let Some(offer) = earlier {
+                    if let Some(choice) = &mut choice {
+                        choice.reply.splice(..0, offer.reply.iter().cloned());
+                        failure_reply.splice(..0, offer.reply.iter().cloned());
+                    } else {
+                        choice = Some(offer.choice());
+                    }
                 }
-                // A later stage with the same keyword cannot hide this stage's
-                // explicit inventory refusal. Successful branches retain priority.
-                let mut blocked = matching_stage;
-                if let Some(callback) = blocked.next()
-                    && blocked.next().is_none()
-                    && let Some(mut choice) = refusal(&callback.failure_reply)
-                {
-                    choice.next_topic = refusal_topic(callback);
-                    return Some(choice);
-                }
-                return None;
+                return choice;
             }
             if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
                 return rottin_dialogue(topic, &text, tracks, refusal);
             }
-            if let Some(offer) = offers
-                .offers
-                .iter()
-                .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
-            {
+            if let Some(offer) = offers.offers.iter().find(|c| {
+                c.reward_order.is_none()
+                    && c.admits(&context.2, topic.number, &text, catalogue, tracks)
+            }) {
                 if !meets_level(offer.minimum_level) {
                     return refusal(&offer.failure_reply);
                 }
-                return Some(Choice {
-                    transition: None,
-                    next_topic: Some(Topic::from(offer.next_topic)),
-                    reply: offer.reply.clone(),
-                });
+                return Some(offer.choice());
             }
             // Earlier stages may share the terminal reward's keyword. Grizzly's
             // dedicated native dialogue and admitted programmes retain those stages;
@@ -258,7 +297,7 @@ pub(super) fn prepare(
                     && c.matches_keyword(&text)
             });
             let callback = matching.next()?;
-            if matching.next().is_some() {
+            if !callback.accepts_npc_match(matching.next().is_some()) {
                 return None;
             }
             if (!meets_level(callback.minimum_level)

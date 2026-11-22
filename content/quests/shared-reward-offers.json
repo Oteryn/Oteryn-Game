@@ -1758,6 +1758,41 @@
       "reply": [
         "I can enchant {pendulet}, {sleep shawl}, {blister ring}, {theurgic amulet}, {ring of souls}, {spiritthorn ring}, {alicorn ring}, {arcanomancer sigil}, {arboreal ring}, {turtle amulet}. Which item?"
       ],
+      "any_topic": true,
+      "reward_order": "before",
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "information"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "With pleasure. <bows> I trade {token}s. There are several ways to obtain the {token}s I am interested in - killing certain bosses, for example. In exchange for a certain amount of tokens, I can offer you some first-class items."
+      ],
+      "any_topic": true,
+      "preserve_topic": true,
+      "reward_order": "before",
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "token",
+        "tokens"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "If you have any {silver} tokens with you, let's have a look! Maybe I can offer you something in exchange."
+      ],
+      "any_topic": true,
+      "preserve_topic": true,
+      "reward_order": "before",
       "msg_contains": true
     },
     {
@@ -1879,6 +1914,136 @@
       "reply": [
         "Should I enchant the turtle amulet for 2 silver tokens?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 102,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 103,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 104,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 105,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 106,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 107,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 108,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 109,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "no"
+      ],
+      "topic": 110,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Alright, come back if you have changed your mind."
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.costello",
@@ -2757,7 +2922,8 @@
       "storage": [],
       "reply": [
         "Trade 15 minor crystal tokens for backpack?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2794,6 +2960,9 @@
       "reply": [
         "Ask me about {minor} or {major} crystal token goods."
       ],
+      "any_topic": true,
+      "preserve_topic": true,
+      "reward_order": "before",
       "msg_contains": true
     },
     {
@@ -2806,7 +2975,8 @@
       "storage": [],
       "reply": [
         "Trade 10 major crystal tokens for gill coat?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2818,7 +2988,8 @@
       "storage": [],
       "reply": [
         "Trade 10 major crystal tokens for gill gugel?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2830,7 +3001,8 @@
       "storage": [],
       "reply": [
         "Trade 10 major crystal tokens for gill legs?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2842,7 +3014,8 @@
       "storage": [],
       "reply": [
         "Trade 20 major crystal tokens for glow wine?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2854,7 +3027,8 @@
       "storage": [],
       "reply": [
         "Trade 20 major crystal tokens for iron loadstone?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2866,7 +3040,8 @@
       "storage": [],
       "reply": [
         "Trade 15 minor crystal tokens for lamp?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2879,6 +3054,9 @@
       "reply": [
         "For major crystal tokens I offer {gill gugel}, {gill coat}, {gill legs}, {spellbook}, {prismatic helmet}, {prismatic armor}, {prismatic legs}, {prismatic boots}, {prismatic shield}, {iron loadstone}, {glow wine}, {basic soil guardian outfit}, {basic crystal warlord outfit}."
       ],
+      "any_topic": true,
+      "preserve_topic": true,
+      "reward_order": "before",
       "msg_contains": true
     },
     {
@@ -2892,6 +3070,9 @@
       "reply": [
         "For minor crystal tokens I offer {muck}, {mission}, {lamp}, {backpack}, {supply}, {addition to the soil guardian outfit}, {addition to the crystal warlord armor outfit}."
       ],
+      "any_topic": true,
+      "preserve_topic": true,
+      "reward_order": "before",
       "msg_contains": true
     },
     {
@@ -2904,7 +3085,8 @@
       "storage": [],
       "reply": [
         "Trade 10 minor crystal tokens for mission?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2916,7 +3098,8 @@
       "storage": [],
       "reply": [
         "Trade 8 minor crystal tokens for muck?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2928,7 +3111,8 @@
       "storage": [],
       "reply": [
         "Trade 10 major crystal tokens for prismatic armor?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2940,7 +3124,8 @@
       "storage": [],
       "reply": [
         "Trade 10 major crystal tokens for prismatic boots?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2952,7 +3137,8 @@
       "storage": [],
       "reply": [
         "Trade 10 major crystal tokens for prismatic helmet?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2964,7 +3150,8 @@
       "storage": [],
       "reply": [
         "Trade 10 major crystal tokens for prismatic legs?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2976,7 +3163,8 @@
       "storage": [],
       "reply": [
         "Trade 10 major crystal tokens for prismatic shield?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -2988,7 +3176,8 @@
       "storage": [],
       "reply": [
         "Trade 10 major crystal tokens for spellbook?"
-      ]
+      ],
+      "any_topic": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -3001,6 +3190,201 @@
       "reply": [
         "Will you help me with this task?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 106,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 107,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 108,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 109,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 110,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 111,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 112,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 113,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 114,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 115,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 116,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 117,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 118,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 119,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 120,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.gregor",
@@ -3976,7 +4360,10 @@
         "{imortus}, {jade amulet}, {key of numerous locks}, {little adventurer doll}, {loremaster doll}, {lucky clover amulet}, {mathmaster shield}, {medusa skull}, {music box}",
         "{noble sword}, {norseman doll}, {old radio}, {orc's jaw shredder}, {phoenix statue}, {pigeon trophy}, {shield of destiny}, {shield of endless search}, {the mexcalibur}",
         "{tibiora's box}"
-      ]
+      ],
+      "any_topic": true,
+      "reward_order": "before",
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.kasmir",
@@ -5859,6 +6246,9 @@
         "{snowman doll}, {snow globe}, {frazzlemaw santa}, {leaf golem santa}, {santa music box}, {santa teddy}, {maxxen santa}, {present bag}",
         "{ferumbras' teddy santa}, {nightmare beast santa}, {orclops santa}, {raccoon santa}, {santa fox}, {santa leech}"
       ],
+      "any_topic": true,
+      "preserve_topic": true,
+      "reward_order": "alongside",
       "msg_contains": true
     },
     {
@@ -6027,7 +6417,8 @@
       "storage": [],
       "reply": [
         "Ask me for {offers} to spend Christmas tokens or bring me a {present bag}."
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.sam",
@@ -6312,6 +6703,8 @@
           "maximum": 2147483647
         }
       ],
+      "any_topic": true,
+      "reward_order": "before",
       "msg_contains": true
     },
     {
@@ -6340,6 +6733,8 @@
           "maximum": 2147483647
         }
       ],
+      "any_topic": true,
+      "reward_order": "before",
       "msg_contains": true
     },
     {
@@ -6368,6 +6763,8 @@
           "maximum": 2147483647
         }
       ],
+      "any_topic": true,
+      "reward_order": "before",
       "msg_contains": true
     },
     {
@@ -6396,6 +6793,8 @@
           "maximum": 2147483647
         }
       ],
+      "any_topic": true,
+      "reward_order": "before",
       "msg_contains": true
     },
     {
@@ -6424,6 +6823,8 @@
           "maximum": 2147483647
         }
       ],
+      "any_topic": true,
+      "reward_order": "before",
       "msg_contains": true
     },
     {
@@ -6452,6 +6853,8 @@
           "maximum": 2147483647
         }
       ],
+      "any_topic": true,
+      "reward_order": "before",
       "msg_contains": true
     },
     {

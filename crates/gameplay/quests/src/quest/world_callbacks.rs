@@ -3567,6 +3567,12 @@ mod depths_survey_tests {
                 assert!(positions.insert(site.selector.position.ok_or("survey position")?));
                 let [minimum, maximum] =
                     site.effects.direct_use_area.ok_or("direct survey area")?;
+                let magic = site.effects.magic.as_ref().ok_or("survey success effect")?;
+                assert!(
+                    magic.position.is_none(),
+                    "{} must publish at the surveyor's tile, including {minimum:?}",
+                    site.key
+                );
                 assert!(site.admits_direct_use(minimum));
                 assert!(site.admits_direct_use(maximum));
                 assert!(!site.admits_direct_use(Position {

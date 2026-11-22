@@ -271,7 +271,9 @@ impl Serialize for CallbackEffectSet {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct MagicEffect {
-    pub position: Position,
+    /// Direct carried surveys omit this anchor to use the acting player’s tile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub effect: u16,
 }
 
@@ -806,10 +808,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         })
         || effects.transform == Some(0)
         || (effects.facing.is_some() && callback.teleport.is_none())
-        || effects
-            .magic
-            .as_ref()
-            .is_some_and(|m| !pos(m.position) || m.effect == 0)
+        || effects.magic.as_ref().is_some_and(|m| {
+            m.effect == 0
+                || m.position
+                    .map_or(effects.direct_use_area.is_none(), |at| !pos(at))
+        })
         || (callback.trigger == Trigger::StepOut && callback.return_on_failure)
     {
         return false;

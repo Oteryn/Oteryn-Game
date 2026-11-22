@@ -1768,9 +1768,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if callback.effects.loot_merchant {
             map.facts.emit_movement_effect(pos, 46);
         }
-        if let Some(magic) = &callback.effects.magic {
-            map.facts
-                .emit_movement_effect(tile(magic.position), magic.effect);
+        if let Some(magic) = &callback.effects.magic
+            && let Some(position) = magic
+                .position
+                .map(tile)
+                .or_else(|| native(expected.position()))
+        {
+            map.facts.emit_movement_effect(position, magic.effect);
         }
         if let Some(effect) = callback
             .effects

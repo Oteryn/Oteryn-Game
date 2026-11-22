@@ -1,5 +1,11 @@
 """Fixed token recipes from Crystal Server 201189f8 (OTS_HYPOTHESIS_ONLY)."""
 
+import hashlib
+import json
+import re
+import tarfile
+from pathlib import Path
+
 PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
 SHARD = "content/quests/npc-callbacks/token-exchanges.json"
 SOURCES = {
@@ -122,6 +128,39 @@ VAMPIRE_HUNTER = "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/"
 RANKS = ((1, 1000), (4, 5000), (5, 10000), (10, 20000), (30, 50000), (50, 100000))
 
 
+def donor_replies():
+    """Extract the new dialogue branches from the committed, digest-checked corpus."""
+    archive = Path(__file__).parent / "samples/donor-source/corpus.tar.gz"
+    with tarfile.open(archive) as corpus:
+        manifest = json.load(corpus.extractfile("corpus-manifest.json"))
+        sources = {}
+        for npc in ("cledwyn", "gnomally"):
+            path = f"data-global/npc/{npc}.lua"
+            expected = SOURCES[npc].rsplit(":", 1)[1]
+            entry = next(
+                row
+                for row in manifest["files"]
+                if row["source"] == "crystalserver"
+                and row["path"] == path
+                and row["sha256"] == expected
+            )
+            data = corpus.extractfile(
+                entry.get("blob_path", entry.get("cache_path"))
+            ).read()
+            if hashlib.sha256(data).hexdigest() != entry["sha256"]:
+                raise ValueError(f"token exchange source drift: {path}")
+            sources[npc] = data.decode()
+
+    def reply(npc, keyword):
+        pattern = rf'MsgContains\(message, "{keyword}"\)[^\n]* then\s+npcHandler:say\("([^"\n]+)"'
+        lines = re.findall(pattern, sources[npc])
+        if len(lines) != 1:
+            raise ValueError(f"missing unique exchange dialogue: {npc}/{keyword}")
+        return lines[0]
+
+    return reply
+
+
 def append(add, storage, callbacks, offers):
     def offer(npc, word, topic, next_topic, reply, *, msg_contains=False, **predicates):
         offers.append(
@@ -160,6 +199,23 @@ def append(add, storage, callbacks, offers):
     def choices(rows):
         return ", ".join("{" + name + "}" for name, *_ in rows)
 
+    donor_reply = donor_replies()
+    for word in ("token", "information"):
+        offer(
+            "cledwyn",
+            word,
+            0,
+            0,
+            donor_reply("cledwyn", word),
+            msg_contains=True,
+            any_topic=True,
+            preserve_topic=True,
+            reward_order="before",
+        )
+        if word == "token":
+            offers[-1]["keywords"].append("tokens")
+    cledwyn_no = donor_reply("cledwyn", "no")
+    gnomally_no = donor_reply("gnomally", "no")
     offer(
         "cledwyn",
         "enchant",
@@ -167,6 +223,8 @@ def append(add, storage, callbacks, offers):
         1,
         "I can enchant " + choices(CLEDWYN) + ". Which item?",
         msg_contains=True,
+        any_topic=True,
+        reward_order="before",
     )
     for topic, (name, discharged, cost, charged) in enumerate(CLEDWYN, 101):
         offer(
@@ -176,6 +234,7 @@ def append(add, storage, callbacks, offers):
             topic,
             f"Should I enchant the {name} for {cost} silver tokens?",
         )
+        offer("cledwyn", "no", topic, 0, cledwyn_no, msg_contains=True)
         recipe(
             "cledwyn",
             "rift_warrior_outfits_quest",
@@ -193,8 +252,11 @@ def append(add, storage, callbacks, offers):
         0,
         "Ask me about {minor} or {major} crystal token goods.",
         msg_contains=True,
+        any_topic=True,
+        preserve_topic=True,
+        reward_order="before",
     )
-    for token, currency in ((16128, "minor"), (16129, "major")):
+    for token, currency in ((16129, "major"), (16128, "minor")):
         rows = [row for row in GNOMALLY if row[1] == token]
         existing = (
             "{supply}, {addition to the soil guardian outfit}, {addition to the crystal warlord armor outfit}"
@@ -208,6 +270,9 @@ def append(add, storage, callbacks, offers):
             0,
             f"For {currency} crystal tokens I offer {choices(rows)}, {existing}.",
             msg_contains=True,
+            any_topic=True,
+            preserve_topic=True,
+            reward_order="before",
         )
     for topic, (name, token, cost, output) in enumerate(GNOMALLY, 106):
         currency = "minor" if token == 16128 else "major"
@@ -217,7 +282,9 @@ def append(add, storage, callbacks, offers):
             0,
             topic,
             f"Trade {cost} {currency} crystal tokens for {name}?",
+            any_topic=True,
         )
+        offer("gnomally", "no", topic, 0, gnomally_no, msg_contains=True)
         recipe(
             "gnomally",
             "bigfoot_s_burden_quest",
@@ -237,6 +304,9 @@ def append(add, storage, callbacks, offers):
         0,
         101,
         "Souvenirs cost 20 silver raid tokens each. Which one do you want?",
+        msg_contains=True,
+        any_topic=True,
+        reward_order="before",
     )
     offers[-1]["reply"].extend(choices(rows) for rows in catalogue)
     for name, token, cost, output in JORGE:
@@ -252,7 +322,17 @@ def append(add, storage, callbacks, offers):
         )
 
     catalogue = [RUPRECHT[start : start + 8] for start in range(0, len(RUPRECHT), 8)]
-    offer("ruprecht", "offers", 0, 0, "I have these offers:", msg_contains=True)
+    offer(
+        "ruprecht",
+        "offers",
+        0,
+        0,
+        "I have these offers:",
+        msg_contains=True,
+        any_topic=True,
+        preserve_topic=True,
+        reward_order="alongside",
+    )
     offers[-1]["reply"].extend(choices(rows) for rows in catalogue)
     offer(
         "ruprecht",
@@ -260,6 +340,7 @@ def append(add, storage, callbacks, offers):
         0,
         0,
         "Ask me for {offers} to spend Christmas tokens or bring me a {present bag}.",
+        msg_contains=True,
     )
     for topic, (name, payment, cost, output) in enumerate(RUPRECHT, 101):
         if payment == 6496:
@@ -316,6 +397,8 @@ def append(add, storage, callbacks, offers):
             ],
             requires=next_rank,
             msg_contains=True,
+            any_topic=True,
+            reward_order="before",
         )
         add(
             f"storkus-rank-{rank}",

@@ -456,6 +456,14 @@ impl OutfitReward {
     }
 }
 impl RewardCallback {
+    /// Jorge scans the donor's souvenir table in source order.
+    pub fn accepts_npc_match(&self, another_match: bool) -> bool {
+        !another_match
+            || (self.npc == "oteryn:npc.jorge"
+                && self.topic == 101
+                && self.key.starts_with("oteryn:quest-reward/jorge-exchange-"))
+    }
+
     pub fn matches_keyword(&self, text: &str) -> bool {
         self.keywords.iter().any(|word| {
             if self.msg_contains {
@@ -616,7 +624,10 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, 
 /// available to immutable receipt reconciliation and catalogue validation.
 pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
     let mut callbacks = load_for(catalogue)?;
-    callbacks.retain(super::authored_bindings::personal_event_offered);
+    callbacks.retain(|callback| {
+        super::authored_bindings::personal_event_offered(callback)
+            && !super::grizzly_adams::regional_tasks::awaits_boss_route(&callback.key)
+    });
     Ok(callbacks)
 }
 
@@ -3579,4 +3590,32 @@ mod daily_tests {
         );
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn jorge_selects_the_first_matching_souvenir_from_the_live_catalogue() -> Result<(), String> {
+    let loaded = super::loader::load_embedded_quest_state("jorge-source-order")
+        .map_err(|error| format!("{error:?}"))?;
+    let callbacks = offered_for(loaded.catalogue())?;
+    let mut matches = callbacks.iter().filter(|callback| {
+        callback.npc == "oteryn:npc.jorge"
+            && callback.topic == 101
+            && callback.matches_keyword("music box or abacus")
+    });
+    let first = matches.next().ok_or("missing first souvenir match")?;
+    assert_eq!(
+        first.give.as_ref().map(|reward| reward.item.as_str()),
+        Some("oteryn:item.tibia.i19151")
+    );
+    let another_match = matches.next().is_some();
+    assert!(
+        another_match,
+        "both souvenir names match the same utterance"
+    );
+    assert!(
+        first.accepts_npc_match(another_match),
+        "the first match must win"
+    );
+    Ok(())
 }
