@@ -343,6 +343,20 @@ pub async fn credit(
         .bind(world.as_bytes().as_slice()).bind(i16::from(event.source_kind)).bind(&event.occurrence).bind(authority.epoch.to_string()).bind(binding).execute(&mut **tx).await?;
     for &(kind, credit) in &event.credits {
         store(tx, world, kind, values[kind.index()]).await?;
+        if let Some(reward) = bindings()?.personal_kill_reward(kind, credit)
+            && let Some(character) = character
+        {
+            crate::durability::account_achievement::add_progress(
+                tx,
+                crate::domain::CharacterId::from_bytes(*character.as_bytes())
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                &reward.achievement,
+                reward.goal,
+                "oteryn:world-change-demon-wars",
+                &event.occurrence,
+            )
+            .await?;
+        }
         if matches!(kind, CounterKind::MagesTower | CounterKind::FireEarth)
             && credit == Credit::Kill(0)
             && (kind != CounterKind::FireEarth || values[kind.index()].stage == 1)

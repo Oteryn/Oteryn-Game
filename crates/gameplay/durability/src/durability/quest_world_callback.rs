@@ -506,6 +506,18 @@ pub(super) async fn consume(
     {
         return Ok(false);
     }
+    if oteryn_gameplay_quests::quest::hive_access::checkpoint_stage(&callback.key).is_some()
+        && !super::world_event::changes::callbacks::hive_gate_permitted(
+            tx,
+            world_id,
+            context.reset_epoch,
+            fence.character_id,
+            &callback.key,
+        )
+        .await?
+    {
+        return Ok(false);
+    }
     // M03: promotion is a permanent Character purchase, not a client vocation
     // name or copied quest storage. The outer writer holds the Character root.
     if callback.admission.as_ref().is_some_and(|a| a.promotion)

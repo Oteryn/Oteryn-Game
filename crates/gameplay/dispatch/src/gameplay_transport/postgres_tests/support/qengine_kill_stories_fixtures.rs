@@ -217,6 +217,9 @@ pub(super) async fn exercise(
         .strip_prefix("qengine-rewards-l12-")
         .and_then(|s| s.strip_suffix("-story"))
         .ok_or("trial")?;
+    if label == "demon-wars" {
+        return demon_wars_trial(owner, admitted, h).await;
+    }
     let (family, npc, level, creatures): (&str, &str, u32, &[(&str, &str, i64)]) = match label {
         "dragon-slayer" => (
             "dragon_slayer",
@@ -472,4 +475,168 @@ pub(super) async fn capture_deaths(
         }
     }
     Ok(targets)
+}
+
+async fn demon_wars_trial(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+    use oteryn_gameplay_quests::quest::world_callbacks::Position;
+    use oteryn_protocol_oteryn::npc_service::{CAPABILITY_NPC_SERVICE_V1, NpcIntentDisposition};
+
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
+    let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)?;
+    let find = |name| {
+        callbacks
+            .iter()
+            .find(|callback| callback.key == format!("oteryn:quest-reward/demon-wars/{name}"))
+            .ok_or("priestess dialogue")
+    };
+    let briefing = find("briefing")?;
+    let report = find("report")?;
+    let placements: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../../content/world/npc-placements/placements-00000-00055.json"
+    ))?;
+    let priestess = Position {
+        x: 33258,
+        y: 31938,
+        floor: -15,
+    };
+    assert!(
+        placements["records"]
+            .as_array()
+            .ok_or("placements")?
+            .iter()
+            .any(|row| row["declaration"]["npc"] == briefing.npc
+                && row["declaration"]["cell"]
+                    == serde_json::json!({"x": priestess.x, "y": priestess.y, "floor": 15}))
+    );
+    let location = |x, y, floor| crate::foundation::MovementLocalPosition { x, y, floor };
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    move_actor(owner, actor, location(33259, 31938, 15)).await?;
+    let [npc] = super::classic_quests_fixtures::install_positions(
+        owner,
+        admitted,
+        [briefing.npc.as_str()],
+        [priestess],
+    )
+    .await?;
+    let mut supported = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    supported.push(CAPABILITY_NPC_SERVICE_V1);
+    supported.sort_unstable();
+    supported.dedup();
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &supported,
+        )
+        .ok_or("NPC capability")?;
+    owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
+    owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("native creatures")?
+        .install_companion_policies(&mut *owner.runtime.lock().await)
+        .map_err(debug)?;
+
+    let wire = super::qengine_rewards_fixtures::wire_conversation;
+    assert_eq!(
+        wire(
+            owner,
+            admitted,
+            npc,
+            briefing,
+            false,
+            vec!["hi", &briefing.keywords[0]]
+        )
+        .await?
+        .0,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(
+        wire(
+            owner,
+            admitted,
+            npc,
+            report,
+            false,
+            vec!["hi", &report.keywords[0]]
+        )
+        .await?
+        .0,
+        NpcIntentDisposition::Rejected
+    );
+    let prefix = "oteryn:quest-progress/demon-wars/trial/";
+    assert_eq!(count(h, &format!("{prefix}phase")).await?, 1);
+    move_actor(owner, actor, location(33260, 31930, 13)).await?;
+    death(owner, admitted, "oteryn:creature.shaburak_prince", 22000).await?;
+    assert_eq!(count(h, &format!("{prefix}prince")).await?, 0);
+    let mut command = 22001;
+    for (creature, goal) in [("demon", 20), ("lord", 1), ("prince", 1)] {
+        let definition = format!("oteryn:creature.shaburak_{creature}");
+        for expected in 1..=goal {
+            death(owner, admitted, &definition, command).await?;
+            command += 1;
+            assert_eq!(count(h, &format!("{prefix}{creature}")).await?, expected);
+        }
+    }
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    move_actor(owner, actor, location(33259, 31938, 15)).await?;
+    assert_eq!(
+        wire(
+            owner,
+            admitted,
+            npc,
+            report,
+            false,
+            vec!["hi", &report.keywords[0]]
+        )
+        .await?
+        .0,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(
+        wire(
+            owner,
+            admitted,
+            npc,
+            report,
+            false,
+            vec!["hi", &report.keywords[0]]
+        )
+        .await?
+        .0,
+        NpcIntentDisposition::Rejected
+    );
+    let completions: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes",
+    )
+    .bind(&report.quest)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(completions, 1);
+    Ok(())
+}
+
+pub(super) async fn move_actor(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    position: crate::foundation::MovementLocalPosition,
+) -> TestResult {
+    let mut runtime = owner.runtime.lock().await;
+    let from = runtime
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
+    let moved = runtime
+        .commit_quest_platform_ride(from, position, actor, |_, _, _| true, || true)
+        .map_err(debug)?;
+    assert_eq!(moved.len(), 1);
+    Ok(())
 }

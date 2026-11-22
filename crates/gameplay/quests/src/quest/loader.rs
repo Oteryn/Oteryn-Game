@@ -834,6 +834,8 @@ mod tests {
             "worldchg-m31/fury_gates/seal",
             "worldchg-m31/grimvale/island",
             "worldchg-m31/grimvale/survey",
+            "worldchg-m31/hive_born/eastern-inner",
+            "worldchg-m31/hive_born/western-inner",
             "worldchg-m31/hive_outpost/outpost",
             "worldchg-m31/hive_outpost/survey",
             "worldchg-m31/insectoid_invasion/incursion",
@@ -841,7 +843,7 @@ mod tests {
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
-        assert_eq!(expected.len() - before_qmech_native, 79);
+        assert_eq!(expected.len() - before_qmech_native, 81);
         assert_eq!(
             callbacks
                 .into_iter()
