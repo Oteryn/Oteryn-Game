@@ -279,11 +279,13 @@ async fn catalogue_page(
     request: &wire::StoreCatalogueRequest,
 ) -> Option<wire::StoreCataloguePage> {
     let account = uuid_text(&admitted.controller?.account_id);
+    let tier = services::visible_xp_tier(owner, admitted, catalogue).await;
     let after = (!request.page_cursor.is_empty()).then_some(request.page_cursor.as_str());
     let mut rows = catalogue
         .rules
-        .offers_in_category(&request.category, after, wire::MAX_STORE_PAGE_ENTRIES + 1)
+        .offers_in_category(&request.category, after, wire::MAX_STORE_PAGE_ENTRIES + 6)
         .ok()?;
+    rows.retain(|offer| catalogue.visible(&offer.key, tier));
     let next_page_cursor = if rows.len() > wire::MAX_STORE_PAGE_ENTRIES {
         rows.truncate(wire::MAX_STORE_PAGE_ENTRIES);
         rows.last().map(|offer| offer.key.clone()).unwrap_or_default()
@@ -549,8 +551,8 @@ async fn purchase_retained_or_new(
     let answer: RetainedAnswer = serde_json::from_slice(&saved).ok()?;
     let code = answer.code()?;
     if code != wire::StorePurchaseCode::Accepted {
-        if let Some(service) = service {
-            services::release(owner, journal, service).await.ok()?;
+        if service.is_some() {
+            services::release(owner, journal).await.ok()?;
         } else if cosmetic.is_some() {
             owner.root.release_store_cosmetic(journal).await.ok()?;
         } else if prey_expansion {

@@ -1,4 +1,4 @@
-//! Store packs credit the same Account + World ledger as Daily Reward and Prey spend.
+//! Reserve before debit, then settle the Game effect and outbox in one transaction.
 use super::super::{
     DurabilityRoot,
     character_authority::{ReconciledCharacterAuthority, assert_recovery_fence},
@@ -43,59 +43,131 @@ impl StorePreyPack {
     }
 }
 
-pub struct StorePreyDelivery {
+#[derive(Clone, Copy, Debug, serde::Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum StoreService {
+    PreyWildcards { count: StorePreyPack },
+    XpBoost { tier: i16 },
+}
+
+impl StoreService {
+    pub fn matches_price(self, price: u64) -> bool {
+        match self {
+            Self::PreyWildcards { .. } => price > 0,
+            // Crystal gamestore/init.lua ExpBoostValues. Each price is a distinct
+            // fixed-price offer on Platform, selected by the current World reset.
+            Self::XpBoost { tier } => match tier {
+                1 => price == 30,
+                2 => price == 45,
+                3 => price == 90,
+                4 => price == 180,
+                5 => price == 360,
+                _ => false,
+            },
+        }
+    }
+
+    const fn kind(self) -> &'static str {
+        match self {
+            Self::PreyWildcards { .. } => "PREY_WILDCARDS",
+            Self::XpBoost { .. } => "XP_BOOST",
+        }
+    }
+
+    const fn amount(self) -> i16 {
+        match self {
+            Self::PreyWildcards { count } => count.quantity(),
+            Self::XpBoost { tier } => tier,
+        }
+    }
+}
+
+pub struct StoreServiceDelivery {
     pub identity: DeliveryIdentity,
     pub request: PurchaseRequest,
     pub operation_id: [u8; 16],
-    pub pack: StorePreyPack,
+    pub service: StoreService,
 }
 
 impl DurabilityRoot {
-    pub async fn reserve_store_prey_pack(
+    pub async fn read_store_xp_tier(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+    ) -> Result<Option<i16>, StoreDurabilityError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| StoreDurabilityError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if !assert_store_fence(&mut tx, &fence, &node, None).await? {
+                        return Ok(Err(StoreDurabilityError::AuthorityRejected));
+                    }
+                    let tier = super::super::store_hunting_xp::available_tier(
+                        &mut tx,
+                        fence.character_id.as_bytes(),
+                        fence.runtime_scope.world_id().as_bytes(),
+                    )
+                    .await?
+                    .map(|(_, tier)| tier);
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(tier))
+                })
+            })
+            .await?
+    }
+
+    pub async fn reserve_store_service(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
         request: PurchaseRequest,
-        pack: StorePreyPack,
+        service: StoreService,
     ) -> Result<Option<PurchaseRequestState>, StoreDurabilityError> {
         request.validate()?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| StoreDurabilityError::AuthorityRejected)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            lock_admission_relations(&mut tx).await?;
-            if let Err(error) = lock_scope(&mut tx, &fence, &node, &request).await {
-                return Ok(Err(error));
-            }
-            let state = match super::purchase::record_request(&mut tx, &request).await {
-                Ok(state) => state,
-                Err(error) => return Ok(Err(error)),
-            };
-            if state == PurchaseRequestState::Sent {
-                let world = fence.runtime_scope.world_id();
-                let reserved = sqlx::query(
-                    "INSERT INTO game_store_prey_purchases(purchase_id,account_id,world_id,quantity)
-                     SELECT encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4
-                     WHERE coalesce((SELECT balance FROM game_account_prey_wildcards
-                        WHERE account_id=encode($2,'hex')::uuid AND world_id=encode($3,'hex')::uuid),0)+$4<=$5
-                     ON CONFLICT DO NOTHING",
-                ).bind(request.purchase_request_id.as_slice()).bind(request.account_id.as_slice())
-                    .bind(world.as_bytes().as_slice()).bind(pack.quantity()).bind(STORE_CAP)
-                    .execute(&mut *tx).await?.rows_affected() == 1;
-                if !reserved && !has_pending_pack(&mut tx, &request, pack, world.as_bytes()).await? {
-                    return Ok(Ok(None));
-                }
-            }
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(Some(state)))
-        })).await?
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if let Err(error) = lock_scope(&mut tx, &fence, &node, &request).await {
+                        return Ok(Err(error));
+                    }
+                    let state = match super::purchase::record_request(&mut tx, &request).await {
+                        Ok(state) => state,
+                        Err(error) => return Ok(Err(error)),
+                    };
+                    if state == PurchaseRequestState::Sent
+                        && !reserve(
+                            &mut tx,
+                            &request,
+                            service,
+                            fence.runtime_scope.world_id().as_bytes(),
+                        )
+                        .await?
+                    {
+                        return Ok(Ok(None));
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(Some(state)))
+                })
+            })
+            .await?
     }
 
-    pub async fn release_refused_store_prey_pack(
+    pub async fn release_refused_store_service(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         request: PurchaseRequest,
@@ -128,7 +200,7 @@ impl DurabilityRoot {
                         return Ok(Err(StoreDurabilityError::ConflictingBinding));
                     }
                     sqlx::query(
-                        "DELETE FROM game_store_prey_purchases
+                        "DELETE FROM game_store_service_purchases
                  WHERE purchase_id=encode($1,'hex')::uuid AND operation_id IS NULL",
                     )
                     .bind(request.purchase_request_id.as_slice())
@@ -141,18 +213,18 @@ impl DurabilityRoot {
             .await?
     }
 
-    pub async fn apply_store_prey_pack(
+    pub async fn apply_store_service(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
-        delivery: StorePreyDelivery,
+        delivery: StoreServiceDelivery,
     ) -> Result<DeliveryReceipt, StoreDurabilityError> {
-        let StorePreyDelivery {
+        let StoreServiceDelivery {
             identity,
             request,
             operation_id,
-            pack,
+            service,
         } = delivery;
         identity.validate()?;
         request.validate()?;
@@ -176,7 +248,7 @@ impl DurabilityRoot {
             }
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:store-delivery:'||encode($1,'hex'),0))")
                 .bind(operation_id.as_slice()).execute(&mut *tx).await?;
-            let state = match settlement_state(&mut tx, &request, &identity, operation_id, pack).await? {
+            let state = match settlement_state(&mut tx, &request, &identity, operation_id, service).await? {
                 Some(state) => state,
                 None => return Ok(Err(StoreDurabilityError::ConflictingBinding)),
             };
@@ -192,11 +264,16 @@ impl DurabilityRoot {
                 Ok(receipt) => receipt,
                 Err(error) => return Ok(Err(error)),
             };
-            sqlx::query("UPDATE game_store_prey_purchases SET operation_id=encode($2,'hex')::uuid
+            sqlx::query("UPDATE game_store_service_purchases SET operation_id=encode($2,'hex')::uuid
                          WHERE purchase_id=encode($1,'hex')::uuid")
                 .bind(request.purchase_request_id.as_slice()).bind(operation_id.as_slice())
                 .execute(&mut *tx).await?;
-            credit(&mut tx, &identity, operation_id, pack.quantity()).await?;
+            match service {
+                StoreService::PreyWildcards { count } => credit(&mut tx, &identity, operation_id, count.quantity()).await?,
+                StoreService::XpBoost { .. } => super::super::store_hunting_xp::grant(
+                    &mut tx, &identity, operation_id
+                ).await?,
+            }
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(receipt))
         })).await?
@@ -228,23 +305,59 @@ async fn lock_account(
     Ok(())
 }
 
-async fn has_pending_pack(
+async fn reserve(
     tx: &mut Transaction<'_, Postgres>,
     request: &PurchaseRequest,
-    pack: StorePreyPack,
+    service: StoreService,
     world: &[u8; 16],
 ) -> Result<bool, sqlx::Error> {
-    sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM game_store_prey_purchases
+    let pending = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_store_service_purchases
          WHERE purchase_id=encode($1,'hex')::uuid AND account_id=encode($2,'hex')::uuid
-           AND world_id=encode($3,'hex')::uuid AND quantity=$4 AND operation_id IS NULL)",
+           AND world_id=encode($3,'hex')::uuid AND amount=$4 AND kind=$5 AND operation_id IS NULL)",
     )
     .bind(request.purchase_request_id.as_slice())
     .bind(request.account_id.as_slice())
     .bind(world.as_slice())
-    .bind(pack.quantity())
+    .bind(service.amount())
+    .bind(service.kind())
     .fetch_one(&mut **tx)
-    .await
+    .await?;
+    if pending {
+        return Ok(true);
+    }
+    let reset = match service {
+        StoreService::PreyWildcards { .. } => {
+            let balance: i16 = sqlx::query_scalar(
+                "SELECT coalesce((SELECT balance FROM game_account_prey_wildcards
+                 WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid),0)::smallint",
+            ).bind(request.account_id.as_slice()).bind(world.as_slice()).fetch_one(&mut **tx).await?;
+            if balance + service.amount() > STORE_CAP {
+                return Ok(false);
+            }
+            None
+        }
+        StoreService::XpBoost { tier } => {
+            let Some((epoch, current_tier)) =
+                super::super::store_hunting_xp::available_tier(tx, &request.character_id, world)
+                    .await?
+            else {
+                return Ok(false);
+            };
+            if current_tier != tier {
+                return Ok(false);
+            }
+            Some(epoch)
+        }
+    };
+    let inserted = sqlx::query(
+        "INSERT INTO game_store_service_purchases(purchase_id,account_id,world_id,character_id,kind,amount,reset_epoch)
+         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7::text::numeric)
+         ON CONFLICT DO NOTHING",
+    ).bind(request.purchase_request_id.as_slice()).bind(request.account_id.as_slice())
+        .bind(world.as_slice()).bind(request.character_id.as_slice()).bind(service.kind())
+        .bind(service.amount()).bind(reset).execute(&mut **tx).await?;
+    Ok(inserted.rows_affected() == 1)
 }
 
 /// Only an accepted operation of this exact reserved request can settle or replay the grant.
@@ -253,20 +366,20 @@ async fn settlement_state(
     request: &PurchaseRequest,
     identity: &DeliveryIdentity,
     operation: [u8; 16],
-    pack: StorePreyPack,
+    service: StoreService,
 ) -> Result<Option<bool>, sqlx::Error> {
     sqlx::query_scalar(
-        "SELECT p.operation_id IS NOT NULL FROM game_store_prey_purchases p
+        "SELECT p.operation_id IS NOT NULL FROM game_store_service_purchases p
          JOIN store_purchase_requests r ON r.purchase_request_id=p.purchase_id
          WHERE p.purchase_id=encode($1,'hex')::uuid AND p.account_id=encode($2,'hex')::uuid
-           AND p.world_id=encode($3,'hex')::uuid AND p.quantity=$4 AND r.character_id=encode($5,'hex')::uuid
+           AND p.world_id=encode($3,'hex')::uuid AND p.amount=$4 AND p.kind=$8 AND r.character_id=encode($5,'hex')::uuid AND r.character_id=p.character_id
            AND r.account_id=p.account_id AND r.binding_digest=$6 AND r.state=2
            AND (p.operation_id IS NULL OR p.operation_id=$7::text::uuid)
            AND convert_from(r.answer,'UTF8')::jsonb->>'result'='ACCEPTED'
            AND convert_from(r.answer,'UTF8')::jsonb->'operation_ids'=jsonb_build_array($7::text)",
     ).bind(request.purchase_request_id.as_slice()).bind(identity.account_id.as_slice())
-        .bind(identity.world_id.as_slice()).bind(pack.quantity()).bind(identity.character_id.as_slice())
-        .bind(request.binding_digest().as_slice()).bind(uuid_string(&operation)).fetch_optional(&mut **tx).await
+        .bind(identity.world_id.as_slice()).bind(service.amount()).bind(identity.character_id.as_slice())
+        .bind(request.binding_digest().as_slice()).bind(uuid_string(&operation)).bind(service.kind()).fetch_optional(&mut **tx).await
 }
 
 async fn credit(

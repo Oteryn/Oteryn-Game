@@ -359,12 +359,9 @@ pub async fn commit_in_transaction<const N: usize>(
                 ForgeDustOutcome::AlreadyWritten(_) => bounty_dust_key = None,
             }
         }
-        let mut modifiers =
-            hunting_xp::read_in_transaction(tx, &member.fence, &input.creature, member.premium)
-                .await?;
-        if let Some(live) = member.live_stamina {
-            modifiers.stamina_minutes = modifiers.stamina_minutes.min(i32::from(live));
-        }
+        let modifiers = hunting_xp::read_in_transaction(
+            tx, &member.fence, &input.creature, member.premium, member.live_stamina,
+        ).await?;
         let raw = member.request.amount.get();
         let amount = oteryn_gameplay_characters::hunting_experience::hunting_experience(
             raw,

@@ -22,7 +22,8 @@ pub(super) async fn execute(
     }
     let mut products = Vec::new();
     for catalogue in catalogues {
-        for offer in catalogue.entries() {
+        let tier = services::visible_xp_tier(owner, admitted, catalogue).await;
+        for offer in catalogue.entries().filter(|offer| catalogue.visible(&offer.key, tier)) {
             products.push(Product {
                 category: offer.category.clone(),
                 revision: catalogue.rules.revision().into(),

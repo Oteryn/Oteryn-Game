@@ -1,7 +1,23 @@
 use super::catalogue::StoreService;
 use super::*;
-use crate::durability::store::{StoreDurabilityError, StorePreyDelivery};
+use crate::durability::store::{StoreDurabilityError, StoreServiceDelivery};
 use crate::native_admission_source::store::OperationKind;
+
+pub(super) async fn visible_xp_tier(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    catalogue: &RuntimeCatalogue,
+) -> Option<i16> {
+    if !catalogue.has_xp_boost() {
+        return None;
+    }
+    let fence = gameplay_fence(owner, admitted).await?;
+    owner
+        .root
+        .read_store_xp_tier(owner.character, owner.holder, fence)
+        .await
+        .ok()?
+}
 
 pub(super) async fn reserve(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -9,29 +25,20 @@ pub(super) async fn reserve(
     request: PurchaseRequest,
     service: StoreService,
 ) -> Result<Option<PurchaseRequestState>, StoreDurabilityError> {
-    match service {
-        StoreService::PreyWildcards { count } => {
-            owner
-                .root
-                .reserve_store_prey_pack(owner.character, owner.holder, fence, request, count)
-                .await
-        }
-    }
+    owner
+        .root
+        .reserve_store_service(owner.character, owner.holder, fence, request, service)
+        .await
 }
 
 pub(super) async fn release(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     request: PurchaseRequest,
-    service: StoreService,
 ) -> Result<(), StoreDurabilityError> {
-    match service {
-        StoreService::PreyWildcards { .. } => {
-            owner
-                .root
-                .release_refused_store_prey_pack(owner.character, request)
-                .await
-        }
-    }
+    owner
+        .root
+        .release_refused_store_service(owner.character, request)
+        .await
 }
 
 pub(super) async fn deliver(
@@ -65,22 +72,20 @@ pub(super) async fn deliver(
         world_id: *admitted.world_id.as_bytes(),
         fulfilment_unit_id: intent.entitlement_id.clone(),
     };
-    let receipt = match service {
-        StoreService::PreyWildcards { count } => owner
-            .root
-            .apply_store_prey_pack(
-                owner.character,
-                owner.holder,
-                fence,
-                StorePreyDelivery {
-                    identity,
-                    request,
-                    operation_id,
-                    pack: count,
-                },
-            )
-            .await
-            .ok()?,
-    };
+    let receipt = owner
+        .root
+        .apply_store_service(
+            owner.character,
+            owner.holder,
+            fence,
+            StoreServiceDelivery {
+                identity,
+                request,
+                operation_id,
+                service,
+            },
+        )
+        .await
+        .ok()?;
     publish(owner, platform, operation_id, &intent, &receipt).await
 }

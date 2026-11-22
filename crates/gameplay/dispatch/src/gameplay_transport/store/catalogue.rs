@@ -1,6 +1,6 @@
 //! The admitted runtime Store catalogue (`rulesets/economy/store/catalogue.json`, built from the
 //! pinned Canary GameStore catalogue by `tools/content-schema/store-authoring/build_runtime_catalogue.py`).
-use crate::durability::store::StorePreyPack;
+pub(super) use crate::durability::store::StoreService;
 use oteryn_gameplay_economy::store as rules;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -65,12 +65,6 @@ pub(super) struct HirelingOffer {
     pub(super) source_id: u16,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
-pub(super) enum StoreService {
-    PreyWildcards { count: StorePreyPack },
-}
-
 pub(in crate::gameplay_transport) struct RuntimeCatalogue {
     pub(in crate::gameplay_transport) rules: rules::Catalogue,
     titles: BTreeMap<String, String>,
@@ -96,6 +90,7 @@ impl RuntimeCatalogue {
         let mut item_revisions = BTreeMap::new();
         let mut hirelings = BTreeMap::new();
         let mut services = BTreeMap::new();
+        let mut xp_tiers = std::collections::BTreeSet::new();
         let mut offers = Vec::with_capacity(document.offers.len());
         for offer in document.offers {
             // Owner-priced offers remain unavailable while their price is a placeholder.
@@ -107,7 +102,16 @@ impl RuntimeCatalogue {
                 return None;
             }
             let (kind, delivery, eligibility) = if let Some(service) = offer.service {
-                if offer.item.is_some() || offer.unlock_key.is_some() || offer.hireling.is_some() {
+                if offer.item.is_some()
+                    || offer.unlock_key.is_some()
+                    || offer.hireling.is_some()
+                    || !service.matches_price(price)
+                {
+                    return None;
+                }
+                if let StoreService::XpBoost { tier } = service
+                    && !xp_tiers.insert(tier)
+                {
                     return None;
                 }
                 services.insert(offer.key.clone(), service);
@@ -226,6 +230,19 @@ impl RuntimeCatalogue {
 
     pub(super) fn service(&self, key: &str) -> Option<StoreService> {
         self.services.get(key).copied()
+    }
+
+    pub(super) fn has_xp_boost(&self) -> bool {
+        self.services
+            .values()
+            .any(|service| matches!(service, StoreService::XpBoost { .. }))
+    }
+
+    pub(super) fn visible(&self, key: &str, xp_tier: Option<i16>) -> bool {
+        match self.service(key) {
+            Some(StoreService::XpBoost { tier }) => Some(tier) == xp_tier,
+            _ => true,
+        }
     }
 
     pub(super) fn title(&self, offer: &str) -> &str {
