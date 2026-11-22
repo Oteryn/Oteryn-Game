@@ -71,3 +71,7 @@ message BestiaryCatalogueCardV1 {
 // ff 03 followed by 1..5 strictly ascending nonzero race:u16le IDs (<=1024)
 // returns their active creature catalogue cards in the same page shape, no cursor.
 // The client batches confirmed discovered races to name the eligible race selector.
+
+// Capability 613 command 6389 uses the seven-byte ff 01 catalogue request and
+// adds a bounded per-card Animus XP prefix to the legacy catalogue reply.
+// See animus-mastery-v1.md#bestiary-xp-bonus. Command 84 keeps its wire format.

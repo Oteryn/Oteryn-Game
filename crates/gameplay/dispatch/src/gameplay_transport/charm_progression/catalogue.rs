@@ -10,6 +10,7 @@ pub(super) async fn dispatch(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     payload: &[u8],
+    include_animus_xp: bool,
 ) -> GuildReply {
     let named_races = if payload.starts_with(&[255,3]) && (4..=12).contains(&payload.len()) && payload.len().is_multiple_of(2) {
         let races:Vec<_>=payload[2..].as_chunks::<2>().0.iter().map(|b|u16::from_le_bytes(*b)).collect();
@@ -59,6 +60,23 @@ pub(super) async fn dispatch(
         return super::charm_details::page(owner.imported_charms, after).and_then(|page| wire::encode_page(&page).ok()).map_or(GuildReply::Rejected, GuildReply::Payload);
     }
     let Some(page) = project(native, request) else { return GuildReply::Rejected; };
+    if include_animus_xp {
+        let Ok(masteries) = owner.root.read_current_animus_masteries(
+            owner.character, owner.holder, current.item_fence(),
+        ).await else {
+            return GuildReply::Rejected;
+        };
+        let Some(races) = super::canonical_races() else { return GuildReply::Rejected; };
+        let bonus = crate::combat::animus_mastery_bonus_basis_points(masteries.len());
+        let bonuses: Option<Vec<_>> = page.cards.iter().map(|card| {
+            let race = races.get(usize::from(card.race.checked_sub(1)?))?;
+            let mastered = masteries.binary_search_by(|key| key.as_str().cmp(race.key())).is_ok();
+            Some(if mastered { bonus } else { 0 })
+        }).collect();
+        return bonuses
+            .and_then(|bonuses| wire::encode_animus_xp_page(&page, &bonuses).ok())
+            .map_or(GuildReply::Rejected, GuildReply::Payload);
+    }
     if payload.len() == 8 {
         owner.echo_warden_bestiary_page(admitted, page).await
     } else {

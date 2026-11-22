@@ -34,3 +34,32 @@ Ctrl+M opens the Animus Mastery window. It shows the server's total completion
 count and a bounded species page, with Refresh, Previous and Next actions.
 Refused or malformed replies preserve the last confirmed page. Session teardown
 clears it, so another character cannot inherit the previous character's list.
+
+## Mastered species XP bonus
+
+With capabilities 168 and 613 selected, command 6388 accepts the original
+four-byte request. It returns a little-endian `u16` XP bonus in basis points
+(100 = 1%) followed by the unchanged command 232 reply, up to 8194 bytes.
+The prefix is 0 when the character has no masteries. With at least one mastery,
+it is 200 plus 10 per ten masteries, capped at 400. It applies to each species
+in that page. The total and bonus cover the whole character even on an empty
+page beyond the end. Command 232 retains its original reply without the prefix.
+
+## Bestiary XP bonus
+
+With capabilities 168 and 613 selected, command 6389 accepts the seven-byte
+`ff 01` browse or detail request from the Bestiary catalogue. The reply starts
+with a `u8` count, then one little-endian `u16` basis-point value per card in
+catalogue order, followed by the existing catalogue page. The count must equal
+the number of cards (0–20). Each value is 0 if unmastered or the mastered species
+bonus defined above. Total reply size remains capped at 22080 bytes. This is a
+read of the current character and active native catalogue. Command 84 keeps
+its normal reply and Echo Warden opt-in.
+
+The server uses the same formula for these reads and for raw XP settlement.
+Crystal `201189f8` supplies the per-creature Bestiary projection
+(`src/server/network/protocol/protocolgame.cpp:2669–2671,3382–3389`) and
+multiplicative raw XP rule (`src/creatures/players/player.cpp:3618–3623`,
+`src/creatures/players/animus_mastery/animus_mastery.cpp:54–57`). The exact
+rate is corroborated by the Tibia Fandom archive
+[Animus Mastery](https://tibia.fandom.com/wiki/Animus_Mastery).
