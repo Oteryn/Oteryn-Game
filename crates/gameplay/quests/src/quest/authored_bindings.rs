@@ -451,9 +451,31 @@ impl Bindings {
             // Replacing the route requires its new binding witness. Keep the
             // legacy migration owners only for unrelated, retained quests.
             catalogue.npc_legacy.remove(&quest.quest);
-            catalogue.predecessors.remove(&quest.quest);
+            if quest.quest == super::dreamer_fire_bug::QUEST {
+                if let Some(&hash) = base.hashes.get(&quest.quest) {
+                    let defaults = quest
+                        .tracks
+                        .iter()
+                        .filter(|track| !base.tracks.contains_key(&track.key))
+                        .map(|track| (track.key.clone(), track.initial))
+                        .collect();
+                    catalogue
+                        .predecessors
+                        .entry(quest.quest.clone())
+                        .or_default()
+                        .push(super::NpcDefinitionPredecessor { hash, defaults });
+                }
+            } else {
+                catalogue.predecessors.remove(&quest.quest);
+            }
         }
         let mut world = super::world_callbacks::load()?;
+        if self.world_callbacks().any(|callback| {
+            callback.key == super::dreamer_death_ring::JOURNEY_RESET
+                && super::dreamer_death_ring::shared_reset(callback)
+        }) {
+            world.retain(|callback| callback.key != super::dreamer_death_ring::RESET);
+        }
         world.extend(self.world_callbacks().cloned());
         if world.len() > MAX_COMPOSED_WORLD_CALLBACKS
             || world.iter().map(|c| &c.key).collect::<BTreeSet<_>>().len() != world.len()

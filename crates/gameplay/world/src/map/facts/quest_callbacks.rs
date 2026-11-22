@@ -138,6 +138,21 @@ pub enum QuestCallbackProjection {
     },
 }
 
+fn dreamer_board_reset(entries: &[(u64, u64, Option<EntryFacts>)]) -> bool {
+    use oteryn_gameplay_quests::quest::dreamer_puzzles as puzzle;
+    entries.len() == 36
+        && entries.iter().all(|(key, _, facts)| {
+            view::placement_of(*key).is_some_and(|(at, ordinal)| {
+                ordinal == 1
+                    && at.floor == -9
+                    && (32818..=32823).contains(&at.x)
+                    && (32334..=32339).contains(&at.y)
+            }) && facts.is_none_or(|facts| {
+                !facts.pickupable && facts.bound && puzzle::PILLOWS.contains(&facts.appearance_id)
+            })
+        })
+}
+
 #[derive(Clone, Debug)]
 struct NaginataPick {
     session: [u8; 16],
@@ -211,10 +226,10 @@ impl CallbackStates {
         });
     }
 
-    fn readset_matches(&self, entries: impl IntoIterator<Item = (u64, u64)>) -> bool {
+    fn readset_matches(&self, entries: impl IntoIterator<Item = (u64, u64)>, limit: usize) -> bool {
         let mut keys = BTreeSet::new();
         for (key, revision) in entries {
-            if keys.len() == 8
+            if keys.len() == limit
                 || !keys.insert(key)
                 || revision == u64::MAX
                 || self.hidden.contains(&key)
@@ -333,8 +348,10 @@ impl CallbackStates {
             }
             QuestCallbackProjection::ReadsetTransforms { entries, reset } => {
                 if entries.iter().any(|(key, _, _)| *key == owner)
-                    || !self
-                        .readset_matches(entries.iter().map(|(key, revision, _)| (*key, *revision)))
+                    || !self.readset_matches(
+                        entries.iter().map(|(key, revision, _)| (*key, *revision)),
+                        if dreamer_board_reset(entries) { 36 } else { 8 },
+                    )
                 {
                     return false;
                 }
@@ -655,7 +672,7 @@ impl BundleFacts {
         publish: impl FnOnce() -> R,
     ) -> Option<R> {
         let states = self.callbacks.lock().ok()?;
-        if !states.readset_matches(readset.iter().copied()) {
+        if !states.readset_matches(readset.iter().copied(), 8) {
             return None;
         }
         let result = publish();
@@ -678,7 +695,7 @@ impl BundleFacts {
             .find(|(_, (pos, id))| *pos == position && *id == entry)?;
         let revision = states.changed.get(&owner).map_or(0, |(rev, _)| *rev);
         states
-            .readset_matches([(owner, revision)])
+            .readset_matches([(owner, revision)], 8)
             .then_some((owner, revision))
     }
 
@@ -1807,6 +1824,9 @@ impl BundleFacts {
             }
             Some(QuestCallbackProjection::Scene { mutations, .. }) => {
                 mutations.len().saturating_mul(3).saturating_add(1)
+            }
+            Some(QuestCallbackProjection::ReadsetTransforms { entries, reset }) => {
+                entries.len() + usize::from(reset.is_some()) + 1
             }
             _ => usize::from(projection.is_some()) * 8,
         };

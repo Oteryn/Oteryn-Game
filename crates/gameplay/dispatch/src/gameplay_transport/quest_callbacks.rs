@@ -15,6 +15,7 @@ pub(super) use court_warlock::PRE_SOURCE_BOSS_CHARGE;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod dreamer_carrot;
+mod dreamer_puzzles;
 mod effects;
 mod encounter;
 pub(super) use encounter::room_contains;

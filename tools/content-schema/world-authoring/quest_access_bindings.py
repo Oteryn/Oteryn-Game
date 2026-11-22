@@ -1,7 +1,7 @@
 """Restore only the pinned startup selectors consumed by shared quest access.
 
-The normalized capture comes from Crystal201189f's LeverUnique, TileUnique,
-TileAction and TeleportAction tables. No placement or item identity is invented.
+The normalized capture comes from Crystal201189f's startup tables.
+No placement or item identity is invented.
 """
 
 import argparse
@@ -23,9 +23,17 @@ def capture_sources(source_root):
     import lua_tables
 
     requested = {
-        "lever.lua": {"LeverUnique": {30004, 30005, 30025, 30030, 30034}},
+        "lever.lua": {
+            "LeverUnique": {2272, 30004, 30005, 30025, 30030, 30034},
+            "LeverAction": {8033},
+        },
         "tile.lua": {"TileUnique": {25010}, "TileAction": {50022}},
         "teleport.lua": {"TeleportAction": {50022}},
+        "item.lua": {
+            "ItemUnique": {2241, 2242, 2243, 2244, 2250, 2251, 2252, 2253, 2254, 2255,
+                           9030, 9234, 50147},
+            "ItemAction": {2245, 2246},
+        },
     }
     sources, bindings = [], []
     for name, groups in requested.items():

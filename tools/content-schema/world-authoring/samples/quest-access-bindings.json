@@ -18,9 +18,26 @@
       "path": "data-global/startup/tables/teleport.lua",
       "sha256": "9e8f807264ec6ab85e263976136666ff38c195f1921cc30e73fd4431370fe87e",
       "git_blob_sha1": "cfbfc04755c4cfd2665aa1d963bcc7416e23707d"
+    },
+    {
+      "path": "data-global/startup/tables/item.lua",
+      "sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad",
+      "git_blob_sha1": "5d5323401d243df8416a38aba33c3d6e738b2d1a"
     }
   ],
   "bindings": [
+    {
+      "position": [
+        32838,
+        32263,
+        14
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "value": 2272,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 690
+    },
     {
       "position": [
         32227,
@@ -83,6 +100,30 @@
     },
     {
       "position": [
+        32836,
+        32278,
+        14
+      ],
+      "item": 2772,
+      "attribute": "action",
+      "value": 8033,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 105
+    },
+    {
+      "position": [
+        32834,
+        32285,
+        14
+      ],
+      "item": 2772,
+      "attribute": "action",
+      "value": 8033,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 105
+    },
+    {
+      "position": [
         32225,
         32268,
         9
@@ -140,6 +181,306 @@
       "value": 50022,
       "source": "data-global/startup/tables/teleport.lua",
       "line": 247
+    },
+    {
+      "position": [
+        32861,
+        32239,
+        9
+      ],
+      "item": 353,
+      "attribute": "unique",
+      "value": 2241,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 4159
+    },
+    {
+      "position": [
+        32861,
+        32236,
+        9
+      ],
+      "item": 351,
+      "attribute": "unique",
+      "value": 2242,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 4163
+    },
+    {
+      "position": [
+        32849,
+        32233,
+        9
+      ],
+      "item": 3134,
+      "attribute": "unique",
+      "value": 2243,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 4167
+    },
+    {
+      "position": [
+        32857,
+        32225,
+        11
+      ],
+      "item": 563,
+      "attribute": "unique",
+      "value": 2244,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 4171
+    },
+    {
+      "position": [
+        32915,
+        32278,
+        14
+      ],
+      "item": 5572,
+      "attribute": "unique",
+      "value": 2250,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 4175
+    },
+    {
+      "position": [
+        32916,
+        32263,
+        14
+      ],
+      "item": 5590,
+      "attribute": "unique",
+      "value": 2251,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 4179
+    },
+    {
+      "position": [
+        32953,
+        32277,
+        13
+      ],
+      "item": 5484,
+      "attribute": "unique",
+      "value": 2252,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 4183
+    },
+    {
+      "position": [
+        32976,
+        32271,
+        14
+      ],
+      "item": 452,
+      "attribute": "unique",
+      "value": 2253,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 4187
+    },
+    {
+      "position": [
+        32933,
+        32269,
+        13
+      ],
+      "item": 2576,
+      "attribute": "unique",
+      "value": 2254,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 4191
+    },
+    {
+      "position": [
+        32934,
+        32269,
+        13
+      ],
+      "item": 2576,
+      "attribute": "unique",
+      "value": 2255,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 4195
+    },
+    {
+      "position": [
+        32762,
+        32290,
+        14
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 9030,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 4495
+    },
+    {
+      "position": [
+        32857,
+        32230,
+        11
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 9234,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 4538
+    },
+    {
+      "position": [
+        32826,
+        32347,
+        9
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "value": 50147,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 5084
+    },
+    {
+      "position": [
+        32816,
+        32334,
+        9
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 2245,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 359
+    },
+    {
+      "position": [
+        32816,
+        32335,
+        9
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 2245,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 359
+    },
+    {
+      "position": [
+        32816,
+        32336,
+        9
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 2245,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 359
+    },
+    {
+      "position": [
+        32816,
+        32337,
+        9
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 2245,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 359
+    },
+    {
+      "position": [
+        32816,
+        32339,
+        9
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 2245,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 359
+    },
+    {
+      "position": [
+        32816,
+        32338,
+        9
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 2245,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 359
+    },
+    {
+      "position": [
+        32818,
+        32332,
+        9
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 2246,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 370
+    },
+    {
+      "position": [
+        32819,
+        32332,
+        9
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 2246,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 370
+    },
+    {
+      "position": [
+        32820,
+        32332,
+        9
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 2246,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 370
+    },
+    {
+      "position": [
+        32821,
+        32332,
+        9
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 2246,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 370
+    },
+    {
+      "position": [
+        32822,
+        32332,
+        9
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 2246,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 370
+    },
+    {
+      "position": [
+        32823,
+        32332,
+        9
+      ],
+      "item": 431,
+      "attribute": "action",
+      "value": 2246,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 370
     }
   ]
 }
