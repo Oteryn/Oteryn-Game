@@ -3,7 +3,7 @@ use super::{NpcDefinitionPredecessor, QuestStateCatalogue};
 
 type DefinitionHash = [u8; 32];
 
-const fn hash(hex: &[u8; 64]) -> DefinitionHash {
+pub(super) const fn hash(hex: &[u8; 64]) -> DefinitionHash {
     const fn digit(byte: u8) -> u8 {
         if byte.is_ascii_digit() {
             byte - b'0'

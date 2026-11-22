@@ -7180,6 +7180,91 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l8-hunter-elane-gloves",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
+      ],
+      "requires_premium": true,
+      "outfits": [
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 2,
+          "sex": "male"
+        },
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 1,
+          "sex": "female"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-hunter-elane-gloves-sale",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
+      ],
+      "repeatable": true
+    },
+    {
       "key": "oteryn:quest-reward/l8-hunter-gloves",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.legola",
@@ -7224,6 +7309,45 @@
           "sex": "female"
         }
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-hunter-gloves-sale",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/legola.lua:sha256:26084a8748e9d3a01d59745bb30e67fb3610924430ce86034828c893c9b8dfc2"
+      ],
+      "repeatable": true
     },
     {
       "key": "oteryn:quest-reward/l8-hunter-hat",
@@ -8673,7 +8797,7 @@
         "outfit": "oteryn:outfit.barbarian",
         "addons": 1
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/brutal_politeness",
       "reply": [
         "Axe is done! For you. Take. Wear like me."
       ],

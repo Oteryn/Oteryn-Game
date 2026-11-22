@@ -156,7 +156,9 @@ def generated(root):
         raise ValueError('Regenerate the source-qualified raid index first')
     raids = json.loads(outputs[raid_catalogue.CATALOGUE])['records']
     active = sum(row['active'] for row in raids)
-    if len(raids) != 239 + 1 or active != 136 + 1:
+    backpack_raid = [row for row in raids if row['key'] == 'raid:venore.orcsambackpack']
+    if (len(raids) != 239 + 1 or active != 136 + 1 + 1
+            or len(backpack_raid) != 1 or not backpack_raid[0]['active']):
         raise ValueError('Non-seasonal raid inventory changed; review its source first')
     path = 'crates/gameplay/encounter-rules/src/raid/catalogue.rs'
     replace(path, r'assert_eq!\(catalogue.records\(\).len\(\), [0-9_]+\);',

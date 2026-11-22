@@ -1529,6 +1529,49 @@ mod protected_loot_tests {
     }
 
     #[test]
+    fn source_quest_loot_settles_the_backpack_and_hunter_music_sheets()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let table = CreatureRewardTable::from_pin(&creatures, Some(&loot));
+        for (creature, corpse, item, chance) in [
+            ("orc_sambackpack", 5966, 3244, 1_000_000),
+            ("novice_of_the_cult", 18186, 6087, 9_700),
+            ("acolyte_of_the_cult", 18038, 6088, 4_800),
+            ("adept_of_the_cult", 18030, 6089, 7_000),
+            ("enlightened_of_the_cult", 18110, 6090, 4_900),
+        ] {
+            let row = table
+                .row(&format!("oteryn:creature.{creature}"))
+                .map_err(|error| format!("{creature}: {}", error.as_str()))?;
+            let corpse_key = format!("oteryn:item.tibia.i{corpse}");
+            assert_eq!(
+                row.corpse_item
+                    .as_ref()
+                    .map(|item| item.production_key.as_str()),
+                Some(corpse_key.as_str()),
+                "{creature} source corpse"
+            );
+            let key = format!("oteryn:item.tibia.i{item}");
+            let entry = row
+                .loot_table
+                .entries
+                .iter()
+                .find(|entry| entry.item.production_key == key)
+                .ok_or_else(|| format!("{creature} drops no {key}"))?;
+            assert_eq!(
+                (entry.min_count, entry.max_count, entry.probability_ppm),
+                (1, 1, Some(chance)),
+                "{creature} source loot"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn unmaterializable_protected_loot_refuses_settlement() -> Result<(), Box<dyn std::error::Error>>
     {
         let (creatures, mut loot) = documents()?;

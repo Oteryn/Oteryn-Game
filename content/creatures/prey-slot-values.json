@@ -17,12 +17,12 @@
     },
     "oteryn:creature.acolyte_of_the_cult": {
       "kills_per_hour_micros": 357763975,
-      "loot_per_kill_micros": 49128402,
+      "loot_per_kill_micros": 49093152,
       "tier": 2
     },
     "oteryn:creature.adept_of_the_cult": {
       "kills_per_hour_micros": 276923076,
-      "loot_per_kill_micros": 105123235,
+      "loot_per_kill_micros": 105607635,
       "tier": 2
     },
     "oteryn:creature.adult_goanna": {
@@ -1172,7 +1172,7 @@
     },
     "oteryn:creature.enlightened_of_the_cult": {
       "kills_per_hour_micros": 168421052,
-      "loot_per_kill_micros": 99327634,
+      "loot_per_kill_micros": 98858034,
       "tier": 2
     },
     "oteryn:creature.enraged_crystal_golem": {
@@ -2487,7 +2487,7 @@
     },
     "oteryn:creature.novice_of_the_cult": {
       "kills_per_hour_micros": 543396226,
-      "loot_per_kill_micros": 19053342,
+      "loot_per_kill_micros": 18951542,
       "tier": 2
     },
     "oteryn:creature.noxious_ripptor": {
@@ -3886,7 +3886,7 @@
       "tier": 2
     }
   },
-  "model_input_sha256": "e9b1d61558d7cc0be4d538027e8d6911d13228cfa0d77f5840182025e2913bfe",
+  "model_input_sha256": "0ace54b321e1d5032ea3624fe0fddf228952bd48f871fe4a5df62437fc770177",
   "npc_price_policy": "maximum_catalogue_offer",
   "npc_sell_prices": {
     "oteryn:item.tibia.i10196": 150,

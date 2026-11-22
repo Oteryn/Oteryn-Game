@@ -28,7 +28,7 @@ CREATURES = 'content/creatures/definitions/spell-native-profiles.json'
 # crates/gameplay/domain/src/domain/loot_data.rs CORPSE_CONTAINER_ENTRIES_MAX.
 CORPSE_CAPACITY_MAX = 48
 GROUPS = ('physical', 'stack', 'container', 'temporal', 'classification')
-MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 40, 8, 144
+MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 45, 8, 160
 
 
 def item_id(reference):
@@ -186,13 +186,19 @@ def qualify(number, definition, world, node, appearance, physical, bindings, fre
         raise ValueError('QUEST_CORPSE_EXACT_BINDING')
     flags = appearance['flags']
     corpse = bool(flags.get('flags.corpse', False))
-    if (bool(flags.get('flags.player_corpse', False)) or bool(flags.get('flags.cumulative', False))
+    player_corpse = bool(flags.get('flags.player_corpse', False))
+    # The XML orc decay chain ends in the same loose bones used by player corpses.
+    # Keep that appearance's client flag and admit it solely as a terminal decay stage.
+    attributes = grizzly.source.attrs(node)
+    terminal_bones = (number == 4317 and not fresh and not corpse
+                      and attributes.get('decayto') == '0' and 'containersize' not in attributes)
+    if ((player_corpse and not terminal_bones) or bool(flags.get('flags.cumulative', False))
             or (fresh and (not corpse or not flags.get('flags.container', False)))):
         raise ValueError('QUEST_CORPSE_CLIENT_KIND')
     if world is not None:
         if (world['kind'] != grizzly.source.K('corpse')
                 or world['corpse']['corpse'] != grizzly.source.K(corpse)
-                or world['corpse']['player_corpse'] != grizzly.source.K(False)
+                or world['corpse']['player_corpse'] != grizzly.source.K(player_corpse)
                 or world['provenance'].get('item_pointer') != identity
                 or world['client_projection'] != grizzly.source.K({'appearance_id': number})
                 or world['movable'] != grizzly.source.K(physical['movable'])):
@@ -202,7 +208,7 @@ def qualify(number, definition, world, node, appearance, physical, bindings, fre
         # They cannot authorize a fresh corpse: only this verified root's decay edge admits
         # them, and their accepted container fact must exactly equal their source XML.
         capacity = definition.get('semantics', {}).get('container')
-        source_capacity = grizzly.source.attrs(node).get('containersize')
+        source_capacity = attributes.get('containersize')
         if (fresh or corpse or source_capacity is None or capacity != grizzly.source.K(
                 {'capacity': grizzly.source.K(int(source_capacity))})):
             raise ValueError('QUEST_CORPSE_DECAY_ITEM_OWNER')
@@ -210,9 +216,16 @@ def qualify(number, definition, world, node, appearance, physical, bindings, fre
     # The shared Ground-only corpse owner takes decay-stage capacity from XML.
     # A missing capacity is non-container; the generic DAT container default of
     # eight slots must not replace that accepted terminal-body policy.
-    if not fresh and 'containersize' not in grizzly.source.attrs(node):
+    if not fresh and 'containersize' not in attributes:
         source['semantics']['container'] = copy.deepcopy(grizzly.source.NA)
     expected = source['semantics']
+    if terminal_bones:
+        # The shared bones already have an accepted weight. This admission supplies decay.
+        canonical_weight = definition['semantics']['physical']['value']['weight']
+        source_weight = expected['physical']['value']['weight']
+        if canonical_weight != grizzly.source.K(10000) or source_weight != grizzly.source.K(60000):
+            raise ValueError('QUEST_CORPSE_TERMINAL_BONES_WEIGHT')
+        expected['physical']['value']['weight'] = copy.deepcopy(canonical_weight)
     for group in GROUPS:
         accepted = definition.get('semantics', {}).get(group, grizzly.source.U)
         if grizzly.known_conflict(accepted, expected[group]):
@@ -227,7 +240,7 @@ def qualify(number, definition, world, node, appearance, physical, bindings, fre
     result = grizzly.source.bind_profiles(
         {'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': [source]}, bindings, {number})['records'][0]
     if fresh and (result['semantics']['container']['state'] != 'KNOWN'
-                  or 'containersize' not in grizzly.source.attrs(node)):
+                  or 'containersize' not in attributes):
         raise ValueError('QUEST_CORPSE_FRESH_CONTAINER_CAPACITY')
     if capacity_limit is not None:
         capacity = result['semantics']['container']['value']['capacity']['value']

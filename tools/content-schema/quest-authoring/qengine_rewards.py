@@ -533,12 +533,13 @@ def build():
     for words,before,after in [(['task'],0,1),(['yes'],1,2)]:
         offers.append({'npc':'oteryn:npc.duncan','keywords':words,'topic':before,'next_topic':after,
             'storage':[storage(sabre,-1,0,0,preserve=True)],'reply':['Bring 100 eye patches, 100 peg legs and 100 hooks in that order.']})
-    for name,before,after,item,topic,word in [
-        ('eye-patches',1,2,6098,3,'eye patches'),('peg-legs',2,3,6126,4,'peg legs'),('hooks',3,4,6097,5,'hooks')]:
+    for name,before,after,item,topic,words in [
+        ('eye-patches',1,2,6098,3,['eye patches']),('peg-legs',2,3,6126,4,['peg legs']),
+        ('hooks',3,4,6097,5,['hooks','pirate hooks'])]:
         states=[storage(sabre,before,after)]
         add('l4-pirate-'+name,pirate_owner,'duncan',['yes'],states,take=[(item,100)],topic=topic)
-        offers.append({'npc':'oteryn:npc.duncan','keywords':[word],'topic':0,'next_topic':topic,
-            'storage':states,'reply':['Have you gathered 100 '+word+'?']})
+        offers.append({'npc':'oteryn:npc.duncan','keywords':words,'topic':0,'next_topic':topic,
+            'storage':states,'reply':['Have you gathered 100 '+words[0]+'?']})
     # Morgan's existing firebird callback owns the only sabre grant; do not duplicate it.
     hat=pirate+'pirate_hat_addon'
     hat_start=[storage(pirate+'pirate_base_outfit',1,1,preserve=True),storage(hat,-1,1,0)]
@@ -569,7 +570,7 @@ def build():
         add('l5-oriental-'+sex+'-comb','outfit_and_addon_quests',first_npc,['yes'],[storage(first,1,2)],
             take=[(5945,1)],outfit=('oriental',1),topic=3)
         callbacks[-1]['creation_sex']=sex
-        offers.append({'npc':'oteryn:npc.'+first_npc,'keywords':['comb'],'topic':0,'next_topic':3,
+        offers.append({'npc':'oteryn:npc.'+first_npc,'keywords':['comb','mermaid comb',"mermaid's comb"],'topic':0,'next_topic':3,
             'storage':[storage(first,1,2)],'reply':['Have you brought the mermaid comb?']})
         states=[storage(second,-1,1,0),storage(common,-1,1,1)]
         add('l5-oriental-'+sex+'-second-start','outfit_and_addon_quests',second_npc,['yes'],states,topic=2)
@@ -855,11 +856,17 @@ def build():
         source_offer('elane',words,0,topic,states)
         if name=='hat':targets(('hunter',1,'male'),('hunter',2,'female'))
     glove=hunter+'hunter/addon_glove'
-    states=[storage(glove,-1,1,0)]
-    add('l8-hunter-gloves',general,'legola',['yes'],states,take=[(5875,1)],topic=1)
-    callbacks[-1]['requires_premium']=True
-    targets(('hunter',2,'male'),('hunter',1,'female'))
-    source_offer('legola',['sniper gloves'],0,1,states)
+    for npc,name,topic in [('legola','gloves',1),('elane','elane-gloves',8)]:
+        states=[storage(glove,-1,1,0)]
+        add('l8-hunter-'+name,general,npc,['yes'],states,take=[(5875,1)],topic=topic)
+        callbacks[-1]['requires_premium']=True
+        targets(('hunter',2,'male'),('hunter',1,'female'))
+        source_offer(npc,['sniper gloves'],0,topic,states)
+        states=[storage(glove,1,1,preserve=True)]
+        add('l8-hunter-'+name+'-sale',general,npc,['yes'],states,take=[(5875,1)],give=(3035,20),topic=topic)
+        callbacks[-1]['repeatable']=True
+        source_offer(npc,['sniper gloves'],0,topic,states)
+        offers[-1]['reply']=['Would you sell the sniper gloves for 2000 gold pieces?']
     mage=prefix+'u7_8/mage_and_summoner_outfits/'
     wand=mage+'addon_wand'
     states=[storage(wand,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',0,1,1)]
