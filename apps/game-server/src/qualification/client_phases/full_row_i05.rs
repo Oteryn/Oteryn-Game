@@ -129,9 +129,10 @@ async fn earn_gold(
     Ok(())
 }
 
-fn item_handle(client: &oteryn_dev_client::DevClientSession, key: NonZeroU32) -> TestResult<items::ItemHandle> {
-    client.inventory().and_then(|view| view.entries.iter().find(|entry| entry.item_definition_ref == key))
-        .map(|entry| entry.handle).ok_or_else(|| format!("inventory-item-absent:{key}").into())
+fn bag_handles(client: &oteryn_dev_client::DevClientSession, key: NonZeroU32) -> TestResult<BTreeSet<items::ItemHandle>> {
+    let inventory = client.inventory().ok_or("step=ring-custody missing=inventory")?;
+    Ok(inventory.entries.iter().filter(|entry| entry.item_definition_ref == key)
+        .map(|entry| entry.handle).collect())
 }
 
 fn item_count(client: &oteryn_dev_client::DevClientSession, key: NonZeroU32) -> TestResult<u64> {
@@ -145,11 +146,14 @@ async fn wait_for_item(
     client: &mut oteryn_dev_client::DevClientSession,
     key: NonZeroU32,
     previous_count: u64,
+    previous_handles: &BTreeSet<items::ItemHandle>,
 ) -> TestResult<items::ItemHandle> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        if item_count(client, key)? > previous_count {
-            return item_handle(client, key);
+        if previous_count.checked_add(1) == Some(item_count(client, key)?)
+            && let Some(handle) = added_handle(bag_handles(client, key)?.into_iter(), previous_handles)
+        {
+            return Ok(handle);
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
@@ -209,6 +213,7 @@ async fn buy_energy_ring(
         offer.side == npc::NpcTradeSide::Buy && offer.item_definition_ref == wanted.get()
     }).ok_or("energy-ring-live-offer-missing")?;
     let previous_count = item_count(client, wanted)?;
+    let previous_handles = bag_handles(client, wanted)?;
     let reply = shop_runtime::buy(client.session_mut(), &npc::NpcTradeIntent {
         npc_actor: actor,
         catalogue_revision: window.open.ok_or("energy-ring-trade-window-closed")?.1,
@@ -220,7 +225,7 @@ async fn buy_energy_ring(
     if reply != npc::NpcIntentDisposition::Ok {
         return Err(format!("energy-ring-buy-refused:reply={reply:?}:gold={}:price={}", carried_gold(client)?, offer.unit_price).into());
     }
-    wait_for_item(client, wanted, previous_count).await
+    wait_for_item(client, wanted, previous_count, &previous_handles).await
 }
 
 fn equipped_ring(client: &oteryn_dev_client::DevClientSession, active: NonZeroU32) -> TestResult<items::ItemHandle> {
@@ -308,8 +313,10 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
             return Err(format!("fresh-admission-timer-not-durable:before={remaining}:reply={durable:?}").into());
         }
         row.passed(5, "fresh-session+active-transform+nonincreasing-timer");
+        let last_equipped_ms = durable.remaining_ms.ok_or("step=unequip missing=last-equipped-budget")?;
         let base = reference(ENERGY_RING)?;
         let previous_count = item_count(&client, base)?;
+        let previous_handles = bag_handles(&client, base)?;
         let moved = client.move_item(&items::ItemMoveIntent {
             source: durable_handle,
             destination: items::ItemMoveDestination::MainBackpack,
@@ -317,14 +324,14 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         if moved.outcome != items::ItemMoveOutcome::Moved {
             return Err(format!("step=unequip observed={moved:?}").into());
         }
-        let paused_handle = wait_for_item(&mut client, base, previous_count).await?;
+        let paused_handle = wait_for_item(&mut client, base, previous_count, &previous_handles).await?;
         if equipped_ring(&client, active).is_ok() {
             return Err("step=unequip observed=active-ring-still-equipped".into());
         }
         let paused = timed_command(&mut client, timed::TimedAction::Inspect, paused_handle, 0).await?;
         client.service_liveness(Duration::from_secs(2)).await?;
         let later = timed_command(&mut client, timed::TimedAction::Inspect, paused_handle, paused.revision).await?;
-        if !has_paused_budget(&paused, &later, remaining) {
+        if !has_paused_budget(&paused, &later, last_equipped_ms) {
             return Err(format!("step=unequip-pause observed=initial:{paused:?}/later:{later:?}").into());
         }
         row.passed(6, "unequip-transformed-to-base+paused-duration-stable");
@@ -339,9 +346,26 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     result.and(release)
 }
 
+
+fn added_handle(handles: impl Iterator<Item = items::ItemHandle>, previous: &BTreeSet<items::ItemHandle>) -> Option<items::ItemHandle> {
+    let mut added = handles.filter(|handle| !previous.contains(handle));
+    let first = added.next()?;
+    added.next().is_none().then_some(first)
+}
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn review_second_unequip_identifies_the_added_ring() -> TestResult {
+        let old = items::ItemHandle::new(1).ok_or("old handle")?;
+        let moved = items::ItemHandle::new(2).ok_or("moved handle")?;
+        let previous = BTreeSet::from([old]);
+        assert_eq!(added_handle([old, moved].into_iter(), &previous), Some(moved));
+        assert_eq!(added_handle([old].into_iter(), &previous), None);
+        assert_eq!(added_handle([old, moved, moved].into_iter(), &previous), None);
+        Ok(())
+    }
+
     #[test]
     fn review_repair_stale_probe_uses_revision_checked_operation() {
         assert_eq!(STALE_PROBE_ACTION, timed::TimedAction::Use);

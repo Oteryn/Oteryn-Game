@@ -205,13 +205,6 @@ async fn buy(
     let wanted = index
         .definition_ref("Item", key, revision)
         .ok_or("step 1 definition reference absent")?;
-    if units(client, wanted) >= u64::from(count) {
-        return Err(format!(
-            "step 1 BUY {key} was not run: observed existing inventory count={}",
-            units(client, wanted)
-        )
-        .into());
-    }
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let offers: serde_json::Value = serde_json::from_slice(&fs::read(
         root.join("content/services/trade/trade-00000-00323.json"),
@@ -310,8 +303,8 @@ async fn buy(
                         && offer.item_definition_ref == wanted.get()
                 })
                 .ok_or("step 1 BUY offer absent")?;
-            let missing = u64::from(count).saturating_sub(units(client, wanted));
-            let quantity = u32::try_from(missing.div_ceil(u64::from(offer.count)))?;
+            let quantity = count.div_ceil(offer.count);
+            let credit = u64::from(quantity) * u64::from(offer.count);
             let before = units(client, wanted);
             let reply = shop::buy(
                 client.session_mut(),
@@ -333,7 +326,7 @@ async fn buy(
                 .into());
             }
             settle(client).await?;
-            if units(client, wanted) < u64::from(count) {
+            if !purchase_observed(before, units(client, wanted), credit) {
                 return Err(format!(
                     "step 1 BUY delta missing for {key}: before={before} after={}",
                     units(client, wanted)
@@ -345,8 +338,6 @@ async fn buy(
     }
     Err(format!("step 1 no reachable served NPC offer for {key}").into())
 }
-
-fn needs_bait_purchase(held: u64) -> bool { held == 0 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -360,10 +351,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let index = provisioning::item_index()?;
     let mut client = connect_world(clients, 0xb9).await?;
     let rod_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3483", 1).await?;
-    let worm_ref = reference(&index, 3492)?;
-    if needs_bait_purchase(units(&client, worm_ref)) {
-        buy(&mut client, world, &index, "oteryn:item.tibia.i3492", 1).await?;
-    }
+    let worm_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3492", 1).await?;
     let fish_ref = reference(&index, 3578)?;
     row.pass(
         "player-acquired-rod-and-bait",
@@ -482,7 +470,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=skinning-hunt observed=corpse-definition-{corpse_definition} expected={fresh_definition}").into());
     }
     let leather = reference(&index, 5878)?;
-    let leather_before = units(&client, leather);
+    let before_other = non_leather_inventory(&client, leather)?;
     let before_skin = inventory_signature(&client)?;
     let skin_reply = use_on(&mut client, knife.handle, MapUseTarget::Item(corpse_handle)).await?;
     settle(&mut client).await?;
@@ -504,9 +492,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             )
             .into());
         }
-        let leather_after = units(&client, leather);
-        if !(leather_before..=leather_before + 1).contains(&leather_after) {
-            return Err(format!("step=skinning-yield observed=leather-{leather_before}-to-{leather_after} expected=zero-or-one-new-leather").into());
+        if !skin_yield_matches(&before_skin, &after_skin, leather.get())
+            || non_leather_inventory(&client, leather)? != before_other
+        {
+            return Err(format!("step=skinning-yield expected=one-leather-and-unchanged-other-custody before={before_skin:?} after={after_skin:?}").into());
         }
         row.pass(
             "skinning-replies-and-deltas",
@@ -691,13 +680,40 @@ async fn hunt_corpse(
         .ok_or_else(|| "step 4 kill published no corpse item handle".into())
 }
 
+
+fn purchase_observed(before: u64, after: u64, expected_credit: u64) -> bool {
+    expected_credit > 0 && before.checked_add(expected_credit) == Some(after)
+}
+
+fn non_leather_inventory(client: &DevClientSession, leather: NonZeroU32) -> TestResult<oteryn_protocol_oteryn::item_view::CharacterInventory> {
+    let mut inventory = client.inventory().cloned().ok_or("step=skinning-yield missing=inventory")?;
+    inventory.entries.retain(|item| item.item_definition_ref != leather);
+    Ok(inventory)
+}
+
+fn skin_yield_matches(before: &[(u32, u32, u32)], after: &[(u32, u32, u32)], leather: u32) -> bool {
+    let count = |items: &[(u32, u32, u32)]| items.iter().filter(|item| item.0 == leather).map(|item| u64::from(item.1)).sum::<u64>();
+    count(before).checked_add(1) == Some(count(after))
+        && before.iter().filter(|item| item.0 != leather)
+            .eq(after.iter().filter(|item| item.0 != leather))
+}
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn review_repair_held_bait_does_not_require_a_purchase() {
-        assert!(!needs_bait_purchase(1));
-        assert!(needs_bait_purchase(0));
+    fn review_second_bait_purchase_requires_new_custody() {
+        assert!(!purchase_observed(1, 1, 1));
+        assert!(purchase_observed(1, 2, 1));
+        assert!(!purchase_observed(1, 3, 1));
+    }
+
+    #[test]
+    fn review_second_skinning_requires_one_leather_and_preserves_other_items() {
+        let before = [(41, 1, 0), (73, 2, 0)];
+        assert!(!skin_yield_matches(&before, &before, 52));
+        assert!(skin_yield_matches(&before, &[(41, 1, 0), (52, 1, 0), (73, 2, 0)], 52));
+        assert!(!skin_yield_matches(&before, &[(52, 1, 0), (73, 2, 0)], 52));
+        assert!(!skin_yield_matches(&before, &[(41, 1, 0), (52, 1, 0), (73, 3, 0)], 52));
     }
 
     #[test]

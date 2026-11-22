@@ -140,8 +140,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     super::full_row_i14::acquire(&mut client, world, 3059, 1).await
         .map_err(|error| verdict::context(format!("step=spellbook-purchase observed={error}"), error))?;
     let handle = carried_handle(&client, spellbook)?;
+    let expected = expected_spellbook(&mut client).await?;
     let book = look(&mut client, wire::ItemLookTarget::Item(handle)).await?;
-    if book.0 != CommandStatus::Accepted || !matches!(&book.1, wire::ItemLookResult::Text(value) if value.starts_with("Spells for Level ") && value.contains(" : ")) {
+    if book.0 != CommandStatus::Accepted || !matches!(&book.1, wire::ItemLookResult::Text(value) if spellbook_matches(value, &expected)) {
         return Err(format!("step=spellbook-look observed={book:?}").into());
     }
     let from = tile(client.world_spatial().actor_position)?;
@@ -204,9 +205,69 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     ));
 }
 
+
+async fn expected_spellbook(client: &mut DevClientSession) -> TestResult<String> {
+    use crate::spell::{Carrier, ManaCost, Vocation};
+    use oteryn_protocol_oteryn::cyclopedia_character as cyclopedia;
+    use std::fmt::Write as _;
+
+    let request = [cyclopedia::CharacterTab::GeneralStats as u8, 0, 0, 1];
+    let reply = client.session_mut().gated_command(cyclopedia::CAPABILITY_CYCLOPEDIA_CHARACTER_V1, 388, &request).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step=spellbook-vocation observed={:?}", reply.status).into());
+    }
+    let vocation_id = general_stats::validate(&reply.payload, general_stats::selected(client))?
+        .ok_or("step=spellbook-vocation missing=served-vocation-id")?;
+    let vocation = [
+        "none", "druid", "elder_druid", "sorcerer", "master_sorcerer", "knight",
+        "elite_knight", "paladin", "royal_paladin", "monk", "exalted_monk",
+    ].into_iter().find(|key| cyclopedia::vocation_id(key) == Some(vocation_id))
+        .and_then(Vocation::from_key).ok_or("step=spellbook-vocation observed=unknown-vocation-id")?;
+
+    let catalogue = native_spell_book()?;
+    let mut entries: Vec<_> = catalogue.spells.iter().enumerate()
+        .filter(|(index, spell)| !catalogue.inactive_aliases.contains(index)
+            && spell.level > 0 && spell.vocations.contains(&vocation))
+        .filter_map(|(_, spell)| match &spell.carrier {
+            Carrier::Instant { words, .. } => Some((spell, words)),
+            Carrier::Rune { .. } => None,
+        }).collect();
+    entries.sort_by_key(|(spell, _)| spell.level);
+    let mut expected = String::new();
+    let mut level = None;
+    for (spell, words) in entries {
+        if level != Some(spell.level) {
+            if level.is_some() {
+                expected.push('\n');
+            }
+            writeln!(expected, "Spells for Level {}", spell.level)?;
+            level = Some(spell.level);
+        }
+        let mana = match spell.mana {
+            ManaCost::Fixed(amount) => amount.to_string(),
+            ManaCost::PercentOfMaximum(amount) => format!("{amount}%"),
+        };
+        writeln!(expected, "  {words} - {} : {mana}", spell.name)?;
+    }
+    expected.push('\n');
+    Ok(expected)
+}
+
+fn spellbook_matches(value: &str, expected: &str) -> bool {
+    value == expected
+}
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn review_second_spellbook_rejects_truncated_wrong_and_incomplete_lists() {
+        let expected = "Spells for Level 8\n  alpha - A : 20\n  beta - B : 50%\n\n";
+        assert!(spellbook_matches(expected, expected));
+        assert!(!spellbook_matches("Spells for Level 8\n  alpha - A : 20\n\n", expected));
+        assert!(!spellbook_matches(&expected.replace("50%", "50"), expected));
+        assert!(!spellbook_matches(&expected.replace("beta", "gamma"), expected));
+    }
+
 
     #[test]
     fn authored_reading_requires_complete_text() {

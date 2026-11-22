@@ -78,13 +78,24 @@ fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestR
 }
 
 async fn wait_quantity(client: &mut DevClientSession, reference: std::num::NonZeroU32, expected: u64) -> TestResult<u64> {
+    wait_quantities(client, &[(reference, expected)]).await
+}
+
+async fn wait_quantities(client: &mut DevClientSession, expected: &[(std::num::NonZeroU32, u64)]) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
         for event in client.take_events() {
-            if let SessionEvent::Inventory(delta) = event && quantity(client, reference)? == expected { return Ok(delta.server_sequence); }
+            if let SessionEvent::Inventory(delta) = event
+                && quantities_match(expected, |id| delta.value.entries.iter()
+                    .filter(|item| item.item_definition_ref == id)
+                    .map(|item| u64::from(item.count.get()))
+                    .sum())
+            {
+                return Ok(delta.server_sequence);
+            }
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("inventory delta timeout definition={reference} expected={expected} observed={}", quantity(client, reference)?).into());
+            return Err(format!("inventory delta timeout expected={expected:?} observed={:?}", quantities(client)?).into());
         }
         client.service_liveness(Duration::from_millis(20)).await?;
     }
@@ -217,19 +228,33 @@ async fn refill_keg(
     let flask_before = quantity(client, flask)?;
     let potion_before = quantity(client, potion)?;
     let payload = encode_item_use_intent(&intent).map_err(|error| format!("keg-use encode: {error:?}"))?;
+    client.take_events();
     let reply = client.session_mut().world_context_use(&payload).await?;
     let disposition = decode_use_result(&reply.payload).map_err(|error| format!("keg-use decode: {error:?}"))?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!("keg-use status={:?} disposition={disposition:?}", reply.status).into());
     }
-    wait_quantity(client, flask, flask_before - 1).await?;
-    wait_quantity(client, potion, potion_before + 1).await?;
+    wait_quantities(client, &[(flask, flask_before - 1), (potion, potion_before + 1)]).await?;
     Ok(())
 }
 
+
+fn quantities_match(expected: &[(std::num::NonZeroU32, u64)], count: impl Fn(std::num::NonZeroU32) -> u64) -> bool {
+    expected.iter().all(|&(id, units)| count(id) == units)
+}
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn review_second_refill_requires_both_legs_in_one_observation() -> TestResult {
+        let flask = std::num::NonZeroU32::new(285).ok_or("flask id")?;
+        let potion = std::num::NonZeroU32::new(266).ok_or("potion id")?;
+        let expected = [(flask, 1), (potion, 3)];
+        assert!(!quantities_match(&expected, |id| if id == flask { 1 } else { 2 }));
+        assert!(quantities_match(&expected, |id| if id == flask { 1 } else { 3 }));
+        Ok(())
+    }
+
     #[test]
     fn ordinary_consumables_do_not_complete_cask_and_special_food_coverage() {
         let passed = BTreeSet::from([
