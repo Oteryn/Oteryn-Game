@@ -2,12 +2,19 @@
 
 use super::*;
 use oteryn_protocol_oteryn::chat::{COMMAND_TYPE_CHAT_INTENT, ChatDisposition};
+use oteryn_protocol_oteryn::hotkey_equip::COMMAND_TYPE_HOTKEY_EQUIP;
 
 pub(super) struct CommandOutcome {
     pub(super) second_logout: bool,
     pub(super) lost_while_logging_out: bool,
     pub(super) npc_relocation: Option<WorldSpatialObservation>,
     pub(super) training_logged_out: bool,
+}
+
+fn log_hotkey_rejection(command_id: u64, stage: &str) {
+    operator_event(&format!(
+        "event=hotkey_equip_rejected stage={stage} command_id={command_id}"
+    ));
 }
 
 pub(super) async fn execute<S, A>(
@@ -103,9 +110,16 @@ where
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Execute) => {}
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
+    let selected_hotkey = command.command_type == COMMAND_TYPE_HOTKEY_EQUIP
+        && session
+            .selected_capabilities
+            .command_selected(COMMAND_TYPE_HOTKEY_EQUIP);
     // A retained unknown Bank operation must reconcile its original outcome. Rejecting it
     // here could hide committed money work. A replay above always keeps its retained result.
     if limited && !session.reconcile_original_bank {
+        if selected_hotkey {
+            log_hotkey_rejection(command.command_id, "throttled");
+        }
         let mut dispatch = integrity::refusal(session, command.command_type);
         session.sequence = session
             .sequence
@@ -270,8 +284,12 @@ where
             .selected_capabilities
             .command_selected(command.command_type)
     {
+        if selected_hotkey && input_permit.is_none() {
+            log_hotkey_rejection(command.command_id, "input_unavailable");
+        }
         Dispatch::Unregistered
     } else if replaced {
+        log_hotkey_rejection(command.command_id, "superseded");
         Dispatch::ItemMove(
             oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected,
             Vec::new(),

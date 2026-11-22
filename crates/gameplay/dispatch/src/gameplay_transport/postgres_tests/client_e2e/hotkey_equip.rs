@@ -3,6 +3,8 @@ use super::TestResult;
 use super::support::{self, Case, count};
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use oteryn_protocol_oteryn::{self as protocol, hotkey_equip as wire};
+use std::future::poll_fn;
+use std::task::Poll;
 
 #[test]
 fn client_e2e_hotkey_equip() -> TestResult {
@@ -142,19 +144,52 @@ pub(super) async fn exercise_open_pvp(
     }
     .encode()
     .ok_or("tier-zero axe payload")?;
-    let frames = support::events(
-        owner,
-        admitted,
-        &[(1, wire::COMMAND_TYPE_HOTKEY_EQUIP, payload)],
-    )
+    let commands = [
+        (1, wire::COMMAND_TYPE_HOTKEY_EQUIP, payload),
+        (2, wire::COMMAND_TYPE_HOTKEY_EQUIP, Vec::new()),
+    ];
+    let mut serving = std::pin::pin!(support::events(owner, admitted, &commands));
+    let mut rejection_events = 0;
+    let frames = poll_fn(|cx| {
+        let mut outcome = Poll::Pending;
+        let lines = oteryn_error_codes::capture(|| outcome = serving.as_mut().poll(cx));
+        rejection_events += lines
+            .iter()
+            .filter_map(|line| oteryn_error_codes::parse_line(line).ok())
+            .filter(|line| {
+                line.module == "gameplay_transport"
+                    && line.event == "hotkey_equip_rejected"
+                    && line
+                        .fields
+                        .iter()
+                        .any(|(key, value)| key == "stage" && value == "payload")
+                    && line
+                        .fields
+                        .iter()
+                        .any(|(key, value)| key == "command_id" && value == "2")
+            })
+            .count();
+        outcome
+    })
     .await?;
     let mut moved = false;
     let mut published = false;
+    let mut rejected = false;
     for frame in frames {
         let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
         match envelope.message_type() {
             protocol::MessageType::CommandResult => {
                 let result = protocol::decode_command_result(envelope.payload()).map_err(debug)?;
+                if result.command_id == 2 {
+                    assert_eq!(result.status, protocol::CommandStatus::Accepted);
+                    assert_eq!(
+                        wire::decode_reply(result.payload).map_err(debug)?,
+                        ItemMoveOutcome::Rejected
+                    );
+                    assert!(!rejected, "exactly one rejection reply");
+                    rejected = true;
+                    continue;
+                }
                 assert_eq!(result.command_id, 1);
                 assert_eq!(result.status, protocol::CommandStatus::Accepted);
                 assert_eq!(
@@ -183,6 +218,11 @@ pub(super) async fn exercise_open_pvp(
         }
     }
     assert!(moved, "command 348 returned Moved");
+    assert!(rejected, "malformed command 348 returned Rejected");
+    assert_eq!(
+        rejection_events, 1,
+        "the rejected command emitted its stage"
+    );
     assert!(
         published,
         "the inventory delta transferred the axe to equipment"
