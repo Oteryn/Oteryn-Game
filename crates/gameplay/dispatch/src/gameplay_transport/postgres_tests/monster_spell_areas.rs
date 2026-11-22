@@ -67,7 +67,10 @@ fn run_case(
 }
 
 fn pin_bytes(bytes: Vec<u8>) -> PinnedGameplayBytes {
-    let sha256 = format!("{:x}", Sha256::digest(&bytes));
+    let sha256 = Sha256::digest(&bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     PinnedGameplayBytes { sha256, bytes }
 }
 
@@ -302,11 +305,7 @@ async fn scenario(harness: &Harness, caster: &str, heal: Option<(i32, i64, i64)>
         if let Some((x, minimum, maximum)) = heal {
             let health_at = |x| -> TestResult<i64> {
                 let actor = recipients.get(&x).ok_or("source heal recipient")?;
-                Ok(runtime
-                    .companion_snapshot(*actor)
-                    .map_err(debug)?
-                    .state
-                    .health)
+                Ok(runtime.companion_snapshot(*actor).map_err(debug)?.health)
             };
             let health = health_at(x)?;
             assert_eq!(
