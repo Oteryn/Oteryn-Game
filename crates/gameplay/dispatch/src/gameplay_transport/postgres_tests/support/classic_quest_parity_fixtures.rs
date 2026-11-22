@@ -314,7 +314,10 @@ pub(super) async fn npc_exercise(
 ) -> TestResult {
     use super::qengine_rewards_fixtures::{talk, wire_conversation};
     let mut selected = admitted.continuity.selected_capabilities.as_slice().to_vec();
-    selected.extend([3, 6, 25]);
+    selected.extend([
+        oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1,
+        oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES,
+    ]);
     selected.sort_unstable();
     selected.dedup();
     admitted.continuity.selected_capabilities =
