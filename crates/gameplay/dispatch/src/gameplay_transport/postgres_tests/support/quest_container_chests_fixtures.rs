@@ -940,9 +940,9 @@ fn scenario_case(
                     assert_eq!(
                         text,
                         (
-                            "9ea894f92d1b6e4cf60555cd08f5e552b8c5ce59c11c13eb6d35f7ff07abb036"
+                            "82c070d062d19713a8dcb51b748174e179a9570800e07a316e209d641708119f"
                                 .into(),
-                            1505,
+                            1484,
                             1,
                             true,
                             true,

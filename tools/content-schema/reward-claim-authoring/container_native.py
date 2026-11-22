@@ -342,6 +342,7 @@ def derive(definition, items, stack_problem):
             # Existing chest source authoring deliberately strips outer LF:
             # quest-authoring/ots_chests.py:278-279. Keep its accepted hash.
             body = text['text'].strip('\n')
+            body = global_corrections.source_text(ids[0], body)
             if (not 1 <= len(body.encode()) <= 7996 or len(body) > 4000 or '\0' in body
                     or item_id(written.get('item', {})) != text['item_id']
                     or written.get('text_ref') != {'length': len(body), 'placeholders': [],
