@@ -166,3 +166,181 @@ mod tests {
         Ok(())
     }
 }
+
+/// Dreamer's Challenge uses these existing reward owners for side chests.
+/// The source definition keeps its historical holds for the source inventory.
+pub(super) fn resolves_dreamer_auxiliary(quest: &Value, hold: &Value) -> bool {
+    if quest["identity"]["key"] != "oteryn:quest.dreamer_s_challenge_quest" {
+        return false;
+    }
+    let expected = match (hold["code"].as_str(), hold["source_key"].as_str()) {
+        (
+            Some("claim_native_lowering_missing"),
+            Some("canary:reward-claim/quest/u7_9/dreamers_challenge/bplong_sword"),
+        ) => "bplong_sword",
+        (
+            Some("claim_native_lowering_missing"),
+            Some("canary:reward-claim/quest/u7_9/dreamers_challenge/chest_book"),
+        ) => "chest_book",
+        (
+            Some("claim_native_lowering_missing" | "claim_item_semantics_missing"),
+            Some("canary:reward-claim/quest/u7_9/dreamers_challenge/chests_wine"),
+        ) => "chests_wine",
+        _ => return false,
+    };
+    static ADMITTED: OnceLock<Vec<Proof>> = OnceLock::new();
+    ADMITTED
+        .get_or_init(dreamer_auxiliary_proofs)
+        .iter()
+        .any(|proof| {
+            proof.owner == quest["source_refs"]["quest"]
+                && hold["source_key"] == proof.key
+                && proof.key.ends_with(expected)
+                && quest["source_refs"]["claims"]
+                    .as_array()
+                    .is_some_and(|claims| {
+                        claims.iter().any(|claim| {
+                            claim["key"] == proof.key && claim["revision"] == proof.revision
+                        })
+                    })
+        })
+}
+
+fn dreamer_auxiliary_proofs() -> Vec<Proof> {
+    let Ok(source) = serde_json::from_str::<Value>(SOURCE) else {
+        return Vec::new();
+    };
+    let digest = format!("{:x}", Sha256::digest(SOURCE.as_bytes()));
+    let mut proofs = Vec::new();
+    for (_, document) in super::NATIVE_CLAIM_SHARDS {
+        let Ok(shard) = serde_json::from_str::<Value>(document) else {
+            return Vec::new();
+        };
+        let Some(records) = shard["records"].as_array() else {
+            return Vec::new();
+        };
+        proofs.extend(
+            records
+                .iter()
+                .filter_map(|row| dreamer_auxiliary_proof(&row["definition"], &source, &digest)),
+        );
+    }
+    proofs
+}
+
+fn dreamer_auxiliary_proof(definition: &Value, source: &Value, digest: &str) -> Option<Proof> {
+    let (suffix, uids): (_, &[_]) = match definition["identity"]["key"].as_str()? {
+        "oteryn:reward-claim.quest.u7_9.dreamers_challenge.bplong_sword" => {
+            ("bplong_sword", &[6195])
+        }
+        "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book" => ("chest_book", &[6196]),
+        "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine" => {
+            ("chests_wine", &[6197, 6198, 6199, 6200])
+        }
+        _ => return None,
+    };
+    let source_key = format!("canary:reward-claim/quest/u7_9/dreamers_challenge/{suffix}");
+    let native = &definition["native_contents"];
+    let source_ref = &definition["source_variant"]["source_claim"];
+    let placements = definition["placements"].as_array()?;
+    let projected = native["placements"].as_array()?;
+    if !definition["data_holds"].as_array()?.is_empty()
+        || definition["definition_profile"] != "authored_variant_v1"
+        || definition["provenance"]["pilot_key"] != source_key
+        || source_ref["identity"]["key"] != source_key
+        || source_ref["identity"]["revision"] != definition["provenance"]["pilot_revision"]
+        || definition["quest"] != source_ref["quest"]
+        || native["schema"] != "OTERYN_NATIVE_CONTAINER_REWARD/v1"
+        || native["source_sha256"] != digest
+        || native["revision"] != source["revision"]
+        || placements.len() != uids.len()
+        || projected.len() != uids.len()
+    {
+        return None;
+    }
+    for ((placement, projection), &uid) in placements.iter().zip(projected).zip(uids) {
+        let evidence = source[if uid == 6196 {
+            "leaf_entries"
+        } else {
+            "entries"
+        }]
+        .as_array()?
+        .iter()
+        .find(|entry| entry["unique_id"] == uid)?;
+        if !dreamer_placement_matches(placement, projection, evidence, source, uid) {
+            return None;
+        }
+    }
+    Some(Proof {
+        owner: definition["quest"].clone(),
+        key: source_key,
+        revision: source_ref["identity"]["revision"].as_str()?.into(),
+    })
+}
+
+fn dreamer_placement_matches(
+    placement: &Value,
+    projection: &Value,
+    evidence: &Value,
+    source: &Value,
+    uid: u64,
+) -> bool {
+    let setting = &evidence["setting"];
+    let binding = &placement["source_binding"];
+    let Some(rewards) = setting["reward"].as_array() else {
+        return false;
+    };
+    let Some(contents) = projection["contents"].as_array() else {
+        return false;
+    };
+    let item_matches = |item: &Value, number: &Value| {
+        item["family"] == "Item"
+            && item["revision"] == "definition-r1"
+            && number
+                .as_u64()
+                .is_some_and(|number| item["key"] == format!("oteryn:item.tibia.i{number}"))
+    };
+    if projection["unique_id"] != uid
+        || projection["line"] != evidence["line"]
+        || projection["completion"]["kind"] != "storage"
+        || projection["completion"]["key"] != setting["storage"]["expr"]
+        || binding["project_position"] != setting["itemPos"]
+        || placement["appearance_tibia_id"] != setting["itemId"]
+        || !binding["legacy_unique_ids"].as_array().is_some_and(|ids| {
+            ids.iter()
+                .any(|id| id["server"] == "crystalserver" && id["unique_id"] == uid)
+        })
+    {
+        return false;
+    }
+    let text = || {
+        source["text_entries"]
+            .as_array()?
+            .iter()
+            .find(|entry| entry["unique_id"] == uid)
+    };
+    if uid == 6196 {
+        let [reward] = rewards.as_slice() else {
+            return false;
+        };
+        return contents.is_empty()
+            && projection["capacity"].is_null()
+            && item_matches(&projection["root"], &reward[0])
+            && reward[1] == 1
+            && text().is_some_and(|entry| projection["root_text"] == entry["text"]);
+    }
+    item_matches(&projection["root"], &setting["container"])
+        && projection["capacity"] == if uid == 6195 { 20 } else { 8 }
+        && contents.len() == rewards.len()
+        && contents.iter().zip(rewards).all(|(item, reward)| {
+            item_matches(&item["item"], &reward[0])
+                && item["count"] == reward[1]
+                && if reward[0] == 2816 {
+                    text().is_some_and(|entry| item["text"] == entry["text"])
+                } else if reward[0] == 2874 {
+                    item["fluid_subtype"] == 2
+                } else {
+                    item.get("text").is_none() && item.get("fluid_subtype").is_none()
+                }
+        })
+}

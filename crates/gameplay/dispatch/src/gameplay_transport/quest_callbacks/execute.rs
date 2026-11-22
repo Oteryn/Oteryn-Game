@@ -194,6 +194,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
+        if !super::dreamer_puzzles::matches(map, callback) {
+            return UseDisposition::Rejected;
+        }
         if !close
             && (!world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
@@ -262,6 +265,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
         }
         projection = match super::conditional_cells::prepare(map, callback, projection) {
+            Ok(projection) => projection,
+            Err(result) => return result,
+        };
+        projection = match super::dreamer_puzzles::prepare(map, callback, key, projection) {
             Ok(projection) => projection,
             Err(result) => return result,
         };
@@ -463,6 +470,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &mut passages,
             &mut replacements,
         ) {
+            Ok(projection) => projection,
+            Err(result) => return result,
+        };
+        projection = match super::dreamer_puzzles::prepare(map, callback, key, projection) {
             Ok(projection) => projection,
             Err(result) => return result,
         };

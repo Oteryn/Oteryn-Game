@@ -20,7 +20,9 @@ impl Callback {
             && !self.opening_only
             && self.lever.is_none()
             && self.passages.is_empty()
-            && (self.teleport.is_none() || super::dense_step_teleport::admitted(self))
+            && (self.teleport.is_none()
+                || super::dense_step_teleport::admitted(self)
+                || crate::quest::dreamer_puzzles::token_requirements(self))
             && self.effects.is_empty()
             && self.offerings.is_empty()
             && self.item_on_target.is_none()

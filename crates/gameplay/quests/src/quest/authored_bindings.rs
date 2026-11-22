@@ -454,6 +454,12 @@ impl Bindings {
             catalogue.predecessors.remove(&quest.quest);
         }
         let mut world = super::world_callbacks::load()?;
+        if self.world_callbacks().any(|callback| {
+            callback.key == super::dreamer_death_ring::JOURNEY_RESET
+                && super::dreamer_death_ring::shared_reset(callback)
+        }) {
+            world.retain(|callback| callback.key != super::dreamer_death_ring::RESET);
+        }
         world.extend(self.world_callbacks().cloned());
         if world.len() > MAX_COMPOSED_WORLD_CALLBACKS
             || world.iter().map(|c| &c.key).collect::<BTreeSet<_>>().len() != world.len()

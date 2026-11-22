@@ -140,7 +140,8 @@ pub fn match_readset<'a>(
     const MAX_TILES: usize = 8;
     if requirements.is_empty()
         || ((requirements.len() > MAX_TILES || snapshots.len() > MAX_TILES)
-            && !dense_pattern::admitted(requirements, snapshots))
+            && !dense_pattern::admitted(requirements, snapshots)
+            && !dreamer_board(requirements, snapshots))
     {
         return Err(GroundStackError::LimitExceeded);
     }
@@ -183,6 +184,26 @@ pub fn match_readset<'a>(
         witnesses.push(witness);
     }
     Ok(Some(witnesses))
+}
+
+fn dreamer_board(
+    requirements: &[GroundStackRequirement],
+    snapshots: &[GroundStackSnapshot],
+) -> bool {
+    let tokens = super::dreamer_puzzles::TOKENS;
+    requirements.len() == tokens.len()
+        && snapshots.len() <= tokens.len()
+        && tokens.iter().all(|&(x, y, appearance)| {
+            requirements.iter().any(|requirement| {
+                requirement.position == (Position { x, y, floor: -14 })
+                    && requirement.items.as_slice().first().is_some_and(|item| {
+                        requirement.items.len() == 1
+                            && item.item == format!("oteryn:item.tibia.i{appearance}")
+                            && item.revision == "definition-r1"
+                            && item.quantity == 1
+                    })
+            })
+        })
 }
 
 #[cfg(test)]

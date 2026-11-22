@@ -1,6 +1,9 @@
 //! Crystal 201189f: the shared Death Ring room and its UID9234 reset.
 use super::world_callbacks::Position;
 pub const RESET: &str = "oteryn:quest-callback/dreamers-challenge-death-ring-reset";
+pub(crate) const JOURNEY_RESET: &str = "oteryn:quest-callback/dreamers-challenge/entrance";
+pub(crate) const ENTRANCE_TRACK: &str =
+    "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s1";
 pub const TREES: [Position; 3] = [
     Position {
         x: 32857,
@@ -60,7 +63,23 @@ pub(crate) fn reset_callback() -> super::world_callbacks::Callback {
 }
 
 pub fn shared_reset(callback: &super::world_callbacks::Callback) -> bool {
-    callback.key == RESET && *callback == reset_callback()
+    let mut expected = reset_callback();
+    if callback.key == JOURNEY_RESET {
+        expected.key = JOURNEY_RESET.into();
+        expected.storage = vec![super::world_callbacks::Storage {
+            set_if: None,
+            add: None,
+            read_only: false,
+            track: ENTRANCE_TRACK.into(),
+            minimum: 0,
+            maximum: 1,
+            set: 1,
+            preserve: false,
+            increment: false,
+            at_least: true,
+        }];
+    }
+    *callback == expected
 }
 
 #[cfg(test)]
