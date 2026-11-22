@@ -419,11 +419,26 @@ pub(super) async fn party(
         }
         None => party_client::PartyCommand::query(),
     };
-    let reply = party_client::send(bot.client()?.session_mut(), &command).await?;
+    let (command_id, reply) =
+        party_client::send_with_receipt(bot.client()?.session_mut(), &command).await?;
+    if reply.status != CommandStatus::Accepted {
+        let operation = match intent {
+            Some(party::PartyIntent::Invite(_)) => "Invite",
+            Some(party::PartyIntent::Accept(_)) => "Accept",
+            Some(party::PartyIntent::Leave) => "Leave",
+            Some(party::PartyIntent::Kick(_)) => "Kick",
+            Some(party::PartyIntent::PassLeadership(_)) => "PassLeadership",
+            None => "Query",
+        };
+        return Err(format!(
+            "party operation={operation};command_type={};command_id={command_id};status={:?}",
+            command.kind, reply.status,
+        )
+        .into());
+    }
     let result = party::decode_party_result(&reply.operation)
         .map_err(|e| format!("party result:{e:?};status={:?}", reply.status))?;
-    if reply.status != CommandStatus::Accepted || result.disposition != party::PartyDisposition::Ok
-    {
+    if result.disposition != party::PartyDisposition::Ok {
         return Err(format!("party status={:?};disposition={:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_command.rs:105", reply.status, result.disposition).into());
     }
     party::decode_party_result(reply.view.as_deref().ok_or("party view absent")?)
