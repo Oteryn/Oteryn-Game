@@ -59,6 +59,14 @@ def materialize(quest, check=False):
     if document["quest"] != QUESTS[quest]:
         raise ValueError(f"Wrong quest source: {source}")
     validate_document(document)
+    if quest == "the_hidden_city_of_beregar":
+        # Crystal stores the deadline (now + 180). The native STEP predicate
+        # reads elapsed time, so lower the same entitlement to its start time.
+        [payment] = [rule for rule in document["rules"]
+                     if rule["key"].endswith("/pythius_the_rotten/golden-mug")]
+        [clock] = [effect for effect in payment["effects"]
+                   if effect["kind"] == "set_now_plus" and effect["value"] == 180]
+        clock["value"] = 0
     payload = json.dumps(document, ensure_ascii=False, indent=2) + "\n"
     if check:
         if not target.exists() or target.read_text() != payload:

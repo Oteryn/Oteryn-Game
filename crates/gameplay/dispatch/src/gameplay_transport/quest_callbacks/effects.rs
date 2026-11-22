@@ -30,11 +30,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .facts
                 .movement_item_facts(presence.appearance)
                 .ok_or(UseDisposition::Rejected)?;
-            // Initially admit known walkable ladders; projections cannot mint portable value
-            // or introduce collision without an owning collision catalogue.
+            // Crystal register_actions.lua:816 creates the Beregar entry
+            // forcefield. Other item-presence callbacks admit walkable ladders.
+            let beregar_portal = callback.key
+                == "oteryn:quest-callback/beregar/open-pythius-portal"
+                && (pos.x, pos.y, pos.floor, facts.appearance_id) == (32551, 31376, -15, 1949);
             if map.facts.house_tile(pos)
                 || facts.pickupable
-                || !crate::map::floor::is_ladder_appearance(facts.appearance_id)
+                || !(beregar_portal || crate::map::floor::is_ladder_appearance(facts.appearance_id))
                 || map.overlay.base().tile(pos.x, pos.y, pos.floor).is_none()
             {
                 return Err(UseDisposition::Rejected);

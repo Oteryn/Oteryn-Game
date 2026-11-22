@@ -33,7 +33,6 @@ BEREGAR_BOOTS = "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firew
 BEREGAR_ACTION = {
     (32611, 31497, 14): (1949, 50092),
     (32611, 31497, 15): (1949, 50093),
-    (32551, 31379, 15): (8425, 50127),
 }
 BEREGAR_UNIQUE = {
     (32613, 31386, 14): (8776, 50125),

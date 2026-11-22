@@ -530,7 +530,7 @@ pub(super) async fn exercise(
         .step(StepDirection::North, at(32601, 31397, -14))
         .await?;
 
-    journey.place_at(at(32551, 31378, -15)).await?;
+    journey.place_at(at(32552, 31378, -15)).await?;
     use oteryn_protocol_oteryn::world_object::{
         MapUseTarget, UseIntent, UseTarget, encode_item_use_intent,
     };
@@ -557,17 +557,14 @@ pub(super) async fn exercise(
     journey
         .state("pythius_portal_open", 1, &[(3456, 1), (9019, 0)])
         .await?;
-    journey.place_at(at(32551, 31377, -15)).await?;
+    journey.place_at(at(32552, 31376, -15)).await?;
     journey
-        .step(StepDirection::North, at(32560, 31404, -15))
+        .step(StepDirection::West, at(32560, 31404, -15))
         .await?;
     journey.state("pythius_fight", 1, &[(9019, 0)]).await?;
     journey.defeat_pythius().await?;
-    journey.place_at(at(32560, 31405, -15)).await?;
-    journey
-        .step(StepDirection::South, at(32577, 31403, -15))
-        .await?;
-    journey.state("pythius_fight", 2, &[(9019, 0)]).await?;
+    assert_eq!(journey.position().await?, local(at(32577, 31403, -15)));
+    journey.state("pythius_defeated", 1, &[(9019, 0)]).await?;
     journey.place_at(at(32581, 31405, -15)).await?;
     let target = journey.target(at(32582, 31405, -15), 2)?;
     let first = journey.admitted.continuity.next_command_id;

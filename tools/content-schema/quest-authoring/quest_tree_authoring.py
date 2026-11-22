@@ -103,6 +103,13 @@ def claim_catalogue(root):
     return claims
 
 
+BEREGAR_QUEST = 'oteryn:quest.the_hidden_city_of_beregar_quest'
+BEREGAR_BACKPACK_HOLD = {
+    'code': 'claim_native_lowering_missing',
+    'source_key': 'canary:reward-claim/quest/u8_4/the_hidden_city_of_beregar/bpthe_undeath_stare',
+}
+
+
 def admitted_beregar_backpack(claim):
     """Reconcile the exact UID 6283 projection while retaining SOURCE dispositions."""
     if claim['identity']['key'] != 'oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare':
@@ -177,8 +184,7 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
                 raise ValueError(f'{key}: committed claim owner does not match source quest: {ref["key"]}')
             canonical.append({'family': 'RewardClaim', **copy.deepcopy(claim['identity'])})
             if claim.get('definition_profile') == 'authored_variant_v1':
-                if not admitted_beregar_backpack(claim):
-                    issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
+                issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
                 categories = {hold['category'] for hold in claim['data_holds']}
                 categories.update(claim.get('_source_hold_categories', []))
                 if claim.get('_source_baseline_item_hold'):
@@ -262,6 +268,12 @@ def source_projection(root, records):
     result = copy.deepcopy(records)
     for row in result:
         definition = row['definition']
+        if definition['identity']['key'] == BEREGAR_QUEST:
+            holds = definition['missing_data']
+            if BEREGAR_BACKPACK_HOLD not in holds:
+                index = next(i for i, hold in enumerate(holds)
+                             if hold['code'] in {'requirement_unknown', 'quest_native_lowering_missing'})
+                holds.insert(index, copy.deepcopy(BEREGAR_BACKPACK_HOLD))
         if definition['identity']['key'] != 'oteryn:quest.the_way_of_the_monk_quest':
             continue
         original = {'state': 'WAITING_IMPLEMENTATION', 'canonical_progress_refs': [],
@@ -421,6 +433,13 @@ def expected_files(root, include_registration=False):
                                 'target_items' not in original.get(stage['key'], {}))
     resolution = enrich([*recipes, {'stages': extra_stages}], index)
     validate_references(records, items)
+    if any(admitted_beregar_backpack(claim) for claim in claims):
+        for row in records:
+            definition = row['definition']
+            if definition['identity']['key'] == BEREGAR_QUEST:
+                # Native evidence resolves the executable hold only after the
+                # frozen SOURCE digest and chosen recipe have been verified.
+                definition['missing_data'].remove(BEREGAR_BACKPACK_HOLD)
     files, shards = {'content/quests/item-key-resolution.json': compact(resolution)}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
         chunk = records[start:start + SHARD_SIZE]

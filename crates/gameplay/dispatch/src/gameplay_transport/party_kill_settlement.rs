@@ -399,12 +399,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 slot.observe_endgame_progression();
             }
         }
-        let runtime = self.runtime.lock().await;
+        let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let attack = self.states.attack.lock().await;
         if source.is_some_and(|source| !source.current_for(&runtime)) {
             return Err(rejected());
         }
+        let mut beregar_reward = false;
         let mut ctx = (
             self,
             &*runtime,
@@ -414,13 +415,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(members),
             &plan,
             &quest_fences,
+            &mut beregar_reward,
         );
         let result = self
             .root
             .try_issue_semantic_pass()?
             .run_with_context(&mut ctx, move |holder, deadline, ctx| {
                 Box::pin(async move {
-                    let (owner, runtime, states, _attack, entry, members, previous, quest_fences) = ctx;
+                    let (owner, runtime, states, _attack, entry, members, previous, quest_fences, beregar_reward) = ctx;
                     let b = runtime.binding();
                     let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
                     let scope = item_tx::assert_spell_item_scope_in_transaction(
@@ -633,6 +635,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     };
                     party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
                     super::quest_kill_objectives::publish(_attack.kills(), &objectives);
+                    **beregar_reward = objectives.iter().any(|receipt| receipt.changes.iter().any(|change| {
+                        change.track == "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_defeated"
+                            && change.after == 1
+                    }));
                     publish_stamina(states, runtime, &current, entry, &awards);
                     Ok(Ok(awards))
                 })
@@ -640,6 +646,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await;
         drop(attack);
         drop(states);
+        if beregar_reward {
+            self.deliver_beregar_victory(&mut runtime, entry);
+        }
         drop(runtime);
         let result = result
             .map_err(CharacterProgressionError::from)
@@ -791,6 +800,47 @@ fn publish_stamina(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Crystal 201189f8, creaturescripts_pythius_the_rotten_kill.lua:5–8.
+    /// Relocate the live top damager after the native credit has committed.
+    fn deliver_beregar_victory(
+        &self,
+        runtime: &mut crate::foundation::ChannelRuntimeV1,
+        entry: &PendingKillSettlement,
+    ) {
+        let principal = entry.facts.principal;
+        if principal.character != entry.facts.top_damage_character {
+            return;
+        }
+        let (Some(map), Ok(position)) = (
+            self.bundle_map(),
+            runtime.read_actor_position(principal.actor),
+        ) else {
+            return;
+        };
+        let at = position.position();
+        if at.floor != 15 || !(32559..=32573).contains(&at.x) || !(31399..=31413).contains(&at.y) {
+            return;
+        }
+        let doors = crate::map::floor::BundleDoors(map.facts.doors());
+        let destination = crate::foundation::MovementLocalPosition {
+            x: 32577,
+            y: 31403,
+            floor: 15,
+        };
+        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+            runtime,
+            self.movement_cells(),
+            principal.actor,
+            principal.session,
+            position,
+            destination,
+            false,
+            &doors,
+        ) {
+            let _ = runtime.commit_source_step(proof);
+        }
+    }
+
     /// A departed top damager still refuses XP. The frozen personal rewards and
     /// remaining physical damagers' BossStorage share the same durable owner.
     pub(super) async fn settle_boss_without_experience(
