@@ -4,7 +4,7 @@
 )]
 use super::*;
 use crate::gameplay_transport::actor_spell::tests::{FACTS, runtime_with_player};
-use oteryn_gameplay_domain::domain::condition::ConditionType;
+use oteryn_gameplay_domain::domain::condition::SpeedRange;
 use oteryn_gameplay_foundation::foundation::condition::TickFacts;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 use std::collections::BTreeSet;
@@ -207,6 +207,62 @@ fn leaving_removes_drown_and_moving_underwater_restarts_it() {
     );
     // Dry ground to dry ground changes nothing.
     assert!(!states.stage_underwater_step(&runtime, actor, session, 9 * SECOND, false, false));
+}
+
+#[test]
+fn underwater_to_underwater_step_removes_haste_and_restarts_drowning() {
+    let (runtime, mut states, actor, session) = ready(0xd7);
+    assert!(states.stage_underwater_step(&runtime, actor, session, 0, false, true));
+    let Some(state) = states.get_mut(&runtime, actor, session) else {
+        panic!("state");
+    };
+    let Some(haste) = ConditionDefinition::new(
+        "test.haste",
+        1,
+        ConditionValues::Speed {
+            paralysis: false,
+            range: SpeedRange {
+                a_min: 0,
+                b_min: 160,
+                a_max: 0,
+                b_max: 160,
+            },
+            duration_ms: 60_000,
+        },
+    ) else {
+        panic!("haste definition");
+    };
+    let root = GameplayDecisionRoot::from_bytes([1; 32]);
+    let facts = ApplicationFacts {
+        now: 0,
+        base_speed: 100,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: true,
+        decision_root: &root,
+        occurrence: DecisionOccurrenceId::from_bytes([1; 16]),
+    };
+    assert!(
+        state
+            .conditions
+            .apply(&haste, None, ConditionSourceKind::SelfUse, &[], &facts)
+            .is_ok()
+    );
+    assert_eq!(state.owned_conditions().speed_delta(), 60);
+    let revision = state.revision();
+    let drown = ConflictKey::Element(DotElement::Drown);
+    let initial_drown = state.owned_conditions().get(drown).cloned();
+    assert!(initial_drown.is_some());
+
+    assert!(states.stage_underwater_step(&runtime, actor, session, SECOND, true, true));
+    let Some(state) = states.get(&runtime, actor, session) else {
+        panic!("state after StepOut and StepIn");
+    };
+    assert!(state.owned_conditions().get(ConflictKey::Speed).is_none());
+    assert_eq!(state.revision(), revision + 1);
+    assert!(drowns(&states, &runtime, actor, session));
+    assert_ne!(state.owned_conditions().get(drown), initial_drown.as_ref());
 }
 
 #[test]
