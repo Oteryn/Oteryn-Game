@@ -10,12 +10,11 @@
 //!    route the content declares (earned gold, walk, `hi`, `trade`, BUY); require the inventory
 //!    delta. No route in content or no reachable seller fails with `needed=acquisition-route-for-50271`.
 //! 3. `augmented-cast`: ITEM_MOVE the item to the right hand, CAST again and require the measured
-//!    mean spell damage to exceed the baseline mean (the content augment is base damage).
+//!    the cast to publish attributed damage. The weapon swap changes the attack inputs.
 //! 4. `unequip`: ITEM_MOVE it back to the backpack; require the inventory delta.
-//! 5. `unequipped-cast`: CAST again with the item only carried; require the measured mean to fall
-//!    below the augmented mean (a carried item grants no augment).
+//! 5. `unequipped-cast`: restore the baseline weapon and CAST with item 50271 only carried.
 //! 6. `fresh-admission`: re-equip, LOGOUT, admit afresh, require the right-hand item to persist and
-//!    CAST again; the pooled augmented mean must exceed the baseline mean.
+//!    CAST again. This observes damage and custody. Augment attribution needs independent evidence.
 
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
@@ -32,13 +31,14 @@ const SPELL_NAME: &str = "greater tiger clash";
 const SAMPLES: usize = 3;
 const COMMAND_BUDGET: Duration = Duration::from_secs(8);
 const BASELINE_BUDGET: Duration = Duration::from_secs(75);
-const STEPS: [&str; 6] = [
+const STEPS: [&str; 7] = [
     "baseline-cast",
     "acquire-50271",
     "augmented-cast",
     "unequip",
     "unequipped-cast",
     "fresh-admission",
+    "augment-attribution",
 ];
 
 struct Row {
@@ -60,6 +60,13 @@ impl Row {
         if self.failure.is_none() && STEPS.get(self.passed.len()) == Some(&step) {
             self.passed.push(step);
             evidence(&format!("C12_CHECK {step} PASS observed={observed:?}"));
+        }
+    }
+
+    fn record_cast(&mut self, step: &'static str, samples: &[u64], equipped: Option<NonZeroU32>) {
+        if self.failure.is_none() && STEPS.get(self.passed.len()) == Some(&step) {
+            self.passed.push(step);
+            evidence(&format!("C12_OBSERVATION step={step} weapon={equipped:?} damage={samples:?}"));
         }
     }
 
@@ -416,10 +423,6 @@ fn cast_damage_in(event: &SessionEvent, own: oteryn_dev_client::EntityRef, victi
         .sum()
 }
 
-fn mean(samples: &[u64]) -> f64 {
-    samples.iter().sum::<u64>() as f64 / samples.len().max(1) as f64
-}
-
 async fn samples(hunt: &Hunt<'_>, client: &mut DevClientSession, spell: NonZeroU32) -> TestResult<Vec<u64>> {
     let mut out = Vec::new();
     for _ in 0..SAMPLES {
@@ -581,15 +584,6 @@ fn weapon(client: &DevClientSession) -> TestResult<Option<NonZeroU32>> {
         .map(|entry| entry.item.item_definition_ref))
 }
 
-fn require_fixed_weapon(before: Option<NonZeroU32>, after: Option<NonZeroU32>) -> TestResult {
-    if before != after {
-        return Err(format!(
-            "need=augment-off-control-with-identical-weapon-inputs;weapon={before:?}->{after:?};item={ITEM_ID}"
-        ).into());
-    }
-    Ok(())
-}
-
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let definition = item_ref()?;
     let mut client = connect_world(clients, 0xc2).await?;
@@ -617,21 +611,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let baseline = verdict::indexed_timeout(BASELINE_BUDGET, samples(&hunt, &mut client, spell_index))
         .await
         .map_err(|_| format!("baseline sampling deadline=75s last-frame={}", client.last_server_sequence()))??;
-    row.pass("baseline-cast", (&baseline, mean(&baseline)));
+    row.record_cast("baseline-cast", &baseline, baseline_weapon);
 
     let acquired = acquire(&mut client, world, &metadata, definition).await?;
     row.pass("acquire-50271", acquired);
 
     equip_right(&mut client, definition).await?;
-    require_fixed_weapon(baseline_weapon, weapon(&client)?)?;
     let augmented = samples(&hunt, &mut client, spell_index).await?;
-    if !equipped_right(&client, definition) || mean(&augmented) <= mean(&baseline) {
-        return Err(format!(
-            "no augment effect: baseline={baseline:?} (mean {:.1}) augmented={augmented:?} (mean {:.1}) content-augment={augment}/10000",
-            mean(&baseline), mean(&augmented)
-        ).into());
-    }
-    row.pass("augmented-cast", (&augmented, mean(&augmented) / mean(&baseline), augment));
+    row.record_cast("augmented-cast", &augmented, weapon(&client)?);
 
     let equipped = client
         .inventory()
@@ -647,12 +634,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     wait_inventory(&mut client, "unequip", |c| !equipped_right(c, definition) && carried_count(c, definition) > 0).await?;
     row.pass("unequip", client.last_server_sequence());
 
-    require_fixed_weapon(baseline_weapon, weapon(&client)?)?;
-    let carried = samples(&hunt, &mut client, spell_index).await?;
-    if mean(&carried) >= mean(&augmented) {
-        return Err(format!("carried item kept the augment: augmented={augmented:?} carried={carried:?}").into());
+    if let Some(baseline_weapon) = baseline_weapon {
+        equip_right(&mut client, baseline_weapon).await?;
     }
-    row.pass("unequipped-cast", (&carried, mean(&carried)));
+    let carried = samples(&hunt, &mut client, spell_index).await?;
+    row.record_cast("unequipped-cast", &carried, weapon(&client)?);
 
     equip_right(&mut client, definition).await?;
     let old_session = client.join_snapshot().game_session_id;
@@ -663,15 +649,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("fresh admission lost the right-hand item".into());
     }
     let fresh_spell_index = spell(&mut fresh)?;
-    require_fixed_weapon(baseline_weapon, weapon(&fresh)?)?;
     let replay = samples(&hunt, &mut fresh, fresh_spell_index).await?;
-    let pooled: Vec<u64> = augmented.iter().chain(&replay).copied().collect();
-    if mean(&replay) <= mean(&baseline) || mean(&pooled) <= mean(&baseline) {
-        return Err(format!("augment not reconstructed: baseline={baseline:?} fresh={replay:?} pooled-augmented={pooled:?}").into());
-    }
+    row.record_cast("fresh-admission", &replay, weapon(&fresh)?);
     logout(&mut fresh).await?;
-    row.pass("fresh-admission", (&replay, mean(&pooled) / mean(&baseline)));
-    Ok(())
+    Err(format!(
+        "need=augment-attribution-with-controlled-attack-inputs;item={ITEM_ID};configured-bps={augment}"
+    ).into())
 }
 
 #[cfg(test)]
@@ -679,18 +662,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn c12_refuses_to_compare_different_weapon_inputs() {
-        let baseline = NonZeroU32::new(1);
-        assert!(require_fixed_weapon(baseline, baseline).is_ok());
-        assert!(require_fixed_weapon(baseline, NonZeroU32::new(2)).is_err());
-        assert!(require_fixed_weapon(baseline, None).is_err());
+    fn cast_observation_does_not_complete_augment_attribution() {
+        let mut row = Row::new();
+        for step in &STEPS[..6] {
+            row.record_cast(step, &[1], None);
+        }
+        assert_eq!(row.current(), "augment-attribution");
     }
 
     #[test]
     fn c12_gap_names_the_stalled_command_and_unrun_steps() {
         let line = gap("baseline-cast", "CAST deadline", &STEPS[1..]);
         assert!(line.starts_with("C12_GAP step=baseline-cast observed=CAST deadline"));
-        assert!(line.contains("not-run=acquire-50271,augmented-cast,unequip,unequipped-cast,fresh-admission"));
+        assert!(line.contains("not-run=acquire-50271,augmented-cast,unequip,unequipped-cast,fresh-admission,augment-attribution"));
     }
 
     #[test]
