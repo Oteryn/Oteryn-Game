@@ -21,9 +21,23 @@ fn field(out: &mut Vec<u8>, key: u8, mut value: u64) {
 fn loop_training_postgres_exercise_real_wire_atomic_stop_replay_fence_and_reload() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(false, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(ExerciseScenario::Replay).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "exercise PG panic")??;
+    Ok(())
+}
+
+#[test]
+fn fast_exercise_live_cadence_spends_twice_as_many_charges_without_changing_gain_per_charge()
+-> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario(ExerciseScenario::FastExercise).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "fast exercise PG panic")??;
     Ok(())
 }
 
@@ -31,7 +45,7 @@ fn loop_training_postgres_exercise_real_wire_atomic_stop_replay_fence_and_reload
 fn loop_training_postgres_exercise_terminal_readback_never_rebases_live_state() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(false, true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(ExerciseScenario::TerminalReadback).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "terminal exercise readback PG panic")??;
     Ok(())
@@ -41,7 +55,7 @@ fn loop_training_postgres_exercise_terminal_readback_never_rebases_live_state() 
 fn loop_training_postgres_node_boot_offline_settlement_and_replay() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(true, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(ExerciseScenario::NodeBoot).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "node boot training PG panic")??;
     Ok(())
@@ -273,12 +287,22 @@ fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
     })
 }
 
-fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ExerciseScenario {
+    Replay,
+    TerminalReadback,
+    NodeBoot,
+    FastExercise,
+}
+
+fn scenario(scenario: ExerciseScenario) -> TestResult {
     run(async |admin| {
-        let tag = if terminal_readback {
-            "loop_training_terminal_readback"
-        } else {
-            "loop_training_exercise"
+        let node_boot = scenario == ExerciseScenario::NodeBoot;
+        let terminal_readback = scenario == ExerciseScenario::TerminalReadback;
+        let tag = match scenario {
+            ExerciseScenario::TerminalReadback => "loop_training_terminal_readback",
+            ExerciseScenario::FastExercise => "loop_training_fast_exercise",
+            ExerciseScenario::Replay | ExerciseScenario::NodeBoot => "loop_training_exercise",
         };
         let h = Harness::create_with_admission_seed(admin, tag, !node_boot, false).await?;
         eprintln!("POSTGRES_STARTED LOOP-TRAIN-1 exercise");
@@ -652,18 +676,71 @@ fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
             owner.owner_now().get().saturating_add(1),
             std::sync::atomic::Ordering::Relaxed,
         );
-        let result = crate::gameplay_transport::loop_training::wire::dispatch(
-            &owner,
-            admitted,
-            command,
-            67,
-            &start,
-            Some(&items),
-        )
-        .await
-        .ok_or("known start")?;
+        use oteryn_gameplay_foundation::scheduled_events::{content_schedule, test_clock};
+
+        // Place the first tick two seconds before the end of the pinned UTC window.
+        const FAST_EXERCISE_END: i64 = 1_731_887_999;
+        let started_at = owner.owner_now().get();
+        let result = {
+            let _schedule_clock = (scenario == ExerciseScenario::FastExercise)
+                .then(|| test_clock::set(content_schedule().clone(), FAST_EXERCISE_END - 4));
+            crate::gameplay_transport::loop_training::wire::dispatch(
+                &owner,
+                admitted,
+                command,
+                67,
+                &start,
+                Some(&items),
+            )
+            .await
+            .ok_or("known start")?
+        };
         assert_eq!(result.disposition, 1, "{result:?}");
         assert_eq!(result.charges, 500);
+        if scenario == ExerciseScenario::FastExercise {
+            for (seconds, intent, disposition, charges) in [
+                (1, 2, 1, 500),  // First tick still waits two seconds.
+                (2, 2, 1, 499),  // First charge at normal cadence.
+                (4, 2, 1, 497), // Two charges in two seconds while active.
+                (5, 2, 1, 496), // The interval scheduled at the inclusive end completes.
+                (7, 3, 2, 495), // One charge in two seconds outside the window, then stop.
+            ] {
+                owner.states.test_owner_time.store(
+                    started_at + seconds * 1_000_000 + 1,
+                    std::sync::atomic::Ordering::Relaxed,
+                );
+                let utc = FAST_EXERCISE_END - 4 + i64::try_from(seconds)?;
+                let _schedule_clock = test_clock::set(content_schedule().clone(), utc);
+                let status = crate::gameplay_transport::loop_training::wire::dispatch(
+                    &owner,
+                    admitted,
+                    UseCommand {
+                        command_id: seconds + 1,
+                        ..command
+                    },
+                    67,
+                    &[8, intent],
+                    Some(&items),
+                )
+                .await
+                .ok_or("fast exercise response")?;
+                assert_eq!((status.disposition, status.charges), (disposition, charges),
+                    "exercise state at {seconds}s");
+            }
+
+            let stored: (i32, i64) = sqlx::query_as(
+                "SELECT (SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid),
+                        (SELECT sword_tries FROM game_character_build_state)",
+            )
+            .bind(id(72).as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(stored, (495, 5 * 7));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         assert_eq!(
             owner.gameplay_idle_exemptions(admitted).await,
             Some((true, false)),

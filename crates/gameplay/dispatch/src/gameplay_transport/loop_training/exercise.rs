@@ -5,6 +5,7 @@ use crate::durability::exercise_training::{
     ExerciseCheckpoint, ExerciseCommitted, ExerciseDummyKey, TrainingWeapon,
 };
 use crate::durability::item_timed_state::TimedDefinitionFacts;
+use oteryn_gameplay_foundation::scheduled_events::current_rates;
 use oteryn_protocol_oteryn::loop_training::ExerciseIntent;
 
 pub(super) struct Run {
@@ -38,6 +39,9 @@ tokio::task_local! {
     pub(in crate::gameplay_transport) static EXERCISE_READBACK_BARRIER:
         std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
 }
+
+const EXERCISE_INTERVAL_US: u64 = 2_000_000;
+const EXERCISE_CHECKPOINT_US: u64 = 60_000_000;
 
 // Crystal 201189f exercise_training_weapons.lua:1,200-203,211.
 const EXERCISE_START_EXHAUST_US: u64 = 10_000_000;
@@ -202,13 +206,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 build.skills()[run.family - 1].0
             };
-            // At most one 60-second checkpoint interval is materialized in one cadence.
-            for _ in 0..30 {
+            // Crystal 201189f8 exercise_training_weapons.lua:133-142 halves the delay
+            // when scheduling the next charge after a tick.
+            let interval = if current_rates().fast_exercise {
+                EXERCISE_INTERVAL_US / 2
+            } else {
+                EXERCISE_INTERVAL_US
+            };
+            // At most one checkpoint interval of charges is materialized in one pass.
+            for _ in 0..EXERCISE_CHECKPOINT_US / interval {
                 if now < run.next_tick || run.spent >= run.durable.charges {
                     break;
                 }
                 run.spent += 1;
-                run.next_tick = run.next_tick.checked_add(2_000_000)?;
+                run.next_tick = run.next_tick.checked_add(interval)?;
                 let gain = run.gain_per_charge.checked_mul(u64::from(run.spent))?;
                 let next = oteryn_gameplay_progression::loop_training::add_gain(
                     &build,
@@ -270,7 +281,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Checkpoint::Pending(fence, request) = run.pending.as_ref()? else {
             return None;
         };
-        let checkpoint_due = now.checked_add(60_000_000)?;
+        let checkpoint_due = now.checked_add(EXERCISE_CHECKPOINT_US)?;
         let result = self
             .root
             .commit_exercise_training(
@@ -525,8 +536,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 house_dummy: target.house_dummy,
                 durable,
                 spent: 0,
-                next_tick: now.checked_add(2_000_000)?,
-                checkpoint_due: now.checked_add(60_000_000)?,
+                next_tick: now.checked_add(EXERCISE_INTERVAL_US)?,
+                checkpoint_due: now.checked_add(EXERCISE_CHECKPOINT_US)?,
                 pending: None,
             });
         }
