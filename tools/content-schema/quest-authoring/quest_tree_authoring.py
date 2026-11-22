@@ -36,6 +36,10 @@ ALAWAR_SOURCE_HOLD = {'code': 'claim_native_lowering_missing',
 OUTLAW_QUEST = 'oteryn:quest.the_outlaw_camp_quest'
 OUTLAW_OVERLAY = ('tools/content-schema/world-authoring/samples/'
                   'quest-chest-bindings/outlaw-camp.json')
+BOTANY = 'oteryn:quest.an_interest_in_botany_quest'
+BOTANY_CLAIM = 'oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach'
+BOTANY_HOLD = {'code': 'claim_native_lowering_missing',
+               'source_key': 'canary:reward-claim/quest/u8_6/an_interest_in_botany/botany_almanach'}
 CALLBACK_COVERAGE = 'docs/repository/QUEST_CALLBACK_COVERAGE.json'
 
 
@@ -258,6 +262,32 @@ def restore_outlaw_source_holds(definition):
         missing[at:at] = holds
 
 
+def reconcile_botany_claim(root, definition, claims):
+    """The Almanach is already delivered by the production chest owner."""
+    refs = definition['source_refs']
+    claim, = (c for c in claims if c['identity']['key'] == BOTANY_CLAIM)
+    placement, = claim['placements']
+    projection, = claim['native_contents']['placements']
+    coverage, = (c for q in read(root, CALLBACK_COVERAGE)['quests']
+                 if q['quest'] == refs['quest']['key']
+                 for c in q['chests'] if c['claim'] == BOTANY_CLAIM)
+    witnessed, = coverage['placements']
+    reward, = placement['reward']['items']
+    if (refs['claims'] != [{'family': 'RewardClaim', 'key': claim['provenance']['pilot_key'],
+                            'revision': claim['provenance']['pilot_revision']}]
+            or claim['quest'] != refs['quest'] or claim['data_holds']
+            or coverage['status'] != 'dispatch_pg_qualified'
+            or witnessed['position'] != placement['source_binding']['project_position']
+            or not any(s['server'] == 'crystalserver' and s['unique_id'] == 6296
+                       and s['reward_matches_current_source'] for s in witnessed['sources'])
+            or projection['root'] != reward['item'] or reward['count'] != 1
+            or reward['item']['key'] != 'oteryn:item.tibia.i11699'):
+        raise ValueError('Botany Almanach native reward evidence differs')
+    definition['missing_data'].remove(BOTANY_HOLD)
+    if not definition['missing_data']:
+        definition['readiness'] = 'definition_ready'
+
+
 def source_projection(root, records):
     """Validate and remove the compiled native annotations from the SOURCE view.
 
@@ -273,6 +303,9 @@ def source_projection(root, records):
             # The applied UID projection closes this delivery in the live Quest only.
             definition['missing_data'].append(copy.deepcopy(ALAWAR_SOURCE_HOLD))
         restore_outlaw_source_holds(definition)
+        if definition['identity']['key'] == BOTANY and BOTANY_HOLD not in definition['missing_data']:
+            definition['missing_data'].append(copy.deepcopy(BOTANY_HOLD))
+            definition['readiness'] = 'waiting_data'
         if definition['identity']['key'] != 'oteryn:quest.the_way_of_the_monk_quest':
             continue
         original = {'state': 'WAITING_IMPLEMENTATION', 'canonical_progress_refs': [],
@@ -369,7 +402,6 @@ def tree_validator():
     return jsonschema.Draft202012Validator(schema, registry=registry)
 
 
-
 def reconcile_alawar_key_claim(root, records, claims):
     """Clear the live key-delivery hold after preserving the historical recipe witness."""
     claim = next(c for c in claims if c['identity']['key'] == ALAWAR_KEY_CLAIM)
@@ -400,6 +432,8 @@ def reconcile_alawar_key_claim(root, records, claims):
     ):
         raise ValueError('Alawar key 4502 lost its native claim or World placement evidence')
     definition['missing_data'].remove(ALAWAR_SOURCE_HOLD)
+
+
 def reconcile_outlaw_key_holds(root, records, claims):
     """Reconcile the four historical holds against exact native key-USE evidence."""
     capture = read(root, OUTLAW_OVERLAY)
@@ -529,6 +563,9 @@ def expected_files(root, include_registration=False):
     resolution = enrich([*recipes, {'stages': extra_stages}], index)
     validate_references(records, items)
     reconcile_outlaw_key_holds(root, records, claims)
+    # Reconcile the served claim after attaching the frozen SOURCE recipe evidence.
+    botany, = (r['definition'] for r in records if r['definition']['identity']['key'] == BOTANY)
+    reconcile_botany_claim(root, botany, claims)
     files, shards = {'content/quests/item-key-resolution.json': compact(resolution)}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
         chunk = records[start:start + SHARD_SIZE]
