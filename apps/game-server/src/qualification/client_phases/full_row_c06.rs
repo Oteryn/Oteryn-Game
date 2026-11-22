@@ -168,6 +168,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         })
         .ok_or("step=4 observed=no-visible-healing-encounter")?
         .entity;
+    let entities = client
+        .world_entities()
+        .ok_or("step=4 observed=no-entity-view")?;
+    let caster = entities
+        .iter()
+        .find(|entity| &entity.entity.identity == entities.own_identity())
+        .map(|entry| entry.entity)
+        .ok_or("step=4 observed=no-self-entity-for-healing-rune")?;
     let full = client
         .actor_vitals()
         .ok_or("step=4 observed=no-vitals")?
@@ -176,10 +184,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let damaged = wait_self_health_below(&mut client, full).await?;
     let heal_before = quantity(&client, healing)?;
     client.take_events();
-    let (disposition, sequence) = use_rune(&mut client, healing, None).await?;
+    let (disposition, sequence) = use_rune(&mut client, healing, Some(caster)).await?;
     if disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
         return Err(format!(
-            "step=4 observed={disposition:?};need=qualified-healing-rune-3152-use-route"
+            "step=4 observed={disposition:?};need=Committed-intense-healing-rune-3152"
         )
         .into());
     }
@@ -206,7 +214,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         || client.actor_vitals().is_none_or(|v| v.health != before)
     {
         return Err(format!(
-            "step=5 observed=reply:{illegal:?}/charges:{}/health:{} need=qualified-healing-rune-3152-TargetIllegal-unchanged",
+            "step=5 observed=reply:{illegal:?}/charges:{}/health:{} need=TargetIllegal-and-unchanged-3152-charges-and-health",
             quantity(&client, healing)?,
             client.actor_vitals().map_or(0, |v| v.health)
         )

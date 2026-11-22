@@ -1,5 +1,6 @@
 //! Pure carrier eligibility for the gated legacy USE qualification.
 use super::ordinary_combat::has_world_geometry;
+use oteryn_gameplay_content::content::spell_data::target::AllowedTargets;
 use oteryn_gameplay_content::content::spell_data::{
     Carrier, Execution, SpellDefinition, SpellEffect,
 };
@@ -20,6 +21,17 @@ pub fn direct_rune(spell: &SpellDefinition) -> bool {
                     (&spell.carrier, behavior["parameters"]["source"].as_str()),
                     (Carrier::Rune { item: 3177, .. }, Some("target_creature"))
                         | (Carrier::Rune { item: 3203, .. }, Some("corpse_tile"))
+                )
+        }
+        (Carrier::Rune { item: 3152, .. }, Execution::Effects(effects)) => {
+            !spell.aggressive
+                && spell.needs_target
+                && spell.allowed_targets == AllowedTargets::SelfOrOwnSummons
+                && !has_world_geometry(spell)
+                && matches!(
+                    effects.as_slice(),
+                    [SpellEffect::Heal { .. }, SpellEffect::RemoveCondition { condition }]
+                        if condition == "paralyze"
                 )
         }
         (Carrier::Rune { item: 3165, .. }, Execution::Effects(effects)) => {
@@ -104,6 +116,14 @@ pub fn direct_rune(spell: &SpellDefinition) -> bool {
 mod tests {
     use super::*;
     use crate::dispatch_plans::ordinary_combat::test_source;
+
+    #[test]
+    fn intense_healing_is_admitted_as_a_direct_rune() {
+        let mut spell = test_source("candidate:spell/rune/intense_healing_rune");
+        assert!(direct_rune(&spell));
+        spell.allowed_targets = AllowedTargets::Any;
+        assert!(!direct_rune(&spell));
+    }
 
     #[test]
     fn engenc_training_missile_is_direct_only_with_qualified_damage_effects() {

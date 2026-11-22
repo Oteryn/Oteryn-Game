@@ -105,20 +105,20 @@ fn reference(id: u32) -> TestResult<NonZeroU32> {
     provisioning::item_reference(&provisioning::item_index()?, id)
 }
 fn count(client: &DevClientSession, key: NonZeroU32) -> TestResult<u64> {
-    Ok(client
-        .inventory()
-        .ok_or("inventory-frame-absent")?
+    Ok(inventory_count(
+        client.inventory().ok_or("inventory-frame-absent")?,
+        key,
+    ))
+}
+
+fn inventory_count(inventory: &items::CharacterInventory, key: NonZeroU32) -> u64 {
+    inventory
         .entries
         .iter()
-        .chain(
-            client
-                .inventory()
-                .into_iter()
-                .flat_map(|v| v.equipment.iter().map(|e| &e.item)),
-        )
+        .chain(inventory.equipment.iter().map(|e| &e.item))
         .filter(|e| e.item_definition_ref == key)
         .map(|e| u64::from(e.count.get()))
-        .sum())
+        .sum()
 }
 fn carried(client: &DevClientSession, key: NonZeroU32) -> TestResult<items::ItemHandle> {
     client
@@ -482,6 +482,24 @@ async fn attack_damage(
         }
     }
 }
+fn bow_debit(previous: &mut u64, current: u64) -> bool {
+    if previous.checked_sub(current) != Some(1) {
+        return false;
+    }
+    *previous = current;
+    true
+}
+
+#[test]
+fn bow_miss_then_hit_spends_one_arrow_per_attempt() {
+    let mut remaining = 10;
+    assert!(bow_debit(&mut remaining, 9));
+    assert!(bow_debit(&mut remaining, 8));
+    assert!(!bow_debit(&mut remaining, 6));
+    assert!(!bow_debit(&mut remaining, 9));
+    assert_eq!(remaining, 8);
+}
+
 async fn bow_shot(client: &mut DevClientSession, arrows: NonZeroU32) -> TestResult<(u64, u64)> {
     let attacker = own(client)?;
     let victim = target(client)?;
@@ -494,13 +512,20 @@ async fn bow_shot(client: &mut DevClientSession, arrows: NonZeroU32) -> TestResu
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     let mut inventory_sequence = 0;
+    let mut remaining = before;
     let mut damage_sequence = 0;
     loop {
         client.service_liveness(Duration::from_millis(25)).await?;
         for event in client.take_events() {
             match event {
-                SessionEvent::Inventory(delta) if count(client, arrows)? + 1 == before => {
-                    inventory_sequence = delta.server_sequence;
+                SessionEvent::Inventory(delta) => {
+                    let observed = inventory_count(&delta.value, arrows);
+                    if observed != remaining {
+                        if !bow_debit(&mut remaining, observed) {
+                            return Err(format!("bow-invalid-arrow-debit:remaining={remaining}:observed={observed}").into());
+                        }
+                        inventory_sequence = delta.server_sequence;
+                    }
                 }
                 SessionEvent::Presentation(delta)
                     if delta.value.iter().any(|event| matches!(event.kind,
@@ -517,13 +542,6 @@ async fn bow_shot(client: &mut DevClientSession, arrows: NonZeroU32) -> TestResu
             && target_health(client, victim).is_none_or(|health| health < before_health)
         {
             return Ok((inventory_sequence, damage_sequence));
-        }
-        if count(client, arrows)? + 1 < before {
-            return Err(format!(
-                "bow-shot-consumed-multiple:before={before}:after={}",
-                count(client, arrows)?
-            )
-            .into());
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("bow-shot-timeout:reply={reply:?}:before={before}:after={}:inventory-sequence={inventory_sequence}:damage-sequence={damage_sequence}", count(client,arrows)?).into());
