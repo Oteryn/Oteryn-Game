@@ -3,7 +3,7 @@ mod vip_presence;
 
 use super::*;
 use crate::gameplay_transport::operator_event;
-use crate::gameplay_transport::record_join_progress;
+use crate::gameplay_transport::{record_join_progress, record_join_refusal};
 
 mod achievement_notices;
 mod activity_transfer;
@@ -237,6 +237,41 @@ async fn close<S: AsyncWrite + Unpin>(
     ServeEnd::Closed(error)
 }
 
+/// ARCH-PROGRESSION-SOURCE-0 §1.5 bounds a refused actor's hold. Earlier
+/// client frames follow the ordinary admitted hold path.
+async fn hold_refused<S>(
+    stream: &mut S,
+    admitted: AdmittedSession,
+    policy: LivenessPolicy,
+    phase: &'static str,
+) -> ConnectionEnd
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+{
+    if admitted.runtime_actor.is_none() {
+        return hold_admitted(stream, admitted).await;
+    }
+    let bound = policy.interval.saturating_mul(policy.missed_limit);
+    match tokio::time::timeout(bound, hold_admitted(stream, admitted)).await {
+        Ok(end) => end,
+        Err(_) => close(stream, admitted, FoundationProtocolError::NotSupported)
+            .await
+            .finish_with_phase(admitted, Some(phase)),
+    }
+}
+
+fn unplayable_reason(outcome: FirstEntryOutcome) -> &'static str {
+    match outcome {
+        FirstEntryOutcome::RefusedStaleAuthority => "stale_authority",
+        FirstEntryOutcome::RefusedUnavailable => "entry_unavailable",
+        FirstEntryOutcome::RefusedByChannel => "channel_refused",
+        FirstEntryOutcome::AwaitingSpellRepair => "spell_repair_actor_missing",
+        FirstEntryOutcome::NotApplicable
+        | FirstEntryOutcome::Positioned
+        | FirstEntryOutcome::Reconciled => "runtime_actor_missing",
+    }
+}
+
 pub(super) async fn serve_admitted_actor<S, A>(
     stream: &mut S,
     mut admitted: AdmittedSession,
@@ -319,13 +354,15 @@ where
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
         );
         let Some(actor) = admitted.runtime_actor.filter(|_| playable) else {
-            record_join_progress("held_unplayable", admitted.first_entry);
-            return hold_refused(stream, admitted, policy).await;
+            let phase = "held_unplayable";
+            record_join_refusal(phase, admitted, unplayable_reason(admitted.first_entry));
+            return hold_refused(stream, admitted, policy, phase).await;
         };
         record_join_progress("baseline", admitted.first_entry);
         let Some(baseline) = authority.observe(actor).await else {
-            record_join_progress("held_no_baseline", admitted.first_entry);
-            return hold_refused(stream, admitted, policy).await;
+            let phase = "held_no_baseline";
+            record_join_refusal(phase, admitted, "baseline_unavailable");
+            return hold_refused(stream, admitted, policy, phase).await;
         };
         let mut session = match setup::prepare(
             stream,

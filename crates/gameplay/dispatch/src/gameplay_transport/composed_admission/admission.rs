@@ -434,6 +434,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+            connection::remember_entry_refusal(
+                admitted.game_session_id,
+                admitted.first_entry,
+                "hazard",
+            );
         }
         // DEATH-2b: a pending respawn that is not placed and consumed leaves the actor
         // input-ineligible, its pending row intact for the next admission.
@@ -450,6 +455,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
             admitted.first_entry = respawned_first_entry(admitted.first_entry, settled);
+            if !settled {
+                connection::remember_entry_refusal(
+                    admitted.game_session_id,
+                    admitted.first_entry,
+                    "newhaven_arrival",
+                );
+            }
         }
         if writes_after_progression(positioned, admitted.first_entry) {
             let trained = admitted.first_entry;
@@ -462,12 +474,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 admitted.first_entry = trained;
             }
+            if trained != admitted.first_entry {
+                connection::remember_entry_refusal(
+                    admitted.game_session_id,
+                    admitted.first_entry,
+                    "loop_training",
+                );
+            }
             if writes_after_progression(positioned, admitted.first_entry)
                 && !budget
                     .retry_until(async || self.admit_prey(admitted).await)
                     .await
             {
                 admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+                connection::remember_entry_refusal(
+                    admitted.game_session_id,
+                    admitted.first_entry,
+                    "prey",
+                );
             }
         }
         if writes_after_progression(positioned, admitted.first_entry) {

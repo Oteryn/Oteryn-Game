@@ -17,7 +17,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Option<last_position::AdmissionPosition>,
     ) {
         let phase = EntryPhase::default();
-        enter_with_retry(budget, &phase, async || {
+        let result = enter_with_retry(budget, &phase, async || {
             self.initialize_first_entry_traced(
                 request,
                 game_session_id,
@@ -28,7 +28,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         })
-        .await
+        .await;
+        if matches!(
+            result.0,
+            FirstEntryOutcome::RefusedStaleAuthority
+                | FirstEntryOutcome::RefusedUnavailable
+                | FirstEntryOutcome::RefusedByChannel
+        ) {
+            connection::remember_entry_refusal(game_session_id, result.0, phase.current());
+        }
+        result
     }
 
     #[cfg(test)]

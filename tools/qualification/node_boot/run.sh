@@ -834,7 +834,16 @@ events = {'serve_end', 'serve_command_end', 'command_guard_failed',
           'appearance_initial_failed', 'appearance_observation_failed',
           'qualification_spawn_refused', 'join_progress', 'fresh_admission_pending',
           'admission_entry_decision'}
+held_join_phases = {'held_unplayable', 'held_no_baseline'}
 spell_repair_phases = {'spell_repair_returned_false', 'spell_repair_deadline_expired'}
+entry_phases = {'resolve_session', 'reserve_precondition', 'conditions', 'gourmet',
+                'daily_streak', 'cast_facts', 'known_spells', 'monk', 'build', 'stamina',
+                'stance', 'equipment', 'familiar_group', 'spell_lane', 'revalidate_character',
+                'revalidate_session', 'authority_guard', 'death_items', 'home_town',
+                'tutorial_position', 'premium_temple', 'equipment_effects', 'channel_owner',
+                'premium_relocation', 'party_presence', 'progression', 'familiar_login',
+                'interpretation', 'starter_backpack', 'starter_kit', 'starting_loadout',
+                'hazard', 'newhaven_arrival', 'loop_training', 'prey'}
 legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
           'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
 labels = {
@@ -873,7 +882,11 @@ labels = {
                       'spell_item_chain', 'audit_payload'},
     'reason': {'transferred', 'disconnected', 'control_lost', 'logged_out',
                'protocol_error', 'commit_outcome_unknown', 'closed', 'no_evidence',
-               'fence', 'no_free_tile', 'session_unknown', 'unknown_creature'},
+               'fence', 'no_free_tile', 'session_unknown', 'unknown_creature',
+               'stale_authority', 'entry_unavailable', 'channel_refused', 'runtime_actor_missing',
+               'baseline_unavailable', 'spell_repair_actor_missing', 'repair_returned_false',
+               'repair_deadline_expired'},
+    'entry_phase': entry_phases,
     'outcome': {'playable', 'retries_exhausted', 'unplayable'},
     'first_entry': {'NotApplicable', 'Positioned', 'Reconciled', 'RefusedStaleAuthority',
                     'RefusedUnavailable', 'AwaitingSpellRepair', 'RefusedByChannel'},
@@ -884,16 +897,9 @@ labels = {
               'trade_open', 'trade_observation', 'inventory', 'visibility', 'appearances',
               'frame', 'frame_error', 'held', 'step_due', 'probe', 'server_message',
               'serene', 'quest_log', 'chat', 'combat', 'chase', 'target_move', 'npc',
-              'baseline', 'held_unplayable', 'held_no_baseline', 'snapshot_encode',
-              'snapshot_write', 'snapshot_flushed', 'live_sounds', 'live_movement_effects',
-              'live_ready', 'automatic_spells', 'spell_facts', 'resolve_session',
-              'reserve_precondition', 'conditions', 'gourmet', 'daily_streak', 'cast_facts',
-              'known_spells', 'monk', 'build', 'stamina', 'stance', 'equipment',
-              'familiar_group', 'spell_lane', 'revalidate_character', 'revalidate_session',
-              'authority_guard', 'death_items', 'home_town', 'tutorial_position',
-              'premium_temple', 'equipment_effects', 'channel_owner', 'premium_relocation',
-              'party_presence', 'progression', 'familiar_login', 'interpretation',
-              'starter_backpack', 'starter_kit', 'starting_loadout'} | spell_repair_phases,
+              'baseline', 'snapshot_encode', 'snapshot_write', 'snapshot_flushed',
+              'live_sounds', 'live_movement_effects', 'live_ready', 'automatic_spells',
+              'spell_facts'} | entry_phases | held_join_phases | spell_repair_phases,
     'deadline_exceeded': {'true', 'false'},
     'ready': {'true', 'false'},
 }
@@ -945,10 +951,16 @@ def report(line):
              'logout_busy': 16, 'control_loss_reconcile_pending': 16,
              'control_loss_grace': 16,
              'character_authority_check_failed': 16}.get(event, 8)
-    # Successful joins can fill their event quota before any repair failure occurs.
+    # Successful joins and ordinary closes can fill their event quotas before a refusal.
     phase = fields.get('phase')
-    bucket = (event, phase) if event == 'join_progress' and phase in spell_repair_phases else event
-    if event_counts[bucket] >= limit or emitted >= 128:
+    held_close = event == 'serve_end' and phase in held_join_phases
+    join_refusal = event == 'join_progress' and phase in held_join_phases | spell_repair_phases
+    terminal_join = held_close or join_refusal
+    bucket = (event, phase) if terminal_join else event
+    # Each terminal phase has at most eight records even after the normal global cap.
+    if terminal_join:
+        limit = 8
+    if event_counts[bucket] >= limit or (emitted >= 128 and not terminal_join):
         if bucket not in limited:
             print(f'NODE_BOOT_RUNTIME_LIMIT stage={stage} world_bundle={world} '
                   f'event={event} records={event_counts[bucket]}')

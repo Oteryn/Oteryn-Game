@@ -13,6 +13,10 @@ impl EntryPhase {
     pub(super) fn set(&self, phase: &'static str) {
         *self.0.lock().unwrap_or_else(|error| error.into_inner()) = phase;
     }
+
+    pub(super) fn current(&self) -> &'static str {
+        *self.0.lock().unwrap_or_else(|error| error.into_inner())
+    }
 }
 
 pub(super) type EntryResult = (
@@ -52,12 +56,7 @@ pub(super) async fn enter_with_retry(
         }
         _ => "unplayable",
     };
-    record_entry_decision(
-        outcome,
-        attempts,
-        started.elapsed(),
-        *phase.0.lock().unwrap_or_else(|error| error.into_inner()),
-    );
+    record_entry_decision(outcome, attempts, started.elapsed(), phase.current());
     result
 }
 

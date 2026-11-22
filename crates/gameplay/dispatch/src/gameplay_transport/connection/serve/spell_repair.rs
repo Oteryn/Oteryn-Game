@@ -69,7 +69,11 @@ where
                     return if repaired {
                         Ok(())
                     } else {
-                        record_join_progress("spell_repair_returned_false", admitted.first_entry);
+                        record_join_refusal(
+                            "spell_repair_returned_false",
+                            *admitted,
+                            "repair_returned_false",
+                        );
                         Err(ServeEnd::Closed(FoundationProtocolError::NotSupported))
                     };
                 }
@@ -92,7 +96,11 @@ where
         Ok(Err(ServeEnd::Closed(error))) => Err(close(stream, *admitted, error).await),
         Ok(Err(end)) => Err(end),
         Err(_) => {
-            record_join_progress("spell_repair_deadline_expired", admitted.first_entry);
+            record_join_refusal(
+                "spell_repair_deadline_expired",
+                *admitted,
+                "repair_deadline_expired",
+            );
             Err(close(stream, *admitted, FoundationProtocolError::NotSupported).await)
         }
     }
@@ -164,9 +172,17 @@ mod tests {
         let error = FoundationProtocolError::NotSupported;
         let expected_wire =
             encode_protocol_error(error, admitted.continuity.connection_generation)?;
-        for (stall, expected_phase) in [
-            (false, "spell_repair_returned_false"),
-            (true, "spell_repair_deadline_expired"),
+        for (stall, expected_phase, expected_reason) in [
+            (
+                false,
+                "spell_repair_returned_false",
+                "repair_returned_false",
+            ),
+            (
+                true,
+                "spell_repair_deadline_expired",
+                "repair_deadline_expired",
+            ),
         ] {
             let mut result = Ok(());
             let lines = oteryn_error_codes::capture(|| {
@@ -191,15 +207,23 @@ mod tests {
                 });
             });
             result?;
-            let phases: Vec<_> = lines
+            let progress: Vec<_> = lines
                 .iter()
                 .filter(|line| line.contains("event=join_progress "))
-                .filter_map(|line| {
-                    line.split_whitespace()
-                        .find_map(|field| field.strip_prefix("phase="))
-                })
                 .collect();
-            assert_eq!(phases, [expected_phase], "{lines:?}");
+            let [line] = progress.as_slice() else {
+                return Err(format!("expected one join progress record: {lines:?}").into());
+            };
+            for field in [
+                format!("phase={expected_phase}"),
+                "first_entry=AwaitingSpellRepair".into(),
+                format!("reason={expected_reason}"),
+            ] {
+                assert!(
+                    line.split_whitespace().any(|token| token == field),
+                    "{line}"
+                );
+            }
         }
         Ok(())
     }
