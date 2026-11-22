@@ -149,7 +149,10 @@ impl WaterFishing {
             Desert => (13989, Some(if loot_roll > 96_000 { 13992 } else { 3578 })),
             // Crystal mechanical_fishing.lua:170-195. The spent form has a 20-minute decay.
             MechanicalDesert => (13988, (loot_roll <= 1_000).then_some(13992)),
-            ProjectedDesert => (DESERT_FISHING_SPENT, (loot_roll <= 1_000).then_some(SANDFISH)),
+            ProjectedDesert => (
+                DESERT_FISHING_SPENT,
+                (loot_roll <= 1_000).then_some(SANDFISH),
+            ),
             // Crystal mechanical_fishing.lua:108-166. A 30% loot branch, with a 1% rare
             // draw inside it, is 300 swimmer and 29,700 trash outcomes per 100,000.
             Dirty => (
@@ -171,7 +174,10 @@ impl WaterFishing {
     pub fn decay(self, target: u16) -> Vec<(u32, i64)> {
         match self {
             Self::Ice => vec![(7200, 900_000)],
-            Self::ProjectedDesert => vec![(u32::from(DESERT_FISHING_WATER), i64::from(DESERT_FISHING_RECOVERY_MS))],
+            Self::ProjectedDesert => vec![(
+                u32::from(DESERT_FISHING_WATER),
+                i64::from(DESERT_FISHING_RECOVERY_MS),
+            )],
             Self::MechanicalSewer
             | Self::MechanicalWater
             | Self::Dirty
@@ -377,9 +383,8 @@ pub fn gathering_attempt(
 ) -> Option<GatheringAttempt> {
     // Crystal 201189f data-global/scripts/actions/other/fishing.lua:148–175.
     if tool == 3483 && target == DESERT_FISHING_WATER {
-        return ((1..=100_000).contains(&yield_roll) && catches(skill, catch_roll)).then_some(
-            WaterFishing::ProjectedDesert.special_catch(target, yield_roll)?,
-        );
+        return ((1..=100_000).contains(&yield_roll) && catches(skill, catch_roll))
+            .then_some(WaterFishing::ProjectedDesert.special_catch(target, yield_roll)?);
     }
     if tool == 9306 && MECHANICAL_FISHING_WATER.contains(&target) {
         if !(1..=100_000).contains(&yield_roll) || !catches(skill, catch_roll) {

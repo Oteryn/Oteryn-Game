@@ -25,7 +25,7 @@ fn fishing_sources_mechanical_shallows_spend_nail_and_replay_the_catch() -> Test
         yield_item: Some(9307),
         committed: true,
         in_sewers: true,
-        projected_desert: false,
+        projected_desert: None,
         select_roll: Some(|catch, _| catch <= 10_000),
         consumes_bait: true,
     })
@@ -40,7 +40,7 @@ fn fishing_sources_desert_water_yields_sandfish_on_the_four_percent_tier() -> Te
         yield_item: Some(13992),
         committed: true,
         in_sewers: false,
-        projected_desert: false,
+        projected_desert: None,
         select_roll: Some(|catch, loot| catch <= 10_000 && loot > 96_000),
         consumes_bait: true,
     })
@@ -55,7 +55,7 @@ fn fishing_sources_dirty_water_can_spend_a_worm_and_yield_nothing() -> TestResul
         yield_item: None,
         committed: true,
         in_sewers: false,
-        projected_desert: false,
+        projected_desert: None,
         select_roll: Some(|catch, loot| catch <= 10_000 && loot > 30_000),
         consumes_bait: true,
     })
@@ -70,7 +70,7 @@ fn fishing_sources_dirty_loot_uses_the_weighted_table_without_bait() -> TestResu
         yield_item: Some(3578),
         committed: true,
         in_sewers: false,
-        projected_desert: false,
+        projected_desert: None,
         select_roll: Some(|_, loot| (493..=600).contains(&loot)),
         consumes_bait: false,
     })
@@ -85,7 +85,7 @@ fn fishing_sources_sewer_drain_uses_the_exact_spent_appearance() -> TestResult {
         yield_item: Some(9307),
         committed: true,
         in_sewers: true,
-        projected_desert: false,
+        projected_desert: None,
         select_roll: Some(|catch, _| catch <= 10_000),
         consumes_bait: true,
     })
@@ -100,7 +100,7 @@ fn fishing_sources_spent_desert_water_cannot_yield_fish() -> TestResult {
         yield_item: None,
         committed: false,
         in_sewers: false,
-        projected_desert: false,
+        projected_desert: None,
         select_roll: Some(|catch, _| catch <= 10_000),
         consumes_bait: false,
     })
@@ -115,7 +115,7 @@ fn fishing_sources_owned_elemental_remains_are_spent_once_without_bait() -> Test
         yield_item: Some(3578),
         committed: true,
         in_sewers: false,
-        projected_desert: false,
+        projected_desert: None,
         select_roll: None,
         consumes_bait: false,
     })

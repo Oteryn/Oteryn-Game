@@ -214,9 +214,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             request.ingredient = Some(ingredient);
             request.station = Some(entry.item.definition.clone());
         }
-        use oteryn_gameplay_items::fishing::{
-            DESERT_FISHING_WATER,
-        };
+        use oteryn_gameplay_items::fishing::DESERT_FISHING_WATER;
         let (station, map_target) = {
             if let Some(station) = request.station.clone() {
                 (
@@ -315,9 +313,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
             .ok()?;
-        let entries = inventory.backpack.iter().flat_map(|bag| &bag.entries)
+        let entries = inventory
+            .backpack
+            .iter()
+            .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry));
-        let tool = entries.clone().find(|entry| entry.item.item_instance_id == source);
+        let tool = entries
+            .clone()
+            .find(|entry| entry.item.item_instance_id == source);
         let mut water_fishing = None;
         if request.ingredient.is_none()
             && let Some(rod) = tool
@@ -333,19 +336,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let has_nail = entries
                 .clone()
                 .any(|entry| entry.item.definition.production_key == fishing::NAIL);
-            let mode = if map_target.4 {
-                let position = (target_pos.x, target_pos.y, -target_pos.floor);
-                let projected = self.bundle_map()
-                    .is_some_and(|map| map.overlay.base().layer_epoch() == Some(self.reset_epoch));
-                if tool_id != 3483 || !projected
-                    || !self.root.world_changes(self.world_id, self.reset_epoch).await
-                        .ok().flatten().is_some_and(|day| day.variants.owns_tile_entry(
-                            "river_runs_deep", position, DESERT_FISHING_WATER,
-                        ))
-                {
-                    return disposition(UseDisposition::NothingToUse);
-                }
+            let projected_desert = if target_id == DESERT_FISHING_WATER
+                && self
+                    .bundle_map()
+                    .is_some_and(|map| map.overlay.base().layer_epoch() == Some(self.reset_epoch))
+            {
+                self.root
+                    .world_changes(self.world_id, self.reset_epoch)
+                    .await
+                    .ok()
+                    .flatten()
+                    .is_some_and(|day| {
+                        day.variants.owns_tile_entry(
+                            "river_runs_deep",
+                            (target_pos.x, target_pos.y, -target_pos.floor),
+                            DESERT_FISHING_WATER,
+                        )
+                    })
+            } else {
+                false
+            };
+            let mode = if projected_desert && tool_id == 3483 {
                 Some(WaterFishing::ProjectedDesert)
+            } else if projected_desert || map_target.4 {
+                return disposition(UseDisposition::NothingToUse);
             } else {
                 fishing::water_fishing(tool_id, target_id, in_sewers, has_nail)
             };

@@ -151,8 +151,11 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look_fixtures::seed_main_backpack(&harness, &[(rod, 1), ("oteryn:item.tibia.i3492", 3)])
-            .await?;
+        super::item_look_fixtures::seed_main_backpack(
+            &harness,
+            &[(rod, 1), ("oteryn:item.tibia.i3492", 3)],
+        )
+        .await?;
         super::achievement_granters::seed_gathering(&harness).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
@@ -346,7 +349,7 @@ fn run_gathering_at(
                 yield_item,
                 committed,
                 in_sewers,
-                projected_desert: false,
+                projected_desert: None,
                 select_roll: if tool == 9306 && !in_sewers {
                     Some(|catch, _| catch <= 10_000)
                 } else {
@@ -354,7 +357,7 @@ fn run_gathering_at(
                 },
                 consumes_bait: matches!(tool, 3483 | 9306) && committed,
             })
-                .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())
         })?
         .join()
         .map_err(|_| "gathering e2e panic")??;

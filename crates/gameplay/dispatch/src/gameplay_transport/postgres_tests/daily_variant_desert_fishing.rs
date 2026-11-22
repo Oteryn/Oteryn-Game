@@ -18,7 +18,7 @@ fn daily_variant_river_fishing_spends_bait_and_replays_the_single_sandfish() -> 
                 yield_item: Some(SANDFISH),
                 committed: true,
                 in_sewers: false,
-                projected_desert: true,
+                projected_desert: Some(oteryn_world_bundle::bundle::Family::Terrain),
                 select_roll: None,
                 consumes_bait: true,
             })
@@ -26,6 +26,36 @@ fn daily_variant_river_fishing_spends_bait_and_replays_the_single_sandfish() -> 
         })?
         .join()
         .map_err(|_| "desert fishing dispatch thread failed")??;
-    eprintln!("DAILY_VARIANT_POSTGRES_CASE_EXECUTED river_fishing elapsed_ms={}", started.elapsed().as_millis());
+    eprintln!(
+        "DAILY_VARIANT_POSTGRES_CASE_EXECUTED river_fishing elapsed_ms={}",
+        started.elapsed().as_millis()
+    );
+    Ok(())
+}
+
+#[test]
+fn daily_variant_river_fishing_spends_bait_without_a_sandfish_and_recovers() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            super::fishing_wire::gathering_scenario(super::fishing_wire::GatheringCase {
+                tool: 3483,
+                target_id: DESERT_FISHING_WATER,
+                after: Some(DESERT_FISHING_SPENT),
+                yield_item: None,
+                committed: true,
+                in_sewers: false,
+                projected_desert: Some(oteryn_world_bundle::bundle::Family::Item),
+                select_roll: None,
+                consumes_bait: true,
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "desert fishing dispatch thread failed")??;
     Ok(())
 }

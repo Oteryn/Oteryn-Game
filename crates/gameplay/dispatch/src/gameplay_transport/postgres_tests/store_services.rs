@@ -73,7 +73,18 @@ fn store_reward_access_is_spent_once_by_a_daily_claim_away_from_the_shrine() -> 
     };
     drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run("store-reward-access", || {
-        scenario(Scenario::RewardAccess)
+        scenario(Scenario::RewardAccess { dead: false })
+    })
+}
+
+#[test]
+fn store_reward_access_keeps_the_token_when_the_player_is_dead() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-reward-access-dead", || {
+        scenario(Scenario::RewardAccess { dead: true })
     })
 }
 
@@ -94,7 +105,7 @@ enum Scenario {
     Blessings,
     Rollback,
     Weekly,
-    RewardAccess,
+    RewardAccess { dead: bool },
     Premium,
 }
 
@@ -109,12 +120,36 @@ fn scenario(scenario: Scenario) -> TestResult {
             .await
             .map_err(debug)?;
         let deps = Dependencies::new()?;
-        let content = matches!(scenario, Scenario::Weekly | Scenario::RewardAccess).then(|| {
-            crate::content::native_gameplay::test_support::activated_with_loot_tables(
+        let content =
+            matches!(scenario, Scenario::Weekly | Scenario::RewardAccess { .. }).then(|| {
+                crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                    deps.admitted.world_id,
+                    None,
+                )
+            });
+        let deps = if let Some((controller, pin)) = &content {
+            let start = pin.entry_start();
+            let channel_pin = crate::foundation::ChannelContentPin::from_activation(
                 deps.admitted.world_id,
-                None,
-            )
-        });
+                pin.activation_sequence(),
+                pin.identity().server_artifact_digest(),
+                pin.identity().client_artifact_digest(),
+                pin.frame_binding().digest(),
+                pin.qualified_room().map_revision_digest(),
+                (start.x, start.y, start.floor),
+            );
+            let native = controller
+                .active()
+                .and_then(|active| active.native_gameplay())
+                .ok_or("active gameplay")?;
+            Dependencies::with_content(
+                channel_pin,
+                pin.qualified_room().clone(),
+                native.spell_book().clone(),
+            )?
+        } else {
+            deps
+        };
         let mut owner = deps.owner(&h, &authority);
         if let Some((controller, _)) = &content {
             owner.active_generation = Some(controller.active().ok_or("active generation")?);
@@ -198,8 +233,8 @@ fn scenario(scenario: Scenario) -> TestResult {
                 weekly_expansion(&h, &owner, admitted).await?;
                 vec![450]
             }
-            Scenario::RewardAccess => {
-                reward_access(&h, &owner, admitted).await?;
+            Scenario::RewardAccess { dead } => {
+                reward_access(&h, &owner, admitted, dead).await?;
                 vec![100]
             }
             Scenario::Premium => {
@@ -456,6 +491,7 @@ async fn reward_access(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
+    dead: bool,
 ) -> TestResult {
     use oteryn_protocol_oteryn::daily_reward as daily;
     let catalogue = catalogue()?;
@@ -471,10 +507,38 @@ async fn reward_access(
         command_id: 2,
         item_fence: admitted.item_fence,
     };
+    if dead {
+        use oteryn_gameplay_combat::ability::creature_bite::CreatureBiteVitals;
+        let mut runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+            owner.owner_now().get(),
+        );
+        states
+            .apply_creature_damage(&mut runtime, actor, admitted.game_session_id, 100_000, now)
+            .ok_or("lethal hit")?;
+        assert!(states.is_dead(actor));
+    }
     let first = owner
         .daily_command(actor, command, Some(daily::DailyRewardClaim))
         .await
         .ok_or("claim result")?;
+    if dead {
+        assert_eq!(
+            first,
+            daily::DailyRewardResult {
+                disposition: 4,
+                transaction_id: None
+            }
+            .encode()
+            .map_err(debug)?
+        );
+        let uses: i64 = sqlx::query_scalar("SELECT count(*) FROM game_store_reward_access_uses")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(uses, 0);
+        return Ok(());
+    }
     assert!(first.starts_with(&[8, 1, 18, 16]));
     let replay = owner
         .daily_command(actor, command, Some(daily::DailyRewardClaim))

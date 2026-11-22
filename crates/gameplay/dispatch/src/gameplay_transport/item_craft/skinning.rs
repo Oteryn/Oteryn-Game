@@ -153,7 +153,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let fresh_rabbit = rabbit_knife && corpse_id == Some(6017);
         let fishing = corpse_id.is_some_and(|target| fishing::is_fishing_corpse(tool_id, target));
-        if !fresh_rabbit && !fishing
+        if !fresh_rabbit
+            && !fishing
             && !corpse_id
                 .and_then(|target| {
                     oteryn_gameplay_items::fishing::corpse_skinning_rule(tool_id, target)

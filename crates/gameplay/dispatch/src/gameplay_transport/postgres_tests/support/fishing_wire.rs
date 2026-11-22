@@ -8,6 +8,7 @@ use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAut
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
+use oteryn_world_bundle::bundle::Family;
 
 pub(super) struct GatheringCase {
     pub tool: u16,
@@ -16,13 +17,23 @@ pub(super) struct GatheringCase {
     pub yield_item: Option<u16>,
     pub committed: bool,
     pub in_sewers: bool,
-    pub projected_desert: bool,
+    pub projected_desert: Option<Family>,
     pub select_roll: Option<fn(u32, u32) -> bool>,
     pub consumes_bait: bool,
 }
 
 pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
-    let GatheringCase { tool, target_id, after, yield_item, committed, in_sewers, projected_desert: desert, select_roll, consumes_bait } = case;
+    let GatheringCase {
+        tool,
+        target_id,
+        after,
+        yield_item,
+        committed,
+        in_sewers,
+        projected_desert,
+        select_roll,
+        consumes_bait,
+    } = case;
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "m09_gathering", true, false).await?;
@@ -68,21 +79,43 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
         } else {
             oteryn_gameplay_items::fishing::WORM
         };
+        let desert = projected_desert.is_some();
+        let desert_terrain = projected_desert == Some(Family::Terrain);
         let epoch = if desert {
             river_reset(&harness, deps.admitted.world_id).await?
         } else {
             0
         };
-        let start = if desert {
-            crate::map::overlay::TilePos { x: 33431, y: 31523, floor: -11 }
-        } else { crate::map::overlay::TilePos {
-            x: if sewer { 32742 } else { 6 },
-            y: if sewer { 31168 } else { 0 },
-            floor: if sewer { -8 } else { -7 },
-        }};
-        let (mut bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
+        let start = match (desert, sewer) {
+            (true, _) => crate::map::overlay::TilePos {
+                x: 33431,
+                y: 31523,
+                floor: -11,
+            },
+            (_, true) => crate::map::overlay::TilePos {
+                x: 32742,
+                y: 31168,
+                floor: -8,
+            },
+            _ => crate::map::overlay::TilePos {
+                x: 6,
+                y: 0,
+                floor: -7,
+            },
+        };
+        let spent = "oteryn:item.tibia.i13988";
+        let extra = if projected_desert == Some(Family::Item) {
+            vec![(
+                spent,
+                reference(spent).ok_or("spent desert water")?.get() - 1,
+            )]
+        } else {
+            Vec::new()
+        };
+        let (mut bytes, mut pins) = crate::map::boot::tests::bundle_with_item_states(
             (bag, reference(bag).ok_or("bag")?.get() - 1),
             (water, reference(water).ok_or("water")?.get() - 1),
+            &extra,
         );
         if sewer || desert {
             // Re-anchor the verified fixture at the exact gathering source.
@@ -103,21 +136,38 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
                     tile.y += dy;
                 }
             }
-            if desert {
-                use oteryn_world_bundle::bundle::{Family, PaletteEntry, Terrain, TerrainKind};
-                let projected_water = data.manifest.palette.iter_mut().find(|entry| entry.key == water)
+            if desert_terrain {
+                use oteryn_world_bundle::bundle::{PaletteEntry, Terrain, TerrainKind};
+                let projected_water = data
+                    .manifest
+                    .palette
+                    .iter_mut()
+                    .find(|entry| entry.key == water)
                     .ok_or("desert fixture water")?;
                 projected_water.key = "oteryn:terrain.tibia.i13989".into();
                 projected_water.family = Family::Terrain;
                 let terrain = Terrain {
-                    kind: TerrainKind::Ground, walkable: Some(true), ground_speed: Some(200),
+                    kind: TerrainKind::Ground,
+                    walkable: Some(true),
+                    ground_speed: Some(200),
                     blocks_projectile: None,
                 };
                 projected_water.terrain = Some(terrain);
+                let tile = data
+                    .sectors
+                    .iter_mut()
+                    .flat_map(|sector| &mut sector.tiles)
+                    .find(|tile| (tile.x, tile.y) == (start.x + 1, start.y))
+                    .ok_or("projected river tile")?;
+                tile.items.remove(0);
+
                 data.manifest.palette.push(PaletteEntry {
                     key: "oteryn:terrain.tibia.i13988".into(),
                     family: Family::Terrain,
-                    id: reference("oteryn:item.tibia.i13988").ok_or("spent desert water")?.get()-1,
+                    id: reference("oteryn:item.tibia.i13988")
+                        .ok_or("spent desert water")?
+                        .get()
+                        - 1,
                     terrain: Some(terrain),
                 });
             }
@@ -146,7 +196,20 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
                 door: false,
             })
         };
-        let map = checked.boot(deps.admitted.world_id, deps.admitted.channel_id, definitions)
+        let checked = crate::map::boot::check(bytes, boot_pins).map_err(debug)?;
+        let checked = if desert {
+            checked
+                .compose_epoch_admitted_layers(epoch, &[], &[])
+                .map_err(debug)?
+        } else {
+            checked
+        };
+        let map = checked
+            .boot(
+                deps.admitted.world_id,
+                deps.admitted.channel_id,
+                definitions,
+            )
             .map_err(debug)?;
         let cells = map
             .movement_cells(deps.room.movement_cells())
@@ -207,14 +270,25 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
         let mut carried = vec![(rod, 1)];
-        let bait_count = if matches!(target_id, 12560 | 9582) { 0 } else { 3 };
+        let bait_count = if matches!(target_id, 12560 | 9582) {
+            0
+        } else {
+            3
+        };
         if bait_count != 0 {
             carried.push((bait_key, bait_count));
         }
         super::item_look_fixtures::seed_main_backpack(&harness, &carried).await?;
         super::achievement_granters::seed_gathering(&harness).await?;
         if target_id == 9582 {
-            return fish_corpse(&owner, &harness, deps.actor, fence, yield_item.ok_or("corpse payout")?).await;
+            return fish_corpse(
+                &owner,
+                &harness,
+                deps.actor,
+                fence,
+                yield_item.ok_or("corpse payout")?,
+            )
+            .await;
         }
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
@@ -230,7 +304,7 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
             floor: start.floor,
         };
         placement.extend_from_slice(
-            &crate::map::view::placement_key(target_pos, 1)
+            &crate::map::view::placement_key(target_pos, u8::from(!desert_terrain))
                 .ok_or("target placement")?
                 .to_be_bytes(),
         );
@@ -342,7 +416,9 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
                         .finalize();
                     occurrence.copy_from_slice(&digest[..16]);
                     oteryn_simulation_determinism::deterministic_decision_u64(
-                        &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(digest.into()),
+                        &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+                            digest.into(),
+                        ),
                         oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(occurrence),
                         "gathering.yield",
                         0,
@@ -350,7 +426,10 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
                     .map_or(0, |draw| u32::try_from(draw % 600 + 1).unwrap_or(0))
                 } else {
                     crate::gameplay_transport::item_craft::gathering_roll(
-                        native.source_digest(), session, 1, &actual,
+                        native.source_digest(),
+                        session,
+                        1,
+                        &actual,
                     )
                     .unwrap_or(0)
                 };
@@ -398,7 +477,11 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
             .map_err(debug)?
             .ok_or("target tile")?;
         if let Some(appearance) = after.or((!committed).then_some(target_id)) {
-            assert!(tile.entries.iter().any(|e| e.facts.appearance_id == appearance));
+            assert!(
+                tile.entries
+                    .iter()
+                    .any(|e| e.facts.appearance_id == appearance)
+            );
         } else {
             assert!(!tile.entries.iter().any(|e| e.source.key()
                 == crate::map::view::MapEntryKey::Base(
@@ -427,7 +510,9 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
             (3483 | 9306, 7236, Some(7158 | 3580 | 7159)) => {
                 Some("oteryn:achievement/exquisite_taste")
             }
-            (3483 | 9306, 7236 | 4597 | 13988, Some(3578)) => Some("oteryn:achievement/here_fishy_fishy"),
+            (3483 | 9306, 7236 | 4597 | 13988, Some(3578)) => {
+                Some("oteryn:achievement/here_fishy_fishy")
+            }
             _ => None,
         };
         let achievement = super::achievement_granters::assert_gathering(&harness, earned).await?;
@@ -511,14 +596,14 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
                 assert_eq!(key, "oteryn:item.tibia.i7442");
             }
         }
-        if sewer && committed {
+        if (sewer || desert) && committed {
             let schedule: (Vec<i64>, Vec<i64>) = sqlx::query_as(
                 "SELECT decay_states,decay_delays FROM game_terrain_tool_transforms",
             )
             .fetch_one(&harness.pool)
             .await?;
-            assert_eq!(schedule, (vec![4597], vec![1_200_000]));
-            // Receipt replay preserves the rod and consumes exactly one nail.
+            assert_eq!(schedule, (vec![i64::from(target_id)], vec![1_200_000]));
+            // Receipt replay preserves the rod and consumes exactly one unit of bait.
             let bait: i64 = sqlx::query_scalar(
                 "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1",
             )
@@ -535,7 +620,11 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
                 crate::map::view::compose_tile(&map.overlay, &map.facts.pinned(), target_pos)
                     .map_err(debug)?
                     .ok_or("tile")?;
-            assert!(tile.entries.iter().any(|e| e.facts.appearance_id == 4597));
+            assert!(
+                tile.entries
+                    .iter()
+                    .any(|e| e.facts.appearance_id == target_id)
+            );
         }
         if target_id == 7236 && committed {
             let schedule: (Vec<i64>, Vec<i64>) = sqlx::query_as(
@@ -585,42 +674,81 @@ async fn fish_corpse(
     use std::num::NonZeroU64;
 
     super::maintain_ready(owner.root).await?;
-    let inventory = owner.root.read_item_use_inventory(owner.character, owner.holder, fence).await?;
-    let rod = inventory.backpack.iter().flat_map(|bag| &bag.entries)
+    let inventory = owner
+        .root
+        .read_item_use_inventory(owner.character, owner.holder, fence)
+        .await?;
+    let rod = inventory
+        .backpack
+        .iter()
+        .flat_map(|bag| &bag.entries)
         .find(|entry| entry.item.definition.production_key == "oteryn:item.tibia.i3483")
-        .ok_or("carried rod")?.item.item_instance_id;
+        .ok_or("carried rod")?
+        .item
+        .item_instance_id;
     let definition = TypedDefinitionRef {
         family: "Item".into(),
         production_key: "oteryn:item.tibia.i9582".into(),
         revision_ref: "definition-r1".into(),
     };
-    let native = owner.active_generation.and_then(crate::content::ActiveGeneration::native_gameplay)
+    let native = owner
+        .active_generation
+        .and_then(crate::content::ActiveGeneration::native_gameplay)
         .ok_or("active loot table")?;
-    let race = native.reward_table().row("oteryn:creature.water_elemental").map_err(debug)?
-        .race.clone().ok_or("water elemental race")?;
+    let race = native
+        .reward_table()
+        .row("oteryn:creature.water_elemental")
+        .map_err(debug)?
+        .race
+        .clone()
+        .ok_or("water elemental race")?;
     let cause = ItemMintCause::for_test(
-        owner.world_id, owner.channel_id, fence.scope_ownership_generation, 819, 1,
-        definition.clone(), CORPSE_MATERIALIZATION_PURPOSE_KEY.into(), 0,
-    ).with_corpse_race(race).map_err(debug)?;
-    let mut candidate = owner.root.freeze_item_mint(owner.character, owner.holder, ItemMintRequest {
-        cause,
-        item: definition,
-        quantity: 1,
-        ground: GroundPlacement {
-            spatial_position: crate::durability::map_item_mint_audit::map_item_spatial_position(7, 0, -7),
-            corpse_ref: vec![5; 16],
-            map_revision: "map-1".into(),
-            content_revision: "content-1".into(),
-            native_room_placement_context: vec![6; 16],
-        },
-        content_revision: "content-1".into(),
-        ruleset_revision: "ruleset-1".into(),
-        sim_revision: "sim-1".into(),
-    }).await?;
+        owner.world_id,
+        owner.channel_id,
+        fence.scope_ownership_generation,
+        819,
+        1,
+        definition.clone(),
+        CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
+        0,
+    )
+    .with_corpse_race(race)
+    .map_err(debug)?;
+    let mut candidate = owner
+        .root
+        .freeze_item_mint(
+            owner.character,
+            owner.holder,
+            ItemMintRequest {
+                cause,
+                item: definition,
+                quantity: 1,
+                ground: GroundPlacement {
+                    spatial_position:
+                        crate::durability::map_item_mint_audit::map_item_spatial_position(7, 0, -7),
+                    corpse_ref: vec![5; 16],
+                    map_revision: "map-1".into(),
+                    content_revision: "content-1".into(),
+                    native_room_placement_context: vec![6; 16],
+                },
+                content_revision: "content-1".into(),
+                ruleset_revision: "ruleset-1".into(),
+                sim_revision: "sim-1".into(),
+            },
+        )
+        .await?;
     let permit = candidate.fresh_death_lane_permit().await;
-    let ItemMintOutcome::Committed(minted) = owner.root.commit_corpse_mint(
-        &permit, owner.character, &harness.node, &mut candidate, id(41),
-    ).await? else {
+    let ItemMintOutcome::Committed(minted) = owner
+        .root
+        .commit_corpse_mint(
+            &permit,
+            owner.character,
+            &harness.node,
+            &mut candidate,
+            id(41),
+        )
+        .await?
+    else {
         return Err("water elemental corpse was not minted".into());
     };
     drop(permit);
@@ -628,7 +756,9 @@ async fn fish_corpse(
     let intent = UseIntent {
         target: UseTarget::Item(NonZeroU64::MIN),
         use_with: None,
-        use_with_map_item: Some(MapUseTarget::Item(NonZeroU64::new(2).ok_or("target handle")?)),
+        use_with_map_item: Some(MapUseTarget::Item(
+            NonZeroU64::new(2).ok_or("target handle")?,
+        )),
         use_with_position: None,
     };
     use oteryn_simulation_determinism::{
@@ -650,41 +780,64 @@ async fn fish_corpse(
                 DecisionOccurrenceId::from_bytes(occurrence),
                 "oteryn.corpse-fishing.v1",
                 0,
-            ).is_ok_and(|roll| roll % 6000 >= 4920)
-        }).ok_or("deterministic trash-tier corpse draw")?;
+            )
+            .is_ok_and(|roll| roll % 6000 >= 4920)
+        })
+        .ok_or("deterministic trash-tier corpse draw")?;
     let command = UseCommand {
         game_session_id: fence.game_session_id,
         command_id,
         item_fence: Some(fence),
     };
-    let first = owner.use_cooking_conversion(
-        actor, command, intent.clone(), Some(ItemKey::Instance(rod)), Some(ItemKey::Instance(corpse)),
-    ).await.ok_or("corpse fishing disposition")?;
+    let first = owner
+        .use_cooking_conversion(
+            actor,
+            command,
+            intent.clone(),
+            Some(ItemKey::Instance(rod)),
+            Some(ItemKey::Instance(corpse)),
+        )
+        .await
+        .ok_or("corpse fishing disposition")?;
     assert_eq!(first.disposition, UseDisposition::Committed);
-    let replay = owner.use_cooking_conversion(actor, command, intent, None, None)
-        .await.ok_or("corpse fishing replay disposition")?;
+    let replay = owner
+        .use_cooking_conversion(actor, command, intent, None, None)
+        .await
+        .ok_or("corpse fishing replay disposition")?;
     assert_eq!(replay.disposition, UseDisposition::Committed);
     let (key, revision): (String, String) = sqlx::query_as(
         "SELECT definition_production_key,state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
     ).bind(corpse.as_slice()).fetch_one(&harness.pool).await?;
     assert_eq!(key, "oteryn:item.tibia.i9583");
     assert_eq!(revision, "2");
-    let craft_count: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_item_craft_records WHERE NOT consume_source",
-    ).fetch_one(&harness.pool).await?;
+    let craft_count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_item_craft_records WHERE NOT consume_source")
+            .fetch_one(&harness.pool)
+            .await?;
     assert_eq!(craft_count, 1);
     let outputs: serde_json::Value = sqlx::query_scalar(
         "SELECT outputs FROM game_item_craft_records WHERE recipe='oteryn:fishing.corpse'",
-    ).fetch_one(&harness.pool).await?;
+    )
+    .fetch_one(&harness.pool)
+    .await?;
     assert_eq!(outputs.as_array().ok_or("corpse craft outputs")?.len(), 1);
-    assert_eq!(outputs[0]["key"], format!("oteryn:item.tibia.i{expected_yield}"));
+    assert_eq!(
+        outputs[0]["key"],
+        format!("oteryn:item.tibia.i{expected_yield}")
+    );
     Ok(())
 }
 
 async fn river_reset(h: &Harness, world: crate::foundation::WorldId) -> TestResult<u64> {
     use oteryn_gameplay_world_change::variants::Selected;
-    let epoch = (1..1_000).find(|epoch| Selected::roll(world.as_bytes(), *epoch)
-        .is_ok_and(|selected| selected.active().any(|(definition, _)| definition.key == "river_runs_deep")))
+    let epoch = (1..1_000)
+        .find(|epoch| {
+            Selected::roll(world.as_bytes(), *epoch).is_ok_and(|selected| {
+                selected
+                    .active()
+                    .any(|(definition, _)| definition.key == "river_runs_deep")
+            })
+        })
         .ok_or("flowing Zao river epoch")?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,'1970-01-01T06:00:00Z','1970-01')")

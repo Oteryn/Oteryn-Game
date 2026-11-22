@@ -65,8 +65,9 @@ BEGIN
           ON tool.item_instance_id=r.tool_item_instance_id
         WHERE r.game_session_id=NEW.game_session_id AND r.command_id=NEW.command_id
           AND r.created_xact_id=pg_current_xact_id()
-          AND r.transformed_item_id IN (12558,12559,12560,13988)
-          AND tool.definition_production_key='oteryn:item.tibia.i9306')
+          AND ((r.transformed_item_id IN (12558,12559,12560,13988)
+                AND tool.definition_production_key='oteryn:item.tibia.i9306')
+               OR (r.transformed_item_id=13988 AND tool.definition_production_key='oteryn:item.tibia.i3483')))
     THEN RAISE EXCEPTION 'empty fishing catch requires a fresh dirty or desert water receipt' USING ERRCODE='23514'; END IF;
     $arm$ FROM regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i') FOR 5);
 
