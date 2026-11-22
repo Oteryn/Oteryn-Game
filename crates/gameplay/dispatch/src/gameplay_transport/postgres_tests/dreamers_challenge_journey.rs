@@ -14,6 +14,7 @@ use crate::gameplay_transport::quest_log::QuestLogLines;
 use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
 };
+use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
     dreamer_fire_bug,
     loader::load_embedded_quest_state,
