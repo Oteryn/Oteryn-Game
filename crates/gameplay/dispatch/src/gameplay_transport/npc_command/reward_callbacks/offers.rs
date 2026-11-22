@@ -15,6 +15,8 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
         include_str!("../../../../../../../content/quests/npc-offers/qd-steal-from-thieves.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-m10.json"),
+        // Top of the City Quest/Spoiler (curid 31073, oldid 1050120), Mission Two.
+        include_str!("../../../../../../../content/quests/npc-offers/top-of-the-city.json"),
     ] {
         let document: Offers = serde_json::from_str(source).ok()?;
         if document.schema != 1 {

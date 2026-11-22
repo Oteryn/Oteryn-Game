@@ -23,6 +23,22 @@ fn m06q_quest_door_resolves_the_named_durable_quest_track() {
     assert!(copy.meets_door_storage(10089));
 }
 
+#[test]
+fn jimmy_door_requires_the_earned_top_of_the_city_stage() {
+    let mut copy = QuestStateCopy::default();
+    let stage = "oteryn:quest-progress/authored/top-of-the-city/stage";
+    let action = 65534;
+    copy.tracks
+        .insert(format!("oteryn:quest-progress/storage/{action}"), 1);
+    assert!(!copy.meets_door_storage(action));
+    copy.tracks.insert(stage.into(), 0);
+    assert!(!copy.meets_door_storage(action));
+    for value in 1..=5 {
+        copy.tracks.insert(stage.into(), value);
+        assert!(copy.meets_door_storage(action), "stage {value}");
+    }
+}
+
 fn id(tag: u8) -> [u8; 16] {
     [tag, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
 }

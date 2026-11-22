@@ -2454,6 +2454,19 @@
     },
     {
       "position": [
+        32858,
+        31374,
+        6
+      ],
+      "action": 65534,
+      "track": "oteryn:quest-progress/authored/top-of-the-city/stage",
+      "minimum": 1,
+      "item": 5289,
+      "classification": "TIBIAWIKI_STRUCTURED",
+      "source": "https://tibia.fandom.com/index.php?curid=31073&oldid=1050120"
+    },
+    {
+      "position": [
         32860,
         32517,
         11

@@ -63,9 +63,10 @@ const CITY_STAGE: &str = "oteryn:quest-progress/authored/top-of-the-city/stage";
 const PICK: &str = "oteryn:item.tibia.i3456";
 const OBSIDIAN_KNIFE: &str = "oteryn:item.tibia.i5908";
 
+/// The walkable tile north of Iriana; the pinned map blocks the diagonal tile north-west of her.
 pub(super) const fn city_start() -> Position {
     Position {
-        x: 32848,
+        x: 32849,
         y: 31299,
         floor: -7,
     }
@@ -431,35 +432,82 @@ async fn framed_talk(
     npc_actor: EntityRef,
     text: &str,
 ) -> TestResult {
+    use crate::foundation::{MessageType, decode_wire_envelope};
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
     use oteryn_protocol_oteryn::npc_service::{
         COMMAND_TYPE_NPC_TALK_INTENT, NpcTalkIntent, decode_npc_intent_result, encode_npc_talk_intent,
     };
-    for words in ["hi", text] {
-        owner.clock_origin = owner
-            .clock_origin
-            .checked_sub(std::time::Duration::from_secs(2))
-            .ok_or("NPC command window")?;
-        let payload = encode_npc_talk_intent(&NpcTalkIntent {
-            npc_actor,
-            text: words.into(),
-        })
-        .map_err(debug)?;
-        let command = admitted.continuity.next_command_id;
-        let reply = quest_world_callbacks_fixtures::wire(
-            owner,
-            admitted,
-            command,
-            COMMAND_TYPE_NPC_TALK_INTENT,
-            payload,
-        )
-        .await?;
-        assert_eq!(
-            decode_npc_intent_result(&reply).map_err(debug)?,
-            NpcIntentDisposition::Ok,
-            "{words}"
-        );
+    use oteryn_protocol_oteryn::{
+        ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
+    };
+    use tokio::io::AsyncWriteExt;
+
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("NPC command window")?;
+    let before = *admitted;
+    // A fresh join snapshot ends the conversation, so the greeting and the words share one connection.
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = async {
+        let ended = serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await;
+        drop(server);
+        ended
+    };
+    let driving = async {
+        while decode_wire_envelope(&read_frame(&mut client).await?)
+            .map_err(debug)?
+            .message_type()
+            != MessageType::SnapshotCommit
+        {}
+        let first = before.continuity.next_command_id;
+        for (command_id, words) in [(first, "hi"), (first + 1, text)] {
+            let payload = encode_npc_talk_intent(&NpcTalkIntent {
+                npc_actor,
+                text: words.into(),
+            })
+            .map_err(debug)?;
+            let frame = encode_client_command(
+                before.continuity.connection_generation,
+                &ClientCommandValue {
+                    command_id,
+                    command_type: COMMAND_TYPE_NPC_TALK_INTENT,
+                    payload: &payload,
+                },
+            )
+            .map_err(debug)?;
+            write_frame(&mut client, &frame).await?;
+            loop {
+                let frame = read_frame(&mut client).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                    assert_eq!(result.command_id, command_id);
+                    assert_eq!(result.status, CommandStatus::Accepted, "{words}");
+                    assert_eq!(
+                        decode_npc_intent_result(result.payload).map_err(debug)?,
+                        NpcIntentDisposition::Ok,
+                        "{words}"
+                    );
+                    break;
+                }
+            }
+        }
+        client.shutdown().await?;
+        Ok(())
+    };
+    let (ended, result): (_, TestResult) = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        super::fixture::join_two(serving, driving),
+    )
+    .await?;
+    if let ConnectionEnd::AdmittedThenDisconnected(current)
+    | ConnectionEnd::AdmittedThenClosed(current, _) = ended
+    {
+        *admitted = current;
     }
-    Ok(())
+    result
 }
 
 async fn relocate_city(
