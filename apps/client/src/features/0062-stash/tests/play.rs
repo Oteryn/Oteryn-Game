@@ -305,6 +305,17 @@ fn reverse_stash_pages_start_at_last_and_keep_withdraw_handle() -> Result<(), Er
             let refreshed = link.stash_panel();
             assert_eq!(refreshed.page, 0);
             assert_eq!(refreshed.rows[0].handle, [3;16]);
+            // The editor limits characters, while the protocol limits UTF-8 bytes.
+            link.stash_filter("é".repeat(65), String::new(), String::new());
+            link.stash_reverse();
+            link.stash_sort();
+            let rejected = link.stash_panel();
+            assert_eq!(rejected.reverse, refreshed.reverse);
+            assert_eq!(rejected.last_server_page, refreshed.last_server_page);
+            assert_eq!(rejected.sort, refreshed.sort);
+            assert_eq!(rejected.sort_edit, refreshed.sort_edit);
+            assert_eq!(rejected.rows, refreshed.rows);
+            assert!(!rejected.pending);
             drop(link);
             task.await?;
             Ok::<(), Error>(())

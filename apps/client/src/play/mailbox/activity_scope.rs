@@ -9,6 +9,7 @@ impl Mailbox {
             cancel.cancel();
             self.channel_probe_refreshed = None;
         }
+        self.logout_requested = None;
         self.reset_wire_frame();
         self.chat.scope = self.chat.scope.wrapping_add(1);
         // Every queued command belonged to the source namespace, including panel queries.
@@ -163,7 +164,6 @@ impl Mailbox {
         };
         self.stepped = None;
         self.combat.clear();
-        self.logout_requested = None;
         self.logout_refused = None;
         self.world_context.pending = false;
         self.world_context.targeting = None;
@@ -316,4 +316,37 @@ fn handoff_releases_hud_stamina_query_without_deselecting_it()
     destination.sync_resource_hud(&link);
     assert_eq!(commands.try_recv()?, PlayCommand::HudStamina);
     Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn logout_can_be_requested_after_handoff_discards_the_queued_command() {
+    let (link, mut commands, outbox) = super::play_channel();
+    lock(&outbox.0).activity_reset_commands = true;
+    link.request_logout();
+    assert!(outbox.death_command(&mut commands).is_err());
+    link.request_logout();
+    assert!(matches!(
+        outbox.death_command(&mut commands),
+        Ok(crate::combat_input::PlayCommand::Logout)
+    ));
+}
+
+#[cfg(test)]
+#[test]
+fn pending_scope_presentation_does_not_accept_a_logout_it_will_discard() {
+    let (link, mut commands, outbox) = super::play_channel();
+    {
+        let mut mailbox = lock(&outbox.0);
+        mailbox.scope_pending = true;
+        mailbox.scope_session = Some([1; 16]);
+    }
+    link.request_logout();
+    assert!(commands.try_recv().is_err());
+    link.scope_presented([1; 16]);
+    link.request_logout();
+    assert!(matches!(
+        commands.try_recv(),
+        Ok(crate::combat_input::PlayCommand::Logout)
+    ));
 }

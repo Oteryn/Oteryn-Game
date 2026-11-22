@@ -370,7 +370,10 @@ impl PlayLink {
     pub fn request_logout(&self) {
         let mut mailbox = lock(&self.mailbox);
         oteryn_client_ui::target_move::cancel(&mut mailbox.target_walk);
-        if mailbox.logout_requested.is_none() && self.commands.send(PlayCommand::Logout).is_ok() {
+        if !mailbox.scope_pending
+            && mailbox.logout_requested.is_none()
+            && self.commands.send(PlayCommand::Logout).is_ok()
+        {
             mailbox.logout_requested = Some(std::time::Instant::now());
         }
     }
