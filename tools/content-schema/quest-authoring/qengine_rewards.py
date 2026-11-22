@@ -993,13 +993,11 @@ def build():
         if label=='issavi':callbacks[-1]['sources'].append('owner:chosen-Issavi-attire-keeper-role:Eshaya:Wanted-report-s21')
     for label,quest,npc,family,level,ready,tokens,carried in [
             ('dream-warrior','dream_warrior_outfits_quest','vanys','dream_warrior',250,dream_ready,[(30169,5),(30168,1)],False),
-            ('issavi','authored.citizen_of_issavi_outfits_quest','eshaya','citizen_of_issavi',250,[requirement(wanted,1)],[(37003,1),(37002,1)],True),
-            ('makeshift','makeshift_warrior_outfits_quest','gnomadness','makeshift_warrior',100,[],[(27657,1),(27656,1)],True)]:
+            ('issavi','authored.citizen_of_issavi_outfits_quest','eshaya','citizen_of_issavi',250,[requirement(wanted,1)],[(37003,1),(37002,1)],True)]:
         for bit,(item,count) in enumerate(tokens,1):
             add('l11-'+label+'-'+('first' if bit==1 else 'second'),quest,npc,
                 ['document'] if carried else ['pomegranates' if bit==1 else 'ice shield'],[],
-                take=[(item,count)],outfit=(family,bit),topic=0 if carried else 8,requires=ready,
-                achievement='oteryn:achievement/cobbled_and_patched' if label=='makeshift' and bit==2 else None)
+                take=[(item,count)],outfit=(family,bit),topic=0 if carried else 8,requires=ready)
             callback=callbacks[-1];callback.update(minimum_level=level,requires_premium=True,
                 requires_outfits=['oteryn:outfit.'+family],forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
             if bit==2:callback['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
@@ -1008,16 +1006,6 @@ def build():
         if not carried:
             for words,before,after in [(['addon'],0,6),(['yes'],6,7),(['yes'],7,8)]:
                 source_offer(npc,words,before,after,[]);offers[-1]['requires']=ready
-    qualification=prefix+'makeshift_warrior/qualification'
-    declarations.append({'key':qualification,'quest':'oteryn:quest.makeshift_warrior_outfits_quest','initial':0,'min':0,'max':2,
-        'writable':True,'sources':['owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:s1-s2:gnomadness-role']})
-    add('l11-makeshift-start','makeshift_warrior_outfits_quest','gnomadness',['salvage'],[storage(qualification,0,1)],next_topic=11)
-    callbacks[-1].update(minimum_level=100,requires_premium=True)
-    callbacks[-1]['sources'].append('owner:chosen-Gnome-Deep-Hub-apprenticeship:meeting-admitted-Gnomadness-witnesses-exploration')
-    add('l11-makeshift-base','makeshift_warrior_outfits_quest','gnomadness',['yes'],[storage(qualification,1,2)],outfit=('makeshift_warrior',0),topic=11)
-    callbacks[-1].update(minimum_level=100,requires_premium=True,forbids_outfits=['oteryn:outfit.makeshift_warrior'])
-    callbacks[-1]['sources'].append('owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:base-qualification')
-    source_offer('gnomadness',['salvage'],0,11,[storage(qualification,1,1,preserve=True)])
     # L12: owner-selected fixed hunting trials; native deaths are the only counter writer.
     for label,family,quest,npc,level,counts,materials in [
         ('dragon-slayer','dragon_slayer','authored.dragon_slayer_outfits_quest','a_sweaty_cyclops',0,[('dragons',20),('dragon_lords',20)],[(5920,10),(5882,10)]),

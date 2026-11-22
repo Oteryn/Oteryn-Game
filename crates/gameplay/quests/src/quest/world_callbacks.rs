@@ -1682,6 +1682,109 @@ mod scene_tests;
 #[cfg(test)]
 mod tests {
     #[test]
+    fn life_ring_cache_mounts_a_completing_container_claim() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let cache = callbacks
+            .iter()
+            .find(|callback| callback.key == "oteryn:quest-callback/authored-life-ring-cache")
+            .ok_or("Life Ring cache")?;
+        let reward = cache.item_reward().as_ref().ok_or("cache reward")?;
+        assert_eq!(reward.item, "oteryn:item.tibia.i2853");
+        assert_eq!(reward.count, 1);
+        assert!(reward.backpack_outputs.is_empty());
+        assert_eq!(reward.contents.len(), 2);
+        assert_eq!(reward.contents[0].item, "oteryn:item.tibia.i3052");
+        assert_eq!(reward.contents[1].item, "oteryn:item.tibia.i3085");
+        assert!(reward.contents.iter().all(|child| child.count == 1));
+        assert!(super::primary_transition(cache)?.completes);
+        Ok(())
+    }
+
+    #[test]
+    fn liquid_black_mounts_coordinates_and_quick_access() -> Result<(), String> {
+        use super::{Position, Trigger, load, primary_transition};
+        let callbacks = load()?;
+        for (name, x, y, floor, ordinal, appearance) in [
+            ("coordinates", 33519, 31308, -8, 2, 2472),
+            ("quick-access", 33478, 31312, -7, 2, 1949),
+        ] {
+            let key = format!("oteryn:quest-callback/authored-liquid-black-{name}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or_else(|| format!("missing {key}"))?;
+            let selector = callback.selector.native.as_ref().ok_or("native selector")?;
+            assert_eq!(selector.position, Position { x, y, floor });
+            assert_eq!(
+                (selector.ordinal, selector.appearance),
+                (ordinal, appearance)
+            );
+            let visitor = &callback.storage[0];
+            assert_eq!(visitor.track, crate::quest::liquid_black::VISITOR);
+            if name == "coordinates" {
+                assert_eq!(callback.trigger, Trigger::Use);
+                assert_eq!((visitor.minimum, visitor.maximum, visitor.set), (1, 1, 2));
+                let reward = callback.item_reward().as_ref().ok_or("coordinates")?;
+                assert_eq!(reward.item, "oteryn:item.tibia.i14176");
+                assert_eq!(reward.count, 1);
+                assert_eq!(primary_transition(callback)?.effects.len(), 1);
+            } else {
+                assert_eq!(callback.trigger, Trigger::StepIn);
+                assert!(callback.return_on_failure && callback.is_read_only());
+                assert_eq!(visitor.minimum, 4);
+                let destination = (name == "quick-access").then_some(Position {
+                    x: 33446,
+                    y: 31288,
+                    floor: -14,
+                });
+                assert_eq!(callback.teleport, destination);
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn lion_inscriptions_mount_once_only_scroll_milestones() -> Result<(), String> {
+        use super::{Position, Trigger, load, primary_transition};
+        let callbacks = load()?;
+        for (name, x, y, appearance) in [
+            ("snake", 33095, 32244, 499),
+            ("lizard", 33130, 32300, 518),
+            ("scorpion", 33109, 32329, 499),
+            ("hyena", 33127, 32340, 499),
+        ] {
+            let key = format!("oteryn:quest-callback/authored-lions-rock-inscription-{name}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or_else(|| format!("missing {key}"))?;
+            assert_eq!(callback.trigger, Trigger::StepIn);
+            let selector = callback.selector.native.as_ref().ok_or("native selector")?;
+            assert_eq!(selector.position, Position { x, y, floor: -9 });
+            assert_eq!((selector.ordinal, selector.appearance), (0, appearance));
+            assert_eq!(callback.present.len(), 1);
+            assert_eq!(callback.present[0].item, "oteryn:item.tibia.i21467");
+            assert_eq!(callback.present[0].count, 1);
+            assert!(
+                callback
+                    .success_message
+                    .as_deref()
+                    .is_some_and(|text| text.contains(name) || text.contains("hyaena"))
+            );
+            let transition = primary_transition(callback)?;
+            assert_eq!(transition.effects.len(), 2);
+            let flag = &callback.storage[0];
+            assert!(flag.track.ends_with(&format!("/{name}_sign")));
+            assert_eq!((flag.minimum, flag.maximum, flag.set), (0, 0, 1));
+            let questline = &callback.storage[1];
+            assert_eq!(questline.track, crate::quest::lions_rock::QUESTLINE);
+            assert!(questline.increment);
+            assert_eq!(questline.set, 1);
+        }
+        Ok(())
+    }
+
+    #[test]
     fn completion_is_bounded_terminal_and_requires_unique_claim_identities() -> Result<(), String> {
         let document: serde_json::Value = serde_json::from_str(include_str!(
             "../../../../../content/quests/shared-access-callbacks.json"

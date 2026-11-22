@@ -201,7 +201,7 @@ pub fn load_embedded_quest_state(
     let lowered = lower_embedded_quest_state(content_revision)?;
     let bindings = super::authored_bindings::embedded::load().map_err(QuestLoadError::Json)?;
     let mut lowered = admit_native_bindings(lowered, bindings.as_ref())?;
-    super::reward_callbacks::retain_qc_reward_predecessors(&mut lowered.catalogue);
+    super::reward_callbacks::retain_published_reward_predecessors(&mut lowered.catalogue);
     Ok(lowered)
 }
 
