@@ -11,6 +11,7 @@ QUEST_REWARD_BOSSES = {
 BODIES = {
     **QUEST_REWARD_BOSSES,
     'an_observer_eye': 5995,
+    'arbaziloth': 50029,
     'armenius_creature': 6006,
     'grand_mother_foulscale': 5973,
     'orshabaal': 5995,
