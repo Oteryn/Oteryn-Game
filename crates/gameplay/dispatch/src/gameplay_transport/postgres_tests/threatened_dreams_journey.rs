@@ -3,7 +3,10 @@ use super::classic_quests_fixtures::{install, progress, talk};
 use super::fixture::{Harness, debug, id, run};
 use super::{ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1};
-use crate::gameplay_transport::connection::{FirstEntryOutcome, UseCommand};
+use crate::gameplay_transport::capabilities::SelectedCapabilities;
+use crate::gameplay_transport::connection::{
+    FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
+};
 use oteryn_gameplay_quests::quest::{threatened_dreams as quest, world_callbacks::Position};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
@@ -135,6 +138,17 @@ fn scenario(configured_admin: &str) -> TestResult {
             ));
             let mut admitted = deps.admitted;
             admitted.first_entry = FirstEntryOutcome::Positioned;
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[
+                    oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
+                    oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES,
+                    oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
+                    oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
+                    oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
+                ],
+            )
+            .ok_or("poacher item-use capabilities")?;
             let fence = owner
                 .current_quest_fence(admitted.game_session_id)
                 .await

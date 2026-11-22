@@ -19,6 +19,8 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                     callback.key.as_str(),
                     "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
+                        | "oteryn:quest-callback/authored-threatened-dreams/book-table-1"
+                        | "oteryn:quest-callback/authored-threatened-dreams/book-table-2"
                 ))
             || rottin_walls::accepts(callback)
             || callback.effects.place_item == Some(12187)
