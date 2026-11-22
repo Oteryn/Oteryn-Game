@@ -22,11 +22,14 @@ enters the shrine and lands beside the chest. These routes use fixed landings
 and objectives. The cave landing uses the swimming outfit qualified from
 Crystal's movement script and appearance data.
 
-Birthing Grounds remains unreachable through the northern forcefield at
-(33555, 31624, 13). The map export carries appearance 1949 at that position
-without a teleport destination. Crystal 201189f8 supplies no matching
-movement action, and the walkthrough identifies the entrance direction only.
-The Guardian still records `access_birthing` at completion.
+The northern forcefield at (33555, 31624, 13) opens when the Guardian accepts
+the Time Compass and records `access_birthing = 1`. Crystal 201189f8 leaves
+the destination unset and supplies no movement action for the forcefield.
+The pinned map places the Birthing Grounds return forcefield at
+(33426, 31741, 13), linked to (33553, 31624, 13). The entrance lands on the
+walkable tile directly south of that return forcefield at (33426, 31742, 13).
+[Crystal map](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm)
+[TibiaWiki](https://tibia.fandom.com/index.php?curid=69583&oldid=1149608)
 
 The pinned world scan verifies each callback's physical selector and floor,
 plus the routes' destination cells. The PostgreSQL chain exercises actual

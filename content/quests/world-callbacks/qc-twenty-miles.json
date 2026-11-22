@@ -1987,6 +1987,50 @@
       "offerings": []
     },
     {
+      "key": "oteryn:quest-callback/qc-twenty-miles-birthing-grounds-entrance",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "trigger": "step_in",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33555,
+            "y": 31624,
+            "floor": -13
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        },
+        "appearance": 1949
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/access_birthing",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?oldid=1149608",
+        "oteryn:content/world/placements/region-z13-x131-y123.b3 (northern forcefield at 33555,31624,13)",
+        "oteryn:content/world/placements/region-z13-x130-y123.b3 (ground at 33426,31742,13 beside the return forcefield at 33426,31741,13)"
+      ],
+      "teleport": {
+        "x": 33426,
+        "y": 31742,
+        "floor": -13
+      },
+      "effects": {
+        "scripted_teleport": true
+      },
+      "return_on_failure": true,
+      "reversible": false,
+      "passages": [],
+      "offerings": []
+    },
+    {
       "key": "oteryn:quest-callback/qc-twenty-miles-ring-cavern-exit",
       "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
       "trigger": "step_in",

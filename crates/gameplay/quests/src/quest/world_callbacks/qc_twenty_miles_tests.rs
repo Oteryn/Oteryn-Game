@@ -10,7 +10,7 @@ fn twenty_miles_world_steps_are_bound_to_distinct_placements() -> Result<(), Str
         .filter(|c| c.key.starts_with("oteryn:quest-callback/qc-twenty-miles-"))
         .collect();
     // 5 skull piles, 9 nacre altars, 4 hoard tiles, 3 chests, 3 broken altars, 1 sundial.
-    assert_eq!(steps.len(), 44);
+    assert_eq!(steps.len(), 45);
     let mut uses = BTreeSet::new();
     for step in &steps {
         assert_eq!(step.quest, QUEST);

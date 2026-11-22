@@ -24,6 +24,12 @@ pub(super) const START: Position = Position {
 };
 const QUEST: &str = "oteryn:quest.twenty_miles_beneath_the_sea_quest";
 const STAGE: &str = "oteryn:quest-progress/qc/twenty_miles/stage";
+const BIRTHING_ENTRANCE: &str = "birthing-grounds-entrance";
+const BIRTHING_LANDING: Position = Position {
+    x: 33426,
+    y: 31742,
+    floor: -13,
+};
 const LEGACY_HASH: &str = "955724dfc1c9b0392d23eaa22a2b771f739e367e9b7a07f2a7d75e524bfe3f3c";
 const NPCS: [(&str, Position); 3] = [
     (
@@ -70,10 +76,27 @@ pub(super) fn pinned_placements() -> TestResult<NpcPlacementTable> {
         .into_iter()
         .filter(|c| c.quest == QUEST)
         .collect();
-    assert_eq!(callbacks.len(), 44);
+    assert_eq!(callbacks.len(), 45);
     let mut matched = BTreeSet::new();
     let mut landings = BTreeSet::new();
+    let mut birthing_return = false;
     let world = bundle::visit(&bytes, |manifest, sector| {
+        // The pinned region-z13-x130-y123.b3 placement retains Crystal 201189f8's
+        // return forcefield at (33426, 31741, 13), one tile north of the landing.
+        if sector.floor == BIRTHING_LANDING.floor
+            && sector.sx == BIRTHING_LANDING.x / 32
+            && sector.sy == (BIRTHING_LANDING.y - 1) / 32
+        {
+            birthing_return = sector.tiles.iter().any(|tile| {
+                tile.x == BIRTHING_LANDING.x
+                    && tile.y == BIRTHING_LANDING.y - 1
+                    && tile.items.iter().any(|item| {
+                        item.depth == 0
+                            && item.attrs.teleport
+                                == Some((33553, 31624, BIRTHING_LANDING.floor.cast_unsigned()))
+                    })
+            });
+        }
         for callback in &callbacks {
             if let Some(at) = callback.teleport
                 && sector.floor == at.floor
@@ -127,6 +150,10 @@ pub(super) fn pinned_placements() -> TestResult<NpcPlacementTable> {
         .map(|b| format!("{b:02x}"))
         .collect::<String>();
     assert_eq!(pin["digest"], digest);
+    assert!(
+        birthing_return,
+        "missing return portal beside Birthing Grounds landing"
+    );
     for callback in &callbacks {
         assert!(
             matched.contains(&callback.key),
@@ -581,6 +608,8 @@ pub(super) async fn exercise(
     }
     say!(1, "guardian-compass-place", ["mission"], true);
     use_object(owner, admitted, "sundial", Some(21754), Committed).await?;
+    stage(h, 22).await?;
+    enter(owner, admitted, BIRTHING_ENTRANCE, false).await?;
     say!(1, "guardian-compass", ["compass"], true);
     stage(h, 23).await?;
     let done: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_states WHERE quest_key=$1 AND completed_character_revision IS NOT NULL)")
@@ -606,5 +635,10 @@ pub(super) async fn exercise(
     );
     assert_eq!(track(h, &energy).await?, 1);
     stage(h, 23).await?;
+    assert_eq!(
+        callback(BIRTHING_ENTRANCE)?.teleport,
+        Some(BIRTHING_LANDING)
+    );
+    enter(owner, admitted, BIRTHING_ENTRANCE, true).await?;
     Ok(())
 }
