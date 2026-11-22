@@ -1,4 +1,4 @@
-//! Kendra's Nostalgia passage through NPC_TALK, the pinned World and the durable travel owner.
+//! Kendra's live route hold and Crystal fare fixture through the durable NPC_TALK owner.
 use super::fixture::{Harness, debug, id, run};
 use super::npc_paid_travel_fixtures::talk;
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -23,6 +23,22 @@ const GOLD: &str = "oteryn:item.tibia.i3031";
 const NOSTALGIA: (i32, i32, i16) = (33494, 31059, 7);
 const THAIS: (i32, i32, i16) = (32259, 32262, 7);
 
+#[derive(Clone, Copy)]
+enum RoutePolicy {
+    LiveCatalogue,
+    CrystalPaidFixture,
+}
+
+#[test]
+fn kendra_thais_anniversary_route_does_not_quote_or_charge_outside_the_event() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("kendra-held", move || {
+        run(async move |_| scenario(admin, RoutePolicy::LiveCatalogue).await)
+    })
+}
+
 #[test]
 fn kendra_thais_live_passage_uses_postman_fare_and_exact_arrival() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
@@ -30,7 +46,7 @@ fn kendra_thais_live_passage_uses_postman_fare_and_exact_arrival() -> TestResult
     };
     let started = Instant::now();
     super::kill_reward_e2e_fixtures::scenario_thread::run("kendra-thais", move || {
-        run(async move |_| scenario(admin).await)
+        run(async move |_| scenario(admin, RoutePolicy::CrystalPaidFixture).await)
     })?;
     eprintln!(
         "POSTGRES_CASE_COMPLETED kendra_thais_live_passage_uses_postman_fare_and_exact_arrival {:?}",
@@ -39,7 +55,7 @@ fn kendra_thais_live_passage_uses_postman_fare_and_exact_arrival() -> TestResult
     Ok(())
 }
 
-async fn scenario(admin: String) -> TestResult {
+async fn scenario(admin: String, policy: RoutePolicy) -> TestResult {
     let world_id = WorldId::decode(&id(42)).map_err(debug)?;
     let (controller, pin) = activated_with_loot_tables(world_id, None);
     let active = controller.active().ok_or("active content")?;
@@ -112,7 +128,18 @@ async fn scenario(admin: String) -> TestResult {
         npc_catalogue_preproduction_limits(),
     )
     .map_err(debug)?;
-    let book = NpcTalkBook::from_model(&catalogue.service_model_for_project().map_err(debug)?);
+    let mut book = NpcTalkBook::from_model(&catalogue.service_model_for_project().map_err(debug)?);
+    if matches!(policy, RoutePolicy::CrystalPaidFixture) {
+        // Keep the exact donor fare/arrival coverage in an explicitly test-only book.
+        let mut entry = book.get(NPC).cloned().ok_or("Kendra talk entry")?;
+        let route = entry
+            .travel_routes
+            .iter_mut()
+            .find(|route| route.route.key == "thais")
+            .ok_or("Crystal Thais route")?;
+        route.held = false;
+        book = book.with(NPC, entry);
+    }
     let npc = {
         let mut runtime = deps.runtime.lock().await;
         runtime
@@ -137,6 +164,30 @@ async fn scenario(admin: String) -> TestResult {
     owner.admit_premium(id(40), session);
 
     talk(&owner, &deps, npc, 1, "hi").await?;
+    if matches!(policy, RoutePolicy::LiveCatalogue) {
+        owner.premium_coordinator = Some(&premium);
+        let refused = talk(&owner, &deps, npc, 2, "thais").await?;
+        assert_eq!(
+            refused.conversation.ok_or("route hold reply")?.lines,
+            ["I'm sorry but I don't sail there."]
+        );
+        let confirmed = talk(&owner, &deps, npc, 3, "yes").await?;
+        assert!(!confirmed.inventory_changed);
+        assert_eq!(live_position(&deps).await?, NOSTALGIA);
+        assert_eq!(carried_gold(&h).await?, 200);
+        let effects: (i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_newhaven_travel_receipts),
+                    (SELECT count(*) FROM game_character_pending_arrivals)",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(effects, (0, 0));
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
+
     let refused = talk(&owner, &deps, npc, 2, "thais").await?;
     assert!(
         refused
@@ -176,16 +227,7 @@ async fn scenario(admin: String) -> TestResult {
         "SELECT route, fare_gold_units, base_fare_gold_units, postman_discount_applied, arrived_at IS NOT NULL FROM game_newhaven_travel_receipts",
     ).fetch_one(&h.pool).await?;
     assert_eq!(receipt, (ROUTE.to_owned(), 170, 180, true, true));
-    let gold: i64 = sqlx::query_scalar(
-        "SELECT COALESCE(sum(i.quantity),0)::bigint FROM game_item_container_entries e
-         JOIN game_item_instances i USING(item_instance_id)
-         WHERE e.character_id=encode($1,'hex')::uuid AND i.definition_production_key=$2",
-    )
-    .bind(id(41).as_slice())
-    .bind(GOLD)
-    .fetch_one(&h.pool)
-    .await?;
-    assert_eq!(gold, 30);
+    assert_eq!(carried_gold(&h).await?, 30);
     let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pending_arrivals")
         .fetch_one(&h.pool)
         .await?;
@@ -194,6 +236,18 @@ async fn scenario(admin: String) -> TestResult {
     drop(authority);
     drop(seal);
     h.cleanup().await
+}
+
+async fn carried_gold(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT COALESCE(sum(i.quantity),0)::bigint FROM game_item_container_entries e
+         JOIN game_item_instances i USING(item_instance_id)
+         WHERE e.character_id=encode($1,'hex')::uuid AND i.definition_production_key=$2",
+    )
+    .bind(id(41).as_slice())
+    .bind(GOLD)
+    .fetch_one(&h.pool)
+    .await?)
 }
 
 fn kendra_placement() -> TestResult<NpcPlacementTable> {
