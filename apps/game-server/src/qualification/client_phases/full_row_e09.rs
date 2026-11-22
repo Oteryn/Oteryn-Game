@@ -10,8 +10,8 @@
 //! 5. Write the recipient on the parcel label, move that label into the parcel with ITEM_MOVE,
 //!    assert the accepted move and inventory delta, then post the parcel and assert `Posted`, its
 //!    removal, and an Inbox parcel delivery.
-//! 6. Logout normally, obtain a fresh admission for the recipient, and re-run depot searches for
-//!    the stamped letter and parcel; both durable Inbox counts must remain present.
+//! 6. Logout normally. Durable Inbox readback after Platform-issued fresh admission
+//!    remains a gap in the reference World harness.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind};
 use oteryn_protocol_oteryn::{depot_search, item_view, mail, npc_service};
@@ -454,9 +454,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let letter = provisioning::item_reference(&definitions, 3505)?;
     let parcel = provisioning::item_reference(&definitions, 3503)?;
     let label = provisioning::item_reference(&definitions, 3507)?;
+    evidence(&format!(
+        "E09_GAP {}",
+        super::full_e2ef4::platform_admission_gap()
+    ));
     let mut client = connect_world(clients, 0xe9).await?;
-    let mut recipient = connect_character(clients, 0xeb, 0).await?;
-    let session = recipient.join_snapshot().game_session_id;
+    let mut recipient =
+        super::full_e2ef4::keep_alive(&mut client, connect_character(clients, 0xeb, 0)).await?;
     let entities = recipient
         .world_entities()
         .ok_or("recipient entities absent")?;
@@ -471,12 +475,24 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .to_owned();
     let path = route(world, tile(recipient.world_spatial().actor_position)?, |at| near_locker(world, at))
         .ok_or("step=recipient-locker need=reachable-authored-locker-for-inbox-search; source:crates/gameplay/dispatch/src/gameplay_transport/depot_search.rs:93")?;
-    walk(&mut recipient, world, &path).await?;
+    super::full_e2ef4::keep_alive(&mut client, walk(&mut recipient, world, &path)).await?;
     let letters_before = inbox(&depot_search(&mut recipient, 3506).await?);
     let parcels_before = inbox(&depot_search(&mut recipient, 3504).await?);
-    acquire(&mut client, world, &metadata.npcs, letter, 2).await?;
-    acquire(&mut client, world, &metadata.npcs, parcel, 1).await?;
-    acquire(&mut client, world, &metadata.npcs, label, 1).await?;
+    super::full_e2ef4::keep_alive(
+        &mut recipient,
+        acquire(&mut client, world, &metadata.npcs, letter, 2),
+    )
+    .await?;
+    super::full_e2ef4::keep_alive(
+        &mut recipient,
+        acquire(&mut client, world, &metadata.npcs, parcel, 1),
+    )
+    .await?;
+    super::full_e2ef4::keep_alive(
+        &mut recipient,
+        acquire(&mut client, world, &metadata.npcs, label, 1),
+    )
+    .await?;
     row.pass(
         "player-bought-mail-items",
         (
@@ -509,7 +525,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             && at.x.abs_diff(mailbox_at.x).max(at.y.abs_diff(mailbox_at.y)) <= 1
     })
     .ok_or("step=walk-mailbox observed=route-disappeared need=reachable-adjacent-tile")?;
-    walk(&mut client, world, &path).await?;
+    super::full_e2ef4::keep_alive(&mut recipient, walk(&mut client, world, &path)).await?;
     let mailbox_handle = visible_mailbox_handle(&mut client, &definitions, mailbox_at)?;
     let before_letters = units(&client, letter);
     let outcome = post(&mut client, first.handle.get(), mailbox_handle).await?;
@@ -583,27 +599,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=recipient-logout observed=refused need=accepted-logout".into());
     }
-    drop(recipient);
-    let mut fresh = connect_character(clients, 0xea, 0).await?;
-    if fresh.join_snapshot().game_session_id == session {
-        return Err("step=fresh-admission observed=reused-session need=new-session".into());
-    }
-    let letter_after = depot_search(&mut fresh, 3506).await?;
-    let parcel_after = depot_search(&mut fresh, 3504).await?;
-    if inbox(&letter_after) != inbox(&delivered) || inbox(&parcel_after) != inbox(&parcel_delivery)
-    {
-        return Err(format!("step=durable-inbox observed=letter-{letter_after:?}-parcel-{parcel_after:?} need=persisted-inbox-counts").into());
-    }
-    row.pass(
-        "fresh-admission-durable-inbox",
-        (letter_after, parcel_after),
-    );
-    if fresh.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=final-logout observed=refused need=accepted-logout".into());
-    }
-    Ok(())
+    Err(super::full_e2ef4::platform_admission_gap())
 }
 
 #[cfg(test)]

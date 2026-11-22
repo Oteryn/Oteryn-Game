@@ -107,7 +107,7 @@ fn visible_npc(client: &DevClientSession, npc: &oteryn_world_bundle::npc::Npc) -
     }).map(|entity| entity.entity)
 }
 
-async fn approach(
+pub(super) async fn approach(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npc: &oteryn_world_bundle::npc::Npc,

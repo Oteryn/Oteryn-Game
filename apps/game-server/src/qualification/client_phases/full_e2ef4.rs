@@ -91,15 +91,6 @@ pub(super) async fn run(
     npcs: &oteryn_world_bundle::npc::Table,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) {
-    // A row interrupted during an exchange cannot reuse its old connection.
-    async fn recover(client: &mut Option<DevClientSession>, clients: &SeamClients<'_>) {
-        if client.is_none() {
-            match connect_world(clients, 0x80).await {
-                Ok(fresh) => *client = Some(fresh),
-                Err(error) => evidence(&format!("E2EF4_GAP fresh-admission {error}")),
-            }
-        }
-    }
     // Each row reports even when another row has missing content or a refused command.
     // Socket waits are bounded; a timed-out session is not evidence of server absence.
     macro_rules! row {
@@ -107,7 +98,6 @@ pub(super) async fn run(
         // travel outside the journey budget, as E01's walk to Sam is; each walked tile is
         // progress, so a stalled walk ends on the no-progress watchdog.
         (travel $to:ident, $id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
-            recover(client, clients).await;
             let mut row = Row::new("E2EF4", $id, $actions).evidence(EVIDENCE, EVIDENCE).gap_lines();
             let watch = row.watch();
             let result = if let Some(active) = client.as_mut() {
@@ -132,7 +122,7 @@ pub(super) async fn run(
                     row!(@journey client, row, watch, active, $journey $(, $arg)*)
                 }
             } else {
-                Err("prior-native-journey-deadline;connection-closed;actions-unproven".into())
+                Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into())
             };
             if result.as_ref().err().is_some_and(|error| matches!(verdict::classify(error.as_ref()), verdict::Cause::Transport { .. })) {
                 *client = None;
@@ -159,7 +149,6 @@ pub(super) async fn run(
             result
         }};
         ($id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
-            recover(client, clients).await;
             let mut row = Row::new("E2EF4", $id, $actions).evidence(EVIDENCE, EVIDENCE).gap_lines();
             let watch = row.watch();
             let result = if let Some(active) = client.as_mut() {
@@ -179,7 +168,7 @@ pub(super) async fn run(
                 }
                 result
             } else {
-                Err("prior-native-journey-deadline;connection-closed;actions-unproven".into())
+                Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into())
             };
             if result.as_ref().err().is_some_and(|error| matches!(verdict::classify(error.as_ref()), verdict::Cause::Transport { .. })) {
                 *client = None;
@@ -199,13 +188,13 @@ pub(super) async fn run(
             }
             result
         } else {
-            Err("prior-native-journey-deadline;connection-closed;actions-unproven".into())
+            Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into())
         };
         row.finish(&result);
     }
     row!("E03", E03, coins, world, spawns);
-    row!("E04", E04, trade, clients, world);
-    row!(travel locker, "E05", E05, market, clients, world);
+    row!("E04", E04, trade, clients, world, spawns);
+    row!(travel locker, "E05", E05, market, clients, world, npcs, spawns);
     row!(travel locker, "E07", E07, storage, clients);
     row!(travel town, "S01", S01, party, clients, world, spawns);
     row!("S03", S03, guild);
@@ -237,12 +226,11 @@ fn own(client: &DevClientSession) -> TestResult<EntityRef> {
         .ok_or_else(|| "native own actor absent".into())
 }
 
-async fn approach_peer(
+async fn approach_position(
     client: &mut DevClientSession,
-    peer: &DevClientSession,
+    other: TilePos,
     world: &BundleWorld,
 ) -> TestResult {
-    let other = tile(peer.world_spatial().actor_position)?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at != other
             && at.floor == other.floor
@@ -699,7 +687,9 @@ async fn trade(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
+    evidence(&format!("E2EF4_GAP E04 {}", platform_admission_gap()));
     use oteryn_dev_client::{
         client_runtime::player_trade as runtime, client_ui::player_trade as ui,
     };
@@ -715,16 +705,20 @@ async fn trade(
         return Err("cancel retained open trade".into());
     }
     // Cancelling no active trade does not qualify the row's cancellation action.
-    let item = client
-        .inventory()
-        .and_then(|i| i.entries.first())
-        .copied()
-        .ok_or("no direct-backpack leaf for real trade;starter backpack itself is not a leaf")?;
-    let mut peer = connect_character(clients, 0x81, 0).await?;
+    let mut peer = keep_alive(client, connect_character(clients, 0x81, 0)).await?;
+    let mut peer_logged_out = false;
     let result: TestResult = async {
-        approach_peer(client, &peer, world).await?;
-        let counter = trade_leaf(&peer, Some(item.item_definition_ref))
-            .ok_or("request/look: need a distinguishable carried leaf on the second starter before the server issues a trade ID; source:crates/gameplay/dispatch/src/gameplay_transport/player_trade/command.rs:392")?;
+        let item = keep_alive(&mut peer, acquire_leaf(client, world, spawns, None)).await?;
+        let counter = keep_alive(
+            client,
+            acquire_leaf(&mut peer, world, spawns, Some(item.item_definition_ref)),
+        )
+        .await?;
+        // The looting trip can leave the peer in combat. Reach a logout-capable
+        // PZ before arming the concurrent accept and logout probe.
+        keep_alive(client, return_to_pz(&mut peer, world)).await?;
+        let position = tile(peer.world_spatial().actor_position)?;
+        keep_alive(&mut peer, approach_position(client, position, world)).await?;
         let before_main = inventory_units(client)?;
         let before_peer = inventory_units(&peer)?;
         let id = open_reciprocal_trade(client, &mut peer, item, counter).await?;
@@ -745,15 +739,22 @@ async fn trade(
         if reply.result != runtime::player_trade::ResultCode::Cancelled || reply.state.phase != 4 {
             return Err("active trade cancellation did not close escrow".into());
         }
-        peer.session_mut().read_gated_delta(runtime::player_trade::STATE_DOMAIN_PLAYER_TRADE, 1).await?;
+        peer.session_mut()
+            .read_gated_delta(runtime::player_trade::STATE_DOMAIN_PLAYER_TRADE, 1)
+            .await?;
         wait_inventory(client, &before_main).await?;
         wait_inventory(&mut peer, &before_peer).await?;
-        row.pass("cancel", "active-offer-closed-and-both-inventories-retained");
+        row.pass(
+            "cancel",
+            "active-offer-closed-and-both-inventories-retained",
+        );
         let expected_main = swapped_inventory(before_main, item, counter)?;
         let expected_peer = swapped_inventory(before_peer, counter, item)?;
         let id = open_reciprocal_trade(client, &mut peer, item, counter).await?;
-        let accept = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Accept { trade_id: id })
-            .ok_or("trade accept encoding")?;
+        let accept = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Accept {
+            trade_id: id,
+        })
+        .ok_or("trade accept encoding")?;
         let first = runtime::send(client.session_mut(), &accept).await?;
         if first.result != runtime::player_trade::ResultCode::Accepted {
             return Err(format!("accept: first result={:?}", first.result).into());
@@ -761,8 +762,13 @@ async fn trade(
         let domain = runtime::player_trade::STATE_DOMAIN_PLAYER_TRADE;
         peer.session_mut().read_gated_delta(domain, 1).await?;
         let second = runtime::send(peer.session_mut(), &accept).await?;
-        if second.result != runtime::player_trade::ResultCode::Completed || second.state.phase != 4 {
-            return Err(format!("accept: second result={:?} phase={}", second.result, second.state.phase).into());
+        if second.result != runtime::player_trade::ResultCode::Completed || second.state.phase != 4
+        {
+            return Err(format!(
+                "accept: second result={:?} phase={}",
+                second.result, second.state.phase
+            )
+            .into());
         }
         client.session_mut().read_gated_delta(domain, 1).await?;
         wait_inventory(client, &expected_main).await?;
@@ -775,55 +781,71 @@ async fn trade(
         let raced_main = swapped_inventory(expected_main.clone(), item, counter)?;
         let raced_peer = swapped_inventory(expected_peer.clone(), counter, item)?;
         let id = open_reciprocal_trade(client, &mut peer, item, counter).await?;
-        let accept = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Accept { trade_id: id })
-            .ok_or("trade race encoding")?;
-        if runtime::send(client.session_mut(), &accept).await?.result != runtime::player_trade::ResultCode::Accepted {
+        let accept = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Accept {
+            trade_id: id,
+        })
+        .ok_or("trade race encoding")?;
+        if runtime::send(peer.session_mut(), &accept).await?.result
+            != runtime::player_trade::ResultCode::Accepted
+        {
             return Err("logout-race: first accept did not arm the race".into());
         }
-        peer.session_mut().read_gated_delta(domain, 1).await?;
+        client.session_mut().read_gated_delta(domain, 1).await?;
 
-        let old_main = client.join_snapshot().game_session_id;
-        let old_peer = peer.join_snapshot().game_session_id;
         let (logout, final_accept) = tokio::join!(
-            client.session_mut().logout(),
-            runtime::send(peer.session_mut(), &accept),
+            peer.session_mut().logout(),
+            runtime::send(client.session_mut(), &accept),
         );
         let logout = logout?;
+        peer_logged_out =
+            logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted);
         let accept = final_accept?;
         let (main, other) = match accept.result {
             runtime::player_trade::ResultCode::Completed => (raced_main, raced_peer),
-            runtime::player_trade::ResultCode::Stale | runtime::player_trade::ResultCode::Cancelled => (expected_main, expected_peer),
+            runtime::player_trade::ResultCode::Stale
+            | runtime::player_trade::ResultCode::Cancelled => (expected_main, expected_peer),
             result => return Err(format!("logout-race: unexpected final accept {result:?}").into()),
         };
-        if logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            *client = connect_world(clients, 0x88).await?;
-        } else if logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Busy) {
-            relog(client, clients).await?;
-        } else {
-            return Err(format!("logout-race: unexpected logout {logout:?}").into());
+        if !peer_logged_out {
+            if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Busy) {
+                return Err(format!("logout-race: unexpected logout {logout:?}").into());
+            }
+            wait_inventory(&mut peer, &other).await?;
         }
-        wait_inventory(&mut peer, &other).await?;
-        let (result, reply, attempts, timeout) = logout_retrying_busy(&mut peer).await?;
-        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("logout-race: peer release {reply}; attempts={attempts}; busy_timed_out={timeout}").into());
-        }
-        peer = connect_character(clients, 0x89, 0).await?;
-        if client.join_snapshot().game_session_id == old_main || peer.join_snapshot().game_session_id == old_peer
-            || inventory_units(client)? != main || inventory_units(&peer)? != other
-        {
-            return Err("relog-custody: concurrent accept/logout did not retain the one observed outcome for both characters".into());
-        }
-        row.pass("logout-race", "concurrent-accept-logout-resolved-without-split-custody");
-        row.pass("relog-custody", "both-fresh-sessions-retain-exact-quantities");
-        Ok(())
+        wait_inventory(client, &main).await?;
+        row.pass(
+            "logout-race",
+            "concurrent-accept-logout-observed-on-active-sessions",
+        );
+        Err(platform_admission_gap())
     }
     .await;
+    if peer_logged_out {
+        return result;
+    }
+    keep_alive(client, return_to_pz(&mut peer, world)).await?;
     let (cleanup_result, cleanup, attempts, busy_timed_out) =
-        super::logout_retrying_busy(&mut peer).await?;
+        keep_alive(client, super::logout_retrying_busy(&mut peer)).await?;
     if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("trade peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
     result
+}
+
+async fn acquire_leaf(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    exclude: Option<std::num::NonZeroU32>,
+) -> TestResult<oteryn_protocol_oteryn::item_view::ItemEntry> {
+    for creature in ["oteryn:creature.rat", "oteryn:creature.poison_spider"] {
+        if let Some(item) = trade_leaf(client, exclude) {
+            return Ok(item);
+        }
+        travel_to_spawn(client, world, spawns, creature).await?;
+        client_hunt::hunt(client).await?;
+    }
+    trade_leaf(client, exclude).ok_or("acquisition: authored rat and spider hunts yielded no eligible carried leaf; source:apps/game-server/src/qualification/client_phases/hunt.rs:105".into())
 }
 
 fn trade_leaf(
@@ -918,12 +940,83 @@ fn swapped_inventory(
     Ok(counts)
 }
 
+async fn fund_market(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    required: u64,
+) -> TestResult {
+    use super::client_row_e02::{approach, backpack_coins, coin_refs};
+    use super::full_row_e06::bank_balance;
+
+    let before = bank_balance(clients, 1).await?;
+    let needed = required.saturating_sub(before);
+    if needed == 0 {
+        return Ok(());
+    }
+    let gap = "market-funding: no reachable authored banker Paulie for earned gold deposit; source:content/world/npc-placements/placements-00000-00055.json:1";
+    let banker = npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == "oteryn:npc.paulie")
+        .ok_or(gap)?;
+    if route(world, tile(client.world_spatial().actor_position)?, |at| {
+        banker
+            .placements
+            .iter()
+            .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 3)
+    })
+    .is_none()
+    {
+        return Err(gap.into());
+    }
+
+    let refs = coin_refs()?;
+    for _ in 0..8 {
+        if backpack_coins(client, refs)?[0] >= needed {
+            break;
+        }
+        travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
+        client_hunt::hunt(client).await?;
+    }
+    if backpack_coins(client, refs)?[0] < needed {
+        return Err(format!("market-funding: rat loot did not supply {needed} backpack gold for the Market fee and escrow").into());
+    }
+    let actor = approach(client, world, banker).await?;
+    super::client_row_e01::talk(client, actor, "hi", None).await?;
+    let text = format!("deposit {needed} gold");
+    let quote = super::client_row_e01::talk(client, actor, &text, None).await?;
+    if !quote
+        .lines
+        .iter()
+        .any(|line| line == &format!("Do you want to deposit {needed} gold?"))
+    {
+        return Err(format!(
+            "market-funding: banker did not quote {needed} gold: {:?}",
+            quote.lines
+        )
+        .into());
+    }
+    super::client_row_e01::talk(client, actor, "yes", None).await?;
+    if bank_balance(clients, 1).await? != required {
+        return Err(
+            "market-funding: accepted dialogue did not credit exact required bank gold".into(),
+        );
+    }
+    locker(client, world).await
+}
+
 async fn market(
     row: &mut Row,
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+    spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
+    evidence(&format!("E2EF4_GAP E05 {}", platform_admission_gap()));
     use oteryn_dev_client::{client_runtime::market as runtime, client_ui::market as ui};
     // The row walked to the depot locker before this journey.
     let mut panel = ui::MarketPanel {
@@ -951,6 +1044,9 @@ async fn market(
         .into());
     }
     row.pass("browse", "native-wares-and-advertised-item-book-decoded");
+    let fee = oteryn_gameplay_economy::market::placement_fee(1, 1)
+        .map_err(|error| format!("market fee: {error:?}"))?;
+    fund_market(client, clients, world, npcs, spawns, 2 * fee + 1).await?;
     panel.sell = false;
     let command = ui::request(&mut panel, ui::Intent::CreateOffer).ok_or("market create input")?;
     let reply = runtime::send(client.session_mut(), &command).await?;
@@ -989,8 +1085,8 @@ async fn market(
     if !ui::apply_result(&mut panel, &reply) || !panel.rows.iter().any(|entry| entry.offer == id) {
         return Err("history: cancelled offer absent from personal history".into());
     }
-    let mut seller = connect_character(clients, 0x87, 0).await?;
-    let journey = market_settle(row, client, &mut seller, clients, world).await;
+    let mut seller = keep_alive(client, connect_character(clients, 0x87, 0)).await?;
+    let journey = market_settle(row, client, &mut seller, clients, world, spawns).await;
     let (result, reply, attempts, timeout) = logout_retrying_busy(&mut seller).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("market seller cleanup: {reply}; attempts={attempts}; busy_timed_out={timeout}; journey={journey:?}").into());
@@ -1004,18 +1100,15 @@ async fn market_settle(
     seller: &mut DevClientSession,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
     use super::full_row_e06::{bank_balance, command};
     use super::full_row_e08::depot_intent;
     use super::full_row_e09::{depot_search, inbox};
     use oteryn_protocol_oteryn::{depot, market::MarketRequest};
 
-    locker(seller, world).await?;
-    let item = seller
-        .inventory()
-        .and_then(|inventory| inventory.entries.first())
-        .copied()
-        .ok_or("accept: seller has no player-obtained leaf for depot custody")?;
+    let item = keep_alive(buyer, acquire_leaf(seller, world, spawns, None)).await?;
+    keep_alive(buyer, locker(seller, world)).await?;
     let definitions = provisioning::item_index()?;
     let (key, _) = definitions
         .definition_at(item.item_definition_ref)
@@ -1107,20 +1200,7 @@ async fn market_settle(
         return Err("history: exact settled unit missing from a participant's history".into());
     }
     row.pass("history", "both-histories-contain-exact-settled-offer");
-    relog(buyer, clients).await?;
-    let fresh_history = command(buyer, history_request).await?;
-    if inbox(&depot_search(buyer, client_id).await?) != after
-        || bank_balance(clients, 1).await? != charged
-        || bank_balance(clients, 0).await? != paid
-        || !settled_offer(&fresh_history, quote.offer, definition)
-    {
-        return Err("relog-settlement: buyer Inbox, account balances or history changed".into());
-    }
-    row.pass(
-        "relog-settlement",
-        "fresh-buyer-inbox-and-history-exact-settled-balances",
-    );
-    Ok(())
+    Err(platform_admission_gap())
 }
 
 fn settled_offer(
@@ -1366,9 +1446,10 @@ async fn party(
         )
         .map_err(|e| format!("party view: {e:?}").into())
     }
-    let mut peer = connect_character(clients, 0x82, 0).await?;
+    let mut peer = keep_alive(client, connect_character(clients, 0x82, 0)).await?;
     let result: TestResult = async {
-        approach_peer(client, &peer, world).await?;
+        let position = tile(peer.world_spatial().actor_position)?;
+        keep_alive(&mut peer, approach_position(client, position, world)).await?;
         send(client, Some(PartyIntent::Invite(own(&peer)?))).await?;
         let invitations = send(&mut peer, None).await?;
         let handle = invitations
@@ -1415,7 +1496,7 @@ async fn party(
         row.pass("leadership", "current-query-selected-member-is-leader");
         let split: TestResult = async {
             const RAT: &str = "oteryn:creature.rat";
-            travel_to_spawn(client, world, spawns, RAT).await?;
+            keep_alive(&mut peer, travel_to_spawn(client, world, spawns, RAT)).await?;
             let target = adjacent_creature(client)
                 .ok_or("shared-xp-split: authored rat route produced no adjacent live creature")?;
             let creature = client.world_entities().and_then(|view| view.get(&target))
@@ -1427,7 +1508,7 @@ async fn party(
                     && at.x.abs_diff(rat.x).max(at.y.abs_diff(rat.y)) <= 1
                     && world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
             }).ok_or("shared-xp-split: no reachable second attack tile beside the live rat")?;
-            walk(&mut peer, world, &path).await?;
+            keep_alive(client, walk(&mut peer, world, &path)).await?;
             let attack = peer.session_mut().attack_target(Some(&target)).await?;
             if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
                 return Err(format!("shared-xp-split: peer contribution refused: {attack:?}").into());
@@ -1436,8 +1517,8 @@ async fn party(
             if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
                 return Err(format!("shared-xp-split: main contribution refused: {attack:?}").into());
             }
-            let death = committed_hunt_death(client, clients, None, RAT, target,
-                tokio::time::Instant::now() + Duration::from_secs(45)).await?;
+            let death = keep_alive(&mut peer, committed_hunt_death(client, clients, None, RAT, target,
+                tokio::time::Instant::now() + Duration::from_secs(45))).await?;
             let first = death.awards.get(&clients.characters[0]).copied();
             let second = death.awards.get(&clients.characters[1]).copied();
             if !death.shared || death.awards.len() != 2 || first.is_none() || second.is_none() {
@@ -1467,9 +1548,9 @@ async fn party(
     if result.is_err() {
         let _ = send(client, Some(PartyIntent::Leave)).await;
     }
-    return_to_pz(&mut peer, world).await?;
+    keep_alive(client, return_to_pz(&mut peer, world)).await?;
     let (cleanup_result, cleanup, attempts, busy_timed_out) =
-        super::logout_retrying_busy(&mut peer).await?;
+        keep_alive(client, super::logout_retrying_busy(&mut peer)).await?;
     if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("party peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
@@ -1495,7 +1576,16 @@ async fn guild(row: &mut Row, client: &mut DevClientSession) -> TestResult {
 
 async fn logout(
     row: &mut Row,
-    _client: &mut DevClientSession,
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult {
+    keep_alive(client, logout_peer(row, clients, world, spawns)).await
+}
+
+async fn logout_peer(
+    row: &mut Row,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
@@ -1608,10 +1698,12 @@ async fn speech(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
+    evidence(&format!("E2EF4_GAP S18 {}", platform_admission_gap()));
     use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatSpeechMode};
-    let mut peer = connect_character(clients, 0x86, 0).await?;
+    let mut peer = keep_alive(client, connect_character(clients, 0x86, 0)).await?;
     let journey: TestResult = async {
-        approach_peer(client, &peer, world).await?;
+        let position = tile(peer.world_spatial().actor_position)?;
+        keep_alive(&mut peer, approach_position(client, position, world)).await?;
         let speaker = own(client)?;
         for (action, mode, text) in [
             ("say", ChatSpeechMode::Say, "E2EF4 adjacent say"),
@@ -1633,7 +1725,7 @@ async fn speech(
             let dy = at.y.abs_diff(speaker_at.y);
             at.floor == speaker_at.floor && dx <= 8 && dy <= 6 && (dx == 8 || dy == 6)
         }).ok_or("range: no walkable same-floor tile on the say/whisper boundary")?;
-        walk(&mut peer, world, &path).await?;
+        keep_alive(client, walk(&mut peer, world, &path)).await?;
         super::client_row_s18::speak(client, ChatSpeechMode::Say, "E2EF4 boundary say").await?;
         wait_heard(&mut peer, speaker, ChatSpeechMode::Say, "E2EF4 boundary say", true).await?;
         super::client_row_s18::speak(client, ChatSpeechMode::Whisper, "E2EF4 private text").await?;
@@ -1646,7 +1738,7 @@ async fn speech(
             let dy = at.y.abs_diff(speaker_at.y);
             at.floor == speaker_at.floor && ((dx == 9 && dy <= 6) || (dy == 7 && dx <= 8))
         }).ok_or("range: no walkable same-floor tile immediately outside the say boundary")?;
-        walk(&mut peer, world, &path).await?;
+        keep_alive(client, walk(&mut peer, world, &path)).await?;
         super::client_row_s18::speak(client, ChatSpeechMode::Say, "E2EF4 outside say").await?;
         wait_heard(&mut peer, speaker, ChatSpeechMode::Say, "E2EF4 outside say", false).await?;
         row.pass("range", "say-boundary-inside-outside-and-obscured-whisper");
@@ -1682,18 +1774,10 @@ async fn speech(
             break;
         }
     }
-    relog(client, clients).await?;
-    if client.chat_log().is_some_and(|log| {
-        log.lines().any(|line| {
-            matches!(
-                line, oteryn_dev_client::ChatLine::Local { text, .. } if text.starts_with("E2EF4 ")
-            )
-        })
-    }) {
-        return Err("fresh-login replayed prior local speech".into());
-    }
-    row.pass("fresh-login", "new-session-without-old-local-lines");
-    Err("yell-level-premium: need level-eligible yell and both under-level premium states; source:crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs:837".into())
+    evidence(
+        "E2EF4_GAP S18 yell-level-premium: need level-eligible yell and both under-level premium states; source:crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs:837",
+    );
+    Err(platform_admission_gap())
 }
 
 fn heard(
@@ -1821,4 +1905,75 @@ mod tests {
         reply.rows[0].state = 1;
         assert!(!settled_offer(&reply, offer, 10));
     }
+}
+
+async fn while_servicing<T, P>(
+    operation: impl Future<Output = TestResult<T>>,
+    parked: &mut P,
+    mut service: impl AsyncFnMut(&mut P) -> TestResult,
+) -> TestResult<T> {
+    let (done, mut stop) = tokio::sync::oneshot::channel();
+    let (result, liveness) = tokio::join!(
+        async {
+            let result = operation.await;
+            let _ = done.send(());
+            result
+        },
+        async {
+            while stop
+                .try_recv()
+                .is_err_and(|error| error == tokio::sync::oneshot::error::TryRecvError::Empty)
+            {
+                service(parked).await?;
+            }
+            Ok::<_, Box<dyn std::error::Error>>(())
+        },
+    );
+    // A broken parked connection must reach the caller, even if the operation
+    // also failed an assertion, so the family discards unusable sessions.
+    liveness?;
+    result
+}
+
+pub(super) async fn keep_alive<T>(
+    parked: &mut DevClientSession,
+    operation: impl Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    while_servicing(operation, parked, async |session| {
+        session.service_liveness(Duration::from_millis(100)).await?;
+        session.take_events();
+        Ok(())
+    })
+    .await
+}
+
+pub(super) fn platform_admission_gap() -> Box<dyn std::error::Error> {
+    "platform-admission: Platform-issued peer and fresh grants unavailable in the reference World harness; source:apps/game-server/src/qualification.rs:2720".into()
+}
+
+#[test]
+fn parked_session_is_serviced_until_operation_completes() -> TestResult {
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    rt.block_on(async {
+        let mut probes = 0;
+        let (ready, response) = tokio::sync::oneshot::channel();
+        let mut ready = Some(ready);
+        let op = async {
+            tokio::time::timeout(Duration::from_millis(100), response).await??;
+            Ok(())
+        };
+        while_servicing(op, &mut probes, async |probes| {
+            *probes += 1;
+            if let Some(ready) = ready.take() {
+                let _ = ready.send(());
+            }
+            tokio::task::yield_now().await;
+            Ok(())
+        })
+        .await?;
+        assert!(probes > 0);
+        Ok(())
+    })
 }
