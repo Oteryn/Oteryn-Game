@@ -44,7 +44,7 @@
       "source_path": "data-global/startup/tables/teleport_item.lua",
       "source_line": 45,
       "map_path": "content/world/placements/region-z07-x125-y126.b3",
-      "map_sha256": "203f0465d9d1373a41ec2e77590f63fc1e1adb0416c39b35f5622c53bf92bad8"
+      "map_sha256": "dd6d7b1fdd94aed020377b8e6dfd3bc216891c4969036cf34f844a8e4f3e8305"
     },
     {
       "position": [
@@ -58,7 +58,7 @@
       "source_path": "data-global/startup/tables/teleport_item.lua",
       "source_line": 45,
       "map_path": "content/world/placements/region-z07-x125-y126.b3",
-      "map_sha256": "203f0465d9d1373a41ec2e77590f63fc1e1adb0416c39b35f5622c53bf92bad8"
+      "map_sha256": "dd6d7b1fdd94aed020377b8e6dfd3bc216891c4969036cf34f844a8e4f3e8305"
     },
     {
       "position": [
@@ -72,7 +72,7 @@
       "source_line": 148,
       "storage_line": 362,
       "map_path": "content/world/placements/region-z08-x125-y126.b3",
-      "map_sha256": "2ae5fc270e0f91649c8e17c2edb7a83bfa410effd5fb0cafa9c09f80939ec704"
+      "map_sha256": "47f087d7ecf6486346d7d9e90b985605176c9a48561ca492b90aa3f79bfff351"
     },
     {
       "position": [
@@ -86,7 +86,7 @@
       "source_path": "data-global/startup/tables/door_level.lua",
       "source_line": 116,
       "map_path": "content/world/placements/region-z10-x125-y126.b3",
-      "map_sha256": "13360bece5e67fe7701947ef269c949ac5110752421f973bdbab9b432e2e58f6"
+      "map_sha256": "626a2a0a0e128cf4c978c927a37659e17561761a7588294904fabd21d0170c5b"
     },
     {
       "position": [
@@ -100,7 +100,21 @@
       "source_line": 153,
       "storage_line": 363,
       "map_path": "content/world/placements/region-z10-x126-y126.b3",
-      "map_sha256": "b55a1d19a97d0cdd2b7db8ece0554bea8aec3b91d6833782cca781b9e673385a"
+      "map_sha256": "fafd3cbbb3ae75bc87e3540660c1b14ac28d11834d906de29df8d55ed4946fb9"
+    },
+    {
+      "position": [
+        32479,
+        31903,
+        4
+      ],
+      "item": 1631,
+      "attribute": "action",
+      "value": 3899,
+      "source_line": 143,
+      "storage_line": 361,
+      "map_path": "content/world/placements/region-z04-x126-y124.b3",
+      "map_sha256": "b180dcf0e4b3a0ade0e1d784ddb2380c901960cc3412750e128789585a4bb145"
     }
   ]
 }

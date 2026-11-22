@@ -18,7 +18,7 @@ CORPUS = (
     ROOT / "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
 )
 REVISION = "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
-SELECTED = ("ID3940", "ID3980")
+SELECTED = ("ID3899", "ID3940", "ID3980")
 TABLE = "data-global/startup/tables/door_key.lua"
 STORAGES = "data-global/lib/core/storages.lua"
 sys.path.insert(0, str(ROOT / "tools/content-schema/quest-authoring"))

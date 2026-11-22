@@ -95,6 +95,21 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
             hash(b"8a188b5b0b564e34830783f89b5b1a24cc00eb29a1639495bdfb8a7124b584af"),
         ],
     ),
+    // Captured from the complete loader at 3e09916423181c795c829eca5e5414dde3f29a3e.
+    (
+        "oteryn:quest.the_paradox_tower_quest",
+        hash(b"1d305dfe05863eea4575a95366cb15dda92d00d22b6c9dff915468932f165cde"),
+        &[hash(
+            b"4fc6ffa2b309728ed9ee0e76381c1e6d20d618389b2e74bdd5b773cf108bdec5",
+        )],
+    ),
+    (
+        "oteryn:quest.the_queen_of_the_banshees_quest",
+        hash(b"32cdd6f504fc316133423cac07489eb9164f00ea9cd93e0c550eeb5efc66f488"),
+        &[hash(
+            b"678a96577e5535714661dd42a36a1fe44de1eafa146415a9d644d9aa96ede1b3",
+        )],
+    ),
 ];
 
 pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> DefinitionHash {

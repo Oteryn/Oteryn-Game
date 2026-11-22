@@ -1837,6 +1837,13 @@
           "set": 1
         }
       ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/l6/spirit/stage",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
       "reply": [
         "Do you have the old cape with you?"
       ]
@@ -1855,6 +1862,13 @@
           "minimum": -1,
           "maximum": 0,
           "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/l6/spirit/stage",
+          "minimum": 2,
+          "maximum": 2
         }
       ],
       "reply": [
