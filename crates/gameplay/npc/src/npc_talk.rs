@@ -42,6 +42,7 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/l13-outfits.json"),
     include_str!("../../../../content/quests/npc-callbacks/m09-rookie.json"),
     include_str!("../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
+    include_str!("../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
     include_str!("../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
 ];
 #[cfg(test)]

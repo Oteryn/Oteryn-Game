@@ -18,6 +18,14 @@ KEY = 'oteryn:item.tibia.i7934'
 BLOODY_TEAR = 'oteryn:item.tibia.i32594'
 
 
+class SelectedChestProfiles(unittest.TestCase):
+    def test_selected_source_charge_bags_retain_their_native_item_closure(self):
+        keys = profiles.requested_keys(ROOT)
+        self.assertLessEqual({f'oteryn:item.tibia.i{item}' for item in (
+            2853, 2859, 2971, 3048, 3056, 3083, 3085, 3424,
+        )}, keys)
+
+
 class QuestCallbackProfiles(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

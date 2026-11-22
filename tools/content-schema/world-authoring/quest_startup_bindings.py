@@ -30,34 +30,63 @@ SPECS = (
     ("teleport.lua", "TeleportUnique", 35020, "unique"),
 )
 
+ADDITIONAL_ACTIONS = (
+    ("door_key.lua", "KeyDoorAction", "Storage.Quest.Key.ID3142", "action"),
+    ("tile_pick.lua", "TilePickAction", 101, "action"),
+    *(("item.lua", "ItemAction", aid, "action")
+      for aid in (*range(64103, 64110), *range(64121, 64129))),
+    *(("teleport.lua", "TeleportAction", aid, "action") for aid in (64120, 64121)),
+)
 
-def capture(source):
+
+def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS)):
     sys.path.insert(0, str(ROOT / "tools/content-schema/quest-authoring"))
     import lua_tables
 
     rows, sources = [], []
-    for filename, table, selector, attribute in SPECS:
+    for filename, table, selector, attribute in specs:
         path = "data-global/startup/tables/" + filename
         raw = (source / path).read_bytes()
         source_row = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
         if source_row not in sources:
             sources.append(source_row)
         fields = lua_tables.assignments(raw.decode(), {table})[table]["fields"]
-        (field,) = [f for f in fields if f["key"] == selector]
+        (field,) = [
+            f for f in fields
+            if (f["key"].get("expr") if isinstance(f["key"], dict) else f["key"]) == selector
+        ]
         value = lua_tables.as_python(field["value"])
         for group in value if isinstance(value, list) else [value]:
             positions = group["itemPos"]
             for position in positions if isinstance(positions, list) else [positions]:
-                # LevelDoorAction's false means the door at this exact position.
-                # Both native placements are 5102, a closed expertise door:
-                # Crystal data/libs/tables/doors.lua:273 (5102 -> 5103).
-                item = group["itemId"] or 5102
+                cell = [position[k] for k in "xyz"]
+                if table == "TilePickAction" and cell != [32774, 32289, 10]:
+                    continue
+                if table == "KeyDoorAction":
+                    if cell != [32450, 32044, 8] or group["itemId"] is not False:
+                        raise ValueError("Key 3142 source selector changed")
+                    storage_path = "data-global/lib/core/storages.lua"
+                    storage = (source / storage_path).read_bytes()
+                    storage_row = {"path": storage_path, "sha256": hashlib.sha256(storage).hexdigest()}
+                    if storage_row not in sources:
+                        sources.append(storage_row)
+                    node = lua_tables.assignments(storage.decode(), {"Storage"})["Storage"]
+                    for key in ("Quest", "Key", "ID3142"):
+                        node = next(f["value"] for f in node["fields"] if f["key"] == key)
+                    if node != 3142:
+                        raise ValueError("Key 3142 source storage changed")
+                # False selectors target the existing source ground or door.
+                item = group["itemId"] or {
+                    "LevelDoorAction": 5102,
+                    "KeyDoorAction": 6248,
+                    "TilePickAction": 355,
+                }[table]
                 rows.append(
                     {
-                        "position": [position[k] for k in "xyz"],
+                        "position": cell,
                         "item": item,
                         "attribute": attribute,
-                        "action": selector,
+                        "action": 3142 if table == "KeyDoorAction" else selector,
                         "source": path,
                         "line": field["line"],
                     }

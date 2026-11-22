@@ -35,6 +35,8 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             name,
             if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps_fixtures::SOURCE
+            } else if name == super::newhaven_gustavo_fixtures::NAME {
+                super::newhaven_gustavo_fixtures::START
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
                     x: 32248,
@@ -918,6 +920,9 @@ pub(super) async fn exercise(
             owner, admitted, h, name,
         ))
         .await;
+    }
+    if name == super::newhaven_gustavo_fixtures::NAME {
+        return Box::pin(super::newhaven_gustavo_fixtures::exercise(owner, admitted, h)).await;
     }
     if name == "qengine-rewards-l2-white-raven" {
         return Box::pin(questl2_passages::white_raven(owner, admitted, h)).await;

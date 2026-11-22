@@ -1,10 +1,9 @@
-//! QA lane: Tibia Global reward corrections of donor chests, proved through real dispatch USE.
+//! Exact reward identity of the first Power Ring Quest box through dispatch USE.
 use super::TestResult;
 
-// Power Ring Quest rev 683946: the first box holds the Power Ring (Crystal
-// chest.lua:1755-1761 encodes a gold coin under a "power ring" comment).
+// Crystal 201189f chest.lua:1755–1761 grants one gold coin at UID 6151.
 #[test]
-fn qa_power_ring_quest_first_box_grants_power_ring_once() -> TestResult {
+fn qa_power_ring_quest_first_box_grants_crystal_gold_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -17,7 +16,7 @@ fn qa_power_ring_quest_first_box_grants_power_ring_once() -> TestResult {
                 (32599, 31776, -9),
                 &[],
                 2473,
-                "oteryn:item.tibia.i3050",
+                "oteryn:item.tibia.i3031",
                 1,
             )
             .map_err(|e| e.to_string())

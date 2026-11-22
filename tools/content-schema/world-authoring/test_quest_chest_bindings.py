@@ -86,6 +86,32 @@ class QuestChestBindings(unittest.TestCase):
                 ]
                 self.assertEqual(found, [unique])
 
+    def test_committed_source_boxes_and_access_attributes(self):
+        index = json.loads((chests.ROOT / chests.INDEX).read_bytes())
+        for position, appearance, attribute, value in (
+            ((32450, 32044, 8), 6248, "action", 3142),
+            ((32601, 31776, 9), 2473, "unique", 6152),
+            ((32769, 32302, 10), 2480, "unique", 6063),
+            ((32774, 32289, 10), 355, "action", 101),
+            ((32778, 32282, 11), 4024, "unique", 6062),
+        ):
+            with self.subTest(position=position):
+                x, y, z = position
+                name = codec.region_name(z, x // 256, y // 256)
+                path = f"content/world/placements/{name}"
+                (entry,) = [r for r in index["regions"] if r["path"] == path]
+                raw = (chests.ROOT / path).read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), entry["sha256"])
+                matches = [
+                    (attrs or {}).get(attribute)
+                    for _, tiles in codec.decode_region(raw)[3]
+                    for tx, ty, _, _, _, items in tiles
+                    if (tx, ty) == (x, y)
+                    for item, depth, attrs in items
+                    if not depth and index["palette"][item]["source_item_id"] == appearance
+                ]
+                self.assertEqual(matches, [value])
+
     def test_current_committed_corpus_captures_exact_elvenbane_startup_uids(self):
         from pathlib import Path
 

@@ -1,4 +1,7 @@
-use super::{TestResult, quest_catalogue_chests_fixtures::phase_a_cohort};
+use super::{
+    TestResult,
+    quest_catalogue_chests_fixtures::{cases, phase_a_cohort},
+};
 
 fn use_reward_chests(quests: &[&str]) -> TestResult {
     // The shared executor skips SQL without a route. Skip catalogue loading too.
@@ -15,7 +18,24 @@ fn quest_catalogue_chests_qchk7_oriental_outfits_use_replay_and_refusal() -> Tes
 
 #[test]
 fn quest_catalogue_chests_qchk7_power_ring_use_replay_and_refusal() -> TestResult {
-    use_reward_chests(&["power_ring_quest"])
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let claims = cases()?;
+    let gold = claims
+        .iter()
+        .find(|case| case.unique == 6151)
+        .ok_or("Power Ring Quest first box")?;
+    assert_eq!(gold.root, "oteryn:item.tibia.i3031");
+    assert_eq!(gold.quantity, 1);
+    let amulet = claims
+        .iter()
+        .find(|case| case.unique == 6152)
+        .ok_or("Power Ring Quest second box")?;
+    assert_eq!(amulet.position, (32601, 31776, -9));
+    assert_eq!(amulet.root, "oteryn:item.tibia.i3056");
+    assert_eq!(amulet.quantity, 1);
+    phase_a_cohort(&["power_ring_quest"])
 }
 
 #[test]

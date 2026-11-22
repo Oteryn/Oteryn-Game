@@ -191,7 +191,7 @@ def requested_keys(root, extra_keys=()):
 def _requested_inputs(root, extra_keys=()):
     # Retain both the selected startup source cohort and authored callback custody.
     sys.path.insert(0, str(root / 'tools/content-schema/world-authoring'))
-    from quest_chest_bindings import panpipe_key_claim
+    from quest_chest_bindings import panpipe_key_claim, verified_source_charges
     sys.path.insert(0, str(root / 'tools/content-schema/reward-claim-authoring'))
     import container_native
 
@@ -281,10 +281,11 @@ def _requested_inputs(root, extra_keys=()):
                 if definition.get('readiness') == 'ready' or panpipe_key_claim(definition):
                     keys.update(item['item']['key'] for placement in definition['placements']
                                 for item in placement['reward']['items'])
-                elif (definition.get('readiness') != 'waiting_implementation'
-                      or definition.get('data_holds') != []
-                      or definition.get('native_contents', {}).get('schema')
-                      != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'):
+                elif not verified_source_charges(definition, definition.get('native_contents', {})) and (
+                        definition.get('readiness') != 'waiting_implementation'
+                        or definition.get('data_holds') != []
+                        or definition.get('native_contents', {}).get('schema')
+                        != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'):
                     raise ValueError('SELECTED_QUEST_CHEST_REWARD_NOT_READY')
                 selected_chests.remove(definition['identity']['key'])
             # QUEST-FINISH owner scope: retain the donor record as evidence,

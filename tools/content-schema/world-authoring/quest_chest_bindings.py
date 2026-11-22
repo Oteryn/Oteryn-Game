@@ -8,6 +8,8 @@ Run --apply [--check]; convert_world_base also applies the same overlay.
 import argparse
 import hashlib
 import json
+import sys
+from functools import cache
 from pathlib import Path
 
 import world_region_codec as codec
@@ -128,12 +130,29 @@ def claim_definitions(root):
     return claims
 
 
+@cache
+def charge_projection_inputs():
+    sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
+    import charge_native
+    import reward_claim_authoring
+
+    return charge_native, reward_claim_authoring.load_items(), reward_claim_authoring.stack_problem
+
+
+def verified_source_charges(definition, native):
+    if native.get("source_difference") != "EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS":
+        return False
+    charge_native, items, stack_problem = charge_projection_inputs()
+    return charge_native.derive(definition, items, stack_problem) == native
+
+
 def supported_claim(definition):
     """Match the existing native container/text gate; retain all source holds."""
     native = definition.get("native_contents", {})
     return (
         definition["readiness"] == "ready"
         or panpipe_key_claim(definition)
+        or verified_source_charges(definition, native)
         or (
             definition.get("definition_profile") == "authored_variant_v1"
             and definition.get("readiness") == "waiting_implementation"
@@ -189,14 +208,13 @@ def panpipe_key_claim(definition):
 
 def capture(source_root, selected, root=ROOT):
     """Read exact pinned source facts; never execute donor Lua."""
-    import sys
-
     sys.path.insert(0, str(ROOT / "tools/content-schema/quest-authoring"))
     import lua_tables
 
     sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
     import container_native
     import global_corrections
+    import itemhold_charge_precedence
     import poison_daggers
     import reward_claim_authoring
 
@@ -222,9 +240,10 @@ def capture(source_root, selected, root=ROOT):
         ]
     }
     claims, rows = claim_definitions(root), []
+    charge_cases = container_native.CHARGED_QUEST_CLAIMS.keys() | itemhold_charge_precedence.CASES.keys()
     needs_charges = any(
         claims[key].get("provenance", {}).get("pilot_key")
-        in container_native.CHARGED_QUEST_CLAIMS
+        in charge_cases
         for key in selected
     )
     items = reward_claim_authoring.load_items() if needs_charges else {}
@@ -263,6 +282,15 @@ def capture(source_root, selected, root=ROOT):
                 source_reward = container_native.source_charged_reward(
                     pilot, source_reward, items
                 )
+
+            pilot = definition.get("provenance", {}).get("pilot_key")
+            if pilot in itemhold_charge_precedence.CASES and len(source_reward) == 1:
+                (number, amount), = source_reward
+                item_key = f"oteryn:item.tibia.i{number}"
+                if itemhold_charge_precedence.qualifies(
+                    items.get(item_key), pilot, position, item_key, amount
+                ):
+                    source_reward = [[number, 1]]
             if (
                 setting["itemPos"] != position
                 or setting["itemId"] != placement["appearance_tibia_id"]

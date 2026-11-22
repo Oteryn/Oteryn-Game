@@ -23,6 +23,28 @@ EXPECTED = (
     ((33498, 32613, 8), 10840, "unique", 35020),
 )
 
+NIGHTMARE = (
+    ((33472, 32645, 9), 20142, "action", 64103),
+    ((33473, 32645, 9), 20142, "action", 64103),
+    ((33474, 32641, 10), 20143, "action", 64104),
+    ((33456, 32579, 8), 20142, "action", 64105),
+    ((33462, 32585, 8), 20143, "action", 64106),
+    ((33419, 32588, 10), 20142, "action", 64107),
+    ((33419, 32602, 10), 20142, "action", 64108),
+    ((33420, 32602, 10), 20142, "action", 64108),
+    ((33430, 32599, 10), 20143, "action", 64109),
+    ((33439, 32619, 10), 10842, "action", 64120),
+    ((33452, 32619, 11), 10840, "action", 64121),
+    ((33465, 32636, 10), 20143, "action", 64121),
+    ((33416, 32625, 10), 20142, "action", 64122),
+    ((33434, 32631, 8), 20143, "action", 64123),
+    ((33429, 32633, 8), 20142, "action", 64124),
+    ((33483, 32628, 8), 20142, "action", 64125),
+    ((33478, 32622, 11), 20142, "action", 64126),
+    ((33453, 32628, 8), 20142, "action", 64127),
+    ((33420, 32582, 9), 20142, "action", 64128),
+)
+
 
 class QuestStartupBindingsTests(unittest.TestCase):
     def outputs(self):
@@ -82,7 +104,7 @@ class QuestStartupBindingsTests(unittest.TestCase):
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(text)
-            capture = startup.capture(root)
+            capture = startup.capture(root, startup.SPECS)
         actual = [
             (tuple(r["position"]), r["item"], r["attribute"], r["action"])
             for r in capture["bindings"]
@@ -100,7 +122,7 @@ class QuestStartupBindingsTests(unittest.TestCase):
         self.assert_native_startup_selectors((((33152, 32866, 8), 2772, "action", 5633),))
 
     def test_native_startup_selectors_match_exact_source_items(self):
-        self.assert_native_startup_selectors(EXPECTED)
+        self.assert_native_startup_selectors((*EXPECTED, *NIGHTMARE))
 
     def assert_native_startup_selectors(self, selectors):
         index = json.loads((ROOT / "content/world/placements/index.json").read_bytes())
