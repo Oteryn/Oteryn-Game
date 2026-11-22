@@ -645,10 +645,9 @@ async fn exercise_reserved_source(harness: &Harness) -> TestResult {
                     })
                     .map_err(|_| DurabilityError::Unavailable)
             };
-            let proof = oteryn_gameplay_entities::held_source_reservation_for_test(
-                runtime, player, session, id(9), [9; 32],
-            )
-            .map_err(|_| DurabilityError::Unavailable)?;
+            let proof = runtime
+                .source_actor_reservation_proof_for_test(player, session, id(9))
+                .map_err(|_| DurabilityError::Unavailable)?;
             let mut held = runtime
                 .prepare_source_actor_reservation(&proof)
                 .map_err(|_| DurabilityError::Unavailable)?;

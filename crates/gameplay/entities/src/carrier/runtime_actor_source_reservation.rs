@@ -781,10 +781,9 @@ impl ChannelRuntimeV1 {
 struct Proof {
     actor: ExactActorRef,
     session: GameSessionId,
-    position: crate::MovementPositionSnapshot,
+    position: super::MovementPositionSnapshot,
     affected: Vec<ExactActorRef>,
     event: [u8; 16],
-    binding: [u8; 32],
 }
 #[cfg(any(test, feature = "test-support"))]
 impl source_reservation_seal::Sealed for Proof {}
@@ -797,7 +796,7 @@ impl SourceActorReservationProof for Proof {
         self.event
     }
     fn source_binding_digest(&self) -> [u8; 32] {
-        self.binding
+        [8; 32]
     }
     fn affected_actors(&self) -> &[ExactActorRef] {
         &self.affected
@@ -811,23 +810,23 @@ impl SourceActorReservationProof for Proof {
     }
 }
 
-/// Builds a commandless reservation proof for the fixture's current player position.
-#[cfg(feature = "test-support")]
-pub fn held_source_reservation_for_test(
-    runtime: &ChannelRuntimeV1,
-    player: ExactActorRef,
-    session: GameSessionId,
-    event: [u8; 16],
-    binding: [u8; 32],
-) -> Result<impl SourceActorReservationProof + use<>, CarrierError> {
-    Ok(Proof {
-        actor: player,
-        session,
-        position: runtime.read_actor_position(player)?,
-        affected: Vec::new(),
-        event,
-        binding,
-    })
+#[cfg(any(test, feature = "test-support"))]
+impl ChannelRuntimeV1 {
+    /// Captures a Player's position for a commandless source reservation in a test.
+    pub fn source_actor_reservation_proof_for_test(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        event: [u8; 16],
+    ) -> Result<impl SourceActorReservationProof + use<>, CarrierError> {
+        Ok(Proof {
+            actor,
+            session,
+            position: self.read_actor_position(actor)?,
+            affected: Vec::new(),
+            event,
+        })
+    }
 }
 
 #[cfg(test)]
@@ -885,7 +884,6 @@ mod tests {
             position,
             affected: vec![target],
             event: id(5),
-            binding: [8; 32],
         };
         let mut reserved = runtime.prepare_source_actor_reservation(&proof).unwrap();
         runtime
@@ -922,7 +920,6 @@ mod tests {
             position,
             affected: vec![target],
             event: id(6),
-            binding: [8; 32],
         };
         assert_eq!(
             runtime.validate_source_actor_reservation(&reserved, &foreign),
@@ -973,7 +970,6 @@ mod tests {
             position,
             affected,
             event: id(5),
-            binding: [8; 32],
         };
         let prepared = runtime.prepare_source_actor_reservation(&proof);
         assert!(
@@ -1048,7 +1044,6 @@ mod tests {
             position,
             affected: Vec::new(),
             event: id(5),
-            binding: [8; 32],
         };
         let mut reservation = runtime.prepare_source_actor_reservation(&proof).unwrap();
         runtime
