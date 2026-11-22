@@ -53,7 +53,7 @@ fn on_large_stack(admin: String, state: EntitlementState) -> TestResult {
                 .build()
                 .map_err(|error| error.to_string())?;
             runtime
-                .block_on(Box::pin(scenario(&admin, state)))
+                .block_on(Box::pin(scenario(admin, state)))
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -61,7 +61,7 @@ fn on_large_stack(admin: String, state: EntitlementState) -> TestResult {
     Ok(())
 }
 
-async fn scenario(admin: &str, state: EntitlementState) -> TestResult {
+async fn scenario(admin: String, state: EntitlementState) -> TestResult {
     reset();
     let tag = if state == EntitlementState::Expired {
         "p20_tile_expired"
