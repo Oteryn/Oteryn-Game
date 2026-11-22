@@ -63,7 +63,12 @@ mod tests {
     }
 }
 
-pub(super) const SKJAAR_DONATION: &str = "oteryn:quest-reward/skjaar-donation";
+const SKJAAR_DONATION: &str = "oteryn:quest-reward/skjaar-donation";
+
+pub(super) fn is_skjaar_donation(request: &NpcProgramRequest) -> bool {
+    request.npc == oteryn_gameplay_quests::quest::npc_rules::SKJAAR_NPC
+        && request.transition_key == SKJAAR_DONATION
+}
 
 pub(super) enum SkjaarPayment {
     Paid,

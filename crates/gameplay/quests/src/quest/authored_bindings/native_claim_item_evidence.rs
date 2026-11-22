@@ -15,6 +15,13 @@ struct Proof {
     revision: String,
 }
 
+fn source_digest() -> String {
+    Sha256::digest(SOURCE.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
 fn proof(definition: &Value, digest: &str, revision: &Value) -> Option<Proof> {
     let native = &definition["native_contents"];
     let source = &definition["source_variant"]["source_claim"];
@@ -82,10 +89,7 @@ pub(super) fn resolves(quest: &Value, hold: &Value) -> bool {
     }
     static PROOFS: OnceLock<Vec<Proof>> = OnceLock::new();
     let proofs = PROOFS.get_or_init(|| {
-        let digest: String = Sha256::digest(SOURCE.as_bytes())
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect();
+        let digest = source_digest();
         let Ok(source) = serde_json::from_str::<Value>(SOURCE) else {
             return Vec::new();
         };
@@ -210,7 +214,7 @@ fn dreamer_auxiliary_proofs() -> Vec<Proof> {
     let Ok(source) = serde_json::from_str::<Value>(SOURCE) else {
         return Vec::new();
     };
-    let digest = format!("{:x}", Sha256::digest(SOURCE.as_bytes()));
+    let digest = source_digest();
     let mut proofs = Vec::new();
     for (_, document) in super::NATIVE_CLAIM_SHARDS {
         let Ok(shard) = serde_json::from_str::<Value>(document) else {

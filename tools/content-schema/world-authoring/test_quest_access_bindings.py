@@ -1,6 +1,9 @@
+import hashlib
 import json
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import quest_access_bindings as access
 import world_region_codec as codec
@@ -9,6 +12,29 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class QuestAccessBindings(unittest.TestCase):
+    def test_capture_bootstraps_without_generated_sample_and_rejects_changed_source(self):
+        sources = {
+            "lever.lua": b"LeverUnique = {}\nLeverAction = {}\n",
+            "tile.lua": b"TileUnique = {}\nTileAction = {}\n",
+            "teleport.lua": b"TeleportAction = {}\n",
+            "item.lua": b"ItemUnique = {}\nItemAction = {}\n",
+        }
+        hashes = {name: hashlib.sha256(raw).hexdigest() for name, raw in sources.items()}
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            tables = root / "data-global/startup/tables"
+            tables.mkdir(parents=True)
+            for name, raw in sources.items():
+                (tables / name).write_bytes(raw)
+            with patch.object(access, "CAPTURE", root / "missing.json"), patch.object(
+                access, "SOURCE_HASHES", hashes, create=True
+            ):
+                capture = access.capture_sources(root)
+                self.assertEqual([row["sha256"] for row in capture["sources"]], list(hashes.values()))
+                (tables / "item.lua").write_bytes(sources["item.lua"] + b"\n")
+                with self.assertRaisesRegex(ValueError, "pinned Crystal201189f blob: .*item.lua"):
+                    access.capture_sources(root)
+
     def fixture(self, attrs=None):
         tiles = [
             (10, 20, 0, 0, (), [(0, 0, attrs), (1, 1, {"count": 3})]),

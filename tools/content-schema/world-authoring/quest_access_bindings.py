@@ -16,6 +16,12 @@ ROOT = Path(__file__).resolve().parents[3]
 CAPTURE = "tools/content-schema/world-authoring/samples/quest-access-bindings.json"
 INDEX = "content/world/placements/index.json"
 SUMMARY = "tools/content-schema/world-authoring/samples/world-base-capture-v1.json"
+SOURCE_HASHES = {
+    "lever.lua": "41e560708ca123dd7aba34b1e54adf73b843e61fe3eb72fa33ad380a92282a7e",
+    "tile.lua": "f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7",
+    "teleport.lua": "9e8f807264ec6ab85e263976136666ff38c195f1921cc30e73fd4431370fe87e",
+    "item.lua": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad",
+}
 
 
 def capture_sources(source_root):
@@ -39,10 +45,13 @@ def capture_sources(source_root):
     for name, groups in requested.items():
         path = "data-global/startup/tables/" + name
         raw = (source_root / path).read_bytes()
+        digest = hashlib.sha256(raw).hexdigest()
+        if digest != SOURCE_HASHES[name]:
+            raise ValueError(f"source table differs from pinned Crystal201189f blob: {path}")
         sources.append(
             {
                 "path": path,
-                "sha256": hashlib.sha256(raw).hexdigest(),
+                "sha256": digest,
                 "git_blob_sha1": hashlib.sha1(
                     b"blob " + str(len(raw)).encode() + b"\0" + raw
                 ).hexdigest(),
@@ -71,9 +80,6 @@ def capture_sources(source_root):
                                 "line": field["line"],
                             }
                         )
-    expected = json.loads((ROOT / CAPTURE).read_bytes())
-    if sources != expected["sources"]:
-        raise ValueError("source tables differ from pinned Crystal201189f blobs")
     return {
         "schema": 1,
         "repository": "zimbadev/crystalserver",

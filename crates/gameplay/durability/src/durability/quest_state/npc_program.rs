@@ -386,7 +386,8 @@ impl DurabilityRoot {
     ) -> Result<NpcProgramCommit> {
         if request.command.game_session_id() != fence.game_session_id
             || request.message.len() > 255
-            || !request.transition_key.starts_with("oteryn:quest-npc/")
+            || !(request.transition_key.starts_with("oteryn:quest-npc/")
+                || rewards::is_skjaar_donation(&request))
             || !valid_quest_key(&request.transition_key)
             || request.topic < 0
             || fence.character_lease_generation == 0
@@ -706,9 +707,7 @@ async fn load(
     if row.try_get::<Vec<u8>, _>("request_binding")? != request.binding(character) {
         return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
     }
-    if request.npc == oteryn_gameplay_quests::quest::npc_rules::SKJAAR_NPC
-        && request.transition_key == rewards::SKJAAR_DONATION
-    {
+    if rewards::is_skjaar_donation(request) {
         let transition = QuestTransitionOutcome::AlreadyCommitted(decode_receipt(&row)?);
         let result = rewards::replay_skjaar_donation(tx, character, request, transition).await?;
         return Ok(Ok(Some(result)));

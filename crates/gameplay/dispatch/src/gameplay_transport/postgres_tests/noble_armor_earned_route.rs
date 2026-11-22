@@ -221,6 +221,21 @@ fn scenario(refusals: bool) -> TestResult {
         let paid = if refusals { (1, 1, 0) } else { (1, 0, 50) };
         assert_eq!(payment(&h).await?, paid);
         let pay_id = command;
+        let atomic_donation: bool = sqlx::query_scalar(
+            "SELECT q.created_xact_id=f.created_xact_id
+                    AND q.committed_character_revision=f.committed_character_revision
+             FROM game_character_quest_receipts q
+             JOIN game_quest_reward_fees f USING(character_id,cause_id,cause_ordinal,transition_key)
+             WHERE q.character_id=encode($1,'hex')::uuid AND q.cause_id=encode($2,'hex')::uuid
+               AND q.cause_ordinal=$3::text::numeric
+               AND q.transition_key='oteryn:quest-reward/skjaar-donation'",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(admitted.game_session_id.as_bytes().as_slice())
+        .bind(pay_id.to_string())
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(atomic_donation, "the quiz response requires an atomic paid receipt");
         let answer = talk(&mut owner, &admitted, npc, pay_id + 1, "spider").await?;
         assert!(answer.iter().all(|line| !line.contains("how many fingers")));
         assert_eq!(

@@ -4,7 +4,7 @@ use oteryn_game_server::content::ProjectV2AuthoringProfileData;
 use serde::Deserialize;
 
 const PACKET: &[u8] = include_bytes!(
-    "../../../../tools/content-schema/monster-authoring/samples/orc-sam-backpack-crystal-201189f8.json"
+    "../../../../tools/content-schema/native-gameplay/orc-sam-backpack-admission.json"
 );
 const SOURCE_REVISION: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
 const BATCH: &str = "monster-full-mechanics-orc-sam-backpack-201189f8";

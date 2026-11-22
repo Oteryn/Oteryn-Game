@@ -269,10 +269,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(projection) => projection,
             Err(result) => return result,
         };
-        projection = match super::dreamer_puzzles::prepare(map, callback, key, projection) {
-            Ok(projection) => projection,
-            Err(result) => return result,
-        };
         let projection_target = match &projection {
             Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
                 key, ..

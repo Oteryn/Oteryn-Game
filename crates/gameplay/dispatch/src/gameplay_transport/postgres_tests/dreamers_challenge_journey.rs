@@ -328,8 +328,18 @@ impl Journey<'_, '_, '_> {
             } else {
                 pos(32818 + control - 6, 32332, 9)
             };
+            let cells = [2, 3, 4, 5, 6, 7].map(|offset| {
+                if control < 6 {
+                    pos(plate.x + offset, plate.y, 9)
+                } else {
+                    pos(plate.x, plate.y + offset, 9)
+                }
+            });
             for _ in 0..count {
+                let mut expected = self.pillows(cells)?;
+                expected.rotate_right(1);
                 self.walk(plate, 0).await?;
+                assert_eq!(self.pillows(cells)?, expected, "floor switch at {plate:?}");
                 self.walk(
                     pos(
                         plate.x - u16::from(control < 6),
@@ -389,6 +399,34 @@ impl Journey<'_, '_, '_> {
         self.arrived(pos(32920, 32296, 13)).await?;
         self.mission = 4;
         self.check("tic-tac-toe exit").await
+    }
+
+    fn pillows(&self, cells: [Position; 6]) -> TestResult<Vec<u16>> {
+        use crate::map::{overlay::TilePos, view::compose_tile};
+        use oteryn_gameplay_quests::quest::dreamer_puzzles::PILLOWS;
+
+        let map = self.owner.bundle_map().ok_or("world")?;
+        let pinned = map.facts.pinned();
+        cells
+            .into_iter()
+            .map(|at| {
+                let tile = compose_tile(
+                    &map.overlay,
+                    &pinned,
+                    TilePos { x: at.x, y: at.y, floor: at.floor },
+                )
+                .map_err(debug)?
+                .ok_or("missing pillow tile")?;
+                let mut pillows = tile
+                    .entries
+                    .iter()
+                    .map(|entry| entry.facts.appearance_id)
+                    .filter(|id| PILLOWS.contains(id));
+                let pillow = pillows.next().ok_or("missing pillow")?;
+                assert!(pillows.next().is_none(), "ambiguous pillow tile at {at:?}");
+                Ok(pillow)
+            })
+            .collect()
     }
 
     async fn maze(&mut self) -> TestResult {
