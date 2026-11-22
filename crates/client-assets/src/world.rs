@@ -16,7 +16,7 @@ pub const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/manifest.j
 /// `world-bundle-compiler pin-refresh` updates it after placement changes; a test
 /// compares it with the repository.
 pub const PLACEMENT_INDEX_SHA256: &str =
-    "0155b6dff9410f467d9f201d3cff2f57e1a97c9756b12d9d464acd2e25e7d3e4";
+    "0000000000000000000000000000000000000000000000000000000000000000";
 pub const PLACEMENT_INDEX_PATH: &str = "content/world/placements/index.json";
 const MAX_INDEX_BYTES: u64 = 8 * 1024 * 1024;
 pub const MAX_REGION_BYTES: u64 = 32 * 1024 * 1024;

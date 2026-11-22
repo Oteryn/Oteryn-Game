@@ -389,7 +389,11 @@ pub(super) async fn wire_reward_with_prefix_refusal(
     Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
     u64,
 )> {
-    let words: Vec<_> = std::iter::once("hi")
+    let greeting = match callback.npc.as_str() {
+        "oteryn:npc.alesar" | "oteryn:npc.baa_leal" | "oteryn:npc.gabel" | "oteryn:npc.malor" => "djanni'hah",
+        _ => "hi",
+    };
+    let words: Vec<_> = std::iter::once(greeting)
         .chain(offer_words(&callback.key).iter().copied())
         .chain(std::iter::once(callback.keywords[0].as_str()))
         .collect();
@@ -1162,6 +1166,40 @@ pub(super) async fn exercise(
         ))
         .await;
     }
+    if name == "qengine-rewards-eroth-start" || name == "qengine-rewards-joe-start" {
+        let (npc, words, track, value) = if name.ends_with("eroth-start") {
+            (
+                "oteryn:npc.eroth",
+                &["hi", "mission", "yes"][..],
+                "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline",
+                1,
+            )
+        } else {
+            (
+                "oteryn:npc.one_eyed_joe",
+                &["hi", "mission", "yes", "yes"][..],
+                "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/questline",
+                0,
+            )
+        };
+        let [npc] = super::classic_quests_fixtures::install(owner, admitted, [npc]).await?;
+        let first = admitted.continuity.next_command_id;
+        for (offset, word) in words.iter().enumerate() {
+            assert_eq!(
+                talk(owner, admitted, npc, first + u64::try_from(offset)?, word).await?,
+                NpcIntentDisposition::Ok,
+                "{word}"
+            );
+        }
+        assert_eq!(
+            super::classic_quests_fixtures::progress(owner, admitted, authority, track).await?,
+            value,
+        );
+        if name.ends_with("eroth-start") {
+            assert_eq!(questl2_journeys::quantity(h, 3463).await?, 1);
+        }
+        return Ok(());
+    }
     if name == "qengine-rewards-l1-legacy-decaying" {
         return Box::pin(legacy_decaying(owner, admitted, h)).await;
     }
@@ -1215,7 +1253,9 @@ pub(super) async fn exercise(
                 preserve: true,
             });
     }
-    seed(owner, admitted, &setup, 9000).await?;
+    if key != "outfox-helmet" {
+        seed(owner, admitted, &setup, 9000).await?;
+    }
     let [npc] = super::classic_quests_fixtures::install(owner, admitted, [callback.npc.as_str()]).await?;
     let mut selected = admitted
         .continuity
@@ -1241,6 +1281,16 @@ pub(super) async fn exercise(
         NpcIntentDisposition::Ok
     );
     let mut command = admitted.continuity.next_command_id;
+    if key == "outfox-helmet" {
+        for word in ["mission", "yes"] {
+            assert_eq!(talk(owner, admitted, npc, command, word).await?, NpcIntentDisposition::Ok);
+            command += 1;
+        }
+        let sessions = owner.states.quest_sessions.lock().map_err(|_| "quest sessions")?;
+        let copy = sessions.get(&admitted.game_session_id)
+            .and_then(|state| state.copy.as_ref()).ok_or("quest copy")?;
+        assert!(copy.meets_door_storage(41492), "Budrik opens the real Mining Helmet door");
+    }
     let offers = offer_words(key);
     for offer in offers {
         assert_eq!(
@@ -1261,7 +1311,7 @@ pub(super) async fn exercise(
         for s in &callback.storage {
             assert_eq!(
                 super::classic_quests_fixtures::progress(owner, admitted, authority, &s.track).await?,
-                s.minimum
+                if key == "outfox-helmet" { 1 } else { s.minimum }
             );
         }
     }

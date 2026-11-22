@@ -1563,7 +1563,8 @@ fn scenario_case(
             } else if name == "authored-torch" {
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
-                13
+                // Fourteen contacts and the player share this fixture world.
+                15
             } else if classic_npc || qd_world {
                 5
             } else if monk {
@@ -2941,7 +2942,7 @@ fn scenario_case(
             )
             .await?;
         } else if outfit_world
-            || callback.effects != Default::default()
+            || (callback.effects != Default::default() && !name.starts_with("crystal-stairs-"))
             || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()
         {
             Box::pin(super::super::qengine_access_fixtures::exercise(

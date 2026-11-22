@@ -45,7 +45,7 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
     ),
     (
         "oteryn:quest.grimvale_quest",
-        hash(b"be926e9f2acf5908483637cc2f83c79dbeb7b3418c4051cb43a2ffa779233d65"),
+        hash(b"8d5144f88d2889bd95d34648f36383a90b0bda712e4bd2f2b40d0256f0f854cd"),
         hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
     ),
     (
@@ -74,6 +74,13 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
 // new rules bound to the new hash. Existing absent-track defaults did not change.
 const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     (
+        "oteryn:quest.factions",
+        hash(b"01570cc2129645571d90b2c42b611558d5943c19441c53ae7bc6545a4784404a"),
+        &[hash(
+            b"2bcb10953ae9889273762889d224e7f8f6d2d91fcb100c6a74a033227134c210",
+        )],
+    ),
+    (
         "oteryn:quest.ferumbras_ascension_quest",
         hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
         &[hash(
@@ -94,6 +101,13 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
             hash(b"4c3fff8d01302e1c6854af72abc7bc65d369e6874890557088a53844da2cbe14"),
             hash(b"8a188b5b0b564e34830783f89b5b1a24cc00eb29a1639495bdfb8a7124b584af"),
         ],
+    ),
+    (
+        "oteryn:quest.tibia_tales",
+        hash(b"4b54400fde0e3f1513f342352f381fa00ca2005dba2e51cd5b707cb2ed1fc8c0"),
+        &[hash(
+            b"8d75517e41359a25abea653c8fd44fa5b4d2768c1470d9acaa9442b73f543065",
+        )],
     ),
 ];
 

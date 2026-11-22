@@ -35,6 +35,7 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
+    include_str!("../../../../content/quests/npc-callbacks/classic-missions.json"),
     include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
@@ -47,6 +48,7 @@ const REWARD_CALLBACKS: &[&str] = &[
 mod m09_rookie_tests;
 const REWARD_GREETINGS: &[&str] = &[
     include_str!("../../../../content/dialogues/quests/chosen-reward-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/classic-mission-greetings.json"),
     include_str!("../../../../content/dialogues/quests/qd-greetings.json"),
     include_str!("../../../../content/dialogues/quests/qnpcfx-m10-greetings.json"),
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
@@ -819,7 +821,19 @@ impl NpcTalkBook {
                         .iter()
                         .filter_map(|reference| model.services().get(reference))
                         .any(|service| service.bank),
-                    greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+                    greetings: match reference.key.as_str() {
+                        "oteryn:npc.baa_leal"
+                        | "oteryn:npc.gabel"
+                        | "oteryn:npc.malor"
+                        | "oteryn:npc.ubaid" => vec!["djanni'hah".into()],
+                        "oteryn:npc.alesar" => GREETINGS
+                            .iter()
+                            .copied()
+                            .chain(["djanni'hah"])
+                            .map(str::to_owned)
+                            .collect(),
+                        _ => GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+                    },
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank

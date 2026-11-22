@@ -61,6 +61,27 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual({r['npc']:r['cell'] for r in actual},expected)
         self.assertTrue(all(r['provenance'] for r in actual))
 
+    def test_classic_quest_contacts_use_the_pinned_global_npc_anchors(self):
+        expected = {
+            "alesar": (33048, 32621, 5),
+            "baa_leal": (33044, 32623, 4),
+            "budrik": (32525, 31905, 8),
+            "eroth": (32662, 31682, 6),
+            "gabel": (33101, 32520, 1),
+            "malor": (33044, 32622, 1),
+            "one_eyed_joe": (32025, 32884, 6),
+            "partos": (32323, 32280, 8),
+            "the_orc_king": (32983, 31732, 9),
+        }
+        for name, (x, y, floor) in expected.items():
+            with self.subTest(npc=name):
+                rows = [r["declaration"] for r in self.records
+                        if r["declaration"]["npc"] == "oteryn:npc." + name]
+                self.assertEqual([row["cell"] for row in rows],
+                                 [{"x": x, "y": y, "floor": floor}])
+                self.assertEqual(rows[0]["provenance"][0]["revision"],
+                                 "201189f871d23597b82caf88fd611454a2ddefb8")
+
     def test_jack_springer_uses_the_pinned_isle_of_the_kings_cell(self):
         rows = [r['declaration'] for r in self.records
                 if r['declaration']['npc'] == 'oteryn:npc.jack_springer']

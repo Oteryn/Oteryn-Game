@@ -10,6 +10,7 @@
     "oteryn:npc.ajax",
     "oteryn:npc.al_dee",
     "oteryn:npc.aldo",
+    "oteryn:npc.alesar",
     "oteryn:npc.alexander",
     "oteryn:npc.amanda",
     "oteryn:npc.ambassador_manop",
@@ -21,6 +22,7 @@
     "oteryn:npc.asralius",
     "oteryn:npc.aurelia",
     "oteryn:npc.avar_tar",
+    "oteryn:npc.baa_leal",
     "oteryn:npc.billy",
     "oteryn:npc.blind_orc",
     "oteryn:npc.boveas",
@@ -29,6 +31,7 @@
     "oteryn:npc.broken_servant_sentry",
     "oteryn:npc.bron",
     "oteryn:npc.buddel",
+    "oteryn:npc.budrik",
     "oteryn:npc.cael",
     "oteryn:npc.captain_waverider",
     "oteryn:npc.captain_waverider_island",
@@ -52,10 +55,12 @@
     "oteryn:npc.emael",
     "oteryn:npc.enpa_deia_pema",
     "oteryn:npc.eremo",
+    "oteryn:npc.eroth",
     "oteryn:npc.ezebeth",
     "oteryn:npc.flickering_soul",
     "oteryn:npc.frank_the_plank",
     "oteryn:npc.frodo",
+    "oteryn:npc.gabel",
     "oteryn:npc.gail",
     "oteryn:npc.gamon",
     "oteryn:npc.gelidrazah_s_thirst",
@@ -90,9 +95,11 @@
     "oteryn:npc.lugri",
     "oteryn:npc.lynda",
     "oteryn:npc.maealil",
+    "oteryn:npc.malor",
     "oteryn:npc.marina",
     "oteryn:npc.maris_mistrock",
     "oteryn:npc.mayor_pocaro",
+    "oteryn:npc.melchior",
     "oteryn:npc.miles_the_guard",
     "oteryn:npc.milos",
     "oteryn:npc.minzy",
@@ -105,8 +112,10 @@
     "oteryn:npc.norma",
     "oteryn:npc.norman_the_foreman",
     "oteryn:npc.obi",
+    "oteryn:npc.one_eyed_joe",
     "oteryn:npc.palimuth",
     "oteryn:npc.para_norbert",
+    "oteryn:npc.partos",
     "oteryn:npc.paulie",
     "oteryn:npc.percybald",
     "oteryn:npc.pydar",
@@ -131,12 +140,14 @@
     "oteryn:npc.the_first_dragon",
     "oteryn:npc.the_forgemaster",
     "oteryn:npc.the_oracle",
+    "oteryn:npc.the_orc_king",
     "oteryn:npc.the_queen_of_the_banshees",
     "oteryn:npc.tibra",
     "oteryn:npc.tim_the_guard",
     "oteryn:npc.tom",
     "oteryn:npc.trisha",
     "oteryn:npc.tyrias",
+    "oteryn:npc.ubaid",
     "oteryn:npc.uzgod",
     "oteryn:npc.vascalir",
     "oteryn:npc.viola",
@@ -208,6 +219,7 @@
   },
   "block_solid_contacts": [
     "oteryn:npc.bron",
+    "oteryn:npc.budrik",
     "oteryn:npc.cerdras",
     "oteryn:npc.gnommander",
     "oteryn:npc.telas",
@@ -312,6 +324,139 @@
     }
   },
   "placement_overrides": {
+    "oteryn:npc.a_sleeping_dragon": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Exact source NPC XML center33243,31213,z10 plus offsetx=-1,y=0. Source XML has no facing; select NPC engine default NORTH, not a recovered source direction. Preserve actual source identity and replace the older Wiki placement hypothesis.",
+      "placements": [
+        {
+          "position": {
+            "x": 33242,
+            "y": 31213,
+            "z": 10
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.alesar": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC spawn at world-npc.xml:441-442. North is the engine default.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33048,
+            "y": 32621,
+            "z": 5
+          }
+        }
+      ]
+    },
+    "oteryn:npc.alexander": {
+      "basis": "E2E JOURNEY: Edron shop at data-global/world/world-npc.xml:121. North is the engine default because the spawn has no direction.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33256,
+            "y": 31839,
+            "z": 3
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.asima": {
+      "basis": "E2E JOURNEY: Darashia shop at data-global/world/world-npc.xml:2078. North is the engine default because the spawn has no direction.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33220,
+            "y": 32403,
+            "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.aurelia": {
+      "basis": "E2E JOURNEY: Targuna shop at data-global/world/world-npc.xml:1709. North is the engine default because the spawn has no direction.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 31955,
+            "y": 31916,
+            "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.baa_leal": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC spawn at world-npc.xml:258-259. North is the engine default.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33044,
+            "y": 32623,
+            "z": 4
+          }
+        }
+      ]
+    },
+    "oteryn:npc.boveas": {
+      "basis": "Crystal world-npc.xml:3300 places Boveas for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32431,
+            "y": 32090,
+            "z": 15
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
     "oteryn:npc.buddel": {
       "basis": "Crystal world-npc.xml:1219-1221 anchors Buddel in Svargrond. The source leaves direction unspecified, so the native placement uses north.",
       "placements": [
@@ -331,6 +476,101 @@
         "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
       }
     },
+    "oteryn:npc.budrik": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC spawn at world-npc.xml:2497-2498. North is the engine default. The fixed bench at this anchor retains its ordinary collision.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32525,
+            "y": 31905,
+            "z": 8
+          }
+        }
+      ]
+    },
+    "oteryn:npc.cerdras": {
+      "basis": "Crystal world-npc.xml:634 places Cerdras for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32301,
+            "y": 31815,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.dreadeye": {
+      "basis": "Crystal world-npc.xml:3174 places Dreadeye for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32800,
+            "y": 31572,
+            "z": 14
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.eroth": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC spawn at world-npc.xml:582-583. North is the engine default.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32662,
+            "y": 31682,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.gabel": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC spawn at world-npc.xml:39-40. North is the engine default.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33101,
+            "y": 32520,
+            "z": 1
+          }
+        }
+      ]
+    },
     "oteryn:npc.jack_springer": {
       "basis": "Crystal world-npc.xml:2722-2724 anchors Jack Springer at the Isle of the Kings. The source leaves direction unspecified, so the native placement uses north.",
       "placements": [
@@ -349,6 +589,101 @@
         "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
         "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
       }
+    },
+    "oteryn:npc.malor": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC spawn at world-npc.xml:42-43. North is the engine default.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33044,
+            "y": 32622,
+            "z": 1
+          }
+        }
+      ]
+    },
+    "oteryn:npc.melchior": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC spawn at world-npc.xml:2316-2317. North is the engine default.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33142,
+            "y": 32817,
+            "z": 7
+          }
+        }
+      ]
+    },
+    "oteryn:npc.milos": {
+      "basis": "Crystal world-npc.xml:118 places Milos for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33258,
+            "y": 31823,
+            "z": 3
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.one_eyed_joe": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC spawn at world-npc.xml:1063-1064. North is the engine default.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32025,
+            "y": 32884,
+            "z": 6
+          }
+        }
+      ]
+    },
+    "oteryn:npc.partos": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC spawn at world-npc.xml:2569-2570. North is the engine default.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32323,
+            "y": 32280,
+            "z": 8
+          }
+        }
+      ]
     },
     "oteryn:npc.rashid": {
       "basis": "Pinned Canary startup/weekday schedule; the existing native UTC weekday filter requires these exact seven cells instead of the wiki-arbitrated migration cell.",
@@ -417,158 +752,6 @@
         "sha256": "77c696b75f7027c3f4120e5392874ce0809495c3c425ba4a005bff3521a546b8"
       }
     },
-    "oteryn:npc.a_sleeping_dragon": {
-      "source": {
-        "origin": "crystal",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "path": "data-global/world/world-npc.xml",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      },
-      "basis": "Exact source NPC XML center33243,31213,z10 plus offsetx=-1,y=0. Source XML has no facing; select NPC engine default NORTH, not a recovered source direction. Preserve actual source identity and replace the older Wiki placement hypothesis.",
-      "placements": [
-        {
-          "position": {
-            "x": 33242,
-            "y": 31213,
-            "z": 10
-          },
-          "direction": "NORTH"
-        }
-      ]
-    },
-    "oteryn:npc.alexander": {
-      "basis": "E2E JOURNEY: Edron shop at data-global/world/world-npc.xml:121. North is the engine default because the spawn has no direction.",
-      "placements": [
-        {
-          "direction": "NORTH",
-          "position": {
-            "x": 33256,
-            "y": 31839,
-            "z": 3
-          }
-        }
-      ],
-      "source": {
-        "origin": "crystal",
-        "path": "data-global/world/world-npc.xml",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      }
-    },
-    "oteryn:npc.asima": {
-      "basis": "E2E JOURNEY: Darashia shop at data-global/world/world-npc.xml:2078. North is the engine default because the spawn has no direction.",
-      "placements": [
-        {
-          "direction": "NORTH",
-          "position": {
-            "x": 33220,
-            "y": 32403,
-            "z": 7
-          }
-        }
-      ],
-      "source": {
-        "origin": "crystal",
-        "path": "data-global/world/world-npc.xml",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      }
-    },
-    "oteryn:npc.aurelia": {
-      "basis": "E2E JOURNEY: Targuna shop at data-global/world/world-npc.xml:1709. North is the engine default because the spawn has no direction.",
-      "placements": [
-        {
-          "direction": "NORTH",
-          "position": {
-            "x": 31955,
-            "y": 31916,
-            "z": 7
-          }
-        }
-      ],
-      "source": {
-        "origin": "crystal",
-        "path": "data-global/world/world-npc.xml",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      }
-    },
-    "oteryn:npc.boveas": {
-      "basis": "Crystal world-npc.xml:3300 places Boveas for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
-      "placements": [
-        {
-          "direction": "NORTH",
-          "position": {
-            "x": 32431,
-            "y": 32090,
-            "z": 15
-          }
-        }
-      ],
-      "source": {
-        "origin": "crystal",
-        "path": "data-global/world/world-npc.xml",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      }
-    },
-    "oteryn:npc.cerdras": {
-      "basis": "Crystal world-npc.xml:634 places Cerdras for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
-      "placements": [
-        {
-          "direction": "NORTH",
-          "position": {
-            "x": 32301,
-            "y": 31815,
-            "z": 6
-          }
-        }
-      ],
-      "source": {
-        "origin": "crystal",
-        "path": "data-global/world/world-npc.xml",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      }
-    },
-    "oteryn:npc.dreadeye": {
-      "basis": "Crystal world-npc.xml:3174 places Dreadeye for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
-      "placements": [
-        {
-          "direction": "NORTH",
-          "position": {
-            "x": 32800,
-            "y": 31572,
-            "z": 14
-          }
-        }
-      ],
-      "source": {
-        "origin": "crystal",
-        "path": "data-global/world/world-npc.xml",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      }
-    },
-    "oteryn:npc.milos": {
-      "basis": "Crystal world-npc.xml:118 places Milos for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
-      "placements": [
-        {
-          "direction": "NORTH",
-          "position": {
-            "x": 33258,
-            "y": 31823,
-            "z": 3
-          }
-        }
-      ],
-      "source": {
-        "origin": "crystal",
-        "path": "data-global/world/world-npc.xml",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      }
-    },
     "oteryn:npc.scutty": {
       "basis": "Crystal world-npc.xml:3012 places Scutty for Shadows of Yalahar. The source leaves direction unspecified, so the native placement uses north.",
       "placements": [
@@ -614,6 +797,44 @@
         "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
         "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
       }
+    },
+    "oteryn:npc.the_orc_king": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC spawn at world-npc.xml:2656-2657. North is the engine default.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32983,
+            "y": 31732,
+            "z": 9
+          }
+        }
+      ]
+    },
+    "oteryn:npc.ubaid": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC spawn at world-npc.xml:982-983. North is the engine default.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33047,
+            "y": 32622,
+            "z": 6
+          }
+        }
+      ]
     }
   }
 }
