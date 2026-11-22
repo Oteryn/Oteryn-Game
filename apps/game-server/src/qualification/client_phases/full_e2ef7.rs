@@ -4329,7 +4329,7 @@ async fn wait_units(
 }
 // Content selects a real vendor and route, never supplies evidence or grants an
 // item. Every acquisition still needs the served offer, accepted BUY and inventory.
-async fn acquire(
+pub(super) async fn acquire(
     client: &mut DevClientSession,
     world: &BundleWorld,
     definitions: &crate::content::item_ref::ItemDefinitionIndex,
@@ -4430,23 +4430,40 @@ async fn acquire_inner(
         })
         .ok_or("vendor route unavailable after gold hunt")?;
         acquisition_step("vendor-walk", walk(client, world, &path)).await?;
-        let actor = client
+        let vendor_name = name.replace('_', " ");
+        let vendor_actor = client
             .world_entities()
             .and_then(|es| {
                 es.iter().find(|e| {
                     e.kind == oteryn_dev_client::EntityKind::Npc
                         && vendor.placements.iter().any(|p| {
-                            e.position
-                                == ActorPosition {
-                                    x: i32::from(p.x),
-                                    y: i32::from(p.y),
-                                    floor: basis.floor(p.floor),
-                                }
+                            let distance = e.position.x.abs_diff(i32::from(p.x)).max(
+                                e.position.y.abs_diff(i32::from(p.y)),
+                            );
+                            e.position.floor == basis.floor(p.floor)
+                                && (distance == 0
+                                    || (distance <= 2
+                                        && e.display_name.is_some_and(|display| {
+                                            display.as_str().is_ok_and(|display| {
+                                                display.eq_ignore_ascii_case(&vendor_name)
+                                            })
+                                        })))
                         })
                 })
             })
-            .map(|e| e.entity)
-            .ok_or_else(|| format!("vendor {name} has no served actor at placement"))?;
+            .copied()
+            .ok_or_else(|| format!("vendor {name} has no served actor at or near its placement"))?;
+        let from = tile(client.world_spatial().actor_position)?;
+        let vendor_at = tile(vendor_actor.position)?;
+        if from.x.abs_diff(vendor_at.x).max(from.y.abs_diff(vendor_at.y)) > 3 {
+            let path = route(world, from, |at| {
+                at.floor == vendor_at.floor
+                    && at.x.abs_diff(vendor_at.x).max(at.y.abs_diff(vendor_at.y)) <= 2
+            })
+            .ok_or_else(|| format!("vendor {name} wandered to unreachable {vendor_at:?}"))?;
+            acquisition_step("vendor-walk", walk(client, world, &path)).await?;
+        }
+        let actor = vendor_actor.entity;
         for text in ["hi", "trade"] {
             let result = acquisition_step("vendor-dialogue", async {
                 Ok(shop::talk(
@@ -4566,7 +4583,7 @@ async fn imbue_window(
         .window
         .ok_or_else(|| "imbuement query omitted window".into())
 }
-async fn apply_imbue(
+pub(super) async fn apply_imbue(
     client: &mut DevClientSession,
     definition: std::num::NonZeroU32,
     family: u8,
@@ -4646,7 +4663,7 @@ async fn strike_effect(client: &mut DevClientSession) -> TestResult<i64> {
         .get(character::combat::CombatStat::CriticalChanceImbuement)
         .ok_or_else(|| "server combat tab reports imbuement critical chance unknown".into())
 }
-async fn shrine(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+pub(super) async fn shrine(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     // Shrine locations come from the production bundle's item palette and sectors.
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let mut positions = BTreeSet::new();
@@ -5543,7 +5560,7 @@ async fn player_gold(client: &mut DevClientSession) -> TestResult<u64> {
         .checked_add(balances.bank_gold)
         .ok_or_else(|| "native gold total overflow".into())
 }
-async fn earn_gold(
+pub(super) async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
     required: u64,
