@@ -4,9 +4,15 @@ fn gem_presentation_all_canonical_vocations_fit_and_use_executed_corrections()
 -> Result<(), &'static str> {
     let data = WheelGemData::embedded().map_err(|_| "catalogue")?;
     let mut mastery_ids = std::collections::BTreeSet::new();
-    for vocation in ["druid", "knight", "monk", "paladin", "sorcerer"] {
+    for (vocation, modifier_count) in [
+        ("druid", 73),
+        ("knight", 71),
+        ("monk", 73),
+        ("paladin", 73),
+        ("sorcerer", 73),
+    ] {
         let rows = project(&data, vocation).ok_or("project")?;
-        assert_eq!(rows.len(), 69);
+        assert_eq!(rows.len(), modifier_count, "{vocation}");
         let reply = wire::Reply {
             grades_current: true,
             qualified_gems: (1_u128..=225).map(u128::to_be_bytes).collect(),
@@ -79,9 +85,11 @@ fn gem_presentation_all_canonical_vocations_fit_and_use_executed_corrections()
     }
     assert_eq!(
         mastery_ids,
-        [5, 21, 22, 23, 39, 40, 41, 56, 57, 58, 73, 74, 75, 91, 92, 93]
-            .into_iter()
-            .collect::<std::collections::BTreeSet<_>>()
+        [
+            5, 21, 22, 23, 39, 40, 41, 56, 57, 58, 73, 74, 75, 91, 92, 93
+        ]
+        .into_iter()
+        .collect::<std::collections::BTreeSet<_>>()
     );
     assert!(project(&data, "none").is_none());
     Ok(())
