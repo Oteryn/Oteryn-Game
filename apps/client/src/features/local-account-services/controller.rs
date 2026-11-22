@@ -31,10 +31,10 @@ pub(super) async fn execute(
             .is_some_and(|r| r.state != OperationState::Pending)
     {
         match client
-            .bazaar_page(token, view.selected_view, None, cancel)
+            .bazaar_page(token, view.selected_view, None, cancel.clone())
             .await
         {
-            Ok(page) => view.install_page(page),
+            Ok(page) => view.install_page(page, client, token, cancel).await,
             Err(_) => view.feedback.push_str(tr!(
                 " Balance refresh unavailable; the receipt is retained."
             )),
@@ -56,9 +56,11 @@ async fn apply(
 ) -> Result<(), NativeLoginError> {
     let command = match action {
         Action::Refresh(kind) => {
-            let page = client.bazaar_page(token, kind, None, cancel).await?;
+            let page = client
+                .bazaar_page(token, kind, None, cancel.clone())
+                .await?;
             view.feedback = tr!("Server account data refreshed.").into();
-            view.install_page(page);
+            view.install_page(page, client, token, cancel).await;
             view.selected_view = kind;
             if view.post_refusal_status == Some(403) {
                 view.post_refusal_status = None;
@@ -69,9 +71,9 @@ async fn apply(
             let cursor = view.page.as_ref().and_then(|p| p.next_cursor.as_deref());
             if let Some(cursor) = cursor {
                 let page = client
-                    .bazaar_page(token, view.selected_view, Some(cursor), cancel)
+                    .bazaar_page(token, view.selected_view, Some(cursor), cancel.clone())
                     .await?;
-                view.install_page(page);
+                view.install_page(page, client, token, cancel).await;
             }
             return Ok(());
         }

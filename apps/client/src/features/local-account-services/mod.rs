@@ -87,8 +87,30 @@ impl View {
             .map(|r| r.request_id.as_str())
             .or_else(|| self.unresolved.iter().next().map(String::as_str))
     }
-    fn install_page(&mut self, page: BazaarPage) {
-        for receipt in &page.recent_operations {
+    async fn install_page(
+        &mut self,
+        mut page: BazaarPage,
+        client: &NativeLoginClient,
+        token: &AccessToken,
+        cancel: CancellationToken,
+    ) {
+        for listed in std::mem::take(&mut page.recent_operations) {
+            let receipt = if self.prior.contains(&listed.request_id)
+                && self
+                    .pending
+                    .as_ref()
+                    .is_none_or(|p| p.request_id != listed.request_id)
+            {
+                let Ok(verified) = client
+                    .bazaar_status(token, &listed.request_id, cancel.clone())
+                    .await
+                else {
+                    continue;
+                };
+                verified
+            } else {
+                listed
+            };
             if self.prior.contains(&receipt.request_id)
                 || self
                     .pending
@@ -97,7 +119,7 @@ impl View {
                 || self
                     .receipt
                     .as_ref()
-                    .is_some_and(|old| old.request_id == receipt.request_id && old != receipt)
+                    .is_some_and(|old| old.request_id == receipt.request_id && old != &receipt)
             {
                 controller::accept(self, receipt.clone());
             } else if receipt.state == OperationState::Pending {
@@ -105,6 +127,7 @@ impl View {
             } else {
                 self.unresolved.remove(&receipt.request_id);
             }
+            page.recent_operations.push(receipt);
         }
         self.page = Some(page);
     }

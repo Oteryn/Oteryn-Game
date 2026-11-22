@@ -294,6 +294,21 @@ fn fresh_oauth(refused: bool) -> TestResult {
     let (body, signature) = mock.signed_event(&order, EventKind::Paid)?;
     assert_eq!(mock.webhook(&body, &signature)?, 200);
     mock.with_coins(|coins| coins.hide_recent_orders = false)?;
+    // A stale catalogue entry can outlive access to the request-status endpoint.
+    let listed = mock
+        .with_coins(|coins| coins.orders.remove(&original))?
+        .ok_or("listed order")?;
+    mock.with_coins(|coins| coins.orders.insert("stale-index".into(), listed))?;
+    let stale = open(vec![Action::Retry])?;
+    for view in stale {
+        assert!(!format!("{view:?}").contains(&original));
+        assert!(view.can_purchase(PACKAGE));
+        assert!(!view.can_retry());
+    }
+    let listed = mock
+        .with_coins(|coins| coins.orders.remove("stale-index"))?
+        .ok_or("stale listing")?;
+    mock.with_coins(|coins| coins.orders.insert(original.clone(), listed))?;
     let reconciled = open(Vec::new())?;
     let view = reconciled.first().ok_or("reconciled")?;
     assert_eq!(view.order.as_ref().map(|o| &o.request_id), Some(&original));
@@ -307,7 +322,7 @@ fn fresh_oauth(refused: bool) -> TestResult {
     assert!(!format!("{:?}", open(Vec::new())?).contains(&original));
     assert_eq!(
         mock.authority.lock().map_err(|_| "lock")?.oauth_exchanges,
-        5
+        6
     );
     Ok(())
 }

@@ -178,7 +178,7 @@ async fn refresh(
 ) -> Result<(), NativeLoginError> {
     view.quote_until.clear();
     let requested_at = Instant::now();
-    let catalogue = client
+    let mut catalogue = client
         .coin_catalogue(token, view.character_id.as_deref(), cancel.clone())
         .await?;
     let mut quote_until: std::collections::BTreeMap<_, _> = catalogue
@@ -191,6 +191,25 @@ async fn refresh(
             )
         })
         .collect();
+    for listed in std::mem::take(&mut catalogue.recent_orders) {
+        let order = if view.prior.contains(&listed.request_id)
+            && view
+                .pending
+                .as_ref()
+                .is_none_or(|p| p.request_id != listed.request_id)
+        {
+            let Ok(verified) = client
+                .coin_order_status(token, &listed.request_id, cancel.clone())
+                .await
+            else {
+                continue;
+            };
+            verified
+        } else {
+            listed
+        };
+        catalogue.recent_orders.push(order);
+    }
     if let Some(request_id) = view
         .pending
         .as_ref()
@@ -204,7 +223,7 @@ async fn refresh(
         accept(view, order.clone())?;
     }
     for order in &catalogue.recent_orders {
-        if view.prior.contains(&order.request_id) {
+        if view.prior.contains(&order.request_id) && view.pending.is_none() {
             accept(view, order.clone())?;
         }
     }

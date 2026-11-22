@@ -415,7 +415,8 @@ fn cancel_reserves_picker_request_until_worker_finishes() -> Result<(), Box<dyn 
     use oteryn_platform_client::native_login::{CharacterAvailability, OwnerCharacter};
     let folder = tempfile::tempdir()?;
     let mut owner = HostOwner::new(None)?;
-    let config = Reentry::device_test_config(folder.path().into(), "https://localhost:1")?;
+    let mut config = Reentry::device_test_config(folder.path().into(), "https://localhost:1")?;
+    config.preference_path = Some(folder.path().join("preferences.json"));
     assert!(owner.entry.as_mut().ok_or("entry")?.configure(config));
     let callback = owner.selector.clone();
     let selector = std::thread::spawn(move || {
