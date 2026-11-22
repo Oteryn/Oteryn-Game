@@ -29,7 +29,7 @@ QUALIFIED = {
     "oteryn:reward-claim.kv.orcshaman": "quest_reward_claims_batch_one_orc_shaman_bag_exact_contents",
     "oteryn:reward-claim.kv.panpipe": "quest_reward_claims_batch_one_panpipe_bag_exact_contents",
     "oteryn:reward-claim.kv.platearmor": "quest_reward_claims_batch_one_plate_armor_coffin_once_and_replay",
-    "oteryn:reward-claim.kv.poisondaggers": "quest_reward_claims_batch_two_poison_daggers_two_instances_once_and_replay",
+    "oteryn:reward-claim.kv.poisondaggers": "quest_reward_claims_batch_two_poison_daggers_numeric_contents_once_and_replay",
     "oteryn:reward-claim.kv.powerbolt1": "quest_reward_claims_batch_two_power_bolts_book_and_ammunition",
     "oteryn:reward-claim.kv.powerbolt2": "quest_reward_claims_batch_two_power_bolts_book_and_ammunition",
     "oteryn:reward-claim.kv.purpletome1": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
@@ -596,7 +596,6 @@ SOURCE_SHA256 = {
 }
 CONTAINER_SOURCE = "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
 ACCEPTED_OVERRIDES = {
-    6068: "Target Wiki2026-11-06 and both donor comments: two quantity1 daggers; retain numeric donor one in source_variant",
     6078: "PR2770 Q5/A: retain accepted Item12510 over donor3208",
     6218: "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
     6226: "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
@@ -744,12 +743,6 @@ def coverage(canary, crystal):
                     captured["native_entry_ordinal"] = authored["source_binding"][
                         "native_entry_ordinal"
                     ]
-            if key == "oteryn:reward-claim.kv.poisondaggers":
-                inventory["target_correction"] = (
-                    "Target Wiki2026-11-06 and both donor comments specify two daggers. "
-                    "The native recipe mints two distinct quantity1 instances; "
-                    "source_variant preserves the donor numeric recipe of one."
-                )
             if native and any(p['reward'].get('written_text') for p in definition['placements']):
                 inventory["qualification_limit"] = (
                     "Reward-grant support includes durable authored book text; "

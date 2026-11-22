@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/newhaven/protect-the-village",
+      "quest": "oteryn:quest.newhaven_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "writable": true,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/newhaven/protect-the-village/kills",
+      "quest": "oteryn:quest.newhaven_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 20,
+      "writable": true,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/newhaven-gustavo-assign",
+      "quest": "oteryn:quest.newhaven_quest",
+      "npc": "oteryn:npc.gustavo_the_guard",
+      "keywords": [
+        "goblins",
+        "goblin",
+        "muglex",
+        "quest",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/newhaven/protect-the-village",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/newhaven/protect-the-village/kills",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The Muglex Clan is threatening Newhaven. Defeat twenty of their goblins, then report back to me."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/newhaven-gustavo-turn-in",
+      "quest": "oteryn:quest.newhaven_quest",
+      "npc": "oteryn:npc.gustavo_the_guard",
+      "keywords": [
+        "goblins",
+        "goblin",
+        "muglex",
+        "quest",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/newhaven/protect-the-village",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3052",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You have made Newhaven safer. Take this ring as thanks, and ask Viola about her missing book."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/gustavo_the_guard.lua#L74-L99"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/newhaven/protect-the-village/kills",
+          "minimum": 20,
+          "maximum": 20
+        }
+      ]
+    }
+  ]
+}
