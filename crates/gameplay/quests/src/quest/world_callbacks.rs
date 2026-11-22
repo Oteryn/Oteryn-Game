@@ -802,6 +802,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/rottin-wood.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/quest-contacts.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/threatened-dreams-mosaic-treasure.json"
     ))?);
     callbacks.extend(super::carried_step::callbacks());

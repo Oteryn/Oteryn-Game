@@ -569,6 +569,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/quest-contacts.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../../content/quests/npc-callbacks/vampire-hunter.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),

@@ -34,6 +34,7 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/quest-contacts.json"),
     include_str!("../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
     include_str!("../../../../content/quests/npc-callbacks/classic-missions.json"),
     include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
@@ -55,6 +56,7 @@ const REWARD_GREETINGS: &[&str] = &[
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
     include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
     include_str!("../../../../content/dialogues/quests/m09-rookie-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/quest-contact-greetings.json"),
     include_str!("../../../../content/dialogues/quests/questpc5-targuna-map-greetings.json"),
     include_str!("../../../../content/dialogues/quests/m13-goblin-greetings.json"),
 ];

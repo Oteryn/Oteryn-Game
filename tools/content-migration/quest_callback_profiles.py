@@ -202,14 +202,18 @@ def _requested_inputs(root, extra_keys=()):
     authored_callbacks = []
     # Executable authored callbacks use the same exact canonical/native Item
     # qualification as source chests. Include every output, never a partial bag.
-    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json'):
+    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json',
+                     'npc-callbacks/quest-contacts.json', 'world-callbacks/quest-contacts.json'):
         path = root / 'content/quests' / relative
         if not path.is_file():
             continue
         for callback in json.loads(path.read_bytes())['callbacks']:
             authored_callbacks.append(callback)
             reward = callback.get('give') or callback.get('effects', {}).get('item_reward')
-            if reward:
+            if (reward and callback['key']
+                    != 'oteryn:quest-reward/their-masters-voice-slime-gobbler'):
+                # Their Master's Voice already admits the Slime Gobbler through the
+                # World Change overlay. Its newly published NPC shares that custody.
                 authored_keys.add(reward['item'])
                 authored_keys.update(child['item'] for field in ('contents', 'backpack_outputs')
                                      for child in reward.get(field, []))

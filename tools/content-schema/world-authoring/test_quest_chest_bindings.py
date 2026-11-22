@@ -208,6 +208,20 @@ class QuestChestBindings(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "LEVEL_SOURCE_PIN"):
             chests.captured_level_access(raw + b"changed", {key})
 
+    def test_fishnapped_goldfish_retains_its_unmovable_startup_uid(self):
+        index = json.loads((chests.ROOT / chests.INDEX).read_bytes())
+        path = chests.ROOT / "content/world/placements" / codec.region_name(6, 126, 128)
+        _, _, _, sectors = codec.decode_region(path.read_bytes())
+        fish = [
+            attrs
+            for _, tiles in sectors
+            for x, y, _, _, _, items in tiles
+            if (x, y) == (32359, 32791)
+            for ordinal, depth, attrs in items
+            if depth == 0 and index["palette"][ordinal]["source_item_id"] == 7936
+        ]
+        self.assertEqual(fish, [{"unique": 9266}])
+
     def test_annihilator_retains_exact_level100_startup_gate_with_reward(self):
         selected, _ = chests.selections()
         gate = selected["action"][(33214, 31671, 13)]

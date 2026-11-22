@@ -411,6 +411,8 @@ fn scenario_case(
         callback("questpc7-formal-display")?
     } else if outfit_world {
         callback(name)?
+    } else if name == super::super::qengine_rewards_fixtures::cq29_quest_contacts::THIEVES {
+        callback("thieves-guild-sarina-vase")?
     } else if classic_npc {
         callback("behemoth")?
     } else if rotten_purchase {
@@ -917,6 +919,8 @@ fn scenario_case(
             )],
             &[],
         )?
+    } else if name == super::super::qengine_rewards_fixtures::cq29_quest_contacts::THIEVES {
+        world_ordinal(&callback, trigger, 7892, 1)?
     } else if name == "questpc7-outfits-formal" {
         // The fixture includes the same admitted entry appearance as the real palace.
         let mut physical = callback.clone();

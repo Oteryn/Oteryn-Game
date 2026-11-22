@@ -666,7 +666,7 @@
     }
   ],
   "inputs_sha256": {
-    "content/items/definitions/spell-native-profiles.json": "a5db7fd03aff178fe60ffbe4de19feb0a97b6ee535fe2537bbae854d660d4ed6",
+    "content/items/definitions/spell-native-profiles.json": "95c73f86507fbe599631b9e6a572a9bb5af9f43ce1206224d7d39fec017e6cf8",
     "content/quests/killing-in-the-name-of.json": "954cd1b9feba72e3c01f03ed97d68ff08fcd78ab0bf8f1ae779c6abff9ce8309",
     "content/world/objects/objects-00000-00499.json": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
     "content/world/objects/objects-00500-00999.json": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
@@ -698,7 +698,7 @@
     "content/world/objects/objects-12877-12916.json": "2c190feb8bf04817077ffe9126360e1aac81652221ccd232d7436616ad9ddcaa",
     "content/world/objects/objects-12917-12931.json": "f261d0a2cc18309b9fb76b1b5f3970ef800586ae5d3562e885fb1a908b4cfb69",
     "content/world/objects/objects-12932-13108.json": "1e960f7a61eccfddbf2428c40924598e4641bbb9790b0cb35305b65a8c2b4877",
-    "content/world/placements/index.json": "700d3fe3005cda32ea2bbdb0a116302d124208018948e81befc2d1694b40bebf",
+    "content/world/placements/index.json": "42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
     "content/world/placements/region-z01-x129-y121.b3": "c11e0e3ea456fbee69b320b8f4e8cacf2240e142045dacec81c91c679560d2be",
     "content/world/placements/region-z02-x125-y121.b3": "5d704484eadabaad8beca02502b161149daee492591a3369b30a0866c311a520",
     "content/world/placements/region-z02-x129-y121.b3": "c280a3777ab40f568fd4cda4883af45ceaea36e0a4bdc15e87b9ab3c237d34c3",
@@ -720,7 +720,7 @@
     "content/world/placements/region-z10-x127-y126.b3": "7a0cc2d7cb7eea753a07a0364cb638ca9b278d8f0b6eebfd9e485bcaad0d0187",
     "content/world/placements/region-z11-x125-y122.b3": "4973f787f0dbf23e00226d9a5ba4ef208e1b3b1f4ce09421f9f1b0e84993d804",
     "content/world/placements/region-z11-x127-y126.b3": "e5f6238f11300f80a6e09d512ae2a8f1ffed427884483277babcdf16eff8d55f",
-    "content/world/placements/region-z11-x128-y126.b3": "79e65ce7797868db8b084a063a30a7bfcf43902dd7e8f06131087e1e9ffff6c8",
+    "content/world/placements/region-z11-x128-y126.b3": "319fd20445e3be09267dc312fee309cef33badb752efe48d8638b449dfc52fe4",
     "content/world/placements/region-z11-x128-y127.b3": "86b1c6bc093c81003fad4dc284f438b4c728034c8e377f4a66c89ad00070b672",
     "content/world/placements/region-z11-x129-y128.b3": "49c5e927d999830d979cbd355167eb5babc4df06fce3bdebe1723babfebda6a4",
     "content/world/placements/region-z12-x129-y121.b3": "73dca21a378bef546b1c0ea0113a62694d136b96ecfdf9749d850911671097ff",

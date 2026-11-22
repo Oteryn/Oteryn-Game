@@ -16,6 +16,7 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
         include_str!("../../../../../../../content/quests/npc-offers/newhaven-gustavo.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qd-steal-from-thieves.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/quest-contacts.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-m10.json"),
         include_str!("../../../../../../../content/quests/npc-offers/vampire-hunter.json"),
     ] {

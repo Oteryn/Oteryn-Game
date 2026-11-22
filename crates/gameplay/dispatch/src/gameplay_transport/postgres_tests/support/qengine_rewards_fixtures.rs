@@ -1,3 +1,6 @@
+#[path = "qengine_rewards/cq29_quest_contacts.rs"]
+pub(super) mod cq29_quest_contacts;
+
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use super::TestResult;
 
@@ -35,6 +38,8 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             name,
             if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps_fixtures::SOURCE
+            } else if name == cq29_quest_contacts::THIEVES {
+                cq29_quest_contacts::VASE
             } else if name == super::newhaven_gustavo_fixtures::NAME {
                 super::newhaven_gustavo_fixtures::START
             } else if name == "qengine-rewards-l2-white-raven" {
@@ -920,6 +925,9 @@ pub(super) async fn exercise(
             owner, admitted, h, name,
         ))
         .await;
+    }
+    if name == cq29_quest_contacts::THIEVES || name == cq29_quest_contacts::SENTRY {
+        return Box::pin(cq29_quest_contacts::exercise(owner, admitted, h, name)).await;
     }
     if name == super::newhaven_gustavo_fixtures::NAME {
         return Box::pin(super::newhaven_gustavo_fixtures::exercise(owner, admitted, h)).await;
