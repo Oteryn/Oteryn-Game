@@ -170,7 +170,7 @@ async fn mimar_haffar_mana_drain(admin: String) -> TestResult {
                 .state(boss)
                 .ok_or("native boss AI state")?;
             assert_eq!(ai.target(), Some(deps.actor));
-            assert!((tick + 1) * THINK_MS >= u64::from(entry.interval_ms));
+            assert!((tick + 1) * THINK_MS >= entry.interval_ms);
             let drained = STARTING_MANA
                 .checked_sub(vitals.mana)
                 .ok_or("the attack must drain mana")?;
