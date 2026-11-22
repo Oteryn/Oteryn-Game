@@ -21,7 +21,24 @@ impl Outbox {
     }
 
     /// Delivers validated session events to the native view (also used by the headless harness).
-    pub fn push(&self, mut events: Vec<SessionEvent>) {
+    pub fn push(&self, events: Vec<SessionEvent>) {
+        lock(&self.0).push_events(events);
+    }
+}
+
+impl Mailbox {
+    /// `entities` are as the server sent them; the shell gets them in the native frame.
+    pub(in crate::play) fn entities(&mut self, entities: Vec<WorldSpatialEntity>) {
+        oteryn_client_ui::player_typing::protocol::retain_visible(
+            &mut self.player_typing,
+            &entities,
+        );
+        let native = self.native_entities(&entities);
+        self.pushed.entities = Some(native);
+        self.entities_wire = entities;
+    }
+
+    pub(in crate::play) fn push_events(&mut self, mut events: Vec<SessionEvent>) {
         let received_at = tokio::time::Instant::now();
         if let Some(index) = events
             .iter()
@@ -62,116 +79,97 @@ impl Outbox {
         self.cyclopedia_discovery_events(&events);
         self.inventory_events(&events);
         self.container_events(&events);
-        let mut mailbox = lock(&self.0);
-        super::super::feature_0060_player_trade::protocol::reduce(
-            &mut mailbox.player_trade,
-            &events,
-        );
-        super::super::feature_local_spell_action_bar::protocol::vitals_events(
-            &mut mailbox,
-            &events,
-        );
-        mailbox.death_protection_events(&events);
-        mailbox.dialogue_events(&events);
-        mailbox.npc_shop_events(&events);
+        super::super::feature_0060_player_trade::protocol::reduce(&mut self.player_trade, &events);
+        super::super::feature_local_spell_action_bar::protocol::vitals_events(self, &events);
+        self.death_protection_events(&events);
+        self.dialogue_events(&events);
+        self.npc_shop_events(&events);
         for event in &events {
             if let SessionEvent::GatedSnapshotReplaced(delta) = event
                 && delta.value.domain_id == 1
             {
-                mailbox.pushed.motion_reset = true;
+                self.pushed.motion_reset = true;
             }
             if let SessionEvent::ContainerViews(update) = event {
                 super::super::feature_0230_browse_field::protocol::replace_views(
-                    &mut mailbox.browse_field,
+                    &mut self.browse_field,
                     update.value.clone(),
                 );
             }
             if let SessionEvent::PlayerTyping(update) = event {
                 oteryn_client_ui::player_typing::protocol::reduce(
-                    &mut mailbox.player_typing,
+                    &mut self.player_typing,
                     update.value,
                 );
             }
         }
-        super::super::feature_0010_analyser::protocol::reduce(&mut mailbox, &events);
+        super::super::feature_0010_analyser::protocol::reduce(self, &events);
         super::super::feature_0134_party_skull::protocol::reduce(
-            &mut mailbox.properties.party_skull,
+            &mut self.properties.party_skull,
             &events,
         );
-        super::super::feature_0287_actor_spell_catalog::protocol::reduce(&mut mailbox, &events);
-        super::super::feature_0291_cast_chat::protocol::reduce(&mut mailbox, &events);
-        mailbox.coalesce_events(events);
-        // A full activity handoff publishes domain 99 without a typed scope event.
-        if replacement.is_some() && mailbox.scope_pending {
-            mailbox.pushed.activity_scope = mailbox.activity_scope.clone();
-            mailbox.pushed.scope_changed = true;
-        }
-        mailbox.check_server_messages();
-        let notices = std::mem::take(&mut mailbox.pushed.achievements);
-        mailbox.reduce_achievement_notices(notices);
-        for text in std::mem::take(&mut mailbox.pushed.notices.tutorial) {
+        super::super::feature_0287_actor_spell_catalog::protocol::reduce(self, &events);
+        super::super::feature_0291_cast_chat::protocol::reduce(self, &events);
+        self.mount_actor_published(&events);
+        self.coalesce_events(events);
+        self.check_server_messages();
+        let notices = std::mem::take(&mut self.pushed.achievements);
+        self.reduce_achievement_notices(notices);
+        for text in std::mem::take(&mut self.pushed.notices.tutorial) {
             // The server's walk refusal (USE-AUTOWALK-1 canonical text).
             if text == "There is no way." {
-                oteryn_client_ui::target_move::no_way(&mut mailbox.target_walk);
+                oteryn_client_ui::target_move::no_way(&mut self.target_walk);
             }
-            mailbox
-                .notices
+            self.notices
                 .apply(oteryn_client_runtime::tutorial_notices::Notice::Tutorial(
                     text,
                 ));
         }
-        if let Some(minutes) = mailbox.pushed.notices.save_minutes.take() {
-            mailbox
-                .notices
+        if let Some(minutes) = self.pushed.notices.save_minutes.take() {
+            self.notices
                 .apply(oteryn_client_runtime::tutorial_notices::Notice::ServerSave { minutes });
         }
-        let deltas = std::mem::take(&mut mailbox.pushed.quests);
-        super::super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
-        super::super::feature_0240_chat_party_room::protocol::reset_if_replaced(&mut mailbox);
-        for line in std::mem::take(&mut mailbox.pushed.chat_lines) {
-            oteryn_client_ui::party::push_feedback(&mut mailbox.party, &line);
-            oteryn_client_ui::chat_party_room::push_line(&mut mailbox.chat_party_room, line);
+        let deltas = std::mem::take(&mut self.pushed.quests);
+        super::super::feature_0016_quest_log::protocol::reduce(&mut self.quest, deltas);
+        super::super::feature_0240_chat_party_room::protocol::reset_if_replaced(self);
+        for line in std::mem::take(&mut self.pushed.chat_lines) {
+            oteryn_client_ui::party::push_feedback(&mut self.party, &line);
+            oteryn_client_ui::chat_party_room::push_line(&mut self.chat_party_room, line);
         }
-        if let Some(rooms) = mailbox.pushed.chat_rooms.take() {
-            oteryn_client_ui::chat_party_room::replace_rooms(&mut mailbox.chat_party_room, rooms);
+        if let Some(rooms) = self.pushed.chat_rooms.take() {
+            oteryn_client_ui::chat_party_room::replace_rooms(&mut self.chat_party_room, rooms);
         }
-        if let Some(presence) = mailbox.pushed.vip_presence.take() {
-            if mailbox.social_channel_selected {
+        if let Some(presence) = self.pushed.vip_presence.take() {
+            if self.social_channel_selected {
                 let notices = oteryn_client_ui::social_channel::presence_notices(
-                    &mailbox.party.channel_names,
-                    &mailbox.vip_presence.presence,
+                    &self.party.channel_names,
+                    &self.vip_presence.presence,
                     &presence,
                 );
                 for notice in notices {
-                    mailbox.vip_channel_notice_serial += 1;
-                    let serial = mailbox.vip_channel_notice_serial;
-                    mailbox.vip_channel_notices.push((serial, notice));
+                    self.vip_channel_notice_serial += 1;
+                    let serial = self.vip_channel_notice_serial;
+                    self.vip_channel_notices.push((serial, notice));
                 }
             }
-            mailbox.vip_presence_confirmed_at = Some(received_at);
-            oteryn_client_ui::vip_presence::replace(&mut mailbox.vip_presence, presence);
+            self.vip_presence_confirmed_at = Some(received_at);
+            oteryn_client_ui::vip_presence::replace(&mut self.vip_presence, presence);
         }
-        if let Some(position) = mailbox.pushed.own
+        if let Some(position) = self.pushed.own
             && let (Ok(x), Ok(y), Ok(floor)) = (
                 u16::try_from(position.x),
                 u16::try_from(position.y),
                 i8::try_from(position.floor),
             )
         {
-            mailbox.hireling.target = Some((x, y, floor));
+            self.hireling.target = Some((x, y, floor));
         }
     }
+}
 
-    /// `entities` are as the server sent them; the shell gets them in the native frame.
+impl Outbox {
     pub(in crate::play) fn entities(&self, entities: Vec<WorldSpatialEntity>) {
-        let mut mailbox = lock(&self.0);
-        oteryn_client_ui::player_typing::protocol::retain_visible(
-            &mut mailbox.player_typing,
-            &entities,
-        );
-        let native = mailbox.native_entities(&entities);
-        mailbox.pushed.entities = Some(native);
-        mailbox.entities_wire = entities;
+        lock(&self.0).entities(entities);
     }
 
     pub(in crate::play) fn logout_refused(&self, result: Option<LogoutResult>) {
@@ -186,7 +184,7 @@ impl Outbox {
         self.container_end();
         let mut mailbox = lock(&self.0);
         mailbox.end_custom_hotkeys();
-        if let Some(launcher) = &mailbox.coin_shop {
+        if let Some(launcher) = &mailbox.connection.coin_shop {
             launcher.end();
         }
         mailbox.arena.end();
@@ -250,7 +248,7 @@ impl Outbox {
         self.container_end();
         let mut mailbox = lock(&self.0);
         mailbox.end_custom_hotkeys();
-        if let Some(launcher) = &mailbox.coin_shop {
+        if let Some(launcher) = &mailbox.connection.coin_shop {
             launcher.end();
         }
         mailbox.arena.end();
@@ -419,7 +417,7 @@ impl Drop for PlayLink {
         self.channel_switch_close();
         let mut mailbox = lock(&self.mailbox);
         mailbox.end_custom_hotkeys();
-        if let Some(launcher) = &mailbox.coin_shop {
+        if let Some(launcher) = &mailbox.connection.coin_shop {
             launcher.end();
         }
         mailbox.properties.end();

@@ -39,9 +39,10 @@ fn coin_shop_store_launcher_uses_services_scope_character_context_and_refresh_ca
         let launcher = Launcher::new(
             config,
             CHARACTER.into(),
-            Arc::new(move || {
+            Arc::new(move |_| {
                 let _ = done_tx.send(());
             }),
+            None,
         );
         assert!(launcher.can_start());
         assert!(launcher.start());
@@ -79,9 +80,10 @@ fn coin_shop_session_end_cancels_pending_oauth_without_presenting_or_refreshing(
         let launcher = Launcher::new(
             config,
             CHARACTER.into(),
-            Arc::new(move || {
+            Arc::new(move |_| {
                 refreshed.fetch_add(1, Ordering::SeqCst);
             }),
+            None,
         );
         assert!(launcher.start());
         opened_rx.recv_timeout(Duration::from_secs(5))?;
@@ -115,7 +117,7 @@ fn store_launcher_opens_coin_history_and_transfer_pages_until_the_session_ends()
             let _ = url_tx.send(url.to_owned());
             true
         });
-        let launcher = Launcher::new(config, CHARACTER.into(), Arc::new(|| {}));
+        let launcher = Launcher::new(config, CHARACTER.into(), Arc::new(|_| {}), None);
         assert!(launcher.open_web(WebLink::CoinHistory));
         assert!(launcher.open_web(WebLink::CoinTransfer));
         let language = oteryn_client_ui::localization::current().code();
@@ -130,6 +132,66 @@ fn store_launcher_opens_coin_history_and_transfer_pages_until_the_session_ends()
         launcher.end();
         assert!(!launcher.open_web(WebLink::CoinHistory));
         assert!(url_rx.try_recv().is_err());
+        Ok(())
+    })
+}
+
+#[test]
+fn store_launcher_fresh_oauth_discards_pending_request() -> TestResult {
+    use crate::account_services::test_server::coins::PACKAGE;
+    use std::time::Instant;
+    test_thread(|| {
+        let stack = test_support::Stack::start(Vec::new())?;
+        let mock = MockPlatform::start()?;
+        mock.authority.lock().map_err(|_| "lock")?.coin_post_failure = Some(0);
+        let mut config = stack.config();
+        config.platform_url = mock.base.clone();
+        let (shown_tx, shown_rx) = mpsc::channel();
+        let steps = AtomicUsize::new(0);
+        config.coin_shop = Arc::new(move |view, _| {
+            let _ = shown_tx.send((view.pending(), format!("{view:?}")));
+            if steps.fetch_add(1, Ordering::SeqCst) == 0 {
+                Action::Purchase {
+                    package_id: PACKAGE.into(),
+                    confirmed: true,
+                }
+            } else {
+                Action::Back
+            }
+        });
+        let (done_tx, done_rx) = mpsc::channel();
+        let launcher = Launcher::new(
+            config,
+            CHARACTER.into(),
+            Arc::new(move |_| {
+                let _ = done_tx.send(());
+            }),
+            None,
+        );
+        assert!(launcher.start());
+        for expected in [false, true] {
+            let (pending, debug) = shown_rx.recv_timeout(Duration::from_secs(5))?;
+            assert_eq!(pending, expected);
+            assert!(!debug.contains("services-test-token-"));
+        }
+        done_rx.recv_timeout(Duration::from_secs(5))?;
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !launcher.can_start() && Instant::now() < deadline {
+            std::thread::yield_now();
+        }
+        assert!(launcher.start());
+        let (pending, debug) = shown_rx.recv_timeout(Duration::from_secs(5))?;
+        assert!(
+            !pending,
+            "Store reopened with state from the previous OAuth"
+        );
+        assert!(!debug.contains("services-test-token-"));
+        assert!(!format!("{launcher:?}").contains("services-test-token-"));
+        done_rx.recv_timeout(Duration::from_secs(5))?;
+        assert_eq!(
+            mock.authority.lock().map_err(|_| "lock")?.oauth_exchanges,
+            2
+        );
         Ok(())
     })
 }

@@ -440,3 +440,25 @@ impl MockChallengeVerifier {
         (403, r#"{"error":"invalid_challenge"}"#)
     }
 }
+
+pub(crate) async fn authorize_selection(
+    client: &NativeLoginClient,
+    config: &NativeLoginConfig,
+) -> Result<(String, Option<String>), GameplayEntryError> {
+    let authorized = super::authorize::authorize(client, config, CancellationToken::new()).await?;
+    Ok((authorized.character_id, authorized.channel_id))
+}
+
+pub(crate) async fn authorize_through_gateway(
+    client: &NativeLoginClient,
+    config: &NativeLoginConfig,
+    expire: bool,
+) -> Result<(String, Option<String>), GameplayEntryError> {
+    let cancel = CancellationToken::new();
+    let mut authorized = super::authorize::authorize(client, config, cancel.clone()).await?;
+    if expire {
+        tokio::time::sleep_until(authorized.ticket.usable_until().into()).await;
+    }
+    let (_, grant) = super::initial_gateway_login(client, &mut authorized, config, cancel).await?;
+    Ok((authorized.character_id, Some(grant.channel_id)))
+}

@@ -59,6 +59,10 @@ impl Reentry {
             return false;
         }
         if let Some(token) = &self.attempt_cancellation {
+            let _delivery = self
+                .browser_delivery
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             token.cancel();
         }
         if let Some(config) = &self.client.native_login {

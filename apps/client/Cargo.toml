@@ -56,7 +56,7 @@ semver = "=1.0.28"
 tokio = { workspace = true, features = ["macros"] }
 fs2 = "=0.4.3"
 tempfile = "=3.27.0"
-url = "=2.5.8"
+url = "=2.5.9"
 zip = { version = "=9.5.1", default-features = false, features = ["deflate"] }
 
 [target.'cfg(unix)'.dependencies]

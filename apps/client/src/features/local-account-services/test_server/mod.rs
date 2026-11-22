@@ -33,6 +33,9 @@ pub(crate) struct Authority {
     pub requests: Vec<String>,
     pub effects: u32,
     pub fail_after_commit: bool,
+    pub bazaar_post_failure: Option<u16>,
+    pub coin_post_failure: Option<u16>,
+    pub oauth_exchanges: u32,
     pub pending_first: bool,
     pub paginate: bool,
     pub fail_pages: bool,
@@ -114,12 +117,6 @@ impl Authority {
                 Some(Ok(())) => (200, "{}".into()),
                 _ => (400, "{}".into()),
             };
-        }
-        if method == "POST" && target == "/oauth/token" {
-            return (
-                200,
-                r#"{"token_type":"Bearer","access_token":"services-test-token"}"#.into(),
-            );
         }
         if method == "GET" && target == "/v1/client/directory" {
             return (

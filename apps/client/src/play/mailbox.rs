@@ -37,6 +37,7 @@ pub enum PlayEvent {
 pub struct Pushed {
     /// A committed activity switch invalidates the source view's queued actions.
     pub scope_changed: bool,
+    pub scope_session: Option<[u8; 16]>,
     pub activity_scope: Option<oteryn_session::activity_scope::ActivityScopeSnapshot>,
     pub served_channel: Option<Option<oteryn_client_runtime::channel_list::ServedChannel>>,
     pub world_weather: Option<oteryn_session::world_weather::WorldWeather>,
@@ -83,6 +84,7 @@ impl Pushed {
             self.personal_map_marks = None;
         }
         self.scope_changed |= newer.scope_changed;
+        self.scope_session = newer.scope_session.or(self.scope_session);
         self.activity_scope = newer.activity_scope.or(self.activity_scope.take());
         self.motion_reset |= newer.motion_reset;
         super::feature_0023_presentation::protocol::absorb_visuals(
@@ -132,8 +134,19 @@ impl Pushed {
 /// dropped until the next poll, an update of a held one is still kept.
 pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
+/// Admission inputs shared across activity scopes on this connection.
+#[derive(Debug, Default)]
+pub(super) struct ConnectionInputs {
+    pub(super) channel_character: String,
+    pub(super) channel_current: Option<[u8; 16]>,
+    pub(super) channel_rows: Vec<oteryn_client_ui::channel_switch::ChannelRow>,
+    pub(super) coin_shop: Option<Arc<crate::coin_shop::launcher::Launcher>>,
+    pub(super) probe_platform: Option<String>,
+}
+
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) connection: ConnectionInputs,
     #[cfg(bevy_shell)]
     pub(super) screen_look: Option<super::feature_local_text_messages::view::LookMessage>,
     #[cfg(bevy_shell)]
@@ -158,6 +171,8 @@ pub(super) struct Mailbox {
     pub(super) diagonal_movement_selected: bool,
     pub(super) own_actor_identity: Option<[u8; 16]>,
     pub(super) activity_scope: Option<oteryn_session::activity_scope::ActivityScopeSnapshot>,
+    pub(super) scope_session: Option<[u8; 16]>,
+    pub(super) scope_reset_modal: bool,
     pub(super) scope_pending: bool,
     pub(super) scope_initialize: bool,
     pub(super) command_receiver: std::sync::Weak<Mutex<UnboundedReceiver<PlayCommand>>>,
@@ -225,7 +240,6 @@ pub(super) struct Mailbox {
     pub(super) item_forge: oteryn_client_ui::item_forge::ItemForgePanel,
     pub(super) store: oteryn_client_ui::store::StorePanel,
     pub(super) premium_game: crate::premium::game::Panel,
-    pub(super) coin_shop: Option<Arc<crate::coin_shop::launcher::Launcher>>,
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
     pub(super) vip_presence_confirmed_at: Option<tokio::time::Instant>,
     /// chsw (capability 513): VIP login, logout and Channel-change notices naming the Channel,
@@ -237,10 +251,7 @@ pub(super) struct Mailbox {
     /// released the session for a switch.
     pub(super) channel_switch: oteryn_client_ui::channel_switch::ChannelSwitchPanel,
     pub(super) channel_switch_target: Option<[u8; 16]>,
-    pub(super) channel_switch_character: String,
-    /// client-channel-probe-v1: the Platform the probe list comes from, the last refresh and
-    /// the measured pings by Channel.
-    pub(super) channel_probe_platform: Option<String>,
+    /// client-channel-probe-v1: the active refresh and its measured pings by Channel.
     pub(super) channel_probe_cancel: Option<oteryn_foundation::CancellationToken>,
     pub(super) channel_probe_refreshed: Option<std::time::Instant>,
     pub(super) channel_probe_pings: Vec<([u8; 16], Option<u32>)>,
@@ -316,7 +327,7 @@ pub(super) struct Mailbox {
     pub(super) chat_private_open: bool,
     pub(super) chat_public_shutdown: bool,
     pub(super) motion_selected: bool,
-    pub(super) mount_pending: bool,
+    pub(super) mount_pending: Option<super::feature_0502_actor_motion::protocol::PendingMount>,
     // CL26s2: player-typing panel state and native-window shutdown.
     pub(super) player_typing: oteryn_client_ui::player_typing::PlayerTypingPanel,
     pub(super) player_typing_shutdown: bool,
@@ -332,6 +343,16 @@ const MAX_COMBAT_REPORTS: usize = 8;
 pub(super) type SharedMailbox = Arc<Mutex<Mailbox>>;
 
 impl Mailbox {
+    pub(super) fn reset_scope_state(&mut self) {
+        self.server_modal.clear();
+        *self = Self {
+            connection: std::mem::take(&mut self.connection),
+            player_typing_shutdown: self.player_typing_shutdown,
+            server_modal: std::mem::take(&mut self.server_modal),
+            ..Default::default()
+        };
+    }
+
     pub(super) fn reset_server_message_namespace(&mut self) {
         self.before.server_messages = ServerMessageInbox::default();
         self.pushed.server_messages = ServerMessageInbox::default();

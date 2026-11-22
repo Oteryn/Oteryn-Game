@@ -14,11 +14,16 @@ pub(in crate::play) fn entities(
 
 impl crate::play::Outbox {
     pub(in crate::play) fn appearances(&self, entries: Vec<oteryn_session::VisibleAppearance>) {
-        let mut mailbox = crate::play::mailbox::lock(&self.0);
-        if mailbox.appearance_state != entries {
-            mailbox.appearance_state.clone_from(&entries);
-            let native = mailbox.native_appearances(&entries);
-            mailbox.pushed.appearances = Some(native);
+        crate::play::mailbox::lock(&self.0).appearances(entries);
+    }
+}
+
+impl crate::play::mailbox::Mailbox {
+    pub(in crate::play) fn appearances(&mut self, entries: Vec<oteryn_session::VisibleAppearance>) {
+        if self.appearance_state != entries {
+            self.appearance_state.clone_from(&entries);
+            let native = self.native_appearances(&entries);
+            self.pushed.appearances = Some(native);
         }
     }
 }

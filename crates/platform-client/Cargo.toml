@@ -30,7 +30,7 @@ serde_jcs = "=0.2.0"
 serde_json.workspace = true
 tokio.workspace = true
 tough = { version = "=0.24.0", default-features = false }
-url = "=2.5.8"
+url = "=2.5.9"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
