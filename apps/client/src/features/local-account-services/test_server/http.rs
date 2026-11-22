@@ -35,7 +35,18 @@ impl MockPlatform {
                 let (status,reply)={let Ok(mut state)=state.lock() else {return;};let headers = head.lines().filter(|line| !line.to_ascii_lowercase().starts_with("authorization:"));
                     state.requests.push(format!("{}\r\n\r\n{body}", headers.collect::<Vec<_>>().join("\r\n")));state.respond(method,target,body,grant,signature)};
                 if status == 0 { continue; }
-                let _=stream.write_all(format!("HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{reply}",reply.len()).as_bytes()).await;
+                let response = format!("HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{reply}", reply.len());
+                if method == "POST" && target == "/api/v1/native-account/coin-purchases/orders"
+                    && let Some((ready, release)) = state.lock().ok().and_then(|mut s| s.hold_coin_response.take())
+                {
+                    tokio::spawn(async move {
+                        let _ = ready.send(());
+                        let _ = release.await;
+                        let _ = stream.write_all(response.as_bytes()).await;
+                    });
+                } else {
+                    let _ = stream.write_all(response.as_bytes()).await;
+                }
             }
         });
         Ok(Self {
