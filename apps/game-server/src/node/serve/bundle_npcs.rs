@@ -150,7 +150,7 @@ enum TimedPeriod {
 /// a start during dusk spawns the day set) and spawns 5 s after the period change
 /// (`spawns_npc_by_time.lua:159-170`), the set follows the world minute at boot and every tick.
 #[derive(Debug)]
-pub(super) struct TimedNpcSpawns {
+pub(crate) struct TimedNpcSpawns {
     admitted: [bool; TIMED_NPCS.len()],
     weekday: Option<weekday::WeekdayNpcSpawns>,
     seasonal: seasonal::SeasonalNpcSpawns,
@@ -159,7 +159,7 @@ pub(super) struct TimedNpcSpawns {
 }
 
 impl TimedNpcSpawns {
-    pub(super) fn from_boot(boot: Option<&NpcBoot>) -> Self {
+    pub(crate) fn from_boot(boot: Option<&NpcBoot>) -> Self {
         let mut admitted = [false; TIMED_NPCS.len()];
         if let Some(NpcBoot::Place { admitted: keys, .. }) = boot {
             for (index, (key, _, _)) in TIMED_NPCS.iter().enumerate() {
@@ -175,7 +175,7 @@ impl TimedNpcSpawns {
         }
     }
 
-    pub(super) fn with_seasonal(
+    pub(crate) fn with_seasonal(
         mut self,
         boot: Option<&NpcBoot>,
         events: &[String],
@@ -215,7 +215,7 @@ impl TimedNpcSpawns {
     /// One world-clock step at `now_utc_ms` (boot and every world tick): the clock the
     /// transport's light uses (`snapshot.rs`), not a second one. `None` when the clock is
     /// unreadable; otherwise whether every admitted NPC is where its period puts it.
-    pub(super) fn tick(
+    pub(crate) fn tick(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         now_utc_ms: u64,
@@ -298,7 +298,7 @@ pub(super) struct LoadedNpcCatalogue {
 
 /// What the Channel does with the bundle's NPCs at start.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) enum NpcBoot {
+pub(crate) enum NpcBoot {
     /// Place the table; an NPC outside `admitted` refuses (production) or is skipped.
     Place {
         table: NpcPlacementTable,
@@ -510,9 +510,10 @@ pub(super) fn talk_book(boot: Option<&NpcBoot>) -> Option<Arc<NpcTalkBook>> {
 
 /// Places the bound NPCs on the Channel once, before its creatures, and logs the outcome.
 /// Returns the number of NPC actors.
-pub(super) fn place(
+pub(crate) fn place(
     runtime: &mut ChannelRuntimeV1,
     boot: Option<&NpcBoot>,
+    seasonal: &[String],
 ) -> Result<usize, BootError> {
     if let Some(catalogue_sha256) = catalogue_sha256(boot) {
         event(&format!(
@@ -538,6 +539,13 @@ pub(super) fn place(
             ..
         }) => {
             let mut table = table.clone();
+            // The committed occurrence gates any authored Casper placement.
+            if !seasonal
+                .iter()
+                .any(|key| key == oteryn_gameplay_world_change::seasonal::LAST_CREEP)
+            {
+                table.npcs.retain(|entry| entry.key != seasonal::CASPER);
+            }
             let unix_ms = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .ok()
@@ -730,7 +738,7 @@ pub(crate) mod tests {
         let boot = bind(frame, Some(&loaded(&[SMITH, TRADER], &catalogue)), true).expect("bind");
         assert_eq!(catalogue_sha256(Some(&boot)), Some(catalogue.as_str()));
         let mut runtime = channel_runtime();
-        assert_eq!(place(&mut runtime, Some(&boot)).expect("placed"), 2);
+        assert_eq!(place(&mut runtime, Some(&boot), &[]).expect("placed"), 2);
         assert_eq!(catalogue_sha256(Some(&boot)), Some(catalogue.as_str()));
         let binding = runtime.binding();
         // W02: the scoped binding now returns Option; this fixture still requires Channel.
@@ -760,7 +768,7 @@ pub(crate) mod tests {
         assert!(visible.creatures.is_empty());
         // Placement runs once, at Channel start.
         assert!(matches!(
-            place(&mut runtime, Some(&boot)),
+            place(&mut runtime, Some(&boot), &[]),
             Err(BootError::Readiness("NPC actor placement"))
         ));
         Ok(())
@@ -1132,7 +1140,7 @@ pub(crate) mod tests {
         let boot = bind(read(&bytes).expect("frame"), Some(&only_smith), true).expect("bind");
         let mut runtime = channel_runtime();
         assert!(matches!(
-            place(&mut runtime, Some(&boot)),
+            place(&mut runtime, Some(&boot), &[]),
             Err(BootError::ContentActivation(
                 "NPC not admitted by the NPC catalogue"
             ))
@@ -1143,7 +1151,7 @@ pub(crate) mod tests {
 
         let boot = bind(read(&bytes).expect("frame"), Some(&only_smith), false).expect("bind");
         let mut runtime = channel_runtime();
-        assert_eq!(place(&mut runtime, Some(&boot)).expect("placed"), 1);
+        assert_eq!(place(&mut runtime, Some(&boot), &[]).expect("placed"), 1);
         let visible = runtime.visible_entities();
         assert_eq!(visible.npcs.len(), 1);
         assert_eq!(runtime.npc_key(visible.npcs[0].actor), Some(SMITH));
@@ -1172,7 +1180,7 @@ pub(crate) mod tests {
                 }
             ));
             let mut runtime = channel_runtime();
-            assert_eq!(place(&mut runtime, Some(&boot)).expect("skipped"), 0);
+            assert_eq!(place(&mut runtime, Some(&boot), &[]).expect("skipped"), 0);
             assert!(runtime.visible_entities().npcs.is_empty());
         }
         // A bundle without NPCs needs no catalogue, in production too.

@@ -15,8 +15,11 @@ pub struct Layer {
     pub sectors: Vec<Sector>,
 }
 
+// Sixteen imported daily variants plus Spring into Life and Kingsday.
+pub const MAX_LAYERS: usize = 18;
+
 pub fn validate(manifest: &Manifest, layers: &[Layer]) -> Result<(), Error> {
-    if layers.len() > 16 || !layers.windows(2).all(|p| p[0].key < p[1].key) {
+    if layers.len() > MAX_LAYERS || !layers.windows(2).all(|p| p[0].key < p[1].key) {
         return Err(Error::Format("layer count/order".into()));
     }
     for layer in layers {

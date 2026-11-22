@@ -25,6 +25,11 @@ fn scenario_case(
 ) -> TestResult {
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
+    let (name, offseason) = match name {
+        "authored-tinder-box-offseason" => ("authored-tinder-box", true),
+        "qengine-rewards-m23-last-creep-offseason" => ("qengine-rewards-m23-last-creep", true),
+        _ => (name, false),
+    };
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -1834,6 +1839,10 @@ fn scenario_case(
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
             .bind(generation.identity().client_artifact_digest().as_slice()).bind(activation_frame_binding.as_slice()).execute(&h.pool).await?;
+        if name == "authored-tinder-box" || last_creep {
+            let event = if last_creep { "last_creep_standing" } else { "tinder_box" };
+            Box::pin(super::super::seasonal_callbacks_fixtures::seed(&mut owner, &h, event, !offseason)).await?;
+        }
         let fresh = super::super::fresh_fixture::fresh::Source::new(0)?.request()?;
         h.root
             .initialize_admission_equipment(
@@ -2733,6 +2742,10 @@ fn scenario_case(
                 trigger,
             ))
             .await?;
+        } else if last_creep {
+            Box::pin(super::super::m23_last_creep_fixtures::exercise(
+                &mut owner, &mut admitted, &h, !offseason,
+            )).await?;
         } else if qengine_reward || shared_rewards {
             Box::pin(super::super::qengine_rewards_fixtures::exercise(
                 &mut owner,
@@ -2901,6 +2914,7 @@ fn scenario_case(
                     &mut owner,
                     &mut admitted,
                     &h,
+                    !offseason,
                 ),
             )
             .await?;
