@@ -235,6 +235,8 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub screenshots: ScreenshotPreferences,
     #[serde(default)]
+    pub impact_records: [u32; 2],
+    #[serde(default)]
     pub diagnostics: DiagnosticsPreferences,
     #[serde(default)]
     pub archive_bindings: crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings,
@@ -362,6 +364,7 @@ impl Default for ReferencePreferences {
             archive_bindings: Default::default(),
             frames: Default::default(),
             screenshots: Default::default(),
+            impact_records: [0; 2],
             diagnostics: Default::default(),
             arcs: Default::default(),
             minimap: Default::default(),

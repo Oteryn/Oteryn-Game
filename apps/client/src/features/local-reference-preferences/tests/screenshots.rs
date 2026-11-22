@@ -249,3 +249,199 @@ fn screenshot_alias_pixel_writer_rejects_relative_folders() -> Result<(), Box<dy
         Ok(())
     })
 }
+
+#[test]
+fn tracked_drop_requests_screenshot_on_confirmed_loot() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::analyser::{AnalyserFact, AnalyserItemCount};
+    let folder = tempfile::tempdir()?;
+    let (link, _, outbox) = crate::play::play_channel();
+    outbox.analyser_initialize(true);
+    link.analyser_open();
+    let mut state = SettingsState::new(None);
+    state.preferences.screenshots.directory = folder.path().to_string_lossy().into_owned();
+    state.preferences.screenshots.on_valuable_loot = true;
+    let now = std::time::Instant::now();
+    let loot = |seq| {
+        oteryn_session::SessionEvent::AnalyserFacts(oteryn_session::AppliedDelta {
+            server_sequence: seq,
+            base_revision: seq - 1,
+            new_revision: seq,
+            value: vec![AnalyserFact::KillLoot {
+                race: None,
+                corpse_items: vec![AnalyserItemCount {
+                    item_type: std::num::NonZeroU32::MIN,
+                    count: std::num::NonZeroU16::MIN,
+                }],
+                gold: 0,
+            }],
+        })
+    };
+    outbox.push(vec![loot(1)]);
+    assert!(
+        state
+            .process_screenshots(now, Some(&link), &mut Source(vec![]))?
+            .is_empty()
+    );
+    assert!(link.analyser_select("loot-tracker"));
+    link.analyser_track_item("1", true);
+    outbox.push(vec![loot(2)]);
+    assert_eq!(
+        state
+            .process_screenshots(now, Some(&link), &mut Source(vec![]))?
+            .len(),
+        1
+    );
+    Ok(())
+}
+
+#[test]
+fn tracked_bestiary_thresholds_and_boss_kills_trigger_independently()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cyclopedia_tracker::{
+        TrackerEntry, TrackerSnapshot, encode_domain_snapshot,
+    };
+    let folder = tempfile::tempdir()?;
+    for key in [
+        "on_bestiary_unlock",
+        "on_bestiary_complete",
+        "on_boss_defeat",
+    ] {
+        let (link, _, outbox) = crate::play::play_channel();
+        outbox.cyclopedia_tracker_initialize(true);
+        let mut state = SettingsState::new(None);
+        let mut settings = serde_json::to_value(&state.preferences.screenshots)?;
+        settings[key] = true.into();
+        state.preferences.screenshots = serde_json::from_value(settings)?;
+        state.preferences.screenshots.directory = folder.path().to_string_lossy().into_owned();
+        for (kills, boss_kills, event) in [
+            (1, 1, ""),
+            (2, 1, "on_bestiary_unlock"),
+            (3, 1, "on_bestiary_unlock"),
+            (4, 1, "on_bestiary_complete"),
+            (4, 2, "on_boss_defeat"),
+        ] {
+            let tracker = |boss: bool, kill_count| TrackerSnapshot {
+                boss,
+                entries: vec![TrackerEntry {
+                    creature_key: if boss { "ferumbras" } else { "rat" }.into(),
+                    kill_count,
+                    thresholds: [2, 3, 4],
+                    completed: kill_count >= 4,
+                }],
+            };
+            outbox.cyclopedia_tracker_push(
+                encode_domain_snapshot(&tracker(false, kills), &tracker(true, boss_kills))
+                    .ok_or("tracker")?,
+            );
+            let paths = state.process_screenshots(
+                std::time::Instant::now(),
+                Some(&link),
+                &mut Source(vec![]),
+            )?;
+            assert_eq!(paths.len(), usize::from(key == event));
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn impact_capture_records_survive_character_relogin() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::analyser_transport::{AnalyserFact, AnalyserImpact};
+    use std::num::NonZeroU32;
+    let folder = tempfile::tempdir()?;
+    for (id, key) in [(1, "on_record_damage"), (2, "on_record_healing")] {
+        for (session, values) in [
+            (1, vec![(100, true), (100, false), (99, false)]),
+            (2, vec![(80, false), (101, true)]),
+        ] {
+            let mut settings = SettingsState::new(Some(folder.path().join("settings.json")));
+            settings.select_character(Some([id; 16]));
+            if session == 1 {
+                let mut draft = settings.preferences.clone();
+                let mut json = serde_json::to_value(&draft.screenshots)?;
+                json[key] = true.into();
+                draft.screenshots = serde_json::from_value(json)?;
+                draft.screenshots.directory = folder.path().to_string_lossy().into_owned();
+                settings.apply(draft);
+            }
+            let (link, _, outbox) = crate::play::play_channel();
+            let now = std::time::Instant::now();
+            settings.process_screenshots(now, Some(&link), &mut Source(vec![]))?;
+            for (i, (amount, record)) in values.into_iter().enumerate() {
+                let value = NonZeroU32::new(amount).ok_or("amount")?;
+                let impact = if id == 1 {
+                    AnalyserImpact::Damage {
+                        value,
+                        element: oteryn_protocol_oteryn::damage_element::DamageElement::Physical,
+                    }
+                } else {
+                    AnalyserImpact::Healing(value)
+                };
+                outbox.push(vec![oteryn_session::SessionEvent::AnalyserFacts(
+                    oteryn_session::AppliedDelta {
+                        server_sequence: i as u64 + 1,
+                        base_revision: i as u64,
+                        new_revision: i as u64 + 1,
+                        value: vec![AnalyserFact::Impact(impact)],
+                    },
+                )]);
+                assert_eq!(
+                    settings
+                        .process_screenshots(now, Some(&link), &mut Source(vec![]))?
+                        .len(),
+                    usize::from(record)
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn untracked_boss_kill_uses_confirmed_bosstiary_progress() -> Result<(), Box<dyn std::error::Error>>
+{
+    use oteryn_protocol_oteryn::boss_encounter::{BosstiaryProgressEntry, encode_bosstiary_list};
+    let folder = tempfile::tempdir()?;
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.boss_encounter_initialize(true);
+    let mut settings = SettingsState::new(None);
+    settings.preferences.screenshots.on_boss_defeat = true;
+    settings.preferences.screenshots.directory = folder.path().to_string_lossy().into_owned();
+    let start = std::time::Instant::now();
+    for (index, count) in [(0_u64, 2), (1, 3), (2, 3)] {
+        let now = start + std::time::Duration::from_secs(index * 6);
+        assert!(
+            settings
+                .process_screenshots(now, Some(&link), &mut Source(vec![]))?
+                .is_empty()
+        );
+        let crate::combat_input::PlayCommand::Feature(query) = commands.try_recv()? else {
+            return Err("boss progress query".into());
+        };
+        assert_eq!((query.capability, query.kind), (117, 133));
+        outbox.boss_encounter_result(&oteryn_session::GatedCommandResult {
+            command_id: index + 1,
+            server_sequence: index + 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: encode_bosstiary_list(
+                index,
+                &[],
+                false,
+                &[BosstiaryProgressEntry {
+                    boss_key: "oteryn:creature.ferumbras".into(),
+                    kill_count: count,
+                }],
+                0,
+                false,
+            )
+            .map_err(|e| format!("{e:?}"))?,
+        });
+        assert_eq!(
+            settings
+                .process_screenshots(now, Some(&link), &mut Source(vec![]))?
+                .len(),
+            usize::from(index == 1)
+        );
+    }
+    Ok(())
+}

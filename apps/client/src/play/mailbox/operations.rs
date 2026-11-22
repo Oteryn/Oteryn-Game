@@ -71,6 +71,7 @@ impl Mailbox {
                 })
                 .for_each(drop);
         }
+        self.observe_capture_events(&events);
         self.console_events(&events);
         self.activity_scope_events(&events);
         self.channel_list_events(&events);
@@ -138,7 +139,7 @@ impl Mailbox {
                 .apply(oteryn_client_runtime::tutorial_notices::Notice::ServerSave { minutes });
         }
         let deltas = std::mem::take(&mut self.pushed.quests);
-        super::super::feature_0016_quest_log::protocol::reduce(&mut self.quest, deltas);
+        super::super::feature_0016_quest_log::protocol::reduce(self, deltas);
         super::super::feature_0240_chat_party_room::protocol::reset_if_replaced(self);
         for line in std::mem::take(&mut self.pushed.chat_lines) {
             oteryn_client_ui::party::push_feedback(&mut self.party, &line);
