@@ -617,6 +617,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 self.character,
                 self.holder,
                 fence,
+                house,
             ))
             .await
             .unwrap_or_default()
