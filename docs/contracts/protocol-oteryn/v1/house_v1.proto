@@ -14,7 +14,13 @@ message HouseAclV1 {
   repeated bytes character_ids = 3;
 }
 message HouseDoorPositionV1 { optional uint32 x = 1; optional uint32 y = 2; optional sint32 floor = 3; } // x/y <=65535, Global z 0..15
-message HouseDoorV1 { HouseDoorPositionV1 position = 1; optional uint64 expected_revision = 2; repeated bytes character_ids = 3; }
+message HouseGuildSelectorsV1 { repeated string selectors = 1; }
+message HouseDoorV1 {
+  HouseDoorPositionV1 position = 1;
+  optional uint64 expected_revision = 2;
+  repeated bytes character_ids = 3;
+  HouseGuildSelectorsV1 guild_selectors = 4; // requires capability 515, present-empty clears
+}
 message HouseKickV1 { bytes character_id = 1; }
 message HouseIntentV1 {
   oneof action {

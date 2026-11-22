@@ -7,18 +7,27 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
 };
 
+pub(crate) type BrowserGate =
+    Arc<dyn Fn(&super::Browser, &str, &CancellationToken) -> bool + Send + Sync>;
+
 pub(crate) struct Launcher {
     config: NativeLoginConfig,
     character_id: String,
-    after: Arc<dyn Fn() + Send + Sync>,
-    active: AtomicBool,
+    after: Arc<dyn Fn(&CancellationToken) + Send + Sync>,
+    browser_gate: Option<BrowserGate>,
     ended: AtomicBool,
-    cancellation: Mutex<Option<CancellationToken>>,
+    cancellation: Mutex<Option<Arc<CancellationToken>>>,
 }
 impl std::fmt::Debug for Launcher {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct(tr!("CoinShopLauncher"))
-            .field("active", &self.active.load(Ordering::Acquire))
+            .field(
+                "active",
+                &self
+                    .cancellation
+                    .lock()
+                    .is_ok_and(|active| active.is_some()),
+            )
             .finish_non_exhaustive()
     }
 }
@@ -26,19 +35,24 @@ impl Launcher {
     pub(crate) fn new(
         config: NativeLoginConfig,
         character_id: String,
-        after: Arc<dyn Fn() + Send + Sync>,
+        after: Arc<dyn Fn(&CancellationToken) + Send + Sync>,
+        browser_gate: Option<BrowserGate>,
     ) -> Arc<Self> {
         Arc::new(Self {
             config,
             character_id,
             after,
-            active: AtomicBool::new(false),
+            browser_gate,
             ended: AtomicBool::new(false),
             cancellation: Mutex::new(None),
         })
     }
     pub(crate) fn can_start(&self) -> bool {
-        !self.ended.load(Ordering::Acquire) && !self.active.load(Ordering::Acquire)
+        !self.ended.load(Ordering::Acquire)
+            && self
+                .cancellation
+                .lock()
+                .is_ok_and(|active| active.is_none())
     }
     /// Opens a Platform web page (coin history, coin transfer) in the system browser.
     pub(crate) fn open_web(&self, link: crate::web_links::WebLink) -> bool {
@@ -46,45 +60,46 @@ impl Launcher {
     }
     pub(crate) fn end(&self) {
         self.ended.store(true, Ordering::Release);
-        if let Ok(token) = self.cancellation.lock()
-            && let Some(token) = token.as_ref()
+        self.cancel_active();
+    }
+    pub(crate) fn cancel_active(&self) {
+        if let Ok(mut active) = self.cancellation.lock()
+            && let Some(cancel) = active.take()
         {
-            token.cancel();
+            cancel.cancel();
         }
     }
     pub(crate) fn start(self: &Arc<Self>) -> bool {
-        if self.ended.load(Ordering::Acquire)
-            || self
-                .active
-                .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-                .is_err()
+        let cancel = Arc::new(CancellationToken::new());
         {
-            return false;
-        }
-        let cancel = CancellationToken::new();
-        {
-            let Ok(mut token) = self.cancellation.lock() else {
-                self.active.store(false, Ordering::Release);
+            let Ok(mut active) = self.cancellation.lock() else {
                 return false;
             };
-            if self.ended.load(Ordering::Acquire) {
-                self.active.store(false, Ordering::Release);
+            if self.ended.load(Ordering::Acquire) || active.is_some() {
                 return false;
             }
-            *token = Some(cancel.clone());
+            *active = Some(cancel.clone());
         }
         let launcher = self.clone();
+        let worker_cancel = cancel.clone();
         if std::thread::Builder::new()
             .name("coin-shop".into())
             .stack_size(64 << 20)
             .spawn(move || {
-                let _active = Active(launcher.clone());
+                let _active = Active(launcher.clone(), worker_cancel.clone());
+                let cancel = (*worker_cancel).clone();
+                let mut config = launcher.config.clone();
+                if let Some(gate) = launcher.browser_gate.clone() {
+                    let browser = config.open_browser;
+                    let browser_cancel = cancel.clone();
+                    config.open_browser = Arc::new(move |url| gate(&browser, url, &browser_cancel));
+                }
                 let result = match tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
                 {
                     Ok(runtime) => runtime.block_on(crate::native_entry::open_coin_shop(
-                        &launcher.config,
+                        &config,
                         &launcher.character_id,
                         cancel.clone(),
                     )),
@@ -106,26 +121,30 @@ impl Launcher {
                     let _ = (launcher.config.coin_shop)(&view, cancel.clone());
                 }
                 if !cancel.is_cancelled() {
-                    (launcher.after)();
+                    (launcher.after)(&cancel);
                 }
             })
             .is_err()
         {
-            if let Ok(mut token) = self.cancellation.lock() {
-                *token = None;
-            }
-            self.active.store(false, Ordering::Release);
+            self.finish_active(&cancel);
             return false;
         }
         true
     }
+
+    fn finish_active(&self, cancel: &Arc<CancellationToken>) {
+        if let Ok(mut active) = self.cancellation.lock()
+            && active
+                .as_ref()
+                .is_some_and(|token| Arc::ptr_eq(token, cancel))
+        {
+            *active = None;
+        }
+    }
 }
-struct Active(Arc<Launcher>);
+struct Active(Arc<Launcher>, Arc<CancellationToken>);
 impl Drop for Active {
     fn drop(&mut self) {
-        if let Ok(mut token) = self.0.cancellation.lock() {
-            *token = None;
-        }
-        self.0.active.store(false, Ordering::Release);
+        self.0.finish_active(&self.1);
     }
 }

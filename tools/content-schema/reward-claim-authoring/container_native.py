@@ -12,6 +12,7 @@ import re
 from native_container_fluids import project_fluid_child
 from pathlib import Path
 
+import global_corrections
 import poison_daggers
 
 SOURCE = Path(__file__).with_name('container_native_source.json')
@@ -34,11 +35,14 @@ MEDUSA_HOLD = [{'category': 'source', 'code': 'SOURCE_WRITTEN_TEXT_CARRIER_UNRES
 # preserve Crystal chest.lua:1447-1456 + Item::CreateItem raw1 for its two vessels.
 FLUID_CHOICES = {
     'oteryn:reward-claim.kv.goblintemple2': (
-        [6119], {2: (2874, 9)}, 'WIKI_MILK_OVERRIDES_DONOR_WATER'),
+        [6119], {2: (2874, 9)}, 'WIKI_MILK_OVERRIDES_DONOR_WATER',
+        'canary:reward-claim/kv/goblintemple2'),
     'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine': (
-        [6197, 6198, 6199, 6200], {1: (2874, 2)}, 'WIKI_WINE_OVERRIDES_DONOR_WATER'),
+        [6197, 6198, 6199, 6200], {1: (2874, 2)}, 'WIKI_WINE_OVERRIDES_DONOR_WATER',
+        'canary:reward-claim/quest/u7_9/dreamers_challenge/chests_wine'),
     'oteryn:reward-claim.kv.present_box': (
-        [6113], {0: (2882, 1), 2: (2881, 1)}, 'CRYSTAL_PRESENT_WATER_SUBTYPES'),
+        [6113], {0: (2882, 1), 2: (2881, 1)}, 'CRYSTAL_PRESENT_WATER_SUBTYPES',
+        'canary:reward-claim/kv/present_box'),
 }
 # These Item profiles already have native charged-instance custody. The
 # historical canonical hold predates that owner. Scope the admission to these
@@ -47,6 +51,8 @@ CHARGED_QUEST_CLAIMS = {
     'canary:reward-claim/kv/desert2': 3084,
     'canary:reward-claim/kv/draconia1': 3284,
     'canary:reward-claim/kv/fireaxe1': 3085,
+    'canary:reward-claim/kv/ghoulroom1': 3083,
+    'canary:reward-claim/kv/silveramulet': 3054,
     'canary:reward-claim/kv/timering3': 3082,
     'canary:reward-claim/kv/triangletower': 3083,
     'canary:reward-claim/kv/trollcave1': 3083,
@@ -74,7 +80,7 @@ def native_charge_item(item, profile):
         return item
     identity = item['identity']
     key = identity['key']
-    charges = {3082: 50, 3083: 150, 3084: 250, 3085: 200, 3284: 1}.get(item_id(identity))
+    charges = {3054: 200, 3082: 50, 3083: 150, 3084: 250, 3085: 200, 3284: 1}.get(item_id(identity))
     if charges is None:
         return item
     held = item
@@ -276,14 +282,15 @@ def derive(definition, items, stack_problem):
     difference = None
     fluid_choice = FLUID_CHOICES.get(definition['identity']['key'])
     if fluid_choice is not None:
-        uids, fills, selected = fluid_choice
+        uids, fills, selected, pilot_key = fluid_choice
         actual = [[u['unique_id'] for u in p['source_binding']['legacy_unique_ids']
                    if u['server'] == 'crystalserver'] for p in definition['placements']]
         holds = [{'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
                   'item': f'oteryn:item.tibia.i{number}', 'placement_index': index,
                   'reason': 'waiting', 'reward_field': 'items', 'reward_index': child}
                  for index in range(len(uids)) for child, (number, _) in fills.items()]
-        if (actual != [[uid] for uid in uids] or definition.get('data_holds') not in ([], holds)
+        if (definition.get('provenance', {}).get('pilot_key') != pilot_key
+                or actual != [[uid] for uid in uids] or definition.get('data_holds') not in ([], holds)
                 or definition.get('source_variant', {}).get('source_data') != {
                     'missing': [], 'status': 'COMPLETE'}):
             return None
@@ -390,7 +397,8 @@ def derive(definition, items, stack_problem):
         if (root is None or root['identity'] != reward['container'] or item_id(reward['container']) != setting['container']
                 or stack_problem(root, 1) is not None or type(capacity) is not int or not 1 <= capacity <= 65535):
             return None
-        original = poison_daggers.source_reward(ids[0], setting['itemPos'], setting['reward'])
+        original = global_corrections.source_reward(
+            ids[0], setting['itemPos'], poison_daggers.source_reward(ids[0], setting['itemPos'], setting['reward']))
         if ids[0] in ACCEPTED_TWO_STACKS:
             selected = ACCEPTED_TWO_STACKS[ids[0]]
             original = [part for source_id, count in original

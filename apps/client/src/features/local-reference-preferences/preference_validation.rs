@@ -43,7 +43,7 @@ impl ReferencePreferences {
         Ok(())
     }
 
-    pub(in super::super) fn validate(&self) -> Result<(), PreferenceError> {
+    pub(crate) fn validate(&self) -> Result<(), PreferenceError> {
         if !self.hud_layout.valid() || !self.graphics.valid() || !self.performance.valid() {
             return Err(PreferenceError);
         }
@@ -60,7 +60,13 @@ impl ReferencePreferences {
         if self.screenshots.backlog_frames > 10 {
             return Err(PreferenceError);
         }
-        if self.active_battle_list >= self.battle_lists.len() || !self.bar_actions.valid() || !self.bar_layout.valid() || !self.action_keys.valid(self) { return Err(PreferenceError); }
+        if self.active_battle_list >= self.battle_lists.len()
+            || !self.bar_actions.valid()
+            || !self.bar_layout.valid()
+            || !self.action_keys.valid(self)
+        {
+            return Err(PreferenceError);
+        }
         self.validate_bindings()?;
         if self.boss_area_opacity > 100 {
             return Err(PreferenceError);
@@ -79,7 +85,13 @@ impl ReferencePreferences {
         }
         self.validate_profiles()?;
         self.validate_status_order()?;
-        if self.toolbar_order.as_ref().is_some_and(|ids| ids.len() > 64 || ids.iter().enumerate().any(|(i, id)| id.len() > 128 || ids[..i].contains(id))) {
+        if self.toolbar_order.as_ref().is_some_and(|ids| {
+            ids.len() > 64
+                || ids
+                    .iter()
+                    .enumerate()
+                    .any(|(i, id)| id.len() > 128 || ids[..i].contains(id))
+        }) {
             return Err(PreferenceError);
         }
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()

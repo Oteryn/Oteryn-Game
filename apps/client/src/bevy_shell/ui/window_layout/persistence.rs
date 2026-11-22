@@ -78,25 +78,14 @@ impl WindowLayouts {
     }
 
     fn locked(path: &Path, write: impl FnOnce() -> io::Result<()>) -> io::Result<()> {
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        let lock = std::fs::File::options()
-            .read(true)
-            .write(true)
-            .create(true)
-            .truncate(false)
-            .open(path.with_extension("json.lock"))?;
-        lock.try_lock().map_err(io::Error::from)?;
+        let _lock = crate::atomic_file::try_lock(path)?;
         write()
     }
 
     fn publish(&self, path: &Path) -> io::Result<()> {
         let bytes = serde_json::to_vec_pretty(self)
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
-        let staging = path.with_extension("json.tmp");
-        std::fs::write(&staging, bytes)?;
-        std::fs::rename(staging, path)
+        crate::atomic_file::replace(path, &bytes, false)
     }
 }
 

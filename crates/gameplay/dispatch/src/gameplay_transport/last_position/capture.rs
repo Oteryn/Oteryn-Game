@@ -49,6 +49,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.states.last_positions.tracked(session).map(|track| track.checked)
     }
 
+    #[cfg(test)]
+    #[allow(dead_code, reason = "The tutorial vocation case is compiled in only one PG shard")]
+    pub(super) fn last_position_cached_for_test(&self, session: GameSessionId) -> bool {
+        self.states.last_positions.tracked(session).is_some_and(|track| track.written.is_some())
+    }
+
     async fn capture_retained_tutorial_position(
         &self,
         track: &Track,

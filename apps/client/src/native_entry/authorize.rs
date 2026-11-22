@@ -30,7 +30,9 @@ pub(super) async fn access_token(
         client.authorization_url(&redirect_uri, state.as_str(), pkce.challenge())
     }
     .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
-    if !(config.open_browser)(url.as_str()) {
+    #[cfg(test)]
+    crate::coin_shop::delivery_tests::pause(crate::coin_shop::delivery_tests::Point::OAuth);
+    if cancellation.is_cancelled() || !(config.open_browser)(url.as_str()) {
         return Err(rejected(PublicClass::RetryLogin));
     }
     let flow = IdentityFlow::new(state, config.callback_timeout);
@@ -235,8 +237,30 @@ pub(super) async fn authorize(
             }
             SelectionAction::Refresh => {}
             SelectionAction::Cancel => {
+                config
+                    .device_sessions
+                    .block_remembered()
+                    .map_err(login_rejected)?;
+                if let Some(path) = &config.preference_path
+                    && let Err(error) =
+                        crate::play::MiscellaneousPreferences::disable_remember_device_at(
+                            &path.with_extension("session-options.json"),
+                        )
+                {
+                    eprintln!("Could not save the remember-device choice: {error}");
+                }
                 if let Some(attempt) = &mut device {
-                    attempt.sign_out(client).await;
+                    config
+                        .device_sessions
+                        .finish_attempt_sign_out(attempt, client)
+                        .await
+                        .map_err(login_rejected)?;
+                } else {
+                    config
+                        .device_sessions
+                        .finish_sign_out(client)
+                        .await
+                        .map_err(login_rejected)?;
                 }
                 return Err(rejected(PublicClass::RetryLogin));
             }

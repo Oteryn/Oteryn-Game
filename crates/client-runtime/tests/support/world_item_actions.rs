@@ -134,6 +134,14 @@ pub fn inventory(equipped: Option<u64>) -> Result<Vec<u8>, BoxError> {
 pub async fn joined_with_equipment(
     equipped: Option<u64>,
 ) -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
+    joined_with_capabilities(equipped, &[]).await
+}
+
+pub async fn joined_with_capabilities(
+    equipped: Option<u64>,
+    extra: &[u32],
+) -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
+    let selected = [SELECTED, extra].concat();
     let (client, mut peer) = tokio::io::duplex(64 * 1024);
     let mut accepted = message(&[
         field(1, &uuid(1)),
@@ -145,7 +153,7 @@ pub async fn joined_with_equipment(
         scalar(8, 1),
         scalar(9, 1),
     ]);
-    for capability in SELECTED {
+    for capability in &selected {
         accepted.extend(scalar(10, u64::from(*capability)));
     }
     write_frame(&mut peer, &envelope(2, 0, 0, &accepted)).await?;
@@ -229,7 +237,7 @@ pub async fn joined_with_equipment(
             character_id: CharacterId::decode(&uuid(4))?,
             admission_material: b"fixture-grant",
             client_build_id: "item-action-test",
-            supported_capabilities: SELECTED,
+            supported_capabilities: &selected,
             deadline: Duration::from_secs(1),
         },
     )

@@ -65,10 +65,26 @@ impl Request {
     }
 }
 
+/// The live House route for a command 174 target.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Approach {
+    Ready,
+    Walk(Vec<oteryn_protocol_oteryn::world_spatial::StepDirection>),
+    NoPath,
+    Unavailable,
+}
+
 macro_rules! authority_methods {
     () => {
         fn house_podium_available(&self) -> bool {
             false
+        }
+        fn house_podium_approach(
+            &self,
+            _: $crate::gameplay_transport::connection::AdmittedSession,
+            _: [u8; 16],
+        ) -> impl std::future::Future<Output = $crate::gameplay_transport::house_podium::Approach> {
+            async { $crate::gameplay_transport::house_podium::Approach::Unavailable }
         }
         fn house_podium(
             &self,
@@ -84,6 +100,13 @@ macro_rules! composed_methods {
     () => {
         fn house_podium_available(&self) -> bool {
             true
+        }
+        async fn house_podium_approach(
+            &self,
+            admitted: connection::AdmittedSession,
+            item: [u8; 16],
+        ) -> house_podium::Approach {
+            self.plan_house_podium_approach(admitted, item).await
         }
         async fn house_podium(
             &self,

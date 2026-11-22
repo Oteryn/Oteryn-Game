@@ -84,7 +84,7 @@ pub fn resolve(
         "oteryn:service.travel.{}",
         npc_key.trim_start_matches("oteryn:npc.")
     );
-    corrections
+    let corrected = corrections
         .iter()
         .filter(|correction| {
             services
@@ -120,6 +120,7 @@ pub fn resolve(
                 price: correction.price,
                 premium: correction.premium,
                 min_level: None,
+                required_quest_tracks: Vec::new(),
             });
             route.key = key.to_owned();
             route.price = correction.price;
@@ -143,8 +144,42 @@ pub fn resolve(
                 return_origin: correction.return_origin.clone(),
                 world_change: correction.world_change.clone(),
             })
+        });
+    let authored = services
+        .iter()
+        .filter_map(|reference| {
+            model
+                .services()
+                .get(reference)
+                .map(|entry| (reference, entry))
         })
-        .collect()
+        .flat_map(|(reference, entry)| {
+            entry.routes.iter().filter_map(move |route| {
+                if route.required_quest_tracks.is_empty() {
+                    return None;
+                }
+                let key = format!("{}/{}", reference.key, route.key);
+                if corrections.iter().any(|correction| correction.key == key) {
+                    return None;
+                }
+                Some(TravelRoute {
+                    service: reference.key.clone(),
+                    route: route.clone(),
+                    keyword: route.key.replace('_', " "),
+                    postman: false,
+                    carpet: false,
+                    held: false,
+                    yalahar_gate: false,
+                    yalahar_town_gate: None,
+                    quest_gate: None,
+                    quest_clear_gate: None,
+                    ticket: None,
+                    return_origin: None,
+                    world_change: None,
+                })
+            })
+        });
+    corrected.chain(authored).collect()
 }
 
 #[cfg(test)]

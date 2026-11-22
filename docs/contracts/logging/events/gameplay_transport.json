@@ -215,6 +215,17 @@
       "note": "PR3106: post-commit admission continuation awaiting spell repair; phase is spell_facts or automatic_spells. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "hotkey_equip_rejected",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage",
+        "command_id"
+      ],
+      "codes": [],
+      "note": "PR3388: hotkey equip (command 348) rejection with the closed rejection stage that produced the existing Rejected reply; wire reply unchanged. Command_id is the client command id. No player identifiers, payloads or raw errors."
+    },
+    {
       "event": "join_prepare_failed",
       "level": "info",
       "span": false,

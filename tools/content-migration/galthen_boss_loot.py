@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import boss_corpse_profiles as base
+import item_detail_source_facts as item_details
 import m25_corpse_items
 
 ROOT = base.ROOT
@@ -143,8 +144,14 @@ def admit(root, generated, destination, manifest_path, order, canonical):
         raise ValueError('M25_LOOT_CLOSED_TABLES')
     document = json.loads(generated[destination])
     existing = {row['production_definition']['production_key']: row for row in document['records']}
+    weights = item_details.load_weight_facts(root, generated)
     for row in packet['records']:
         key = row['production_definition']['production_key']
+        identifier = int(row['production_binding']['external_id'])
+        if identifier in weights:
+            item_details.apply_weight(row, identifier, weights)
+            if key in existing:
+                item_details.apply_weight(existing[key], identifier, weights)
         if key in existing and existing[key] != row:
             raise ValueError('M25_LOOT_KNOWN_POLICY_CONFLICT:' + key)
         if key not in existing:

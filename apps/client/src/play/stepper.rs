@@ -122,6 +122,10 @@ super::feature_0014_container_tree::protocol::session_trait! {
         None
     }
     fn visible_appearances(&self) -> Vec<oteryn_session::VisibleAppearance> { Vec::new() }
+    fn game_session_id(&self) -> Option<[u8; 16]> {
+        None
+    }
+
     fn own_identity(&self) -> Option<[u8; 16]> { None }
     fn task_board_selected(&self) -> bool {
         false

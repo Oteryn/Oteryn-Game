@@ -265,8 +265,13 @@ fn scenario_case(
         };
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let world = if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
-            super::quest_callbacks::source_world_choices_with_door(
+        let pinned_completion_chest = catalogue.is_some_and(|chest| {
+            super::qc_pinned_world::COMPLETION_CHEST_UIDS.contains(&chest.unique)
+        });
+        let world = if pinned_completion_chest {
+            super::qc_pinned_world::world(native)?
+        } else if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
+            super::quest_callbacks_fixtures::source_world_choices_with_door(
                 chest,
                 captured_choices.as_deref().unwrap_or(&[
                     (33227, 6085),
@@ -377,12 +382,17 @@ fn scenario_case(
                 deps.room.movement_cells()
             })
             .map_err(debug)?;
+        let frame_binding = if pinned_completion_chest {
+            world.frame_binding_digest(deps.admitted.world_id)
+        } else {
+            activated_pin.frame_binding().digest()
+        };
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
             generation.identity().server_artifact_digest(),
             generation.identity().client_artifact_digest(),
-            activated_pin.frame_binding().digest(),
+            frame_binding,
             world.map_revision_digest(),
             (
                 i32::from(chest.0) - 1,
@@ -430,7 +440,7 @@ fn scenario_case(
             .bind(id(42).as_slice()).bind(id(43).as_slice())
             .bind(generation.identity().server_artifact_digest().as_slice())
             .bind(generation.identity().client_artifact_digest().as_slice())
-            .bind(activated_pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+            .bind(frame_binding.as_slice()).execute(&harness.pool).await?;
         let weights = NativeItemWeights(native);
         let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
         harness
@@ -457,7 +467,17 @@ fn scenario_case(
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
         let target_at = |x| -> TestResult<WorldObjectTarget> {
-            let key = oteryn_world_bundle::bundle::placement_key(chest.2, x, chest.1, 1)
+            let ordinal = if pinned_completion_chest {
+                let source = catalogue.ok_or("completion chest")?;
+                let tile = world
+                    .base()
+                    .tile(x, chest.1, chest.2)
+                    .ok_or("live chest tile")?;
+                super::qc_pinned_world::ordinal(tile, source.appearance, Some(unique))?
+            } else {
+                1
+            };
+            let key = oteryn_world_bundle::bundle::placement_key(chest.2, x, chest.1, ordinal)
                 .ok_or("placement")?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());

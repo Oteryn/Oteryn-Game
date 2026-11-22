@@ -1,5 +1,7 @@
 //! Sandbox coin checkout and status. The client never verifies provider events or grants coins.
 mod controller;
+#[cfg(test)]
+pub(crate) mod delivery_tests;
 pub(crate) mod launcher;
 #[cfg(test)]
 mod tests;
@@ -155,7 +157,7 @@ pub(crate) async fn run(
         cancel.clone(),
     )
     .await;
-    loop {
+    while !cancel.is_cancelled() {
         let present = presenter.clone();
         let cancellation = cancel.clone();
         let snapshot = view.clone();
@@ -171,4 +173,5 @@ pub(crate) async fn run(
         }
         controller::execute(view, action, client, token, browser, cancel.clone()).await;
     }
+    Ok(())
 }

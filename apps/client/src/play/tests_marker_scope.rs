@@ -2,6 +2,15 @@
 use super::*;
 use oteryn_session::activity_scope::{ActivityScope, ActivityScopeSnapshot, encode_activity_scope};
 
+#[path = "tests_marker_scope/connection_handoff.rs"]
+mod connection_handoff;
+#[path = "tests_marker_scope/guild_projection.rs"]
+mod guild_projection;
+#[path = "tests_marker_scope/presentation_gate.rs"]
+mod presentation_gate;
+#[path = "tests_marker_scope/wire_handoff.rs"]
+mod wire_handoff;
+
 struct AutomaticQueryHandoff {
     scope: ActivityScopeSnapshot,
     changed: bool,
@@ -12,9 +21,14 @@ struct AutomaticQueryHandoff {
     serves: Arc<AtomicUsize>,
 }
 impl Stepper for AutomaticQueryHandoff {
+    fn daily_reward_selected(&self) -> bool {
+        self.capability == 182
+    }
     fn feature_selected(&self, capability: u32) -> bool {
         match capability {
             31 | 75 => true,
+            287 | 500 if self.capability == 182 => !self.changed && !self.activity,
+            450 if self.capability == 182 => !self.changed,
             287 => self.capability == 500,
             451 if self.changed => self.scope.selection.contains(&451),
             _ => capability == self.capability,
@@ -52,7 +66,24 @@ impl Stepper for AutomaticQueryHandoff {
         if command.capability == 451 && !self.feature_selected(451) {
             return Err(SessionError::CapabilityNotSelected { capability: 451 });
         }
-        assert_eq!(command.capability, self.capability);
+        if self.changed && self.capability == 182 && command.capability == 182 {
+            use oteryn_session::daily_reward::returner::Reply;
+            return Ok(oteryn_session::GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload: Reply {
+                    state: 1,
+                    id: Some(self.scope.session),
+                }
+                .encode()
+                .map_err(|_| SessionError::SessionUnusable)?,
+            });
+        }
+        assert_eq!(
+            command.capability, self.capability,
+            "a later feature query or modal poll ran before the Returner scope barrier"
+        );
         assert!(
             !self.changed,
             "scope transition must not replay its source query"
@@ -155,7 +186,7 @@ impl Stepper for AutomaticQueryHandoff {
         })
     }
     fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {
-        if domain == 100 && self.capability == 500 {
+        if domain == 100 && matches!(self.capability, 182 | 500) {
             return oteryn_session::spell_catalog::encode_catalog(&[
                 oteryn_session::spell_catalog::SpellCatalogEntry {
                     cast_index: 1,
@@ -391,6 +422,13 @@ fn query_handoff_continues(
                 .any(|icon| icon.group && icon.id == 1 && icon.tooltip.contains("2000"))
         );
     }
+    if capability == 182 {
+        assert_eq!(
+            link.daily_reward_panel().returner_notified,
+            Some(destination),
+            "interrupted Returner query was not retried after presentation"
+        );
+    }
     runtime.shutdown(Duration::from_millis(250));
     Ok(())
 }
@@ -426,6 +464,16 @@ fn modal_refresh_scope_changed_publishes_destination_and_continues() -> Result<(
     automatic_query_handoff_continues(450, false)
 }
 
+#[test]
+fn initial_returner_scope_changed_publishes_before_other_queries() -> Result<(), String> {
+    automatic_query_handoff_continues(182, false)
+}
+
+#[test]
+fn initial_returner_activity_scope_changed_publishes_before_modal_poll() -> Result<(), String> {
+    automatic_query_handoff_continues(182, true)
+}
+
 fn support_delivery_handoff_continues(activity: bool) -> Result<(), String> {
     use oteryn_client_runtime::support_intake::{CAPABILITY_SUPPORT_INTAKE_V1, CRASH};
     let command = oteryn_client_ui::support_intake::submission(
@@ -457,7 +505,7 @@ fn support_delivery_activity_scope_changed_publishes_destination_and_continues()
     support_delivery_handoff_continues(true)
 }
 
-fn house_handoff(outbox: &Outbox) {
+fn publish_activity_handoff(outbox: &Outbox) {
     let mut id = [1; 16];
     id[6] = 0x71;
     id[8] = 0x81;
@@ -507,7 +555,7 @@ fn typed_handoff_resets_presented_message_namespace() -> Result<(), String> {
     let mut view = super::PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 0, &[])
         .map_err(|error| error.to_string())?;
     let source_namespace = view.message_namespace;
-    house_handoff(&outbox);
+    publish_activity_handoff(&outbox);
     view.tick(&link).map_err(|error| format!("{error:?}"))?;
     assert_ne!(source_namespace, view.message_namespace);
     Ok(())
@@ -518,7 +566,7 @@ fn handoff_retains_shared_frontend_and_admitted_byte_counters() {
     let (link, _, outbox) = play_channel();
     link.use_shared_frontend();
     link.set_traffic(Arc::default());
-    house_handoff(&outbox);
+    publish_activity_handoff(&outbox);
     assert_eq!(
         (link.uses_shared_frontend(), link.traffic_bytes()),
         (true, Some((0, 0)))
@@ -533,7 +581,7 @@ fn handoff_preserves_saved_chat_mode_on_settings_tick() {
         let mut settings = super::SettingsState::new(None);
         settings.preferences.chat_mode = Some(mode);
         settings.sync_chat_context(&link);
-        house_handoff(&outbox);
+        publish_activity_handoff(&outbox);
         settings.sync_chat_context(&link);
         assert_eq!(settings.preferences.chat_mode, Some(mode));
     }
@@ -547,7 +595,7 @@ fn destination_look_uses_a_fresh_receipt() -> Result<(), &'static str> {
     let (link, _, outbox) = play_channel();
     record_look(&mut lock(&outbox.0), Action::Look, "Source");
     let source = link.look_message().ok_or("source look")?;
-    house_handoff(&outbox);
+    publish_activity_handoff(&outbox);
     assert!(link.look_message().is_none());
     record_look(&mut lock(&outbox.0), Action::Look, "Destination");
     let destination = link.look_message().ok_or("destination look")?;
@@ -570,7 +618,7 @@ fn review_scope_preserves_admission_identity() -> Result<(), Box<dyn std::error:
     link.house_edit(1, "oteryn:content.area.city.thais".into());
     link.house_request(0);
     assert!(commands.try_recv().is_err());
-    house_handoff(&outbox);
+    publish_activity_handoff(&outbox);
     assert_eq!(link.party_panel().own_character_name, "Ari");
     assert!(link.notices_panel().tutorial_selected && link.notices_panel().save_selected);
     assert_eq!(

@@ -1212,7 +1212,7 @@ impl ProjectV2ServiceOffer {
     }
 }
 
-/// A declarative travel route of an NPC travel Service. No runtime path executes it.
+/// A travel route of an NPC travel Service.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectV2TravelRoute {
@@ -1223,6 +1223,18 @@ pub struct ProjectV2TravelRoute {
     pub premium: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub min_level: Option<u32>,
+    /// A nonempty list admits the route through the paid travel owner when every track matches.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_quest_tracks: Vec<ProjectV2TravelQuestRequirement>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2TravelQuestRequirement {
+    pub track: String,
+    pub minimum: i64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub maximum: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -1909,6 +1921,34 @@ fn validate_v2_travel_routes(
         if !is_v2_lowercase_slug(&route.key) {
             return Err(ProjectError::InvalidProject(
                 "v2 Service route key is not a lowercase slug",
+            ));
+        }
+        let tracks = &route.required_quest_tracks;
+        limits.check(
+            "v2 Service travel quest requirements",
+            tracks.len(),
+            limits.max_reference_records,
+        )?;
+        if tracks.windows(2).any(|pair| pair[0].track >= pair[1].track)
+            || tracks.iter().any(|requirement| {
+                let valid_track = requirement
+                    .track
+                    .strip_prefix("oteryn:quest-progress/")
+                    .is_some_and(|key| {
+                        !key.is_empty()
+                            && key.bytes().all(|byte| {
+                                byte.is_ascii_alphanumeric() || b"._:/-".contains(&byte)
+                            })
+                    });
+                !valid_track
+                    || requirement.track.len() > 128
+                    || requirement
+                        .maximum
+                        .is_some_and(|max| max < requirement.minimum)
+            })
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 Service travel quest requirements are invalid",
             ));
         }
         let destination = &route.destination;

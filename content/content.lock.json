@@ -37,7 +37,7 @@
     "Service.Blessing": 10,
     "Service.Promotion": 7,
     "Service.Trade": 324,
-    "Service.Travel": 56,
+    "Service.Travel": 57,
     "StarterKit": 1,
     "item_conversion": 130
   },
@@ -47,10 +47,10 @@
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "1ece240aac647f149c1755b206b88444d2bad224",
+    "declarations": "eccb941ee5334dd5423e5de7699c6388108bcb68",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "a38ff435e6bc02c124589ef7a217546b3691d63f",
-    "reference": "88a663439b6cc89039e8672b2692e48c1ef9947b",
+    "imports": "d6633ab6d1335663d3b6bc4929225b3adbcbff2c",
+    "reference": "e8c4487697f321137afbd4b4962a7d0e202a4331",
     "sources": "2cf0e78314dfab9278d37c5bb45e73d155c09eec"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "f6b2bec6e73f735c0aa55186f3cbc37d6204cd5432682ebc88d98d36b1ba285e"
+          "sha256": "47e9d5b54eb9cc3de65a88bc53e178ba36da10dffa4a5d1f0f4643a678908c36"
         },
         {
           "creates_canonical_identities": false,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6570,
+          "record_count": 6576,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "f558fe0c2247516cf58bd7dedd39b40ac12eeaba2021e01803ff389891fdab3b"
+          "sha256": "a5db7fd03aff178fe60ffbe4de19feb0a97b6ee535fe2537bbae854d660d4ed6"
         },
         {
           "creates_canonical_identities": false,

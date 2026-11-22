@@ -123,9 +123,30 @@ pub(super) async fn walk_to(
     admitted: &mut AdmittedSession,
     goal: Position,
 ) -> TestResult<Vec<MovementLocalPosition>> {
+    let end = super::quest_world_callbacks_fixtures::local(goal);
+    walk_to_matching(owner, admitted, end, |at| at == end).await
+}
+
+/// Stop at the first adjacent square reached by the source walk search.
+pub(super) async fn walk_to_adjacent(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    target: MovementLocalPosition,
+) -> TestResult<Vec<MovementLocalPosition>> {
+    walk_to_matching(owner, admitted, target, |at| {
+        at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) == 1
+    })
+    .await
+}
+
+async fn walk_to_matching(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    end: MovementLocalPosition,
+    is_goal: impl Fn(MovementLocalPosition) -> bool,
+) -> TestResult<Vec<MovementLocalPosition>> {
     use std::collections::{BTreeMap, BTreeSet, VecDeque};
     let actor = admitted.runtime_actor.ok_or("actor")?;
-    let end = super::quest_world_callbacks_fixtures::local(goal);
     let path = {
         let map = owner.bundle_map().ok_or("source map")?;
         let runtime = owner.runtime.lock().await;
@@ -157,9 +178,16 @@ pub(super) async fn walk_to(
                 (-1, -1, StepDirection::NorthWest),
             ]);
         }
-        while let Some((x, y)) = queue.pop_front() {
-            if (x, y) == (end.x, end.y) {
-                break;
+        let mut cursor = loop {
+            let (x, y) = queue
+                .pop_front()
+                .ok_or_else(|| format!("no source walk from {start:?} to {end:?}"))?;
+            if is_goal(MovementLocalPosition {
+                x,
+                y,
+                floor: start.floor,
+            }) {
+                break (x, y);
             }
             for (dx, dy, direction) in directions.iter().copied() {
                 let next = (x + dx, y + dy);
@@ -188,8 +216,7 @@ pub(super) async fn walk_to(
                 previous.insert(next, ((x, y), direction));
                 queue.push_back(next);
             }
-        }
-        let mut cursor = (end.x, end.y);
+        };
         let mut result = Vec::new();
         while cursor != (start.x, start.y) {
             let (parent, direction) = previous

@@ -120,6 +120,7 @@ AUTHORING_TOOLS = (
 
 CHECKS = (
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
     ["python3", "tools/content-migration/refresh_season_creature_inventory.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply", "--check"],
@@ -831,6 +832,8 @@ def main() -> int:
     import questpc7_thaian_authoring
     # install completes authoring through the native writer; no pins name staged Python bytes.
     questpc7_thaian_authoring.install(ROOT)
+    from buddel_travel import install_buddel
+    install_buddel(ROOT, WORLD)
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()
@@ -848,6 +851,7 @@ def main() -> int:
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
+    run(["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py"])
     # Callback witnesses add authored props to the native index; rooms must pin that final index.
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     for tool in AUTHORING_TOOLS:

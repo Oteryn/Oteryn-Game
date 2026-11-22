@@ -562,6 +562,13 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     qengine_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import elephant_corpse_profiles
     elephant_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Arbaziloth owns corpse 50029. The retained Item source closes its
+    # Ground-only decay chain (Canary items.xml:82814-82829).
+    arbaziloth_corpses = elephant_corpse_profiles.capture_chain(
+        root, {50029: (300, 50028, 15), 50028: (300, 50027, 15), 50027: (60, 0, None)})
+    qengine_reward_item_profiles.admit_records(
+        root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+        NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes, arbaziloth_corpses)
     import questpc7_hot_corpse_profiles
     questpc7_hot_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import questpc7_hot_fishburger_profile
@@ -589,6 +596,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     questpc7_smith_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import questpc7_smith_item_profile
     questpc7_smith_item_profile.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import qc_item_profiles
+    qc_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import qnpcfx_item_profiles
     qnpcfx_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import qready1_quest_item_profiles
@@ -618,6 +627,10 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # Source loot custody completion follows established Item owners. In
     # particular3081/3097 retain TIMED-CONTENT-1's amulet/ring authoring;
     # the bounded yield overlay fills only proven UNKNOWN custody fields.
+    import item_detail_source_facts
+    item_detail_weights = item_detail_source_facts.qualified_weights(root)
+    generated[item_detail_source_facts.WEIGHT_FACTS] = spell_import.canonical_bytes(
+        {str(identifier): value for identifier, value in item_detail_weights.items()})
     import boss_reward_yield_profiles
     boss_reward_yield_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Crystal santa_claus.lua:111-119 places these gifts through the ordinary
@@ -704,6 +717,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     admit_dream_courts_supplies(root, items)
     import protected_loot_yields
     protected_loot_yields.admit(root, items, provider_order)
+    item_detail_source_facts.apply(root, items, item_detail_weights)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.

@@ -142,8 +142,8 @@ def refresh_bestiary_inventory(root: Path) -> None:
     golden = root / "tools/content-migration/test_world_project_v2_to_tree.py"
     golden_text = golden.read_text()
     for pattern in (
-        r'''(?m)^(assert family_counts\[(?:'Creature'|"Creature")\] == )[0-9_]+$''',
-        r'(?m)^(assert lock\["source_binding_counts"\] == \{[^{}]*?"Creature":\s*)[0-9_]+',
+        r'''(?m)^([ \t]*assert family_counts\[(?:'Creature'|"Creature")\] == )[0-9_]+$''',
+        r'(?m)^([ \t]*assert lock\["source_binding_counts"\] == \{[^{}]*?"Creature":\s*)[0-9_]+',
     ):
         golden_text, guarded = re.subn(pattern, lambda match: match.group(1) + f"{count:_}", golden_text)
         if guarded != 1:
@@ -697,7 +697,7 @@ def main(*, items_only: bool = False) -> int:
                             "schema": declarations["schema"]}})
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
-    if len(service_records) != 399:
+    if len(service_records) != 400:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}

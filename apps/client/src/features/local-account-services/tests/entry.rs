@@ -73,6 +73,59 @@ fn account_services_selection_uses_separate_scope_and_returns_to_fresh_game_logi
 }
 
 #[test]
+fn entry_cancel_waits_for_account_services_browser_delivery() -> TestResult {
+    use std::sync::mpsc;
+    use std::time::Duration;
+    test_thread(|| {
+        let stack = test_support::Stack::start(Vec::new())?;
+        let mock = MockPlatform::start()?;
+        let mut config = stack.config();
+        config.platform_url = mock.base.clone();
+        config.select_character =
+            Arc::new(|_, _, _| crate::character_selection::SelectionAction::AccountServices);
+        let (entered, ready) = mpsc::channel();
+        let (release, released) = mpsc::channel();
+        let released = Mutex::new(released);
+        let original = config.open_browser.clone();
+        config.open_browser = Arc::new(move |url| {
+            if !url.contains("scope=game%3Aaccount-services") {
+                return original(url);
+            }
+            let _ = entered.send(());
+            assert!(
+                released
+                    .lock()
+                    .is_ok_and(|rx| rx.recv_timeout(Duration::from_secs(5)).is_ok())
+            );
+            false
+        });
+        let mut entry =
+            crate::reentry::Reentry::new(crate::ClientBootstrap::new()?.with_native_login(config));
+        assert!(entry.request());
+        ready.recv_timeout(Duration::from_secs(5))?;
+        let (started, starting) = mpsc::channel();
+        let (finished, done) = mpsc::channel();
+        let closer = std::thread::spawn(move || {
+            let _ = started.send(());
+            let _ = finished.send(entry.cancel_entry());
+            entry.shutdown();
+        });
+        starting.recv_timeout(Duration::from_secs(5))?;
+        let early = done.recv_timeout(Duration::from_millis(100));
+        release.send(())?;
+        closer.join().map_err(|_| "entry cancellation thread")?;
+        assert_eq!(
+            early,
+            Err(mpsc::RecvTimeoutError::Timeout),
+            "entry cancellation passed an Account Services browser delivery still in progress"
+        );
+        assert!(done.try_recv()?);
+        stack.finish();
+        Ok(())
+    })
+}
+
+#[test]
 fn fresh_services_oauth_discards_bazaar_state() -> TestResult {
     fresh_services_oauth(false)
 }

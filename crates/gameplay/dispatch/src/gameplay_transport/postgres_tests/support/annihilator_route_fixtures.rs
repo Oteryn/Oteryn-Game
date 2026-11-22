@@ -5,6 +5,7 @@ use super::fixture::{debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, Dependencies, FirstEntryOutcome, TestResult};
 
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1};
+use crate::gameplay_transport::monster_profile_cycle::with_native_ai_seed;
 
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
@@ -482,14 +483,20 @@ pub(super) fn run(route: Route) -> TestResult {
             route,
             Route::ElvenbaneCombat | Route::ElvenbaneDefenders | Route::ElvenbaneComplete
         ) {
-            let result = super::elvenbane_combat_fixtures::scenario(
+            // Replay the Elvenbane native think rolls from before the 1009535a merge.
+            const SEED: [u8; 32] = [
+                0xf0, 0xf6, 0x62, 0x2d, 0x18, 0xdc, 0x19, 0x24, 0x99, 0x61, 0x56, 0x21, 0x93,
+                0xfe, 0x19, 0x8a, 0xff, 0x7e, 0xdc, 0x76, 0xd8, 0xc4, 0x20, 0x41, 0x55, 0x28,
+                0x22, 0x76, 0xa6, 0x0a, 0xd7, 0xfc,
+            ];
+            let turn = super::elvenbane_combat_fixtures::scenario(
                 &mut owner,
                 &mut admitted[0],
                 &h.pool,
                 matches!(route, Route::ElvenbaneDefenders | Route::ElvenbaneComplete),
                 route == Route::ElvenbaneComplete,
-            )
-            .await;
+            );
+            let result = with_native_ai_seed(SEED, turn).await;
             drop(owner);
             drop(authority);
             drop(seal);

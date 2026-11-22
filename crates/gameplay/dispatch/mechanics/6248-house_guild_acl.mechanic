@@ -1,0 +1,5 @@
+name=house_guild_acl
+commands=6252
+offer=707,house_intent::offer_guild_acl,house_guild_acl_available
+[route]
+routing::house::guild_acl(authority, session.actor, &session.admitted, command).await

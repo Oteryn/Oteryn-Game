@@ -103,7 +103,11 @@ async fn apply(
             refresh(view, client, token, cancel).await?;
             view.feedback = tr!("Purchase status and wallet balance refreshed from Oteryn.").into();
         }
-        Action::OpenCheckout => open_checkout(view, client, browser),
+        Action::OpenCheckout => {
+            #[cfg(test)]
+            super::delivery_tests::pause(super::delivery_tests::Point::ExplicitCheckout);
+            open_checkout(view, client, browser, &cancel);
+        }
         Action::Back => {}
     }
     Ok(())
@@ -137,8 +141,14 @@ async fn submit(
     if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {
         clear_refused_order(view);
     }
-    accept(view, result?)?;
-    open_checkout(view, client, browser);
+    let order = result?;
+    #[cfg(test)]
+    super::delivery_tests::pause(super::delivery_tests::Point::OrderCheckout);
+    if cancel.is_cancelled() {
+        return Ok(());
+    }
+    accept(view, order)?;
+    open_checkout(view, client, browser, &cancel);
     // Browser launch is not payment evidence. Always use a separate authenticated wallet read.
     refresh(view, client, token, cancel).await?;
     Ok(())
@@ -242,7 +252,12 @@ fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
     view.checkout_unverified = false;
     Ok(())
 }
-fn open_checkout(view: &mut View, client: &NativeLoginClient, browser: &Browser) {
+fn open_checkout(
+    view: &mut View,
+    client: &NativeLoginClient,
+    browser: &Browser,
+    cancel: &CancellationToken,
+) {
     let Some(order) = view.order.as_ref().filter(|_| view.can_checkout()) else {
         view.feedback = tr!("No checkout is available for this purchase state.").into();
         return;
@@ -252,6 +267,9 @@ fn open_checkout(view: &mut View, client: &NativeLoginClient, browser: &Browser)
     };
     if !client.valid_coin_checkout(url, &order.order_id) {
         view.feedback = tr!("Checkout address refused.").into();
+        return;
+    }
+    if cancel.is_cancelled() {
         return;
     }
     view.feedback = if browser(url.as_str()) {
