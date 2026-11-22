@@ -198,7 +198,11 @@ def _requested_inputs(root, extra_keys=()):
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
             for offering in callback['offerings']}
-    authored_keys = set()
+    # The Ape City binding issues these portable quest Items from Crystal's
+    # Hairycles exchange and Holy Ape Hair footprint. Use the existing
+    # exact-identity custody qualification, without granting other item behavior.
+    authored_keys = {'oteryn:item.tibia.i4832', 'oteryn:item.tibia.i4835'}
+    keys.update(authored_keys)
     authored_callbacks = []
     # Executable authored callbacks use the same exact canonical/native Item
     # qualification as source chests. Include every output, never a partial bag.

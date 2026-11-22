@@ -1,0 +1,1561 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "recipe_sha256": "78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+      "admission": {
+        "minimum_level": 0,
+        "premium": true
+      },
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/stage",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 15
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/access",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/amphora-1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/amphora-2",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/amphora-3",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/amphora-4",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/lever-1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/lever-2",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/lever-3",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/lever-4",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/lever-5",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/lever-6",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/chosen/ape-city/exit",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "start",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/ape-city/start",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "npc": "oteryn:npc.hairycles",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Bring me a banana to show you come in friendship."
+              ],
+              "sources": [
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:80-89"
+              ]
+            }
+          }
+        },
+        {
+          "key": "banana",
+          "completes": false,
+          "trigger": {
+            "kind": "collect",
+            "collection": {
+              "key": "oteryn:quest-collection/ape-city/banana",
+              "items": [
+                {
+                  "item": "oteryn:item.tibia.i3587",
+                  "count": 1
+                }
+              ],
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:709-715"
+              ]
+            }
+          }
+        },
+        {
+          "key": "banana-hand-in",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/ape-city/banana-hand-in",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "npc": "oteryn:npc.hairycles",
+              "keywords": [
+                "banana"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "requires_premium": true,
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i3587",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Thank you. Ask me for another mission."
+              ],
+              "sources": [
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:80-94"
+              ]
+            }
+          }
+        },
+        {
+          "key": "next-mission",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/ape-city/next-mission",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "npc": "oteryn:npc.hairycles",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Find the old parchment in Chor and bring it here."
+              ],
+              "sources": [
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:100-120"
+              ]
+            }
+          }
+        },
+        {
+          "key": "parchment",
+          "completes": false,
+          "trigger": {
+            "kind": "collect",
+            "collection": {
+              "key": "oteryn:quest-collection/ape-city/parchment",
+              "items": [
+                {
+                  "item": "oteryn:item.tibia.i4831",
+                  "count": 1
+                }
+              ],
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                }
+              ],
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1368-1374"
+              ]
+            }
+          }
+        },
+        {
+          "key": "parchment-hand-in",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/ape-city/parchment-hand-in",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "npc": "oteryn:npc.hairycles",
+              "keywords": [
+                "parchment"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 6
+                }
+              ],
+              "requires_premium": true,
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i4831",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Read the signs on the stone in the tomb east of the desert city."
+              ],
+              "sources": [
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:103-120"
+              ]
+            }
+          }
+        },
+        {
+          "key": "decipher",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-decipher",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 33305,
+                  "y": 32861,
+                  "floor": -13
+                },
+                "appearance": 419,
+                "ordinal": null,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 33305,
+                    "y": 32861,
+                    "floor": -13
+                  },
+                  "appearance": 419,
+                  "ordinal": 0
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 6,
+                  "maximum": 6,
+                  "set": 7
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/movements_mission4_parchment_decyphering.lua:3-19"
+              ],
+              "premium_required": true,
+              "effects": {
+                "player_speech": "!-! -O- I_I (/( --I Morgathla"
+              }
+            }
+          }
+        },
+        {
+          "key": "holy-hair",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-holy-hair",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32933,
+                  "y": 32495,
+                  "floor": -7
+                },
+                "appearance": 2753,
+                "ordinal": 1,
+                "unique": null,
+                "action": null
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 7,
+                  "maximum": 7,
+                  "set": 8
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4465-4469"
+              ],
+              "premium_required": true,
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i4832",
+                  "count": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "key": "hair-hand-in",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/ape-city/hair-hand-in",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "npc": "oteryn:npc.hairycles",
+              "keywords": [
+                "holy ape hair"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 8,
+                  "maximum": 8,
+                  "set": 9
+                }
+              ],
+              "requires_premium": true,
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i4832",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You found the holy hair. One last mission awaits you."
+              ],
+              "sources": [
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:429-436"
+              ]
+            }
+          }
+        },
+        {
+          "key": "issue-tool",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/ape-city/issue-tool",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "npc": "oteryn:npc.hairycles",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 9,
+                  "maximum": 9,
+                  "set": 10
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i4835",
+                "count": 1
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Use this Snake Destroyer in the deepest catacombs."
+              ],
+              "sources": [
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:437-446"
+              ]
+            }
+          }
+        },
+        {
+          "key": "deeper-banuta",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-deeper-banuta",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32839,
+                  "y": 32533,
+                  "floor": -9
+                },
+                "appearance": 1949,
+                "ordinal": null,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 32839,
+                    "y": 32533,
+                    "floor": -9
+                  },
+                  "appearance": 1949,
+                  "ordinal": 1
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32749,
+                "y": 32536,
+                "floor": -10
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 10,
+                  "maximum": 15,
+                  "set": 11,
+                  "set_if": 10
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/movements_mission9_the_deepest_catacomb_teleport.lua:5-34"
+              ],
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "amphora-1",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-amphora-1",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32792,
+                  "y": 32527,
+                  "floor": -10
+                },
+                "appearance": 4995,
+                "ordinal": 1,
+                "unique": null,
+                "action": null
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 11,
+                  "maximum": 11,
+                  "set": 11,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/amphora-1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:7-41"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i4835",
+                "count": 1,
+                "selected_instance": true,
+                "reusable": true,
+                "target_replacement": 4996
+              },
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "amphora-2",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-amphora-2",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32823,
+                  "y": 32525,
+                  "floor": -10
+                },
+                "appearance": 4995,
+                "ordinal": 1,
+                "unique": null,
+                "action": null
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 11,
+                  "maximum": 11,
+                  "set": 11,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/amphora-2",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:7-41"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i4835",
+                "count": 1,
+                "selected_instance": true,
+                "reusable": true,
+                "target_replacement": 4996
+              },
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "amphora-3",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-amphora-3",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32876,
+                  "y": 32584,
+                  "floor": -10
+                },
+                "appearance": 4995,
+                "ordinal": 1,
+                "unique": null,
+                "action": null
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 11,
+                  "maximum": 11,
+                  "set": 11,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/amphora-3",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:7-41"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i4835",
+                "count": 1,
+                "selected_instance": true,
+                "reusable": true,
+                "target_replacement": 4996
+              },
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "amphora-4",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-amphora-4",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32744,
+                  "y": 32586,
+                  "floor": -10
+                },
+                "appearance": 4995,
+                "ordinal": 1,
+                "unique": null,
+                "action": null
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 11,
+                  "maximum": 11,
+                  "set": 11,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/amphora-4",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:7-41"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i4835",
+                "count": 1,
+                "selected_instance": true,
+                "reusable": true,
+                "target_replacement": 4996
+              },
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "deepest-catacombs",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-deepest-catacombs",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32854,
+                  "y": 32544,
+                  "floor": -10
+                },
+                "appearance": 1949,
+                "ordinal": null,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 32854,
+                    "y": 32544,
+                    "floor": -10
+                  },
+                  "appearance": 1949,
+                  "ordinal": 1
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32885,
+                "y": 32632,
+                "floor": -11
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 11,
+                  "maximum": 11,
+                  "set": 12
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/amphora-1",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/amphora-2",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/amphora-3",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/amphora-4",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/movements_mission9_the_deepest_catacomb_teleport.lua:19-34"
+              ],
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "lever-1",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-lever-1",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32891,
+                  "y": 32590,
+                  "floor": -11
+                },
+                "appearance": 2772,
+                "ordinal": 1,
+                "unique": null,
+                "action": null
+              },
+              "lever": [
+                2772,
+                2773
+              ],
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 12,
+                  "maximum": 12,
+                  "set": 12,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/lever-1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34"
+              ],
+              "effects": {
+                "reset_after_ms": 600000
+              },
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "lever-2",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-lever-2",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32843,
+                  "y": 32649,
+                  "floor": -11
+                },
+                "appearance": 2772,
+                "ordinal": 1,
+                "unique": null,
+                "action": null
+              },
+              "lever": [
+                2772,
+                2773
+              ],
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 12,
+                  "maximum": 12,
+                  "set": 12,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/lever-2",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34"
+              ],
+              "effects": {
+                "reset_after_ms": 600000
+              },
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "lever-3",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-lever-3",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32808,
+                  "y": 32613,
+                  "floor": -11
+                },
+                "appearance": 2772,
+                "ordinal": 2,
+                "unique": null,
+                "action": null
+              },
+              "lever": [
+                2772,
+                2773
+              ],
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 12,
+                  "maximum": 12,
+                  "set": 12,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/lever-3",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34"
+              ],
+              "effects": {
+                "reset_after_ms": 600000
+              },
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "lever-4",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-lever-4",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32775,
+                  "y": 32583,
+                  "floor": -11
+                },
+                "appearance": 2772,
+                "ordinal": 1,
+                "unique": null,
+                "action": null
+              },
+              "lever": [
+                2772,
+                2773
+              ],
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 12,
+                  "maximum": 12,
+                  "set": 12,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/lever-4",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34"
+              ],
+              "effects": {
+                "reset_after_ms": 600000
+              },
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "lever-5",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-lever-5",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32756,
+                  "y": 32494,
+                  "floor": -11
+                },
+                "appearance": 2772,
+                "ordinal": 2,
+                "unique": null,
+                "action": null
+              },
+              "lever": [
+                2772,
+                2773
+              ],
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 12,
+                  "maximum": 12,
+                  "set": 12,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/lever-5",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34"
+              ],
+              "effects": {
+                "reset_after_ms": 600000
+              },
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "lever-6",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-lever-6",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32799,
+                  "y": 32556,
+                  "floor": -11
+                },
+                "appearance": 2772,
+                "ordinal": 1,
+                "unique": null,
+                "action": null
+              },
+              "lever": [
+                2772,
+                2773
+              ],
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 12,
+                  "maximum": 12,
+                  "set": 12,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/lever-6",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-34"
+              ],
+              "effects": {
+                "reset_after_ms": 600000
+              },
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "gate",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-gate",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32862,
+                  "y": 32557,
+                  "floor": -11
+                },
+                "appearance": 2772,
+                "ordinal": 1,
+                "unique": null,
+                "action": null
+              },
+              "lever": [
+                2772,
+                2773
+              ],
+              "reversible": false,
+              "passages": [
+                {
+                  "position": {
+                    "x": 32864,
+                    "y": 32556,
+                    "floor": -11
+                  },
+                  "appearance": 1563,
+                  "replacement": null
+                }
+              ],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 12,
+                  "maximum": 12,
+                  "set": 13
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/lever-1",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/lever-2",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/lever-3",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/lever-4",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/lever-5",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/lever-6",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:36-70"
+              ],
+              "world_requirements": [
+                {
+                  "position": {
+                    "x": 32891,
+                    "y": 32590,
+                    "floor": -11
+                  },
+                  "appearance": 2773
+                },
+                {
+                  "position": {
+                    "x": 32843,
+                    "y": 32649,
+                    "floor": -11
+                  },
+                  "appearance": 2773
+                },
+                {
+                  "position": {
+                    "x": 32808,
+                    "y": 32613,
+                    "floor": -11
+                  },
+                  "appearance": 2773
+                },
+                {
+                  "position": {
+                    "x": 32775,
+                    "y": 32583,
+                    "floor": -11
+                  },
+                  "appearance": 2773
+                },
+                {
+                  "position": {
+                    "x": 32756,
+                    "y": 32494,
+                    "floor": -11
+                  },
+                  "appearance": 2773
+                },
+                {
+                  "position": {
+                    "x": 32799,
+                    "y": 32556,
+                    "floor": -11
+                  },
+                  "appearance": 2773
+                }
+              ],
+              "admission": {
+                "premium": true
+              },
+              "effects": {
+                "reset_after_ms": 10000,
+                "passages_reset_after_ms": 10000
+              }
+            }
+          }
+        },
+        {
+          "key": "exit-gate",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-exit-gate",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32862,
+                  "y": 32555,
+                  "floor": -11
+                },
+                "appearance": 2772,
+                "ordinal": 1,
+                "unique": null,
+                "action": null
+              },
+              "lever": [
+                2772,
+                2773
+              ],
+              "reversible": false,
+              "passages": [
+                {
+                  "position": {
+                    "x": 32864,
+                    "y": 32556,
+                    "floor": -11
+                  },
+                  "appearance": 1563,
+                  "replacement": null
+                }
+              ],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 13,
+                  "maximum": 15,
+                  "set": 13,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/exit",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:36-70"
+              ],
+              "effects": {
+                "reset_after_ms": 10000,
+                "passages_reset_after_ms": 10000
+              },
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "snake-destroyer",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-ape-city-snake-destroyer",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32858,
+                  "y": 32526,
+                  "floor": -11
+                },
+                "appearance": 4850,
+                "ordinal": 1,
+                "unique": null,
+                "action": null
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 13,
+                  "maximum": 13,
+                  "set": 14
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "oteryn-authored:chosen-recipe:the-ape-city",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:44-65"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i4835",
+                "count": 1,
+                "selected_instance": true
+              },
+              "effects": {
+                "transform": 4851,
+                "reset_after_ms": 40000
+              },
+              "premium_required": true
+            }
+          }
+        },
+        {
+          "key": "report",
+          "completes": true,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/ape-city/report",
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "npc": "oteryn:npc.hairycles",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/stage",
+                  "minimum": 14,
+                  "maximum": 14,
+                  "set": 15
+                },
+                {
+                  "track": "oteryn:quest-progress/chosen/ape-city/access",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": null,
+              "outfit": {
+                "outfit": "oteryn:outfit.shaman",
+                "addons": 0
+              },
+              "achievement": null,
+              "reply": [
+                "Banuta is safe. You may return to Deeper Banuta. You have earned shaman clothing."
+              ],
+              "sources": [
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:186-195,449-456"
+              ]
+            }
+          }
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:the-ape-city",
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/recipe:sha256:78b0d3e813f1dc1711eae831fb850d98c23974869a17a913923e6431dee2b323",
+        "https://tibia.fandom.com/wiki/The_Ape_City_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:80-195,429-456",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1-70",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:1-65"
+      ]
+    }
+  ]
+}
