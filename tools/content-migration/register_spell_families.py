@@ -701,6 +701,14 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     ordinary_corpse_profiles.bind_creatures(root, corpse_document)
     generated[corpse_creatures] = spell_import.canonical_bytes(corpse_document)
     del corpse_document
+    import ordinary_corpse_cohort
+    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
+    item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
+    creatures = json.loads(generated[creature_path])
+    items = json.loads(generated[item_path])
+    ordinary_corpse_cohort.apply(root, creatures, items, provider_order)
+    generated[creature_path] = spell_import.canonical_bytes(creatures)
+    generated[item_path] = spell_import.canonical_bytes(items)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     import ordinary_corpse_slice2

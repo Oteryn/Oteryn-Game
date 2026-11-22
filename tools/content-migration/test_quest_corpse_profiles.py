@@ -61,8 +61,11 @@ class CorpseQualification(unittest.TestCase):
             expected = self.plan.records[key]['semantics']['container']['value']['capacity']['value']
             self.assertTrue(facts[key]['materializable'], key)
             self.assertEqual(facts[key]['container_capacity'], expected, key)
-        for number in (5967, 5999, 6031, 25814):
+        for number in (5999, 6031):
             self.assertTrue(facts[f'oteryn:item.tibia.i{number}']['ordinary_corpse_only'])
+        # Rottie and Raxias also have exact private-reward bindings to these bodies.
+        for number in (5967, 25814):
+            self.assertNotIn('ordinary_corpse_only', facts[f'oteryn:item.tibia.i{number}'])
 
     def test_exact_source_capacities_and_complete_decay_chains(self):
         self.assertEqual(self.plan.roots, {

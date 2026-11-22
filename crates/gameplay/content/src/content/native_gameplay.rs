@@ -1301,6 +1301,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("Arbaziloth fire identity collision"));
         }
+        // These exact bodies lack a historical XML binding. Their Crystal
+        // appearance and the current client object agree on the server Item id.
+        for external_id in [35136, 35384, 35388, 35846, 36929, 44667, 44671, 48406] {
+            let binding = serde_json::from_value(serde_json::json!({
+                "source_key": "oteryn:source.crystalserver",
+                "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                "identity_namespace": "ots/item_server_id",
+                "external_id": external_id.to_string(),
+                "target": {"family": "Item", "key": format!("oteryn:item.tibia.i{external_id}"), "revision": "definition-r1"},
+                "disposition": "EXACT"
+            })).map_err(|_| invalid("ordinary corpse exact Item identity"))?;
+            if admitted.insert(external_id.to_string(), binding).is_some() {
+                return Err(invalid("ordinary corpse Item identity collision"));
+            }
+        }
         let cradle_profiles = qready1_cradle::profiles()?;
         for (id, record) in &cradle_profiles {
             if admitted
@@ -2281,6 +2296,118 @@ mod tests {
         qualify_native_entry_room_with_gameplay,
     };
     use serde_json::Value;
+    #[test]
+    fn third_quarter_corpse_admissions_reach_the_pinned_reward_loader()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world = test_source(1)?.world_id;
+        let supplied = NativeGameplayInput::from_manifest(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json"),
+        )?;
+        let (controller, _) = test_support::try_activate_input(world, &supplied)
+            .map_err(|_| invalid("corpse production activation"))?;
+        let active = controller.active().ok_or("active content")?;
+        let native = active.native_gameplay().ok_or("native content")?;
+        let mut failures = Vec::new();
+        for (creature, id) in [
+            ("orc", 5966),
+            ("nomad", 18185),
+            ("necromancer", 18174),
+            ("tentacle10", 35136),
+            ("tentacle2", 35136),
+            ("tentacle3", 35136),
+            ("tentacle4", 35136),
+            ("tentacle5", 35136),
+        ] {
+            let key = format!("oteryn:creature.{creature}");
+            let expected = format!("oteryn:item.tibia.i{id}");
+            match native.reward_table().row(&key) {
+                Ok(row)
+                    if row
+                        .corpse_item
+                        .as_ref()
+                        .is_some_and(|corpse| corpse.production_key == expected)
+                        && native.item_policy(&expected, "definition-r1").is_some() => {}
+                other => failures.push(format!("{key}, expected {expected}: {other:?}")),
+            }
+        }
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
+        Ok(())
+    }
+
+    #[test]
+    fn third_quarter_pinned_corpse_facts_match_the_source_cohort()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::creature_reward::{LootTablesSection, NoSettlementReason};
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let cohort: Value = serde_json::from_slice(&std::fs::read(
+            path.join("tools/content-schema/native-gameplay/ordinary-corpse-cohort.json"),
+        )?)?;
+        let world = test_source(1)?.world_id;
+        let supplied =
+            NativeGameplayInput::from_manifest(&path.join("content/spells.manifest.json"))?;
+        let loot: LootTablesSection =
+            serde_json::from_slice(&supplied.loot_tables.as_ref().ok_or("pinned loot")?.bytes)?;
+        let (controller, _) = test_support::try_activate_input(world, &supplied)
+            .map_err(|_| invalid("corpse production activation"))?;
+        let active = controller.active().ok_or("active content")?;
+        let native = active.native_gameplay().ok_or("native content")?;
+        let admissions = cohort["admissions"]
+            .as_object()
+            .ok_or("source admissions")?;
+        assert_eq!(admissions.len(), 306);
+        for (creature, source) in admissions {
+            let key = format!("oteryn:creature.{creature}");
+            let source = source.as_u64().ok_or("source Item id")?;
+            let item = format!("oteryn:item.tibia.i{source}");
+            let policy = native
+                .item_policy(&item, "definition-r1")
+                .ok_or_else(|| format!("{creature} is missing the {item} Item policy"))?;
+            assert!(policy.record().admission.materializable, "{key}");
+            let section = loot
+                .items
+                .iter()
+                .find(|facts| facts.item.key == item)
+                .ok_or("corpse fact")?;
+            let capacity = cohort["items"][source.to_string()]["capacity"].as_u64();
+            if let Some(capacity) = capacity {
+                assert!(section.materializable, "{key}");
+                assert_eq!(
+                    section.container_capacity,
+                    Some(u32::try_from(capacity)?),
+                    "{key}"
+                );
+            }
+            match native.reward_table().row(&key) {
+                Ok(row) => {
+                    assert_eq!(
+                        row.corpse_item
+                            .as_ref()
+                            .ok_or("physical corpse")?
+                            .production_key,
+                        item
+                    );
+                }
+                // A coupled loot table independently refuses unavailable yields
+                // after the body's own source fact has qualified.
+                Err(NoSettlementReason::LootItemInadmissible) if capacity.is_some() => {}
+                Err(error) => return Err(format!("{key}: {error:?}").into()),
+            }
+        }
+        let chains = cohort["chains"].as_object().ok_or("source chains")?;
+        assert_eq!(chains.len(), 252);
+        for stages in chains.values() {
+            for stage in stages.as_array().ok_or("source chain")? {
+                let id = stage[0].as_u64().ok_or("stage Item id")?;
+                let item = format!("oteryn:item.tibia.i{id}");
+                let record = native
+                    .item_policy(&item, "definition-r1")
+                    .ok_or_else(|| format!("{item} has no native decay stage policy"))?;
+                assert!(record.record().admission.materializable, "{item}");
+            }
+        }
+        Ok(())
+    }
+
     #[test]
     fn m25_complete_canonical_item_policies_qualify_before_boss_admission()
     -> Result<(), ContentError> {
