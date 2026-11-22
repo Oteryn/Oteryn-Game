@@ -143,10 +143,10 @@ impl Reentry {
         self.attempt_cancellation = Some(attempt_cancellation.clone());
         if let Some(config) = &mut config {
             // OAuth and Account Services use the same opener for this attempt.
-            // cancel_entry takes this gate before cancelling the attempt token.
+            // Cancellation fences any delivery already in progress before returning.
             let gate = Arc::clone(&self.browser_delivery);
             let cancel = attempt_cancellation.clone();
-            let browser = Arc::clone(&config.open_browser);
+            let browser = config.scoped_browser(cancel.clone());
             config.open_browser = Arc::new(move |url| {
                 let _delivery = gate.lock().unwrap_or_else(PoisonError::into_inner);
                 !cancel.is_cancelled() && browser(url)
@@ -274,7 +274,6 @@ impl Reentry {
             result
         };
         self.pending = None;
-        self.attempt_cancellation = None;
         self.progress = None;
         self.waiting = None;
         self.last_wait_text = None;
@@ -293,12 +292,20 @@ impl Reentry {
         {
             config.training_queue.clear();
         }
+        if result.is_err()
+            && let Some(cancel) = self.attempt_cancellation.take()
+        {
+            cancel.cancel();
+        }
         self.state.finish(result.is_ok());
         Some(result)
     }
 
     pub fn leave_play(&mut self) {
         if self.state == EntryState::Playing {
+            if let Some(cancel) = self.attempt_cancellation.take() {
+                cancel.cancel();
+            }
             self.state = EntryState::Offline;
             let confirmed = self
                 .training_completion
@@ -316,6 +323,9 @@ impl Reentry {
     }
 
     pub fn shutdown(self) {
+        if let Some(cancel) = self.attempt_cancellation {
+            cancel.cancel();
+        }
         self.client.shutdown();
     }
 }

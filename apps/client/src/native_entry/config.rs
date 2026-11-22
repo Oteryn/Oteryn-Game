@@ -117,7 +117,7 @@ impl NativeLoginConfig {
     }
 }
 
-/// Waits for the system URL delivery helper to finish.
+/// Observes early helper failures. Call from a worker thread.
 pub fn open_system_browser(url: &str) -> bool {
     deliver_system_url(url, None)
 }
@@ -130,27 +130,52 @@ fn deliver_system_url(url: &str, cancel: Option<&CancellationToken>) -> bool {
     } else {
         BrowserPlatform::Unix
     };
-    let Ok(mut child) = browser_command(platform, url)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-    else {
-        return false;
-    };
-    let deadline = std::time::Instant::now() + Duration::from_secs(3);
-    while std::time::Instant::now() < deadline
-        && !cancel.is_some_and(CancellationToken::is_cancelled)
-    {
-        match child.try_wait() {
-            Ok(Some(status)) => return status.success(),
-            Ok(None) => std::thread::sleep(Duration::from_millis(10)),
-            Err(_) => break,
-        }
-    }
-    let _ = child.kill();
-    let _ = child.wait();
-    false
+    let mut command = browser_command(platform, url);
+    let cancel = cancel.cloned();
+    let (result, delivery) = std::sync::mpsc::channel();
+    let worker = std::thread::Builder::new()
+        .name("browser-helper".into())
+        .spawn(move || {
+            if cancel.as_ref().is_some_and(CancellationToken::is_cancelled) {
+                return;
+            }
+            let Ok(mut child) = command
+                .stdin(std::process::Stdio::null())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn()
+            else {
+                return;
+            };
+            let deadline = std::time::Instant::now() + Duration::from_secs(3);
+            let mut pending = Some(result);
+            while !cancel.as_ref().is_some_and(CancellationToken::is_cancelled) {
+                match child.try_wait() {
+                    Ok(Some(status)) => {
+                        if let Some(result) = pending {
+                            let _ = result.send(status.success());
+                        }
+                        return;
+                    }
+                    Err(_) => break,
+                    Ok(None) => {
+                        if std::time::Instant::now() >= deadline
+                            && let Some(result) = pending.take()
+                        {
+                            let _ = result.send(true);
+                            if cancel.is_none() {
+                                let _ = child.wait();
+                                return;
+                            }
+                        }
+                        std::thread::sleep(Duration::from_millis(10));
+                    }
+                }
+            }
+            let _ = child.kill();
+            let _ = child.wait();
+        });
+    worker.is_ok() && delivery.recv().unwrap_or(false)
 }
 
 enum BrowserPlatform {
@@ -173,7 +198,7 @@ fn browser_command(platform: BrowserPlatform, url: &str) -> std::process::Comman
 }
 
 impl NativeLoginConfig {
-    pub(crate) fn checkout_browser(&self, cancel: CancellationToken) -> BrowserOpener {
+    pub(crate) fn scoped_browser(&self, cancel: CancellationToken) -> BrowserOpener {
         if Arc::ptr_eq(&self.open_browser, &SYSTEM_BROWSER) {
             Arc::new(move |url| deliver_system_url(url, Some(&cancel)))
         } else {
@@ -199,6 +224,51 @@ impl NativeLoginConfig {
 #[cfg(test)]
 mod browser_command_tests {
     use super::*;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn browser_helper_delivery_and_reaping() -> Result<(), Box<dyn std::error::Error>> {
+        use std::os::unix::fs::PermissionsExt;
+        const ROOT: &str = "OTERYN_BROWSER_DELIVERY_TEST";
+        let Some(root) = std::env::var_os(ROOT) else {
+            let dir = tempfile::tempdir()?;
+            let helper = dir.path().join("xdg-open");
+            std::fs::write(
+                &helper,
+                "#!/bin/sh\ncase $1 in fail) exit 1;; esac\necho $$ > \"$OTERYN_BROWSER_DELIVERY_TEST/pid\"\nexec sleep \"$1\"\n",
+            )?;
+            std::fs::set_permissions(helper, std::fs::Permissions::from_mode(0o755))?;
+            let name = std::thread::current().name().ok_or("test name")?.to_owned();
+            let status = std::process::Command::new(std::env::current_exe()?)
+                .args(["--exact", &name, "--nocapture"])
+                .env(ROOT, dir.path())
+                .env("PATH", format!("{}:/usr/bin:/bin", dir.path().display()))
+                .status()?;
+            assert!(status.success());
+            return Ok(());
+        };
+        assert!(!open_system_browser("fail"));
+        for delay in ["4", "60"] {
+            let cancel = CancellationToken::new();
+            assert!(if delay == "4" {
+                open_system_browser(delay)
+            } else {
+                deliver_system_url(delay, Some(&cancel))
+            });
+            let pid = std::fs::read_to_string(PathBuf::from(&root).join("pid"))?;
+            let process = PathBuf::from("/proc").join(pid.trim());
+            assert!(process.exists());
+            if delay == "60" {
+                cancel.cancel();
+            }
+            let deadline = std::time::Instant::now() + Duration::from_secs(5);
+            while process.exists() && std::time::Instant::now() < deadline {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            assert!(!process.exists());
+        }
+        Ok(())
+    }
 
     #[test]
     fn browser_commands_keep_the_url_in_one_argument_without_a_shell() {

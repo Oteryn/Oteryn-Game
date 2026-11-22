@@ -59,11 +59,11 @@ impl Reentry {
             return false;
         }
         if let Some(token) = &self.attempt_cancellation {
+            token.cancel();
             let _delivery = self
                 .browser_delivery
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            token.cancel();
         }
         if let Some(config) = &self.client.native_login {
             config.training_queue.clear();
@@ -106,6 +106,28 @@ impl Reentry {
             .native_login
             .as_ref()
             .is_some_and(|config| crate::web_links::open(config, link))
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn start_web_link(
+        &self,
+        link: crate::web_links::WebLink,
+    ) -> Option<std::sync::mpsc::Receiver<bool>> {
+        let config = self.client.native_login.as_ref()?;
+        let url = crate::web_links::url(
+            &config.platform_url,
+            link,
+            oteryn_client_ui::localization::current(),
+        )?;
+        let browser = config.scoped_browser(self.client.runtime.cancellation());
+        let (sender, result) = std::sync::mpsc::channel();
+        std::thread::Builder::new()
+            .name("login-web-link".into())
+            .spawn(move || {
+                let _ = sender.send(browser(&url));
+            })
+            .ok()?;
+        Some(result)
     }
 
     #[cfg(bevy_shell)]
@@ -346,4 +368,29 @@ fn wait_for_revocation(
         .await??;
         result.ok_or_else(|| "revocation result missing".into())
     })
+}
+
+#[cfg(all(test, bevy_shell))]
+#[test]
+fn login_web_link_returns_before_browser_delivery() -> Result<(), Box<dyn std::error::Error>> {
+    use std::time::Duration;
+    let folder = tempfile::tempdir()?;
+    let mut config = Reentry::device_test_config(folder.path().into(), "https://localhost:1")?;
+    let (release, wait) = mpsc::channel();
+    let wait = Mutex::new(wait);
+    config.open_browser = Arc::new(move |_| {
+        assert!(
+            wait.lock()
+                .is_ok_and(|rx| rx.recv_timeout(Duration::from_secs(5)).is_ok())
+        );
+        false
+    });
+    let entry = Reentry::new(ClientBootstrap::new()?.with_native_login(config));
+    let result = entry
+        .start_web_link(crate::web_links::WebLink::CookiePolicy)
+        .ok_or("start web link")?;
+    release.send(())?;
+    assert!(!result.recv_timeout(Duration::from_secs(5))?);
+    entry.shutdown();
+    Ok(())
 }
