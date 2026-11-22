@@ -458,6 +458,7 @@ def test_source_cohort_includes_installed_successors() -> None:
             patch.object(rc, "refresh_quest_callback_proof"), \
             patch.object(rc, "materialize_world"), \
             patch("questpc7_thaian_authoring.install", side_effect=installed.append), \
+            patch("buddel_travel.install_buddel"), \
             patch.object(rc, "canonicalize_world"), \
             patch.object(rc, "refresh_source_cohort_extent", side_effect=measure):
         try:
@@ -486,6 +487,20 @@ def test_normal_generation_orders_native_callback_producers() -> None:
     assert not nonunique, nonunique
     for producer, consumer in pairs:
         assert commands.index(tree) < commands.index(producer) < commands.index(consumer), (producer, consumer)
+
+
+def test_authored_quest_props_follow_final_quest_shards() -> None:
+    authoring = "tools/content-schema/quest-authoring/"
+    rewards = ("python3", authoring + "qengine_rewards.py")
+    lowering = ("python3", authoring + "quest_state_lowering.py")
+    commands = []
+    assert full_generation_trace(commands, lambda *_: None, checks=True) == 0
+    tree = next(i for i, command in enumerate(commands)
+                if command[:2] == ("python3", authoring + "quest_tree_authoring.py"))
+    final_rewards = max(i for i, command in enumerate(commands) if command == rewards)
+    assert tree < final_rewards < commands.index(lowering), (
+        "authored props must hash the final Quest shards before downstream consumers run"
+    )
 
 
 def full_generation_trace(events, inspect_command, *, prepare=None, checks=False) -> int:
@@ -1126,6 +1141,7 @@ def main() -> None:
         test_native_generation_refreshes_custody_census_before_first_pin,
         test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work,
         test_normal_generation_orders_native_callback_producers,
+        test_authored_quest_props_follow_final_quest_shards,
         test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them,
         test_world_canonicalizer_copies_only_a_complete_document_inventory,
         test_npc_service_counts_follow_final_producers_even_when_checks_are_skipped,

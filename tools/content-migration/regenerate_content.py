@@ -95,6 +95,14 @@ EXTRA_DERIVED = (
 # the hand-written fields of the interactions index. A conflict here needs a person.
 HAND_MAINTAINED_PREFIXES = ("imports/",)
 HAND_MAINTAINED = ("content/interactions/index.json",)
+# QENGINE emits these inputs after the Quest shards. The placement index also
+# contains authored map rows, so staging its generated changes does not make
+# the index eligible for automatic conflict resolution.
+AUTHORED_PROP_OUTPUTS = {
+    "content/world/placements/authored-questpc7-smith.json",
+    "content/world/placements/authored-questpc7.json",
+    "content/world/placements/index.json",
+}
 # World pins and their identity files (`<slug>.ruleset.json` is hand-written), rewritten by
 # `world-bundle-compiler pin-refresh` from the staged inputs; the manifest follows the pin.
 WORLD_PINS = "content/world/pins/"
@@ -864,6 +872,9 @@ def main() -> int:
     # branch-owned chest transitions in the resulting Claim bodies.
     run(["python3", "tools/content-schema/quest-authoring/quest_tree_authoring.py", "content",
          "--source-packet", "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"])
+    # The compiler validates the complete Quest shard bytes named by each prop.
+    # Refresh those documents, their placement index, and their callback witnesses together.
+    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_state_lowering.py"])
     run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py", "content"])
     # These standalone compilers consume the final Quest and placement inputs;
@@ -906,7 +917,7 @@ def main() -> int:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
                 run(command)
     if args.resolve:
-        derived = derived_paths() | {
+        derived = derived_paths() | AUTHORED_PROP_OUTPUTS | {
             PIN_PATH,
             "apps/game-server/tests/content_npc_catalogue.rs",
             "apps/game-server/tests/content_npc_service_model.rs",
