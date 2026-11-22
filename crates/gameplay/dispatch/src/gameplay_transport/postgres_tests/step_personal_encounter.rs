@@ -138,7 +138,7 @@ fn scenario() -> TestResult {
             );
             let mut runtime = ChannelRuntimeV1::from_committed_assignment(
                 deps.admitted.world_id, deps.admitted.channel_id, NodeId::decode(&id(1)).map_err(debug)?,
-                1, 1, 1, "runtime-scope-assignment:1", 8, pin,
+                1, 1, 1, "runtime-scope-assignment:1", 8, pin.clone(),
             ).map_err(debug)?;
             let mut admitted = deps.admitted;
             let session = admitted.game_session_id;
