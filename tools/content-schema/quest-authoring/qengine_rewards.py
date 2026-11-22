@@ -1109,6 +1109,9 @@ def build():
             }
         elif name in ('l6-citizen-rook-backpack', 'qb-citizen-backpack'):
             callback['account_reservation'] = {'action': 'finish', 'key': backpack}
+    numbered_keys = json.loads((ROOT / 'tools/content-schema/quest-authoring/cwdoor-npc-keys.json').read_bytes())
+    callbacks.extend(numbered_keys['callbacks'])
+    offers.extend(numbered_keys['offers'])
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)
@@ -1276,7 +1279,7 @@ def validate_callbacks(document):
             or {r['track'] for r in requires}&{s['track'] for s in storage}
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
-            or (not value_guard and not callback.get('repeatable',False) and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
+            or (counter is None and not value_guard and not callback.get('repeatable',False) and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or (callback.get('repeatable',False) and (
                 not ((callback.get('fee') and callback.get('give'))
                      or (bool(callback['take']) and (callback.get('give')

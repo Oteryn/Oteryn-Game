@@ -354,6 +354,19 @@ impl BundleFacts {
         manifest: &Manifest,
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<Self, FactsRefusal> {
+        let item = |key: &str| {
+            let mut definition = item(key)?;
+            if !definition.door
+                && let Some(solid) = palette_appearance(key)
+                    .and_then(super::door_registry::qualified_startup_door_solidity)
+            {
+                definition.door = true;
+                definition.solid = Some(solid);
+                definition.blocks_projectile = solid;
+                definition.pickupable = false;
+            }
+            Some(definition)
+        };
         let palette = manifest
             .palette
             .iter()
