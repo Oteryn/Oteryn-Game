@@ -627,7 +627,7 @@ pub fn table_activation_spawns_with_eligibility(
 ) -> Option<Vec<BundleSpawnFacts>> {
     use oteryn_world_bundle::spawn::Period;
     // Each creature's profile is resolved once, on its first active point.
-    let mut profiles: Vec<Option<(u64, bool)>> = vec![None; table.creatures.len()];
+    let mut profiles = vec![None; table.creatures.len()];
     let mut out = Vec::with_capacity(table.sources.len());
     for source in &table.sources {
         let z = i16::from(source.floor).checked_neg()?;

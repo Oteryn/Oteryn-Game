@@ -216,9 +216,7 @@ async fn drive_spawn_window(runtime: &tokio::sync::Mutex<ChannelRuntimeV1>, now:
 #[test]
 fn bundle_night_spawn_waits_for_night_and_honors_underground_override() {
     use crate::map::boot::table_activation_spawns_with_eligibility;
-    use oteryn_gameplay_content::content::project::{
-        ProjectV2SpawnEligibility, ProjectV2SpawnPeriod,
-    };
+    use oteryn_gameplay_content::content::{ProjectV2SpawnEligibility, ProjectV2SpawnPeriod};
     use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
 
     const DAY: u64 = 12 * 60;
