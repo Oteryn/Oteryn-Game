@@ -41,6 +41,7 @@ SCOPE = HERE / "npc_placement_scope.json"
 NPCS = ROOT / "content/npcs/definitions"
 FRAME = "global-target-2026-09-27"
 from chosen_placement_adjustments import choose_cell
+from mainland_contacts import CONTACTS, contacts as mainland_contacts
 SHARD_SIZE = 500
 SOURCES = {
     "canary": ("opentibiabr/canary", "47dfd51f45280a59a1d3e50ba7edd573d7234446", "oteryn:source.canary"),
@@ -396,16 +397,24 @@ def convert() -> dict[str, str]:
     assert all(h["reason"] in REASONS for h in held)
     held.sort(key=dump)
 
-    ordered = [records[k] for k in sorted(records)]
+    original = [records[k] for k in sorted(records)]
+    mainland = mainland_contacts(admitted, set(npcs), original, candidates, ROOT)
+    placed.update(record["declaration"]["npc"] for record in mainland)
+    ordered = original + mainland
     files, shards = {}, []
-    for start in range(0, len(ordered), SHARD_SIZE):
-        part = ordered[start : start + SHARD_SIZE]
+    # Keep the published, independently used starter/quest shards intact.
+    # Mainland contacts form their own sorted run after the original shards.
+    parts = [cohort[start : start + SHARD_SIZE]
+             for cohort in (original, mainland) for start in range(0, len(cohort), SHARD_SIZE)]
+    start = 0
+    for part in parts:
         name = f"placements-{start:05d}-{start + len(part) - 1:05d}.json"
         if start == 0:
             # Keep Main's published shard path as admitted placements grow.
             name = "placements-00000-00055.json"
         shards.append(f"content/world/npc-placements/{name}")
         files[name] = dump({"coordinate_frame": FRAME, "family": "Npc.Placement", "records": part})
+        start += len(part)
     held_text = dump({"coordinate_frame": FRAME, "family": "Npc.Placement", "held": held, "schema": "OTERYN_NPC_PLACEMENT_HELD/v1"})
     files["held.json"] = held_text
     files["index.json"] = dump(
@@ -423,6 +432,7 @@ def convert() -> dict[str, str]:
                 "scope_sha256": hashlib.sha256(SCOPE.read_bytes()).hexdigest(),
                 **({"wiki_br_facts_sha256": hashlib.sha256(wiki_br_facts).hexdigest()}
                    if wiki_br_facts else {}),
+                "mainland_contacts_sha256": hashlib.sha256(CONTACTS.read_bytes()).hexdigest(),
                 **({"native_contacts_sha256": hashlib.sha256(dump(native).encode()).hexdigest()}
                    if native else {}),
             },

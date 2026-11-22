@@ -26,7 +26,7 @@ def ground_item(root, palette_index):
     return palette_index in ground_item.cache
 
 
-def choose_cell(root, actual_source, choice, occupied):
+def choose_cell(root, actual_source, choice, occupied, *, compiler_qualified=False):
     fields = {'source', 'target', 'reason'}
     if set(choice) not in (fields, fields | {'blocked_source'}):
         raise ValueError('chosen placement requires source, target and reason')
@@ -65,7 +65,13 @@ def choose_cell(root, actual_source, choice, occupied):
         and not source_tile[3] and bool(source_tile[5])
         and ground_item(root, source_tile[5][0][0])
     )
-    if distance != 1:
+    if compiler_qualified:
+        # The mainland compiler regression checks these decorated contact tiles
+        # with the same resolver used by the published bundle.
+        tile = tiles.get(after[:2])
+        if not 1 <= distance <= MAX_NEAREST_CLEAR_DISTANCE or tile is None or tile[3] or not tile[5]:
+            raise ValueError('qualified contact target must be a nearby native tile outside houses')
+    elif distance != 1:
         # An absent or explicitly blocked source can use the uniquely nearest clear tile.
         source_present = before[:2] in tiles
         blocked_source = (choice.get("blocked_source") is True and source_present
@@ -78,7 +84,7 @@ def choose_cell(root, actual_source, choice, occupied):
                        if cell != (x, y)
                        and abs(cell[0]-before[0]) + abs(cell[1]-before[1]) <= distance)):
             raise ValueError('chosen placement must adjoin its exact retained source cell')
-    if not clear((x, y)) and not same_walkable_surface:
+    if not compiler_qualified and not clear((x, y)) and not same_walkable_surface:
         raise ValueError('chosen placement target is not clear native ground')
     return after, {'origin':'oteryn', 'basis':'CHOSEN_OTERYN_APPROXIMATION',
                    'source_cell':{'x':before[0],'y':before[1],'floor':before[2]},
