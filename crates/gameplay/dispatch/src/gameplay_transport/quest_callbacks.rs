@@ -5,6 +5,7 @@ use super::{
     connection::{UseCommand, UseOutcome},
 };
 mod admission;
+mod annihilator;
 mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
@@ -12,6 +13,7 @@ mod committed_copy;
 mod court_warlock;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
+mod demon_helmet_plates;
 mod dreamer_carrot;
 mod effects;
 mod encounter;
@@ -842,6 +844,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         optional_pvp,
                         None,
                         pending.selected_tool.as_ref(),
+                        None,
                     ))
                     .await
                 }
@@ -1183,6 +1186,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
+            let stations = if annihilator::owns(callback) {
+                if map.facts.object_revision(resolved.placement_key) != target.expected_revision {
+                    return UseDisposition::StaleState;
+                }
+                if annihilator::lever_spent(map, callback, &resolved) {
+                    return UseDisposition::NothingToUse;
+                }
+                match self.observe_annihilator_stations(callback, (actor, command.game_session_id)).await {
+                    Ok(stations) => Some(stations),
+                    Err(disposition) => return disposition,
+                }
+            } else {
+                None
+            };
             if !self.prepare_scene_items(&permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence).await {
                 return UseDisposition::Rejected;
             }
@@ -1233,6 +1250,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
                 read_only_gate.as_ref(),
                 selected_tool.as_ref(),
+                stations.as_ref(),
             ))
             .await;
             drop(states);
@@ -1283,8 +1301,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let entered = self
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;
-        self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)
-            .await
+        let entered = self
+            .step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)
+            .await;
+        self.step_demon_helmet_plates(actor, session, origin, entered)
+            .await;
+        entered
     }
 
     #[allow(
@@ -1524,6 +1546,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         observation.as_ref(),
                         optional_pvp,
                         read_only_gate.as_ref(),
+                        None,
                         None,
                     ))
                     .await

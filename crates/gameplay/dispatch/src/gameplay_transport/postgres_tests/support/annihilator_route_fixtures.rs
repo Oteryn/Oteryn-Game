@@ -52,9 +52,16 @@ pub(super) fn elvenbane_source_exploration() -> TestResult {
 }
 
 pub(super) fn run(route: Route) -> TestResult {
-    let combat = !matches!(route, Route::Entry | Route::ClaimedStation | Route::ArenaDeadline | Route::DemonHelmetPlates);
+    let combat = !matches!(
+        route,
+        Route::Entry | Route::ClaimedStation | Route::ArenaDeadline | Route::DemonHelmetPlates
+    );
     let start = if route == Route::DemonHelmetPlates {
-        Position { x: 33190, y: 31630, floor: -13 }
+        Position {
+            x: 33190,
+            y: 31630,
+            floor: -13,
+        }
     } else if matches!(
         route,
         Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
@@ -119,7 +126,12 @@ pub(super) fn run(route: Route) -> TestResult {
                 .await?;
         let mut currents = Vec::new();
         let mut operations = Vec::new();
-        for index in 0..if route == Route::DemonHelmetPlates { 3_u8 } else { 4_u8 } {
+        let member_count = match route {
+            Route::DemonHelmetPlates => 3_u8,
+            Route::ArenaDeadline => 5,
+            _ => 4,
+        };
+        for index in 0..member_count {
             let (current, operation) =
                 crate::world_party_runtime_postgres_cases::committed_fresh_player_with_operation(
                     &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
@@ -244,7 +256,11 @@ pub(super) fn run(route: Route) -> TestResult {
             let at = if route == Route::DemonHelmetPlates {
                 match index {
                     1 => Position { x: 33191, ..start },
-                    2 => Position { x: 33211, y: 31631, ..start },
+                    2 => Position {
+                        x: 33211,
+                        y: 31631,
+                        ..start
+                    },
                     _ => start,
                 }
             } else {
@@ -475,7 +491,8 @@ pub(super) fn run(route: Route) -> TestResult {
         };
         let map = index.map();
         if route == Route::DemonHelmetPlates {
-            let result = super::plate_predicates_fixtures::demon_helmet(&mut owner, &mut admitted, map).await;
+            let result =
+                super::plate_predicates_fixtures::demon_helmet(&mut owner, &mut admitted, map).await;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -536,7 +553,7 @@ pub(super) fn run(route: Route) -> TestResult {
         // Fresh admissions share the same source approach tile, as normal login
         // admissions share a configured start. Each walks through the real door
         // to a distinct staging tile; no runtime relocation supplies entry.
-        for (index, member) in admitted.iter_mut().enumerate() {
+        for (index, member) in admitted[..4].iter_mut().enumerate() {
             if route == Route::Complete {
                 super::annihilator_finish::outer_gate(&mut owner, member, map).await?;
             }
@@ -556,12 +573,21 @@ pub(super) fn run(route: Route) -> TestResult {
         }
         let lever = target(map, 33226, 31671)?;
         if route == Route::ClaimedStation {
-            let result = super::plate_predicates_fixtures::claimed_station(&mut owner, &mut admitted, &lever, &h.pool).await;
+            let result = super::plate_predicates_fixtures::claimed_station(
+                &mut owner, &mut admitted, &lever, &h.pool,
+            )
+            .await;
             drop(owner);
             drop(authority);
             drop(seal);
             h.cleanup().await?;
             return result;
+        }
+        if route == Route::ArenaDeadline {
+            owner.states.test_owner_time.store(
+                owner.owner_now().get() + 1,
+                std::sync::atomic::Ordering::Relaxed,
+            );
         }
         assert_eq!(
             use_target(&mut owner, &mut admitted[0], &lever).await?,

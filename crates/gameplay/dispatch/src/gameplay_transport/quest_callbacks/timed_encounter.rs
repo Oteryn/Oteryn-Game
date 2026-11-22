@@ -15,12 +15,49 @@ pub(super) struct TimedEncounter {
     map: [u8; 32],
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     participant: Option<(ExactActorRef, GameSessionId)>,
+    group: Option<Vec<(ExactActorRef, GameSessionId)>>,
     spawn_at: u64,
     reset_at: u64,
     attempted_spawn: bool,
     spawned: Vec<ExactActorRef>,
 }
 impl TimedEncounter {
+    pub(super) fn for_annihilator(
+        runtime: &ChannelRuntimeV1,
+        map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        revision: u64,
+        participants: &[(ExactActorRef, GameSessionId)],
+        now: u64,
+    ) -> Option<Self> {
+        let reset_at = now.checked_add(super::annihilator::TRANSFER_AFTER_US)?;
+        Some(Self {
+            callback: callback.clone(),
+            key,
+            revision: revision.checked_add(1)?,
+            content: runtime.content_pin().server_artifact_digest(),
+            map: map.overlay.base().digest(),
+            scope: runtime.encounter_owner_scope(),
+            participant: None,
+            group: Some(participants.to_vec()),
+            spawn_at: reset_at,
+            reset_at,
+            attempted_spawn: true,
+            spawned: Vec::new(),
+        })
+    }
+
+    pub(super) fn encounter(&self) -> Option<&world_callbacks::Encounter> {
+        self.callback.effects.encounter.as_ref()
+    }
+
+    pub(super) fn group_contains(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.group
+            .as_ref()
+            .is_some_and(|group| group.contains(&(actor, session)))
+    }
+
     pub(super) fn source_key(&self) -> u64 {
         self.key
     }
@@ -34,19 +71,21 @@ impl TimedEncounter {
         position: MovementLocalPosition,
         now: u64,
     ) -> bool {
-        now < self.reset_at
+        let participant = if self.group.is_some() {
+            self.group_contains(actor, session)
+        } else {
+            now < self.reset_at
+                && self
+                    .participant
+                    .is_none_or(|participant| participant == (actor, session))
+        };
+        participant
             && self.scope == runtime.encounter_owner_scope()
             && self.content == runtime.content_pin().server_artifact_digest()
             && self.map == map.overlay.base().digest()
             && self.revision == map.facts.object_revision(self.key)
             && self
-                .participant
-                .is_none_or(|participant| participant == (actor, session))
-            && self
-                .callback
-                .effects
-                .encounter
-                .as_ref()
+                .encounter()
                 .is_some_and(|room| super::encounter::room_contains(room, position))
     }
 
@@ -145,6 +184,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map: map.overlay.base().digest(),
             scope: runtime.encounter_owner_scope(),
             participant: personal.then_some((actor, session)),
+            group: None,
             spawn_at,
             reset_at,
             attempted_spawn: false,
@@ -170,6 +210,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        let mut states = self.states.spell_states.lock().await;
+        self.update_demon_helmet_walls(&mut runtime, &mut states, map, true);
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;
         };
@@ -187,6 +229,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             if now < memo.next_due_us() {
                 index += 1;
+                continue;
+            }
+            if memo.group.is_some() {
+                if self.transfer_annihilator_group(&mut runtime, &mut states, map, memo, now) {
+                    pending.remove(index);
+                } else {
+                    index += 1;
+                }
                 continue;
             }
             let Some(encounter) = &memo.callback.effects.encounter else {

@@ -6,7 +6,7 @@ use crate::map::{boot::BundleMap, view::MapFacts};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use oteryn_protocol_oteryn::world_spatial::StepDirection::{North, South};
-use std::time::Duration;
+use std::sync::atomic::Ordering;
 
 pub(super) async fn demon_helmet(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -33,6 +33,7 @@ pub(super) async fn demon_helmet(
     step(owner, &mut members[1], North).await?;
     assert_eq!(hidden(), [true; 3], "both exact plates occupied");
     step(owner, &mut members[2], North).await?;
+    assert_position(owner, &members[2], 33211, 31630).await?;
     step(owner, &mut members[0], South).await?;
     assert_eq!(hidden(), [false; 3], "a player left the first plate");
     assert_position(owner, &members[2], 33211, 31631).await?;
@@ -65,7 +66,7 @@ pub(super) async fn claimed_station(
          claim_revision_ref, claimed_transaction_id, claimed_at) \
          VALUES (encode($1,'hex')::uuid, 'RewardClaim', \
          'oteryn:reward-claim.quest.u7_24.the_annihilator.reward', 'reward-claim-r1', \
-         encode($2,'hex')::uuid, 1)",
+         encode($2,'hex')::uuid, floor(extract(epoch FROM clock_timestamp()))::bigint)",
     )
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(super::fixture::id(249).as_slice())
@@ -97,45 +98,49 @@ pub(super) async fn claimed_station(
 }
 
 pub(super) async fn arena_deadline(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
     members: &[AdmittedSession],
     map: &BundleMap,
 ) -> TestResult {
-    // Model one admitted member already past the door, without killing the native defenders.
+    let admitted_at = owner.owner_now().get();
+    // One member has passed the reward door and a different session now occupies
+    // their vacated cell. Neither should move when this run expires.
+    let closed = crate::map::floor::BundleDoors(&map.facts);
     {
-        let member = members[0];
-        let actor = member.runtime_actor.ok_or("actor")?;
         let mut runtime = owner.runtime.lock().await;
-        let closed = crate::map::floor::BundleDoors(&map.facts);
-        let proof = crate::map::floor::prepare_quest_encounter_ejection(
-            &runtime,
-            &owner.movement_cells,
-            actor,
-            member.game_session_id,
-            runtime.read_actor_position(actor).map_err(debug)?,
-            local(Position {
-                x: 33227,
-                y: 31657,
-                floor: -13,
-            }),
-            &closed,
-        )
-        .map_err(debug)?;
-        runtime.commit_source_step(proof).map_err(debug)?;
+        for (member, (x, y)) in [(&members[0], (33227, 31657)), (&members[4], (33222, 31659))] {
+            let actor = member.runtime_actor.ok_or("actor")?;
+            let proof = crate::map::floor::prepare_quest_encounter_ejection(
+                &runtime,
+                &owner.movement_cells,
+                actor,
+                member.game_session_id,
+                runtime.read_actor_position(actor).map_err(debug)?,
+                local(Position { x, y, floor: -13 }),
+                &closed,
+            )
+            .map_err(debug)?;
+            runtime.commit_source_step(proof).map_err(debug)?;
+        }
     }
-    owner.clock_origin = owner
-        .clock_origin
-        .checked_sub(Duration::from_secs(590))
-        .ok_or("clock")?;
+
+    owner
+        .states
+        .test_owner_time
+        .store(admitted_at + 600_000_000, Ordering::Relaxed);
     owner.drain_quest_encounter_deadlines().await;
-    assert_position(owner, &members[1], 33221, 31659).await?;
-    owner.clock_origin = owner
-        .clock_origin
-        .checked_sub(Duration::from_secs(11))
-        .ok_or("clock")?;
+    for (member, x) in members[1..4].iter().zip([33221, 33220, 33219]) {
+        assert_position(owner, member, x, 31659).await?;
+    }
+
+    owner
+        .states
+        .test_owner_time
+        .store(admitted_at + 600_000_001, Ordering::Relaxed);
     owner.drain_quest_encounter_deadlines().await;
     assert_position(owner, &members[0], 33227, 31657).await?;
-    for member in &members[1..] {
+    assert_position(owner, &members[4], 33222, 31659).await?;
+    for member in &members[1..4] {
         assert_position(owner, member, 33227, 31659).await?;
     }
     assert_eq!(
@@ -149,7 +154,7 @@ pub(super) async fn arena_deadline(
         6
     );
     owner.drain_quest_encounter_deadlines().await;
-    for member in &members[1..] {
+    for member in &members[1..4] {
         assert_position(owner, member, 33227, 31659).await?;
     }
     Ok(())

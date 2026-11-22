@@ -377,6 +377,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let group_transfer = if annihilator::owns(callback) {
+            let Some(run) = super::timed_encounter::TimedEncounter::for_annihilator(
+                runtime,
+                map,
+                callback,
+                key,
+                expected_revision,
+                &party,
+                self.owner_now().get(),
+            ) else {
+                return UseDisposition::Exhausted;
+            };
+            let Ok(mut timed) = self.states.quest_callbacks.timed.lock() else {
+                return UseDisposition::Rejected;
+            };
+            if timed.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
+                || timed.iter().any(|run| run.source_key() == key)
+                || timed.try_reserve(1).is_err()
+            {
+                return UseDisposition::Exhausted;
+            }
+            Some((run, timed))
+        } else {
+            None
+        };
         let mut visits = if encounter.phase.is_none() && !monsters.is_empty() {
             let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
                 return UseDisposition::Rejected;
@@ -422,6 +447,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return UseDisposition::Rejected;
         };
+        if let Some((run, mut timed)) = group_transfer {
+            timed.push(run);
+            states.owner_wake.notify_one();
+        }
         if let (Some(capture), Some(prepared), Some(roster)) = (capture.as_mut(), prepared, roster)
         {
             capture.publish_encounter(prepared, roster);
