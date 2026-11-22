@@ -500,6 +500,80 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/iron-helmet-porgol-account",
+      "quest": "oteryn:quest.iron_helmet_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32769,
+          "y": 32224,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3506
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/47/definition:sha256:aa7c8f0615324ce8dbbdbeba70f8452bd008b3ea67758ca859a3ee5627d43dbd",
+        "https://tibia.fandom.com/index.php?curid=23373",
+        "tools/content-schema/world-authoring/samples/quest-chest-bindings/classic-quests.json"
+      ],
+      "success_message": "Muriel, I suspect Porgol stole your books on necromancy. He has yet to discover the fountain of life or the caves of inferno. I will send Laira to town. If I am right about him, she is safer there. — Arcian"
+    },
+    {
+      "key": "oteryn:quest-callback/isle-of-the-mists-book",
+      "quest": "oteryn:quest.isle_of_the_mists_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32855,
+          "y": 32331,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2838
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/49/definition:sha256:aa7c8f0615324ce8dbbdbeba70f8452bd008b3ea67758ca859a3ee5627d43dbd",
+        "https://tibia.fandom.com/index.php?curid=29702",
+        "tools/content-schema/world-authoring/samples/quest-chest-bindings/classic-quests.json"
+      ],
+      "success_message": "Passage across the Plains of Havoc has become too dangerous. We are leaving the Isle of the Mists and giving up our meeting place for now. In safer times we may be able to return."
+    },
+    {
       "key": "oteryn:quest-callback/m01b/alawar-s-vault/s1/entry",
       "quest": "oteryn:quest.alawar_s_vault_quest",
       "trigger": "step_in",

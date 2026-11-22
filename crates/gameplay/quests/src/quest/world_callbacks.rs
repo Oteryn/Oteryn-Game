@@ -1718,6 +1718,47 @@ mod scene_tests;
 #[cfg(test)]
 mod tests {
     #[test]
+    fn classic_quest_readables_bind_world_use_at_the_written_items() -> Result<(), String> {
+        use super::{Position, Trigger, load};
+
+        let callbacks = load()?;
+        for (key, position, appearance, phrase) in [
+            (
+                "oteryn:quest-callback/iron-helmet-porgol-account",
+                Position {
+                    x: 32769,
+                    y: 32224,
+                    floor: -7,
+                },
+                3506,
+                "Porgol stole your books on necromancy",
+            ),
+            (
+                "oteryn:quest-callback/isle-of-the-mists-book",
+                Position {
+                    x: 32855,
+                    y: 32331,
+                    floor: -7,
+                },
+                2838,
+                "leaving the Isle of the Mists",
+            ),
+        ] {
+            let row = callbacks.iter().find(|row| row.key == key).ok_or(key)?;
+            assert_eq!(row.trigger, Trigger::Use);
+            assert_eq!(row.selector.position, Some(position));
+            assert_eq!(row.selector.appearance, Some(appearance));
+            assert!(!row.requires_durable_commit());
+            assert!(
+                row.success_message
+                    .as_deref()
+                    .is_some_and(|text| text.contains(phrase))
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn mastermind_source_caches_load_with_exact_container_allocations() -> Result<(), String> {
         let callbacks = super::load()?;
         for (suffix, position, appearance, ordinal, contents) in [

@@ -80,6 +80,7 @@ fn scenario(case: Case) -> TestResult {
 pub(super) struct CatalogueBatch<'a> {
     pub(super) template: &'a super::fixture::MigratedDatabaseTemplate,
     pub(super) quests: Arc<QuestStateCatalogue>,
+    pub(super) use_classic_regions: bool,
 }
 
 pub(super) fn embedded_catalogue() -> TestResult<Arc<QuestStateCatalogue>> {
@@ -101,6 +102,31 @@ pub(super) fn catalogue_scenario_in_batch(
     batch: &CatalogueBatch,
 ) -> TestResult {
     scenario_case(Case::Catalogue, Some(chest), Some(activation), Some(batch))
+}
+
+type NativeRegion = (&'static [u8], (u8, u16, u16));
+
+fn restored_classic_region(unique: u16) -> Option<NativeRegion> {
+    macro_rules! region {
+        ($z:literal, $x:literal, $y:literal, $name:literal) => {
+            Some((include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/", $name)), ($z, $x, $y)))
+        };
+    }
+    match unique {
+        6168 => region!(7, 128, 125, "region-z07-x128-y125.b3"),
+        6219 => region!(9, 125, 121, "region-z09-x125-y121.b3"),
+        5014 => region!(9, 125, 125, "region-z09-x125-y125.b3"),
+        6146..=6148 => region!(9, 127, 124, "region-z09-x127-y124.b3"),
+        6183 => region!(10, 129, 126, "region-z10-x129-y126.b3"),
+        6162 | 6163 => region!(11, 125, 125, "region-z11-x125-y125.b3"),
+        6192 => region!(11, 128, 127, "region-z11-x128-y127.b3"),
+        5026 | 6120 | 6121 => region!(12, 125, 125, "region-z12-x125-y125.b3"),
+        6080..=6082 => region!(14, 127, 125, "region-z14-x127-y125.b3"),
+        5009 => region!(15, 126, 125, "region-z15-x126-y125.b3"),
+        5016 => region!(15, 127, 125, "region-z15-x127-y125.b3"),
+        _ => None,
+    }
 }
 
 fn scenario_case(
@@ -295,8 +321,35 @@ fn scenario_case(
         let pinned_completion_chest = catalogue.is_some_and(|chest| {
             super::qc_pinned_world::COMPLETION_CHEST_UIDS.contains(&chest.unique)
         });
+        let classic_region = batch
+            .filter(|batch| batch.use_classic_regions)
+            .and(catalogue)
+            .and_then(|case| restored_classic_region(case.unique));
+        let start = if classic_region.is_some() {
+            match unique {
+                5009 | 5014 | 6146..=6148 | 6080..=6082 | 6219 => (chest.0, chest.1 + 1),
+                5026 | 6120 | 6121 => (chest.0, chest.1 - 1),
+                6183 => (chest.0 + 1, chest.1 - 1),
+                6192 => (chest.0, chest.1),
+                _ => (chest.0 - 1, chest.1),
+            }
+        } else {
+            (chest.0 - u16::from(!matches!(case, Case::ChoiceDoor)), chest.1)
+        };
         let world = if pinned_completion_chest {
             super::qc_pinned_world::world(native)?
+        } else if let Some((bytes, region)) = classic_region {
+            use super::l6_world_pickups_fixtures::{NativeCrop, native_crop};
+            native_crop(native, NativeCrop {
+                bytes,
+                region,
+                bounds: (
+                    chest.0.min(start.0), chest.1.min(start.1),
+                    chest.0.max(start.0) + 1, chest.1.max(start.1) + 1,
+                ),
+                start,
+                expected: Vec::new(),
+            })?
         } else if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
             super::quest_callbacks_fixtures::source_world_choices_with_door(
                 chest,
@@ -432,7 +485,7 @@ fn scenario_case(
                 deps.room.movement_cells()
             })
             .map_err(debug)?;
-        let frame_binding = if pinned_completion_chest {
+        let frame_binding = if pinned_completion_chest || classic_region.is_some() {
             world.frame_binding_digest(deps.admitted.world_id)
         } else {
             activated_pin.frame_binding().digest()
@@ -445,8 +498,8 @@ fn scenario_case(
             frame_binding,
             world.map_revision_digest(),
             (
-                i32::from(chest.0) - 1,
-                i32::from(chest.1),
+                i32::from(if classic_region.is_some() { start.0 } else { chest.0 - 1 }),
+                i32::from(start.1),
                 -i16::from(chest.2),
             ),
         );
@@ -470,8 +523,8 @@ fn scenario_case(
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: i32::from(chest.0) - i32::from(!matches!(case, Case::ChoiceDoor)),
-                    y: i32::from(chest.1),
+                    x: i32::from(start.0),
+                    y: i32::from(start.1),
                     floor: -i16::from(chest.2),
                 },
             )
@@ -517,7 +570,7 @@ fn scenario_case(
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
         let target_at = |x| -> TestResult<WorldObjectTarget> {
-            let ordinal = if pinned_completion_chest {
+            let ordinal = if pinned_completion_chest || classic_region.is_some() {
                 let source = catalogue.ok_or("completion chest")?;
                 let tile = world
                     .base()

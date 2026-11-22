@@ -202,7 +202,14 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
             uids = sorted({(w['source'], w['uid']) for entry in witnesses for w in entry['sources']})
             if not uids:
                 raise ValueError('canonical variant placement has no exact source UID binding')
-            p = {'appearance_tibia_id': int(placement['appearance']['key'].split(':item/', 1)[1]),
+            appearance = int(placement['appearance']['key'].split(':item/', 1)[1])
+            if (source['identity']['key'] == 'canary:reward-claim/quest/key/id3667'
+                    and placement['position'] == {'x': 32576, 'y': 32216, 'z': 15}):
+                # Crystal 201189f chest.lua:492-498 and the retained tile use corpse 4240.
+                if appearance != 3204:
+                    raise ValueError('KEY_3667_SOURCE_APPEARANCE_DRIFT')
+                appearance = 4240
+            p = {'appearance_tibia_id': appearance,
                 'source_binding': {'project_position': copy.deepcopy(placement['position']),
                     'legacy_unique_ids': [{'server': server, 'unique_id': uid} for server, uid in uids]},
                 'reward': reward}

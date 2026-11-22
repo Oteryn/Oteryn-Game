@@ -1,5 +1,6 @@
 """Exact pinned source bindings for the QENGINE-1 shared access operations."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -66,6 +67,23 @@ def document():
                                        for x,y in [(33219,31657),(33221,31657),(33223,31659),
                                                    (33224,31659),(33220,31661),(33222,31661)]],
                              room_min=position(33217,31655,13), room_max=position(33225,31663,13))))
+    classic = ROOT / 'tools/content-schema/world-authoring/samples/quest-chest-bindings/classic-quests.json'
+    quest_shard = 'content/quests/definitions/quests-00000-00099.json'
+    quest_bytes = (ROOT / quest_shard).read_bytes()
+    quest_digest = hashlib.sha256(quest_bytes).hexdigest()
+    quest_indices = {row['definition']['identity']['key']: index
+                     for index, row in enumerate(json.loads(quest_bytes)['records'])}
+    for prop in json.loads(classic.read_bytes())['wiki_items']:
+        if 'read_callback' not in prop:
+            continue
+        item, = prop['items']
+        row = callback(prop['read_callback'], prop['quest'], 'use', '',
+                       at=position(*prop['position']), appearance=item['appearance'])
+        index = quest_indices[row['quest']]
+        row['sources'] = [f'canonical:{quest_shard}:1#/records/{index}/definition:sha256:{quest_digest}',
+                          prop['source'], classic.relative_to(ROOT).as_posix()]
+        row['success_message'] = item['attrs']['text']
+        rows.append(row)
     import questpc2_access
     questpc2_access.extend(rows, callback, position)
     for row in rows:

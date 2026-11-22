@@ -1,4 +1,4 @@
-"""Lower the pinned source room's finite edits into the shared scene projection."""
+"""Lower pinned source rooms' finite edits into the shared scene projection."""
 import json
 from pathlib import Path
 import sys
@@ -7,8 +7,32 @@ ROOT = Path(__file__).resolve().parents[3]
 SOURCE = "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua:1-23"
 
 
-def position(x, y):
-    return {"x": x, "y": y, "floor": -14}
+def position(x, y, floor=-14):
+    return {"x": x, "y": y, "floor": floor}
+
+
+def katana():
+    door = position(32177, 32148, -11)
+    landing = position(32178, 32148, -11)
+    return {
+        "key": "oteryn:quest-callback/katana-hidden-lever",
+        "quest": "oteryn:quest.katana_quest",
+        "trigger": "use",
+        "selector": {"position": position(32182, 32145, -11), "unique": 30029,
+                     "action": None, "appearance": 2772},
+        "lever": [2772, 2773], "reversible": True, "passages": [],
+        "teleport": None, "storage": [], "offerings": [],
+        "return_on_failure": False, "failure_message": None,
+        "effects": {"scene": {
+            "open": [{"position": door, "remove": 5107, "create": 5108, "passable": True}],
+            "close": [{"position": door, "remove": 5108, "create": 5107, "passable": False}],
+            "evacuate_close": [{"players_to": landing, "creatures_to": landing,
+                                "all": True, "from": door}],
+            "relocate_items_close": True,
+        }},
+        "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:"
+                    "data-global/scripts/actions/rookgaard/katana_quest/katana_quest_lever.lua:6-28"],
+    }
 
 
 def generate():
@@ -16,7 +40,7 @@ def generate():
              for y in (32105, 32106)]
     edits += [{"position": position(x, 32104), "remove": 1271, "create": None, "passable": None}
               for x in range(32593, 32602)]
-    return {"schema": 1, "callbacks": [{
+    return {"schema": 1, "callbacks": [katana(), {
         "key": "oteryn:quest-callback/mintwallin-cyclops-scene",
         "quest": "oteryn:quest.mintwallin_cyclops_quest",
         "trigger": "use",

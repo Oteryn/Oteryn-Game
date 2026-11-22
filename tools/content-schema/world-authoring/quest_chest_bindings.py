@@ -8,6 +8,7 @@ Run --apply [--check]; convert_world_base also applies the same overlay.
 import argparse
 import hashlib
 import json
+from collections import Counter
 from pathlib import Path
 
 import world_region_codec as codec
@@ -27,6 +28,22 @@ STARTUP_PINS = {
     CURRENT_REVISION: "897c4ea5572c6adef1d2b300fd75c141910d608a093ca15c3d3bf65fcf56826c"
 }
 LEVEL_SHA256 = "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc"
+KEY_SHA256 = "e5368703030072fcb400980274408ee2cbcfa51a6bf7d435da3dc2c9fcd2438b"
+NUMBERED_DOORS = {
+    (32179, 32149, 10): (5106, 4603),
+    (32393, 32136, 14): (6251, 3620),
+    (32395, 32117, 15): (5097, 3620),
+    (32397, 32114, 15): (5097, 3620),
+    (32400, 32117, 15): (5097, 3620),
+    (32578, 32197, 15): (1631, 3666),
+    (32592, 32102, 14): (5106, 3667),
+}
+KATANA_PROPS = {
+    (32177, 32148, 11): (5107, 22006),
+    (32182, 32145, 11): (2772, 30029),
+}
+MEDUSA_CLAIM = "oteryn:reward-claim.quest.u7_3.the_medusa_quest"
+MEDUSA_GATES = [((33032, 32398, 11), 9565, 1060), ((33037, 32398, 11), 9565, 1060)]
 ITEM_SHA256 = "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
 ITEM_ACCESS = {
     "oteryn:reward-claim.kv.naginata": ((32356, 32074, 10), 1791, 40031),
@@ -87,8 +104,10 @@ def captured_level_access(raw, selected, root=ROOT):
         "LevelDoorAction"
     ]["fields"]
     doors = {}
-    for key in sorted(set(selected) & LEVEL_ACCESS.keys()):
-        position, appearance, action = LEVEL_ACCESS[key]
+    gates = [(key, *LEVEL_ACCESS[key]) for key in set(selected) & LEVEL_ACCESS.keys()]
+    if MEDUSA_CLAIM in selected:
+        gates.extend((MEDUSA_CLAIM, *gate) for gate in MEDUSA_GATES)
+    for key, position, appearance, action in sorted(gates):
         field = next(f for f in fields if f["key"] == action)
         value = lua_tables.as_python(field["value"])
         groups = value if isinstance(value, list) else [value]
@@ -133,7 +152,13 @@ def supported_claim(definition):
     native = definition.get("native_contents", {})
     return (
         definition["readiness"] == "ready"
-        or panpipe_key_claim(definition)
+        or numbered_key_claim(definition)
+        or (
+            definition["identity"]["key"] == MEDUSA_CLAIM
+            and native.get("source_difference") == "CRYSTAL_MEDUSA_WITHOUT_CANARY_TEXT"
+            and native.get("revision") == REVISION
+            and [p.get("unique_id") for p in native.get("placements", [])] == [6183]
+        )
         or (
             definition.get("definition_profile") == "authored_variant_v1"
             and definition.get("readiness") == "waiting_implementation"
@@ -152,11 +177,12 @@ def supported_claim(definition):
     )
 
 
-def panpipe_key_claim(definition):
+def numbered_key_claim(definition):
     """Select the existing key-only lowering, with its exact source key number."""
     variant = definition.get("source_variant", {})
+    key = definition["identity"]["key"].removeprefix("oteryn:reward-claim.quest.key.id")
     return (
-        definition["identity"]["key"] == "oteryn:reward-claim.quest.key.id4055"
+        key in {"3620", "3667", "4055", "4603"}
         and definition.get("definition_profile") == "authored_variant_v1"
         and definition.get("readiness") == "waiting_implementation"
         and definition.get("native_admission") == "WAITING_IMPLEMENTATION"
@@ -182,7 +208,7 @@ def panpipe_key_claim(definition):
                     "count": 1,
                 }
             ],
-            "key_binding": "canary:door-key/4055",
+            "key_binding": f"canary:door-key/{key}",
         }
     )
 
@@ -260,6 +286,9 @@ def capture(source_root, selected, root=ROOT):
                 ),
                 items,
             )
+            leaf = container_native.FULL_CHARGE_LEAVES.get(definition.get("provenance", {}).get("pilot_key"))
+            if leaf and leaf[0] == unique and source_reward == [[leaf[1], leaf[2]]]:
+                source_reward = [[leaf[1], 1]]
             if (
                 setting["itemPos"] != position
                 or setting["itemId"] != placement["appearance_tibia_id"]
@@ -267,9 +296,9 @@ def capture(source_root, selected, root=ROOT):
                 or setting.get("container") != container_id
             ):
                 raise ValueError("QUEST_CHEST_SOURCE_SELECTOR_OR_REWARD_DRIFT")
-            if panpipe_key_claim(definition) and (
+            if numbered_key_claim(definition) and (
                 setting.get("isKey") is not True
-                or setting.get("storage") != {"expr": "Storage.Quest.Key.ID4055"}
+                or setting.get("storage") != {"expr": "Storage.Quest.Key.ID" + placement["reward"]["key_binding"].rsplit("/", 1)[1]}
             ):
                 raise ValueError("QUEST_CHEST_SOURCE_KEY_DRIFT")
             rows.append(
@@ -334,7 +363,7 @@ def capture(source_root, selected, root=ROOT):
 
 def selections(root=ROOT):
     claims = claim_definitions(root)
-    bindings, doors, sources = {}, {}, []
+    bindings, doors, pickups, sources = {}, {}, {}, []
     for path in sorted((root / CAPTURES).glob("*.json")):
         raw = path.read_bytes()
         document = json.loads(raw)
@@ -363,6 +392,11 @@ def selections(root=ROOT):
             if len(matches) != 1 or position in bindings:
                 raise ValueError("QUEST_CHEST_CANONICAL_SELECTOR_DRIFT")
             bindings[position] = row
+        for row in document.get("wiki_items", []):
+            position = tuple(row["position"])
+            if position in pickups or not row["source"].startswith("https://tibia.fandom.com/"):
+                raise ValueError("QUEST_WIKI_ITEM_SOURCE")
+            pickups[position] = row
         captured_claims = {r["claim"] for r in document["bindings"]}
         for row in document.get("level_access", []):
             position = tuple(row["position"])
@@ -370,8 +404,8 @@ def selections(root=ROOT):
                 not row["claims"]
                 or not set(row["claims"]) <= captured_claims
                 or any(
-                    LEVEL_ACCESS.get(key)
-                    != (position, row["appearance"], row["action"])
+                    (position, row["appearance"], row["action"])
+                    not in (MEDUSA_GATES if key == MEDUSA_CLAIM else [LEVEL_ACCESS.get(key)])
                     for key in row["claims"]
                 )
             ):
@@ -382,6 +416,26 @@ def selections(root=ROOT):
             ) != (row["action"], row["appearance"]):
                 raise ValueError("QUEST_CHEST_LEVEL_ACCESS_CONFLICT")
             doors[position] = row
+        if MEDUSA_CLAIM in captured_claims and any(p not in doors for p, _, _ in MEDUSA_GATES):
+            raise ValueError("MEDUSA_LEVEL_ACCESS_MISSING")
+        if "numbered_doors" in document:
+            if document.get("key_source_sha256") != KEY_SHA256:
+                raise ValueError("QUEST_CHEST_KEY_SOURCE_PIN")
+            for row in document["numbered_doors"]:
+                position = tuple(row["position"])
+                if position in doors or NUMBERED_DOORS.get(position) != (row["appearance"], row["action"]):
+                    raise ValueError("QUEST_CHEST_KEY_ACCESS_DRIFT")
+                doors[position] = row
+            if not NUMBERED_DOORS.keys() <= doors.keys():
+                raise ValueError("QUEST_CHEST_KEY_ACCESS_MISSING")
+        if "katana_props" in document:
+            props = {
+                tuple(row["position"]): (row["appearance"], row["unique"])
+                for row in document["katana_props"]
+            }
+            if props != KATANA_PROPS or props.keys() & bindings.keys():
+                raise ValueError("KATANA_SCENE_SELECTOR_DRIFT")
+            bindings.update((tuple(row["position"]), row) for row in document["katana_props"])
         for key in captured_claims & LEVEL_ACCESS.keys():
             if LEVEL_ACCESS[key][0] not in doors:
                 raise ValueError("QUEST_CHEST_LEVEL_ACCESS_MISSING")
@@ -403,7 +457,7 @@ def selections(root=ROOT):
             if ITEM_ACCESS[key][0] not in doors:
                 raise ValueError("QUEST_CHEST_ITEM_ACCESS_MISSING")
     if any(
-        row["claim"] == "oteryn:reward-claim.kv.panpipe" for row in bindings.values()
+        row.get("claim") == "oteryn:reward-claim.kv.panpipe" for row in bindings.values()
     ):
         # Already captured from both donors: door_key.lua lines137/158. The
         # numeric storage is4055 despite the donors' stale "key3791" label.
@@ -436,10 +490,10 @@ def selections(root=ROOT):
             "claims": ["oteryn:reward-claim.kv.panpipe"],
         }
         sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
-    return {"unique": bindings, "action": doors}, sources
+    return {"unique": bindings, "action": doors, "wiki_items": pickups}, sources
 
 
-def overlay_region(raw, palette, bindings, attribute="unique"):
+def overlay_region(raw, palette, bindings, attribute="unique", wiki_attributes=None):
     """Only a single top-level source appearance may receive its captured attribute."""
     z, rx, ry, table = codec.parse_region(raw)
     selected = {
@@ -461,6 +515,24 @@ def overlay_region(raw, palette, bindings, attribute="unique"):
             position = (x, y, z)
             row = selected.get(position)
             if row is None:
+                continue
+            if attribute == "wiki_items":
+                if house or not items or palette[items[0][0]]["source_item_id"] != row["ground"]:
+                    raise ValueError(f"QUEST_WIKI_ITEM_GROUND_DRIFT: {position}")
+                for item in row["items"]:
+                    index = next(i for i, entry in enumerate(palette)
+                                 if entry["source_item_id"] == item["appearance"]
+                                 and not entry.get("retired"))
+                    entry = (index, 0, item.get("attrs"))
+                    existing = [value for value in items if value[0] == index]
+                    if existing and existing != [entry]:
+                        raise ValueError(f"QUEST_WIKI_ITEM_CONFLICT: {position}")
+                    if not existing:
+                        items.append(entry)
+                        wiki_attributes.update((entry[2] or {}).keys())
+                        added += 1
+                        changed = True
+                found.add(position)
                 continue
             slots = [
                 slot
@@ -516,11 +588,29 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
     paths &= regions.keys()
     if not paths:
         return 0
+    palette = index["palette"]
+    mapped = {row["source_item_id"]: row for row in palette}
+    wiki_items = [
+        row for (x, y, z), row in selections_by_attribute.get("wiki_items", {}).items()
+        if f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}" in paths
+    ]
+    wiki_attributes = Counter()
+    for appearance in sorted({i["appearance"] for row in wiki_items for i in row["items"]}):
+        key = f"oteryn:item.tibia.i{appearance}"
+        if appearance in mapped:
+            row = mapped[appearance]
+            if row["key"] != key or row.get("provisional"):
+                raise ValueError(f"QUEST_WIKI_ITEM_NOT_ADMITTED: {appearance}")
+            row.pop("retired", None)
+        else:
+            palette.append({"key": key, "provisional": False, "source_item_id": appearance})
     for path in sorted(paths):
         previous = outputs[path]
         raw = previous
         for attribute, rows in selections_by_attribute.items():
-            raw, count, delta = overlay_region(raw, index["palette"], rows, attribute)
+            raw, count, delta = overlay_region(raw, palette, rows, attribute, wiki_attributes)
+            if attribute == "wiki_items" and delta:
+                regions[path]["items"] += delta
             imported += count
             added[attribute] += delta
         byte_delta += len(raw) - len(previous)
@@ -529,8 +619,15 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
     if require_all and imported != len(bindings):
         raise ValueError("QUEST_CHEST_INCOMPLETE_OVERLAY")
     index["source"]["quest_chests"] = {"captures": sources, "imported": imported}
+    extra_items = added.pop("wiki_items", 0)
+    if extra_items:
+        index["totals"]["items"] += extra_items
     outputs[INDEX] = canonical(index)
     summary = json.loads(outputs[SUMMARY])
+    if extra_items:
+        summary["totals"]["items"] += extra_items
+    for attribute, count in wiki_attributes.items():
+        added[attribute] = added.get(attribute, 0) + count
     summary["source"] = index["source"]
     for attribute, count in added.items():
         if count:
