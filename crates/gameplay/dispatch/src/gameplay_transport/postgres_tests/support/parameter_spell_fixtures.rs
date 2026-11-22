@@ -1,7 +1,7 @@
 #![allow(clippy::expect_used)]
 
-use tokio::io::AsyncWriteExt;
 use super::appearance_change_postgres_fixtures::observer_visibility_tests as observer;
+use tokio::io::AsyncWriteExt;
 
 use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
 
@@ -64,10 +64,12 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         false,
     )
     .await?;
-    eprintln!("PARAM-CAST-WIRE-1 PostgreSQL harness created, case={case}, world_type={world_type:?}");
+    eprintln!(
+        "PARAM-CAST-WIRE-1 PostgreSQL harness created, case={case}, world_type={world_type:?}"
+    );
     prepare_current_session(&h).await?;
     h.seed_pvp_target().await?;
-    if !matches!(case, 1 | 5 | 6) {
+    if !matches!(case, 1 | 5..=8) {
         observer::admit(&h).await?;
     }
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -105,11 +107,17 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         cp,
         room.clone(),
         native.spell_book().clone(),
-        if matches!(case, 5 | 6) { 4 } else { 2 },
+        if matches!(case, 5..=7) { 4 } else { 2 },
     )?;
     deps.combat_room = Some(room);
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
+    if case >= 7 {
+        owner
+            .states
+            .test_owner_time
+            .store(20_000_001, std::sync::atomic::Ordering::Relaxed);
+    }
     let mut admitted = deps.admitted;
     let actor = deps.actor;
     let session = admitted.game_session_id;
@@ -140,7 +148,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             current_fence(&owner, session).await?,
             ExperienceAwardRequest {
                 occurrence: ExperienceRewardOccurrence::from_bytes(id(91)).map_err(debug)?,
-                amount: oteryn_simulation_determinism::ExactI64::new(98_800),
+                amount: oteryn_simulation_determinism::ExactI64::new(if case >= 7 {
+                    204_800
+                } else {
+                    98_800
+                }),
                 context: progression.context.clone(),
                 policy_revision: progression.policy_revision.clone(),
                 reward_revision: progression.reward_revision.clone(),
@@ -203,6 +215,36 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                 .actor;
             augment_target = Some((target, position));
         }
+        if case == 7 {
+            let p = runtime
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position();
+            runtime
+                .install_companion_policies(native.policies().clone())
+                .map_err(debug)?;
+            let species = "oteryn:creature.demon";
+            let policy = runtime.companion_policy(species).map_err(debug)?;
+            let health = u64::try_from(policy.maximum_health)?;
+            assert!(policy.forge_difficulty.is_some());
+            runtime
+                .realize_activation_spawns(vec![(
+                    vec![(p.x + 1, p.y, p.floor)],
+                    60_000,
+                    5_000,
+                    species.into(),
+                    health,
+                )])
+                .map_err(debug)?;
+            runtime
+                .drive_spawn_respawns(owner.owner_now().get(), |_, _| false)
+                .map_err(debug)?;
+            assert!(runtime.visible_entities().creatures.iter().any(|c| {
+                runtime.companion_snapshot(c.actor).is_ok_and(|s| {
+                    s.forge == Some(crate::domain::forge_creature::ForgeCreature::Fiendish)
+                })
+            }));
+        }
         let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
@@ -211,7 +253,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                     actor,
                     session,
                     crate::spell::cast::CharacterCastFacts {
-                        level: 20,
+                        level: if case >= 7 { 25 } else { 20 },
                         ..crate::gameplay_transport::actor_spell::tests::FACTS
                     },
                     (0, 0),
@@ -227,7 +269,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .map_err(debug)?;
     }
     let target_session = GameSessionId::decode(&id(110)).map_err(debug)?;
-    let target_actor = if !matches!(case, 1 | 5 | 6) {
+    let target_actor = if !matches!(case, 1 | 5..=8) {
         Some(observer::initialize(&deps, &owner).await?)
     } else {
         None
@@ -251,7 +293,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
     for current_session in [
         Some(session),
-        (!matches!(case, 1 | 5 | 6)).then_some(target_session),
+        (!matches!(case, 1 | 5..=8)).then_some(target_session),
     ]
     .into_iter()
     .flatten()
@@ -309,7 +351,9 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         .ok_or("before vitals")?
         .1
         .mana;
-    let words = if matches!(case, 5 | 6) {
+    let words = if case >= 7 {
+        "exiva moe res"
+    } else if matches!(case, 5 | 6) {
         "exori vis"
     } else if matches!(case, 2 | 4) {
         "exura"
@@ -376,7 +420,10 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         let hp = runtime
             .creature_combat_facts(target, owner.owner_now().get() / 1000)
             .map_err(debug)?;
-        assert!(hp.health > 0, "equipment projection fixture must be nonlethal");
+        assert!(
+            hp.health > 0,
+            "equipment projection fixture must be nonlethal"
+        );
         let real = hp.maximum_health - hp.health;
         assert!(real > 0);
         assert_eq!(
@@ -410,7 +457,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     let result = chat::decode_chat_intent_result(&results[0].1).map_err(debug)?;
     assert_eq!(
         result.disposition,
-        if case == 1 || case == 3 {
+        if matches!(case, 1 | 3 | 8) {
             chat::ChatDisposition::Rejected
         } else {
             chat::ChatDisposition::Ok
@@ -423,9 +470,16 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         .ok_or("after vitals")?
         .1
         .mana;
-    assert_eq!(before - after, if case == 1 || case == 3 { 0 } else { 20 });
+    assert_eq!(
+        before - after,
+        if matches!(case, 1 | 3 | 8) { 0 } else { 20 }
+    );
     if !matches!(case, 2 | 4) {
-        let expected = if case == 1 {
+        let expected = if case == 7 {
+            "The monster is standing next to you. Be prepared to find a creature of difficulty level \"Unknown\"."
+        } else if case == 8 {
+            "No creatures around"
+        } else if case == 1 {
             "A player with this name is not online."
         } else if case == 3 {
             "The character you are trying to find with Exiva is currently protected from your spell."
@@ -434,6 +488,9 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         };
         assert!(feedback.iter().any(|line| matches!(line, chat::ChatLine::Private { speaker_name, text } if speaker_name == "Game" && text == expected)), "{feedback:?}");
         assert!(owner.states.chat.drain(target_session).is_empty());
+    }
+    if case >= 7 {
+        return Ok(());
     }
     if case == 4 {
         let (_, vitals) = owner.observe_vitals(actor, session).await.ok_or("healed")?;

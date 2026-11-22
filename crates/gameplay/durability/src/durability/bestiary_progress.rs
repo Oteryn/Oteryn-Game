@@ -36,7 +36,7 @@ use oteryn_gameplay_progression::bestiary_achievement::{
     SOURCE_KIND, completion_keys, kill_count_keys,
 };
 use sha2::{Digest, Sha256};
-use sqlx::Row;
+use sqlx::{Postgres, Row, Transaction};
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
@@ -579,6 +579,26 @@ impl DurabilityRoot {
             })
             .await?
     }
+}
+
+/// Read one Bestiary race for the caster inside the fenced spell transaction.
+pub async fn spell_caster_bestiary_kills(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &super::spell_item_transaction::SpellItemAuthority,
+    race: &BestiaryRace,
+) -> Result<u32> {
+    super::spell_item_transaction::check_transaction(tx, authority)
+        .await
+        .map_err(|_| BestiaryProgressError::AuthorityRejected)?;
+    let kills: Option<i64> = sqlx::query_scalar(
+        "SELECT kill_count FROM game_character_bestiary_progress
+          WHERE character_id = encode($1,'hex')::uuid AND race_key = $2",
+    )
+    .bind(authority.character_id_bytes().as_slice())
+    .bind(race.key())
+    .fetch_optional(&mut **tx)
+    .await?;
+    u32::try_from(kills.unwrap_or_default()).map_err(|_| DurabilityError::InvalidStoredState.into())
 }
 
 /// The shared fence refuses with `AuthorityRejected`,

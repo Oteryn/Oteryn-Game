@@ -1215,7 +1215,7 @@ pub struct ScopeRuntimeV1 {
     daily_boost: Option<oteryn_gameplay_content::content::daily_boost::DailyBoostSelection>,
     echo_wardens: echo_warden::EchoRuntime,
     forge_next_tick_micros: u64,
-    forge_fiends: Vec<(ExactActorRef, Option<u64>)>,
+    forge_fiends: Vec<forge_creature::TrackedFiend>,
     /// SPAWN-CEILINGS-1 (Codex 4243397472): the occurrences of `spawn_schedule` by (deadline,
     /// point), written with every schedule write, so a drive reads only the occurrences it runs
     /// (`O(log n)` each) instead of collecting and sorting every due occurrence.

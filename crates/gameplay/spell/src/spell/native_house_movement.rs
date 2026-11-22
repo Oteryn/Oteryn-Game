@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use crate::domain::appearance::AppearanceSelection;
 
-use oteryn_gameplay_spell_rules::locate::locate;
+use oteryn_gameplay_spell_rules::locate::locate_with_very_far_band;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Position {
@@ -26,8 +26,8 @@ impl Position {
         })
     }
 
-    fn phrase(self, target: Self) -> Result<String, Error> {
-        Ok(locate(
+    fn phrase(self, target: Self, very_far: i64) -> Result<String, Error> {
+        Ok(locate_with_very_far_band(
             self.x
                 .checked_sub(target.x)
                 .ok_or(Error::PositionOverflow)?,
@@ -37,6 +37,7 @@ impl Position {
             self.z
                 .checked_sub(target.z)
                 .ok_or(Error::PositionOverflow)?,
+            very_far,
         )
         .phrase())
     }
@@ -196,7 +197,7 @@ fn player_plan(
         return Ok(refusal("exiva_protected"));
     }
     Ok(HouseMovementPlan::Message {
-        text: format!("{} {}.", target.name, caster.phrase(target.position)?),
+        text: format!("{} {}.", target.name, caster.phrase(target.position, 251)?),
         effect: "magic_blue",
     })
 }
@@ -218,9 +219,7 @@ fn fiend_plan(caster: Position, fiends: &[Fiend], now: i64) -> Result<HouseMovem
             .unwrap_or(0)
         });
     let Some(target) = target else {
-        return Ok(refusal(
-            "At the moment there is no fiend with special loot roaming this world.",
-        ));
+        return Ok(refusal("no_creatures_around"));
     };
     let difficulty = if !target.bestiary_completed {
         "Unknown"
@@ -237,7 +236,7 @@ fn fiend_plan(caster: Position, fiends: &[Fiend], now: i64) -> Result<HouseMovem
     };
     let mut text = format!(
         "The monster {}. Be prepared to find a creature of difficulty level \"{difficulty}\".",
-        caster.phrase(target.position)?
+        caster.phrase(target.position, 275)?
     );
     let seconds = target
         .reverts_at_seconds

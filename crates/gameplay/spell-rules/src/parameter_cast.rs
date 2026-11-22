@@ -41,6 +41,7 @@ pub fn source_feedback(
             "The character you are trying to find with Exiva is currently protected from your spell."
         }
         "name_is_ambiguous" => "Player name is ambiguous.",
+        "no_creatures_around" => "No creatures around",
         "not_possible" => "Sorry, not possible.",
         "not_enough_room" => "There is not enough room.",
         _ => return Err(PlanRejected),

@@ -72,13 +72,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let actor_spell::SpellTarget::Position(position) = &mut intent.target {
             position.floor = self.runtime_floor(position.floor);
         }
-        // Magic Rope has no text parameter, but shares the vertical relocation owner.
-        // Levitate still requires its explicit up/down parameter in that owner.
-        let vertical = self.spells.source_indexed(intent.spell).is_some_and(|(spell, _)| {
+        // Find Fiend and Magic Rope use the parameter-cast owner for their private result.
+        let implicit_parameter = self.spells.source_indexed(intent.spell).is_some_and(|(spell, _)| {
             matches!(&spell.execution, crate::spell::Execution::NativeProfile(profile)
                 if profile.spell()["execution"]["native_behavior"]["key"].as_str() == Some("vertical_move"))
+                || super::super::parameter_cast::is_find_fiend(spell)
         });
-        let implicit = vertical.then_some(
+        let implicit = implicit_parameter.then_some(
             oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent {
                 intent,
                 parameter: None,
