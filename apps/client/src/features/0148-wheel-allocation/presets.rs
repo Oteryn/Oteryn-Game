@@ -6,17 +6,34 @@ use crate::play::{
 use oteryn_client_ui::wheel_allocation::presets::PresetBook;
 use std::{
     path::Path,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, MutexGuard},
 };
 use tokio::sync::mpsc::UnboundedSender;
+#[cfg(all(bevy_shell, test))]
+type TestPath = Box<dyn FnOnce() -> std::path::PathBuf>;
+
+#[cfg(all(bevy_shell, test))]
+thread_local! {
+    pub(in crate::play) static TEST_PATH: std::cell::RefCell<Option<TestPath>> = const { std::cell::RefCell::new(None) };
+}
+
 fn path() -> Result<std::path::PathBuf, String> {
+    #[cfg(all(bevy_shell, test))]
+    if let Some(resolve) = TEST_PATH.take() {
+        return Ok(resolve());
+    }
     Ok(crate::native_login::settings_path()?.with_file_name("wheel-presets.json"))
 }
 #[cfg(bevy_shell)]
-pub(in crate::play) fn submit_named(shared: &Arc<Mutex<Mailbox>>, action: usize, selected: String) {
+pub(in crate::play) fn submit_named(
+    shared: &Arc<Mutex<Mailbox>>,
+    mut mailbox: MutexGuard<'_, Mailbox>,
+    action: usize,
+    selected: String,
+) {
     match path() {
-        Ok(path) => submit_shared(shared, action, selected, path, true),
-        Err(message) => lock(shared).wheel.preset_feedback = message,
+        Ok(path) => submit_shared(shared, mailbox, action, selected, path, true),
+        Err(message) => mailbox.wheel.preset_feedback = message,
     }
 }
 
@@ -33,7 +50,7 @@ fn submit_panel(
     action: usize,
     selected: &str,
     path: &Path,
-) {
+) -> bool {
     let result: Result<(), &str> = (|| {
         match action {
             0 => {
@@ -96,9 +113,11 @@ fn submit_panel(
     if action == 6 && result.is_err() {
         panel.preset_fields[0] = selected.into();
     }
+    let success = result.is_ok();
     panel.preset_feedback = result.map_or_else(str::to_owned, |()| {
         tr!("Preset updated. Loaded points are proposals; Save Wheel submits them.").into()
     });
+    success
 }
 fn update_book(
     path: &Path,
@@ -131,35 +150,66 @@ fn update_book(
     Ok(book)
 }
 
+#[derive(Debug)]
+pub(in crate::play) struct PresetWrite {
+    snapshot: oteryn_client_ui::wheel_allocation::WheelPanel,
+    action: usize,
+    selected: String,
+    path: std::path::PathBuf,
+}
+
 fn submit_shared(
     shared: &Arc<Mutex<Mailbox>>,
+    mut mailbox: MutexGuard<'_, Mailbox>,
     action: usize,
     selected: String,
     path: std::path::PathBuf,
     background: bool,
 ) {
     if !matches!(action, 0 | 2 | 6) {
-        submit_at(&mut lock(shared), action, &selected, &path);
+        submit_at(&mut mailbox, action, &selected, &path);
         return;
     }
-    let mut snapshot = {
-        let mut mailbox = lock(shared);
-        if mailbox.wheel_preset_save_pending {
-            return;
-        }
-        mailbox.wheel_preset_save_pending = true;
-        mailbox.wheel.clone()
+    let mut write = PresetWrite {
+        snapshot: mailbox.wheel.clone(),
+        action,
+        selected,
+        path,
     };
-    let field = snapshot.preset_fields[0].clone();
+    if let Some(queue) = &mut mailbox.wheel_preset_writes {
+        queue.push_back(write);
+        return;
+    }
+    mailbox.wheel_preset_writes = Some(Default::default());
+    drop(mailbox);
+
     let shared = shared.clone();
-    let job = move || {
-        submit_panel(&mut snapshot, action, &selected, &path);
+    let job = move || loop {
+        let field = write.snapshot.preset_fields[0].clone();
+        let success = submit_panel(
+            &mut write.snapshot,
+            write.action,
+            &write.selected,
+            &write.path,
+        );
         let mut mailbox = lock(&shared);
-        mailbox.wheel_preset_save_pending = false;
-        mailbox.wheel.preset_book = snapshot.preset_book;
-        mailbox.wheel.preset_feedback = snapshot.preset_feedback;
+        if success {
+            mailbox.wheel.preset_book = write.snapshot.preset_book;
+        }
+        mailbox.wheel.preset_feedback = write.snapshot.preset_feedback;
         if mailbox.wheel.preset_fields[0] == field {
-            mailbox.wheel.preset_fields[0] = snapshot.preset_fields[0].clone();
+            mailbox.wheel.preset_fields[0] = write.snapshot.preset_fields[0].clone();
+        }
+        match mailbox
+            .wheel_preset_writes
+            .as_mut()
+            .and_then(|queue| queue.pop_front())
+        {
+            Some(next) => write = next,
+            None => {
+                mailbox.wheel_preset_writes = None;
+                return;
+            }
         }
     };
     #[cfg(bevy_shell)]
@@ -179,7 +229,14 @@ fn submit_shared(
 impl PlayLink {
     pub fn wheel_presets_request(&self, action: usize) {
         match path() {
-            Ok(path) => submit_shared(&self.mailbox, action, String::new(), path, cfg!(bevy_shell)),
+            Ok(path) => submit_shared(
+                &self.mailbox,
+                lock(&self.mailbox),
+                action,
+                String::new(),
+                path,
+                cfg!(bevy_shell),
+            ),
             Err(message) => lock(&self.mailbox).wheel.preset_feedback = message,
         }
     }
