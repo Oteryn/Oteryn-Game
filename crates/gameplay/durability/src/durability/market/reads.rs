@@ -144,23 +144,21 @@ pub async fn book_page(
     Ok(BookPage { offers, next })
 }
 
-/// Unlocked job discovery only; re-lock the book and re-read each offer before planning a step.
-pub async fn expired_candidates(
-    connection: &mut PgConnection,
-    world: WorldId,
-) -> Result<Vec<(BookKey, MarketOfferId)>> {
-    let rows=sqlx::query("SELECT offer_id::text,definition_key FROM game_market_offers WHERE world_id=encode($1,'hex')::uuid AND state=1 AND expires_at_us<=floor(extract(epoch FROM clock_timestamp())*1000000)::bigint ORDER BY expires_at_us,offer_id LIMIT 100")
-        .bind(world.as_bytes().as_slice()).fetch_all(connection).await?;
-    rows.iter()
-        .map(|r| {
-            Ok((
-                BookKey {
-                    world,
-                    definition: MarketDefinitionKey::new(r.try_get::<&str, _>("definition_key")?)
-                        .map_err(|_| invalid())?,
-                },
-                MarketOfferId::new(uuid_text(r.try_get("offer_id")?)?).map_err(|_| invalid())?,
-            ))
-        })
-        .collect()
+/// Lock the next Market job's book, skipping books in use by another transaction.
+pub async fn lock_job_candidate(
+    tx: &mut Transaction<'_, Postgres>,
+    world: crate::foundation::WorldId,
+    after: Option<MarketOfferId>,
+) -> Result<Option<MarketOfferId>> {
+    let offer: Option<String> = sqlx::query_scalar(
+        "SELECT game_market_lock_job_candidate(encode($1,'hex')::uuid,encode($2,'hex')::uuid)::text",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(after.as_ref().map(|offer| offer.as_bytes().as_slice()))
+    .fetch_one(&mut **tx)
+    .await?;
+    offer
+        .as_deref()
+        .map(|offer| MarketOfferId::new(uuid_text(offer)?))
+        .transpose()
 }

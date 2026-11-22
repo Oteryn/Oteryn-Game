@@ -72,6 +72,7 @@ pub(super) enum Case {
     CharmParry,
     T94,
     CharmSecondary,
+    CorpseFree,
     CakeWorldBonus,
     CakeWorldBonusExpired,
     CakeKillBeforeActivation,
@@ -138,6 +139,11 @@ pub(super) fn run_with_admin(case: Case, admin: String) -> TestResult {
                     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
                     let (controller, pin) = if matches!(case, Case::Eqmod2 | Case::CharmSecondary) {
                         super::equipment_mods_fixtures::activate(world)?
+                    } else if matches!(case, Case::CorpseFree) {
+                        crate::content::native_gameplay::test_support::activated_corpse_free_rat_fixture(
+                            world,
+                            include_bytes!("../../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"),
+                        )
                     } else {
                         crate::content::native_gameplay::test_support::activated_with_loot_tables(
                             world,
@@ -183,7 +189,8 @@ async fn scenario(
         | Case::TaskBoardParty
         | Case::TaskBoardUnbound
         | Case::TaskBoardPrechange
-        | Case::TaskBoardOrdered => Case::OneHit,
+        | Case::TaskBoardOrdered
+        | Case::CorpseFree => Case::OneHit,
         Case::TaskBoardForeign => Case::Foreign,
         Case::TaskBoardTalisman
         | Case::CharmIncoming
@@ -528,6 +535,7 @@ async fn scenario(
             | Case::TaskBoardUnbound
             | Case::TaskBoardPrechange
             | Case::TaskBoardOrdered
+            | Case::CorpseFree
     ) {
         task_board::install_boards(&mut owner, h, &players, &pin).await?;
     }
@@ -1144,6 +1152,16 @@ async fn scenario(
         }) {
             break;
         }
+        if matches!(task_board_case, Case::CorpseFree) {
+            let runtime = owner.runtime.lock().await;
+            let killed = runtime
+                .companion_snapshot_including_dead(creature.actor)
+                .is_ok_and(|snapshot| snapshot.health == 0);
+            assert!(
+                !killed,
+                "a real lethal swing on a corpse-free creature must queue settlement"
+            );
+        }
         assert!(pass + 1 < REAL_SWING_PASSES, "real swings killed the rat");
         owner.clock_origin = owner
             .clock_origin
@@ -1346,6 +1364,7 @@ async fn scenario(
             | Case::TaskBoardForeign
             | Case::TaskBoardUnbound
             | Case::TaskBoardPrechange
+            | Case::CorpseFree
     ) {
         Some(task_board::capture_pending(&owner, &players).await?)
     } else {
@@ -1517,10 +1536,36 @@ async fn scenario(
             entry,
             matches!(
                 task_board_case,
-                Case::TaskBoardParty | Case::TaskBoardUnbound
+                Case::TaskBoardParty | Case::TaskBoardUnbound | Case::CorpseFree
             ),
         )
         .await?;
+    }
+    if matches!(task_board_case, Case::CorpseFree) {
+        let (base, shared): (i64, bool) = sqlx::query_as(
+            "SELECT base_xp, shared FROM game_party_kill_xp_receipts WHERE creature_key='oteryn:creature.rat'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!((base, shared), (5, true));
+        h.root.maintain_ready_once().await?;
+        assert!(owner.flush_daily_kill_statistics().await);
+        let physical: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_statistics_creature_deaths d JOIN game_party_kill_xp_receipts x USING (death_key) WHERE d.creature_key='oteryn:creature.rat'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(physical, 1, "physical statistics use the same death key");
+        let (bestiary, mints): (i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_character_bestiary_kill_receipts WHERE race_key='oteryn:creature.rat'), (SELECT count(*) FROM game_item_mint_receipts)",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(
+            (bestiary, mints),
+            (1, 0),
+            "Bestiary credit with zero corpse or loot MINTs"
+        );
     }
     if matches!(task_board_case, Case::TaskBoardUnbound) {
         let counts: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_character_xp_receipts),(SELECT count(*) FROM game_character_bestiary_kill_receipts)")

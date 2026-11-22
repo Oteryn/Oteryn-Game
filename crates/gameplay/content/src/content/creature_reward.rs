@@ -1,7 +1,6 @@
 //! ARCH-KILL-REWARD-LOGOUT-1 §1.1: the immutable reward rows of one active generation, keyed
 //! by the creature definition reference the runtime uses for its creature policies. A creature
-//! without a settleable row fails closed: its kill settles nothing and logs one
-//! `kill_reward_refused` line with the reason.
+//! with an explicitly corpse-free profile can also carry a progression-only row.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, LazyLock};
@@ -33,9 +32,9 @@ const LOOT_SECTION_ITEMS_MAX: usize = 8192;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreatureRewardRow {
     pub xp_amount: ExactI64,
-    /// Absent only for the closed source-qualified corpse-free encounter children.
+    /// Absent on corpse-free deaths.
     pub corpse_item: Option<LootDefinitionRef>,
-    /// Absent with corpse_item for those children; no synthetic Item/Loot identity.
+    /// Absent when there is no corpse Item to receive loot.
     pub loot_table_ref: Option<LootDefinitionRef>,
     pub loot_table: LootTableDefinition,
     pub race: Option<BestiaryRace>,
@@ -55,7 +54,7 @@ pub struct CreatureEncounterFacts {
     source_soul_core: Option<(u32, LootDefinitionRef)>,
 }
 
-/// Why a creature's kill settles nothing.
+/// Why ordinary corpse reward admission failed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NoSettlementReason {
     /// The pin carries no `creature_loot` row for the creature.
@@ -90,6 +89,7 @@ impl NoSettlementReason {
 #[derive(Debug, Clone, Default)]
 pub struct CreatureRewardTable {
     rows: HashMap<String, Result<Arc<CreatureRewardRow>, NoSettlementReason>>,
+    corpse_free_progression: HashMap<String, Arc<CreatureRewardRow>>,
     bosses: HashMap<String, BosstiaryBoss>,
     reward_boss_corpses: HashMap<String, Arc<CreatureRewardRow>>,
     forge_sliver: Option<LootDefinitionRef>,
@@ -136,6 +136,12 @@ impl CreatureRewardTable {
     /// This never admits a personal reward table or an ordinary creature's loot.
     pub fn reward_boss_corpse(&self, creature: &str) -> Option<Arc<CreatureRewardRow>> {
         self.reward_boss_corpses.get(creature).cloned()
+    }
+
+    /// XP and kill credit from a native profile which declares no corpse Item.
+    /// Physical and private loot admission continue to use the ordinary row.
+    pub fn corpse_free_progression(&self, creature: &str) -> Option<Arc<CreatureRewardRow>> {
+        self.corpse_free_progression.get(creature).cloned()
     }
 
     /// Mintable Item references already admitted by this generation's existing loot owner.
@@ -571,7 +577,7 @@ impl CreatureRewardTable {
             .iter()
             .map(|facts| (&facts.item, facts))
             .collect();
-        let rows = creatures
+        let rows: HashMap<_, _> = creatures
             .records
             .iter()
             .map(|record| {
@@ -607,6 +613,36 @@ impl CreatureRewardTable {
                     })
                     .map(Arc::new);
                 (target.key.clone(), row)
+            })
+            .collect();
+        let corpse_free_progression = creatures
+            .records
+            .iter()
+            .filter_map(|record| {
+                let target = &record.profile.target;
+                if !matches!(
+                    rows.get(&target.key),
+                    Some(Err(NoSettlementReason::CorpseItemMissing))
+                ) {
+                    return None;
+                }
+                let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
+                    return None;
+                };
+                let details = profile.details.as_ref()?;
+                if details.corpse_item.is_some() || details.summoning.is_familiar {
+                    return None;
+                }
+                let amount = i64::try_from(profile.experience?)
+                    .ok()
+                    .filter(|xp| *xp > 0)?;
+                let race = races
+                    .get(&target.key)
+                    .filter(|race| race.definition_revision() == target.revision)
+                    .cloned();
+                let mut row = corpse_free_row(ExactI64::new(amount), race);
+                row.boss = boss_metadata(profile, &target.key);
+                Some((target.key.clone(), Arc::new(row)))
             })
             .collect();
         let reward_boss_corpses = creatures
@@ -716,6 +752,7 @@ impl CreatureRewardTable {
             .collect();
         Self {
             rows,
+            corpse_free_progression,
             bosses,
             reward_boss_corpses,
             forge_sliver,
@@ -864,6 +901,20 @@ struct CorpseAdmission<'a> {
     verified_source_corpses: &'a HashSet<String>,
 }
 
+fn corpse_free_row(xp_amount: ExactI64, race: Option<BestiaryRace>) -> CreatureRewardRow {
+    CreatureRewardRow {
+        xp_amount,
+        corpse_item: None,
+        loot_table_ref: None,
+        loot_table: LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
+            entries: Vec::new(),
+        },
+        race,
+        boss: None,
+    }
+}
+
 fn row(
     creature: &str,
     profile: &ProjectV2CreatureAuthoring,
@@ -897,17 +948,7 @@ fn row(
                 | "oteryn:creature.spiteful_spitter"
         )
     {
-        return Ok(CreatureRewardRow {
-            xp_amount,
-            corpse_item: None,
-            loot_table_ref: None,
-            loot_table: LootTableDefinition {
-                algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
-                entries: Vec::new(),
-            },
-            race,
-            boss: None,
-        });
+        return Ok(corpse_free_row(xp_amount, race));
     }
     let corpse = declared_corpse.ok_or(NoSettlementReason::CorpseItemMissing)?;
     let corpse = SectionRef {

@@ -586,8 +586,12 @@ impl KillSettlementQueue {
         if !begin.current_for(runtime) || native.source_digest() != begin.content_digest() {
             return Err(());
         }
-        let row = native.reward_table().row(begin.definition_key()).ok();
         let creature = begin.definition_key().to_owned();
+        let rewards = native.reward_table();
+        let row = rewards.row(&creature).ok();
+        let progression = row
+            .clone()
+            .or_else(|| rewards.corpse_free_progression(&creature));
         let mut state = self.state();
         if state
             .in_flight
@@ -625,7 +629,7 @@ impl KillSettlementQueue {
                 return;
             }
             entry.creature.clone_from(&creature);
-            entry.row = row.clone();
+            entry.row = progression.clone();
             if let (Some(boss), Some(reward)) = (&mut entry.boss_reward, &row) {
                 boss.reward = Arc::clone(reward);
                 // A later source form still has only the private reward route.
@@ -1555,6 +1559,9 @@ impl KillSettlementQueue {
             .source_drop_rates
             .unwrap_or_else(oteryn_gameplay_foundation::scheduled_events::current_rates);
         let loot_mints = entry.row.as_ref().map_or(0, |row| {
+            if row.corpse_item.is_none() {
+                return 0;
+            }
             loot_table_mint_ceiling(
                 entry.facts.death,
                 row,
@@ -2038,8 +2045,13 @@ pub fn record_creature_kill(
     let personal_reward_row = personal_rewards
         .then(|| full_reward.as_ref().ok().cloned())
         .flatten();
-    let reward =
-        full_reward.or_else(|reason| sink.rewards.reward_boss_corpse(&creature).ok_or(reason));
+    // Crystal 201189f8 Creature::onDeath awards XP and monster credit before dropCorpse.
+    let reward = full_reward.or_else(|reason| {
+        sink.rewards
+            .reward_boss_corpse(&creature)
+            .or_else(|| sink.rewards.corpse_free_progression(&creature))
+            .ok_or(reason)
+    });
     let Ok(mut facts) =
         capture_projected_death_facts(&mut owner, target, principal, last_damage_at_ms, now_ms)
     else {
@@ -2383,7 +2395,9 @@ pub fn record_creature_kill(
             }
         }
     }
-    if let Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _difficulty)) = forge_kind
+    if row.corpse_item.is_some()
+        && let Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _difficulty)) =
+            forge_kind
     {
         let Some(item) = sink.rewards.forge_sliver() else {
             refuse("forge_sliver_inadmissible", &creature);
@@ -2550,7 +2564,7 @@ pub fn record_creature_kill(
         Arc::make_mut(&mut row).loot_table.entries.clear();
     }
     let mut callback_loot = Vec::new();
-    if !top.is_gone() {
+    if row.corpse_item.is_some() && !top.is_gone() {
         if echo.is_some() {
             if let Some(scroll) =
                 super::echo_warden::drops::warden_scroll(runtime, sink.rewards, facts.occurrence)
@@ -4074,7 +4088,9 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 };
             }
         }
-        super::quest_death_loot::append(&mut loot_table, &entry);
+        if row.corpse_item.is_some() {
+            super::quest_death_loot::append(&mut loot_table, &entry);
+        }
         // Ordinary stamina/event/duplex transforms must never remove or multiply
         // the one-shot tutorial reward. Its arm is consumed by the atomic MINT.
         let Ok((loot_table, tutorial_corruptor)) = admission

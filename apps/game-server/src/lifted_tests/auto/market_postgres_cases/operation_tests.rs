@@ -10,12 +10,19 @@ fn market_expiry_returns_sell_items_to_inbox_and_buy_gold_to_bank() -> TestResul
         seed_escrow(h, &sell, 10).await?;
         seed(h, &buy).await?;
 
+        let mut outcomes = Vec::with_capacity(2);
         for offer in [&sell, &buy] {
-            sqlx::query("SELECT game_market_write(encode($1,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,game_market_identity(encode($2,'hex')::uuid,'expire'),4::smallint,encode($2,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,NULL,NULL,sha256($2),NULL)")
+            let outcome: Option<Vec<u8>> = sqlx::query_scalar("SELECT game_market_write(encode($1,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,game_market_identity(encode($2,'hex')::uuid,'expire'),4::smallint,encode($2,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,NULL,NULL,sha256($2),NULL)")
                 .bind(offer.world.as_bytes().as_slice())
                 .bind(offer.id.as_bytes().as_slice())
-                .execute(&h.pool)
+                .fetch_one(&h.pool)
                 .await?;
+            assert!(
+                matches!(outcome.as_deref(), Some([1, id @ ..]) if id == offer.id.as_bytes()),
+                "expiry for {:?} should settle with code 01 and the same offer ID, got {outcome:02x?}",
+                offer.id,
+            );
+            outcomes.push(outcome);
         }
 
         let inbox_units: i64 = sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_character_inbox_locations l JOIN game_item_instances i USING(item_instance_id,world_id) WHERE l.character_id=encode($1,'hex')::uuid AND l.world_id=encode($2,'hex')::uuid")
@@ -23,19 +30,19 @@ fn market_expiry_returns_sell_items_to_inbox_and_buy_gold_to_bank() -> TestResul
             .bind(sell.world.as_bytes().as_slice())
             .fetch_one(&h.pool)
             .await?;
-        assert_eq!(inbox_units, 10);
+        assert_eq!(inbox_units, 10, "sell and buy expiry results were {outcomes:02x?}");
         let balance: i64 = sqlx::query_scalar("SELECT balance::text::bigint FROM game_account_bank_balances WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
             .bind(buy.account.as_bytes().as_slice())
             .bind(buy.world.as_bytes().as_slice())
             .fetch_one(&h.pool)
             .await?;
-        assert_eq!(balance, 1_000);
+        assert_eq!(balance, 1_000, "sell and buy expiry results were {outcomes:02x?}");
         let states: Vec<i16> = sqlx::query_scalar("SELECT state FROM game_market_offers WHERE offer_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid) ORDER BY offer_id")
             .bind(sell.id.as_bytes().as_slice())
             .bind(buy.id.as_bytes().as_slice())
             .fetch_all(&h.pool)
             .await?;
-        assert_eq!(states, vec![4, 4]);
+        assert_eq!(states, vec![4, 4], "sell and buy expiry results were {outcomes:02x?}");
         Ok(())
     })
 }

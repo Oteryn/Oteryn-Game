@@ -857,7 +857,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
     let ItemKey::Instance(item) = request.item else {
         return refused(LoopMoveRefusal::NotSupported);
     };
-    let (native, pins, index, mailbox, ring_target, seed_target, assembly_target) = {
+    let (native, pins, index, mailbox, ring_target, assembly_target, content_digest) = {
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         let dead = states.is_dead(actor);
@@ -871,7 +871,6 @@ pub(super) async fn move_loop_item_with_house_capacity(
         let placement_context = pin.frame_binding_digest().to_vec();
         let mut mailbox = None;
         let mut ring_target = None;
-        let mut seed_target = None;
         let mut assembly_target = None;
         let pins =
             super::bundle_map_position(&mut runtime, admission.movement_cells(), actor).map(|at| {
@@ -886,8 +885,6 @@ pub(super) async fn move_loop_item_with_house_capacity(
                     mailbox = super::mail::mailbox_at(at.map, index, TilePos { x, y, floor });
                     ring_target =
                         dreamer_ring::target(at.map, *to, content_digest, admission.reset_epoch);
-                    seed_target =
-                        seed_drop::target(at.map, *to, content_digest, admission.reset_epoch);
                     assembly_target =
                         floor_assembly::target(at.map, *to, content_digest, admission.reset_epoch);
                 }
@@ -904,8 +901,8 @@ pub(super) async fn move_loop_item_with_house_capacity(
             index,
             mailbox,
             ring_target,
-            seed_target,
             assembly_target,
+            content_digest,
         )
     };
     let Some(native) = native else {
@@ -921,6 +918,16 @@ pub(super) async fn move_loop_item_with_house_capacity(
     let ground = match &pins {
         Some((base, ..)) => loop_ground(admission, base, index).await,
         None => None,
+    };
+    let seed_target = match (&request.target, admission.bundle_map()) {
+        (LoopTarget::Ground(to), Some(map)) if pins.is_some() => seed_drop::target(
+            map,
+            ground.as_deref(),
+            *to,
+            content_digest,
+            admission.reset_epoch,
+        ),
+        _ => None,
     };
     let pickup = ground
         .as_ref()

@@ -1199,8 +1199,11 @@ fn palette_facts(
                         .is_some_and(|terrain| terrain.kind == TerrainKind::Wall),
             );
         facts.pickupable = definition.pickupable;
+        // The WorldObject record for Crystal's ladder 1968 states blocks_movement=false.
+        // It is a use ladder and has no native Item solidity profile to carry that fact.
         solid = definition
             .solid
+            .or_else(|| (entry.key == "oteryn:item.tibia.i1968").then_some(false))
             .unwrap_or_else(|| !walkable_floor_change(&entry.key) && !terrain_floor(entry));
         door = palette_door(&entry.key, item);
     }
@@ -1995,6 +1998,49 @@ mod tests {
         assert!(item_solid("oteryn:item.tibia.i100"));
         assert!(!item_solid("oteryn:item.tibia.i1950"));
         assert!(!item_solid("oteryn:item.tibia.i293"));
+    }
+
+    #[test]
+    fn ghostship_ladder_1968_is_walkable_without_an_item_solidity_profile() {
+        let ladder = "oteryn:item.tibia.i1968";
+        let (bytes, bundle) = fixture::bundle_with_items(ladder, "item:coin");
+        let base = crate::map::load(&bytes, &bundle).expect("base map");
+        let pins = crate::map::boot::BootPins {
+            map_revision: super::super::overlay::map_revision(&base),
+            bundle,
+            start: TilePos {
+                x: 2,
+                y: 0,
+                floor: -7,
+            },
+        };
+        let world_id = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel_id = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let landing = TilePos {
+            x: 6,
+            y: 0,
+            floor: -7,
+        };
+        for (solid, enterable) in [(None, true), (Some(true), false)] {
+            let world = boot(&bytes, &pins, world_id, channel_id, |key| {
+                if key == ladder {
+                    fixture::items("item:box").map(|definition| ItemDefinition {
+                        solid,
+                        ..definition
+                    })
+                } else {
+                    fixture::items(key)
+                }
+            })
+            .expect("bundle with ladder");
+            assert_eq!(
+                world.enterable(landing),
+                enterable,
+                "profile solidity {solid:?}"
+            );
+        }
     }
 
     /// An Item entry routed to a `ground` Terrain record, or to a `border` the terrain catalogue

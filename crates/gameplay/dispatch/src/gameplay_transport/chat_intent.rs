@@ -28,7 +28,7 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 use super::ComposedFreshAdmission;
 use super::actor_spell::ChannelSpellStates;
 use super::chat_relay::ChatRelay;
-use super::npc_talk::{NpcTalkBook, TalkNpc, talk};
+use super::npc_talk::{NpcTalkBook, TalkNpc, render_dialogue, talk};
 use crate::chat::relay::{RelayDestination, RelayLine};
 use crate::chat::{
     ChatEgress, ChatLimiter, ChatPosition, ChatRefusal, ChatText, SpeechMode, YellGate, local_line,
@@ -966,8 +966,7 @@ fn npc_answer(
         };
         reply.text = greeting.to_owned();
     }
-    reply.text =
-        oteryn_gameplay_npc::quest_greetings::render_player_name(&reply.text, &speaking.name);
+    reply.text = render_dialogue(&reply.text, &speaking.name);
     if speaking.engaged.is_some_and(|npc| prior != Some(npc))
         && crowded(sessions, session, reply.id)
     {

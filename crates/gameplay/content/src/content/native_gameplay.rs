@@ -29,7 +29,7 @@ use super::project::{
 };
 use super::spell_data::{SpellBook, executable_catalog};
 use crate::content::creature_policy::{CompiledCreaturePolicies, CompiledCreaturePolicy};
-use oteryn_gameplay_domain::domain::condition::{ConditionType, DotElement};
+use oteryn_gameplay_domain::domain::condition::{ConditionType, DotElement, StatusKind};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -1844,13 +1844,9 @@ fn exact(reference: &ProjectV2DefinitionRef, family: ProjectV2Family) -> Result<
     super::DefinitionRevisionRef::new(&reference.revision)?;
     Ok(())
 }
-fn condition(text: &str) -> Result<Option<ConditionType>, ContentError> {
-    // Source-only families have no accepted speed/DOT analogue. Preserve them in the complete
-    // decoded details rather than inventing a typed immunity for another effect family.
-    if text == "drunk" {
-        return Ok(None);
-    }
-    Ok(Some(match text {
+fn condition(text: &str) -> Result<ConditionType, ContentError> {
+    Ok(match text {
+        "drunk" => ConditionType::Status(StatusKind::Drunk),
         "invisible" | "invisibility" => ConditionType::Invisible,
         "haste" => ConditionType::Haste,
         "paralysis" | "paralyze" => ConditionType::Paralysis,
@@ -1869,7 +1865,7 @@ fn condition(text: &str) -> Result<Option<ConditionType>, ContentError> {
         "attributes" => ConditionType::Attributes,
         "outfit" => ConditionType::Outfit,
         _ => return Err(invalid("native gameplay unsupported condition immunity")),
-    }))
+    })
 }
 // tools/content-schema/encounters/import_boss_levers.py:68-69,135 hashes canonical original records,
 // including explicit nulls. Typed serialization may omit those facts. Keep the
@@ -2004,10 +2000,7 @@ fn creature_policies(
             .condition_immunities
             .iter()
             .map(|c| condition(c))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flatten()
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
         let (outfit_look_type, object_look_type) = *appearance.get(&record.presentation).ok_or(
             invalid("native gameplay exact creature presentation missing"),
         )?;
@@ -2224,10 +2217,11 @@ pub mod test_support {
 
     mod activation_fixture;
     pub use activation_fixture::{
-        activated_boss_slot_loot_fixture, activated_loop_monster,
-        activated_loop_monster_missing_child, activated_reward_boss_corpse_capacity_fixture,
-        activated_reward_boss_fixture, activated_with_custom_loot_tables,
-        activated_with_loot_tables, loop_monster_inner_digest, try_activate_input,
+        activated_boss_slot_loot_fixture, activated_corpse_free_rat_fixture,
+        activated_loop_monster, activated_loop_monster_missing_child,
+        activated_reward_boss_corpse_capacity_fixture, activated_reward_boss_fixture,
+        activated_with_custom_loot_tables, activated_with_loot_tables, loop_monster_inner_digest,
+        try_activate_input,
     };
 }
 

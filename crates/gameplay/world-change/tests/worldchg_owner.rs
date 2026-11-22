@@ -154,6 +154,7 @@ fn worldchg_authored_candidate_probabilities_control_selection() {
                 voice_percent: percent,
                 trader_percent: percent,
                 fire_earth_permille: 199,
+                fury_gate_permille: 0,
                 stampede_permille: u16::from(percent) * 10,
             },
             |_| u64::MAX,
@@ -183,6 +184,7 @@ fn worldchg_stampede_uses_accepted_daily_gate_and_preserves_legacy_snapshots()
                 voice_percent: 0,
                 trader_percent: 0,
                 fire_earth_permille: 199,
+                fury_gate_permille: 0,
                 stampede_permille: 125,
             },
             |purpose| {

@@ -1,4 +1,5 @@
 use super::*;
+use harness::Harness;
 
 #[test]
 fn market_native_offer_read_is_scoped_and_never_commits_a_return() -> TestResult {
@@ -110,25 +111,227 @@ fn market_native_expiry_candidates_bound_order_world_and_recheck() -> TestResult
             )
             .await?;
         }
-        let mut connection = h.pool.acquire().await?;
-        let rows = expired_candidates(&mut connection, world()).await?;
-        assert_eq!(rows.len(), 100);
-        assert_eq!(rows[0].1, MarketOfferId::new(id(1))?);
-        assert_eq!(rows[99].1, MarketOfferId::new(id(100))?);
+        let mut discovery = h.pool.begin().await?;
+        let world = crate::foundation::WorldId::decode(&id(WORLD))?;
+        let mut after = None;
+        for n in 1..=100 {
+            after = lock_job_candidate(&mut discovery, world, after).await?;
+            assert_eq!(after, Some(MarketOfferId::new(id(n))?));
+        }
         assert!(
-            expired_candidates(&mut connection, WorldId::from_bytes(id(111))?)
-                .await?
-                .is_empty()
+            lock_job_candidate(
+                &mut discovery,
+                crate::foundation::WorldId::decode(&id(111))?,
+                None,
+            )
+            .await?
+            .is_none()
         );
-        drop(connection);
+        discovery.rollback().await?;
         // A concurrent completed atomic writer may end a discovered row. Selection re-reads it;
         // this fixture does not claim to execute the omitted bank/Inbox operation.
         sqlx::query("UPDATE game_market_offers SET state=4,escrow_gold=0,ended_at_us=expires_at_us,end_sequence=nextval('game_market_end_sequence') WHERE offer_id=encode($1,'hex')::uuid").bind(id(1).as_slice()).execute(&h.pool).await?;
         let mut tx = h.pool.begin().await?;
-        let mut book = lock_book(&mut tx, rows[0].0.clone()).await?;
-        assert!(book.plan_end(rows[0].1, EndReason::Expire).await.is_err());
-        assert!(book.plan_end(rows[1].1, EndReason::Expire).await?.is_some());
+        let key = offer(1, Side::Buy, 40, time).book();
+        let mut book = lock_book(&mut tx, key).await?;
+        assert!(book.plan_end(MarketOfferId::new(id(1))?, EndReason::Expire).await.is_err());
+        assert!(book.plan_end(MarketOfferId::new(id(2))?, EndReason::Expire).await?.is_some());
         tx.rollback().await?;
         Ok(())
     })
+}
+
+#[test]
+fn market_expiry_discovery_leaves_later_books_available_to_writers() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_expiry_case(admin, "market_expiry_book_scope", async |h| {
+        let time = now(h).await? - LIFETIME_US - 10_000;
+        let first = offer(60, Side::Buy, 40, time);
+        let mut later = offer(61, Side::Buy, 70, time + 1);
+        later.definition = definition("oteryn:content.item.bowl", "r1")?;
+        seed(h, &first).await?;
+        seed(h, &later).await?;
+
+        let mut discovery = h.pool.begin().await?;
+        let world = crate::foundation::WorldId::decode(&id(WORLD))?;
+        let candidate = lock_job_candidate(&mut discovery, world, None).await?;
+        assert_eq!(candidate, Some(first.id));
+        let mut writer = h.pool.begin().await?;
+        assert!(try_lock_job_book(&mut writer, later.book()).await?.is_some());
+        assert!(try_lock_job_book(&mut writer, first.book()).await?.is_none());
+        writer.rollback().await?;
+        discovery.rollback().await?;
+        Ok(())
+    })
+}
+
+#[test]
+fn market_expiry_postgres_drains_unlocked_book_behind_locked_candidate_window() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_expiry_case(admin, "market_expiry_window", async |h| {
+        let time = now(h).await? - LIFETIME_US - 10_000;
+        let first = offer(1, Side::Buy, 40, time);
+        for n in 1..=100 {
+            seed(h, &offer(n, Side::Buy, 40, time + i64::from(n))).await?;
+        }
+        let mut later = offer(101, Side::Buy, 70, time + 101);
+        later.definition = definition("oteryn:content.item.bowl", "r1")?;
+        seed_expiry_owner(h, &later).await?;
+
+        let mut blocker = h.pool.begin().await?;
+        let _book = lock_book(&mut blocker, first.book()).await?;
+        assert!(advance_market(h, &h.root).await?, "the later book should make progress");
+        assert_eq!(expiry_state(h, &later).await?, (4, 1_000, 1));
+        assert_eq!(expiry_state(h, &first).await?, (1, 0, 0));
+        assert!(!advance_market(h, &h.root).await?);
+        blocker.rollback().await?;
+        Ok(())
+    })
+}
+
+#[test]
+fn market_expiry_postgres_rechecks_offer_and_refunds_once() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_expiry_case(admin, "market_expiry_recheck", async |h| {
+        let time = now(h).await?;
+        let mut due = offer(60, Side::Buy, 40, time - LIFETIME_US - 1);
+        due.matching_pending = true;
+        let live = offer(61, Side::Buy, 70, time - 1_000);
+        let taken = offer(62, Side::Buy, 80, time - LIFETIME_US - 2);
+        seed(h, &due).await?;
+        seed_expiry_owner(h, &live).await?;
+        seed_expiry_owner(h, &taken).await?;
+
+        let runtime_url = format!("{}?options=-c%20role%3Doteryn_game_runtime", h.database.url);
+        let runtime = crate::durability::DurabilityRoot::connect_test_runtime(&runtime_url)?;
+        let mut blocker = h.pool.begin().await?;
+        let _book = lock_book(&mut blocker, due.book()).await?;
+        assert!(!advance_market(h, &runtime).await?);
+        assert_eq!(expiry_state(h, &due).await?, (1, 0, 0));
+
+        // The lock holder ends the oldest candidate using the native atomic writer.
+        let outcome: Option<Vec<u8>> = sqlx::query_scalar(
+            "SELECT game_market_write(encode($1,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,
+                game_market_identity(encode($2,'hex')::uuid,'expire'),4::smallint,
+                encode($2,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,NULL,NULL,sha256($2),NULL)",
+        )
+        .bind(taken.world.as_bytes().as_slice())
+        .bind(taken.id.as_bytes().as_slice())
+        .fetch_one(&mut *blocker)
+        .await?;
+        assert!(
+            matches!(outcome.as_deref(), Some([1, id @ ..]) if id == taken.id.as_bytes()),
+            "expiry for {:?} should settle with code 01 and the same offer ID, got {outcome:02x?}",
+            taken.id,
+        );
+        blocker.commit().await?;
+        assert_eq!(
+            expiry_state(h, &taken).await?,
+            (4, 1_000, 1),
+            "expiry writer returned {outcome:02x?}",
+        );
+
+        assert!(advance_market(h, &runtime).await?);
+        assert_eq!(expiry_state(h, &due).await?, (4, 1_000, 1));
+        assert!(!advance_market(h, &runtime).await?);
+        assert_eq!(expiry_state(h, &due).await?, (4, 1_000, 1));
+        assert_eq!(expiry_state(h, &taken).await?, (4, 1_000, 1));
+        assert_eq!(expiry_state(h, &live).await?, (1, 0, 0));
+        Ok(())
+    })
+}
+
+async fn seed_expiry_owner(h: &Harness, offer: &Offer) -> TestResult {
+    seed(h, offer).await?;
+    // The storage fixture inserts a legacy root without a creation receipt.
+    // Retain the matching v2 receipt and advance the issuer floor before opening authority.
+    let result = sqlx::query(
+        "WITH receipt AS (
+            INSERT INTO game_character_operation_receipts(
+                operation_id,command_binding,account_id,character_id,world_id,character_revision,
+                event_id,occurred_at,server_build_id,transaction_id,issuer_decision_id,
+                intent_source_revision,issued_at_source,expires_at_source)
+            SELECT ids.operation_id,
+                decode('02','hex') || uuid_send(ids.decision_id) || int8send(f.source_revision + 1)
+                || uuid_send(ids.operation_id) || uuid_send(r.account_id) || uuid_send(r.world_id)
+                || int8send(1) || int8send(120)
+                || int2send(octet_length(r.profile_revision)::smallint) || convert_to(r.profile_revision,'UTF8')
+                || int2send(octet_length(r.ruleset_revision)::smallint) || convert_to(r.ruleset_revision,'UTF8')
+                || int2send(octet_length(r.content_revision)::smallint) || convert_to(r.content_revision,'UTF8')
+                || int2send(octet_length(r.starter_template_revision)::smallint) || convert_to(r.starter_template_revision,'UTF8')
+                || int2send(octet_length(r.name)::smallint) || convert_to(r.name,'UTF8'),
+                r.account_id,r.character_id,r.world_id,1,game_character_uuid_v7(),1,'test/1',
+                game_character_uuid_v7(),ids.decision_id,f.source_revision + 1,1,120
+            FROM game_character_roots r
+            CROSS JOIN game_character_bootstrap_intent_floors f
+            CROSS JOIN (SELECT game_character_uuid_v7() AS operation_id,
+                               game_character_uuid_v7() AS decision_id) ids
+            WHERE r.character_id=encode($1,'hex')::uuid AND f.issuer_scope=1
+            RETURNING intent_source_revision,issuer_decision_id,command_binding
+         )
+         UPDATE game_character_bootstrap_intent_floors f
+         SET source_revision=receipt.intent_source_revision,
+             issuer_decision_id=receipt.issuer_decision_id,intent_binding=receipt.command_binding
+         FROM receipt WHERE f.issuer_scope=1",
+    )
+    .bind(offer.character.as_bytes().as_slice())
+    .execute(&h.pool)
+    .await?;
+    assert_eq!(result.rows_affected(), 1, "expiry fixture creation receipt");
+    Ok(())
+}
+
+fn run_expiry_case<F>(admin: String, tag: &'static str, body: F) -> TestResult
+where
+    F: AsyncFnOnce(&Harness) -> TestResult + Send + 'static,
+{
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            harness::runtime()
+                .and_then(|runtime| {
+                    runtime.block_on(async {
+                        let h = Harness::create(admin, tag, false).await?;
+                        let result = body(&h).await;
+                        h.cleanup().await?;
+                        result
+                    })
+                })
+                .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "Market expiry test thread failed")?
+        .map_err(Into::into)
+}
+
+async fn advance_market(h: &Harness, root: &crate::durability::DurabilityRoot) -> TestResult<bool> {
+    root.await_ready().await?;
+    let seal = h.recovery.seal_current().map_err(harness::debug)?;
+    let authority = root
+        .open_character_authority(&seal)
+        .await
+        .map_err(|error| format!("open Market expiry Character authority: {error:?}"))?;
+    root.await_ready().await?;
+    let world = crate::foundation::WorldId::decode(&id(WORLD))?;
+    Ok(root.advance_market(&authority, &h.node, world).await?)
+}
+
+async fn expiry_state(h: &Harness, offer: &Offer) -> TestResult<(i16, i64, i64)> {
+    Ok(sqlx::query_as(
+        "SELECT o.state, COALESCE(b.balance, 0)::bigint,
+            (SELECT count(*) FROM game_account_bank_entries e
+             JOIN game_market_settlements s ON s.transaction_id=e.market_transaction_id
+             WHERE s.offer_id=o.offer_id AND e.market_kind='MARKET_ESCROW_RETURN')
+         FROM game_market_offers o LEFT JOIN game_account_bank_balances b USING(account_id,world_id)
+         WHERE o.offer_id=encode($1,'hex')::uuid",
+    )
+    .bind(offer.id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?)
 }

@@ -634,9 +634,7 @@ impl NpcTalkBook {
                     dialogue
                         .keywords
                         .iter()
-                        .filter(|keyword| {
-                            literal_keyword(keyword) && !keyword.reply[0].contains("|TIME|")
-                        })
+                        .filter(|keyword| literal_keyword(keyword))
                         .cloned()
                         .collect(),
                 )

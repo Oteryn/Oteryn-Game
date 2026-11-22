@@ -550,27 +550,35 @@ fn scenario(
                 &[4, 6, 12, 14, 98, 179, 180],
             )
             .ok_or("Newhaven item command capabilities")?;
-        let click = QuickLootRequest {
-            action: QuickLootAction::Click,
-            corpse: Some(corpse),
-            category: None,
-            recipient: None,
-            recipient_id: None,
-            fallback_to_main: false,
-            filter_mode: None,
-            filter_definition_ref: None,
-        };
-        let payload =
-            oteryn_protocol_oteryn::quick_loot::encode_quick_loot_request(&click).map_err(debug)?;
-        let reply = wire_command(
+        let corpse_identity = owner
+            .runtime
+            .lock()
+            .await
+            .visible_corpses()
+            .into_iter()
+            .find(|entry| entry.item.item_instance_id == corpse)
+            .ok_or("Newhaven runtime corpse")?
+            .identity;
+        let (_, replies) = super::quick_loot_fixtures::exchange(
             &owner,
             &mut admitted,
-            oteryn_protocol_oteryn::quick_loot::COMMAND_TYPE_QUICK_LOOT,
-            &payload,
+            corpse_identity,
+            |shown| {
+                Ok(vec![QuickLootRequest {
+                    action: QuickLootAction::Click,
+                    corpse: Some(shown.corpse.ok_or("Newhaven shown corpse")?),
+                    category: None,
+                    recipient: None,
+                    recipient_id: None,
+                    fallback_to_main: false,
+                    filter_mode: None,
+                    filter_definition_ref: None,
+                }])
+            },
         )
         .await?;
-        let result = oteryn_protocol_oteryn::quick_loot::decode_quick_loot_result(&reply)
-            .map_err(|error| format!("{vocation} Quick Loot reply: {error:?}"))?;
+        assert_eq!(replies[0].0, oteryn_protocol_oteryn::CommandStatus::Accepted);
+        let result = &replies[0].1;
         assert!(!result.items.is_empty(), "the real corpse is in reach");
         assert!(result.items.iter().all(|item| item.accepted));
         if let Some((item, quantity)) = mushroom {
