@@ -41,6 +41,7 @@ fn bazaar_reopened_window_recovers_pending_before_allowing_another_mutation() ->
             .await;
             assert!(reopened.pending());
             assert!(!reopened.can_retry());
+            mock.authority.lock().map_err(|_| "lock")?.pending_first = false;
             controller::execute(
                 &mut reopened,
                 Action::Sell {
@@ -106,6 +107,7 @@ fn bazaar_resolving_one_pending_with_failed_refresh_keeps_other_mutations_fenced
             )
             .await;
             assert!(view.pending());
+            mock.authority.lock().map_err(|_| "lock")?.pending_first = false;
             mock.authority.lock().map_err(|_| "lock")?.fail_pages = true;
             controller::execute(
                 &mut view,
@@ -287,12 +289,12 @@ fn bazaar_retry_and_precreate_refusals_settle_after_missing_status() -> TestResu
                     .bazaar_post_failure = Some(refusal);
                 execute(&mut view, Action::Retry);
                 assert_eq!(view.pending.as_ref(), Some(&request));
-                assert!(!view.can_retry());
+                assert_eq!(view.can_retry(), refusal == 409);
                 execute(&mut view, Action::Status);
             }
             settled.push(!view.pending());
             assert_eq!(mock.authority.lock().map_err(|_| "lock")?.effects, 0);
-            if retry == Some(403) {
+            if retry.is_some() {
                 let pending = view.pending.clone().ok_or("missing unresolved request")?;
                 assert!(view.can_retry());
                 mock.authority
@@ -313,8 +315,8 @@ fn bazaar_retry_and_precreate_refusals_settle_after_missing_status() -> TestResu
         }
         assert_eq!(
             settled,
-            [true, true, false],
-            "bazaar retry 409 and pre-create 403 must settle, but retry 403 plus 404 must keep the original pending"
+            [false, true, false],
+            "only the initial definitive refusal settles the request"
         );
         Ok(())
     })
@@ -362,6 +364,51 @@ fn bazaar_reopen_with_same_authorization_keeps_retry_before_first_receipt() -> T
             ))?;
         }
         assert_eq!(mock.authority.lock().map_err(|_| "lock")?.effects, 1);
+        Ok(())
+    })
+}
+
+#[test]
+fn fresh_grant_filters_previously_accepted_bazaar_receipt() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let next = mock.token(&client)?;
+        let execute = |view: &mut View, action, grant| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                grant,
+                CancellationToken::new(),
+            ));
+        };
+        let mut first = View::default();
+        execute(&mut first, Action::Refresh(AuctionView::All), &token);
+        execute(
+            &mut first,
+            Action::Bid {
+                auction_id: AUCTION.into(),
+                coins: 50,
+                confirmed: true,
+            },
+            &token,
+        );
+        let id = first.receipt.ok_or("receipt")?.request_id;
+        {
+            let mut state = mock.authority.lock().map_err(|_| "lock")?;
+            let listed = state.commands.remove(&id).ok_or("listed receipt")?;
+            state.commands.insert("stale-index".into(), listed);
+        }
+        let mut fresh = View {
+            prior: first.prior,
+            ..Default::default()
+        };
+        execute(&mut fresh, Action::Refresh(AuctionView::Own), &next);
+        assert!(fresh.page.is_some());
+        assert!(!format!("{fresh:?}").contains(&id));
+        assert!(!fresh.pending());
         Ok(())
     })
 }
