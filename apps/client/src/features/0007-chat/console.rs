@@ -358,6 +358,12 @@ impl Mailbox {
         for event in events {
             match event {
                 oteryn_session::SessionEvent::ChatLine(delta) => {
+                    #[cfg(bevy_shell)]
+                    if let oteryn_session::ChatLine::Private { speaker_name, text } = &delta.value
+                        && self.chat.console.communication.visible(&delta.value)
+                    {
+                        self.window_notice(crate::play::feature_local_text_messages::view::NoticeKind::Private, format!("{speaker_name}: {text}"));
+                    }
                     self.chat.pending_lines = self.chat.pending_lines.wrapping_add(1);
                     self
                         .chat

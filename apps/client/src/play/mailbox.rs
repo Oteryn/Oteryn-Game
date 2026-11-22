@@ -151,6 +151,9 @@ pub(super) struct Mailbox {
     pub(super) screen_look: Option<super::feature_local_text_messages::view::LookMessage>,
     #[cfg(bevy_shell)]
     pub(super) look_receipt: u64,
+    #[cfg(bevy_shell)]
+    pub(super) window_notices:
+        std::collections::VecDeque<super::feature_local_text_messages::view::WindowNotice>,
     pub(super) shared_frontend: bool,
     pub(super) command_latency: Option<(std::time::Instant, std::time::Duration)>,
     /// The admitted session's byte counters; `None` before admission.
@@ -355,6 +358,8 @@ impl Mailbox {
     }
 
     pub(super) fn reset_server_message_namespace(&mut self) {
+        #[cfg(bevy_shell)]
+        self.window_notices.clear();
         self.before.server_messages = ServerMessageInbox::default();
         self.pushed.server_messages = ServerMessageInbox::default();
         self.pushed.scope_changed = true;

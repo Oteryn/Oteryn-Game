@@ -318,7 +318,13 @@ impl PlayView {
     pub(crate) fn special_condition_rows(&self, hud: bool) -> Vec<(String, String, String)> {
         use oteryn_client_ui::condition_status::{icon_key, icon_label};
         let preferences = self.preferences();
-        if !preferences.resource_hud.conditions {
+        if !preferences.resource_hud.conditions
+            || !(if hud {
+                preferences.conditions_hud_enabled
+            } else {
+                preferences.conditions_bar_enabled
+            })
+        {
             return Vec::new();
         }
         let hidden = if hud {

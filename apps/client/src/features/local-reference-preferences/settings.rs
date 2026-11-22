@@ -160,6 +160,13 @@ pub struct ReferencePreferences {
     pub compact_status: bool,
     #[serde(default = "enabled")]
     pub status_panel_visible: bool,
+    #[serde(default = "enabled")]
+    pub conditions_bar_enabled: bool,
+    #[serde(default = "enabled")]
+    pub conditions_hud_enabled: bool,
+    #[serde(default = "enabled")]
+    pub status_bar_visible: bool,
+
     #[serde(default)]
     pub skill_order: Vec<u8>,
     #[serde(default)]
@@ -210,6 +217,15 @@ pub struct ReferencePreferences {
     pub hud_bounds: [u16; 4],
     #[serde(default = "enabled")]
     pub hud_bars: bool,
+    #[serde(default = "enabled")]
+    pub hud_other_health: bool,
+    #[serde(default)]
+    pub harmony_left: bool,
+    #[serde(default = "enabled")]
+    pub player_hud_enabled: bool,
+    #[serde(default = "enabled")]
+    pub other_hud_enabled: bool,
+
     #[serde(default = "enabled")]
     pub show_effects: bool,
     #[serde(default = "enabled")]
@@ -321,6 +337,10 @@ impl Default for ReferencePreferences {
             console_font_px: 14,
             compact_status: false,
             status_panel_visible: true,
+            conditions_bar_enabled: true,
+            conditions_hud_enabled: true,
+            status_bar_visible: true,
+
             skill_order: Vec::new(),
             condition_order: Vec::new(),
             special_condition_order: Vec::new(),
@@ -346,6 +366,11 @@ impl Default for ReferencePreferences {
             keyboard_delay_ms: 0,
             hud_bounds: default_hud_bounds(),
             hud_bars: true,
+            hud_other_health: true,
+            harmony_left: false,
+            player_hud_enabled: true,
+            other_hud_enabled: true,
+
             game_window: Default::default(),
             show_effects: true,
             show_lights: true,
