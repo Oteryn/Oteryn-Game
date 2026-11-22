@@ -345,7 +345,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
 
     if matches!(case, Case::Unavailable) {
-        sqlx::query("REVOKE EXECUTE ON FUNCTION game_house_podium_target_fenced(UUID,UUID,NUMERIC,NUMERIC,NUMERIC,UUID,NUMERIC,UUID,TEXT,UUID) FROM oteryn_game_runtime")
+        // The harness pool connects as the administrative role, so revoking EXECUTE
+        // from the runtime role would not make the target unavailable here.
+        sqlx::query("ALTER FUNCTION game_house_podium_target_fenced(UUID,UUID,NUMERIC,NUMERIC,NUMERIC,UUID,NUMERIC,UUID,TEXT,UUID) RENAME TO test_unavailable_house_podium_target")
             .execute(&h.pool).await?;
     }
     let item = id(71);
