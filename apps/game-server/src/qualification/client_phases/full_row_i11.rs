@@ -19,6 +19,14 @@ use oteryn_protocol_oteryn::world_object::{
 
 const DOUGH: u32 = 3604;
 const BREAD: u32 = 3600;
+const WHEAT: u32 = 3605;
+const FLOUR: u32 = 3603;
+const MILLSTONES: [&str; 4] = [
+    "oteryn:item.tibia.i1943",
+    "oteryn:item.tibia.i1944",
+    "oteryn:item.tibia.i1945",
+    "oteryn:item.tibia.i1946",
+];
 const OVENS: [&str; 4] = [
     "oteryn:item.tibia.i2535",
     "oteryn:item.tibia.i2537",
@@ -31,26 +39,106 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "baked-refused-and-reloaded".to_owned()),
-        Ok(Err(error)) if error.to_string().contains("MISSING-SERVER:") => {
-            evidence(&format!(
-                "I11_GAP {}",
-                error.to_string().replace([' ', '\n', '\r'], "_")
-            ));
-            (
-                "MISSING-SERVER",
-                "source:crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs:154".to_owned(),
-            )
-        }
         Ok(Err(error)) => (
             "FAIL",
             error.to_string().replace([' ', '\n', '\r'], "_"),
         ),
         Err(_) => ("FAIL", "step-timeout-observed=no-reply".to_owned()),
     };
+    if status == "FAIL" {
+        evidence(&format!("I11_GAP {detail}"));
+    }
     evidence(&format!(
         "SEAM_EVIDENCE e2e_all scenario=I11.full status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
+}
+
+fn nearby_station(
+    at: TilePos,
+    stations: &std::collections::BTreeMap<TilePos, u8>,
+) -> Option<(TilePos, u8)> {
+    for x in at.x.saturating_sub(1)..=at.x.saturating_add(1) {
+        for y in at.y.saturating_sub(1)..=at.y.saturating_add(1) {
+            let candidate = TilePos { x, y, floor: at.floor };
+            if let Some(&ordinal) = stations.get(&candidate) {
+                return Some((candidate, ordinal));
+            }
+        }
+    }
+    None
+}
+
+async fn reach_station(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    bytes: &[u8],
+    here: TilePos,
+    keys: &[&str],
+    name: &str,
+) -> TestResult<(TilePos, u8)> {
+    let mut stations = std::collections::BTreeMap::new();
+    oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
+        if here.floor.abs_diff(sector.floor) > 2 {
+            return Ok(());
+        }
+        for tile in sector.tiles {
+            if here.x.abs_diff(tile.x) > 161 || here.y.abs_diff(tile.y) > 161 {
+                continue;
+            }
+            for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
+                if keys.contains(&manifest.palette[item.palette as usize].key.as_str()) {
+                    let at = TilePos { x: tile.x, y: tile.y, floor: sector.floor };
+                    let ordinal = u8::try_from(ordinal).map_err(|_| {
+                        oteryn_world_bundle::Error::Limit("I11 oven ordinal".into())
+                    })?;
+                    stations.entry(at).or_insert(ordinal);
+                }
+            }
+        }
+        Ok(())
+    })?;
+    let path = route(world, here, |at| nearby_station(at, &stations).is_some())
+        .ok_or_else(|| format!("step={name}-route missing=reachable-compiled-world-station"))?;
+    walk(client, world, &path).await?;
+    let arrived = tile(client.world_spatial().actor_position)?;
+    nearby_station(arrived, &stations).ok_or_else(|| format!("step={name}-route observed=no-station-within-use-distance-after-STEP").into())
+}
+
+async fn mill_wheat(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    bytes: &[u8],
+) -> TestResult {
+    super::full_row_i14::acquire(client, world, WHEAT, 1).await.map_err(|error|
+        verdict::context(format!("step=wheat-purchase observed={error}"), error)
+    )?;
+    let here = tile(client.world_spatial().actor_position)?;
+    let (mill, ordinal) = reach_station(client, world, bytes, here, &MILLSTONES, "millstone").await?;
+    let index = provisioning::item_index()?;
+    let wheat = provisioning::item_reference(&index, WHEAT)?;
+    let flour = provisioning::item_reference(&index, FLOUR)?;
+    let before_wheat = quantity(client, wheat)?;
+    let before_flour = quantity(client, flour)?;
+    let handle = client.inventory().and_then(|inventory| inventory.entries.iter().find(|entry| entry.item_definition_ref == wheat))
+        .ok_or("step=millstone observed=purchased-wheat-handle-missing")?.handle;
+    let key = crate::map::view::placement_key(mill, ordinal).ok_or("step=millstone observed=placement-key-missing")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(handle),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget { placement, expected_revision: 0 })),
+        use_with_position: None,
+    }).map_err(|error| format!("step=millstone encode={error:?}"))?;
+    let reply = client.session_mut().world_context_use(&payload).await?;
+    let disposition = decode_use_result(&reply.payload).map_err(|error| format!("step=millstone decode={error:?}"))?;
+    if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
+        return Err(format!("step=millstone status={:?} disposition={disposition:?}", reply.status).into());
+    }
+    wait_quantities(client, wheat, before_wheat - 1, flour, before_flour + 1).await?;
+    evidence("I11_CHECK wheat-to-flour PASS");
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -62,30 +150,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut oven = None;
-    oteryn_world_bundle::bundle::visit(&bytes, |manifest, sector| {
-        for tile in sector.tiles {
-            for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
-                if OVENS.contains(&manifest.palette[item.palette as usize].key.as_str()) {
-                    oven.get_or_insert((
-                        TilePos { x: tile.x, y: tile.y, floor: sector.floor },
-                        u8::try_from(ordinal).map_err(|_| {
-                            oteryn_world_bundle::Error::Limit("I11 oven ordinal".into())
-                        })?,
-                    ));
-                }
-            }
-        }
-        Ok(())
-    })?;
-    let (oven, ordinal) = oven.ok_or("step-1_observed=no-compiled-world-oven")?;
     let mut client = connect_character(clients, 0xb8, 0).await?;
+    let milling = mill_wheat(&mut client, world, &bytes).await;
     let here = tile(client.world_spatial().actor_position)?;
-    let path = route(world, here, |at| {
-        at.floor == oven.floor && at.x.abs_diff(oven.x).max(at.y.abs_diff(oven.y)) <= 1
-    })
-    .ok_or("step-1_observed=no-walk-route-to-oven")?;
-    walk(&mut client, world, &path).await?;
+    let (oven, ordinal) = reach_station(&mut client, world, &bytes, here, &OVENS, "oven").await?;
 
     let index = provisioning::item_index()?;
     let dough = provisioning::item_reference(&index, DOUGH)?;
@@ -145,7 +213,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         if quantity(&reloaded, dough)? != 0 || quantity(&reloaded, bread)? != before_bread {
             return Err("step-4_observed=refused-use-changed-durable-quantities".into());
         }
-        return Err("MISSING-SERVER:step-2_observed=NothingToUse_no_legitimate_dough_source_need=server-player-acquisition_path".into());
+        milling?;
+        return Err("step=dough-acquisition observed=NothingToUse missing=flour-with-water-or-milk owner=crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs:187".into());
     }
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!(
@@ -208,7 +277,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step-4_observed=baked-quantities-not-durable".into());
     }
-    Ok(())
+    milling
 }
 
 fn quantity(
@@ -252,4 +321,20 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
         return Err("step-4_observed=logout-refused".into());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn oven_planning_uses_diagonal_reach_but_never_another_floor() {
+        let at = TilePos { x: 10, y: 10, floor: -7 };
+        let adjacent = TilePos { x: 11, y: 9, floor: -7 };
+        let below = TilePos { floor: -8, ..at };
+        let mut ovens = std::collections::BTreeMap::from([(below, 1)]);
+        assert_eq!(nearby_station(at, &ovens), None);
+        ovens.insert(adjacent, 2);
+        assert_eq!(nearby_station(at, &ovens), Some((adjacent, 2)));
+    }
 }

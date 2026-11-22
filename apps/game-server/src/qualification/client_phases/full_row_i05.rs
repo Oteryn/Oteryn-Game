@@ -18,6 +18,7 @@
 //! 5. Log out, obtain a fresh admission, and re-check durable equipped custody: the
 //!    active 3088 view remains in the ring slot and its inspected remaining budget
 //!    is positive and no greater than the pre-logout budget.
+//! 6. Unequip the ring, require its base item view and verify that its timer pauses.
 use super::*;
 use oteryn_dev_client::client_runtime::npc_shop as shop_runtime;
 use oteryn_protocol_oteryn::{item_view as items, npc_service as npc, timed_item as timed};
@@ -47,7 +48,7 @@ impl Journey {
         }
         evidence(&format!(
             "e2e_all scenario=I05.full status={} seconds={:.3}",
-            if result.is_ok() && self.step == 5 { "PASS" } else { "FAIL" },
+            if result.is_ok() && self.step == 6 { "PASS" } else { "FAIL" },
             self.started.elapsed().as_secs_f64()
         ));
     }
@@ -228,6 +229,16 @@ fn equipped_ring(client: &oteryn_dev_client::DevClientSession, active: NonZeroU3
     })).map(|entry| entry.item.handle).ok_or("active-energy-ring-equipment-delta-missing".into())
 }
 
+fn has_paused_budget(
+    first: &timed::TimedItemResult,
+    later: &timed::TimedItemResult,
+    previous_ms: u64,
+) -> bool {
+    first.disposition == timed::TimedDisposition::Ok
+        && first.remaining_ms.is_some_and(|ms| (1..=previous_ms).contains(&ms))
+        && first == later
+}
+
 async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -295,6 +306,26 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
             return Err(format!("fresh-admission-timer-not-durable:before={remaining}:reply={durable:?}").into());
         }
         row.passed(5, "fresh-session+active-transform+nonincreasing-timer");
+        let base = reference(ENERGY_RING)?;
+        let previous_count = item_count(&client, base)?;
+        let moved = client.move_item(&items::ItemMoveIntent {
+            source: durable_handle,
+            destination: items::ItemMoveDestination::MainBackpack,
+        }).await?;
+        if moved.outcome != items::ItemMoveOutcome::Moved {
+            return Err(format!("step=unequip observed={moved:?}").into());
+        }
+        let paused_handle = wait_for_item(&mut client, base, previous_count).await?;
+        if equipped_ring(&client, active).is_ok() {
+            return Err("step=unequip observed=active-ring-still-equipped".into());
+        }
+        let paused = timed_command(&mut client, timed::TimedAction::Inspect, paused_handle, 0).await?;
+        client.service_liveness(Duration::from_secs(2)).await?;
+        let later = timed_command(&mut client, timed::TimedAction::Inspect, paused_handle, paused.revision).await?;
+        if !has_paused_budget(&paused, &later, remaining) {
+            return Err(format!("step=unequip-pause observed=initial:{paused:?}/later:{later:?}").into());
+        }
+        row.passed(6, "unequip-transformed-to-base+paused-duration-stable");
         Ok(())
     }.await;
     let release = async {
@@ -309,6 +340,18 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn paused_ring_rejects_countdown_and_reset() {
+        let paused = timed::TimedItemResult {
+            remaining_ms: Some(50),
+            ..timed::TimedItemResult::refused(timed::TimedDisposition::Ok)
+        };
+        let countdown = timed::TimedItemResult { remaining_ms: Some(49), ..paused };
+        assert!(has_paused_budget(&paused, &paused, 60));
+        assert!(!has_paused_budget(&paused, &countdown, 60));
+        assert!(!has_paused_budget(&paused, &paused, 40));
+    }
+
     #[test]
     fn required_item_ids_and_price_are_fixed() {
         assert_eq!((ENERGY_RING, ACTIVE_ENERGY_RING, PRICE), (3051, 3088, 5_000));

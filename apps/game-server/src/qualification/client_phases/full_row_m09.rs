@@ -358,7 +358,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let index = provisioning::item_index()?;
     let mut client = connect_world(clients, 0xb9).await?;
     let rod_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3483", 1).await?;
-    let worm_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3492", 40).await?;
+    let worm_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3492", 1).await?;
     let fish_ref = reference(&index, 3578)?;
     row.pass(
         "player-acquired-rod-and-bait",
@@ -415,17 +415,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("fishing-replies-and-deltas", committed);
 
-    while units(&client, worm_ref) > 0 {
-        let reply = use_on(
-            &mut client,
-            rod.handle,
-            MapUseTarget::Object(target(world, water.1)?),
-        )
-        .await?;
-        settle(&mut client).await?;
-        if reply.0 != CommandStatus::Accepted {
-            return Err(format!("step 3 bait-drain reply={reply:?}").into());
-        }
+    if units(&client, worm_ref) != 0 {
+        return Err("step 3 no-bait refusal requires the single purchased worm to be consumed".into());
     }
     let fish = units(&client, fish_ref);
     let refusal = use_on(
@@ -447,7 +438,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     // player BUY; if the served world offers no legitimate knife route, report
     // that observed step rather than manufacturing one.
     let knife_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i5908", 1).await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step 4 skinning prerequisite after completed fishing/refusal: observed={error}; server needs a reachable player acquisition route for oteryn:item.tibia.i5908"), error) })?;
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=skinning-knife-acquisition observed={error}; missing=ordinary-obsidian-knife-5908-acquisition; obsidian-knife-quest-native-lowering=WAITING_IMPLEMENTATION content/quests/definitions/quests-00100-00199.json:1"), error) })?;
     let knife =
         carried(&client, knife_ref).ok_or("step 4 bought knife missing from native inventory")?;
     let corpse = hunt_corpse(&mut client, world, &bytes).await?;
@@ -460,6 +451,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     };
     let corpse_definition =
         object_definition(corpse).ok_or("step 4 served corpse has no object definition")?;
+    let fresh_definition = reference(&index, 5969)?.get();
+    let spent = reference(&index, 4012)?.get();
+    if corpse_definition != fresh_definition {
+        return Err(format!("step=skinning-hunt observed=corpse-definition-{corpse_definition} expected={fresh_definition}").into());
+    }
+    let leather = reference(&index, 5878)?;
+    let leather_before = units(&client, leather);
     let before_skin = inventory_signature(&client)?;
     let skin_reply = use_on(&mut client, knife.handle, MapUseTarget::Item(corpse_handle)).await?;
     settle(&mut client).await?;
@@ -475,11 +473,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                     "step 4 committed skinning removed the observed corpse: reply={skin_reply:?}"
                 )
             })?;
-        if spent_definition == corpse_definition {
+        if spent_definition != spent {
             return Err(format!(
-                "step 4 committed skinning did not transform corpse: reply={skin_reply:?}; definition={corpse_definition}"
+                "step 4 committed skinning returned the wrong spent corpse: reply={skin_reply:?}; definition={spent_definition}; expected={spent}"
             )
             .into());
+        }
+        let leather_after = units(&client, leather);
+        if !(leather_before..=leather_before + 1).contains(&leather_after) {
+            return Err(format!("step=skinning-yield observed=leather-{leather_before}-to-{leather_after} expected=zero-or-one-new-leather").into());
         }
         row.pass(
             "skinning-replies-and-deltas",
@@ -585,7 +587,7 @@ async fn hunt_corpse(
                 .spawns
                 .creatures
                 .get(point.creature as usize)
-                .is_some_and(|creature| creature.key == "oteryn:creature.rat")
+                .is_some_and(|creature| creature.key == "oteryn:creature.minotaur")
         })
         .map(|(floor, point)| TilePos {
             x: point.x,
@@ -603,7 +605,7 @@ async fn hunt_corpse(
                     && position.x.abs_diff(at.x).max(position.y.abs_diff(at.y)) <= 1
             })
     })
-    .ok_or("step 4 no reachable ordinary creature spawn")?;
+    .ok_or("step=skinning-hunt missing=reachable-minotaur-spawn-for-corpse-5969 owner=crates/gameplay/items/src/fishing.rs:111")?;
     walk(client, world, &path).await?;
     let at = client.world_spatial().actor_position;
     let target = client
@@ -611,6 +613,7 @@ async fn hunt_corpse(
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == oteryn_dev_client::EntityKind::Creature
+                    && entry.display_name.as_ref().and_then(|name| name.as_str().ok()) == Some("Minotaur")
                     && entry.position.floor == at.floor
                     && entry
                         .position
@@ -621,7 +624,13 @@ async fn hunt_corpse(
             })
         })
         .copied()
-        .ok_or("step 4 combat endpoint has no served creature")?;
+        .ok_or("step=skinning-hunt observed=no-live-minotaur-in-melee-range")?;
+    let previous_corpses: Vec<_> = client.world_entities().into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|entry| entry.kind == oteryn_dev_client::EntityKind::Corpse)
+        .map(|entry| entry.entity)
+        .collect();
+    let mut last_position = target.position;
     let reply = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -632,12 +641,12 @@ async fn hunt_corpse(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
     loop {
         settle(client).await?;
-        if !client
-            .world_entities()
-            .is_some_and(|entities| entities.iter().any(|entry| entry.entity == target.entity))
-        {
+        let Some(live) = client.world_entities()
+            .and_then(|entities| entities.iter().find(|entry| entry.entity == target.entity))
+        else {
             break;
-        }
+        };
+        last_position = live.position;
         if tokio::time::Instant::now() >= deadline {
             client.session_mut().attack_target(None).await?;
             return Err("step 4 ATTACK timeout: creature remained alive for 45s".into());
@@ -649,7 +658,8 @@ async fn hunt_corpse(
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == oteryn_dev_client::EntityKind::Corpse
-                    && entry.position == target.position
+                    && entry.position == last_position
+                    && !previous_corpses.contains(&entry.entity)
             })
         })
         .copied()
@@ -659,6 +669,17 @@ async fn hunt_corpse(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn minotaur_corpse_has_the_obsidian_knife_recipe() {
+        use oteryn_gameplay_items::fishing::{GatheringTarget, gathering_rule};
+
+        assert!(matches!(
+            gathering_rule(5908, 5969),
+            Some((GatheringTarget::Corpse { spent_item: 4012 }, yield_item))
+                if yield_item.item == 5878
+        ));
+    }
+
     #[test]
     fn row_requires_action_refusal_skinning_and_fresh_admission() {
         let mut row = Row::new();
