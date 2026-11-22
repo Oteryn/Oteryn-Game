@@ -766,7 +766,7 @@ fn source_soul_war_corpse_pair(
         })
 }
 
-fn source_questpc7_corpse_capacity(creature: &str, corpse: &SectionRef) -> Option<u32> {
+fn source_exact_corpse_capacity(creature: &str, corpse: &SectionRef) -> Option<u32> {
     if corpse.family != "Item" || corpse.revision != "definition-r1" {
         return None;
     }
@@ -774,6 +774,21 @@ fn source_questpc7_corpse_capacity(creature: &str, corpse: &SectionRef) -> Optio
         ("oteryn:creature.hydra", "oteryn:item.tibia.i6048") => Some(36),
         ("oteryn:creature.glooth_golem", "oteryn:item.tibia.i20972") => Some(38),
         ("oteryn:creature.werehyaena", "oteryn:item.tibia.i33821") => Some(48),
+        ("oteryn:creature.lost_berserker", "oteryn:item.tibia.i16071") => Some(50),
+        ("oteryn:creature.lucifuga_aranea", "oteryn:item.tibia.i7344") => Some(52),
+        ("oteryn:creature.madareth", "oteryn:item.tibia.i7893") => Some(60),
+        ("oteryn:creature.magma_crawler", "oteryn:item.tibia.i15991") => Some(50),
+        ("oteryn:creature.memory_of_a_fungus", "oteryn:item.tibia.i15872") => Some(50),
+        ("oteryn:creature.memory_of_a_hero", "oteryn:item.tibia.i18134") => Some(60),
+        ("oteryn:creature.memory_of_a_pirate", "oteryn:item.tibia.i18190") => Some(50),
+        ("oteryn:creature.moohtant", "oteryn:item.tibia.i20996") => Some(50),
+        ("oteryn:creature.orewalker", "oteryn:item.tibia.i15911") => Some(50),
+        ("oteryn:creature.pirate_buccaneer", "oteryn:item.tibia.i18190") => Some(50),
+        ("oteryn:creature.pirate_corsair", "oteryn:item.tibia.i18194") => Some(50),
+        ("oteryn:creature.pirate_cutthroat", "oteryn:item.tibia.i18198") => Some(50),
+        ("oteryn:creature.pirate_marauder", "oteryn:item.tibia.i18202") => Some(50),
+        ("oteryn:creature.priestess", "oteryn:item.tibia.i18210") => Some(50),
+        ("oteryn:creature.reflection_of_mawhawk", "oteryn:item.tibia.i21004") => Some(50),
         _ => None,
     }
 }
@@ -793,6 +808,20 @@ fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
                     "oteryn:creature.aspect_of_power",
                     "oteryn:item.tibia.i33949"
                 )
+                | ("oteryn:creature.lovely_snake", "oteryn:item.tibia.i3998")
+                | ("oteryn:creature.pink_butterfly", "oteryn:item.tibia.i4378")
+                | (
+                    "oteryn:creature.purple_butterfly",
+                    "oteryn:item.tibia.i4992"
+                )
+                | ("oteryn:creature.red_butterfly", "oteryn:item.tibia.i4991")
+                | (
+                    "oteryn:creature.norgle_glacierbeard",
+                    "oteryn:item.tibia.i7349"
+                )
+                | ("oteryn:creature.orcus_the_cruel", "oteryn:item.tibia.i7349")
+                | ("oteryn:creature.rocky", "oteryn:item.tibia.i7349")
+                | ("oteryn:creature.raging_fire", "oteryn:item.tibia.i21815")
                 | (
                     "oteryn:creature.necromantic_focus",
                     "oteryn:item.tibia.i33984"
@@ -833,6 +862,8 @@ fn verified_soul_war_corpses(
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(48));
         let source_plain = matches!(definition.production_key.as_str(),
             "oteryn:item.tibia.i33792" | "oteryn:item.tibia.i33793" | "oteryn:item.tibia.i33876"
+            | "oteryn:item.tibia.i3998" | "oteryn:item.tibia.i4378" | "oteryn:item.tibia.i4991" | "oteryn:item.tibia.i4992"
+            | "oteryn:item.tibia.i7349" | "oteryn:item.tibia.i21815"
             | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984")
             && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
             && record.semantics.container == F::NotApplicable;
@@ -848,7 +879,32 @@ fn verified_soul_war_corpses(
             && matches!(&record.semantics.physical, F::Known(value)
                 if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(capacity)));
-        source_48 || source_plain || source_questpc7
+        // Crystal items.xml records larger physical containers for these roots.
+        // The independent reward work and view limits remain at 48 entries.
+        let ordinary_capacity = match definition.production_key.as_str() {
+            "oteryn:item.tibia.i7344" => Some((52, false)),
+            "oteryn:item.tibia.i7893" => Some((60, false)),
+            "oteryn:item.tibia.i15872" => Some((50, false)),
+            "oteryn:item.tibia.i15911" => Some((50, true)),
+            "oteryn:item.tibia.i15991" => Some((50, false)),
+            "oteryn:item.tibia.i16071" => Some((50, false)),
+            "oteryn:item.tibia.i18134" => Some((60, true)),
+            "oteryn:item.tibia.i18190" => Some((50, true)),
+            "oteryn:item.tibia.i18194" => Some((50, true)),
+            "oteryn:item.tibia.i18198" => Some((50, true)),
+            "oteryn:item.tibia.i18202" => Some((50, true)),
+            "oteryn:item.tibia.i18210" => Some((50, true)),
+            "oteryn:item.tibia.i20996" => Some((50, false)),
+            "oteryn:item.tibia.i21004" => Some((50, false)),
+            _ => None,
+        };
+        let source_ordinary = ordinary_capacity.is_some_and(|(capacity, movable)|
+            record.admission.legal_destinations == [NativeItemDestination::Ground]
+            && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::Known(ReferenceItemType::Container))
+            && matches!(&record.semantics.physical, F::Known(value)
+                if value.weight == F::Known(0) && value.movable == F::Known(movable) && value.pickupable == F::Known(false))
+            && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(capacity)));
+        source_48 || source_plain || source_questpc7 || source_ordinary
     }).map(|record| record.production_definition.production_key.clone()).collect()
 }
 
@@ -941,7 +997,7 @@ fn row(
                         && verified_source_corpses.contains(&corpse.key)
                         && source_soul_war_corpse_pair(creature, profile, &corpse))
                     || (verified_source_corpses.contains(&corpse.key)
-                        && source_questpc7_corpse_capacity(creature, &corpse) == Some(*capacity))
+                        && source_exact_corpse_capacity(creature, &corpse) == Some(*capacity))
             })
             .ok_or(NoSettlementReason::CorpseItemInadmissible)?;
     }

@@ -689,6 +689,14 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     questpc2_rotten_loot_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # T174: qualify boot slots only after every shop/loot Item cohort is present.
     imbuement_item_profiles.complete_boots(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import ordinary_corpse_cohort
+    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
+    item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
+    creatures = json.loads(generated[creature_path])
+    items = json.loads(generated[item_path])
+    ordinary_corpse_cohort.apply(root, creatures, items, provider_order)
+    generated[creature_path] = spell_import.canonical_bytes(creatures)
+    generated[item_path] = spell_import.canonical_bytes(items)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions
