@@ -327,14 +327,9 @@ async fn place(
     )?);
     drop(runtime);
     let acquire_holder = async || {
-        qualification_build::retry_holder(
-            Some(root),
-            budget.work_deadline,
-            |error| matches!(error, DurabilityError::RootUnavailable),
-            async || root.try_acquire_ready(),
-        )
-        .await
-        .map_err(|error| fence(format!("qualification spawn holder: {error:?}")))
+        acquire_spawn_holder(root, budget.work_deadline)
+            .await
+            .map_err(|error| fence(format!("qualification spawn holder: {error:?}")))
     };
     let mut holder = acquire_holder().await?;
     let eligible = spawn_transaction(&mut holder, budget, true, async |tx| {
@@ -402,6 +397,34 @@ async fn place(
         root.request_ready();
     }
     result
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn acquire_spawn_holder(
+    root: &DurabilityRoot,
+    deadline: tokio::time::Instant,
+) -> Result<sqlx::pool::PoolConnection<sqlx::Postgres>, DurabilityError> {
+    let mut waiting = None;
+    loop {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        match root.try_acquire_ready() {
+            Err(DurabilityError::RootUnavailable) => {}
+            outcome => return outcome,
+        }
+        // Hold priority and a FIFO turn only while retrying the checkout.
+        if waiting.is_none() {
+            waiting = Some((root.foreground_demand()?, root.holder_waiter()));
+        }
+        let now = tokio::time::Instant::now();
+        let latest = (now + Duration::from_millis(250)).min(deadline);
+        if !root.wait_holder_turn(now, latest).await {
+            // A retired connection has no turn to wait for. The node's maintenance
+            // can re-establish it and signal readiness within the same retry window.
+            root.wait_holder_retry(now, latest).await;
+        }
+    }
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
@@ -1005,6 +1028,157 @@ mod tests {
         })
         .await;
         assert!(rejected.is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_spawn_gets_its_turn_after_a_busy_holder()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{Harness, debug, runtime};
+
+        let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || {
+                runtime()
+                    .map_err(debug)?
+                    .block_on(async {
+                        let harness = Harness::create(admin, "spawn_holder", false).await?;
+                        let result = exercise_busy_spawn(&harness).await;
+                        harness.cleanup().await?;
+                        result
+                    })
+                    .map_err(debug)
+            })?
+            .join()
+            .map_err(|_| "qualification spawn test thread failed")?
+            .map_err(Into::into)
+    }
+
+    async fn exercise_busy_spawn(
+        harness: &crate::bestiary_postgres_harness::Harness,
+    ) -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{SESSION, debug, id, scope};
+        use crate::foundation::GameSessionId;
+        use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
+        use sqlx::pool::PoolConnectionReturnDisposition;
+        use std::future::{Future, poll_fn};
+        use std::task::Poll;
+
+        let scope = scope()?;
+        let world = scope.world_id();
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../content/spells.manifest.json");
+        let room =
+            crate::content::qualify_native_entry_room_from_gameplay_manifest(world, &manifest)?;
+        let native = crate::content::qualified_native_gameplay_test_state(room.compiled())?;
+        // Put the admitted player at the Thalom hunt cell used by the seam fixture.
+        let pin = ChannelContentPin::from_activation(
+            world,
+            1,
+            room.compiled().server_digest(),
+            room.compiled().client_digest(),
+            room.frame_binding().digest(),
+            room.map_revision_digest(),
+            (0, 11, -7),
+        );
+        let fact = harness.node.fact();
+        let mut channel = ChannelRuntimeV1::from_committed_scope_assignment(
+            scope,
+            fact.node_id(),
+            fact.registration_revision(),
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            pin,
+        )?;
+        let session = GameSessionId::decode(&id(SESSION))?;
+        let reservation = channel.reserve_fresh_session(session)?;
+        let player = channel.commit_fresh_session(reservation)?;
+        channel.initialize_first_entry_position(player)?;
+        let channel = Mutex::new(channel);
+        let owners = SpawnOwners {
+            runtime: &channel,
+            room: &room,
+        };
+        let config = format!(
+            "qualification_fixture = true\n{}",
+            crate::node::config::tests::NODE
+        )
+        .replace("database = \"oteryn\"", "database = \"oteryn_node_boot\"")
+        .replace(
+            "oteryn:runtime:world-1:channel-1",
+            "oteryn:runtime:node-boot",
+        );
+        let config = NodeConfig::parse(config.as_bytes())?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let root = &harness.root;
+        let authority = root.open_character_authority(&seal).await.map_err(debug)?;
+        assert!(root.maintain_ready_once().await?);
+        let mut busy = root.try_acquire_ready()?;
+        assert!(!root.has_ready_demand());
+        let request = format!(
+            "spawn {} canary:creature/rat\n",
+            uuid_text(session.as_bytes())
+        );
+        let spawn = spawn(
+            root,
+            &authority,
+            &harness.node,
+            &config,
+            Some(&native),
+            Some(owners),
+            request.as_bytes(),
+        );
+        tokio::pin!(spawn);
+        poll_fn(|cx| match spawn.as_mut().poll(cx) {
+            Poll::Ready(reply) => Poll::Ready(Err(format!(
+                "spawn completed while the holder was busy: {reply}"
+            ))),
+            Poll::Pending if root.has_ready_demand() => Poll::Ready(Ok(())),
+            Poll::Pending => Poll::Pending,
+        })
+        .await?;
+
+        assert_eq!(
+            busy.return_to_pool_observed().await,
+            PoolConnectionReturnDisposition::ReturnedToIdle
+        );
+        // Try the later owner before polling spawn again so the race has a fixed order.
+        let competing = DurabilityRoot::with_holder_owner(async { root.try_acquire_ready() }).await;
+        if !matches!(competing, Err(DurabilityError::RootUnavailable)) {
+            return Err("the later owner took the returned holder before the waiting spawn".into());
+        }
+
+        let reply = spawn.await;
+        let channel = channel.lock().await;
+        let census = channel.positioned_actor_census()?;
+        let [
+            (_, player_position, Some(actual_session)),
+            (creature, creature_position, None),
+        ] = census.as_slice()
+        else {
+            return Err(
+                format!("expected one player and one spawned creature, reply={reply}").into(),
+            );
+        };
+        assert_eq!(*actual_session, session);
+        assert!(
+            wild_spawn::adjacent_cells(player_position.position())
+                .contains(&creature_position.position())
+        );
+        let identity = creature
+            .placement_identity()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        assert_eq!(
+            reply,
+            format!("spawned {identity} {}", creature.actor_local_generation())
+        );
         Ok(())
     }
 
