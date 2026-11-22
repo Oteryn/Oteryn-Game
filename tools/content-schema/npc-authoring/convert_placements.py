@@ -27,6 +27,7 @@ import hashlib
 import json
 import sys
 from collections import defaultdict
+from collections.abc import Collection
 from pathlib import Path
 
 import native_contacts
@@ -35,6 +36,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 OUT = ROOT / "content/world/npc-placements"
 CANDIDATES = HERE / "samples/promotion-candidates-v1.json"
+WIKI_BR = ROOT / "imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json"
 SCOPE = HERE / "npc_placement_scope.json"
 NPCS = ROOT / "content/npcs/definitions"
 FRAME = "global-target-2026-09-27"
@@ -71,12 +73,14 @@ def cell_of(position: dict) -> tuple[int, int, int]:
     return x, y, z
 
 
-def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
-    """Explicit pinned schedules supersede migration placement hypotheses, not definitions."""
+def apply_placement_overrides(
+    candidates: dict, scope: dict, admitted: Collection[str] = (),
+) -> dict:
+    """Use pinned source cells for scoped NPCs, including independently admitted definitions."""
     result = copy.deepcopy(candidates)
     for key, override in scope.get("placement_overrides", {}).items():
-        if key not in scope["npcs"] or key not in result:
-            raise ValueError("placement override requires a scoped candidate")
+        if key not in scope["npcs"] or (key not in result and key not in admitted):
+            raise ValueError("placement override requires a scoped NPC definition")
         source, placements = override["source"], override["placements"]
         if (source.get("origin") not in SOURCES
                 or not re.fullmatch(r"[0-9a-f]{40}", source.get("revision", ""))
@@ -99,6 +103,8 @@ def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
                 raise ValueError("ambiguous native placement override")
             cells.add(cell)
         repository, _, source_key = SOURCES[source["origin"]]
+        if key not in result:
+            result[key] = {"identity": {"key": key}}
         result[key]["placements"] = copy.deepcopy(placements)
         result[key]["placement_override_provenance"] = [{
             "origin": source["origin"], "repository": repository,
@@ -109,6 +115,40 @@ def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
                              "rule": "EXPLICIT_PINNED_NATIVE_PLACEMENTS", "basis": override["basis"]}],
         }]
     return result
+
+
+def apply_wiki_br_contacts(candidates: dict, scope: dict, facts: bytes) -> None:
+    """Resolve explicitly selected coordinates against the retained Wiki BR revision."""
+    pages = {page["pageid"]: page for page in json.loads(facts)["pages"]}
+    for key, contact in scope["wiki_br_contacts"].items():
+        candidate = candidates.get(key)
+        if (key not in scope["npcs"] or candidate is None
+                or "placement_override_provenance" in candidate):
+            raise ValueError("Wiki BR contact requires a scoped candidate")
+        page = pages.get(contact["pageid"])
+        if (page is None or page["name"].casefold() != candidate["name"].casefold()
+                or page["removed"]):
+            raise ValueError(f"{key}: Wiki BR contact identity or lifecycle mismatch")
+        cells = contact["cells"]
+        if (not isinstance(cells, list) or not 1 <= len(cells) <= 16
+                or any(not isinstance(cell, list) or len(cell) != 3
+                       or any(type(coordinate) is not int for coordinate in cell)
+                       or cell not in page["positions"] for cell in cells)
+                or len({tuple(cell) for cell in cells}) != len(cells)):
+            raise ValueError(f"{key}: Wiki BR contact position missing from retained revision")
+        candidate["placements"] = [
+            {"position": dict(zip(("x", "y", "z"), cell)), "direction": None,
+             "origin": "native_wiki_br"}
+            for cell in cells
+        ]
+        candidate["native_provenance"] = {
+            "origin": "native_wiki_br",
+            "repository": "www.tibiawiki.com.br",
+            "pageid": page["pageid"],
+            "revid": page["revid"],
+            "source_sha256": page["sha256"],
+            "direction_note": "No source direction; north is the project default",
+        }
 
 
 def apply_authored_placements(candidates: dict, scope: dict, admitted: set[str], root: Path = ROOT) -> dict:
@@ -209,8 +249,11 @@ def convert() -> dict[str, str]:
     if not set(native) <= set(scope["npcs"]):
         raise ValueError("native_contacts names an unscoped NPC")
     candidates.update(native)
-    candidates = apply_placement_overrides(candidates, scope)
     admitted = admitted_keys()
+    candidates = apply_placement_overrides(candidates, scope, admitted)
+    wiki_br_facts = WIKI_BR.read_bytes() if scope.get("wiki_br_contacts") else b""
+    if wiki_br_facts:
+        apply_wiki_br_contacts(candidates, scope, wiki_br_facts)
     candidates = apply_authored_placements(candidates, scope, admitted)
     npcs = sorted(scope["npcs"])
     if len(set(npcs)) != len(npcs):
@@ -340,6 +383,8 @@ def convert() -> dict[str, str]:
             "inputs": {
                 "candidates_sha256": hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
                 "scope_sha256": hashlib.sha256(SCOPE.read_bytes()).hexdigest(),
+                **({"wiki_br_facts_sha256": hashlib.sha256(wiki_br_facts).hexdigest()}
+                   if wiki_br_facts else {}),
                 **({"native_contacts_sha256": hashlib.sha256(dump(native).encode()).hexdigest()}
                    if native else {}),
             },
