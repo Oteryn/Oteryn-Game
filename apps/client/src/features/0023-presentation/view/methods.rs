@@ -101,6 +101,7 @@ impl PlayView {
             self.own,
             &self.entities,
             &self.party_icons,
+            &self.party_summons,
             &self.guild_emblems,
             actor_options,
         )?;

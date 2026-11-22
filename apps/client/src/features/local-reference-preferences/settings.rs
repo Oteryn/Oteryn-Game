@@ -104,6 +104,15 @@ pub enum ChatMode {
     Off,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum StatusBarStyle {
+    Compact,
+    Default,
+    #[default]
+    Large,
+    Parallel,
+}
+
 /// Preferences owned entirely by the native client.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -160,6 +169,10 @@ pub struct ReferencePreferences {
     pub compact_status: bool,
     #[serde(default = "enabled")]
     pub status_panel_visible: bool,
+    #[serde(default)]
+    pub status_bar_bottom: bool,
+    #[serde(default)]
+    pub status_bar_style: StatusBarStyle,
     #[serde(default)]
     pub skill_order: Vec<u8>,
     #[serde(default)]
@@ -324,6 +337,8 @@ impl Default for ReferencePreferences {
             console_font_px: 14,
             compact_status: false,
             status_panel_visible: true,
+            status_bar_bottom: false,
+            status_bar_style: StatusBarStyle::Large,
             skill_order: Vec::new(),
             condition_order: Vec::new(),
             special_condition_order: Vec::new(),

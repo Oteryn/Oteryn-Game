@@ -49,6 +49,8 @@ struct FrameGroupMsg {
 
 #[derive(Clone, PartialEq, Message)]
 struct SpriteInfoMsg {
+    #[prost(bool, optional, tag = "8")]
+    is_opaque: Option<bool>,
     #[prost(uint32, optional, tag = "1")]
     pattern_width: Option<u32>,
     #[prost(uint32, optional, tag = "2")]
@@ -79,6 +81,8 @@ struct PhaseMsg {
 
 #[derive(Clone, PartialEq, Message)]
 struct FlagsMsg {
+    #[prost(bool, optional, tag = "32")]
+    fullbank: Option<bool>,
     #[prost(message, optional, tag = "1")]
     bank: Option<BankMsg>,
     #[prost(bool, optional, tag = "2")]
@@ -157,6 +161,7 @@ struct HeightMsg {
 /// Frame group 0 of an appearance. Visual effects resolve all animation phases.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Appearance {
+    pub covers_tile: bool,
     pub id: u32,
     /// Official appearance light intensity and palette colour.
     pub light: Option<(u8, u8)>,
@@ -367,6 +372,7 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         return None;
     }
     Some(Appearance {
+        covers_tile: info.is_opaque.unwrap_or(false) || flags.fullbank.unwrap_or(false),
         id,
         light: flags.light.and_then(|light| {
             Some((

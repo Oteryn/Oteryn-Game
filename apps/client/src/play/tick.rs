@@ -77,7 +77,8 @@ impl PlayView {
         let icon_now = std::time::Instant::now();
         if (self.preferences().creature_bars
             || self.preferences().hud_marks_own
-            || self.preferences().hud_marks_other)
+            || self.preferences().hud_marks_other
+            || self.preferences().panel_visible("battle"))
             && party.selected
             && !party.pending
             && self.party_icons_refresh.is_none_or(|last| {
@@ -88,6 +89,7 @@ impl PlayView {
             self.party_icons_refresh = Some(icon_now);
         }
         self.party_icons = party.icons;
+        self.party_summons = super::mailbox::lock(&link.mailbox).party_summons();
         self.sync_spell_words(link);
         self.project_presentation(std::time::Instant::now())
             .map_err(|_| UNAVAILABLE)?;

@@ -189,7 +189,8 @@ impl HostOwner {
         let unambiguous = self.play.as_ref().and_then(|play| {
             let row = play
                 .link
-                .filtered_battle_rows(play.link.active_battle_list())
+                .battle_panel()
+                .visible_actors
                 .into_iter()
                 .find(|row| row.entity == target)?;
             let tile = TileCoord::new(row.position.x, row.position.y);

@@ -343,3 +343,62 @@ fn context_stop_refuses_an_opponent_published_after_validation() -> Result {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn secondary_list_context_keeps_attack_for_the_unambiguous_creature() -> Result {
+    use oteryn_session::{
+        ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
+    };
+
+    let own = TileCoord::new(100, 100);
+    let tile = TileCoord::new(101, 100);
+    let creature = WorldSpatialEntity {
+        entity: EntityRef {
+            identity: [3; 16],
+            generation: 1,
+        },
+        kind: EntityKind::Creature,
+        position: ActorPosition {
+            x: tile.x,
+            y: tile.y,
+            floor: 7,
+        },
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+        motion: None,
+        display_name: None,
+    };
+    let mut host = HostOwner::new(None)?;
+    let (link, _commands, outbox) = play_channel();
+    outbox.bevy_world_look_selected();
+    outbox.battle_publish(None, Some(7), &[creature]);
+    let mut lists = vec![
+        serde_json::from_value(serde_json::json!({"creatures":false}))?,
+        serde_json::from_value(serde_json::json!({"name":"Monsters"}))?,
+    ];
+    link.sync_battle_lists(&mut lists, 0);
+    assert!(link.filtered_battle_rows(0).is_empty());
+    assert_eq!(link.filtered_battle_rows(1), [creature]);
+    host.play = Some(super::super::owner::ActivePlay {
+        view: PlayView::new(own, 7, &[])?.with_entities(vec![creature])?,
+        link,
+    });
+    host.phase = Phase::Playing;
+    host.request_creature_context(creature.entity);
+    let request = host
+        .dialogs
+        .pending
+        .as_ref()
+        .ok_or("secondary list context")?;
+    assert!(matches!(
+        request.content,
+        Content::Context {
+            attack: Some(_),
+            ..
+        }
+    ));
+    Ok(())
+}

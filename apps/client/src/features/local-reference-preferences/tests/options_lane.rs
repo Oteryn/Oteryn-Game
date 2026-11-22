@@ -227,6 +227,7 @@ fn hud_arcs_project_server_vitals_and_persist_geometry_controls()
         distance: 25,
         size: 60,
         opacity: 50,
+        ..Default::default()
     };
     play.set_preferences(prefs.clone())?;
     assert!(play.hud_arc_layout().is_none());

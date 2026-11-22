@@ -1,4 +1,5 @@
 use super::*;
+use crate::play::StatusBarStyle;
 pub(super) const MAIN: [Row; 4] = [
     check!("interface.tooltips", "Show Tooltips", tooltips_enabled),
     number!(
@@ -23,7 +24,7 @@ pub(super) const MAIN: [Row; 4] = [
         cursor_crosshair
     ),
 ];
-pub(super) const HUD: [Row; 23] = [
+pub(super) const HUD: [Row; 28] = [
     check!("hud.health", "Show Health", hud_health),
     check!("hud.mana", "Show Mana", hud_mana),
     check!("hud.own_name", "Show Own Name", hud_names[0]),
@@ -45,6 +46,31 @@ pub(super) const HUD: [Row; 23] = [
         "Show Status Panel",
         status_panel_visible
     ),
+    Row {
+        id: "hud.status_position",
+        label: "Status Bar Position",
+        editor: Editor::Choice {
+            values: &["Top", "Bottom"],
+            read: |p| usize::from(p.status_bar_bottom),
+            write: |p, i| p.status_bar_bottom = i == 1,
+        },
+    },
+    Row {
+        id: "hud.status_style",
+        label: "Status Bar Style",
+        editor: Editor::Choice {
+            values: &["Compact", "Default", "Large", "Parallel"],
+            read: |p| p.status_bar_style as usize,
+            write: |p, i| {
+                p.status_bar_style = [
+                    StatusBarStyle::Compact,
+                    StatusBarStyle::Default,
+                    StatusBarStyle::Large,
+                    StatusBarStyle::Parallel,
+                ][i]
+            },
+        },
+    },
     check!("hud.status_compact", "Compact Status Panel", compact_status),
     check!("hud.health_arc", "Show Health Arc", arcs.health),
     check!(
@@ -52,6 +78,17 @@ pub(super) const HUD: [Row; 23] = [
         "Show Health/Mana Circles",
         health_circle
     ),
+    check!("hud.experience_arc", "Show Experience Arc", arcs.experience),
+    check!("hud.skill_arc", "Show Skill Arc", arcs.skill),
+    Row {
+        id: "hud.tracked_skill",
+        label: "Tracked Skill",
+        editor: Editor::Choice {
+            values: &oteryn_client_ui::skill_progress::SKILL_LABELS,
+            read: |p| usize::from(p.arcs.tracked_skill),
+            write: |p, i| p.arcs.tracked_skill = i as u8,
+        },
+    },
     check!("hud.mana_arc", "Show Mana Arc", arcs.mana),
     number!(
         "hud.arc_distance",
