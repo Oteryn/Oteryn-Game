@@ -10,6 +10,7 @@ use std::{
 };
 #[derive(Default)]
 pub(in super::super) struct ScreenshotRuntime {
+    readback_epoch: u64,
     frames: VecDeque<(Instant, Arc<Pixels>)>,
     last_frame: Option<Instant>,
     last_pvp_query: Option<Instant>,
@@ -139,6 +140,15 @@ impl PlayLink {
     }
 }
 
+impl ScreenshotRuntime {
+    fn invalidate(&mut self) {
+        *self = Self {
+            readback_epoch: self.readback_epoch.wrapping_add(1),
+            ..Default::default()
+        };
+    }
+}
+
 impl SettingsState {
     fn observe_impact_records(&mut self, maxima: [u32; 2], enabled: [bool; 12]) {
         #[cfg(bevy_shell)]
@@ -182,8 +192,13 @@ impl SettingsState {
         self.screenshot_runtime.automatic_pending = [false; 12];
         self.screenshot_requested = false;
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn screenshot_readback_epoch(&self) -> u64 {
+        self.screenshot_runtime.readback_epoch
+    }
+
     pub fn reset_screenshot_session(&mut self) {
-        self.screenshot_runtime = ScreenshotRuntime::default();
+        self.screenshot_runtime.invalidate();
         self.screenshot_requested = false;
     }
     pub fn process_screenshots(
@@ -230,7 +245,7 @@ impl SettingsState {
             || runtime.game_only != Some(preferences.game_only)
             || runtime.activity != activity
         {
-            *runtime = ScreenshotRuntime::default();
+            runtime.invalidate();
             runtime.game_only = Some(preferences.game_only);
             runtime.activity = activity;
         }

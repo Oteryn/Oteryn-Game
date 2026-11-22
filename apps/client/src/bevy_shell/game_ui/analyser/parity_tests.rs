@@ -212,6 +212,20 @@ fn report_copy_uses_the_activated_window() -> TestResult {
         select(&mut app, tool)?;
         click_caption(&mut app, "Copy report")?;
         assert!(app.world().resource::<Captured>().0.contains(expected));
+        let feedback = |app: &App| {
+            app.world().non_send::<HostOwner>().play.as_ref()
+                .and_then(|play| play.link.analyser_panel().feedback)
+        };
+        let completed = |status| matches!(status, Some("Report copied" | "Clipboard unavailable"));
+        assert!(!completed(feedback(&app)), "clipboard finished inside the input frame");
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while !completed(feedback(&app)) {
+            if std::time::Instant::now() >= deadline {
+                return Err("clipboard worker did not publish its result".into());
+            }
+            app.update();
+            std::thread::yield_now();
+        }
     }
     Ok(())
 }

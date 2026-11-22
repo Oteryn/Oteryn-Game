@@ -466,7 +466,13 @@ fn outfit_preview_buttons_animate_the_retained_image_without_sending_a_change()
             .and_then(|image| image.data.clone())
             .ok_or_else(|| "image".into())
     };
+    let placeholder = pixels(&app)?;
     app.update();
+    assert_eq!(
+        pixels(&app)?,
+        placeholder,
+        "sprite sheets were drawn on the input frame"
+    );
     finish_draw(&mut app)?;
     let south = pixels(&app)?;
     app.world_mut().trigger(Activate { entity: right });
