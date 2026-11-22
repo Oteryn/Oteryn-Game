@@ -11,8 +11,8 @@ Optional block_solid_contacts admits only source-backed solid-object contacts;
 the compiler still checks walls, floor changes and other terrain hazards.
 Explicit placement_adjustments choose adjacent clear native ground while retaining
 the donor cell. Pinned placement overrides preserve their own evidence and replace
-only a scoped candidate's placement hypothesis. The source is OTS_HYPOTHESIS_ONLY
-migration evidence: only normalized facts are written. Unadmitted keys and
+the placement hypothesis of a scoped, admitted NPC. Explicit Wiki BR cells are
+qualified against the retained page. The source is OTS_HYPOTHESIS_ONLY migration evidence: only normalized facts are written. Unadmitted keys and
 out-of-range positions fail closed.
 
     python convert_placements.py [--check]
@@ -26,6 +26,7 @@ import re
 import hashlib
 import json
 import sys
+from collections.abc import Set
 from collections import defaultdict
 from pathlib import Path
 
@@ -38,6 +39,7 @@ CANDIDATES = HERE / "samples/promotion-candidates-v1.json"
 SCOPE = HERE / "npc_placement_scope.json"
 NPCS = ROOT / "content/npcs/definitions"
 FRAME = "global-target-2026-09-27"
+BR_FACTS = ROOT / "imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json"
 from chosen_placement_adjustments import choose_cell
 SHARD_SIZE = 500
 SOURCES = {
@@ -71,12 +73,12 @@ def cell_of(position: dict) -> tuple[int, int, int]:
     return x, y, z
 
 
-def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
+def apply_placement_overrides(candidates: dict, scope: dict, admitted: Set[str] = frozenset()) -> dict:
     """Explicit pinned schedules supersede migration placement hypotheses, not definitions."""
     result = copy.deepcopy(candidates)
     for key, override in scope.get("placement_overrides", {}).items():
-        if key not in scope["npcs"] or key not in result:
-            raise ValueError("placement override requires a scoped candidate")
+        if key not in scope["npcs"] or (key not in result and key not in admitted):
+            raise ValueError("placement override requires a scoped candidate or admitted NPC")
         source, placements = override["source"], override["placements"]
         if (source.get("origin") not in SOURCES
                 or not re.fullmatch(r"[0-9a-f]{40}", source.get("revision", ""))
@@ -99,7 +101,15 @@ def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
                 raise ValueError("ambiguous native placement override")
             cells.add(cell)
         repository, _, source_key = SOURCES[source["origin"]]
-        result[key]["placements"] = copy.deepcopy(placements)
+        for alias in override.get("supersedes_unscoped", []):
+            if alias in scope["npcs"] or alias not in result:
+                raise ValueError("placement override can only supersede an unscoped alias")
+            old = result[alias]["placements"]
+            retained = [p for p in old if cell_of(p["position"]) not in cells]
+            if retained == old:
+                raise ValueError("superseded alias has no matching cell")
+            result[alias]["placements"] = retained
+        result.setdefault(key, {"identity": {"key": key}})["placements"] = copy.deepcopy(placements)
         result[key]["placement_override_provenance"] = [{
             "origin": source["origin"], "repository": repository,
             "revision": source["revision"], "source_key": source_key,
@@ -109,6 +119,32 @@ def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
                              "rule": "EXPLICIT_PINNED_NATIVE_PLACEMENTS", "basis": override["basis"]}],
         }]
     return result
+
+
+
+def apply_wiki_br_cells(candidates: dict, scope: dict) -> None:
+    """Use an explicitly chosen, retained Wiki cell for an occurrence absent from donor XML."""
+    selections = scope.get("wiki_br_cells", {})
+    if not selections:
+        return
+    pages = defaultdict(list)
+    for page in json.loads(BR_FACTS.read_text())["pages"]:
+        pages[page["name"].casefold()].append(page)
+    for key, position in selections.items():
+        if key not in scope["npcs"] or key in scope.get("placement_overrides", {}):
+            raise ValueError("Wiki position requires a scoped NPC without a donor override")
+        candidate = candidates[key]
+        source_pages = pages[candidate["name"].casefold()]
+        if len(source_pages) != 1 or list(cell_of(position)) not in source_pages[0]["positions"]:
+            raise ValueError(f"{key}: position is absent from the retained Wiki page")
+        page = source_pages[0]
+        candidate["placements"] = [{"position": position, "direction": None, "origin": "native_wiki_br"}]
+        candidate["native_provenance"] = {
+            "origin": "native_wiki_br", "repository": "www.tibiawiki.com.br",
+            "source_sha256": page["sha256"], "revid": page["revid"], "pageid": page["pageid"],
+            "url": f"https://www.tibiawiki.com.br/index.php?oldid={page['revid']}",
+            "direction_note": "North is the project default when the source supplies no facing.",
+        }
 
 
 def apply_authored_placements(candidates: dict, scope: dict, admitted: set[str], root: Path = ROOT) -> dict:
@@ -209,8 +245,9 @@ def convert() -> dict[str, str]:
     if not set(native) <= set(scope["npcs"]):
         raise ValueError("native_contacts names an unscoped NPC")
     candidates.update(native)
-    candidates = apply_placement_overrides(candidates, scope)
     admitted = admitted_keys()
+    candidates = apply_placement_overrides(candidates, scope, admitted)
+    apply_wiki_br_cells(candidates, scope)
     candidates = apply_authored_placements(candidates, scope, admitted)
     npcs = sorted(scope["npcs"])
     if len(set(npcs)) != len(npcs):

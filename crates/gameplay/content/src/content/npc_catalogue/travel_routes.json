@@ -638,7 +638,7 @@
     "key": "oteryn:service.travel.captain_max/calassa",
     "keyword": "calassa",
     "price": 200,
-    "premium": true,
+    "premium": false,
     "x": 31911,
     "y": 32710,
     "floor": 6,

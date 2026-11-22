@@ -64,3 +64,80 @@ fn pinned_catalogue_service_model_counts() {
     ]);
     assert_eq!(counts, expected);
 }
+
+/// Crystal 201189f8, data-global/npc/captain_max.lua:59-78.
+#[test]
+fn captain_max_calassa_keeps_mission_and_postman_access_without_premium()
+-> Result<(), Box<dyn std::error::Error>> {
+    let catalogue = build();
+    let model = catalogue.service_model_for_project()?;
+    let (_, npc) = model
+        .npcs()
+        .iter()
+        .find(|(key, _)| key.key == "oteryn:npc.captain_max")
+        .ok_or("Captain Max in the production catalogue")?;
+    let routes = npc_catalogue::travel::resolve(&model, "oteryn:npc.captain_max", &npc.services);
+    let calassa = routes
+        .iter()
+        .find(|route| route.keyword == "calassa")
+        .ok_or("Calassa service route")?;
+
+    assert_eq!(calassa.route.price, 200);
+    assert_eq!(
+        (
+            calassa.route.destination.x,
+            calassa.route.destination.y,
+            calassa.route.destination.floor,
+        ),
+        (31911, 32710, 6)
+    );
+    assert!(calassa.postman);
+    assert!(!calassa.held);
+    assert_eq!(
+        calassa.quest_gate.as_deref(),
+        Some("oteryn:quest-progress/quest/u7_6/explorer_society/calassa_quest")
+    );
+    assert!(!calassa.route.premium);
+    Ok(())
+}
+
+#[test]
+fn regional_variant_names_come_from_the_donor_npc_configuration()
+-> Result<(), Box<dyn std::error::Error>> {
+    let catalogue = build();
+    let model = catalogue.service_model_for_project()?;
+    let names: BTreeMap<_, _> = model
+        .npcs()
+        .iter()
+        .map(|(key, npc)| (key.key.as_str(), npc.name.as_str()))
+        .collect();
+    for (key, name) in [
+        ("oteryn:npc.anaztassja_moroia_init", "Anaztassja Moroia"),
+        ("oteryn:npc.baa_leal", "Baa'Leal"),
+        ("oteryn:npc.bo_ques", "Bo'Ques"),
+        ("oteryn:npc.buddel_helheim", "Buddel"),
+        ("oteryn:npc.buddel_okolnir", "Buddel"),
+        ("oteryn:npc.buddel_raider_camp", "Buddel"),
+        ("oteryn:npc.buddel_tyrsung", "Buddel"),
+        ("oteryn:npc.captain_max_calassa", "Captain Max"),
+        ("oteryn:npc.fa_hradin", "Fa'Hradin"),
+        ("oteryn:npc.gnomish_operative_catching", "Gnomish Operative"),
+        ("oteryn:npc.gnomish_operative_gt_m_01", "Gnomish Operative"),
+        ("oteryn:npc.gnomish_operative_raiders", "Gnomish Operative"),
+        (
+            "oteryn:npc.gnomish_operative_resonating",
+            "Gnomish Operative",
+        ),
+        ("oteryn:npc.gnomish_operative_volcano", "Gnomish Operative"),
+        ("oteryn:npc.jack_fate_goroma", "Jack Fate"),
+        ("oteryn:npc.john_bounac", "John"),
+        ("oteryn:npc.lesh_the_seer", "Lesh the Seer"),
+        ("oteryn:npc.nah_bob", "Nah'Bob"),
+        ("oteryn:npc.one_eyed_joe", "One-Eyed Joe"),
+        ("oteryn:npc.rata_mari", "Rata'Mari"),
+        ("oteryn:npc.sebastian_nargor", "Sebastian"),
+    ] {
+        assert_eq!(names.get(key), Some(&name), "{key}");
+    }
+    Ok(())
+}
