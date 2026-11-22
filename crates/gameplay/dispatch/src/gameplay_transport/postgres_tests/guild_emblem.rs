@@ -48,6 +48,7 @@ async fn war(h: &Harness, n: u32, declaring: u32, opposing: u32, state: i16) -> 
 #[test]
 fn guild_emblem_relations_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("POSTGRES_CASE_SKIPPED {}: OTERYN_TEST_POSTGRES_ADMIN_URL is absent", module_path!());
         return Ok(());
     }
     std::thread::Builder::new()
@@ -224,11 +225,11 @@ fn scenario() -> TestResult {
         let mut stale = admitted;
         stale.continuity.connection_generation += 1;
         assert_eq!(owner.observe_guild_emblems(stale).await, None);
-        // An ended war returns to Member.
         sqlx::query("UPDATE game_guild_wars SET ends_at=2 WHERE war_id=encode($1,'hex')::uuid")
             .bind(guild_fixture::sid(1, 40).as_slice()).execute(&h.pool).await?;
         assert!(read().await?.contains(&(rival, Emblem::Other)), "expired war must not display Enemy");
-        sqlx::query("UPDATE game_guild_wars SET state=3,ended_reason=1 WHERE war_id=encode($1,'hex')::uuid")
+        // With a future deadline, only the ended state can suppress the enemy emblem.
+        sqlx::query("UPDATE game_guild_wars SET state=3,ended_reason=1,ends_at=9999999999999 WHERE war_id=encode($1,'hex')::uuid")
             .bind(guild_fixture::sid(1, 40).as_slice())
             .execute(&h.pool)
             .await?;

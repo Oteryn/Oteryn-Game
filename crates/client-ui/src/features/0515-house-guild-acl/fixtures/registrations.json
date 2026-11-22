@@ -1,0 +1,20 @@
+[
+  {
+    "mechanic": "0515-house-guild-acl",
+    "kind": "handlers",
+    "id": "0515-house-guild-acl-replace",
+    "status": "unsupported",
+    "commands": [
+      6252
+    ],
+    "direction": "client_to_server",
+    "reason": "The native house editor edits character entries through command 56. Guild selectors use command 6252 on bundle Worlds.",
+    "not_applicable": {
+      "state": "Guild selectors are stored in the server House ACL.",
+      "protocol": "Guild selectors use the negotiated House guild ACL command.",
+      "view": "The native house editor presents character entries.",
+      "input": "The native house editor submits character entries.",
+      "settings": "Guild selectors have no client setting."
+    }
+  }
+]

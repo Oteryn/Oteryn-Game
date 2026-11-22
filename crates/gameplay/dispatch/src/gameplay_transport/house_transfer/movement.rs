@@ -19,9 +19,147 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::time::Duration;
 
 type Reply = (StepOutcome, Option<Duration>);
-type ItemCells = BTreeMap<LogicalCell, (bool, u16)>;
+type ItemCells = BTreeMap<LogicalCell, Option<FloorItems>>;
+
+#[derive(Default)]
+struct FloorItems {
+    blocked: bool,
+    height: u16,
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn plan_house_podium_approach(
+        &self,
+        admitted: AdmittedSession,
+        item: [u8; 16],
+    ) -> crate::gameplay_transport::house_podium::Approach {
+        use crate::gameplay_transport::house_podium::Approach;
+        self.read_house_podium_route(admitted, item)
+            .await
+            .unwrap_or(Approach::Unavailable)
+    }
+
+    async fn read_house_podium_route(
+        &self,
+        admitted: AdmittedSession,
+        item: [u8; 16],
+    ) -> Option<crate::gameplay_transport::house_podium::Approach> {
+        use crate::gameplay_transport::house_podium::Approach;
+        use crate::movement::path_search::{
+            CHASE_SEARCH_DISTANCE, chebyshev, measured_creature_route, route_next_to,
+        };
+
+        let actor = admitted.runtime_actor?;
+        let fence = admitted.item_fence?;
+        let session = admitted.game_session_id;
+        let state = self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, session)
+            .ok()?;
+        if state.scope != fence.runtime_scope
+            || state.generation != fence.scope_ownership_generation
+        {
+            return None;
+        }
+        let house = HouseId::new(self.world_id, &state.house)?;
+        let Some(bytes) = self
+            .root
+            .house_podium_target(self.holder, fence, house.clone(), item)
+            .await
+            .ok()?
+        else {
+            // A current read with no matching item still has the existing empty projection.
+            return Some(Approach::Ready);
+        };
+        let coord = |i| Some(i32::from_be_bytes(bytes.get(i..i + 4)?.try_into().ok()?));
+        let target = MovementLocalPosition {
+            x: coord(0)?,
+            y: coord(4)?,
+            floor: i16::try_from(coord(8)?).ok()?,
+        };
+        let start = movement(state.position);
+        if start.floor != target.floor {
+            return Some(Approach::NoPath);
+        }
+        if chebyshev(start, target) <= 1 {
+            return Some(Approach::Ready);
+        }
+
+        let doors = self.door.lock().await.blocking_cells().clone();
+        let runtime = self.runtime.lock().await;
+        if runtime.house_actor_state(actor, session).ok()? != state {
+            return None;
+        }
+        let request = HouseStepReadRequest {
+            fence,
+            origin_channel: *self.channel_id.as_bytes(),
+            house,
+            content_digest: runtime.content_pin().server_artifact_digest(),
+        };
+        let diagonal = admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1);
+        let mut context = (self, &runtime, &state.house, &doors, Approach::Unavailable);
+        self.root
+            .with_house_step_read(
+                self.character,
+                self.holder,
+                request,
+                &mut context,
+                move |read, context| {
+                    let (owner, runtime, house, doors, route) = context;
+                    let Some(items) = owner
+                        .active_generation
+                        .and_then(crate::content::ActiveGeneration::native_gameplay)
+                        .and_then(|content| item_cells(&read.interior.items, content))
+                    else {
+                        return false;
+                    };
+                    let cells = owner.movement_cells();
+                    let blocker = HouseBlocker {
+                        cells,
+                        bundle: owner.bundle_map(),
+                        house,
+                        items: &items,
+                        doors,
+                    };
+                    let tile_cost = |at| {
+                        let tile = cell(at);
+                        (!blocker.blocks(tile)
+                            && cells.index().lookup(cells.scope(), tile)
+                                == Ok(CollisionClass::Walkable)
+                            && !runtime
+                                .house_cell_occupied_except(
+                                    actor,
+                                    session,
+                                    LocalPosition {
+                                        x: at.x,
+                                        y: at.y,
+                                        floor: at.floor,
+                                    },
+                                )
+                                .unwrap_or(true))
+                        .then_some(0)
+                    };
+                    let path = if diagonal {
+                        route_next_to(start, target, CHASE_SEARCH_DISTANCE, tile_cost)
+                    } else {
+                        measured_creature_route(start, target, false, tile_cost).0
+                    };
+                    *route = path.map_or(Approach::NoPath, |steps| {
+                        Approach::Walk(steps.into_iter().map(step_direction).collect())
+                    });
+                    false
+                },
+            )
+            .await
+            .ok()?;
+        Some(context.4)
+    }
+
     pub(in crate::gameplay_transport) async fn house_paced_step(
         &self,
         actor: ExactActorRef,
@@ -357,11 +495,24 @@ fn cardinal(direction: StepDirection) -> (CardinalStep, MovementFacing) {
     }
 }
 
+fn step_direction(step: CardinalStep) -> StepDirection {
+    match step {
+        CardinalStep::North => StepDirection::North,
+        CardinalStep::East => StepDirection::East,
+        CardinalStep::South => StepDirection::South,
+        CardinalStep::West => StepDirection::West,
+        CardinalStep::NorthEast => StepDirection::NorthEast,
+        CardinalStep::SouthEast => StepDirection::SouthEast,
+        CardinalStep::SouthWest => StepDirection::SouthWest,
+        CardinalStep::NorthWest => StepDirection::NorthWest,
+    }
+}
+
 fn item_cells(
     items: &[crate::durability::house_interior::HouseInteriorLoadedItem],
     content: &crate::content::native_gameplay::NativeGameplayState,
 ) -> Option<ItemCells> {
-    let mut cells = BTreeMap::<LogicalCell, (bool, u16)>::new();
+    let mut cells = ItemCells::new();
     for item in items {
         if item.definition.family != "Item" || item.spatial_position.len() != 12 {
             return None;
@@ -379,17 +530,26 @@ fn item_cells(
             y: part(4)?,
             z: part(8)?,
         };
-        let policy = content.item_policy(
-            &item.definition.production_key,
-            &item.definition.revision_ref,
-        )?;
-        if policy.source_digest() != content.source_digest() {
-            return None;
-        }
-        let attributes = &policy.record().attributes;
-        let current = cells.entry(position).or_default();
-        current.0 |= attributes.blocks_movement?;
-        current.1 = current.1.checked_add(u16::from(attributes.has_height?))?;
+        let current = cells
+            .entry(position)
+            .or_insert_with(|| Some(FloorItems::default()));
+        // Collision facts may be incomplete for placeable items such as podiums.
+        // A known location still lets us fence that cell during unrelated steps.
+        *current = current.take().and_then(|mut stack| {
+            let policy = content.item_policy(
+                &item.definition.production_key,
+                &item.definition.revision_ref,
+            )?;
+            if policy.source_digest() != content.source_digest() {
+                return None;
+            }
+            let attributes = &policy.record().attributes;
+            stack.blocked |= attributes.blocks_movement?;
+            stack.height = stack
+                .height
+                .checked_add(u16::from(attributes.has_height?))?;
+            Some(stack)
+        });
     }
     Some(cells)
 }
@@ -410,10 +570,11 @@ fn resolve_destination(
             origin,
             direction,
             |at| {
-                Some((
-                    blocked.blocks(cell(at)),
-                    items.get(&cell(at)).map_or(0, |item| item.1),
-                ))
+                let height = match items.get(&cell(at)) {
+                    Some(stack) => stack.as_ref()?.height,
+                    None => 0,
+                };
+                Some((blocked.blocks(cell(at)), height))
             },
         )?;
         return Ok((destination, destination.floor != origin.floor));
@@ -462,7 +623,12 @@ impl CellBlocker for HouseBlocker<'_> {
             || self.doors.contains(&cell),
             |bundle| crate::map::floor::BundleDoors(&bundle.facts).blocks(cell),
         );
-        outside || door || self.items.get(&cell).is_some_and(|item| item.0)
+        outside
+            || door
+            || self
+                .items
+                .get(&cell)
+                .is_some_and(|stack| stack.as_ref().is_none_or(|stack| stack.blocked))
     }
 }
 

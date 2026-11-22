@@ -933,7 +933,7 @@
     }
   ],
   "schema": "SRX3_SOUL_WAR_ORDERED_DEATH_EVENTS/v1",
-  "source_definitions_sha256": "ea69f2d20442443bfa0d7cef82756afb44b7ba5ee35150f8b14c27605c0d1a99",
+  "source_definitions_sha256": "0ada2a068209bedfe2e3b06970f746834eed1a38d654f93d598c3cc6978b00bb",
   "source_repository": "zimbadev/crystalserver",
   "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
   "sources": [

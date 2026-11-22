@@ -234,8 +234,30 @@ pub(super) async fn authorize(
             }
             SelectionAction::Refresh => {}
             SelectionAction::Cancel => {
+                config
+                    .device_sessions
+                    .block_remembered()
+                    .map_err(login_rejected)?;
+                if let Some(path) = &config.preference_path
+                    && let Err(error) =
+                        crate::play::MiscellaneousPreferences::disable_remember_device_at(
+                            &path.with_extension("session-options.json"),
+                        )
+                {
+                    eprintln!("Could not save the remember-device choice: {error}");
+                }
                 if let Some(attempt) = &mut device {
-                    attempt.sign_out(client).await;
+                    config
+                        .device_sessions
+                        .finish_attempt_sign_out(attempt, client)
+                        .await
+                        .map_err(login_rejected)?;
+                } else {
+                    config
+                        .device_sessions
+                        .finish_sign_out(client)
+                        .await
+                        .map_err(login_rejected)?;
                 }
                 return Err(rejected(PublicClass::RetryLogin));
             }

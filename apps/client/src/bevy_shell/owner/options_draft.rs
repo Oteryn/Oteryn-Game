@@ -53,7 +53,7 @@ impl HostOwner {
                 "Wait for the options transfer to finish before applying edits.".into();
             return;
         }
-        let Some(draft) = self.draft.take() else {
+        let Some(mut draft) = self.draft.take() else {
             return;
         };
         if draft.scope != self.scope || self.phase == Phase::Closed {
@@ -63,16 +63,20 @@ impl HostOwner {
         // The retained owner alone validates, saves and installs preferences. Invalid edits
         // remain in the transient draft; a disk failure still accepts the live values.
         let before = self.settings.preferences.miscellaneous;
+        let after = draft.values.miscellaneous;
+        let forget = before.stay_logged_in && !after.stay_logged_in
+            || before.remember_device && !after.remember_device;
+        if forget && draft.values.validate().is_ok() {
+            if !self.forget_device() {
+                self.draft = Some(draft);
+                return;
+            }
+            draft.values.miscellaneous.remember_device = false;
+        }
         self.settings.apply(draft.values.clone());
         if self.settings.preferences != draft.values {
             self.draft = Some(draft);
             return;
-        }
-        let after = self.settings.preferences.miscellaneous;
-        if before.stay_logged_in && !after.stay_logged_in
-            || before.remember_device && !after.remember_device
-        {
-            self.forget_device();
         }
         if close {
             self.settings.open = false;
