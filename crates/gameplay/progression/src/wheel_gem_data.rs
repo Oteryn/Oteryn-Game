@@ -14,6 +14,7 @@ const GEMS: &str = include_str!("../../../../rulesets/progression/wheel-of-desti
 const MANIFEST: &str =
     include_str!("../../../../rulesets/progression/wheel-of-destiny/import-manifest.json");
 const SOURCE: &str = "tools/content-schema/wheel-authoring/samples/wheel-candidate.json";
+const SUPREME_COUNT: usize = 112;
 const VOCATIONS: [&str; 5] = ["druid", "knight", "monk", "paladin", "sorcerer"];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -132,14 +133,14 @@ impl WheelGemData {
                     || count(&wheel.data["vocations"][v], "revelations") != 4
             })
             || count(&gems.data["catalogue"], "basic_mods") != 46
-            || count(&gems.data["catalogue"], "supreme_mods") != 94
+            || count(&gems.data["catalogue"], "supreme_mods") != SUPREME_COUNT
             || manifest.coverage
                 != BTreeMap::from([
                     ("vocations".into(), 5),
                     ("slots".into(), 180),
                     ("revelations".into(), 20),
                     ("basic_mods".into(), 46),
-                    ("supreme_mods".into(), 94),
+                    ("supreme_mods".into(), SUPREME_COUNT),
                 ])
         {
             return reject("incomplete imported data");

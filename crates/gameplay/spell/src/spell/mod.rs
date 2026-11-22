@@ -600,12 +600,11 @@ fn resolve_with_wheel(
     let members = match (&spell.execution, facts) {
         (Execution::PartyBuff(buff), Facts::Party(world)) => {
             let members = buff.affected(world).map_err(party_rejection)?;
-            // The authored `costs.mana` is 0 for a party buff (reader rule); the buff's mana is added.
+            // The initial check used the registered base. The party script's
+            // adjustment plus the base debit pays exactly the computed total.
             mana = buff
                 .mana_cost(members.len())
-                .ok()
-                .and_then(|cost| mana.checked_add(cost))
-                .ok_or(CastRejection::PartyCostOverflow)?;
+                .map_err(|_| CastRejection::PartyCostOverflow)?;
             if caster.mana < mana {
                 return Err(CastRejection::NotEnoughMana { required: mana });
             }

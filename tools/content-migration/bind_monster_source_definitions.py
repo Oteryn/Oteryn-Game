@@ -118,6 +118,32 @@ def bind_attack_definitions(root: Path, creatures):
         }
 
 
+def bind_nibblemaw_wave(root: Path, creatures):
+    records = [row for row in creatures["records"]
+               if row["profile"]["target"]["key"] == "oteryn:creature.nibblemaw"]
+    if not records:
+        return
+    creature, = records
+    packet = json.loads((root / "content/abilities/source-imports/nibblemaw-wave.json").read_bytes())
+    case, = packet["cases"]
+    if creature["profile"]["target"]["key"] != case["creature"]:
+        raise ValueError("Nibblemaw Wave creature binding changed")
+    behavior = creature["behavior"]
+    entry = behavior["data"]["profile"]["attacks"][case["entry"]]
+    if entry["ability"]["key"] != case["ability"]:
+        raise ValueError("Nibblemaw Wave predecessor slot changed")
+    behavior["data"]["profile"]["attacks"][case["entry"]] = case["schedule"]
+    closure = creature["attack_definitions"]
+    wave = packet["abilities"][case["ability"]]
+    for section, identity, rows in (
+        ("profiles", "target", [behavior, *wave["profiles"]]),
+        ("records", "identity", wave["records"]),
+    ):
+        for authored in rows:
+            index, = (i for i, row in enumerate(closure[section]) if row[identity] == authored[identity])
+            closure[section][index] = authored
+
+
 def bind_definitions(root: Path, generated: dict[str, bytes]):
     result = dict(generated)
     creatures = json.loads(result[CREATURES])
@@ -144,6 +170,7 @@ def bind_definitions(root: Path, generated: dict[str, bytes]):
             native_profiles[key][override["field"]] = canonical_profiles[key][override["field"]]
     explicit_reference_levels(creatures)
     bind_attack_definitions(root, creatures)
+    bind_nibblemaw_wave(root, creatures)
     creatures["source_definitions_sha256"] = definition_digest(root)
     result[CREATURES] = canonical(creatures) + b"\n"
     manifest = json.loads(result[MANIFEST])

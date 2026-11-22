@@ -233,14 +233,23 @@ def outputs(root, generated):
         updated = project.attach_source(entry, source)
         entry.clear()
         entry.update(updated)
-    result = copy.deepcopy(generated)
-    result[CATALOG] = encoded(catalog)
     if "monster_melee" in data:
         monsters = data["monster_melee"]
         if monsters["held_path"] != "content/abilities/source-imports/unavailable-monster-melee.jsonl" or \
                 digest((root / monsters["held_path"]).read_bytes()) != monsters["held_sha256"]:
             raise ValueError("CURRENT_MONSTER_HELD_CHANGED")
-        result[CREATURE_PROFILES] = monster_melee(monsters, generated, project.DONORS)
+        generated = dict(generated)
+        generated[CREATURE_PROFILES] = monster_melee(monsters, generated, project.DONORS)
+        manifest = json.loads(generated[MANIFEST])
+        manifest["creature_profiles"]["sha256"] = digest(generated[CREATURE_PROFILES])
+        generated[MANIFEST] = encoded(manifest)
+    return with_catalog(generated, catalog)
+
+
+def with_catalog(generated, catalog):
+    """Serialize the catalogue, its dependencies and their selection and manifest pins."""
+    result = dict(generated)
+    result[CATALOG] = encoded(catalog)
     selection = json.loads(result[SELECTION])
     if selection["catalog_sha256"] != digest(generated[CATALOG]):
         raise ValueError("CURRENT_SOURCE_SELECTION_BASE_MISMATCH")
@@ -249,8 +258,6 @@ def outputs(root, generated):
     manifest = json.loads(result[MANIFEST])
     for name, path in (("catalog", CATALOG), ("source_selection", SELECTION)):
         manifest[name]["sha256"] = digest(result[path])
-    if "monster_melee" in data:
-        manifest["creature_profiles"]["sha256"] = digest(result[CREATURE_PROFILES])
     result[MANIFEST] = encoded(manifest)
     for path, value in result.items():
         if path == CATALOG or not path.startswith("content/abilities/"):

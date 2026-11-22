@@ -212,10 +212,10 @@ def test_item_bindings() -> None:
     bindings = pa.item_bindings(committed())
     rows = bindings["records"]
     # ITEM-ADD-1 plus the admitted appearance-only Snowball identity.
-    assert bindings["record_count"] == len(rows) == 665
+    assert bindings["record_count"] == len(rows) == 666
     assert bindings["excluded"] == {
         "item_not_defined": 0,
-        "unknown_threshold_class": 1,
+        "unknown_threshold_class": 0,
     }
     items = pa.content_item_revisions()
     definitions = {d["identity"]["key"] for d in committed()["proficiencies"]}
@@ -240,7 +240,9 @@ def test_item_bindings() -> None:
         },
         "threshold_class": "standard",
     }
-    assert "oteryn:item.tibia.i51666" not in by_item
+    ink = by_item["oteryn:item.tibia.i51666"]
+    assert ink["threshold_class"] == "standard"
+    assert ink["profile_binding"]["key"] == "oteryn:proficiency.tibia.p371"
     for row in source["bindings"]:
         bound = by_item.get(row["item_key"])
         if bound is None:
