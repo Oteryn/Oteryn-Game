@@ -1,7 +1,6 @@
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::item_loop_move::managed_container_move::{Admission, Request, ResultView};
 use crate::foundation::{CommandId, CommandRef};
-use oteryn_protocol_oteryn::container_batch::Reply;
 
 macro_rules! authority_methods {
     () => {
@@ -60,10 +59,7 @@ pub(super) async fn execute(
             && runtime
                 .player_control_facts(actor, admitted.game_session_id)
                 .is_ok_and(|facts| facts.control_loss.is_none())
-            && owner
-                .states
-                .player_trades
-                .physical_service(admitted.game_session_id)
+            && !owner.states.player_trades.open(admitted.game_session_id)
             && super::equipment_move::native_for_move(
                 &runtime,
                 owner.active_generation,
@@ -78,7 +74,7 @@ pub(super) async fn execute(
     else {
         return Ok(None);
     };
-    let result = owner
+    owner
         .root
         .move_to_managed_containers(
             Admission {
@@ -96,17 +92,5 @@ pub(super) async fn execute(
             &super::item_ref_admission::NativeItemWeights(native),
         )
         .await
-        .map_err(|_| ())?;
-    if result
-        .as_ref()
-        .is_some_and(|result| matches!(result.reply, Reply::Committed(_)))
-    {
-        owner
-            .states
-            .attack
-            .lock()
-            .await
-            .forget_weapon(actor, admitted.game_session_id);
-    }
-    Ok(result)
+        .map_err(|_| ())
 }
