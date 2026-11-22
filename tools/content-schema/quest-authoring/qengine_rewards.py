@@ -1043,11 +1043,16 @@ def build():
             add('l12-'+label+'-'+('first' if bit==1 else 'second'),quest,npc,[family.replace('_',' ')+' addon '+str(bit)],[],
                 take=[(39544 if bit==1 else 39545,1)] if label=='fire-fighter' else [],outfit=(family,bit),
                 fee={'gold':2000 if bit==1 else 3000,'include_bank':False} if label=='cave-explorer' else None,
-                achievement='oteryn:achievement/friendly_fire' if label=='fire-fighter' and bit==2 else None)
+                achievement={
+                    'cave-explorer':'oteryn:achievement/cave_completionist',
+                    'fire-fighter':'oteryn:achievement/friendly_fire',
+                }.get(label) if bit==2 else None)
             callbacks[-1].update(minimum_level=level,requires_premium=True,requires_outfits=['oteryn:outfit.'+family],
                 forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
             if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
             callbacks[-1]['sources'].append(provenance)
+            if label=='cave-explorer' and bit==2:
+                callbacks[-1]['sources'].append('https://tibia.fandom.com/index.php?curid=65413&oldid=846114')
     engoutfit_m36.append(add, storage, callbacks, offers, declarations,
         f'crystal:{PIN}:data-global/npc/rock_steady.lua:56-98:sha256:{sha(inputs["data-global/npc/rock_steady.lua"])}')
     qmech_m39.append(add, callbacks, offers, declarations, inputs, PIN)

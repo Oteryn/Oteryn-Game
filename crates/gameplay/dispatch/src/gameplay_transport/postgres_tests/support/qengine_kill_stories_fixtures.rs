@@ -368,6 +368,15 @@ pub(super) async fn exercise(
                 if bit == 1 { 1 } else { 3 },
             )
             .await?;
+            if label == "cave-explorer" {
+                let grants: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_account_achievements \
+                     WHERE achievement_key = 'oteryn:achievement/cave_completionist'",
+                )
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(grants, i64::from(bit == 2), "only the full outfit grants the achievement");
+            }
         }
     }
     Ok(())
