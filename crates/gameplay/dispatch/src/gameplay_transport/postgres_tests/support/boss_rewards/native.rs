@@ -24,7 +24,7 @@ pub(super) async fn native_death(
     admitted: &mut AdmittedSession,
     fence: CurrentCharacterItemFence,
     creature: &str,
-    atomic_fault: bool,
+    case: Case,
 ) -> TestResult {
     let native = owner
         .active_generation
@@ -136,7 +136,7 @@ pub(super) async fn native_death(
         );
         batch
     };
-    if atomic_fault {
+    if matches!(case, Case::AtomicDeathFault) {
         for statement in [
             "CREATE SEQUENCE overlordcr_chest_fault",
             "CREATE FUNCTION overlordcr_chest_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NOT EXISTS (SELECT 1 FROM game_character_boss_reward_chests) THEN RAISE EXCEPTION 'chests must precede XP in the same transaction'; END IF; PERFORM nextval('overlordcr_chest_fault'); RAISE EXCEPTION 'fault after chests before XP' USING ERRCODE='23514'; END $$",
@@ -233,6 +233,12 @@ pub(super) async fn native_death(
         count.3
     );
     let death: [u8; 16] = before.0.try_into().map_err(|_| "death UUID")?;
+    if matches!(case, Case::NestedCustody) {
+        return super::super::boss_reward_nested_custody::assert_nested_custody(
+            h, owner, admitted, death, count.3,
+        )
+        .await;
+    }
     let browse = encode_browse_request(&BrowseRequest {
         death,
         after_ordinal: 0,

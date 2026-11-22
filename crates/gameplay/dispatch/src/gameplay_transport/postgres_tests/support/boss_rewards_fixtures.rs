@@ -58,6 +58,7 @@ pub(super) enum Case {
     Collection,
     Expiry,
     NativeDeath,
+    NestedCustody,
     NonOverlordHealing,
     OrdinaryDamagerAndHealer,
     ProductionNativeDeath,
@@ -112,6 +113,10 @@ fn scenario(case: Case) -> TestResult {
         } else if matches!(case, Case::LargePrivateCorpse) {
             crate::content::native_gameplay::test_support::activated_reward_boss_corpse_capacity_fixture(
                 deps.admitted.world_id, None, Some(64),
+            )
+        } else if matches!(case, Case::NestedCustody) {
+            crate::content::native_gameplay::test_support::activated_nested_reward_boss_fixture(
+                deps.admitted.world_id,
             )
         } else if matches!(case, Case::NativeDeath) {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
@@ -279,6 +284,7 @@ fn scenario(case: Case) -> TestResult {
         if matches!(
             case,
             Case::NativeDeath
+                | Case::NestedCustody
                 | Case::AtomicDeathFault
                 | Case::ProductionNativeDeath
                 | Case::LargePrivateCorpse
@@ -294,7 +300,7 @@ fn scenario(case: Case) -> TestResult {
                 &mut admitted,
                 fence,
                 creature,
-                matches!(case, Case::AtomicDeathFault),
+                case,
             )
             .await?;
             eprintln!("BOSS_REWARDS POSTGRES_NATIVE_DEATH_COMPLETED");
@@ -315,6 +321,7 @@ fn scenario(case: Case) -> TestResult {
             Case::Collection
             | Case::LargePrivateCorpse
             | Case::NativeDeath
+            | Case::NestedCustody
             | Case::AtomicDeathFault
             | Case::ProductionNativeDeath
             | Case::OfflineReward
