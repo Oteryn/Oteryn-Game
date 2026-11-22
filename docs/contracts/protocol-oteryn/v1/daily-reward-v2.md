@@ -56,7 +56,15 @@ temple scrolls, XP percent, XP minutes, bounty tokens; since WU26-07 only days 1
 carry the cycle and days 8..30 are all zero); history count u8 (0..30);
 then each receipt: epoch u64 LE, reset day i64 LE, lane day u8, streak u32 LE,
 jokers spent u8, own-character boolean u8. Records are newest first. No trailing
-bytes. Maximum 1104 bytes. The claim remains empty and server-owned.
+bytes. Maximum 1104 bytes.
+
+Command 6323 uses the same capability and empty request. Its `DRD2` result
+has the same layout after the magic bytes, with mandatory `next_reset_at`
+appended as i64 LE Unix milliseconds. This is the 06:00 Europe/Berlin
+boundary following the committed reset day, including DST transitions. If
+activation is delayed, the scheduled boundary can already have passed. It
+does not authorize a claim. Maximum 1112 bytes. Command 738 continues to
+return `DRD1` for older clients.
 
 ## item picker (T144, owner decision B 2026-11-09), retired
 

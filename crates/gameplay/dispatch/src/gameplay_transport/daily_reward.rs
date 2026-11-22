@@ -39,11 +39,11 @@ pub(super) async fn dispatch(
             .daily_reward_returner(actor, command, command_type, payload)
             .await;
     }
-    if command_type == wire::details::COMMAND_TYPE {
+    if matches!(command_type, wire::details::COMMAND_TYPE | wire::details::COMMAND_TYPE_WITH_RESET) {
         if !payload.is_empty() {
             return None;
         }
-        return authority.daily_reward_details(actor, command).await;
+        return authority.daily_reward_details(actor, command, command_type).await;
     }
     let claim = if command_type == wire::COMMAND_TYPE_DAILY_REWARD_CLAIM {
         match wire::DailyRewardClaim::decode(payload) {
@@ -380,6 +380,7 @@ macro_rules! authority_methods {
             &self,
             _actor: crate::foundation::ExactActorRef,
             _command: $crate::gameplay_transport::connection::UseCommand,
+            _kind: u32,
         ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
             async { None }
         }
@@ -412,8 +413,9 @@ macro_rules! composed_methods {
             &self,
             actor: ExactActorRef,
             command: connection::UseCommand,
+            kind: u32,
         ) -> Option<Vec<u8>> {
-            self.daily_details(actor, command).await
+            self.daily_details(actor, command, kind).await
         }
         fn daily_reward_available(&self) -> bool {
             self.daily_content().is_some()
@@ -468,6 +470,7 @@ mod picker_retired_tests {
                 wire::details::COMMAND_TYPE,
                 wire::returner::QUERY,
                 wire::returner::CLAIM,
+                wire::details::COMMAND_TYPE_WITH_RESET,
             ]
         );
         for retired in [wire::picker::QUERY, wire::picker::CLAIM] {

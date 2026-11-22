@@ -31,6 +31,7 @@ pub struct DailyRewardDeliveryPlan {
 #[derive(Debug, Clone)]
 pub struct DailyRewardView {
     pub epoch: u64,
+    pub next_reset_at: i64,
     pub history: Vec<oteryn_protocol_oteryn::daily_reward::details::Receipt>,
     pub lane_day: u8,
     pub streak: u32,
@@ -83,9 +84,9 @@ impl DurabilityRoot {
             if !current(&mut tx, &node, fence, command).await? {
                 return Ok(Err(DailyRewardClaimError::AuthorityRejected));
             }
-            let epoch: Option<String> = sqlx::query_scalar("SELECT h.reset_epoch::text FROM public.game_world_reset_history h WHERE h.world_id=encode($1,'hex')::uuid ORDER BY h.reset_epoch DESC LIMIT 1")
+            let reset: Option<(String, i64)> = sqlx::query_as("SELECT h.reset_epoch::text, (extract(epoch FROM (((DATE '1970-01-01' + (h.reset_day + 1)::integer) + TIME '06:00') AT TIME ZONE 'Europe/Berlin')) * 1000)::bigint FROM public.game_world_reset_history h WHERE h.world_id=encode($1,'hex')::uuid ORDER BY h.reset_epoch DESC LIMIT 1")
                 .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-            let Some(epoch) = epoch else { return Ok(Err(DailyRewardClaimError::ResetWindowUnavailable)); };
+            let Some((epoch, next_reset_at)) = reset else { return Ok(Err(DailyRewardClaimError::ResetWindowUnavailable)); };
             let epoch = epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
             let state = load_state(&mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes()).await?;
             let receipt = load_receipt(&mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes(), epoch).await?;
@@ -100,7 +101,7 @@ impl DurabilityRoot {
             } else { oteryn_gameplay_progression::daily_reward::cycle_day(state.lane_day) };
             let history=super::daily_reward::history::load(&mut tx,fence.character_id.as_bytes(),fence.runtime_scope.world_id().as_bytes(),epoch).await?;
             let streak = effective_streak(state, epoch, jokers)?;
-            Ok(Ok(DailyRewardView { epoch, lane_day, streak, jokers, receipt, settled, history }))
+            Ok(Ok(DailyRewardView { epoch, next_reset_at, lane_day, streak, jokers, receipt, settled, history }))
         })).await?
     }
 

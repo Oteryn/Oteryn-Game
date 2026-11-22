@@ -62,6 +62,31 @@ async fn unrelated_custody_event(h: &Harness) -> TestResult {
 }
 
 #[test]
+fn daily_reward_details_dispatch_reports_berlin_reset_boundary() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario_mode(false, 3)
+}
+
+async fn reset_boundary_case(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    let (_, output) = serve(owner, admitted, &[(738, &[]), (6323, &[])]).await?;
+    let values = results(&output)?;
+    let legacy = &values[0].2;
+    let extended = &values[1].2;
+    assert_eq!(values[1].1, crate::foundation::CommandStatus::Accepted);
+    assert_eq!(&legacy[..4], b"DRD1");
+    assert_eq!(&extended[..4], b"DRD2");
+    assert_eq!(&extended[4..legacy.len()], &legacy[4..]);
+    // 2026-10-25 06:00 Berlin is 05:00 UTC after the DST transition.
+    assert_eq!(&extended[legacy.len()..], &1_792_904_400_000_i64.to_le_bytes());
+    Ok(())
+}
+
+#[test]
 fn daily_reward_real_dispatch_delivers_replays_reloads_and_orders_thirty_days() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -201,6 +226,15 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
                 .contains(wire::CAPABILITY_DAILY_REWARD_V2)
         );
         epoch(&harness, 1).await?;
+        if mode == 3 {
+            epoch(&harness, 24).await?;
+            let result = reset_boundary_case(&owner, &mut admitted).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return result;
+        }
         // A real Store delivery owns this row; seed its durable effect before the
         // real daily dispatch so the claim must run beside it, never extend it.
         // The expiry pass advances this clock explicitly. A slow 30-day dispatch
