@@ -14,11 +14,15 @@
 //! NPC the catalogue does not admit is skipped by key.
 
 use super::{BootError, event};
+use crate::content::NativeEntryMovementCells;
+use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
 use crate::foundation::{
-    ChannelRuntimeV1, MovementFacing, NpcPlacement, NpcPlacementError, NpcPlacementTable,
-    NpcPlacements,
+    ChannelRuntimeV1, MovementFacing, MovementLocalPosition, NpcPlacement, NpcPlacementError,
+    NpcPlacementTable, NpcPlacements,
 };
 use crate::gameplay_transport::NpcTalkBook;
+use crate::map::boot::{BundleCollisionIndex, BundleCollisionIndexExt};
+use crate::map::overlay::TilePos;
 use oteryn_world_bundle::{bundle, npc};
 use std::collections::BTreeSet;
 use std::path::Path;
@@ -138,6 +142,17 @@ const TIMED_NPCS: [(&str, (u16, u16, i8), TimedPeriod); 21] = [
     ),
 ];
 
+// Crystal @201189f8, src/utils/utils_definitions.hpp:66 (CONST_ME_TELEPORT).
+const TELEPORT_EFFECT: u16 = 11;
+
+fn npc_effect_tile(position: MovementLocalPosition) -> Option<TilePos> {
+    Some(TilePos {
+        x: u16::try_from(position.x).ok()?,
+        y: u16::try_from(position.y).ok()?,
+        floor: i8::try_from(position.floor).ok()?.checked_neg()?,
+    })
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TimedPeriod {
     Day,
@@ -150,8 +165,9 @@ enum TimedPeriod {
 /// a start during dusk spawns the day set) and spawns 5 s after the period change
 /// (`spawns_npc_by_time.lua:159-170`), the set follows the world minute at boot and every tick.
 #[derive(Debug)]
-pub(super) struct TimedNpcSpawns {
+pub(crate) struct TimedNpcSpawns {
     admitted: [bool; TIMED_NPCS.len()],
+    bundle_effects: Option<BundleCollisionIndex>,
     weekday: Option<weekday::WeekdayNpcSpawns>,
     seasonal: seasonal::SeasonalNpcSpawns,
     conditional: conditional::ConditionalNpcSpawns,
@@ -159,7 +175,7 @@ pub(super) struct TimedNpcSpawns {
 }
 
 impl TimedNpcSpawns {
-    pub(super) fn from_boot(boot: Option<&NpcBoot>) -> Self {
+    pub(crate) fn from_boot(boot: Option<&NpcBoot>) -> Self {
         let mut admitted = [false; TIMED_NPCS.len()];
         if let Some(NpcBoot::Place { admitted: keys, .. }) = boot {
             for (index, (key, _, _)) in TIMED_NPCS.iter().enumerate() {
@@ -168,11 +184,19 @@ impl TimedNpcSpawns {
         }
         Self {
             admitted,
+            bundle_effects: None,
             weekday: weekday::WeekdayNpcSpawns::from_boot(boot),
             seasonal: seasonal::SeasonalNpcSpawns::default(),
             conditional: conditional::ConditionalNpcSpawns::default(),
             event_contacts: event_contacts::EventContacts::default(),
         }
+    }
+
+    pub(crate) fn with_bundle_effects(mut self, cells: &NativeEntryMovementCells) -> Self {
+        if let NativeMovementCollisionIndex::Bundle(index) = cells.index() {
+            self.bundle_effects = Some(index.clone());
+        }
+        self
     }
 
     pub(super) fn with_seasonal(
@@ -215,7 +239,7 @@ impl TimedNpcSpawns {
     /// One world-clock step at `now_utc_ms` (boot and every world tick): the clock the
     /// transport's light uses (`snapshot.rs`), not a second one. `None` when the clock is
     /// unreadable; otherwise whether every admitted NPC is where its period puts it.
-    pub(super) fn tick(
+    pub(crate) fn tick(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         now_utc_ms: u64,
@@ -246,30 +270,56 @@ impl TimedNpcSpawns {
             oteryn_gameplay_world::world_clock::SUNSET_START,
         );
         let wanted = |period: TimedPeriod| (period == TimedPeriod::Day) == day;
-        let mut outcome = Ok(());
-        for (index, (key, _, period)) in TIMED_NPCS.iter().enumerate() {
-            if self.admitted[index] && !wanted(*period) {
-                let removed = runtime.remove_dynamic_npc(key);
-                outcome = outcome.and(removed);
-            }
-        }
-        let present: BTreeSet<String> = runtime
-            .visible_entities()
+        let visible = runtime.visible_entities();
+        let present: BTreeSet<String> = visible
             .npcs
             .iter()
             .filter_map(|npc| runtime.npc_key(npc.actor).map(str::to_owned))
             .collect();
+        let effects = self.bundle_effects.as_ref().map(|index| &index.map().facts);
+        let mut outcome = Ok(());
+        for (index, (key, _, period)) in TIMED_NPCS.iter().enumerate() {
+            if self.admitted[index] && !wanted(*period) {
+                // Removal by key selects the lowest matching slot. Capture its current
+                // tile while the runtime is exclusively held, before the slot is retired.
+                let departure = effects.and_then(|_| {
+                    visible
+                        .npcs
+                        .iter()
+                        .filter(|npc| runtime.npc_key(npc.actor) == Some(*key))
+                        .min_by_key(|npc| npc.actor.actor_local_id())
+                        .and_then(|npc| npc_effect_tile(npc.position))
+                });
+                let removed = runtime.remove_dynamic_npc(key);
+                if removed.is_ok()
+                    && let (Some(effects), Some(tile)) = (effects, departure)
+                {
+                    effects.emit_movement_effect(tile, TELEPORT_EFFECT);
+                }
+                outcome = outcome.and(removed);
+            }
+        }
         for (index, (key, (x, y, z), period)) in TIMED_NPCS.iter().enumerate() {
             if self.admitted[index] && wanted(*period) && !present.contains(*key) {
+                let tile = TilePos {
+                    x: *x,
+                    y: *y,
+                    floor: -*z,
+                };
                 let placed = runtime.place_dynamic_npc(
                     key,
                     NpcPlacement {
-                        floor: -*z,
-                        y: *y,
-                        x: *x,
+                        floor: tile.floor,
+                        y: tile.y,
+                        x: tile.x,
                         direction: MovementFacing::South,
                     },
                 );
+                if placed.is_ok()
+                    && let Some(effects) = effects
+                {
+                    effects.emit_movement_effect(tile, TELEPORT_EFFECT);
+                }
                 outcome = outcome.and(placed.map(|_| ()));
             }
         }
@@ -298,7 +348,7 @@ pub(super) struct LoadedNpcCatalogue {
 
 /// What the Channel does with the bundle's NPCs at start.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) enum NpcBoot {
+pub(crate) enum NpcBoot {
     /// Place the table; an NPC outside `admitted` refuses (production) or is skipped.
     Place {
         table: NpcPlacementTable,
@@ -695,7 +745,7 @@ pub(crate) mod tests {
         }
     }
 
-    fn channel_runtime() -> ChannelRuntimeV1 {
+    pub(crate) fn channel_runtime() -> ChannelRuntimeV1 {
         channel_runtime_with(8)
     }
 
@@ -766,7 +816,7 @@ pub(crate) mod tests {
         Ok(())
     }
 
-    fn timed_boot(keys: &[&str]) -> NpcBoot {
+    pub(crate) fn timed_boot(keys: &[&str]) -> NpcBoot {
         NpcBoot::Place {
             table: NpcPlacementTable::default(),
             catalogue_sha256: digest("v1"),
@@ -966,7 +1016,7 @@ pub(crate) mod tests {
     }
 
     /// The UTC instant of world minute `minute` on the production world clock.
-    fn at_minute(minute: u64) -> u64 {
+    pub(crate) fn at_minute(minute: u64) -> u64 {
         let now = minute * crate::world_clock::TIBIAN_MINUTE_MS;
         let clock = crate::world_clock::WorldClockSource::new(
             crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
