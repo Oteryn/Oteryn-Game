@@ -546,6 +546,8 @@ struct Document {
 
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/ape-city.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/beginning.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../../content/quests/npc-callbacks/hunter-hymn.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
@@ -2438,7 +2440,7 @@ mod tests {
         // Shared rewards include 207 earlier rows, 31 QB routes, four Dream
         // Courts exchanges and one native First Dragon victory exchange.
         // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 246 + 132 + 125 + 4 + 1 + 1 + 13 + 12);
+        assert_eq!(load()?.len(), 246 + 132 + 125 + 4 + 1 + 1 + 13 + 12 + 3 + 2);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

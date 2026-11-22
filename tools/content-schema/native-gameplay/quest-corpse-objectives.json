@@ -14,7 +14,8 @@
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/novice_of_the_cult.lua:33,98",
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/acolyte_of_the_cult.lua:32,97",
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/adept_of_the_cult.lua:32,98",
-    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/enlightened_of_the_cult.lua:32,103"
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/enlightened_of_the_cult.lua:32,103",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/vermins/cockroach.lua:17-41"
   ],
   "capacity_projections": [
     {
@@ -66,6 +67,7 @@
     "oteryn:creature.thalas": 6025,
     "oteryn:creature.tortoise": 6072,
     "oteryn:creature.undead_gladiator": 8909,
-    "oteryn:creature.vashresamun": 6025
+    "oteryn:creature.vashresamun": 6025,
+    "oteryn:creature.cockroach": 7763
   }
 }

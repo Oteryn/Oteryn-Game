@@ -161,7 +161,10 @@
     "oteryn:npc.a_majestic_warwolf",
     "oteryn:npc.ceiron",
     "oteryn:npc.kroox",
-    "oteryn:npc.ustan"
+    "oteryn:npc.ustan",
+    "oteryn:npc.hairycles",
+    "oteryn:npc.padreia",
+    "oteryn:npc.the_blind_prophet"
   ],
   "position_conflicts": [],
   "placement_cells": {
@@ -563,6 +566,63 @@
         "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
         "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
       }
+    },
+    "oteryn:npc.hairycles": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal world NPC spawn at line 977.",
+      "placements": [
+        {
+          "position": {
+            "x": 32826,
+            "y": 32574,
+            "z": 6
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.padreia": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal world NPC spawn at line 1664.",
+      "placements": [
+        {
+          "position": {
+            "x": 32302,
+            "y": 31814,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.the_blind_prophet": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal world NPC spawn at line 2221.",
+      "placements": [
+        {
+          "position": {
+            "x": 33021,
+            "y": 32604,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ]
     }
   }
 }

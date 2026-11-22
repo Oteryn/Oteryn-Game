@@ -12,6 +12,7 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
     for source in [
         SHARED_OFFERS,
         include_str!("../../../../../../../content/quests/chosen-reward-offers.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/ape-city.json"),
         include_str!("../../../../../../../content/quests/npc-offers/l6-stories.json"),
         include_str!("../../../../../../../content/quests/npc-offers/m09-rookie.json"),
         include_str!("../../../../../../../content/quests/npc-offers/m16-targuna-marker.json"),

@@ -2556,6 +2556,144 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/nah_bob.lua:146:sha256:7598ed6c02bba9fe6705c56d9b63601d3727259ead8561a4f0db3e3ca8acdb83"
       ]
+    },
+    {
+      "npc": "oteryn:npc.carlos",
+      "service": "oteryn:service.trade.carlos",
+      "offers": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3577",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 2,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_beginning_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_trade_storage",
+              "initial": 0,
+              "minimum": 1,
+              "maximum": 1
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3582",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 2,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_beginning_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_trade_storage",
+              "initial": 0,
+              "minimum": 1,
+              "maximum": 1
+            }
+          ]
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:33-43"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "service": "oteryn:service.trade.hairycles",
+      "offers": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3587",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 2,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+              "initial": 0,
+              "minimum": 18,
+              "maximum": 18
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i5046",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 65,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+              "initial": 0,
+              "minimum": 18,
+              "maximum": 18
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i5055",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 65,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+              "initial": 0,
+              "minimum": 18,
+              "maximum": 18
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i5056",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 65,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+              "initial": 0,
+              "minimum": 18,
+              "maximum": 18
+            }
+          ]
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:498-517"
+      ]
     }
   ]
 }

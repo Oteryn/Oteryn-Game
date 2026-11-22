@@ -16,7 +16,7 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
-pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024;
+pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1056;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -702,6 +702,12 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(
         &serde_json::json!({"schema":1,"callbacks":[nomads_window::callback()?]}).to_string(),
     )?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/ape-city.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/beginning.json"
+    ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/children-grease.json"
     ))?);
@@ -3350,6 +3356,112 @@ mod srvenc_live_requirements_tests {
         ] {
             value["character_requirements"] = invalid;
             assert!(parse(&packet(&value)).is_err());
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod ape_city_map_tests {
+    use super::*;
+
+    #[test]
+    fn ape_city_callbacks_are_admitted_by_the_world_loader() -> Result<(), String> {
+        let callbacks = load()?;
+        let ape: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| callback.quest == "oteryn:quest.the_ape_city_quest")
+            .collect();
+        let decipher = ape
+            .iter()
+            .find(|callback| callback.selector.action == Some(12124))
+            .ok_or("parchment step")?;
+        assert_eq!(decipher.trigger, Trigger::StepIn);
+        assert_eq!(decipher.storage[0].minimum, 7);
+        assert_eq!(decipher.storage[1].set, 1);
+        assert_eq!(
+            ape.iter()
+                .filter(|callback| {
+                    callback.selector.action == Some(12129)
+                        && callback.lever == Some([2772, 2773])
+                        && callback.effects.reset_after_ms == Some(600_000)
+                })
+                .count(),
+            6
+        );
+        for unique in [1040, 1041, 9257] {
+            assert!(
+                ape.iter()
+                    .any(|callback| callback.selector.unique == Some(unique))
+            );
+        }
+        let casks: Vec<_> = ape
+            .iter()
+            .filter(|callback| {
+                callback
+                    .key
+                    .starts_with("oteryn:quest-callback/ape-city-cask-")
+            })
+            .collect();
+        assert_eq!(casks.len(), 7);
+        for cask in casks {
+            let tool = cask.item_on_target.as_ref().ok_or("cask tool")?;
+            assert_eq!(tool.item, "oteryn:item.tibia.i3304");
+            assert!(tool.reusable && tool.selected_instance);
+            assert_eq!(cask.storage.len(), 1);
+            assert_eq!(cask.storage[0].maximum, 2);
+            assert_eq!(cask.storage[0].add, Some(1));
+            assert_eq!(cask.storage[0].set, 3);
+            assert_eq!(cask.effects.transform, Some(3134));
+            assert_eq!(cask.effects.reset_after_ms, Some(180_000));
+        }
+        let destroy = ape
+            .iter()
+            .find(|callback| callback.key.ends_with("/ape-city-destroy-monument"))
+            .ok_or("monument callback")?;
+        let tool = destroy.item_on_target.as_ref().ok_or("monument tool")?;
+        assert_eq!(tool.item, "oteryn:item.tibia.i4835");
+        assert!(tool.selected_instance);
+        assert!(!tool.reusable);
+        assert_eq!(destroy.storage[0].minimum, 17);
+        assert_eq!(destroy.storage[1].set, 1);
+        assert_eq!(destroy.effects.transform, Some(4851));
+        Ok(())
+    }
+
+    #[test]
+    fn beginning_cellar_and_tool_chests_are_admitted_by_the_world_loader() -> Result<(), String> {
+        let callbacks = load()?;
+        let cellar = callbacks
+            .iter()
+            .find(|callback| callback.key.ends_with("/beginning-santiago-cellar"))
+            .ok_or("beginning cellar")?;
+        assert_eq!(cellar.trigger, Trigger::StepIn);
+        assert_eq!(cellar.storage[0].minimum, 5);
+        assert_eq!(cellar.storage[0].set, 6);
+        assert!(cellar.return_on_failure);
+        assert_eq!(cellar.teleport.ok_or("cellar destination")?.floor, -7);
+
+        for (unique, item) in [
+            (50080, "oteryn:item.tibia.i2853"),
+            (50093, "oteryn:item.tibia.i3457"),
+            (50094, "oteryn:item.tibia.i3003"),
+        ] {
+            let chest = callbacks
+                .iter()
+                .find(|callback| callback.selector.unique == Some(unique))
+                .ok_or("beginning chest")?;
+            assert_eq!(chest.quest, "oteryn:quest.the_beginning_quest");
+            assert_eq!(chest.trigger, Trigger::Use);
+            let reward = chest.item_reward.as_ref().ok_or("beginning chest reward")?;
+            assert_eq!(reward.item, item);
+            assert_eq!(reward.count, 1);
+            if unique == 50080 {
+                assert_eq!(reward.contents.len(), 1);
+                assert_eq!(reward.contents[0].item, "oteryn:item.tibia.i3562");
+            } else {
+                assert!(reward.contents.is_empty());
+            }
         }
         Ok(())
     }

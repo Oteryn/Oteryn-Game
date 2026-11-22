@@ -28,7 +28,7 @@ CREATURES = 'content/creatures/definitions/spell-native-profiles.json'
 # crates/gameplay/domain/src/domain/loot_data.rs CORPSE_CONTAINER_ENTRIES_MAX.
 CORPSE_CAPACITY_MAX = 48
 GROUPS = ('physical', 'stack', 'container', 'temporal', 'classification')
-MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 45, 8, 168
+MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 46, 8, 168
 
 
 def item_id(reference):
