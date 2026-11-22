@@ -28,8 +28,9 @@ use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{NativeEntryMovementCells, QualifiedNativeEntryRoom};
 use crate::durability::spell_item_transaction::{
     SpellItemError, SpellItemScopeAuthority, read_creature_empty_tiles_in_transaction,
-    read_creature_scope_tile_in_transaction,
+    read_creature_field_positions_in_transaction, read_creature_scope_tile_in_transaction,
 };
+use crate::foundation::carrier::VisibleRuntimeActor;
 use crate::map::boot::BundleCollisionIndexExt;
 use crate::world_runtime::LocalObjectRuntime;
 use std::collections::{BTreeMap, BTreeSet};
@@ -374,6 +375,8 @@ pub struct CurrentMonsterMap<'a, 'db> {
     empty_tiles: BTreeSet<Vec<u8>>,
     read_chunks: BTreeSet<(i32, i32, i16)>,
     source_observed_seconds: Option<u64>,
+    #[cfg(any(test, feature = "test-support"))]
+    field_read_counts: [std::sync::atomic::AtomicUsize; 3],
 }
 impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
     /// The qualified room already bound to this map and transaction.
@@ -399,6 +402,8 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
             empty_tiles: BTreeSet::new(),
             read_chunks: BTreeSet::new(),
             source_observed_seconds: None,
+            #[cfg(any(test, feature = "test-support"))]
+            field_read_counts: Default::default(),
             view: MonsterMap {
                 cells: room.movement_cells().clone(),
                 valid: true,
@@ -572,6 +577,8 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         runtime: &ChannelRuntimeV1,
         at: MovementLocalPosition,
     ) -> Option<bool> {
+        #[cfg(any(test, feature = "test-support"))]
+        self.field_read_counts[2].fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         if !self.view.matches(runtime)
             || self.authority.runtime_scope() != runtime.binding().runtime_scope()
             || self.authority.generation() != runtime.binding().scope_generation().get()
@@ -618,6 +625,59 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                 .protection_zone,
         )
     }
+    /// Mark candidates in census order. Residual conditions and retained entries
+    /// still need a tile read after movement, replacement, or field removal.
+    pub async fn creature_field_candidates(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        creatures: &[VisibleRuntimeActor],
+    ) -> Result<Vec<bool>, SpellItemError> {
+        if creatures.is_empty() {
+            return Ok(Vec::new());
+        }
+        if !self.view.matches(runtime)
+            || self.authority.runtime_scope() != runtime.binding().runtime_scope()
+            || self.authority.generation() != runtime.binding().scope_generation().get()
+            || self.content.source_digest() != runtime.content_pin().server_artifact_digest()
+        {
+            return Err(SpellItemError::Rejected("current Monster Map authority"));
+        }
+        crate::native_world_read::qualified_static_owner(self.room, runtime, self.objects)
+            .map_err(|_| SpellItemError::Rejected("current Monster Map field scope"))?;
+        // Both keys can enter the canonical item-policy lookup. A broad key match
+        // leaves revision, provenance, and top-of-stack choice with the tile reader.
+        let field_keys = self
+            .content
+            .item_profiles()
+            .filter(|record| record.attributes.field_condition.is_some())
+            .flat_map(|record| {
+                [
+                    record.authoring.item.key.as_str(),
+                    record.production_definition.production_key.as_str(),
+                ]
+            })
+            .collect::<Vec<_>>();
+        let Some(positions) =
+            read_creature_field_positions_in_transaction(self.tx, self.authority, &field_keys)
+                .await?
+        else {
+            return Ok(vec![true; creatures.len()]);
+        };
+        let positions: BTreeSet<Vec<u8>> = positions.into_iter().collect();
+        Ok(creatures
+            .iter()
+            .map(|visible| {
+                let at = visible.position;
+                let mut address = [0; 10];
+                address[..4].copy_from_slice(&at.x.to_be_bytes());
+                address[4..8].copy_from_slice(&at.y.to_be_bytes());
+                address[8..].copy_from_slice(&at.floor.to_be_bytes());
+                positions.contains(address.as_slice())
+                    || runtime.has_creature_periodic_state(visible.actor)
+            })
+            .collect())
+    }
+
     /// Prefetch the current census's exact addresses in bounded SQL batches. A sparse
     /// World must not read 256 neighbouring cells for every occupied 16x16 chunk.
     /// These observations remain scoped to this borrowed physical transaction;
@@ -627,6 +687,8 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         runtime: &ChannelRuntimeV1,
         positions: &[MovementLocalPosition],
     ) -> Result<(), SpellItemError> {
+        #[cfg(any(test, feature = "test-support"))]
+        self.field_read_counts[0].fetch_add(positions.len(), std::sync::atomic::Ordering::Relaxed);
         if !self.view.matches(runtime)
             || self.authority.runtime_scope() != runtime.binding().runtime_scope()
             || self.authority.generation() != runtime.binding().scope_generation().get()
@@ -667,6 +729,8 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         runtime: &ChannelRuntimeV1,
         at: MovementLocalPosition,
     ) -> Result<crate::durability::spell_items_abi::DurableTileItems, SpellItemError> {
+        #[cfg(any(test, feature = "test-support"))]
+        self.field_read_counts[1].fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         if !self.view.matches(runtime)
             || self.authority.runtime_scope() != runtime.binding().runtime_scope()
             || self.authority.generation() != runtime.binding().scope_generation().get()

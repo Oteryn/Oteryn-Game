@@ -882,6 +882,11 @@ impl<S: Clone> ConditionStore<S> {
             .is_some_and(|instance| instance.ends_at.is_some_and(|end| now < end))
     }
 
+    /// Periodic turns consume ticks and retire expired instances and cleanse immunities.
+    pub fn has_periodic_state(&self) -> bool {
+        !self.instances.is_empty() || !self.cleanse_immunities.is_empty()
+    }
+
     pub fn instances(&self) -> &[ConditionInstance<S>] {
         &self.instances
     }

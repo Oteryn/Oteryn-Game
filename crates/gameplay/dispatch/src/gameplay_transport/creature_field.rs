@@ -22,18 +22,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .validate_frame(runtime)
             .map_err(|_| DurabilityError::Unavailable)?;
         let mut plans = Vec::new();
+        let mut ordered_turns = Vec::new();
         let mut source_players = Vec::new();
 
         let creatures = runtime.visible_entities().creatures;
+        let candidates = map
+            .creature_field_candidates(runtime, &creatures)
+            .await
+            .map_err(|_| DurabilityError::Unavailable)?;
         // Passive source creatures are outside the AI table, but still own field conditions.
         let positions = creatures
             .iter()
-            .map(|visible| visible.position)
+            .zip(&candidates)
+            .filter_map(|(visible, candidate)| candidate.then_some(visible.position))
             .collect::<Vec<_>>();
-        map.prefetch_empty_tiles(runtime, &positions)
-            .await
-            .map_err(|_| DurabilityError::Unavailable)?;
-        for visible in creatures {
+        if !positions.is_empty() {
+            map.prefetch_empty_tiles(runtime, &positions)
+                .await
+                .map_err(|_| DurabilityError::Unavailable)?;
+        }
+        for (visible, candidate) in creatures.into_iter().zip(candidates) {
             let Ok(snapshot) = runtime.companion_snapshot(visible.actor) else {
                 continue;
             };
@@ -45,6 +53,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .encounter_hooks()
                     .is_some_and(|hooks| hooks.contains(visible.actor))
             {
+                continue;
+            }
+            if !candidate {
+                if snapshot.state.conditions.accepts_time(now) {
+                    ordered_turns.push((visible.actor, false));
+                }
                 continue;
             }
             let read = map
@@ -179,7 +193,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     source_players.push(source);
                 }
             }
-            plans.push((visible.actor, entry, facts));
+            ordered_turns.push((visible.actor, true));
+            plans.push((entry, facts));
         }
         if let Some(active) = self.active_generation {
             let room = map.room();
@@ -200,26 +215,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !map.validate_transaction(runtime).await {
             return Err(DurabilityError::Unavailable);
         }
-        for (actor, entry, facts) in plans {
+        let mut plans = plans.into_iter();
+        // Preserve the shared ordinal at the point each original turn staged it.
+        // Reserving all empty turns together would shift the intervening damage stamps.
+        for (actor, candidate) in ordered_turns {
+            let (entry, facts) = if candidate {
+                plans.next().ok_or(DurabilityError::Unavailable)?
+            } else {
+                (None, TickFacts::default())
+            };
             runtime
                 .commit_creature_field_entry(actor, now, entry.as_ref())
                 .map_err(|_| DurabilityError::Unavailable)?;
-            let observations = match native_health_names.observe(runtime, actor) {
-                Ok(observation) => observation.into_iter().collect::<Vec<_>>(),
-                // Only this required health callback lacks facts. The original
-                // condition/entry clock remains installed and its HP ticks
-                // remain unconsumed; unrelated actors continue normally.
-                Err(()) => continue,
+            // Missing names defer this creature's HP turn, leaving the entry installed.
+            let Ok(observation) = native_health_names.observe(runtime, actor) else {
+                continue;
             };
-            states
-                .tick_source_creature_conditions_with_health_observations(
-                    runtime,
-                    actor,
-                    facts,
-                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
-                    &observations,
-                )
-                .map_err(|_| DurabilityError::Unavailable)?;
+            if candidate {
+                states
+                    .tick_source_creature_conditions_with_health_observations(
+                        runtime,
+                        actor,
+                        facts,
+                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
+                        observation.as_slice(),
+                    )
+                    .map_err(|_| DurabilityError::Unavailable)?;
+            } else {
+                runtime
+                    .advance_empty_creature_periodic_turn(actor, now, observation.as_ref())
+                    .map_err(|_| DurabilityError::Unavailable)?;
+            }
         }
         Ok(())
     }
