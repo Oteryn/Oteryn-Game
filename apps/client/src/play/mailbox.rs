@@ -140,8 +140,6 @@ pub(super) struct ConnectionInputs {
     pub(super) channel_character: String,
     pub(super) channel_current: Option<[u8; 16]>,
     pub(super) channel_rows: Vec<oteryn_client_ui::channel_switch::ChannelRow>,
-    /// Shared across handoffs. Acquire before the mailbox when retiring Store requests.
-    pub(super) browser_delivery: Arc<Mutex<()>>,
     pub(super) coin_shop: Option<Arc<crate::coin_shop::launcher::Launcher>>,
     pub(super) probe_platform: Option<String>,
 }
@@ -263,7 +261,8 @@ pub(super) struct Mailbox {
     pub(super) animus: oteryn_client_ui::animus_mastery::AnimusPanel,
     pub(super) wheel: oteryn_client_ui::wheel_allocation::WheelPanel,
     pub(super) wheel_shutdown: bool,
-    pub(super) wheel_preset_save_pending: bool,
+    pub(super) wheel_preset_writes:
+        Option<VecDeque<super::feature_0148_wheel_allocation::view::presets::PresetWrite>>,
     pub(super) exiva: oteryn_client_ui::exiva_settings::ExivaPanel,
     pub(super) mechanics_status: oteryn_client_ui::mechanics_status::MechanicsStatusPanel,
     pub(super) condition_status: oteryn_client_ui::condition_status::ConditionStatusPanel,

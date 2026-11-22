@@ -68,6 +68,10 @@ impl Vault for SecretService {
         status
     }
 
+    fn write_process(&self, bytes: &[u8]) -> Result<bool, String> {
+        Ok(self.write(bytes).is_ok())
+    }
+
     fn clear(&self) -> Result<(), String> {
         let mut child = self
             .command("clear")

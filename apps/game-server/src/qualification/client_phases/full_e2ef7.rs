@@ -1922,19 +1922,22 @@ async fn raw_map_replacement<S: tokio::io::AsyncRead + Unpin>(
 
 impl LightClient {
     async fn connect(clients: &SeamClients<'_>, tag: u8) -> TestResult<Self> {
-        let generation = platform_generation(clients.descriptor, &clients.accounts[1]).await?;
+        let index = client_row_w20b::LIGHT_CHARACTER;
+        wait_character_released(clients, index).await?;
+        let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
+        let (nonce, attempt) = fresh_grant_material(tag)?;
         let token = sign_grant(
             &Grant {
                 signing: clients.signing,
                 key_id: clients.key_id,
-                account_id: &clients.accounts[1],
-                character_id: clients.characters[1],
+                account_id: &clients.accounts[index],
+                character_id: clients.characters[index],
                 world_id: clients.world,
                 channel_id: clients.channel,
                 security_generation: generation,
                 scope_generation: clients.scope_generation,
-                nonce: [tag; 32],
-                attempt: v7(tag, 0x05),
+                nonce,
+                attempt,
             },
             now_seconds()?,
         );
@@ -1957,7 +1960,7 @@ impl LightClient {
             &mut stream,
             &native::encode_client_bootstrap(&native::ClientBootstrapValue {
                 schema_revision: 1,
-                character_id: CharacterId::decode(&clients.characters[1])?,
+                character_id: CharacterId::decode(&clients.characters[index])?,
                 admission_material: token.as_bytes(),
                 client_build_id: "oteryn-e2e-light",
                 supported_capabilities: supported,
@@ -2317,6 +2320,9 @@ async fn light_journey(
     clients: &SeamClients<'_>,
 ) -> TestResult {
     let book = native_spell_book()?;
+    let mut fixture = client_row_w20b::connect_caster(clients).await?;
+    logout(&mut fixture).await?;
+    drop(fixture);
     *connection = Some(LightClient::connect(clients, 0xe0).await?);
     row.pass("admission");
     for (words, level, mana, seconds, paid, refused, relog, tag, expired) in [
@@ -4323,7 +4329,7 @@ async fn wait_units(
 }
 // Content selects a real vendor and route, never supplies evidence or grants an
 // item. Every acquisition still needs the served offer, accepted BUY and inventory.
-async fn acquire(
+pub(super) async fn acquire(
     client: &mut DevClientSession,
     world: &BundleWorld,
     definitions: &crate::content::item_ref::ItemDefinitionIndex,
@@ -4424,23 +4430,40 @@ async fn acquire_inner(
         })
         .ok_or("vendor route unavailable after gold hunt")?;
         acquisition_step("vendor-walk", walk(client, world, &path)).await?;
-        let actor = client
+        let vendor_name = name.replace('_', " ");
+        let vendor_actor = client
             .world_entities()
             .and_then(|es| {
                 es.iter().find(|e| {
                     e.kind == oteryn_dev_client::EntityKind::Npc
                         && vendor.placements.iter().any(|p| {
-                            e.position
-                                == ActorPosition {
-                                    x: i32::from(p.x),
-                                    y: i32::from(p.y),
-                                    floor: basis.floor(p.floor),
-                                }
+                            let distance = e.position.x.abs_diff(i32::from(p.x)).max(
+                                e.position.y.abs_diff(i32::from(p.y)),
+                            );
+                            e.position.floor == basis.floor(p.floor)
+                                && (distance == 0
+                                    || (distance <= 2
+                                        && e.display_name.is_some_and(|display| {
+                                            display.as_str().is_ok_and(|display| {
+                                                display.eq_ignore_ascii_case(&vendor_name)
+                                            })
+                                        })))
                         })
                 })
             })
-            .map(|e| e.entity)
-            .ok_or_else(|| format!("vendor {name} has no served actor at placement"))?;
+            .copied()
+            .ok_or_else(|| format!("vendor {name} has no served actor at or near its placement"))?;
+        let from = tile(client.world_spatial().actor_position)?;
+        let vendor_at = tile(vendor_actor.position)?;
+        if from.x.abs_diff(vendor_at.x).max(from.y.abs_diff(vendor_at.y)) > 3 {
+            let path = route(world, from, |at| {
+                at.floor == vendor_at.floor
+                    && at.x.abs_diff(vendor_at.x).max(at.y.abs_diff(vendor_at.y)) <= 2
+            })
+            .ok_or_else(|| format!("vendor {name} wandered to unreachable {vendor_at:?}"))?;
+            acquisition_step("vendor-walk", walk(client, world, &path)).await?;
+        }
+        let actor = vendor_actor.entity;
         for text in ["hi", "trade"] {
             let result = acquisition_step("vendor-dialogue", async {
                 Ok(shop::talk(
@@ -4560,7 +4583,7 @@ async fn imbue_window(
         .window
         .ok_or_else(|| "imbuement query omitted window".into())
 }
-async fn apply_imbue(
+pub(super) async fn apply_imbue(
     client: &mut DevClientSession,
     definition: std::num::NonZeroU32,
     family: u8,
@@ -4640,7 +4663,7 @@ async fn strike_effect(client: &mut DevClientSession) -> TestResult<i64> {
         .get(character::combat::CombatStat::CriticalChanceImbuement)
         .ok_or_else(|| "server combat tab reports imbuement critical chance unknown".into())
 }
-async fn shrine(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+pub(super) async fn shrine(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     // Shrine locations come from the production bundle's item palette and sectors.
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let mut positions = BTreeSet::new();
@@ -5537,7 +5560,7 @@ async fn player_gold(client: &mut DevClientSession) -> TestResult<u64> {
         .checked_add(balances.bank_gold)
         .ok_or_else(|| "native gold total overflow".into())
 }
-async fn earn_gold(
+pub(super) async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
     required: u64,
@@ -6203,6 +6226,29 @@ async fn forge_row(clients: &SeamClients<'_>) {
     row.finish(&result);
 }
 
+pub(super) fn forge_next_step(
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    entities: &[spatial::WorldSpatialEntity],
+    blocked: &BTreeSet<TilePos>,
+) -> Option<StepDirection> {
+    let occupied = entities
+        .iter()
+        .filter(|entity| {
+            matches!(
+                entity.kind,
+                spatial::EntityKind::Player | spatial::EntityKind::Creature | spatial::EntityKind::Npc
+            )
+        })
+        .filter_map(|entity| tile(entity.position).ok())
+        .collect::<BTreeSet<_>>();
+    route_avoiding(world, from, goal, |at| {
+        !blocked.contains(&at) && !occupied.contains(&at)
+    })
+    .and_then(|path| path.first().copied())
+}
+
 impl ForgeClient {
     // A native turn is a barrier after command acknowledgements, which may precede
     // their inventory/spatial deltas. No elapsed-time-only success is accepted.
@@ -6231,28 +6277,46 @@ impl ForgeClient {
             .map(|e| u64::from(e.count.get()))
             .sum()
     }
-    async fn walk(&mut self, world: &BundleWorld, path: &[StepDirection]) -> TestResult {
-        for direction in path {
+    async fn walk(&mut self, world: &BundleWorld, goal: impl Fn(TilePos) -> bool) -> TestResult {
+        let mut blocked = BTreeSet::new();
+        for _ in 0..160 {
             let before = tile(self.position)?;
+            if goal(before) {
+                return Ok(());
+            }
+            let direction = forge_next_step(world, before, &goal, &self.entities, &blocked)
+                .ok_or_else(|| format!("forge route has no available step at {before:?}"))?;
+            let landing = destination(world, before, direction).ok_or("forge route landing absent")?;
             let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
             loop {
-                let reply = self.step(*direction).await?;
-                if reply.disposition == StepDisposition::Moved {
-                    break;
+                let reply = self.step(direction).await?;
+                match reply.disposition {
+                    StepDisposition::Moved => {
+                        self.barrier().await?;
+                        if tile(self.position)? != landing {
+                            return Err("forge STEP endpoint frame mismatch".into());
+                        }
+                        break;
+                    }
+                    StepDisposition::Blocked => {
+                        self.barrier().await?;
+                        if tile(self.position)? != before {
+                            return Err("forge blocked STEP changed position".into());
+                        }
+                        blocked.insert(landing);
+                        break;
+                    }
+                    StepDisposition::TooEarly if tokio::time::Instant::now() < deadline => {
+                        self.barrier().await?;
+                    }
+                    _ => return Err(format!("forge real route step:{reply:?};at={before:?}").into()),
                 }
-                if !matches!(reply.disposition, StepDisposition::TooEarly)
-                    || tokio::time::Instant::now() >= deadline
-                {
-                    return Err(format!("forge real route step:{reply:?};at={before:?}").into());
-                }
-                self.barrier().await?;
-            }
-            self.barrier().await?;
-            if Some(tile(self.position)?) != destination(world, before, *direction) {
-                return Err("forge STEP endpoint frame mismatch".into());
             }
         }
-        Ok(())
+        if goal(tile(self.position)?) {
+            return Ok(());
+        }
+        Err("forge route exhausted its 160-step budget".into())
     }
     async fn forge(
         &mut self,
@@ -6457,11 +6521,9 @@ async fn forge_attack_corpse(
     };
     client.hunt = None;
     let (corpse, position) = corpse;
-    let path = route(world, tile(client.position)?, |at| {
-        hunt_spawn_approach(at, position)
-    })
-    .ok_or("observed forge corpse has no reachable loot approach")?;
-    client.walk(world, &path).await?;
+    client
+        .walk(world, |at| hunt_spawn_approach(at, position))
+        .await?;
     Ok((corpse, xp_before))
 }
 
@@ -6514,17 +6576,14 @@ async fn forge_hunt_inner(
         if tokio::time::Instant::now() >= deadline || points.is_empty() {
             return Err(format!("forge-selection-blocked:required={};served-marker-absent;reachable-spawn-visits={visits};budget=330s,160-tiles;no-global-absence-inferred",if fiendish{"fiendish-15"}else{"influenced-1..5"}).into());
         }
-        let path = route(world, tile(client.position)?, |at| {
+        let walk = client.walk(world, |at| {
             points.iter().any(|point| hunt_spawn_approach(at, *point))
                 && world
                     .base()
                     .tile(at.x, at.y, at.floor)
                     .is_some_and(|t| !t.protection_zone())
-        })
-        .ok_or(
-            "forge-selection-blocked:no reachable unvisited spawn approach;served-marker-absent",
-        )?;
-        acquisition_step("forge-spawn-walk", client.walk(world, &path)).await?;
+        });
+        acquisition_step("forge-spawn-walk", walk).await?;
         let at = tile(client.position)?;
         points.retain(|point| !hunt_spawn_approach(at, *point));
         visits += 1;
@@ -6538,16 +6597,16 @@ async fn forge_hunt_inner(
     };
     let (entity, stacks) = target;
     let position = tile(entity.position)?;
-    let path = route(world, tile(client.position)?, |at| {
-        at.floor == position.floor
-            && at.x.abs_diff(position.x).max(at.y.abs_diff(position.y)) <= 1
-            && world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|t| !t.protection_zone())
-    })
-    .ok_or("observed forge creature has no reachable unprotected melee approach")?;
-    client.walk(world, &path).await?;
+    client
+        .walk(world, |at| {
+            at.floor == position.floor
+                && at.x.abs_diff(position.x).max(at.y.abs_diff(position.y)) == 1
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|t| !t.protection_zone())
+        })
+        .await?;
     let (corpse, xp_before) = forge_attack_corpse(client, world, entity, stacks).await?;
     client.attack_target(None).await?;
     client.barrier().await?;

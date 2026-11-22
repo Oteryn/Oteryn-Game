@@ -113,6 +113,18 @@ fn finish_marker_preferences(app: &mut App) -> TestResult {
 #[test]
 fn removing_a_remembered_mark_reports_storage_failure_after_activation() -> TestResult {
     let root = tempfile::tempdir()?;
+    const CHILD: &str = "OTERYN_TEST_MARKER_SAVE_PROFILE";
+    if std::env::var_os(CHILD).is_none() {
+        let output = std::process::Command::new(std::env::current_exe()?)
+            .args(["--exact", std::thread::current().name().ok_or("test name")?])
+            .env(CHILD, root.path())
+            .env("XDG_CONFIG_HOME", root.path())
+            .env("LOCALAPPDATA", root.path())
+            .env("HOME", root.path())
+            .output()?;
+        crate::play::screenshot::assert_one_test_passed(&output);
+        return Ok(());
+    }
     let path = root.path().join("preferences.json");
     let mut app = fixture()?;
     {
