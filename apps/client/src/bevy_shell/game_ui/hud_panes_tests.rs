@@ -580,3 +580,31 @@ fn concurrent_dock_move_and_close_keep_widgets_visible() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn review_round_sidebar_close_keeps_concurrent_move_to_open_sidebar() -> TestResult {
+    let fixture = tempfile::tempdir()?;
+    for (side, from, to) in [
+        (Side::Left, Dock::Left, Dock::Extra),
+        (Side::Right, Dock::Extra, Dock::Left),
+    ] {
+        let path = fixture.path().join("concurrent-dock.json");
+        let mut initial = SidebarWidgets::default();
+        initial.set_sidebar(Side::Left, true);
+        initial.set_sidebar(Side::Right, true);
+        initial.place(Widget::Vip, from, None);
+        initial.save(&path)?;
+
+        let mut moving = SidebarWidgets::load(&path)?;
+        let mut closing = SidebarWidgets::load(&path)?;
+        moving.place(Widget::Vip, to, None);
+        moving.save(&path)?;
+        closing.set_sidebar(side, false);
+        closing.save(&path)?;
+
+        let saved = SidebarWidgets::load(&path)?;
+        assert_eq!(saved.entry(Widget::Vip).ok_or("VIP")?.dock, to);
+        assert_eq!(saved, closing);
+    }
+    Ok(())
+}

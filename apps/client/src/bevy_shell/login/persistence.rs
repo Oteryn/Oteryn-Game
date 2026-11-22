@@ -97,11 +97,24 @@ impl LoginState {
         let settings = saved
             .inspect_err(|error| self.form.feedback(error.clone()))
             .ok()?;
-        // A concurrently saved Platform belongs to a different sign-in selection.
-        // Keep the submitted settings together when its origin differs.
+        // Adopt concurrent settings within the submitted Platform selection.
+        // Explicit environment values also apply to this sign-in.
         if settings.platform_url == self.form.settings.platform_url {
+            let submitted = self.form.settings.values();
+            let saved = settings.values();
+            let settings = LoginSettings::from_values(std::array::from_fn(|i| {
+                if self.env_fallback[i] {
+                    submitted[i]
+                } else {
+                    saved[i]
+                }
+                .to_owned()
+            }));
             self.shown_settings.clone_from(&settings);
-            self.form.settings = settings;
+            if self.form.settings != settings {
+                self.form.settings = settings;
+                self.revision = self.revision.saturating_add(1);
+            }
         }
         self.form.submit().ok()
     }

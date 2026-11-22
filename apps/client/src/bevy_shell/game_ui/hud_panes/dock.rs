@@ -219,9 +219,6 @@ impl SidebarWidgets {
                 continue;
             };
             let active = &mut self.entries[active_index];
-            if edit.dock != previous.dock {
-                active.dock = edit.dock;
-            }
             if edit.open != previous.open {
                 active.open = edit.open;
             }
@@ -241,6 +238,7 @@ impl SidebarWidgets {
             .unwrap_or(&edited.placements);
         for &(widget, dock, before) in placements {
             if let Some(index) = self.entries.iter().position(|entry| entry.widget == widget) {
+                self.entries[index].dock = dock;
                 self.reorder(index, dock, before);
                 self.placements.push((widget, dock, before));
             }

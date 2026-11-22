@@ -29,6 +29,19 @@ impl LoginSettings {
         let error = Self::save_error;
         let settings = match std::fs::read(path) {
             Ok(bytes) => match serde_json::from_slice::<Self>(&bytes) {
+                Ok(active) if active.platform_url != self.platform_url => {
+                    // A Platform switch saves the whole submitted selection. A stale
+                    // form can still sign in with its own selection without changing
+                    // the settings saved for the other Platform.
+                    if edited[0]
+                        || (env_fallback[0]
+                            && Self::validate_field(0, &active.platform_url).is_err())
+                    {
+                        self.clone()
+                    } else {
+                        return Ok(active);
+                    }
+                }
                 Ok(active) => {
                     let submitted = self.values();
                     let disk = active.values();
