@@ -241,8 +241,20 @@ def outlaw_key_holds(definition):
             for ref in definition['source_refs']['claims']]
 
 
+def restore_outlaw_source_holds(definition):
+    if definition['identity']['key'] != OUTLAW_QUEST:
+        return
+    holds = outlaw_key_holds(definition)
+    missing = definition['missing_data']
+    if not any(hold in missing for hold in holds):
+        # The native projection removes the consecutive key holds.
+        # The frozen donor view keeps them immediately before the quest hold.
+        at = missing.index({'code': 'quest_native_lowering_missing'})
+        missing[at:at] = holds
+
+
 def source_projection(root, records):
-    """Validate and remove only the compiled native annotation from the SOURCE view.
+    """Remove the compiled native projections from the frozen SOURCE view.
 
     Frozen SOURCE receipts still compare every original field byte for byte. Native
     references are compiler output, checked exactly against the callback input, and
@@ -251,14 +263,7 @@ def source_projection(root, records):
     result = copy.deepcopy(records)
     for row in result:
         definition = row['definition']
-        if definition['identity']['key'] == OUTLAW_QUEST:
-            holds = outlaw_key_holds(definition)
-            missing = definition['missing_data']
-            if not any(hold in missing for hold in holds):
-                # The native projection removes the consecutive key holds.
-                # The frozen donor view keeps them immediately before the quest hold.
-                at = missing.index({'code': 'quest_native_lowering_missing'})
-                missing[at:at] = holds
+        restore_outlaw_source_holds(definition)
         if definition['identity']['key'] != 'oteryn:quest.the_way_of_the_monk_quest':
             continue
         original = {'state': 'WAITING_IMPLEMENTATION', 'canonical_progress_refs': [],

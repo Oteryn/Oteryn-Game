@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 import source_fix_guard as guard
+from quest_tree_authoring import restore_outlaw_source_holds
 FIXTURE=Path(os.environ.get('SOURCE_FIX_GUARD_FIXTURE',str(Path(__file__).resolve().parents[3])))
 class SourceFixGuardTests(unittest.TestCase):
  @classmethod
@@ -17,7 +18,9 @@ class SourceFixGuardTests(unittest.TestCase):
    for row in guard.read_json(FIXTURE/path)['records']:
     core=copy.deepcopy(row['definition'])
     if core.get('definition_profile')=='oteryn_authored_v1':continue
-    core.pop('oteryn_recipe',None);cls.current[core['identity']['key']]=core
+    core.pop('oteryn_recipe',None)
+    restore_outlaw_source_holds(core)
+    cls.current[core['identity']['key']]=core
   cls.receipt=guard.read_json(FIXTURE/guard.RECEIPT)
   cls.approval=guard.read_json(FIXTURE/guard.APPROVAL)
  def setUp(self):
