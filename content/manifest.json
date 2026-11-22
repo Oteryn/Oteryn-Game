@@ -930,10 +930,10 @@
             "dependencies": "tools/content-schema/spell-authoring/spell-dependencies.schema.json",
             "manifest": "tools/content-schema/monster-authoring/monster-import-readiness.schema.json"
           },
-          "sha256": "f6372601a2fa1af0d6ca549d49b898d69eb3bee71d05df0dc335b3dd78b6aae5",
+          "sha256": "6a2dcac4cb4d9c00082ee2ad7eea3cf6fd7876af30d373e2d695be77da944dfc",
           "source_selection": {
             "path": "content/abilities/definitions/player-spell-selection.json",
-            "sha256": "486f541f0a8c011b63fc46f27647c4db1dcaab29c2680b471b1b14f79ee3ca4f"
+            "sha256": "edd2668dff781489cc66680a65047d423794a68726551f7a2914d3f969ab7d96"
           }
         },
         {
@@ -945,7 +945,7 @@
             "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
             "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/abilities/items"
           },
-          "sha256": "2bca5870303c5565b6b0ed052a7c13a4b9c2fafc4fb43a72ea8e8b4bc1899e3f"
+          "sha256": "7ba8b708baeaf7365f7c134383f6a6d76d9a13bc18291f42b168afc1a66a031a"
         },
         {
           "creates_canonical_identities": false,
@@ -984,7 +984,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "47e9d5b54eb9cc3de65a88bc53e178ba36da10dffa4a5d1f0f4643a678908c36"
+          "sha256": "8a11af244239e853dd7e519e2798535e13e129b718456e8eaf8a8e3721296ffd"
         },
         {
           "creates_canonical_identities": false,
@@ -1035,7 +1035,7 @@
             "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
             "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/effects/items"
           },
-          "sha256": "27f9820953317efac20eb904d1aac7f6553002b245db9fc5471d4cf5ca2f6ab3"
+          "sha256": "061cc1d7fe1b1d0e186719f68ec84185d070ff31ffb77c64330c79aea12594d0"
         }
       ],
       "Formula": [
@@ -1048,7 +1048,7 @@
             "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
             "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/formulas/items"
           },
-          "sha256": "2992bb5d477ec9c8e28cf9ee37aa72b1fcacb43534666b5ba692432531abab52"
+          "sha256": "31d487c0f97ce45ad9e0174ce12591e0d383e53dc4aba8a6c55d883f33c2b412"
         }
       ],
       "Item": [

@@ -60,7 +60,7 @@ DIALOGUE_COUNT = 836
 CHARM_COUNT = 25
 # Proficiency likewise (tools/content-schema/proficiency-authoring).
 PROFICIENCY_COUNT = 443
-PROFICIENCY_BINDING_COUNT = 665  # ITEM-ADD-1 plus the admitted appearance-only Snowball
+PROFICIENCY_BINDING_COUNT = 666  # Includes the admitted Snowball and Ink Sword bindings
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring).
 REWARD_CLAIM_COUNT = len(json.loads(
     (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
