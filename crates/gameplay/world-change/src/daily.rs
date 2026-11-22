@@ -403,6 +403,7 @@ mod tests {
             all,
             DailyWorldChanges {
                 reset_epoch: 9,
+                variants: Default::default(),
                 fury_gates: Some("fury_gates/abdendriel"),
                 fury_exit: "fury_gates/abdendriel",
                 nightmare_isles: "nightmare_isle/ankrahmun-north",
