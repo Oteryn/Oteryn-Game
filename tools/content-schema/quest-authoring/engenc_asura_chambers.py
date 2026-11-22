@@ -103,12 +103,15 @@ def attach_chambers(document, root):
             if number == 2
             else f"{BASE}/s{number - 1}/opened"
         )
+        prior = gate(previous, 1)
+        if stage == "s4":
+            prior["maximum"] = 2
         admission = callback(
             source,
             chamber["entry"],
             [
-                gate(previous, 1),
-                {"track": entered, "minimum": 0, "maximum": 0, "set": 1},
+                prior,
+                {"track": entered, "minimum": 0, "maximum": 1, "set": 1},
             ],
         )
         admission["effects"] = {
@@ -138,11 +141,15 @@ def attach_chambers(document, root):
             [
                 gate(entered, 1),
                 gate(count, 2),
-                {"track": opened, "minimum": 0, "maximum": 0, "set": 1},
+                {
+                    "track": opened,
+                    "minimum": 0,
+                    "maximum": 2 if stage == "s3" else 1,
+                    "set": 1,
+                    "at_least": True,
+                },
             ],
         )
-        if stage == "s3":
-            door["activation"] = {"track": opened, "minimum": 0, "maximum": 0}
         if door["selector"]["appearance"] != chamber["door_appearance"]:
             raise ValueError("Asura authored door changed")
         open_door(door)
@@ -178,7 +185,7 @@ def attach_chambers(document, root):
         )
     # The occupied fire chamber and Orchid's retained source room share geometry.
     # The same native door admits Orchid after the three defender chambers.
-    # Its earlier door callback only routes while the final chamber is unfinished.
+    # Dispatch prefers Orchid when both callbacks at this door are eligible.
     orchid = "oteryn:creature.the_flaming_orchid"
     source = "oteryn:quest-callback/engenc/asura/orchid/entry"
     fire_door = f"{BASE}/s3/opened"

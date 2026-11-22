@@ -180,7 +180,21 @@ fn unique_eligible<'a>(
         })
     });
     let selected = eligible.next()?;
-    eligible.next().is_none().then_some(selected)
+    let Some(alternative) = eligible.next() else {
+        return Some(selected);
+    };
+    if eligible.next().is_some() {
+        return None;
+    }
+    // The chamber door can be reopened after a reset. At the shared source,
+    // the later Orchid encounter takes priority once its own guards pass.
+    const FIRE_DOOR: &str = "oteryn:quest-callback/engenc/asura/s3/door";
+    const ORCHID: &str = "oteryn:quest-callback/engenc/asura/orchid/entry";
+    match (selected.key.as_str(), alternative.key.as_str()) {
+        (FIRE_DOOR, ORCHID) => Some(alternative),
+        (ORCHID, FIRE_DOOR) => Some(selected),
+        _ => None,
+    }
 }
 
 fn tile(p: Position) -> TilePos {
@@ -197,7 +211,7 @@ fn local(p: Position) -> MovementLocalPosition {
         floor: -i16::from(p.floor),
     }
 }
-fn native(p: MovementLocalPosition) -> Option<TilePos> {
+pub(super) fn native(p: MovementLocalPosition) -> Option<TilePos> {
     Some(TilePos {
         x: p.x.try_into().ok()?,
         y: p.y.try_into().ok()?,
@@ -293,13 +307,40 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     {
         return false;
     }
+    if matches!(
+        callback.key.as_str(),
+        oteryn_gameplay_quests::quest::barbarian_mead::AWAKE_BEAR
+            | "oteryn:quest-callback/barbarian-test/stun-bear"
+            | "oteryn:quest-callback/barbarian-test/hug-bear"
+    ) {
+        // Bear actions are selected by the live form at the same source cell.
+        // The original palette identity stays awake even during a stun.
+        return ordinal == 2
+            && !map.facts.base_hidden(key)
+            && callback
+                .selector
+                .position
+                .is_some_and(|expected| tile(expected) == pos)
+            && map
+                .overlay
+                .base()
+                .tile(pos.x, pos.y, pos.floor)
+                .and_then(|base| {
+                    base.ids()
+                        .iter()
+                        .zip(base.depths())
+                        .filter(|(_, depth)| **depth == 0)
+                        .nth(usize::from(ordinal))
+                })
+                .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
+                .is_some_and(|live| callback.selector.appearance == Some(live.appearance_id));
+    }
     // These source-bound World ingresses retain no startup UID/AID in B3.
     // An appearance elsewhere in the stack cannot impersonate their source.
     let source_ordinal = match callback.key.as_str() {
         "oteryn:quest-callback/grimvale-full-moon-entry"
         | "oteryn:quest-callback/mages-tower-entry" => Some(1),
-        "oteryn:quest-callback/mages-tower-exit"
-        | oteryn_gameplay_quests::quest::barbarian_mead::AWAKE_BEAR => Some(2),
+        "oteryn:quest-callback/mages-tower-exit" => Some(2),
         _ => None,
     };
     if source_ordinal.is_some_and(|source| source != ordinal) {
@@ -1015,15 +1056,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
-                    // The barrel and bear have separate bare and selected-horn USE routes.
-                    && match c.key.as_str() {
-                        oteryn_gameplay_quests::quest::barbarian_mead::KEY
-                        | oteryn_gameplay_quests::quest::barbarian_mead::AWAKE_BEAR
-                        | "oteryn:quest-callback/barbarian-test/hug-bear" => selected_tool.is_none(),
-                        "oteryn:quest-callback/barbarian-test/fill-horn"
-                        | "oteryn:quest-callback/barbarian-test/stun-bear" => selected_tool.is_some(),
-                        _ => true,
-                    }
+                    // Selected tools and bare USE share a placement but can own different actions.
+                    && c.item_on_target.as_ref().is_some_and(|tool| tool.selected_instance)
+                        == selected_tool.is_some()
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
                     && c.activation.as_ref().is_none_or(|activation| {

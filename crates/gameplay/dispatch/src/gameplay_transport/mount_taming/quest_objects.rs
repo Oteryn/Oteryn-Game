@@ -19,6 +19,8 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                     callback.key.as_str(),
                     "oteryn:quest-callback/barbarian-test/fill-horn"
                         | "oteryn:quest-callback/barbarian-test/stun-bear"
+                        | "oteryn:quest-callback/children-grease"
+                        | "oteryn:quest-callback/children-poison-water"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
                 ))
@@ -57,6 +59,29 @@ pub(crate) fn matches_source(
 mod tests {
     use super::*;
     use oteryn_gameplay_quests::quest::{native_rules::NativeRule, world_callbacks};
+
+    #[test]
+    fn children_selected_tools_reach_the_carried_tool_owner() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let children: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback.key.starts_with("oteryn:quest-callback/children-")
+                    && callback
+                        .item_on_target
+                        .as_ref()
+                        .is_some_and(|tool| tool.selected_instance)
+            })
+            .collect();
+        assert_eq!(children.len(), 2);
+        let unrouted: Vec<_> = children
+            .iter()
+            .filter(|callback| !accepts(callback))
+            .map(|callback| callback.key.as_str())
+            .collect();
+        assert!(unrouted.is_empty(), "unrouted selected tools: {unrouted:?}");
+        Ok(())
+    }
 
     #[test]
     fn registered_ice_paint_callbacks_reach_the_carried_tool_owner() -> Result<(), String> {

@@ -190,6 +190,22 @@ fn freeze_at(
                     death_position.is_some_and(|position| area.contains(position))
                 })
             {
+                use crate::durability::quest_state::native_kills::NativeDeathSource;
+                let source = if oteryn_gameplay_quests::quest::kill_objectives::party_hunt(
+                    &counter.transition,
+                )
+                .is_some()
+                {
+                    let Some(at) = corpse.and_then(super::quest_callbacks::native) else {
+                        continue;
+                    };
+                    NativeDeathSource::PositionedParty {
+                        source: Arc::clone(&native_source),
+                        position: (at.x, at.y, at.floor),
+                    }
+                } else {
+                    NativeDeathSource::Party(Arc::clone(&native_source))
+                };
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,
                     session: snapshot.session,
@@ -200,10 +216,7 @@ fn freeze_at(
                         definition_hash: counter.definition_hash,
                         creature: creature.into(),
                         observed_revision: snapshot.observed_revision,
-                        source:
-                            crate::durability::quest_state::native_kills::NativeDeathSource::Party(
-                                Arc::clone(&native_source),
-                            ),
+                        source,
                     },
                 });
             }

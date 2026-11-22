@@ -305,17 +305,31 @@ pub(super) async fn add_progress(
     source_kind: &str,
     event_id: &[u8],
 ) -> std::result::Result<(), DurabilityError> {
+    add_progress_amount(tx, character_id, key, total, source_kind, event_id, 1).await
+}
+
+/// Record earned progress in one capped upsert, including progress recovered from ownership.
+pub(super) async fn add_progress_amount(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character_id: CharacterId,
+    key: &str,
+    total: u32,
+    source_kind: &str,
+    event_id: &[u8],
+    amount: u32,
+) -> std::result::Result<(), DurabilityError> {
     let progress: Option<i64> = sqlx::query_scalar(
         "INSERT INTO game_character_achievement_progress AS p \
                 (character_id, achievement_key, progress) \
-         VALUES (encode($1,'hex')::uuid, $2, 1) \
+         VALUES (encode($1,'hex')::uuid, $2, LEAST($3::bigint, $4::bigint)) \
          ON CONFLICT (character_id, achievement_key) \
-         DO UPDATE SET progress = p.progress + 1 WHERE p.progress < $3 \
+         DO UPDATE SET progress = LEAST(p.progress + EXCLUDED.progress, $3) WHERE p.progress < $3 \
          RETURNING progress",
     )
     .bind(character_id.as_bytes().as_slice())
     .bind(key)
     .bind(i64::from(total))
+    .bind(i64::from(amount))
     .fetch_optional(&mut **tx)
     .await?;
     if progress == Some(i64::from(total)) {

@@ -33,6 +33,62 @@ mod tests {
     use super::*;
 
     #[test]
+    fn asura_chamber_loader_allows_fresh_use_with_saved_flags() -> Result<(), String> {
+        use crate::quest::{authored_bindings::Bindings, loader, world_callbacks};
+        use std::collections::BTreeMap;
+
+        let bindings = Bindings::parse(include_bytes!(
+            "../../../../../../content/quests/authored-bindings/engenc-asura-palace.json"
+        ))?;
+        let loaded = loader::load_embedded_quest_state_with_bindings("content-1", &bindings)
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let callbacks = world_callbacks::load_for(catalogue)?;
+        for (stage, previous) in [
+            ("s2", "oteryn:quest-progress/authored/asura_palace_quest/s1"),
+            ("s3", "oteryn:quest-progress/engenc/asura/s2/opened"),
+            ("s4", "oteryn:quest-progress/engenc/asura/s3/opened"),
+        ] {
+            let entered = format!("oteryn:quest-progress/engenc/asura/{stage}/entered");
+            let count = format!("oteryn:quest-progress/engenc/asura/{stage}/count");
+            let opened = format!("oteryn:quest-progress/engenc/asura/{stage}/opened");
+            let mut saved =
+                BTreeMap::from([(previous.to_owned(), 1), (entered, 1), (count.clone(), 1)]);
+            for part in ["entry", "door"] {
+                if part == "door" {
+                    saved.insert(count.clone(), 2);
+                    saved.insert(opened.clone(), 1);
+                }
+                let key = format!("oteryn:quest-callback/engenc/asura/{stage}/{part}");
+                let callback = callbacks
+                    .iter()
+                    .find(|callback| callback.key == key)
+                    .ok_or(&key)?;
+                assert!(
+                    callback.activation.as_ref().is_none_or(|activation| {
+                        saved.get(&activation.track).is_some_and(|value| {
+                            (activation.minimum..=activation.maximum).contains(value)
+                        })
+                    }),
+                    "{key} cannot be selected with saved progress"
+                );
+                let transition = catalogue.transition(&key).ok_or(&key)?;
+                let result = catalogue.evaluate(transition, &saved, 0);
+                assert!(result.is_ok(), "{key} refuses saved progress: {result:?}");
+                if stage == "s4" && part == "entry" || stage == "s3" && part == "door" {
+                    let mut orchid_seen = saved.clone();
+                    orchid_seen.insert("oteryn:quest-progress/engenc/asura/s3/opened".into(), 2);
+                    let changes = catalogue
+                        .evaluate(transition, &orchid_seen, 0)
+                        .map_err(|error| format!("{key} after Orchid: {error:?}"))?;
+                    assert!(changes.iter().all(|change| change.before == change.after));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn asura_authored_doors_project_passable_replacements() -> Result<(), String> {
         let bindings = crate::quest::authored_bindings::Bindings::parse(include_bytes!(
             "../../../../../../content/quests/authored-bindings/engenc-asura-palace.json"

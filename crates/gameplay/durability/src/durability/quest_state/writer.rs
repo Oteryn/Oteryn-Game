@@ -718,7 +718,7 @@ impl DurabilityRoot {
                 .starts_with(oteryn_gameplay_quests::quest::authored_bindings::door_use::PREFIX)
             || oteryn_gameplay_quests::quest::source_deaths::rule(&request.transition_key)
                 .is_some()
-            || oteryn_gameplay_quests::quest::native_kills::counter(&request.transition_key)
+            || oteryn_gameplay_quests::quest::native_kills::counter_for(&catalogue, &request.transition_key)
                 .is_some();
         if native_key != native.is_some()
             || native

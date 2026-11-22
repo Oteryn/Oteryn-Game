@@ -216,7 +216,7 @@
                 {
                   "track": "oteryn:quest-progress/engenc/asura/s2/entered",
                   "minimum": 0,
-                  "maximum": 0,
+                  "maximum": 1,
                   "set": 1
                 }
               ],
@@ -361,8 +361,9 @@
                 {
                   "track": "oteryn:quest-progress/engenc/asura/s2/opened",
                   "minimum": 0,
-                  "maximum": 0,
-                  "set": 1
+                  "maximum": 1,
+                  "set": 1,
+                  "at_least": true
                 }
               ],
               "offerings": [],
@@ -425,7 +426,7 @@
                 {
                   "track": "oteryn:quest-progress/engenc/asura/s3/entered",
                   "minimum": 0,
-                  "maximum": 0,
+                  "maximum": 1,
                   "set": 1
                 }
               ],
@@ -570,8 +571,9 @@
                 {
                   "track": "oteryn:quest-progress/engenc/asura/s3/opened",
                   "minimum": 0,
-                  "maximum": 0,
-                  "set": 1
+                  "maximum": 2,
+                  "set": 1,
+                  "at_least": true
                 }
               ],
               "offerings": [],
@@ -581,11 +583,6 @@
                 "tools/content-schema/quest-authoring/samples/engenc/asura-chambers.json",
                 "authored per owner rule"
               ],
-              "activation": {
-                "track": "oteryn:quest-progress/engenc/asura/s3/opened",
-                "minimum": 0,
-                "maximum": 0
-              },
               "effects": {
                 "transform": 1675
               }
@@ -632,14 +629,14 @@
                 {
                   "track": "oteryn:quest-progress/engenc/asura/s3/opened",
                   "minimum": 1,
-                  "maximum": 1,
+                  "maximum": 2,
                   "set": 1,
                   "preserve": true
                 },
                 {
                   "track": "oteryn:quest-progress/engenc/asura/s4/entered",
                   "minimum": 0,
-                  "maximum": 0,
+                  "maximum": 1,
                   "set": 1
                 }
               ],
@@ -784,8 +781,9 @@
                 {
                   "track": "oteryn:quest-progress/engenc/asura/s4/opened",
                   "minimum": 0,
-                  "maximum": 0,
-                  "set": 1
+                  "maximum": 1,
+                  "set": 1,
+                  "at_least": true
                 }
               ],
               "offerings": [],

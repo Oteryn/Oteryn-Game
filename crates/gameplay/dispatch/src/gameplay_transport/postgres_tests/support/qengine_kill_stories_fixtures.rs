@@ -532,6 +532,19 @@ async fn spike(
         let achievement: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/cave_completionist'")
             .fetch_one(&h.pool).await?;
         assert_eq!(achievement, i64::from(mask == 3));
+        if mask == 3 {
+            let progress: i64 = sqlx::query_scalar("SELECT progress FROM game_character_achievement_progress WHERE achievement_key='oteryn:achievement/cave_completionist'")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(progress, 2);
+        }
+        if mask == 2 {
+            // Main granted the cosmetic before these purchases tracked achievement progress.
+            let erased = sqlx::query("DELETE FROM game_character_achievement_progress WHERE achievement_key='oteryn:achievement/cave_completionist'")
+                .execute(&h.pool)
+                .await?;
+            assert_eq!(erased.rows_affected(), 1);
+        }
     }
     Ok(())
 }

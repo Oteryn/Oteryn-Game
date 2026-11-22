@@ -495,13 +495,32 @@ pub(crate) async fn apply(
         .chain_update(callback.key.as_bytes())
         .finalize();
     for progress in &callback.achievement_progress {
-        super::super::account_achievement::add_progress(
+        let mut amount = 1;
+        if progress.key == "oteryn:achievement/cave_completionist" {
+            // Both purchase routes already hold the appearance account lock.
+            // A main-era purchase can own its addon with no achievement counter.
+            let cosmetics = admission.native.cosmetics().ok_or(DurabilityError::InvalidStoredState)?;
+            let mut owned = 0;
+            for addon in 1..=2 {
+                if super::super::character_appearance::podium_cosmetic_owned(
+                    tx,
+                    fence.character_id,
+                    cosmetics,
+                    EarnedCosmetic::Addon("oteryn:outfit.cave_explorer", addon),
+                ).await? {
+                    owned += 1;
+                }
+            }
+            amount = amount.max(owned);
+        }
+        super::super::account_achievement::add_progress_amount(
             tx,
             fence.character_id,
             &progress.key,
             progress.target,
             "oteryn:quest-reward",
             &progress_event,
+            amount,
         )
         .await?;
     }

@@ -1,6 +1,10 @@
 //! Catalogue-scoped counter views; retained counter declarations keep their existing bytes.
 use super::Counter;
-use crate::quest::{QuestStateCatalogue, authored_bindings::Trigger};
+use crate::quest::{
+    QuestStateCatalogue,
+    authored_bindings::{Trigger, kills::DeathArea},
+    kill_objectives::{KillObjective, SPIKE_HUNTS, party_hunt},
+};
 use std::collections::BTreeMap;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -34,10 +38,34 @@ impl Counter {
     }
 }
 
+fn spike_counter(rule: &KillObjective) -> Option<CounterRef<'static>> {
+    let (track, maximum) = rule.counter?;
+    let (x0, y0, z0) = rule.minimum;
+    let (x1, y1, z1) = rule.maximum;
+    Some(CounterRef {
+        transition: rule.transition,
+        creature: rule.creature,
+        quest: rule.quest,
+        track,
+        gate: rule.phase_track,
+        gate_value: rule.phase_before,
+        minimum: 0,
+        maximum,
+        death_area: Some(DeathArea {
+            minimum: [x0, y0, i32::from(z0)],
+            maximum: [x1, y1, i32::from(z1)],
+        }),
+        encounter_source: None,
+    })
+}
+
 pub fn counter_for<'a>(catalogue: &'a QuestStateCatalogue, key: &str) -> Option<CounterRef<'a>> {
     let transition = catalogue.transition(key)?;
     if let Some(counter) = super::counter(key) {
         return (counter.quest == transition.quest).then(|| counter.view());
+    }
+    if let Some(rule) = party_hunt(key) {
+        return spike_counter(rule).filter(|counter| counter.quest == transition.quest);
     }
     for quest in &catalogue.authored_bindings()?.quests {
         for stage in &quest.stages {
@@ -58,6 +86,17 @@ pub fn active_for(catalogue: &QuestStateCatalogue, tracks: &BTreeMap<String, i64
         .filter(|key| counter_for(catalogue, key).is_some())
         .map(str::to_owned)
         .collect();
+    for rule in &SPIKE_HUNTS {
+        let Some(counter) = counter_for(catalogue, rule.transition) else {
+            continue;
+        };
+        if tracks.get(counter.gate).copied() == Some(counter.gate_value)
+            && (counter.minimum..counter.maximum)
+                .contains(&tracks.get(counter.track).copied().unwrap_or(0))
+        {
+            active.push(rule.transition.into());
+        }
+    }
     if let Some(bindings) = catalogue.authored_bindings() {
         for quest in &bindings.quests {
             for stage in &quest.stages {
@@ -85,6 +124,7 @@ pub fn active_for(catalogue: &QuestStateCatalogue, tracks: &BTreeMap<String, i64
 
 pub fn tracks_creature_for(catalogue: &QuestStateCatalogue, creature: &str) -> bool {
     super::counters().any(|counter|counter.creature==creature && catalogue.transition(counter.transition).is_some())
+        || SPIKE_HUNTS.iter().any(|rule| rule.creature == creature && catalogue.transition(rule.transition).is_some())
         || catalogue.authored_bindings().is_some_and(|bindings|bindings.quests.iter().any(|quest|
             quest.stages.iter().any(|stage|matches!(&stage.trigger,Trigger::Kill {counter} if counter.creature==creature))))
 }

@@ -123,10 +123,11 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.authored.asura_palace_quest",
-        hash(b"f46458b071254e14908bea9b5f40d7924f6a3ca818e27c8961e01b35632d0518"),
-        &[hash(
-            b"7d2ff46451588dd3ff2352c5db743480e1511730cce8c4ffcdf10f716a1d7caa",
-        )],
+        hash(b"a807363e56c5966b6e3bba458b4e29151bbf31230de20d129e0864e13c795a53"),
+        &[
+            hash(b"f46458b071254e14908bea9b5f40d7924f6a3ca818e27c8961e01b35632d0518"),
+            hash(b"7d2ff46451588dd3ff2352c5db743480e1511730cce8c4ffcdf10f716a1d7caa"),
+        ],
     ),
     (
         "oteryn:quest.authored.braindeath_quest",
@@ -225,6 +226,10 @@ const SOURCE_ROUTE_PREDECESSORS: &[(&str, DefinitionHash)] = &[
     (
         "oteryn:quest.spike_task",
         hash(b"056a2e30ee5ff71b52331a31967a02804df035b2f8b0befe321d8869809829bb"),
+    ),
+    (
+        "oteryn:quest.spike_task",
+        hash(b"3f03edd9b13bd48938ee76a9644e0c1f0acbe2528199ca6d0f3811202177ac7f"),
     ),
 ];
 

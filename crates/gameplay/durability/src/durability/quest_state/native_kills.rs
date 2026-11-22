@@ -55,7 +55,11 @@ impl NativeQuestDeath {
                         &self.transition,
                     )
                     .is_some_and(|counter| {
+                        let spike = oteryn_gameplay_quests::quest::kill_objectives::party_hunt(counter.transition);
                         counter.creature == self.creature
+                            && spike.is_none_or(|rule| position.is_some_and(|(x, y, floor)| {
+                                rule.contains(i32::from(x), i32::from(y), -i16::from(floor))
+                            }))
                             && counter.encounter_source.is_none()
                             && if oteryn_gameplay_quests::quest::native_kills::counter(
                                 &self.transition,

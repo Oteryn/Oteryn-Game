@@ -75,11 +75,16 @@ impl KillObjective {
     }
 
     fn effects(self) -> Vec<QuestEffect> {
-        let mut effects = vec![QuestEffect {
-            track: self.phase_track.into(),
-            from: QuestComparison::Eq(self.phase_before),
-            effect: QuestEffectKind::Set(self.phase_after),
-        }];
+        let mut effects = Vec::new();
+        if self.quest == QUEST {
+            effects.push(QuestEffect {
+                track: self.phase_track.into(),
+                from: QuestComparison::Eq(self.phase_before),
+                effect: QuestEffectKind::Set(self.phase_after),
+            });
+        }
+        // The party kill writer checks the acceptance revision. A kill must
+        // not advance that revision for other deaths already queued.
         if let Some((track, maximum)) = self.counter {
             effects.push(QuestEffect {
                 track: track.into(),
@@ -110,7 +115,7 @@ const fn objective(
     }
 }
 
-pub const OBJECTIVES: [KillObjective; 8] = [
+pub const OBJECTIVES: [KillObjective; 5] = [
     objective(
         "oteryn:quest-transition/elvenbane/dragon",
         "oteryn:creature.dragon",
@@ -141,8 +146,10 @@ pub const OBJECTIVES: [KillObjective; 8] = [
         Some(("oteryn:quest-progress/elvenbane/demon-skeleton", 2)),
         3,
     ),
-    // Crystal 201189f, creaturescripts_{upper,middle,lower}_spike_kill.lua:
-    // source kill credit is bounded by the corresponding Spike tier.
+];
+
+pub const SPIKE_HUNTS: [KillObjective; 3] = [
+    // Crystal 201189f: the corresponding Spike tier bounds party kill credit.
     KillObjective {
         transition: "oteryn:quest-transition/spike/upper/kill",
         quest: "oteryn:quest.spike_task",
@@ -178,6 +185,12 @@ pub const OBJECTIVES: [KillObjective; 8] = [
     },
 ];
 
+pub fn party_hunt(transition: &str) -> Option<&'static KillObjective> {
+    SPIKE_HUNTS
+        .iter()
+        .find(|rule| rule.transition == transition)
+}
+
 pub fn binding(transition: &str) -> Option<KillObjective> {
     OBJECTIVES
         .iter()
@@ -195,7 +208,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
         min: 0,
         max: 4,
     });
-    for rule in OBJECTIVES {
+    for rule in OBJECTIVES.into_iter().chain(SPIKE_HUNTS) {
         if rule.quest != QUEST {
             tracks.push(QuestTrack {
                 key: rule.phase_track.into(),
