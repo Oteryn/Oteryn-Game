@@ -242,6 +242,13 @@ pub(super) async fn exercise(
     super::classic_quests_fixtures::talk(owner, admitted, quentin, 1201, "finish prayer").await?;
     assert_eq!(count(h, 5941).await?, 0);
     assert_eq!(count(h, 5942).await?, 1);
+    // TibiaWiki "Blessed!": finishing The Blessed Stake unlocks the achievement.
+    let blessed: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/blessed'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(blessed, 1);
     let before_repeat_blessing = receipts(h).await?;
     assert_eq!(
         super::qengine_rewards_fixtures::talk(owner, admitted, quentin, 1202, "finish prayer").await?,

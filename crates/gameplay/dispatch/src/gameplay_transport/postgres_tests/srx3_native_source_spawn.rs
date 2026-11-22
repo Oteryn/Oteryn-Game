@@ -5,6 +5,7 @@ use super::srx3_native_source_cast_fixtures::{
 };
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
+use crate::gameplay_transport::monster_profile_cycle::with_native_ai_seed;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 struct CaseDuration {
@@ -141,8 +142,7 @@ fn source_spawn_case_with_gaz_heal(
             let child_key = format!("oteryn:creature.{child}");
             let started_at = owner.owner_now().get();
             let mut now = started_at;
-            // The content seed can delay Maxxen beyond the original 128 passes.
-            let passes = if slug == "professor_maxxen" { 256 } else { 128 };
+            let passes = 128;
             let think_interval_us = crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000;
             // Keep the former two-second budget per pass and drain every owner deadline
             // within that budget on its native cadence.
@@ -151,12 +151,19 @@ fn source_spawn_case_with_gaz_heal(
                 let interval_end = started_at + pass * 2 * think_interval_us;
                 while now < interval_end {
                     // The Energy Pulse can spawn and retire in separate drains at the same instant.
-                    created = settle_monster_melee_at_until(&owner, now, async || {
+                    let turn = settle_monster_melee_at_until(&owner, now, async || {
                         let runtime = owner.runtime.lock().await;
                         runtime.visible_entities().creatures.iter().any(|entity|
                             runtime.current_live_creature_identity(entity.actor).ok()
                                 == Some(child_key.as_bytes()))
-                    }).await?;
+                    });
+                    // This seed selects the generator at its first 30-second defence
+                    // interval, before a teleport can leave the stationary player's view.
+                    created = if slug == "professor_maxxen" {
+                        with_native_ai_seed([0; 32], turn).await?
+                    } else {
+                        turn.await?
+                    };
                     let runtime = owner.runtime.lock().await;
                     let states = owner.states.spell_states.lock().await;
                     if let Some(report) = states.monster_melee.creature_ai.last_report_for_test(caster) {

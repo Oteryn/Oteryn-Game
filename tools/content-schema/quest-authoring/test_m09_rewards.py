@@ -61,19 +61,30 @@ class M09Rewards(unittest.TestCase):
             if 'callbacks' not in document:
                 continue
             for callback in document['callbacks']:
-                gift = callback.get('give') or callback['effects']['item_reward']
+                gift = callback.get('give') or callback.get('effects', {}).get('item_reward')
+                if gift is None:
+                    self.assertEqual(callback['key'], 'oteryn:quest-callback/m09-treasure-telescope-legacy')
+                    self.assertTrue(callback['completes'])
+                    continue
                 for item in [gift, *gift.get('additional', [])]:
                     self.assertTrue(item['item'] in keys,
                                     'unqualified runtime reward: '+item['item'])
 
     def test_treasure_caches_have_distinct_once_tracks_and_no_daily_floor_loot(self):
-        callbacks = m.outputs()['content/quests/world-callbacks/m09-treasure.json']['callbacks']
+        telescope, ingots, legacy = m.outputs()['content/quests/world-callbacks/m09-treasure.json']['callbacks']
+        callbacks = [telescope, ingots]
         self.assertEqual(len({c['storage'][0]['track'] for c in callbacks}), 2)
         self.assertEqual(len({tuple(c['selector']['position'].values()) for c in callbacks}), 2)
         self.assertEqual([(c['effects']['item_reward']['item'],
                            c['effects']['item_reward']['count']) for c in callbacks],
                          [('oteryn:item.tibia.i9616', 1), ('oteryn:item.tibia.i9058', 3)])
         self.assertTrue(all(not c['effects']['item_reward'].get('additional') for c in callbacks))
+        self.assertEqual(legacy['selector'], telescope['selector'])
+        self.assertEqual(legacy['storage'], [
+            {**telescope['storage'][0], 'minimum': 1, 'maximum': 1}])
+        self.assertEqual(legacy['storage'][0]['set'], 2)
+        self.assertTrue(legacy['completes'])
+        self.assertEqual(legacy['effects'], {})
 
 
 if __name__ == '__main__':

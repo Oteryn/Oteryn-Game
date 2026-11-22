@@ -2,7 +2,14 @@ use oteryn_gameplay_world::map::view::MapFacts;
 use super::annihilator_combat::{KNIGHT_POTION, PALADIN_POTION};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 
+use crate::foundation::MovementLocalPosition;
 use oteryn_protocol_oteryn::attack::*;
+
+const ORC_SHAMAN_SPAWN: MovementLocalPosition = MovementLocalPosition {
+    x: 32590,
+    y: 31647,
+    floor: 4,
+};
 
 pub(super) async fn scenario(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -303,7 +310,11 @@ async fn upper_defenders(
                     (origin.floor == floor).then_some((row, origin))
                 })
                 .collect();
-            targets.sort_by_key(|(row, _)| row.actor.placement_identity());
+            // Pull the Shaman on arrival. Fighting the Mage first gives the
+            // Shaman time to fill both approaches with native snake summons.
+            targets.sort_by_key(|(row, origin)| {
+                (*origin != ORC_SHAMAN_SPAWN, row.actor.placement_identity())
+            });
             assert_eq!(
                 targets.len(),
                 if floor == 4 { 2 } else { 3 },
@@ -319,23 +330,15 @@ async fn upper_defenders(
                 .read_actor_position(target.actor)
                 .map_err(debug)?
                 .position();
-            let chase = if (origin.x, origin.y, origin.floor) == (32590, 31647, 4)
+            let chase = if origin == ORC_SHAMAN_SPAWN
                 && at.y == 31647
                 && (32590..=32592).contains(&at.x)
             {
-                // The Orc Shaman retreats behind projectile blockers on this floor.
-                // Walk around the pillars to the open tile immediately west of it.
-                super::desert_earned_route_fixtures::walk_to(
-                    owner,
-                    member,
-                    Position {
-                        x: u16::try_from(at.x - 1)?,
-                        y: 31647,
-                        floor: -4,
-                    },
-                )
-                .await
-                .map_err(|error| format!("approaching the Orc Shaman at {at:?}: {error}"))?;
+                // The Orc Shaman retreats behind projectile blockers. Search
+                // the source walk for the nearest free adjacent firing tile.
+                super::desert_earned_route_fixtures::walk_to_adjacent(owner, member, at)
+                    .await
+                    .map_err(|error| format!("approaching the Orc Shaman at {at:?}: {error}"))?;
                 ChaseMode::Stand
             } else {
                 ChaseMode::Chase

@@ -347,7 +347,10 @@ pub(super) fn unhandled_confirmation(
     reward_callbacks::offered_for(catalogue).is_ok_and(|callbacks| {
         callbacks.iter().any(|callback| {
             callback.npc == context.2
-                && (callback.topic == topic || requested)
+                && (callback.topic == topic
+                    || requested
+                    // The forge requires a specific offer before it accepts yes.
+                    || callback.key == "oteryn:quest-reward/qc-obsidian-draconian-steel")
                 && callback.keywords.contains(&text)
         })
     })

@@ -27,10 +27,25 @@ pub(super) fn prepare(
             ) {
                 return None;
             }
-            let complete = quest::TRACKS
+            let returned = quest::TRACKS
                 .iter()
-                .all(|track| tracks.get(*track).copied().unwrap_or(0) == 1);
-            Some(Choice{transition:complete.then(||quest::COMPLETE.into()),next_topic:None,reply:vec![if complete{"You have returned the three orb energies. The Fire-Feathered Sea Serpent's task is complete."}else{"Bring the darkness, life and light energies. The darkness orb needs one mind stone, the life orb one seacrest pearl, and the light orb a bottle of gloo. You keep the bottle."}.into()]})
+                .filter(|track| tracks.get(**track) == Some(&1))
+                .count();
+            // Explicit Fire-Feathered help is available before any orb is returned.
+            if returned == 0 && !matches!(text.as_str(), "orbs" | "energies") {
+                return None;
+            }
+            let complete = returned == quest::TRACKS.len();
+            let reply = if complete {
+                "You have returned the three orb energies. The Fire-Feathered Sea Serpent's task is complete."
+            } else {
+                "Bring the darkness, life and light energies. The darkness orb needs one mind stone, the life orb one seacrest pearl, and the light orb a bottle of gloo. You keep the bottle."
+            };
+            Some(Choice {
+                transition: complete.then(|| quest::COMPLETE.into()),
+                next_topic: None,
+                reply: vec![reply.into()],
+            })
         },
     )
 }
