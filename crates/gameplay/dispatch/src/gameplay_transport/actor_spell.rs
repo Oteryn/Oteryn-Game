@@ -3239,6 +3239,9 @@ impl ChannelSpellStates {
         proof: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
         contact: Option<NonPlayerFieldContact>,
     ) -> actor_movement::StepInChannel {
+        if self.has_pending_spell_commit(actor, session) || self.is_dead(actor) {
+            return Err(crate::movement::MovementError::NotQualified);
+        }
         let Some(contact) = contact else {
             return actor_movement::step_in_channel_with_source_step(
                 runtime,
@@ -3254,8 +3257,6 @@ impl ChannelSpellStates {
             );
         };
         if contact.content != runtime.content_pin().server_artifact_digest()
-            || self.has_pending_spell_commit(actor, session)
-            || self.is_dead(actor)
             || runtime.assert_actor_spell_unreserved(actor).is_err()
         {
             return Err(crate::movement::MovementError::NotQualified);

@@ -30,6 +30,7 @@ pub struct View {
     pub feedback: String,
     pub unavailable: bool,
     character_id: Option<String>,
+    prior: crate::account_services::PriorRequests,
     pending: Option<CoinOrderRequest>,
     post_refusal_status: Option<u16>,
     checkout_unverified: bool,
@@ -47,6 +48,16 @@ impl View {
             ..Self::default()
         }
     }
+    pub(crate) fn reopen(&mut self, character_id: Option<String>) {
+        let mut prior = std::mem::take(&mut self.prior);
+        if let Some(request) = self.pending.take() {
+            prior.retain(request.request_id);
+        }
+        *self = Self {
+            prior,
+            ..Self::new(character_id)
+        };
+    }
     pub fn pending(&self) -> bool {
         self.pending.is_some()
     }
@@ -58,6 +69,7 @@ impl View {
     }
     pub(crate) fn can_purchase_at(&self, id: &str, now: Instant) -> bool {
         !self.unavailable
+            && !self.prior.blocked()
             && !self.pending()
             && self.balance.as_ref().is_some_and(|b| !b.review_required)
             && self.catalogue.as_ref().is_some_and(|c| {
@@ -78,6 +90,12 @@ impl View {
     }
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
+        if self.prior.blocked() {
+            text.push('\n');
+            text.push_str(tr!(
+                "Resolve the pending operation before starting another."
+            ));
+        }
         if let Some(request) = &self.pending {
             text.push_str(&lfmt!(
                 "\nUnresolved order request {}: retry this request or check status.",
@@ -169,6 +187,10 @@ pub(crate) async fn run(
                 )
             })?;
         if matches!(action, Action::Back) || cancel.is_cancelled() {
+            if view.post_refusal_status == Some(409) {
+                controller::execute(view, Action::Status, client, token, browser, cancel.clone())
+                    .await;
+            }
             return Ok(());
         }
         controller::execute(view, action, client, token, browser, cancel.clone()).await;

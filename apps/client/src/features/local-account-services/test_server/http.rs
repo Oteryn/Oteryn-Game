@@ -26,10 +26,14 @@ impl MockPlatform {
                 let (head,body)=text.split_once("\r\n\r\n").unwrap_or_default();
                 let mut line=head.lines().next().unwrap_or_default().split_whitespace();
                 let method=line.next().unwrap_or_default();let target=line.next().unwrap_or_default();
-                let authorized=head.lines().any(|line|line.to_ascii_lowercase().starts_with("authorization: bearer services-test-token-"));
+                let grant = head.lines().find_map(|line| {
+                    let (name, value) = line.split_once(':')?;
+                    if !name.eq_ignore_ascii_case("authorization") { return None; }
+                    value.trim().strip_prefix("Bearer services-test-token-")?.parse::<u32>().ok()
+                });
                 let signature=head.lines().find_map(|line| {let(key,value)=line.split_once(':')?;key.eq_ignore_ascii_case("x-sandbox-signature").then(||value.trim())});
                 let (status,reply)={let Ok(mut state)=state.lock() else {return;};let headers = head.lines().filter(|line| !line.to_ascii_lowercase().starts_with("authorization:"));
-                    state.requests.push(format!("{}\r\n\r\n{body}", headers.collect::<Vec<_>>().join("\r\n")));state.respond(method,target,body,authorized,signature)};
+                    state.requests.push(format!("{}\r\n\r\n{body}", headers.collect::<Vec<_>>().join("\r\n")));state.respond(method,target,body,grant,signature)};
                 if status == 0 { continue; }
                 let _=stream.write_all(format!("HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{reply}",reply.len()).as_bytes()).await;
             }
@@ -60,19 +64,32 @@ impl Authority {
         method: &str,
         target: &str,
         body: &str,
-        authorized: bool,
+        grant: Option<u32>,
         signature: Option<&str>,
     ) -> (u16, String) {
         if method == "POST" && target == "/oauth/token" {
             self.oauth_exchanges += 1;
             return (
                 200,
-                format!(
-                    r#"{{"token_type":"Bearer","access_token":"services-test-token-{}"}}"#,
-                    self.oauth_exchanges
-                ),
+                serde_json::json!({
+                    "token_type": "Bearer",
+                    "access_token": format!("services-test-token-{}", self.oauth_exchanges),
+                    "expires_in": 1800,
+                    "scope": "game:account-services",
+                    "refresh_token": format!("refresh-test-token-{}", self.oauth_exchanges)
+                })
+                .to_string(),
             );
         }
+        let grant = grant.filter(|n| (1..=self.oauth_exchanges).contains(n));
+        if let Some(wallet) = grant.and_then(|n| self.coin_wallets_by_grant.get_mut(&n))
+            && target.starts_with("/api/v1/native-account/coin-purchases/")
+        {
+            return wallet
+                .route(method, target, body)
+                .unwrap_or((404, String::new()));
+        }
+        let authorized = grant.is_some();
         if authorized && method == "POST" {
             let failure = match target {
                 "/api/v1/native-account/bazaar/commands" => self.bazaar_post_failure.take(),

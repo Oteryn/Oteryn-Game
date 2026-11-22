@@ -5,12 +5,13 @@ impl PreferenceStore {
         &mut self,
         preferences: ReferencePreferences,
     ) -> io::Result<()> {
-        self.apply_then(preferences, |_| {})
+        self.apply_then(preferences, false, |_| ())
     }
 
     pub(in super::super) fn apply_then(
         &mut self,
         preferences: ReferencePreferences,
+        recover_malformed: bool,
         complete: impl FnOnce(bool) + Send + 'static,
     ) -> io::Result<()> {
         preferences.validate().map_err(io::Error::other)?;
@@ -27,7 +28,7 @@ impl PreferenceStore {
                 let mut previous = baseline
                     .lock()
                     .map_err(|error| io::Error::other(error.to_string()))?;
-                let active = Self::write_edits(&path, &previous, &edited)?;
+                let active = Self::write_edits(&path, &previous, &edited, recover_malformed)?;
                 *previous = edited;
                 Ok(replacing.then_some(active))
             })();
