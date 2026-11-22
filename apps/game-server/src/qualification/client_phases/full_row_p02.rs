@@ -6,8 +6,8 @@
 //! 5. ATTACK the daily boosted boss and require its three-kill delta and slot refusal.
 //! 6. LOGOUT, freshly admit, query both commands, and re-check all durable state.
 use super::*;
+use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::boss_encounter;
-use oteryn_dev_client::{DevClientSession, EntityKind};
 use oteryn_protocol_oteryn::bosstiary_slots::{
     BossSlotReply, BossSlotRequest, COMMAND_TYPE_BOSSTIARY_SLOTS,
 };
@@ -132,33 +132,7 @@ async fn kill(
     s: &oteryn_world_bundle::spawn::Table,
     key: &str,
 ) -> TestResult {
-    travel_to_spawn(c, w, s, key).await.map_err(|e| {
-        verdict::record_error(verdict::IndexedError::as_error(&e));
-        verdict::context(format!("step boss-kill {key}: walking/spawn reply={e}"), e)
-    })?;
-    let here = c.world_spatial().actor_position;
-    let target = c
-        .world_entities()
-        .and_then(|es| {
-            es.iter()
-                .filter(|e| {
-                    e.kind == EntityKind::Creature
-                        && e.position.floor == here.floor
-                        && e.position
-                            .x
-                            .abs_diff(here.x)
-                            .max(e.position.y.abs_diff(here.y))
-                            <= 1
-                })
-                .min_by_key(|e| {
-                    e.position
-                        .x
-                        .abs_diff(here.x)
-                        .max(e.position.y.abs_diff(here.y))
-                })
-        })
-        .copied()
-        .ok_or_else(|| format!("step boss-kill {key}: no adjacent creature"))?;
+    let target = full_row_p05::wait_for_spawn(c, w, s, key).await?;
     let r = c.session_mut().attack_target(Some(&target.entity)).await?;
     if r.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!("step boss-kill {key}: ATTACK reply={r:?}").into());
@@ -182,6 +156,28 @@ async fn kill(
         }
     }
 }
+fn boosted_exclusion_slot(
+    reply: &BossSlotReply,
+    boss: &str,
+    kills: u64,
+    threshold: u64,
+) -> Option<u8> {
+    let details = reply.details.as_ref()?;
+    if reply.status != 0
+        || details.boosted != boss
+        || kills < threshold
+        || details.now < reply.ready_at_ms
+        || reply.bosses.iter().any(|assigned| assigned == boss)
+    {
+        return None;
+    }
+    (0_u8..2)
+        .find(|index| {
+            reply.unlocked & (1 << index) != 0 && reply.bosses[usize::from(*index)].is_empty()
+        })
+        .map(|index| index + 1)
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -261,6 +257,52 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
     }
+    let (boosted_key, boosted_state) =
+        boosted.ok_or("step=boosted-kill no reachable boss produced delta=3")?;
+    let boosted_category = catalog
+        .iter()
+        .find(|entry| entry.key == boosted_key)
+        .ok_or("step=boosted-exclusion boosted boss catalogue entry missing")?;
+    let threshold = crate::domain::bosstiary::kill_thresholds(&boosted_category.category)
+        .ok_or("step=boosted-exclusion boosted boss prowess threshold missing")?[0];
+    let boosted_kills = counts(&before).get(&boosted_key).copied().unwrap_or(0);
+    let ready = slot(
+        &mut c,
+        BossSlotRequest::Detailed(Box::new(BossSlotRequest::Query)),
+    )
+    .await?;
+    let exclusion_slot = boosted_exclusion_slot(&ready, &boosted_key, boosted_kills, threshold)
+        .ok_or_else(|| format!("step=boosted-exclusion boss={boosted_key} kills={boosted_kills}/{threshold} need=boosted-boss-prowess-and-ready-empty-unlocked-slot observed={ready:?}"))?;
+    let br = slot(
+        &mut c,
+        BossSlotRequest::Equip {
+            slot: exclusion_slot,
+            boss: boosted_key.clone(),
+        },
+    )
+    .await?;
+    if br.status != 1 || br.bosses != ready.bosses {
+        return Err(
+            format!("step=boosted-exclusion refusal or custody mismatch reply={br:?}").into(),
+        );
+    }
+    let after_exclusion = slot(
+        &mut c,
+        BossSlotRequest::Detailed(Box::new(BossSlotRequest::Query)),
+    )
+    .await?;
+    if after_exclusion
+        .details
+        .as_ref()
+        .is_none_or(|details| details.boosted != boosted_key)
+        || after_exclusion.bosses != ready.bosses
+    {
+        return Err(format!(
+            "step=boosted-exclusion daily boss or slot custody changed reply={after_exclusion:?}"
+        )
+        .into());
+    }
+    row.pass("boosted-kill", (&boosted_key, &boosted_state.progress, &br));
     let equipped = slot(
         &mut c,
         BossSlotRequest::Equip {
@@ -285,20 +327,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step slot-refusal: reply={refused:?}").into());
     }
     row.pass("slot-refusal", &refused);
-    let (boosted_key, boosted_state) =
-        boosted.ok_or("step boosted-kill: no reachable boss produced delta=3")?;
-    let br = slot(
-        &mut c,
-        BossSlotRequest::Equip {
-            slot: 2,
-            boss: boosted_key.clone(),
-        },
-    )
-    .await?;
-    if br.status == 0 {
-        return Err(format!("step boosted-kill: slot accepted reply={br:?}").into());
-    }
-    row.pass("boosted-kill", (&boosted_key, &boosted_state.progress, &br));
     full_row_p05::logout_after_combat(&mut c).await?;
     drop(c);
     let mut c = connect_world(clients, 0xb3).await?;
@@ -317,6 +345,31 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 mod tests {
     use super::*;
     #[test]
+    fn exclusion_requires_prowess_and_an_empty_ready_unlocked_slot() {
+        let mut reply = BossSlotReply {
+            details: Some(oteryn_protocol_oteryn::bosstiary_slots::SlotDetails {
+                base_bonus: 0,
+                bonuses: [0; 2],
+                boosted: "boss".into(),
+                now: 10,
+            }),
+            status: 0,
+            unlocked: 1,
+            bonus: 0,
+            points: 0,
+            remove_fee: 0,
+            ready_at_ms: 10,
+            bosses: ["ordinary".into(), String::new()],
+        };
+        assert_eq!(boosted_exclusion_slot(&reply, "boss", 5, 5), None);
+        reply.bosses[0].clear();
+        assert_eq!(boosted_exclusion_slot(&reply, "boss", 4, 5), None);
+        assert_eq!(boosted_exclusion_slot(&reply, "boss", 5, 5), Some(1));
+        reply.ready_at_ms = 11;
+        assert_eq!(boosted_exclusion_slot(&reply, "boss", 5, 5), None);
+    }
+
+    #[test]
     fn requires_whole_lifecycle() {
         assert_eq!(REQUIRED.len(), 6);
         assert!(Row::new().passed.is_empty());
@@ -330,5 +383,15 @@ fn row_02_publishes_a_gap_for_an_unproven_journey() {
         include_str!("full_row_p02.rs")
             .split_once("#[cfg(test)]")
             .is_some_and(|(production, _)| production.contains("P02_GAP status=PASS"))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_p02_guards_the_journey() {
+    assert!(
+        include_str!("full_row_p02.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("boosted_exclusion_slot"))
     );
 }

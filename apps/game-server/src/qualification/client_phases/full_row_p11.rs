@@ -110,14 +110,63 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step=pagination page={beyond} observed={empty:?}").into());
     }
+    let backpack = client
+        .inventory()
+        .and_then(|inventory| inventory.main_backpack)
+        .ok_or("step=granter no legitimately granted starter item")?;
+    client.take_events();
+    let use_reply = client.session_mut().use_item(backpack.handle).await?;
+    client.service_liveness(Duration::from_millis(250)).await?;
+    let earned = client
+        .take_events()
+        .into_iter()
+        .find_map(|event| match event {
+            SessionEvent::AchievementEarned(delta) => Some(delta.value),
+            _ => None,
+        });
+    let Some(earned) = earned else {
+        // Still complete the durable lifecycle so this is runtime evidence, not a source probe.
+        let unchanged = page(&mut client, 0).await?;
+        logout(&mut client).await?;
+        drop(client);
+        let mut fresh = connect_world(clients, 0xc2).await?;
+        let persisted = page(&mut fresh, 0).await?;
+        logout(&mut fresh).await?;
+        return Err(format!(
+            "step=granter observed_reply={use_reply:?},missing_delta=AchievementEarned,query_unchanged={},relogin_unchanged={};need=reachable_quest_or_event_source_granter",
+            unchanged == before,
+            persisted == before
+        )
+        .into());
+    };
+    let granted = page(&mut client, 0).await?;
+    if granted.fact_count != before.fact_count.saturating_add(1)
+        || !granted.rows.iter().any(|row| row.key == earned.key)
+    {
+        return Err(format!("step=granter delta/query mismatch: {earned:?} {granted:?}").into());
+    }
+
+    client.take_events();
+    let duplicate_reply = client.session_mut().use_item(backpack.handle).await?;
+    client.service_liveness(Duration::from_millis(250)).await?;
+    if client
+        .take_events()
+        .iter()
+        .any(|event| matches!(event, SessionEvent::AchievementEarned(_)))
+        || page(&mut client, 0).await? != granted
+    {
+        return Err(
+            format!("step=duplicate observed_reply={duplicate_reply:?},duplicate-grant").into(),
+        );
+    }
     logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0xc2).await?;
-    if page(&mut fresh, 0).await? != before {
+    if page(&mut fresh, 0).await? != granted {
         return Err("step=relogin durable achievement page changed".into());
     }
     logout(&mut fresh).await?;
-    Err("step=granter need=reachable-Yasir-committed-trade-or-other-authored-grant-and-AchievementEarned;source=crates/gameplay/durability/src/durability/npc_trade.rs:566;unproven=malformed-wire-query-refusal;source=crates/session/src/account_achievements.rs:18".into())
+    Err("step=coverage observed=bounded-grant-relogin-validated;unproven=malformed-wire-query-refusal,remaining-quest-event-granters".into())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -147,5 +196,15 @@ fn row_11_publishes_a_gap_for_an_unproven_journey() {
         include_str!("full_row_p11.rs")
             .split_once("#[cfg(test)]")
             .is_some_and(|(production, _)| production.contains("P11_GAP status="))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_p11_guards_the_journey() {
+    assert!(
+        include_str!("full_row_p11.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("duplicate_reply"))
     );
 }

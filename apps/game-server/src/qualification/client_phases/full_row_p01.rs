@@ -21,7 +21,7 @@
 //!    the pre-logout durable view.
 
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, SessionEvent};
+use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::charm::{CharmAssignDisposition, CharmUnlockDisposition};
 use oteryn_protocol_oteryn::charm_progression::{
     self as wire, CharmProgressionAction, CharmProgressionOutcome, CharmProgressionReply,
@@ -146,105 +146,12 @@ fn race_complete(reply: &CharmProgressionReply, race: NonZeroU32) -> bool {
         .is_some_and(|entry| entry.kill_count == entry.kill_thresholds[2])
 }
 
-async fn kill_adjacent(client: &mut DevClientSession) -> TestResult {
-    use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
-    let before = query(client).await?;
-    let here = client.world_spatial().actor_position;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entry| {
-                entry.kind == EntityKind::Creature
-                    && entry.position.floor == here.floor
-                    && entry
-                        .position
-                        .x
-                        .abs_diff(here.x)
-                        .max(entry.position.y.abs_diff(here.y))
-                        <= 1
-            })
-        })
-        .copied()
-        .ok_or("hunt route has no adjacent creature")?;
-    client.take_events();
-    let attack = client
-        .session_mut()
-        .attack_target(Some(&target.entity))
-        .await?;
-    if attack.disposition != AttackIntentDisposition::Ok {
-        return Err(format!("ATTACK refused: {attack:?}").into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    let mut damaged = false;
-    loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        for event in client.take_events() {
-            if let SessionEvent::WorldSpatialEntities(delta) = event {
-                damaged |= delta.value.update.iter().any(|entry| {
-                    entry.entity == target.entity
-                        && matches!(
-                            entry.detail,
-                            EntityDetail::Actor { health_percent, .. } if health_percent < 100
-                        )
-                });
-            }
-        }
-        if client
-            .world_entities()
-            .is_some_and(|entities| entities.get(&target.entity).is_none())
-        {
-            client.session_mut().attack_target(None).await?;
-            let after = query(client).await?;
-            let before_total = before
-                .bestiary
-                .iter()
-                .try_fold(0_u32, |total, entry| total.checked_add(entry.kill_count))
-                .ok_or("Bestiary kill total overflow before ATTACK")?;
-            let after_total = after
-                .bestiary
-                .iter()
-                .try_fold(0_u32, |total, entry| total.checked_add(entry.kill_count))
-                .ok_or("Bestiary kill total overflow after ATTACK")?;
-            if before_total
-                .checked_add(1)
-                .ok_or("Bestiary kill total overflow")?
-                != after_total
-                || before
-                    .bestiary
-                    .iter()
-                    .any(|entry| count(&after, entry.race) < entry.kill_count)
-            {
-                return Err(format!(
-                    "target vanished without exactly one credited Bestiary kill: before={:?} after={:?}",
-                    before.bestiary, after.bestiary
-                )
-                .into());
-            }
-            evidence(&format!(
-                "P01_CHECK combat-kill PASS target={:?} damaged={damaged} bestiary_delta=1",
-                target.entity
-            ));
-            return Ok(());
-        }
-        if tokio::time::Instant::now() >= deadline {
-            client.session_mut().attack_target(None).await?;
-            return Err(format!(
-                "ATTACK timeout target={:?} damaged={damaged}",
-                target.entity
-            )
-            .into());
-        }
-    }
-}
-
 async fn hunt_once(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
-) -> TestResult {
-    travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
-    kill_adjacent(client).await
+) -> TestResult<full_row_p05::KillSample> {
+    full_row_p05::hunt_for_race(client, world, spawns, "oteryn:creature.rat").await
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -268,7 +175,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK admission-query PASS accepted-native-views");
 
     row.at("player-earned-kill-count");
-    hunt_once(&mut client, world, &metadata.spawns).await?;
+    let first_kill = hunt_once(&mut client, world, &metadata.spawns).await?;
     let mut current = query(&mut client).await?;
     let race = current
         .bestiary
@@ -281,7 +188,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 initial.bestiary, current.bestiary
             )
         })?;
-    if count(&current, race) != count(&initial, race) + 1 {
+    if first_kill.race != race
+        || count(&initial, race).checked_add(1) != Some(count(&current, race))
+    {
         return Err("credited kill did not increment Bestiary by exactly one".into());
     }
     evidence(&format!(
@@ -371,8 +280,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.at("assigned-combat-hook");
     let before_hook = count(&assigned, race);
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    client_hunt::hunt(&mut client).await?;
+    let kill = hunt_once(&mut client, world, &metadata.spawns).await?;
+    if kill.race != race {
+        return Err(format!(
+            "step=assigned-combat expected-race={race} credited-race={}",
+            kill.race
+        )
+        .into());
+    }
     let after_hook = query(&mut client).await?;
     let after_state = &after_hook.charms.charms[usize::try_from(charm.get() - 1)?];
     if count(&after_hook, race) != before_hook
@@ -381,7 +296,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("assigned combat hook lost durable state: {after_hook:?}").into());
     }
-    evidence("P01_CHECK assigned-combat-hook PASS native-attack-retained-active-assignment");
+    evidence("P01_CHECK assigned-race-kill PASS analyser-credit-and-active-assignment");
 
     row.at("logout-fresh-admission");
     let old_session = client.join_snapshot().game_session_id;
@@ -418,5 +333,15 @@ fn row_01_publishes_a_gap_for_an_unproven_journey() {
         include_str!("full_row_p01.rs")
             .split_once("#[cfg(test)]")
             .is_some_and(|(production, _)| production.contains("P01_GAP status="))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_p01_guards_the_journey() {
+    assert!(
+        include_str!("full_row_p01.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("hunt_for_race"))
     );
 }

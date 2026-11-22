@@ -116,24 +116,12 @@ fn shrine_tile(world: &BundleWorld, start: TilePos) -> TestResult<TilePos> {
     Err("step-3 no reachable production daily shrine in town window".into())
 }
 
-async fn experience(client: &mut DevClientSession) -> TestResult<u64> {
-    use oteryn_protocol_oteryn::character_info as info;
-    let reply = client
-        .session_mut()
-        .gated_command(
-            info::CAPABILITY_CHARACTER_INFO_V1,
-            info::COMMAND_TYPE_CHARACTER_INFO,
-            &[0, 0, 0, 1], // QuerySelf, offset 0, limit 1.
-        )
-        .await?;
-    if reply.status != CommandStatus::Accepted || reply.payload.first() != Some(&0) {
-        return Err(format!("step=boost-xp-query reply={reply:?}").into());
-    }
-    let bytes = reply
-        .payload
-        .get(9..17)
-        .ok_or("step=boost-xp-query experience missing")?;
-    Ok(u64::try_from(i64::from_le_bytes(bytes.try_into()?))?)
+fn same_kill_sample(before: full_row_p05::KillSample, after: full_row_p05::KillSample) -> bool {
+    before.race == after.race
+        && before.raw_xp > 0
+        && before.raw_xp == after.raw_xp
+        && before.gained_xp > 0
+        && after.gained_xp > before.gained_xp
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -162,15 +150,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .and_then(|content| content.reward(initial.lane_day, false))
         .ok_or("step-5 authored reward absent")?;
     let baseline_xp = if reward.xp_boost_percent > 0 {
-        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-        let before = experience(&mut client).await?;
-        client_hunt::hunt(&mut client).await?;
         Some(
-            experience(&mut client)
-                .await?
-                .checked_sub(before)
-                .filter(|xp| *xp > 0)
-                .ok_or("step=boost-baseline rat kill did not award XP")?,
+            full_row_p05::hunt_for_race(
+                &mut client,
+                world,
+                &metadata.spawns,
+                "oteryn:creature.rat",
+            )
+            .await?,
         )
     } else {
         None
@@ -214,17 +201,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step-6 duplicate changed wall or reward cards".into());
     }
     if let Some(baseline) = baseline_xp {
-        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-        let before = experience(&mut client).await?;
-        client_hunt::hunt(&mut client).await?;
-        let gained = experience(&mut client).await?.checked_sub(before);
-        if !gained.is_some_and(|gained| gained > baseline) {
-            return Err(
-                format!("step=boost-combat-xp unboosted={baseline} boosted={gained:?}").into(),
-            );
+        let gained = full_row_p05::hunt_for_race(
+            &mut client,
+            world,
+            &metadata.spawns,
+            "oteryn:creature.rat",
+        )
+        .await?;
+        if !same_kill_sample(baseline, gained) {
+            return Err(format!("step=boost-combat-xp incomparable or unboosted samples before={baseline:?} after={gained:?}").into());
         }
         evidence(&format!(
-            "P09_CHECK step=boost-combat-xp unboosted={baseline} boosted={gained:?}"
+            "P09_CHECK step=boost-combat-xp unboosted={baseline:?} boosted={gained:?}"
         ));
     }
     full_row_p05::logout_after_combat(&mut client).await?;
@@ -267,4 +255,47 @@ fn row_09_publishes_a_gap_for_an_unproven_journey() {
             .split_once("#[cfg(test)]")
             .is_some_and(|(production, _)| production.contains("P09_GAP status="))
     );
+}
+
+#[cfg(test)]
+#[test]
+fn review_p09_guards_the_journey() {
+    assert!(
+        include_str!("full_row_p09.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("same_kill_sample"))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn boost_comparison_rejects_a_different_race_or_base_award() -> TestResult {
+    use full_row_p05::KillSample;
+    let race = |n| std::num::NonZeroU32::new(n).ok_or("zero fixture race");
+    let before = KillSample {
+        race: race(1)?,
+        raw_xp: 20,
+        gained_xp: 20,
+    };
+    let boosted = KillSample {
+        gained_xp: 25,
+        ..before
+    };
+    assert!(same_kill_sample(before, boosted));
+    assert!(!same_kill_sample(
+        before,
+        KillSample {
+            race: race(2)?,
+            ..boosted
+        }
+    ));
+    assert!(!same_kill_sample(
+        before,
+        KillSample {
+            raw_xp: 25,
+            ..boosted
+        }
+    ));
+    assert!(!same_kill_sample(before, before));
+    Ok(())
 }

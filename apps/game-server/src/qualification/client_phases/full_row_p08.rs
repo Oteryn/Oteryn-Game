@@ -142,28 +142,6 @@ async fn select(
     })
 }
 
-async fn modify(
-    client: &mut DevClientSession,
-    definition: NonZeroU32,
-    operation: wire::ModificationOperation,
-    revision: u64,
-) -> TestResult<wire::ModificationReply> {
-    let request = wire::ModificationRequest {
-        definition,
-        slot: 1,
-        operation,
-        expected_revision: revision,
-    };
-    let reply = command(client, operation.command_type(), &request.encode()).await?;
-    wire::ModificationReply::decode(&reply.payload).ok_or_else(|| {
-        format!(
-            "step-modify-{operation:?}:status={:?} payload={:?}",
-            reply.status, reply.payload
-        )
-        .into()
-    })
-}
-
 async fn acquire_weapon(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -210,8 +188,7 @@ async fn acquire_weapon(
         if carried(client)? >= needed {
             break;
         }
-        travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-        client_hunt::hunt(client).await?;
+        full_row_p05::hunt_for_race(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     }
     let funded = carried(client)?;
     if funded < needed || funded == before {
@@ -448,8 +425,8 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
         (catalogue_entry, browse_row),
     );
 
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    client_hunt::hunt(&mut client).await?;
+    full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, "oteryn:creature.rat")
+        .await?;
     let mut after_kill = browse(&mut client, browse_offset).await?;
     observed.require(
         "2-xp-delta",
@@ -471,8 +448,8 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
         if xp >= first_threshold {
             break;
         }
-        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-        client_hunt::hunt(&mut client).await?;
+        full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, "oteryn:creature.rat")
+            .await?;
         after_kill = browse(&mut client, browse_offset).await?;
         if !after_kill
             .rows
@@ -518,93 +495,28 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
             }),
         (&after_kill, &selected, &after_select),
     );
-    let operations = [
-        wire::ModificationOperation::Modify { level: 0 },
-        wire::ModificationOperation::RankUp,
-        wire::ModificationOperation::OrbRank,
-        wire::ModificationOperation::ReshapeOffer,
-        wire::ModificationOperation::ReshapeChoose { choice: Some(0) },
-        wire::ModificationOperation::Clear,
-    ];
-    let mut previous_slot: Option<wire::ModifiedSlot> = None;
-    for (index, operation) in operations.into_iter().enumerate() {
-        let reply = modify(&mut client, definition, operation, index as u64 + 1).await?;
-        observed.require(
-            "modification",
-            reply.result == wire::ModificationResult::Accepted,
-            (operation, reply),
-        );
-        let transition_matches = match (operation, previous_slot, reply.slot) {
-            (wire::ModificationOperation::Modify { level: 0 }, None, Some(after)) => {
-                after.level == 0 && after.rank == 0 && after.pending_offer.is_none()
-            }
-            (wire::ModificationOperation::RankUp, Some(before), Some(after)) => {
-                after.level == before.level
-                    && after.entry_index == before.entry_index
-                    && after.rank == before.rank + 1
-                    && after.pending_offer.is_none()
-            }
-            (wire::ModificationOperation::OrbRank, Some(before), Some(after)) => {
-                after.level == before.level
-                    && after.entry_index == before.entry_index
-                    && after.rank == 10
-                    && after.pending_offer.is_none()
-            }
-            (wire::ModificationOperation::ReshapeOffer, Some(before), Some(after)) => {
-                after.level == before.level
-                    && after.entry_index == before.entry_index
-                    && after.rank == before.rank
-                    && after.pending_offer.is_some()
-            }
-            (
-                wire::ModificationOperation::ReshapeChoose { choice: Some(0) },
-                Some(before),
-                Some(after),
-            ) => {
-                after.level == before.level
-                    && after.rank == before.rank
-                    && after.entry_index
-                        == before
-                            .pending_offer
-                            .map(|offer| offer[0])
-                            .unwrap_or(u8::MAX)
-                    && after.pending_offer.is_none()
-            }
-            (wire::ModificationOperation::Clear, Some(_), None) => true,
-            _ => false,
-        };
-        observed.require(
-            "4-slot-transition",
-            transition_matches,
-            (operation, previous_slot, reply),
-        );
-        observed.require(
-            "4-cost-delta",
-            false,
-            format!(
-                "operation={operation:?} reply={reply:?}; no player inventory/currency state is exposed by the native proficiency replies"
-            ),
-        );
-        previous_slot = reply.slot;
-    }
-    let stable = browse(&mut client, browse_offset).await?;
-    let refused = modify(
-        &mut client,
-        definition,
-        wire::ModificationOperation::RankUp,
-        u64::MAX,
+    let protection_zone = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| tile.protection_zone())
+    };
+    let path = route(
+        world,
+        tile(client.world_spatial().actor_position)?,
+        protection_zone,
     )
-    .await?;
+    .ok_or("step=modification no route to a protection zone")?;
+    walk(&mut client, world, &path).await?;
+    if !protection_zone(tile(client.world_spatial().actor_position)?) {
+        return Err("step=modification protection-zone arrival not observed".into());
+    }
     observed.require(
-        "stale-refusal",
-        refused.result == wire::ModificationResult::StaleRevision,
-        refused,
+        "committed-track-revision-unavailable",
+        false,
+        "browse, catalogue and selection replies omit the committed track revision required by Modify; source=crates/protocol-oteryn/src/weapon_proficiency.rs:163",
     );
-    observed.require(
-        "refusal-no-delta",
-        browse(&mut client, browse_offset).await? == stable,
-        &stable,
-    );
+    let stable = browse(&mut client, browse_offset).await?;
 
     full_row_p05::logout_after_combat(&mut client).await?;
     drop(client);
@@ -694,4 +606,14 @@ fn weapon_acquisition_waits_for_the_post_trade_inventory_delta() {
             .next()
             .is_some_and(|body| body.contains("wait_for_inventory("))
     }));
+}
+
+#[cfg(test)]
+#[test]
+fn review_p08_guards_the_journey() {
+    assert!(
+        include_str!("full_row_p08.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("committed-track-revision-unavailable"))
+    );
 }

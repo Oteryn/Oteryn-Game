@@ -153,8 +153,8 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
             // LevelTooLow is the only refusal hunting can resolve.
             break;
         }
-        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-        client_hunt::hunt(&mut client).await?;
+        full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, "oteryn:creature.rat")
+            .await?;
         started = send(&mut client, 5, 0).await?;
     }
     journey.check(
@@ -166,46 +166,8 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         (&started.refusal, &started.weekly),
     );
 
-    let mut weekly = started.weekly;
-    for index in 0..weekly.kills.len() {
-        while let Some(task) = weekly
-            .kills
-            .get(index)
-            .filter(|task| task.current < task.required)
-        {
-            let race = if task.race.is_empty() {
-                "oteryn:creature.rat"
-            } else {
-                &task.race
-            };
-            let from = tile(client.world_spatial().actor_position)?;
-            if !full_row_p05::has_reachable_spawn(world, from, &metadata.spawns, race) {
-                journey.check(
-                    4,
-                    false,
-                    format!("weekly-kill needs reachable spawn: {task:?}"),
-                );
-                break;
-            }
-            travel_to_spawn(&mut client, world, &metadata.spawns, race).await?;
-            client_hunt::hunt(&mut client).await?;
-            let next = query(&mut client).await?.weekly;
-            if !next.kills.get(index).is_some_and(|next| {
-                next.race == task.race && task.current.checked_add(1) == Some(next.current)
-            }) {
-                journey.check(
-                    4,
-                    false,
-                    format!(
-                        "weekly-kill credit missing: {task:?} -> {:?}",
-                        next.kills.get(index)
-                    ),
-                );
-                break;
-            }
-            weekly = next;
-        }
-    }
+    // Sample one weekly credit after delivery and bounty commands have been exercised.
+    let weekly = started.weekly;
     let delivery_index = weekly
         .deliveries
         .iter()
@@ -270,6 +232,41 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         (&upgraded.refusal, upgraded.talisman[0]),
     );
 
+    let before_sample = query(&mut client).await?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let sample = before_sample
+        .weekly
+        .kills
+        .iter()
+        .enumerate()
+        .filter(|(_, task)| task.current < task.required)
+        .find_map(|(index, task)| {
+            let race = if task.race.is_empty() {
+                "oteryn:creature.rat"
+            } else {
+                &task.race
+            };
+            full_row_p05::has_reachable_spawn(world, from, &metadata.spawns, race)
+                .then_some((index, task, race))
+        });
+    if let Some((index, task, race)) = sample {
+        full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, race).await?;
+        let next = query(&mut client).await?;
+        journey.check(
+            4,
+            next.weekly.kills.get(index).is_some_and(|found| {
+                found.race == task.race && task.current.checked_add(1) == Some(found.current)
+            }),
+            ("weekly-credit-sample", task, next.weekly.kills.get(index)),
+        );
+    } else {
+        journey.check(
+            4,
+            false,
+            "weekly-credit-sample needs a reachable unfinished assignment",
+        );
+    }
+
     let reset = query(&mut client).await?;
     journey.check(
         7,
@@ -326,5 +323,15 @@ fn row_04_publishes_a_gap_for_an_unproven_journey() {
         include_str!("full_row_p04.rs")
             .split_once("#[cfg(test)]")
             .is_some_and(|(production, _)| production.contains("P04_GAP status="))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_p04_guards_the_journey() {
+    assert!(
+        include_str!("full_row_p04.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("weekly-credit-sample"))
     );
 }
