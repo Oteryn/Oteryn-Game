@@ -16,11 +16,6 @@ const CAMP: Position = Position {
     y: 31976,
     floor: -11,
 };
-const TABLE: Position = Position {
-    x: 32788,
-    y: 31976,
-    floor: -11,
-};
 const BOOK: &str = "oteryn:item.tibia.i25235";
 const PLATINUM: &str = "oteryn:item.tibia.i3035";
 
@@ -30,12 +25,28 @@ fn threatened_dreams_poacher_book_journey() -> TestResult {
         return Ok(());
     };
     super::kill_reward_e2e_fixtures::scenario_thread::run("threatened-dreams-book", move || {
-        scenario(&admin)
+        scenario(&admin, "threatened_dreams_book", 31976, 12648)
     })
 }
 
-fn scenario(configured_admin: &str) -> TestResult {
+#[test]
+fn threatened_dreams_poacher_book_accepts_second_table_half() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "threatened-dreams-book-second",
+        move || scenario(&admin, "threatened_dreams_book_second", 31977, 12649),
+    )
+}
+
+fn scenario(configured_admin: &str, schema: &str, table_y: u16, appearance: u16) -> TestResult {
     let trigger = CAMP;
+    let table = Position {
+        x: 32788,
+        y: table_y,
+        floor: CAMP.floor,
+    };
     let chest = super::quest_catalogue_chests_fixtures::cases()?
         .into_iter()
         .find(|chest| {
@@ -46,7 +57,11 @@ fn scenario(configured_admin: &str) -> TestResult {
         .ok_or("poacher chest")?;
     let world = super::quest_catalogue_chests_fixtures::catalogue_source_worlds(
         std::slice::from_ref(&chest),
-        &[(TABLE, 12648, oteryn_world_bundle::sector::Attrs::default())],
+        &[(
+            table,
+            appearance,
+            oteryn_world_bundle::sector::Attrs::default(),
+        )],
         &[CAMP],
         false,
     )?;
@@ -55,8 +70,7 @@ fn scenario(configured_admin: &str) -> TestResult {
             admin == configured_admin,
             "fixture must use the configured PostgreSQL route"
         );
-        let h = Harness::create_with_admission_seed(admin, "threatened_dreams_book", false, false)
-            .await?;
+        let h = Harness::create_with_admission_seed(admin, schema, false, false).await?;
         {
             prepare_current_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
@@ -262,7 +276,7 @@ fn scenario(configured_admin: &str) -> TestResult {
             let intent = UseIntent {
                 target: UseTarget::ItemByDefinition(book),
                 use_with: None,
-                use_with_map_item: Some(MapUseTarget::Object(target(&owner, TABLE, 1)?)),
+                use_with_map_item: Some(MapUseTarget::Object(target(&owner, table, 1)?)),
                 use_with_position: None,
             };
             let payload = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent)

@@ -1540,8 +1540,10 @@ fn extend_callbacks(
             continue;
         }
         if published_markers::needs_marker(callback, &published) {
+            let mut published_plan = callback.clone();
+            super::published_quest_pins::preserve_plan_citations(&mut published_plan.sources);
             let digest: String =
-                Sha256::digest(serde_json::to_vec(&callback).map_err(|e| e.to_string())?)
+                Sha256::digest(serde_json::to_vec(&published_plan).map_err(|e| e.to_string())?)
                     .iter()
                     .map(|byte| format!("{byte:02x}"))
                     .collect();

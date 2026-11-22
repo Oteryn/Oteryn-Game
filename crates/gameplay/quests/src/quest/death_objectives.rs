@@ -221,8 +221,10 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             return Err("foreign objective counter".into());
         }
         counter.max = counter.max.max(i64::from(objective.required));
+        let mut published_plan = objective.clone();
+        super::published_quest_pins::preserve_plan_citations(&mut published_plan.sources);
         let digest: String =
-            Sha256::digest(serde_json::to_vec(objective).map_err(|e| e.to_string())?)
+            Sha256::digest(serde_json::to_vec(&published_plan).map_err(|e| e.to_string())?)
                 .iter()
                 .map(|byte| format!("{byte:02x}"))
                 .collect();

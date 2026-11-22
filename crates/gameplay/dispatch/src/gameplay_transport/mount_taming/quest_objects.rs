@@ -17,7 +17,9 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                 .is_some_and(|tool| tool.selected_instance)
                 && matches!(
                     callback.key.as_str(),
-                    "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
+                    "oteryn:quest-callback/authored-threatened-dreams/book-table-1"
+                        | "oteryn:quest-callback/authored-threatened-dreams/book-table-2"
+                        | "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
                 ))
             || rottin_walls::accepts(callback)

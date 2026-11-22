@@ -104,6 +104,44 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
         .map_or(current, |(_, _, published)| *published)
 }
 
+/// Keep the published plan markers when this package refreshes a shard or
+/// placement index citation. The live documents retain their exact citations.
+pub(super) fn preserve_plan_citations(sources: &mut [String]) {
+    const REFRESHES: &[(&str, &str, &str)] = &[
+        (
+            "canonical:content/quests/definitions/quests-00000-00099.json:1#",
+            "fa447fc76c3dcb81f9b7da83bfaa926588a132c79d603dcc8500786053a4e6f6",
+            "aa7c8f0615324ce8dbbdbeba70f8452bd008b3ea67758ca859a3ee5627d43dbd",
+        ),
+        (
+            "canonical:content/quests/definitions/quests-00100-00199.json:1#",
+            "3aa8003127f2d71f3cf81429aea9e4e970a6e9cb631240e98490cbf3b7673b53",
+            "e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        ),
+        (
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#",
+            "82a0071497344a02ea912d4b8be220557fdd1b7aeb4292dfb76eb88246117ab9",
+            "93396f2035c3efe01e973db299172b86f00ec18359917f34ae0043abba3ff610",
+        ),
+        (
+            "content/world/placements/index.json:1:",
+            "7ea2556fd4cb665aa606b8655ea90128a10011b219a499b6e0ee44424f5e06d6",
+            "42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        ),
+    ];
+    for source in sources {
+        let Some((citation, digest)) = source.rsplit_once(":sha256:") else {
+            continue;
+        };
+        if let Some(&(_, _, published)) = REFRESHES
+            .iter()
+            .find(|&&(prefix, refreshed, _)| source.starts_with(prefix) && digest == refreshed)
+        {
+            source.replace_range(citation.len() + ":sha256:".len().., published);
+        }
+    }
+}
+
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
     for &(quest, current, previous) in GAMEPLAY_PREDECESSORS {
         if catalogue.definition_hash(quest) == Some(current) {

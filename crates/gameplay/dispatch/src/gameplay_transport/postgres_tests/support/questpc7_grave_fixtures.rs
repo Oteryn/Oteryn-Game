@@ -149,6 +149,16 @@ pub(super) async fn exercise(
     step(owner, a, StepDirection::East).await?;
     assert_eq!(value(owner, a, TRACK).await?, 1);
     assert_eq!(value(owner, a, VISITS).await?, 0);
+    let entry_pin: String = sqlx::query_scalar(
+        "SELECT encode(definition_hash, 'hex') FROM game_character_quest_states WHERE quest_key = $1",
+    )
+    .bind(QUEST)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        entry_pin, "9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab",
+        "the entry writer must keep the published Grave Danger save identity after citation refresh"
+    );
     for i in 0..12 {
         let c = callback(&rows, &format!("survey-{i}"))?;
         let target = c.selector.position.ok_or("grave")?;
