@@ -704,13 +704,14 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     engenc_elemental_profiles.apply(creatures)
     generated[creature_path] = spell_import.canonical_bytes(creatures)
 
-    # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
-    # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     items = json.loads(generated[item_path])
+    import crystal_ordinary_items
+    crystal_ordinary_items.apply(root, items, provider_order)
+    # Crystal 201189f8 data/items/items.xml:2122 is an ordinary field that retires at 98 s.
     energy = next(row for row in items["records"]
                   if row["production_definition"]["production_key"] == "oteryn:item.tibia.i2122")
-    energy["semantics"]["temporal"]["value"]["duration"]["value"] = 100_000
+    energy["semantics"]["temporal"]["value"]["duration"]["value"] = 98_000
     # HEALPAR: Great Mana Potion is for all vocations on Global (TibiaWiki rev 1190635).
     import healing_global_overrides
     healing_global_overrides.apply_native_profiles(items)

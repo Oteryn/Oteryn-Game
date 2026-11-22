@@ -5,6 +5,13 @@ use super::*;
 const ROPE_GROUND: &[u32] = &[
     386, 421, 7762, 12202, 12936, 14238, 17238, 21965, 21966, 21967, 21968, 23363,
 ];
+const ROPE_OVERLAY: u32 = 12935;
+
+/// An appearance the rope owner accepts as the selected spot surface.
+pub fn rope_spot_appearance(id: u32) -> bool {
+    ROPE_GROUND.contains(&id) || id == ROPE_OVERLAY
+}
+
 // Accepted §6.3 order: south, north, east, west, then the diagonals.
 const OFFSETS: &[(i32, i32)] = &[
     (0, 1),
@@ -189,7 +196,7 @@ impl RopeProof<'_> {
                 || !(tile
                     .ground_source_id()
                     .is_some_and(|id| ROPE_GROUND.contains(&id))
-                    || tile.top_source_ids().contains(&12935))
+                    || tile.top_source_ids().contains(&ROPE_OVERLAY))
             {
                 return Err(MovementError::NotQualified);
             }

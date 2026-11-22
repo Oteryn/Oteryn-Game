@@ -222,6 +222,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             }
+            // No earlier terrain-tool action matches the selected rope surface.
+            // Leave the exact placement and upstairs landing to the rope owner.
+            if crate::map::floor::rope_spot_appearance(u32::from(before.appearance_id))
+                && super::rope::secret_agent_rope(&definition.production_key)
+            {
+                return Ok(None);
+            }
             let MapDefinition::Item(reference) = before.definition else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };

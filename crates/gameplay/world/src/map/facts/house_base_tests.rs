@@ -27,6 +27,7 @@ fn w19_house_base_facts_exclude_channel_door_rotation_and_callback_overrides() {
         facts: before,
         solid: false,
         door: PaletteDoor::No,
+        plain_door: None,
     });
     facts.placements.push((
         key,

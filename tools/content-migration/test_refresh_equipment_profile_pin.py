@@ -1207,6 +1207,20 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
                         'SRX3 source profile differs: SRX3-BOSS-YIELDS/oteryn:item.tibia.i7385'):
                     self.generate(actual)
 
+    def test_energy_drink_adds_exact_food_policy_without_relaxing_yield_proof(self):
+        key = 'oteryn:item.tibia.i23545'
+        actual = copy.deepcopy(self.actual)
+        row = next(row for row in actual['records']
+                   if row['production_definition']['production_key'] == key)
+        food = row['semantics']['consumption']
+        self.assertEqual(food, {'state': 'KNOWN', 'value': {
+            'kind': 'FOOD', 'value': {'regeneration_seconds': 360},
+        }})
+        self.generate(actual)
+        food['value']['value']['regeneration_seconds'] = 30
+        with self.assertRaisesRegex(ValueError, f'SRX3 source profile differs: SRX3-BOSS-YIELDS/{key}'):
+            self.generate(actual)
+
 
 
 if __name__ == "__main__":

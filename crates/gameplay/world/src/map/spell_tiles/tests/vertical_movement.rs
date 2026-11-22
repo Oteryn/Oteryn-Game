@@ -2,6 +2,10 @@
 use super::*;
 
 pub fn world(world: WorldId, channel: ChannelId) -> BundleWorld {
+    world_with_rope_spot(world, channel, 386)
+}
+
+pub fn world_with_rope_spot(world: WorldId, channel: ChannelId, appearance: u32) -> BundleWorld {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{Extent, Sector};
     let sector = |floor, positions: &[(u16, u16, u32)]| Sector {
@@ -24,7 +28,8 @@ pub fn world(world: WorldId, channel: ChannelId) -> BundleWorld {
             })
             .collect(),
     };
-    let (bytes, bundle) = super::bundle_with_ground(
+    let spot = format!("oteryn:item.tibia.i{appearance}");
+    let (bytes, bundle) = super::bundle_with_projectiles(
         Some(vec![
             sector(-8, &[(10, 10, 4)]),
             sector(-7, &[(10, 9, 0), (10, 11, 0)]),
@@ -39,6 +44,8 @@ pub fn world(world: WorldId, channel: ChannelId) -> BundleWorld {
             floors: vec![-8, -7, -6, -5],
         }),
         "oteryn:item.tibia.i103",
+        &spot,
+        None,
     );
     let revision = format!(
         "sha256:{}",
@@ -62,10 +69,10 @@ pub fn world(world: WorldId, channel: ChannelId) -> BundleWorld {
         world,
         channel,
         |key| {
-            super::items(if key == "oteryn:item.tibia.i103" {
-                super::KEYS[0]
-            } else {
-                key
+            super::items(match key {
+                "oteryn:item.tibia.i103" => super::KEYS[0],
+                key if key == spot => super::KEYS[4],
+                key => key,
             })
         },
     )
