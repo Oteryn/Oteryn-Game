@@ -4,10 +4,10 @@
   "quest": {
     "key": "oteryn:quest.giant_smithhammer_quest",
     "path": "content/quests/definitions/quests-00100-00199.json",
-    "sha256": "e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
+    "sha256": "ab41e89be7c603ade0dac75298fa9e8a4f7485175609d2a21c8841b013d1801f"
   },
   "sources": [
-    "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+    "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:ab41e89be7c603ade0dac75298fa9e8a4f7485175609d2a21c8841b013d1801f",
     "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
     "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
     "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef"

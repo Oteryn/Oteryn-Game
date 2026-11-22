@@ -10,6 +10,7 @@ SOURCE = ROOT / "tools/content-schema/quest-authoring/samples/server-completion/
 
 
 REGISTERED_TALK_QUESTS = {
+    "oteryn:quest.an_interest_in_botany_quest",
     "oteryn:quest.authored.a_pirate_s_death_to_me",
     "oteryn:quest.goblin_merchant_quest",
     "oteryn:quest.machinery_of_war_quest",

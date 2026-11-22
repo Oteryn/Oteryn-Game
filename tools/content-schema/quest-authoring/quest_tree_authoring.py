@@ -41,6 +41,9 @@ BOTANY_CLAIM = 'oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_alma
 BOTANY_HOLD = {'code': 'claim_native_lowering_missing',
                'source_key': 'canary:reward-claim/quest/u8_6/an_interest_in_botany/botany_almanach'}
 CALLBACK_COVERAGE = 'docs/repository/QUEST_CALLBACK_COVERAGE.json'
+PARADOX_QUEST = 'oteryn:quest.the_paradox_tower_quest'
+PARADOX_KEY_HOLD = {'code': 'claim_native_lowering_missing',
+                    'source_key': 'canary:reward-claim/quest/key/id3899'}
 
 
 def compact(value):
@@ -288,6 +291,25 @@ def reconcile_botany_claim(root, definition, claims):
         definition['readiness'] = 'definition_ready'
 
 
+def restore_source_holds(definition):
+    key = definition['identity']['key']
+    if key == OUTLAW_QUEST:
+        restore_outlaw_source_holds(definition)
+        return
+    if key not in (ALAWAR_QUEST, PARADOX_QUEST, BOTANY):
+        return
+    missing = definition['missing_data']
+    if key == ALAWAR_QUEST and ALAWAR_SOURCE_HOLD not in missing:
+        # The applied UID projection closes this delivery in the live Quest only.
+        missing.append(copy.deepcopy(ALAWAR_SOURCE_HOLD))
+    if key == PARADOX_QUEST and PARADOX_KEY_HOLD not in missing:
+        at = missing.index({'code': 'quest_native_lowering_missing'})
+        missing.insert(at, copy.deepcopy(PARADOX_KEY_HOLD))
+    if key == BOTANY and BOTANY_HOLD not in missing:
+        missing.append(copy.deepcopy(BOTANY_HOLD))
+        definition['readiness'] = 'waiting_data'
+
+
 def source_projection(root, records):
     """Validate and remove the compiled native annotations from the SOURCE view.
 
@@ -298,14 +320,7 @@ def source_projection(root, records):
     result = copy.deepcopy(records)
     for row in result:
         definition = row['definition']
-        if (definition['identity']['key'] == ALAWAR_QUEST
-                and ALAWAR_SOURCE_HOLD not in definition['missing_data']):
-            # The applied UID projection closes this delivery in the live Quest only.
-            definition['missing_data'].append(copy.deepcopy(ALAWAR_SOURCE_HOLD))
-        restore_outlaw_source_holds(definition)
-        if definition['identity']['key'] == BOTANY and BOTANY_HOLD not in definition['missing_data']:
-            definition['missing_data'].append(copy.deepcopy(BOTANY_HOLD))
-            definition['readiness'] = 'waiting_data'
+        restore_source_holds(definition)
         if definition['identity']['key'] != 'oteryn:quest.the_way_of_the_monk_quest':
             continue
         original = {'state': 'WAITING_IMPLEMENTATION', 'canonical_progress_refs': [],
@@ -490,11 +505,11 @@ def reconcile_paradox_key(root, records, claims):
                 not in binding['legacy_unique_ids']):
         raise ValueError('Paradox key native placement evidence differs from the qualified claim')
     quest, = (row['definition'] for row in records
-              if row['definition']['identity']['key'] == 'oteryn:quest.the_paradox_tower_quest')
+              if row['definition']['identity']['key'] == PARADOX_QUEST)
     # Preserve the original source witness and source digest attached above.
-    quest['missing_data'].remove({
-        'code': 'claim_native_lowering_missing', 'source_key': claim['provenance']['pilot_key'],
-    })
+    if claim['provenance']['pilot_key'] != PARADOX_KEY_HOLD['source_key']:
+        raise ValueError('Paradox key source identity differs from the historical hold')
+    quest['missing_data'].remove(PARADOX_KEY_HOLD)
 
 
 def expected_files(root, include_registration=False):

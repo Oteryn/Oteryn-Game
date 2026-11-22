@@ -815,6 +815,9 @@ def test_downstream_quest_producers_follow_inputs_and_precede_consumers() -> Non
     authored = [("python3", tool, "content") for tool in rc.AUTHORING_TOOLS]
     last_authored = max(i for i, command in enumerate(events) if command in authored)
     assert last_authored < events.index(commands[0]) < events.index(commands[1]) < events.index(native)
+    completion = ("python3", "tools/content-schema/quest-authoring/quest_completion_import.py")
+    assert events.count(completion) == 1
+    assert events.index(completion) < events.index(commands[1])
     final_inputs = max(events.index(native), events.index(("world-metadata",)), events.index(variant))
     indices = [events.index(command) for command in commands[2:]]
     assert indices == sorted(indices) and final_inputs < indices[0]
