@@ -113,6 +113,7 @@ impl Stack {
                 };
                 if two_channels {
                     let _ = channel_node::serve(&mut stream, &game_node, index).await;
+                    game_node.disconnects.fetch_add(1, Ordering::SeqCst);
                     let _ = stream.shutdown().await;
                     continue;
                 }

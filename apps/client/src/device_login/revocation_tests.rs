@@ -375,6 +375,7 @@ fn c2a_cancel_during_begin_preserves_family_for_retry() -> TestResult {
         vault::Vault::write(vault.as_ref(), &enrollment_response()?)
             .map_err(std::io::Error::other)?;
         let login = || DeviceLogin {
+            commerce: Default::default(),
             enabled: true,
             forget_requested: Default::default(),
             journal: test_server::journal(Some(folder.path().into())),

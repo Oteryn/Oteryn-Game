@@ -81,6 +81,21 @@ impl Reentry {
         self.attempt_cancellation = Some(CancellationToken::new());
     }
 
+    #[cfg(all(test, bevy_shell))]
+    pub(crate) fn wait_for_ready_admission(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let admitted = self
+            .pending
+            .as_ref()
+            .ok_or("no pending admission")?
+            .recv_timeout(std::time::Duration::from_secs(10))??;
+        let (sender, receiver) = mpsc::channel();
+        sender
+            .send(Ok(admitted))
+            .map_err(|_| "admission receiver dropped")?;
+        self.pending = Some(receiver);
+        Ok(())
+    }
+
     #[cfg(test)]
     pub(crate) fn device_test_config(
         folder: std::path::PathBuf,

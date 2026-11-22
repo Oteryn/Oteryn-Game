@@ -295,3 +295,69 @@ fn c2d_process_forget_stages_vault_off_frame() -> Result<(), Box<dyn std::error:
     owner.close();
     Ok(())
 }
+
+#[cfg(test)]
+fn check_pending_admission(sign_out: bool) -> crate::account_services::test_server::TestResult {
+    use crate::{account_services::test_server::test_thread, native_entry::test_support::Stack};
+    use std::{
+        sync::atomic::Ordering,
+        time::{Duration, Instant},
+    };
+    test_thread(move || {
+        let stack = Stack::start_two_channels()?;
+        let folder = tempfile::tempdir()?;
+        let mut config = stack.config();
+        config.device_sessions = std::sync::Arc::new(
+            crate::device_login::DeviceLogin::test_fixture(folder.path().to_owned()),
+        );
+        let mut owner = HostOwner::new(None)?;
+        let entry = owner.entry.as_mut().ok_or("entry")?;
+        assert!(entry.configure(config));
+        assert!(entry.request());
+        entry.wait_for_ready_admission()?;
+        owner.phase = Phase::Entering;
+        if sign_out {
+            owner.sign_out_device();
+        } else {
+            owner.cancel_login();
+        }
+        let intent = owner.forget_intent.take().ok_or("pending intent")?;
+        let (release, wait) = std::sync::mpsc::channel();
+        owner.forget_intent = Some(PendingIntent {
+            worker: std::thread::spawn(move || {
+                wait.recv().map_err(|error| error.to_string())?;
+                intent.worker.join().map_err(|_| "forget worker panicked")?
+            }),
+            ..intent
+        });
+        owner.poll([800, 600]);
+        let held = owner.phase == Phase::Entering && owner.play.is_none();
+        release.send(())?;
+        owner.finish_forget_intent();
+        assert!(held, "ready admission escaped pending intent");
+        owner.poll([800, 600]);
+        assert_eq!(owner.phase, Phase::Offline);
+        assert!(owner.play.is_none());
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while stack.node.disconnects.load(Ordering::SeqCst) == 0 {
+            assert!(Instant::now() < deadline, "connection stayed open");
+            std::thread::yield_now();
+        }
+        owner.close();
+        stack.finish();
+        Ok(())
+    })
+}
+
+#[cfg(test)]
+#[test]
+fn regression_pending_cancel_holds_admission() -> crate::account_services::test_server::TestResult {
+    check_pending_admission(false)
+}
+
+#[cfg(test)]
+#[test]
+fn regression_pending_sign_out_holds_admission() -> crate::account_services::test_server::TestResult
+{
+    check_pending_admission(true)
+}
