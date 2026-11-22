@@ -47,6 +47,8 @@ impl Outbox {
     }
 
     pub(super) fn reset_unbound_scope(&self) {
+        let delivery = lock(&self.0).connection.browser_delivery.clone();
+        let _delivery = delivery.lock().unwrap_or_else(PoisonError::into_inner);
         let mut mailbox = lock(&self.0);
         retire_source_requests(&mut mailbox);
         mailbox.reset_server_message_namespace();
@@ -66,6 +68,12 @@ impl Outbox {
             && binding != mailbox.scope_session
             && (mailbox.scope_session.is_some() || scope.is_some());
         if reset {
+            // The session stepper owns scope publication. Release the mailbox while
+            // an in-flight opener finishes so it can still call back into play.
+            let delivery = mailbox.connection.browser_delivery.clone();
+            drop(mailbox);
+            let _delivery = delivery.lock().unwrap_or_else(PoisonError::into_inner);
+            mailbox = lock(&self.0);
             let reset_modal = mailbox.scope_session.is_some();
             reset_scope(&mut mailbox, scope, session);
             mailbox.scope_reset_modal = reset_modal;

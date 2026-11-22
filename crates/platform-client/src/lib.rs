@@ -438,6 +438,28 @@ mod tests {
     }
 
     #[test]
+    fn production_api_selection_respects_normalized_origin_and_url_boundaries()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for web in ["https://OTERYN.com", "https://oteryn.com:443/"] {
+            assert_platform_routes(web, PRODUCTION_API_ORIGIN)?;
+        }
+        for web in [
+            "https://oteryn.com:8443/",
+            "https://oteryn.com.example.invalid/",
+        ] {
+            assert_platform_routes(web, web)?;
+        }
+        let configured_path = "https://oteryn.com/preprod/";
+        assert_eq!(
+            PlatformClientConfig::new(configured_path)?
+                .api_base_url
+                .as_str(),
+            configured_path
+        );
+        Ok(())
+    }
+
+    #[test]
     fn safe_directory_contains_no_route() -> Result<(), PlatformClientError> {
         let directory = parse_directory(SAFE)?;
         assert_eq!(directory.epoch.get(), 7);

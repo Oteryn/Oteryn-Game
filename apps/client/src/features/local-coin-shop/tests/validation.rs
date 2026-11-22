@@ -175,10 +175,26 @@ fn coin_post_refusals_settle_after_missing_status() -> TestResult {
                 mock.authority.lock().map_err(|_| "lock")?.coin_post_failure = Some(refusal);
                 execute(&mut view, Action::Retry);
                 assert_eq!(view.pending.as_ref(), Some(&request));
+                assert!(!view.can_retry());
                 execute(&mut view, Action::Status);
             }
             settled.push(!view.pending());
             assert_eq!(mock.with_coins(|coins| coins.creations)?, 0);
+            if retry == Some(403) {
+                let pending = view.pending.clone().ok_or("missing unresolved request")?;
+                assert!(view.can_retry());
+                mock.authority.lock().map_err(|_| "lock")?.coin_post_failure = Some(403);
+                execute(&mut view, Action::Retry);
+                assert!(!view.can_retry());
+                execute(&mut view, Action::Refresh);
+                assert!(view.can_retry());
+                execute(&mut view, Action::Retry);
+                assert_eq!(
+                    view.order.as_ref().map(|r| &r.request_id),
+                    Some(&pending.request_id)
+                );
+                assert_eq!(mock.with_coins(|coins| coins.creations)?, 1);
+            }
         }
         assert_eq!(
             settled,
