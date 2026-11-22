@@ -20,7 +20,7 @@ class QuestExploreAreaCandidatesTest(unittest.TestCase):
         self.assertEqual(
             {
                 "explore_stages": 247,
-                "canonical_areas": 970,
+                "canonical_areas": 973,
                 "statuses": {
                     "AMBIGUOUS_MULTIPLE_AREAS": 36,
                     "EXACT_SINGLE_AREA_ONLY_TARGET": 10,

@@ -288,6 +288,45 @@ def records(out: dict) -> dict[str, dict]:
     return {r["declaration"]["name"]: r["declaration"] for r in shard["records"]}
 
 
+class CommittedGeographyTest(unittest.TestCase):
+    def test_island_evidence_compiles_from_committed_b3(self) -> None:
+        snapshot = (convert.ROOT / convert.SNAPSHOT).read_bytes()
+        out = convert.build(snapshot)
+        summary = json.loads(out[convert.SUMMARY])
+        self.assertEqual(
+            [
+                (row["pageid"], row["reason"])
+                for row in summary["excluded"]
+                if row["pageid"] == 89930
+            ],
+            [(89930, "event_only_not_on_map")],
+        )
+        included = {row["key"]: row for row in summary["included"]}
+        for name, pageid, anchor, size, boundary in (
+            ("Travora", 40899, pos(32057, 32368), 66, (0, 35)),
+            ("Redbone Castle", 8309, pos(32666, 31675, 15), 491, (91, 0)),
+            ("Dwacatra", 5196, pos(32588, 31917, 14), 2696, (451, 8)),
+        ):
+            with self.subTest(name=name):
+                record = next(
+                    row
+                    for path, data in out.items()
+                    if path.startswith("content/world/areas/islands/islands-")
+                    for row in json.loads(data)["records"]
+                    if row["declaration"]["name"] == name
+                )
+                self.assertEqual(record["declaration"]["anchor"], anchor)
+                self.assertEqual(record["declaration"]["footprint"]["tile_count"], size)
+                self.assertEqual(
+                    record["source_bindings"][0]["external_id"], str(pageid)
+                )
+                key = record["declaration"]["identity"]["key"]
+                self.assertEqual(
+                    included[key]["boundary_tiles"],
+                    {"lava": boundary[0], "void": 0, "water": boundary[1]},
+                )
+
+
 class ConverterTest(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
