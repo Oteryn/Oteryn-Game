@@ -95,6 +95,7 @@ def refresh_bestiary_inventory(root: Path) -> None:
     if count != index["record_count"]:
         raise RuntimeError("BESTIARY_SHARD_COUNT")
     bestiary_count = 0
+    boss_counts = Counter()
     for record in records:
         authoring = record.get("authoring")
         if (not isinstance(authoring, dict) or authoring.get("kind") != "Creature"
@@ -105,6 +106,10 @@ def refresh_bestiary_inventory(root: Path) -> None:
             if not isinstance(bestiary, dict):
                 raise RuntimeError("BESTIARY_PROFILE_SHAPE")
             bestiary_count += 1
+        profile = authoring["profile"]
+        boss = profile.get("details", {}).get("bosstiary") or profile.get("bosstiary")
+        if boss is not None:
+            boss_counts[boss["category"]] += 1
     body = f"const SHARDS: [(&str, &[u8]); {len(shards)}] = [\n"
     for path in shards:
         body += f'    (\n        "{path}",\n        include_bytes!(\n            "../../../../../../{path}"\n        ),\n    ),\n'
@@ -114,6 +119,10 @@ def refresh_bestiary_inventory(root: Path) -> None:
     replacements = (
         (r"const SHARDS: \[\(&str, &\[u8\]\); [0-9]+\] = \[[\s\S]*?\n\];\nconst CREATURE_COUNT: usize = [0-9_]+;\nconst BESTIARY_COUNT: usize = [0-9_]+;", body),
         (r"assert_eq!\(catalogue\.bestiary\.len\(\), [0-9_]+\);", f"assert_eq!(catalogue.bestiary.len(), {bestiary_count:_});"),
+        (r"assert_eq!\(catalogue\.bosstiary\.len\(\), [0-9_]+\);",
+         f"assert_eq!(catalogue.bosstiary.len(), {sum(boss_counts.values()):_});"),
+        *((rf'\("{category}", [0-9_]+\)', f'("{category}", {boss_counts[category]:_})')
+          for category in ("bane", "archfoe", "nemesis")),
         (r"assert_eq!\(limits\(\)\.max_reference_records, [0-9_]+\);", f"assert_eq!(limits().max_reference_records, {count:_});"),
         (r"fn canonical_projection_retains_all_[0-9]+_admitted_bestiary_blocks", f"fn canonical_projection_retains_all_{bestiary_count}_admitted_bestiary_blocks"),
     )

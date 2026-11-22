@@ -31,13 +31,13 @@ const SHARDS: [(&str, &[u8]); 4] = [
         ),
     ),
     (
-        "content/creatures/definitions/creatures-01500-01864.json",
+        "content/creatures/definitions/creatures-01500-01870.json",
         include_bytes!(
-            "../../../../../../content/creatures/definitions/creatures-01500-01864.json"
+            "../../../../../../content/creatures/definitions/creatures-01500-01870.json"
         ),
     ),
 ];
-const CREATURE_COUNT: usize = 1_865;
+const CREATURE_COUNT: usize = 1_871;
 const BESTIARY_COUNT: usize = 824;
 
 #[derive(Deserialize)]
@@ -348,6 +348,59 @@ mod tests {
     type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
     #[test]
+    fn crystal_boss_categories_are_in_the_canonical_catalogue() -> TestResult {
+        use crate::content::{
+            native_gameplay::NativeGameplayInput, native_gameplay_test_world_id,
+            qualified_native_gameplay_test_state, qualify_selected_native_gameplay_room,
+        };
+
+        let catalogue = canonical_title_catalogue(limits())?;
+        let expected = [
+            ("the_horned_fox", "nemesis"),
+            ("lethal_lissy", "nemesis"),
+            ("ron_the_ripper", "nemesis"),
+            ("brutus_bloodbeard", "nemesis"),
+            ("deadeye_devious", "nemesis"),
+            ("cublarc_the_plunderer", "nemesis"),
+            ("enusat_the_onyx_wing", "bane"),
+            ("the_primal_menace", "archfoe"),
+            ("ayana_the_crimson_curse", "nemesis"),
+            ("twisterror", "archfoe"),
+            ("gralvalon", "archfoe"),
+            ("malvaroth", "archfoe"),
+        ];
+        for (name, category) in expected {
+            let key = format!("oteryn:creature.{name}");
+            assert_eq!(
+                catalogue
+                    .bosstiary
+                    .iter()
+                    .find(|boss| boss.key == key)
+                    .map(|boss| boss.category.as_str()),
+                Some(category),
+                "{key}",
+            );
+        }
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/spells.manifest.json");
+        let input = NativeGameplayInput::from_manifest(&manifest)?;
+        let room = qualify_selected_native_gameplay_room(native_gameplay_test_world_id()?, &input)?;
+        let native = qualified_native_gameplay_test_state(room.compiled())?;
+        for (name, category) in expected {
+            let key = format!("oteryn:creature.{name}");
+            assert_eq!(
+                native
+                    .reward_table()
+                    .boss(&key)
+                    .map(|boss| boss.category.as_str()),
+                Some(category),
+                "{key}",
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn canonical_title_catalogue_retains_all_classes_and_boss_categories() -> TestResult {
         let catalogue = canonical_title_catalogue(limits())?;
         let rows = canonical_bestiary_rows(limits())?;
@@ -364,8 +417,8 @@ mod tests {
         let classes: std::collections::BTreeSet<_> =
             catalogue.bestiary.iter().map(|(_, class)| class).collect();
         assert_eq!(classes.len(), 21);
-        assert_eq!(catalogue.bosstiary.len(), 291);
-        for (category, expected) in [("bane", 72), ("archfoe", 125), ("nemesis", 94)] {
+        assert_eq!(catalogue.bosstiary.len(), 303);
+        for (category, expected) in [("bane", 73), ("archfoe", 129), ("nemesis", 101)] {
             assert_eq!(
                 catalogue
                     .bosstiary
@@ -546,7 +599,7 @@ mod tests {
                 .iter()
                 .all(|(_, bytes)| bytes.len() <= limits().max_document_bytes)
         );
-        assert_eq!(limits().max_reference_records, 1_865);
+        assert_eq!(limits().max_reference_records, 1_871);
     }
 
     #[test]

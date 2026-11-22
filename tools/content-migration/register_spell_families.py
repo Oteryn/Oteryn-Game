@@ -694,8 +694,14 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     imbuement_item_profiles.complete_boots(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
+    import cyclopedia_creatures
+    cyclopedia_creatures.apply(root, generated)
     from bind_monster_source_definitions import bind_definitions
     generated = bind_definitions(root, generated)
+    presentation_path = spell_import.PROVIDER_DESTINATIONS["presentation_profiles"]
+    manifest = json.loads(generated[NATIVE_MANIFEST])
+    manifest["presentation_profiles"]["sha256"] = hashlib.sha256(generated[presentation_path]).hexdigest()
+    generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
     # W11 source callback outfits share the registered native appearance provider.
     import soul_war_appearance_profiles
     soul_war_appearance_profiles.admit(

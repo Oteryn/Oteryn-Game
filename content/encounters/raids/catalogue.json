@@ -27845,7 +27845,6 @@
         }
       ],
       "inactive_reasons": [
-        "creature_unbound:Cublarc The Plunderer",
         "global_broadcast_sequence_conflict:oteryn:raid.zao_raids.orcs_raid_on_zzaion"
       ],
       "key": "raid:farmine.zulazzathecorruptor",
