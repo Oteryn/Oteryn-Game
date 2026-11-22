@@ -10,6 +10,8 @@ struct Recipe {
     source: String,
     #[serde(default)]
     world_station: bool,
+    #[serde(default)]
+    ordered: bool,
 }
 
 pub(super) fn carried(
@@ -56,7 +58,8 @@ fn resolve(
         .as_ref()?;
     let mut matching = rows.iter().filter(|r| {
         r.world_station == world_station
-            && (r.ingredients == pair || (!world_station && r.ingredients == [pair[1], pair[0]]))
+            && (r.ingredients == pair
+                || (!r.ordered && !world_station && r.ingredients == [pair[1], pair[0]]))
     });
     let row = matching.next()?;
     if matching.next().is_some()
