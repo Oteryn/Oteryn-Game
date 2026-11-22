@@ -238,22 +238,6 @@
     }
   },
   "authored_placements": {
-    "oteryn:npc.lai": {
-      "basis": "CHOSEN_OTERYN_APPROXIMATION",
-      "placements": [
-        {
-          "direction": "SOUTH",
-          "position": {
-            "x": 32571,
-            "y": 32506,
-            "z": 7
-          }
-        }
-      ],
-      "recipe_path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
-      "recipe_sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
-      "recipe_title": "Mystery of the Valley Quest"
-    },
     "oteryn:npc.rhargu": {
       "basis": "CHOSEN_OTERYN_APPROXIMATION",
       "recipe_path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
@@ -304,6 +288,25 @@
     }
   },
   "placement_overrides": {
+    "oteryn:npc.lai": {
+      "basis": "Crystal world-npc.xml:240–242 places Lai in Azzilon Castle. North is the default facing because the source omits direction.",
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "placements": [
+        {
+          "position": {
+            "x": 33834,
+            "y": 32352,
+            "z": 4
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
     "oteryn:npc.buddel": {
       "basis": "Crystal world-npc.xml:1219-1221 anchors Buddel in Svargrond. The source leaves direction unspecified, so the native placement uses north.",
       "placements": [
