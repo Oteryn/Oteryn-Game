@@ -9,7 +9,7 @@
 //!    server's ordinary regeneration owner, without changing state through a fixture or database.
 //! 5. Return to the poison spider, acquire another delayed poison delta, request logout (first
 //!    refusal may be `InFight`), retry until accepted, then make a fresh admission; expect a new
-//!    game-session id and an authoritative active poison icon before another encounter.
+//!    game-session id, an authoritative active poison icon, and resumed damage out of combat.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
@@ -215,13 +215,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass((damaged, regenerated));
     client.take_events();
     let clean_until = tokio::time::Instant::now() + Duration::from_secs(15);
+    let mut health = regenerated;
     while tokio::time::Instant::now() < clean_until {
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
-            if let SessionEvent::ActorVitals(delta) = event
-                && delta.value.health < regenerated
-            {
-                return Err(format!("step=dispel observed=health-loss-after-retreat:{} need=no-further-poison-damage", delta.value.health).into());
+            if let SessionEvent::ActorVitals(delta) = event {
+                if delta.value.health < health {
+                    return Err(format!("step=dispel observed=health-loss-after-retreat:{health}->{} need=no-further-poison-damage", delta.value.health).into());
+                }
+                health = delta.value.health;
             }
         }
     }
@@ -261,9 +263,48 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if !poison_status(&mut client).await? {
         return Err("step=poison-persistence observed=missing-poison-icon-on-fresh-admission need=saved-live-condition".into());
     }
-    row.pass(second);
+    let tick = resumed_poison_tick(&mut client, world).await?;
+    row.pass((second, tick));
     let _ = client.session_mut().logout().await?;
     Ok(())
+}
+
+fn creature_can_interfere(client: &DevClientSession, at: ActorPosition) -> bool {
+    client.world_entities().is_none_or(|entities| entities.iter().any(|entry| {
+        entry.kind == oteryn_dev_client::EntityKind::Creature
+            && entry.position.floor == at.floor
+            && entry.position.x.abs_diff(at.x).max(entry.position.y.abs_diff(at.y)) <= 8
+    }))
+}
+
+async fn resumed_poison_tick(client: &mut DevClientSession, world: &BundleWorld) -> TestResult<(u32, u32)> {
+    let basis = spatial_basis::current(client)?;
+    let safe_site = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
+            && !creature_can_interfere(client, basis.position(at))
+    }).ok_or("step=poison-persistence observed=no-safe-tick-site-outside-pz need=uninterrupted-durable-poison-tick")?;
+    walk(client, world, &safe_site).await?;
+    let site = client.world_spatial().actor_position;
+    let mut health = client.actor_vitals().ok_or("step=poison-persistence observed=no-post-admission-vitals")?.health;
+    client.take_events();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    loop {
+        if creature_can_interfere(client, site) || client.world_spatial().actor_position != site {
+            return Err("step=poison-persistence observed=unsafe-tick-site need=damage-without-creature-contact".into());
+        }
+        for event in client.take_events() {
+            if let SessionEvent::ActorVitals(delta) = event {
+                if delta.value.health < health {
+                    return Ok((health, delta.value.health));
+                }
+                health = delta.value.health;
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=poison-persistence observed=active-icon-without-damage need=resumed-saved-poison-tick".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
 }
 
 #[cfg(test)]
