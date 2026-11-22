@@ -103,7 +103,9 @@ fn account(ui: &mut Builder<'_, '_, '_>, view: &crate::account_services::View) {
     if view.can_retry() {
         ui.account("account.retry", "Retry same request", Account::Retry);
     }
-    ui.account("account.status", "Check pending operation", Account::Status);
+    if view.pending() {
+        ui.account("account.status", "Check pending operation", Account::Status);
+    }
     if view.can_transfer()
         && let Some(quote) = &view.quote
     {
@@ -193,7 +195,9 @@ fn coins(ui: &mut Builder<'_, '_, '_>, view: &crate::coin_shop::View) {
     if view.can_retry() {
         ui.coin("coin.retry", "Retry same request", Coin::Retry);
     }
-    ui.coin("coin.status", "Check order status", Coin::Status);
+    if view.pending() || view.order.is_some() {
+        ui.coin("coin.status", "Check order status", Coin::Status);
+    }
     if view.can_checkout() {
         ui.coin("coin.checkout", "Open sandbox checkout", Coin::OpenCheckout);
     }

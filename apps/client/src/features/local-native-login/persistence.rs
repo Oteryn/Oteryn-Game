@@ -15,7 +15,7 @@ impl LoginSettings {
     }
 
     pub fn save(&self, path: &Path) -> Result<(), String> {
-        self.save_fields(path, [true; 6], [false; 6]).map(|_| ())
+        self.save_fields(path, [true; 6], [false; 6])
     }
 
     pub(crate) fn save_fields(
@@ -23,7 +23,7 @@ impl LoginSettings {
         path: &Path,
         edited: [bool; 6],
         env_fallback: [bool; 6],
-    ) -> Result<Self, String> {
+    ) -> Result<(), String> {
         let _lock = crate::atomic_file::lock(path).map_err(|_| Self::save_error())?;
         self.validate()?;
         let error = Self::save_error;
@@ -55,8 +55,7 @@ impl LoginSettings {
         };
         settings.validate()?;
         let bytes = serde_json::to_vec_pretty(&settings).map_err(|_| error())?;
-        crate::atomic_file::replace(path, &bytes, true).map_err(|_| Self::save_error())?;
-        Ok(settings)
+        crate::atomic_file::replace(path, &bytes, true).map_err(|_| Self::save_error())
     }
 
     pub(crate) fn save_error() -> String {

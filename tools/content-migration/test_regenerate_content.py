@@ -499,6 +499,16 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
         root = Path(temp)
         for tool in rc.AUTHORING_TOOLS:
             write(root, tool, "")
+        # Seed the committed inputs so the in-process Nomads refresh runs as usual.
+        profile = json.loads((rc.ROOT / rc.NOMADS_WINDOW).read_bytes())
+        for path in (
+            rc.NOMADS_WINDOW,
+            profile["map"]["path"],
+            *(path for path, _ in rc.NOMADS_WINDOW_REPORTS),
+        ):
+            target = root / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((rc.ROOT / path).read_bytes())
         feedback = "tools/content-schema/quest-authoring/samples/donor-source/refinements/conditions.json"
         write(root, feedback, {"source_fixture": True})
         write(root, "content/quests/definitions/index.json", {"authoring_sources": [{

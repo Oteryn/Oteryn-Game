@@ -2,7 +2,7 @@ use super::*;
 use std::ffi::OsString;
 
 pub(super) struct PendingSave {
-    task: bevy_tasks::Task<Result<LoginSettings, String>>,
+    task: bevy_tasks::Task<Result<(), String>>,
     visible: LoginSettings,
     revision: u64,
     assets: Option<OsString>,
@@ -90,19 +90,11 @@ impl LoginState {
         }
     }
 
-    fn finish_save(
-        &mut self,
-        saved: Result<LoginSettings, String>,
-    ) -> Option<crate::NativeLoginConfig> {
-        let settings = match saved {
-            Ok(settings) => settings,
-            Err(error) => {
-                self.form.feedback(error);
-                return None;
-            }
-        };
-        self.shown_settings = settings.clone();
-        self.form.settings = settings;
+    fn finish_save(&mut self, saved: Result<(), String>) -> Option<crate::NativeLoginConfig> {
+        if let Err(error) = saved {
+            self.form.feedback(error);
+            return None;
+        }
         self.form.submit().ok()
     }
 }

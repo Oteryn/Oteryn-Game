@@ -129,26 +129,3 @@ fn submit_repairs_empty_saved_gateway_from_environment() -> TestResult {
     assert_eq!(LoginSettings::load(&path)?.gateway_url, gateway);
     Ok(())
 }
-
-#[test]
-fn sign_in_uses_the_settings_merged_from_disk() -> TestResult {
-    use crate::account_services::test_server::CHARACTER;
-
-    let temp = Temp::new()?;
-    let path = temp.join("login.json");
-    let mut external = settings(&temp)?;
-    external.save(&path)?;
-    let mut owner = HostOwner::new(None)?;
-    owner.configure_login(Some(path.clone()), |_| None);
-    owner.request_login();
-
-    external.platform_url = "http://127.0.0.1:18567".into();
-    external.save(&path)?;
-    owner.login.form.settings.character_id = CHARACTER.into();
-    let config = owner.login.submit()?;
-    let saved = LoginSettings::load(&path)?;
-    assert_eq!(saved.platform_url, external.platform_url);
-    assert_eq!(saved.character_id, CHARACTER);
-    assert_eq!(config.platform_url, saved.platform_url);
-    Ok(())
-}
