@@ -1860,7 +1860,7 @@
     "y": 31059,
     "floor": 7,
     "postman": true,
-    "held": false,
+    "held": true,
     "carpet": false
   },
   {
@@ -2083,12 +2083,12 @@
     "key": "oteryn:service.travel.melian/marapur",
     "keyword": "marapur",
     "price": 70,
-    "premium": false,
+    "premium": true,
     "x": 33805,
     "y": 32766,
     "floor": 2,
     "postman": true,
-    "held": false,
+    "held": true,
     "carpet": true,
     "project_required_quest_tracks": []
   },
@@ -2288,12 +2288,12 @@
     "key": "oteryn:service.travel.pino/marapur",
     "keyword": "marapur",
     "price": 70,
-    "premium": false,
+    "premium": true,
     "x": 33805,
     "y": 32766,
     "floor": 2,
     "postman": true,
-    "held": false,
+    "held": true,
     "carpet": true,
     "project_required_quest_tracks": []
   },
@@ -2395,7 +2395,7 @@
     "y": 32813,
     "floor": 7,
     "postman": false,
-    "held": false,
+    "held": true,
     "carpet": false,
     "project_required_quest_tracks": [
       {
@@ -2553,12 +2553,12 @@
     "key": "oteryn:service.travel.tanyt/marapur",
     "keyword": "marapur",
     "price": 70,
-    "premium": false,
+    "premium": true,
     "x": 33805,
     "y": 32766,
     "floor": 2,
     "postman": true,
-    "held": false,
+    "held": true,
     "carpet": true,
     "project_required_quest_tracks": []
   },
@@ -2619,7 +2619,7 @@
     "y": 32916,
     "floor": 7,
     "postman": true,
-    "held": false,
+    "held": true,
     "carpet": false,
     "project_required_quest_tracks": []
   },
@@ -2713,11 +2713,12 @@
     "price": 70,
     "premium": true,
     "x": 32588,
-    "y": 31942,
+    "y": 31941,
     "floor": 0,
     "postman": true,
     "held": false,
-    "carpet": true
+    "carpet": true,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.uzon/kazordoon",
@@ -2725,11 +2726,12 @@
     "price": 70,
     "premium": true,
     "x": 32588,
-    "y": 31942,
+    "y": 31941,
     "floor": 0,
     "postman": true,
     "held": false,
-    "carpet": true
+    "carpet": true,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.uzon/svargrond",

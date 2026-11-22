@@ -2,8 +2,21 @@ use super::fixture::{Harness, debug, run};
 use super::npcfix_m38_travel_guards_fixtures::NoPremium;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
-use crate::durability::npc_travel::TravelRefusal;
+use crate::durability::npc_travel::{NpcTravelGate, TravelRefusal};
+
 use crate::gameplay_transport::NpcTalkBook;
+
+struct Premium;
+
+impl NpcTravelGate for Premium {
+    async fn travel_permitted(
+        &self,
+        _tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>,
+        _account: [u8; 16],
+    ) -> Result<bool, crate::durability::DurabilityError> {
+        Ok(true)
+    }
+}
 
 #[test]
 fn lane_three_reference_routes_use_donor_quote_conditions_postgres() -> TestResult {
@@ -82,12 +95,48 @@ async fn check_source_quotes(h: &Harness) -> TestResult {
         3,
     )
     .await?;
+    let mut mismatches = Vec::new();
+    let premium_quote = |route| {
+        h.root
+            .quote_npc_travel(&authority, &h.node, fence, route, &Premium)
+    };
+    for (npc, destination) in [
+        ("melian", "marapur"),
+        ("pino", "marapur"),
+        ("tanyt", "marapur"),
+    ] {
+        let inbound = route(npc, destination)?;
+        let actual = quote(inbound.clone()).await.map_err(debug)?;
+        if actual != Err(TravelRefusal::PremiumRequired) {
+            mismatches.push(format!("{npc}/{destination} for a free account: {actual:?}"));
+        }
+    }
+    for (npc, destination) in [
+        ("melian", "marapur"),
+        ("pino", "marapur"),
+        ("tanyt", "marapur"),
+        ("tonar", "passage"),
+        ("kendra_thais", "nostalgia"),
+    ] {
+        let actual = premium_quote(route(npc, destination)?).await.map_err(debug)?;
+        if actual != Err(TravelRefusal::UnavailableRoute) {
+            mismatches.push(format!("{npc}/{destination} without its unlock: {actual:?}"));
+        }
+    }
     let nargor = route("sebastian", "nargor")?;
+    if !nargor.held && oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime().map_err(debug)?
+        .program("oteryn:quest.the_shattered_isles_quest").is_none()
+    {
+        mismatches.push("Sebastian advertises Nargor before its quest program is live".into());
+    }
     assert_eq!(
         quote(nargor.clone()).await.map_err(debug)?,
         Err(TravelRefusal::UnavailableRoute)
     );
-    let mut mismatches = Vec::new();
+    // The release hold applies even to imported characters. Check the exact storage
+    // predicate separately with the hold lifted in the quote fixture.
+    let mut nargor_candidate = nargor.clone();
+    nargor_candidate.held = false;
     for value in [0, 1, 2] {
         seed_track(
             "oteryn:quest.the_shattered_isles_quest",
@@ -100,7 +149,11 @@ async fn check_source_quotes(h: &Harness) -> TestResult {
         } else {
             Err(TravelRefusal::UnavailableRoute)
         };
-        let actual = quote(nargor.clone()).await.map_err(debug)?;
+        let live = quote(nargor.clone()).await.map_err(debug)?;
+        if live != Err(TravelRefusal::UnavailableRoute) {
+            mismatches.push(format!("held Nargor route at storage {value}: {live:?}"));
+        }
+        let actual = quote(nargor_candidate.clone()).await.map_err(debug)?;
         if actual != expected {
             mismatches.push(format!(
                 "Nargor at storage {value}: {actual:?}, expected {expected:?}"
@@ -113,7 +166,9 @@ async fn check_source_quotes(h: &Harness) -> TestResult {
         ("tanyt", "marapur", 70),
         ("tonar", "passage", 0),
     ] {
-        let actual = quote(route(npc, destination)?).await.map_err(debug)?;
+        let mut candidate = route(npc, destination)?;
+        candidate.held = false;
+        let actual = premium_quote(candidate).await.map_err(debug)?;
         if actual != Ok(fare) {
             mismatches.push(format!(
                 "{npc}/{destination}: {actual:?}, expected fare {fare}"

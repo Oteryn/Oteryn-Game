@@ -326,40 +326,29 @@ mod tests {
             };
             assert_eq!(row.keyword, keyword);
             assert_eq!(serde_json::json!(row.price), source["selected_fare"]);
-            // Crystal 201189f8 melian.lua:69, pino.lua:85 and tanyt.lua:85 register
-            // Marapur for free accounts. The native map admits the tile one step north.
-            let marapur = matches!(
-                row.key.as_str(),
+            assert_eq!(serde_json::json!(row.premium), source["selected_premium"]);
+            match row.key.as_str() {
+                // The native Marapur landing is one tile north of the donor destination.
                 "oteryn:service.travel.melian/marapur"
-                    | "oteryn:service.travel.pino/marapur"
-                    | "oteryn:service.travel.tanyt/marapur"
-            );
-            if marapur {
-                assert!(!row.premium, "{}", row.key);
-                assert_eq!(row.y, 32_766, "{}", row.key);
-            } else {
-                assert_eq!(serde_json::json!(row.premium), source["selected_premium"]);
-                assert_eq!(serde_json::json!(row.y), source["destination"]["y"]);
+                | "oteryn:service.travel.pino/marapur"
+                | "oteryn:service.travel.tanyt/marapur" => assert_eq!(row.y, 32_766, "{}", row.key),
+                // Share Ziyad's Kazordoon landing, clear of Gewen's occupied donor tile.
+                "oteryn:service.travel.uzon/kazor" | "oteryn:service.travel.uzon/kazordoon" => {
+                    assert_eq!(row.y, 31_941, "{}", row.key);
+                }
+                _ => assert_eq!(serde_json::json!(row.y), source["destination"]["y"]),
             }
             assert_eq!(serde_json::json!(row.x), source["destination"]["x"]);
             assert_eq!(serde_json::json!(row.floor), source["destination"]["z"]);
             let facts = &evidence["facts"];
             assert_eq!(row.carpet, facts["transport"]["value"] == "carpet");
-            if row.carpet && !marapur {
+            if row.carpet {
                 assert!(row.premium, "{}", row.key);
             }
-            // Sebastian's exact storage is authored on the Service route. Crystal
-            // Tonar (tonar.lua:100) and the three Marapur registrations have no quest gate.
-            if marapur
-                || matches!(
-                    row.key.as_str(),
-                    "oteryn:service.travel.sebastian/nargor"
-                        | "oteryn:service.travel.tonar/passage"
-                )
-            {
-                assert!(!row.held, "{}", row.key);
-            } else if facts["quest_requirements"]["value"] != serde_json::json!([])
+            // Source-backed access needs a live quest owner or event before admission.
+            if facts["quest_requirements"]["value"] != serde_json::json!([])
                 || !facts["travel_guard_conditions"]["value"].is_null()
+                || row.key == "oteryn:service.travel.kendra_thais/nostalgia"
             {
                 assert!(row.held, "{}", row.key);
             }

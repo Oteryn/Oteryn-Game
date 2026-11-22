@@ -39,6 +39,8 @@ fn lane_three_travel_origins_are_realized_from_the_world_project() -> Result<(),
         ("sebastian", "nargor", (32024, 32813, 7)),
         ("tanyt", "marapur", (33805, 32766, 2)),
         ("tonar", "passage", (33070, 32916, 7)),
+        ("uzon", "kazor", (32588, 31941, 0)),
+        ("uzon", "kazordoon", (32588, 31941, 0)),
     ];
     let regions: BTreeSet<_> = origins
         .iter()
