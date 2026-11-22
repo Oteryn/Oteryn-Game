@@ -9,6 +9,9 @@ use crate::gameplay_transport::connection::{
 };
 use oteryn_protocol_oteryn::quick_loot::*;
 
+#[path = "quick_loot/session_fence.rs"]
+mod session_fence;
+
 #[test]
 fn quick_loot_postgres_dispatch_assignment_transfer_replay_and_fences() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("quick-loot", scenario)
@@ -29,14 +32,16 @@ fn request(action: QuickLootAction) -> QuickLootRequest {
 
 #[test]
 fn quick_loot_pouch_postgres_dispatch_unlimited_slots_coin_only_and_weight() -> TestResult {
-    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-pouch", || scenario_with_pouch(true))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-pouch", || {
+        scenario_with_pouch(true, None)
+    })
 }
 
 fn scenario() -> TestResult {
-    scenario_with_pouch(false)
+    scenario_with_pouch(false, None)
 }
 
-fn scenario_with_pouch(pouch: bool) -> TestResult {
+fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "quick_loot", true, false).await?;
         prepare_current_session(&harness).await?;
@@ -48,7 +53,10 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                world,
+                "content-1",
+            )?;
         let generation = controller.active().ok_or("active")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();
@@ -255,6 +263,48 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
             SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 98])
                 .ok_or("capabilities")?;
         assert!(admitted.continuity.selected_capabilities.contains(98));
+        if let Some(case) = fence_case {
+            let corpse_identity = {
+                let mut runtime = deps.runtime.lock().await;
+                let creature = runtime
+                    .admit_pinned_test_creature(MovementLocalPosition {
+                        x: 7,
+                        y: 0,
+                        floor: 7,
+                    })
+                    .map_err(debug)?;
+                runtime
+                    .commit_monster_lab_damage(creature, b"quick-loot-corpse", 20)
+                    .map_err(debug)?;
+                let mut death = runtime.borrow_combat_death();
+                let receipt = death.committed_lethal_receipt(creature).map_err(debug)?;
+                death.project_committed_lethal(receipt).map_err(debug)?;
+                runtime
+                    .bind_corpse_item(
+                        creature,
+                        corpse_id,
+                        "Item",
+                        "oteryn:item.tibia.i5973",
+                        "definition-r1",
+                    )
+                    .map_err(debug)?;
+                creature.corpse_identity()
+            };
+            case.check(
+                &owner,
+                &mut admitted,
+                &harness.pool,
+                corpse_identity,
+                corpse_id,
+                &items,
+            )
+            .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
         assert!(
             crate::gameplay_transport::equipment_move::native_for_move(
                 &*deps.runtime.lock().await,
@@ -775,7 +825,8 @@ async fn equip_quiver_via_wire(
             ItemMoveIntent {
                 source: std::num::NonZeroU64::new(base + 3).ok_or("meat handle")?,
                 destination: ItemMoveDestination::Container(
-                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?, None
+                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?,
+                    None
                 )
             },
             selection
@@ -791,7 +842,8 @@ async fn equip_quiver_via_wire(
             ItemMoveIntent {
                 source: std::num::NonZeroU64::new(base + 2).ok_or("ammo handle")?,
                 destination: ItemMoveDestination::Container(
-                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?, None
+                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?,
+                    None
                 )
             },
             selection
