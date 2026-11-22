@@ -380,6 +380,53 @@ class SharedDispatchArchiveTests(unittest.TestCase):
         self.assertEqual(elapsed[0], 61)
         self.assertEqual(api.downloads, 0)
 
+    def test_queued_run_with_active_producer_waits_for_its_verified_archive(self):
+        # GitHub reported run 45004445109 queued while its Dispatch producers
+        # were running. The selected job, not the aggregate run state, is active.
+        api = self.api()
+        api.run["status"] = "queued"
+        artifact, api.artifact = api.artifact, None
+        elapsed = [0]
+
+        def sleep(seconds):
+            self.assertEqual(seconds, 30)
+            elapsed[0] += seconds
+            api.artifact = artifact
+
+        output = self.restore(api, sleep=sleep, clock=lambda: elapsed[0], timeout=61)
+        self.assertEqual(elapsed[0], 30)
+        self.assertEqual(api.downloads, 1)
+        self.assertEqual((output / "unit-tests.tar.zst").read_bytes(), b"the nextest archive")
+
+    def test_queued_run_keeps_active_and_queued_producer_wait_bounds(self):
+        for status, expected_seconds in (("in_progress", 61), ("queued", 60)):
+            with self.subTest(producer_status=status):
+                api = self.api()
+                api.run["status"] = "queued"
+                api.jobs[0]["status"] = status
+                api.artifact = None
+                elapsed = [0]
+
+                def sleep(seconds):
+                    self.assertLessEqual(seconds, 5 if status == "queued" else 30)
+                    elapsed[0] += seconds
+
+                with self.assertRaises(shared.Unavailable):
+                    self.restore(api, sleep=sleep, clock=lambda: elapsed[0], timeout=61)
+                self.assertEqual(elapsed[0], expected_seconds)
+                self.assertEqual(api.downloads, 0)
+
+    def test_terminal_or_unknown_run_does_not_wait_for_missing_artifact(self):
+        for status, conclusion in (("completed", "cancelled"), ("completed", "failure"),
+                                   ("unknown", None), (None, None)):
+            with self.subTest(status=status, conclusion=conclusion):
+                api = self.api()
+                api.run.update(status=status, conclusion=conclusion)
+                api.artifact = None
+                with self.assertRaises(shared.Unavailable):
+                    self.restore(api, sleep=lambda _: self.fail("terminal run cannot be awaited"))
+                self.assertEqual(api.downloads, 0)
+
     def test_legacy_producer_is_unavailable_without_reading_its_old_archive(self):
         api = self.api()
         api.jobs = [{"id": 91, "run_id": 71, "run_attempt": 2,

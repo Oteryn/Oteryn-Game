@@ -586,7 +586,9 @@ def restore(role, output, *, root=ROOT, env=None, api=None, clock=time.monotonic
                 staged.rename(output)
                 (output / "cargo-nextest").chmod(0o755)
             return
-        if run.get("status") != "in_progress" or job.get("status") != "in_progress" or clock() >= deadline:
+        # The aggregate run can remain queued while this exact producer is active.
+        if (run.get("status") not in {"queued", "in_progress"}
+                or job.get("status") != "in_progress" or clock() >= deadline):
             raise Unavailable("no running compatible producer within the wait bound")
         sleep(max(0, min(30, deadline - clock())))
         run = api.json(f"{base}/runs/{run_id}")

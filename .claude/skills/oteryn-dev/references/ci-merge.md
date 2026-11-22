@@ -84,6 +84,8 @@ If no compatible producer is available, it builds locally; an invalid selected
 artifact fails. Route-less fast results never count as PostgreSQL qualification.
 For a deliberate reuse qualification, apply `heavy-tests` to the frozen head
 once all three dedicated producers are active or their artifacts are available.
+An overall workflow can still report `queued` while its selected producer is
+active; honor the bounded active-producer wait in either workflow state.
 Queued or undiscovered producers can exhaust the bounded discovery window and
 cause local fallback; report those builds separately from successful reuse.
 Waiting for producer admission can delay other PG archives, so measure the

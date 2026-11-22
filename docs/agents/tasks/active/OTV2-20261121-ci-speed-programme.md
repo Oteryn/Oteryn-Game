@@ -9,14 +9,14 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: chatgpt/ci-warmup-balance-20261122
 issue: 3352
-pr: null
+pr: 3391
 base_sha: dc0ea80cb74e19d5d21a5907895aead945270263
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT standalone CI programme coordinator, issue 3352
 created_at: 2026-11-21T09:29:01Z
-updated_at: 2026-11-22T08:38:48Z
+updated_at: 2026-11-22T09:07:00Z
 execution_policy: continuous_progress
 owned_paths:
   - .github/workflows/
@@ -83,6 +83,22 @@ disjoint cache, PG timing and Windows verification slices.
   Record cold, no-op and leaf-edit cases separately; do not infer whole-CI,
   remote-cache, monthly-cost or aggregate-RAM gains from a server-library test.
 
+PR #3391 first published head `41302d9e26d364b3324dd721b5df397f026a2b87`
+received a clean independent review (receipt7076789162). During actual PG
+run45005282188, the matching Fast run45004445109 reported `queued` while
+its archive producers were already active. The restore loop accepted only an
+`in_progress` workflow and could fall back before its active producer finished.
+Return to AUTHORING for the bounded status fix in this same PR, preserving
+actual-job state, discovery/wait limits and all artifact custody checks.
+Requalify and review the successor; the first head's receipt is not transferable.
+
+Molehill's accepted-be364 server-library experiment measured one sample each:
+cold242.644s, no-op1.028s and a real leaf edit2.305s. Its two-repetition A/B
+comparison stopped at sccache no-op:33 Cargo units were not fresh, despite32
+Rust cache hits. A separate client probe covered all254 external units in both
+library and integration builds, but17 rebuilt. Both experiments remain partial;
+preserved logs/fingerprints are being diagnosed without relaxing their guards.
+
 Native Git dry-run publication failed because this isolated environment has no
 GitHub credentials. Root selects the already authorized META3.1.0 API-native
 new-candidate route for this exclusive branch: one complete bounded tree,
@@ -92,8 +108,8 @@ Preserve PostgreSQL18.6, required checks, test assertions and source provenance.
 The generated protected pin rotation still needs independent review; its
 protected-base self-audit rejection is not a fabricated passing check.
 
-Current main's full gate44996564771 is red outside PG: Windows dead code,
-four client integration failures and Node rows. Runtime repairs in active
+Measured be364 main's full gate44996564771 is red outside PG: Windows dead code,
+four client integration failures and Node rows. Runtime repairs in
 PRs #3388/#3389 belong to their existing owners and are not duplicated.
 Keep this programme open: the whole-CI10–15min goal remains unproven, and one
 unchanged end-to-end campaign alone took1016.955s on the measured main.
