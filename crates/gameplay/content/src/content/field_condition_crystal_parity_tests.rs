@@ -462,7 +462,7 @@ fn c07_production_field_decay_equals_crystal_for_shared_field_items() {
         (2118, 200_000, Some(2119)),
         (2119, 148_000, Some(2120)),
         (2120, 98_000, None),
-        (2122, 98_000, None),
+        (2122, 100_000, None),
         (2132, 120_000, Some(2133)),
         (2133, 120_000, None),
         (2134, 120_000, None),

@@ -75,11 +75,12 @@ def registered_source_document(root, document):
     from forge_item_profiles import project
 
     packet = equipped.load_facts(root)
+    capture = equipped.load_capture(root)
     rows = equipped.records(result)
     for fact in packet['combat']:
         key = f'{equipped.PREFIX}{fact["id"]}'
         if key in rows:
-            equipped.apply_combat(rows[key], fact, source)
+            equipped.apply_combat(rows[key], fact, source, capture)
     forge = [fact for fact in packet['forge'] if f'{equipped.PREFIX}{fact["id"]}' in rows]
     if forge:
         admitted = equipped.forge_owners(root, forge)

@@ -38,10 +38,14 @@ pub(super) async fn scenario(admin: String, case: u8, use_bundle: bool) -> TestR
 }
 
 pub(super) async fn physical_rope(admin: String, tool: &str, appearance: u32) -> TestResult {
-    run(admin, 3, true, Some((tool, appearance))).await
+    run(admin, 3, true, Some((tool, appearance, false))).await
 }
 
-async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32)>) -> TestResult {
+pub(super) async fn jammed_rope(admin: String, tool: &str, appearance: u32) -> TestResult {
+    run(admin, 3, true, Some((tool, appearance, true))).await
+}
+
+async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32, bool)>) -> TestResult {
     let h =
         Harness::create_with_admission_seed(admin, &format!("vertical_move_{case}"), false, false)
             .await?;
@@ -66,7 +70,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32)
         use crate::map::spell_tiles::tests::vertical_movement;
         let channel = crate::foundation::ChannelId::decode(&id(43)).expect("fixture channel");
         match tool {
-            Some((_, appearance)) => vertical_movement::world_with_rope_spot(world, channel, appearance),
+            Some((_, appearance, _)) => vertical_movement::world_with_rope_spot(world, channel, appearance),
             None => vertical_movement::world(world, channel),
         }
     });
@@ -244,7 +248,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32)
         .bind(id(42).as_slice()).bind(id(43).as_slice())
         .bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice())
         .bind(room.frame_binding().digest().as_slice()).execute(&h.pool).await?;
-    if let (Some((tool, _)), Some(bundle)) = (tool, &bundle) {
+    if let (Some((tool, _, jam)), Some(bundle)) = (tool, &bundle) {
         use crate::gameplay_transport::connection::UseCommand;
         use oteryn_protocol_oteryn::world_object::{
             MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
@@ -261,12 +265,20 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32)
         placement.extend_from_slice(&spot.to_be_bytes());
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
             .current_session_at(session).await?.0;
+        let command_id = (1..=10_000)
+            .find(|&command_id| {
+                oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw(
+                    *session.as_bytes(), command_id, id(71), 4, 1_000,
+                )
+                .is_some_and(|draw| (draw < 10) == jam)
+            })
+            .ok_or("Secret Agent test roll")?;
         let outcome = crate::gameplay_transport::item_craft::dispatch(
             &owner,
             actor,
             UseCommand {
                 game_session_id: session,
-                command_id: 1,
+                command_id,
                 item_fence: crate::gameplay_transport::item_fence_of(current),
             },
             UseIntent {
@@ -283,8 +295,18 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32)
         .await
         .ok_or("rope dispatch")?;
         assert_eq!(outcome.disposition, UseDisposition::Committed, "{tool}");
+        let expected = if jam { at(10, 10, 8) } else { at(10, 11, 7) };
         assert_eq!(deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
-                   at(10, 11, 7));
+                   expected, "{tool}");
+        if jam {
+            let (target, duration): (String, i64) = sqlx::query_as(
+                "SELECT definition_production_key, duration_millis FROM game_spell_item_temporal_schedules WHERE target_production_key=$1",
+            )
+            .bind(tool).fetch_one(&h.pool).await?;
+            let id: u32 = tool.rsplit(".i").next().ok_or("tool id")?.parse()?;
+            assert_eq!(target, format!("oteryn:item.tibia.i{}", id + 1));
+            assert_eq!(duration, 60_000);
+        }
         drop(owner);
         drop(authority);
         drop(seal);

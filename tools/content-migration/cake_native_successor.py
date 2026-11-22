@@ -24,8 +24,9 @@ def source_profile(row):
     result = copy.deepcopy(row)
     if result['target']['family'] == 'Creature':
         profile = result['data']['profile']
-        if profile.get('immunities') == []:
-            del profile['immunities']
+        for field in ('abilities', 'immunities', 'resistances'):
+            if profile.get(field) == []:
+                del profile[field]
         if profile['details'].get('reference_level') is None:
             profile['details'].pop('reference_level', None)
     return result

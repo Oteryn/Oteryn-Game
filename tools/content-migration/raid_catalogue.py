@@ -42,33 +42,15 @@ MAX_CREATURES = 500  # Crystal yalahar/vampires.xml:6-12; RAIDS-GLOBAL 2026-11-0
 MAX_WAVES = 50  # Crystal oramond/walkers.xml:4-53, 50 separately scheduled spawns.
 
 
-# Preserve the 201189f XML waves and clocks for the reviewed Crystal parity set.
-CRYSTAL_XML_PARITY = frozenset({
-    "raid:abdendriel.chayenne",
-    "raid:abdendriel.dragons",
-    "raid:abdendriel.warwolves",
-    "raid:ankrahmun.cobras",
-    "raid:ankrahmun.gargoyles",
-    "raid:ankrahmun.nomads",
-    "raid:ankrahmun.terramites",
-    "raid:carlin.amazons",
-    "raid:carlin.lesserundeads",
-    "raid:carlin.trolls",
-    "raid:carlin.undeads",
-    "raid:farmine.blightfather",
-    "raid:farmine.zulazzathecorruptor",
-    "raid:kazordoon.goblins",
-    "raid:libertybay.quaras",
-    "raid:oramond.ravenger",
-    "raid:porthope.gorga",
-    "raid:porthope.serpentspawns",
-    "raid:svargrond.barbarianssvargrond1",
-    "raid:svargrond.ghazbaran",
-    "raid:thais.orcs",
-    "raid:venore.hunters",
-    "raid:venore.orcsambackpack",
-    "raid:venore.the_old_widow",
-})
+# Global admission requires the owning encounter or world-state prerequisite.
+GLOBAL_RAID_HOLDS = {
+    "raid:abdendriel.chayenne": "global_raid_membership_unproven:historical_unavailable",
+    "raid:farmine.zulazzathecorruptor": "global_siege_trigger_and_gate_transition_unbound",
+    "raid:oramond.ravenger": "global_oramond_catacombs_quest_trigger_unbound",
+    "raid:porthope.gorga": "global_regular_spawn_has_no_public_raid",
+    "raid:venore.the_old_widow": "global_raid_clock_unregistered",
+}
+
 # Crystal registers identical Orc bodies in data-global and data-crystal;
 # the catalogue has the compact spelling used by the latter registration.
 # The Oramond XML misspells the only Dark Trails boss in the donor monster tree.
@@ -355,8 +337,6 @@ def reconcile_global(record: dict, observed: dict) -> None:
     record.setdefault("global_observations", []).append({"key": observed["key"], "facts": {
         key: facts[key] for key in ("broadcast_timeline", "schedule", "wave_count_observations", "wave_timing")
         if key in facts}})
-    if record["key"] in CRYSTAL_XML_PARITY:
-        return
     timeline = facts["broadcast_timeline"]["value"]
     known = [event for event in timeline if event.get("message")]
     announcements = variant["announcements"]
@@ -452,11 +432,14 @@ def halloween_variant(record: dict, facts: dict) -> None:
     schedule = calendar_schedule(observation)
     if not schedule["window"] or (schedule["interval_ms"] or interval) != interval:
         raise ValueError("HALLOWEEN_ARCHIVE_SCHEDULE")
-    # The existing recurring-calendar scheduler starts against the committed
-    # reset date. Each check picks a single source cell for that firing.
-    schedule.update(interval_ms=interval, repeat=True)
+    anchor = (
+        "immediate_post_save"
+        if record["key"].endswith(".the_halloween_hare") else "server_open"
+    )
+    # Preserve the observed dates and waves for an owner that can prove the anchor.
+    schedule.update(interval_ms=None, repeat=False)
     record.update(schedule=schedule, end={"kind": "until_reset", "despawn_after_ms": None},
-                  inactive_reasons=[], variants=[])
+                  inactive_reasons=[f"calendar_firing_anchor_unbound:{anchor}"], variants=[])
     message_source = {"evidence": "TIBIAWIKI_STRUCTURED", **facts["broadcast_timeline"]["sources"][0]}
     location_source = {"evidence": "TIBIAWIKI_STRUCTURED", "source": cell_ref, "selector": "Mapper Coords"}
     for x, y, floor in cells:
@@ -513,29 +496,6 @@ def xml_schedule(node: dict, ordinal: int) -> dict:
             "margin_ms": int(attrs.get("margin", 0)) * 60_000,
             "repeat": attrs.get("repeat", "false").lower() in {"true", "1", "yes"},
             "source_order": ordinal}
-
-
-def bind_old_widow_schedule(record: dict, sources: dict[str, dict], ordinal: int) -> None:
-    # The custom map registers this named occurrence. Its identical broadcasts
-    # and ten-spider wave identify the clock; its custom Ferumbras and cells
-    # belong to that map. The Global XML supplies the encounter's actual waves.
-    registry = sources["data-crystal/raids/raids.xml"]
-    sibling = sources["data-crystal/raids/the_old_widow/widow.xml"]
-    entry, = [row for row in xml(registry["text"])["children"]
-              if row["attributes"]["file"] == "the_old_widow/widow.xml"]
-    if entry["attributes"]["name"] != "The Old Widow":
-        raise ValueError("OLD_WIDOW_SCHEDULE_IDENTITY")
-    custom = xml_variant(sibling, {}, set())
-    native = record["variants"][0]
-    fingerprint = lambda variant: (
-        [(event["raw_delay_ms"], event["text"]) for event in variant["announcements"]],
-        [(wave["raw_delay_ms"], row["amount"]) for wave in variant["waves"]
-         for row in wave["entries"] if row["source_name"] == "Giant Spider"],
-    )
-    if fingerprint(custom) != fingerprint(native):
-        raise ValueError("OLD_WIDOW_SCHEDULE_VARIANT")
-    record["schedule"] = xml_schedule(entry, ordinal)
-    record["sources"].extend([citation(registry, entry["line"]), citation(sibling, 1)])
 
 
 def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict,
@@ -612,8 +572,6 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
                   "wiki_records": identities, "sources": refs, "schedule": schedule,
                   "variant_group": f"raid-group:{Path(path).parent.name}.{group}" if group else None,
                   "variants": [variant], "end": {"kind": "until_reset", "despawn_after_ms": None}, "inactive_reasons": []}
-        if key == "raid:venore.the_old_widow":
-            bind_old_widow_schedule(record, sources, len(registered))
         if key == "raid:edron.feroxa":
             # Crystal 9f5a72c data-global/lib/quests/grimvale.lua:46-48:
             # the spawned boss has twenty hours, independently of server save.
@@ -629,8 +587,8 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
             record["world_change_binding"] = "EVENTS-WORLD-1 W6/W10; WORLD-SRC-1105 native activation"
         for identity in identities:
             reconcile_global(record, wiki[identity])
-        if key in CRYSTAL_XML_PARITY:
-            record["compatibility_decision"] = "Crystal 201189f XML membership, waves and timeline take precedence"
+        if key in GLOBAL_RAID_HOLDS:
+            record["inactive_reasons"].append(GLOBAL_RAID_HOLDS[key])
         qualify(record, creatures, placements)
         records.append(record)
     for key, observed in sorted(wiki.items()):

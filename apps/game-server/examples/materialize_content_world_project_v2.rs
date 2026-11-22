@@ -3213,6 +3213,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // The canonical writer requires an absent root for the successor package.
         fs::remove_dir_all(&root)?;
         write_documents(&root, &documents)?;
+        let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let status = std::process::Command::new("python3")
+            .arg(repo.join("tools/content-migration/native_world_canonicalization.py"))
+            .arg("--repo-root")
+            .arg(&repo)
+            .arg("--input-root")
+            .arg(&root)
+            .arg("--materializer-executable")
+            .arg(std::env::current_exe()?)
+            .status()?;
+        if !status.success() {
+            return Err(format!("WorldProject successor completion failed: {status}").into());
+        }
         return Ok(());
     }
     let promoted = protected_r7_p04_gold_coin_item_family_import(

@@ -4,7 +4,7 @@
     "race": "blood",
     "source": "opentibiabr/canary src/creatures/monsters/monsters.hpp MonsterInfo::race = RACE_BLOOD"
   },
-  "record_count": 1892,
+  "record_count": 1893,
   "records": [
     {
       "creature": {
@@ -4247,6 +4247,20 @@
         "path": "data-otservbr-global/monster/magicals/crystalcrusher.lua",
         "repository": "opentibiabr/canary",
         "sha256": "ec76ab3a776789d280610d12ae1bdd52c7918d08eee29a7fb7572cbf6049ea06"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.cublarc_the_plunderer",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "blood",
+      "source": {
+        "path": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "3425a5c95ccd6b91ba4ac0592cfc8308ebcf7772b16ba688d3aee2d7de305e76"
       }
     },
     {

@@ -286,6 +286,13 @@
       "source_member": "CONST_ME_DIVINE_DAZZLE"
     },
     {
+      "client_id": 246,
+      "key": "canary.appearance:effect/divine_empowerment",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_DIVINE_EMPOWERMENT"
+    },
+    {
       "client_id": 245,
       "key": "canary.appearance:effect/divine_grenade",
       "kind": "effect",
@@ -594,6 +601,13 @@
       "source_member": "CONST_ME_MAGIC_GREEN"
     },
     {
+      "client_id": 182,
+      "key": "canary.appearance:effect/magic_powder",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_MAGIC_POWDER"
+    },
+    {
       "client_id": 14,
       "key": "canary.appearance:effect/magic_red",
       "kind": "effect",
@@ -732,6 +746,13 @@
       "kind": "effect",
       "source": "opentibiabr/canary",
       "source_member": "CONST_ME_PURPLESMOKE"
+    },
+    {
+      "client_id": 222,
+      "key": "canary.appearance:effect/purpleteleport",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_PURPLETELEPORT"
     },
     {
       "client_id": 264,
@@ -1075,6 +1096,13 @@
       "kind": "missile",
       "source": "opentibiabr/canary",
       "source_member": "CONST_ANI_DEATH"
+    },
+    {
+      "client_id": 57,
+      "key": "canary.appearance:missile/diamondarrow",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_DIAMONDARROW"
     },
     {
       "client_id": 30,

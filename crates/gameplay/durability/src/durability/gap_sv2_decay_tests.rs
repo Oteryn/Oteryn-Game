@@ -429,7 +429,7 @@ fn crystal_energy_field_uses_its_source_deadline_and_retires() -> TestResult {
     let source = QualifiedItemDefinition::from_native_policy(profile)?;
     let plan = qualify_source_field_chain(native, source).map_err(debug)?;
     assert_eq!(plan.decay_chain.len(), 1);
-    assert_eq!(plan.decay_chain[0].duration_millis, 98_000);
+    assert_eq!(plan.decay_chain[0].duration_millis, 100_000);
     assert!(plan.decay_chain[0].target.is_none());
     Ok(())
 }

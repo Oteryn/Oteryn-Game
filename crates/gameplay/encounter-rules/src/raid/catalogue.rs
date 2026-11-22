@@ -559,7 +559,7 @@ mod tests {
         // plus Crystal a_piece_of_cake_config.lua:394-400's seasonal raid.
         // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
         assert_eq!(catalogue.records().len(), 240);
-        assert_eq!(catalogue.active().count(), 163);
+        assert_eq!(catalogue.active().count(), 138);
         for record in catalogue.records() {
             if record.active {
                 record.select([7; 32], [9; 16])?.definition.validate()?;
@@ -572,8 +572,8 @@ mod tests {
     }
 
     #[test]
-    fn crystal_xml_raids_are_selectable_with_donor_clocks() -> Result<(), Box<dyn std::error::Error>>
-    {
+    fn conflicting_crystal_xml_raids_preserve_evidence_and_refuse_selection()
+    -> Result<(), Box<dyn std::error::Error>> {
         let catalogue = RaidCatalogue::embedded()?;
         let keys = [
             "raid:abdendriel.chayenne",
@@ -598,8 +598,6 @@ mod tests {
             "raid:svargrond.ghazbaran",
             "raid:thais.orcs",
             "raid:venore.hunters",
-            "raid:venore.orcsambackpack",
-            "raid:venore.the_old_widow",
         ];
         for key in keys {
             let raid = catalogue.get(&ProductionKey::new(key)?).ok_or(key)?;
@@ -607,27 +605,36 @@ mod tests {
                 matches!(raid.schedule, CatalogueSchedule::LegacyXml { .. }),
                 "{key}"
             );
-            assert!(raid.active, "{key}: {:?}", raid.inactive_reasons);
-            raid.select([1; 32], [2; 16])?.definition.validate()?;
+            assert!(!raid.active, "{key}");
+            assert!(raid.select([1; 32], [2; 16]).is_err(), "{key}");
         }
+        let orc_sam = catalogue
+            .get(&ProductionKey::new("raid:venore.orcsambackpack")?)
+            .ok_or("Orc Sam raid")?;
+        assert!(matches!(
+            orc_sam.schedule,
+            CatalogueSchedule::LegacyXml { .. }
+        ));
+        assert!(orc_sam.active);
+        orc_sam.select([1; 32], [2; 16])?.definition.validate()?;
         Ok(())
     }
 
     #[test]
-    fn halloween_raids_use_the_archived_reset_window_and_cells()
+    fn halloween_raids_keep_source_cells_and_require_anchored_schedule()
     -> Result<(), Box<dyn std::error::Error>> {
         let catalogue = RaidCatalogue::embedded()?;
-        for (key, last_day, interval, cells) in [
+        for (key, last_day, inactive_reason, cells) in [
             (
                 "kazordoon_raids.the_halloween_hare",
                 (10, 31),
-                86_400_000,
+                "calendar_firing_anchor_unbound:immediate_post_save",
                 &[(32624, 32018)][..],
             ),
             (
                 "northern_darama_raids.the_mutated_pumpkin",
                 (11, 2),
-                14_400_000,
+                "calendar_firing_anchor_unbound:server_open",
                 &[(33115, 32398), (33095, 32381), (33092, 32418)][..],
             ),
         ] {
@@ -643,53 +650,50 @@ mod tests {
             };
             assert_eq!((window.start_month, window.start_day), (10, 31));
             assert_eq!((window.end_month, window.end_day), last_day);
-            assert_eq!(interval_ms, Some(interval));
-            assert!(repeat);
+            assert_eq!(interval_ms, None);
+            assert!(!repeat);
+            assert!(
+                raid.inactive_reasons
+                    .iter()
+                    .any(|reason| reason == inactive_reason)
+            );
             assert_eq!(raid.variants.len(), cells.len());
             for (variant, &(x, y)) in raid.variants.iter().zip(cells) {
                 let area = &variant.waves[0].entries[0].area;
                 assert_eq!((area.from.x, area.from.y, area.from.floor), (x, y, 7));
                 assert_eq!((area.to.x, area.to.y, area.to.floor), (x, y, 7));
             }
-            let selected = raid.select([1; 32], [2; 16])?;
-            assert_eq!(selected.definition.announcements.len(), 1);
-            assert_eq!(selected.definition.waves.len(), 1);
-            assert_eq!(selected.definition.waves[0].entries[0].count, 1);
+            assert!(raid.select([1; 32], [2; 16]).is_err());
+            for variant in &raid.variants {
+                assert_eq!(variant.announcements.len(), 1);
+                assert_eq!(variant.waves.len(), 1);
+                assert_eq!(variant.waves[0].entries[0].amount.min, 1);
+                assert_eq!(variant.waves[0].entries[0].amount.max, 1);
+            }
         }
         Ok(())
     }
 
     #[test]
-    fn gorga_source_spawn_is_admitted_by_the_raid_loader() -> Result<(), Box<dyn std::error::Error>>
+    fn old_widow_without_a_global_clock_refuses_selection() -> Result<(), Box<dyn std::error::Error>>
     {
         let catalogue = RaidCatalogue::embedded()?;
         let raid = catalogue
-            .get(&ProductionKey::new("raid:porthope.gorga")?)
-            .ok_or("Gorga raid")?;
-        let selected = raid.select([1; 32], [1; 16])?;
-        let entries = &selected.definition.waves[0].entries;
-        assert_eq!(entries.len(), 1);
-        assert_eq!(entries[0].creature.as_str(), "oteryn:creature.gorga");
-        assert_eq!(entries[0].count, 1);
+            .get(&ProductionKey::new("raid:venore.the_old_widow")?)
+            .ok_or("Old Widow raid")?;
+        assert!(matches!(raid.schedule, CatalogueSchedule::Unknown));
+        assert!(raid.select([1; 32], [1; 16]).is_err());
         Ok(())
     }
 
     #[test]
-    fn gorga_raid_selects_the_exact_crystal_single_spawn() -> Result<(), Box<dyn std::error::Error>>
-    {
+    fn gorga_raid_is_held_with_its_exact_crystal_spawn_as_evidence()
+    -> Result<(), Box<dyn std::error::Error>> {
         let catalogue = RaidCatalogue::embedded()?;
         let raid = catalogue
             .get(&ProductionKey::new("raid:porthope.gorga")?)
             .ok_or("Gorga raid is missing")?;
-        let selected = raid.select([7; 32], [9; 16])?;
-        let [wave] = selected.definition.waves.as_slice() else {
-            return Err("expected one Gorga raid wave".into());
-        };
-        let [entry] = wave.entries.as_slice() else {
-            return Err("expected one Gorga raid entry".into());
-        };
-        assert_eq!(entry.count, 1);
-        assert_eq!(entry.creature.as_str(), "oteryn:creature.gorga");
+        assert!(raid.select([7; 32], [9; 16]).is_err());
         let [variant] = raid.variants.as_slice() else {
             return Err("expected one Gorga raid variant".into());
         };
@@ -700,6 +704,9 @@ mod tests {
             return Err("expected one Gorga donor entry".into());
         };
         assert_eq!(source_wave.delay_ms, 1_000);
+        assert_eq!(source_entry.creature.as_str(), "oteryn:creature.gorga");
+        assert_eq!(source_entry.amount.min, 1);
+        assert_eq!(source_entry.amount.max, 1);
         let at = source_entry.area.from;
         assert_eq!((at.x, at.y, at.floor), (32867, 32829, 1));
         assert_eq!(source_entry.area.to.position(), at.position());
@@ -814,7 +821,7 @@ mod tests {
     }
 
     #[test]
-    fn source_maxima_and_post_spawn_announcement_remain_executable()
+    fn source_maxima_and_held_trolls_keep_post_spawn_announcement_order()
     -> Result<(), Box<dyn std::error::Error>> {
         let catalogue = RaidCatalogue::embedded()?;
         let walkers = catalogue
@@ -838,8 +845,9 @@ mod tests {
         let trolls = catalogue
             .get(&ProductionKey::new("raid:carlin.trolls")?)
             .ok_or("trolls")?;
-        // Crystal orders the last announcement after the spawn at the same raw delay.
-        let definition = trolls.select([1; 32], [1; 16])?.definition;
+        assert!(trolls.select([1; 32], [1; 16]).is_err());
+        // Check the retained donor order independently of the Global firing gate.
+        let definition = trolls.realize(0, None)?.definition;
         let mut cursor = RaidRunCursor::default();
         let mut last_announcement = None;
         let mut complete = None;

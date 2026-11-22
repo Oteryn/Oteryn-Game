@@ -579,7 +579,8 @@ impl BundleFacts {
                         open_solid,
                         locked,
                         key_forms,
-                        authored_closed,
+                        close_pose,
+                        starts_open,
                         ..
                     } => {
                         self.doors.push(
@@ -593,7 +594,7 @@ impl BundleFacts {
                             required_storage,
                         );
                         self.doors.set_key_forms(key_forms);
-                        self.doors.set_authored_open(authored_closed);
+                        self.doors.set_close_pose(close_pose, starts_open);
                     }
                     PaletteDoor::Sealed => {
                         self.doors.push_sealed();
@@ -1243,10 +1244,10 @@ fn palette_door(
         return PaletteDoor::Sealed;
     };
     let (closed_solid, closed_projectile) = super::door_registry::closed_collision(closed);
-    let Some(closed_def) = item(key).filter(|definition| {
-        definition.solid.unwrap_or(true) == closed_solid
-            && definition.blocks_projectile == closed_projectile
-    }) else {
+    if item(key).is_none_or(|definition| {
+        definition.solid.unwrap_or(true) != closed_solid
+            || definition.blocks_projectile != closed_projectile
+    }) {
         return PaletteDoor::Sealed;
     };
     let Some(definition) = item(&open_key) else {
@@ -1257,40 +1258,47 @@ fn palette_door(
     if definition.solid != Some(false) || definition.blocks_projectile {
         return PaletteDoor::Sealed;
     }
-    let key_forms =
-        super::door_registry::key_closed_forms(closed).and_then(|(unlocked, locked)| {
-            let face = |appearance| {
-                let key = door::open_key(key, closed, appearance)?;
-                let definition = item(&key)?;
-                let (solid, projectile) = super::door_registry::closed_collision(appearance);
-                if definition.solid != Some(solid) || definition.blocks_projectile != projectile {
-                    return None;
-                }
-                Some(EntryFacts {
-                    definition: MapDefinition::Item(definition.reference),
-                    appearance_id: u16::try_from(appearance).ok()?,
-                    blocks_projectile: projectile,
-                    terrain_kind: None,
-                    pickupable: false,
-                    bound: false,
-                    count: 1,
-                    sub_type: 0,
-                })
-            };
-            Some([face(unlocked)?, face(locked)?])
-        });
-    let authored_closed = (authored != closed).then_some(EntryFacts {
-        definition: MapDefinition::Item(closed_def.reference),
-        appearance_id: closed as u16,
-        blocks_projectile: closed_def.blocks_projectile,
-        terrain_kind: None,
-        pickupable: false,
-        bound: false,
-        count: 1,
-        sub_type: 0,
-    });
+    let face = |appearance, default_solid| {
+        let key = door::open_key(key, closed, appearance)?;
+        let definition = item(&key)?;
+        let (solid, projectile) = super::door_registry::closed_collision(appearance);
+        if definition.solid.or(default_solid) != Some(solid)
+            || definition.blocks_projectile != projectile
+        {
+            return None;
+        }
+        Some(EntryFacts {
+            definition: MapDefinition::Item(definition.reference),
+            appearance_id: u16::try_from(appearance).ok()?,
+            blocks_projectile: projectile,
+            terrain_kind: None,
+            pickupable: false,
+            bound: false,
+            count: 1,
+            sub_type: 0,
+        })
+    };
+    let key_forms = super::door_registry::key_closed_forms(closed)
+        .and_then(|(unlocked, locked)| Some([face(unlocked, None)?, face(locked, None)?]));
+    let starts_open = authored != closed;
+    // A shared ordinary pose loses the original variant once opened. Preserve
+    // the placed appearance at revision zero and resolve the donor's first pair on close.
+    let closes_to = if door::open_of(closed) == Some(open) {
+        super::door_registry::plain_closed_of(open).unwrap_or(closed)
+    } else {
+        closed
+    };
+    let close_pose = if closes_to != authored {
+        let Some(pose) = face(closes_to, (closes_to == closed).then_some(true)) else {
+            return PaletteDoor::Sealed;
+        };
+        Some(pose)
+    } else {
+        None
+    };
     PaletteDoor::Pair {
-        authored_closed,
+        close_pose,
+        starts_open,
         closed_solid,
         key_door: key_door.is_some(),
         key_forms,

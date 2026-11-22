@@ -13,8 +13,8 @@ import re
 from pathlib import Path
 
 
-def load_weights(root):
-    """Return client weights (hundredths of an ounce) by Item id from the verified capture."""
+def load_capture(root):
+    """Return client Item observations from the verified capture."""
     capture = root / 'docs/reference/content-prep/item-cyclopedia-capture-1'
     raw = (capture / 'items.jsonl').read_bytes()
     manifest = json.loads((capture / 'manifest.json').read_bytes())
@@ -24,6 +24,13 @@ def load_weights(root):
     rows = {row['id']: row for row in records}
     if len(rows) != len(records) or len(rows) != manifest['records']:
         raise ValueError('Cyclopedia record count or duplicate ID')
+    return rows
+
+
+def load_weights(root):
+    """Return client weights (hundredths of an ounce) by Item id."""
+    rows = load_capture(root)
+    capture = root / 'docs/reference/content-prep/item-cyclopedia-capture-1'
     corrections = json.loads((capture / 'weight-corrections.json').read_bytes())
     for correction in corrections:
         row = rows[correction['id']]

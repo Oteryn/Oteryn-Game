@@ -97,7 +97,9 @@ def stage_delta(root, packet):
         or packet["revision"] != PIN
     ):
         raise ValueError("Crystal spawn Creature source identity")
-    bindings = json.loads((root / "imports/crystalserver/bindings/items.json").read_bytes())["bindings"]
+    bindings = json.loads(
+        (root / "imports/crystalserver/bindings/items.json").read_bytes()
+    )["bindings"]
     items = {
         int(row["external_id"]): row["target"]["key"]
         for row in bindings
@@ -153,7 +155,9 @@ def install(root, world):
             previous = occupied.get(identity(row[field]))
             if previous is None:
                 rows.append(row)
-            elif previous != (source_profile(row) if field == "target" else row):
+            elif previous != row and (
+                field != "target" or source_profile(previous) != source_profile(row)
+            ):
                 raise ValueError(
                     f"Crystal spawn Creature definition conflict: {row[field]}"
                 )
@@ -235,6 +239,7 @@ def install(root, world):
     for locator, document in zip(locators, docs, strict=True):
         (world / locator).write_bytes(canonical_bytes(document))
     from questpc7_world_seal import refresh
+
     refresh(root, world)
 
 

@@ -153,6 +153,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
+        // Crystal rolls before the tool action. The same command and carried
+        // identity select the jam inside the durable consume/transform owner.
+        if super::rope::secret_agent_rope(&definition.production_key)
+            && oteryn_gameplay_items::secret_agent::jams(
+                *command.game_session_id.as_bytes(),
+                command.command_id,
+                entry.item.item_instance_id,
+            )
+        {
+            {
+                let runtime = self.runtime.lock().await;
+                let states = self.states.spell_states.lock().await;
+                if !runtime
+                    .player_control_facts(actor, command.game_session_id)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+                    || states.is_dead(actor)
+                    || !states.spell_idle(&runtime, actor, command.game_session_id)
+                {
+                    return Ok(Some(outcome(UseDisposition::Rejected)));
+                }
+            }
+            let request = crate::durability::consume_transform::ConsumeTransformRequest {
+                command: command_ref,
+                source: entry.item.item_instance_id,
+                target: None,
+                intent: encoded,
+            };
+            let content = super::super::item_ref_admission::NativeItemWeights(native)
+                .with_wheel(self.premium_coordinator);
+            let result = self
+                .root
+                .jam_secret_agent_tool(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    native,
+                    &content,
+                )
+                .await
+                .map_err(|_| ())?;
+            return Ok(Some(outcome(result.unwrap_or(UseDisposition::Rejected))));
+        }
         let mutation = {
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;

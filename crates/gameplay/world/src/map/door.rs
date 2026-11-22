@@ -45,7 +45,8 @@ pub enum PaletteDoor {
         key_door: bool,
         key_forms: Option<[EntryFacts; 2]>,
         locked: bool,
-        authored_closed: Option<EntryFacts>,
+        close_pose: Option<EntryFacts>,
+        starts_open: bool,
     },
 }
 
@@ -54,7 +55,7 @@ struct Door {
     /// The bundle placement key of the closed door entry.
     key: u64,
     key_forms: Option<[EntryFacts; 2]>,
-    authored_closed: Option<EntryFacts>,
+    close_pose: Option<EntryFacts>,
     /// Crystal action id carried by the placed door; key items must match it exactly.
     action: Option<u16>,
     required_level: Option<u32>,
@@ -127,7 +128,7 @@ impl DoorBook {
             result.doors.push(Door {
                 key: door.key,
                 key_forms: door.key_forms,
-                authored_closed: door.authored_closed,
+                close_pose: door.close_pose,
                 action: door.action,
                 required_level: door.required_level,
                 required_storage: door.required_storage,
@@ -150,7 +151,7 @@ impl DoorBook {
             .map(|door| Door {
                 key: door.key,
                 key_forms: door.key_forms,
-                authored_closed: door.authored_closed,
+                close_pose: door.close_pose,
                 action: door.action,
                 required_level: door.required_level,
                 required_storage: door.required_storage,
@@ -181,7 +182,7 @@ impl DoorBook {
         self.doors.push(Door {
             key,
             key_forms: None,
-            authored_closed: None,
+            close_pose: None,
             action,
             required_level,
             required_storage,
@@ -200,10 +201,10 @@ impl DoorBook {
         }
     }
 
-    pub(super) fn set_authored_open(&mut self, closed: Option<EntryFacts>) {
+    pub(super) fn set_close_pose(&mut self, closed: Option<EntryFacts>, starts_open: bool) {
         if let Some(door) = self.doors.last_mut() {
-            door.authored_closed = closed;
-            if closed.is_some() {
+            door.close_pose = closed;
+            if starts_open {
                 door.initial_state = 1;
                 door.state = AtomicU64::new(1);
             }
@@ -306,10 +307,13 @@ impl DoorBook {
                 let face = if state & 3 == 1 {
                     door.open
                 } else {
+                    let closed = if state >> 2 == 0 {
+                        entry
+                    } else {
+                        door.close_pose.unwrap_or(entry)
+                    };
                     door.key_forms
-                        .map_or(door.authored_closed.unwrap_or(entry), |forms| {
-                            forms[usize::from(state & 3 == 2)]
-                        })
+                        .map_or(closed, |forms| forms[usize::from(state & 3 == 2)])
                 };
                 EntryFacts {
                     definition: face.definition,
@@ -1112,12 +1116,21 @@ mod authored_open_tests {
                         open: false
                     })
                 );
+                let expected = match closed {
+                    30834 => 30833,
+                    30836 => 30835,
+                    49679 => 49678,
+                    49681 => 49680,
+                    49685 => 49684,
+                    49687 => 49686,
+                    _ => closed,
+                };
+                let closed_again = facts.base_entry(at, 1, id).ok_or("closed again")?;
+                assert_eq!(closed_again.appearance_id, expected);
                 assert_eq!(
-                    facts
-                        .base_entry(at, 1, id)
-                        .ok_or("closed again")?
-                        .appearance_id,
-                    closed
+                    closed_again.blocks_projectile,
+                    !matches!(expected, 18025 | 39934..=39937 | 49684..=49686),
+                    "closed after use {closed}",
                 );
             }
         }

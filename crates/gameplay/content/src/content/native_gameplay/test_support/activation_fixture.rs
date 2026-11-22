@@ -1086,6 +1086,8 @@ fn crystal_portable_containers_load_with_exact_inventory_capacities()
                 .active()
                 .and_then(|generation| generation.native_gameplay())
                 .ok_or("active native gameplay")?;
+            // The verified definition has 22 slots and is held by the ordinary container owner.
+            assert!(native.item_policy_for_source_id(53074).is_none());
             // Crystal 201189f8 data/items/items.xml and its container/take appearance flags.
             for (capacity, source_ids) in [
                 (1, &[6104][..]),
@@ -1099,7 +1101,7 @@ fn crystal_portable_containers_load_with_exact_inventory_capacities()
                     &[
                         2865, 2866, 2868, 2869, 2870, 2871, 2872, 5949, 8860, 9602, 9604, 9605,
                         10202, 10324, 10327, 14248, 14249, 16099, 16100, 19159, 21292, 21411,
-                        22084, 24395, 35577, 37536, 53074,
+                        22084, 24395, 35577, 37536,
                     ],
                 ),
             ] {

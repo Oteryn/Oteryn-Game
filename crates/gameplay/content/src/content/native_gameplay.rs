@@ -5100,6 +5100,63 @@ mod equipment_projection_tests {
         );
     }
 
+    #[test]
+    fn crystal_ranged_loot_projects_two_handed_equipment_claims()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentBaseVocation;
+
+        let world = oteryn_protocol_oteryn::WorldId::decode(&[
+            1, 1, 1, 1, 1, 1, 0x70, 1, 0x80, 1, 1, 1, 1, 1, 1, 1,
+        ])
+        .map_err(|error| format!("{error:?}"))?;
+        let (controller, _) = super::test_support::activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|a| a.native_gameplay())
+            .ok_or("native content")?;
+        let ids = [8029, 30393, 35518];
+        let capture = std::fs::read_to_string(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../docs/reference/content-prep/item-cyclopedia-capture-1/items.jsonl"),
+        )?;
+        let mut levels = BTreeMap::new();
+        for line in capture.lines() {
+            let row: serde_json::Value = serde_json::from_str(line)?;
+            if let Some(id) = row["id"].as_u64().and_then(|id| u32::try_from(id).ok())
+                && ids.contains(&id)
+            {
+                let level: u16 = row["basic"]["Required Level"]
+                    .as_str()
+                    .ok_or("Global equip level")?
+                    .parse()?;
+                levels.insert(id, level);
+            }
+        }
+        for id in ids {
+            let level = *levels.get(&id).ok_or("Global ranged loot level")?;
+            let record = native
+                .item_policy_for_source_id(id)
+                .ok_or("ranged loot profile")?
+                .record();
+            let claims = projected_equipment_claims(&record.semantics, 5)?;
+            assert_eq!(
+                (claims.slots, claims.level),
+                (vec![5, 6], level),
+                "Item {id}"
+            );
+            assert_eq!(
+                claims.vocations,
+                [EquipmentBaseVocation::Paladin],
+                "Item {id}"
+            );
+            assert!(
+                projected_equipment_claims(&record.semantics, 6).is_err(),
+                "Item {id}"
+            );
+        }
+        Ok(())
+    }
+
     /// MP01: hatchet (3276) and axe (3274) carry no Crystal level or vocation, so the shipped
     /// native profile must project level 0 with any vocation instead of an unknown pattern.
     #[test]

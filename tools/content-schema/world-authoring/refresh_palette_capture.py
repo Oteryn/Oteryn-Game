@@ -74,6 +74,8 @@ def outputs(
     if sum(used.values()) != index["totals"]["items"]:
         raise ValueError("palette capture occurrence count differs from the map")
     generated = {}
+    defined = base.defined_item_keys(root)
+    doors = base.placed_door_keys(root, defined)
     if refresh_palette:
         bindings_path = root / "imports/crystalserver/bindings/items.json"
         bindings = bindings_path.read_bytes()
@@ -87,12 +89,18 @@ def outputs(
             }
         )
         index["palette"] = base.build_palette(
-            base.bound_keys(bindings, base.defined_item_keys(root)),
+            base.bound_keys(bindings, defined) | doors,
             occurrences,
             previous=index["palette"],
             terrain=base.terrain_keys(root),
             world_object=base.world_object_keys(root),
         )
+        generated["content/world/placements/index.json"] = base.canonical(index)
+    elif doors:
+        for row in index["palette"]:
+            key = doors.get(row["source_item_id"])
+            if key is not None:
+                row.update(key=key, provisional=False)
         generated["content/world/placements/index.json"] = base.canonical(index)
     if refresh_summary:
         counted = {key: totals[key] for key in sorted(validate.TOTAL_KEYS)}

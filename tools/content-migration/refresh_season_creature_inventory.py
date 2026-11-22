@@ -249,9 +249,9 @@ def generated(root):
         raise ValueError('Regenerate the source-qualified raid index first')
     raids = json.loads(outputs[raid_catalogue.CATALOGUE])['records']
     active = sum(row['active'] for row in raids)
-    additions = raid_catalogue.CRYSTAL_XML_PARITY | raid_catalogue.HALLOWEEN.keys()
-    activated = {row['key'] for row in raids if row['active']}
-    if len(raids) != 239 + 1 or not additions <= activated or active - len(additions) != 136 + 1:
+    held = raid_catalogue.GLOBAL_RAID_HOLDS.keys() | raid_catalogue.HALLOWEEN.keys()
+    inactive = {row['key'] for row in raids if not row['active']}
+    if len(raids) != 239 + 1 or active != 138 or not held <= inactive:
         raise ValueError('Non-seasonal raid inventory changed; review its source first')
     path = 'crates/gameplay/encounter-rules/src/raid/catalogue.rs'
     replace(path, r'assert_eq!\(catalogue.records\(\).len\(\), [0-9_]+\);',

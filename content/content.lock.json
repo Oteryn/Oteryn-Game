@@ -49,9 +49,9 @@
   "legacy_blobs": {
     "declarations": "7e3ad101450bec5f5804f0eba4c497da06180468",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "432d23438a881716476b9b646e48d0e94d009c64",
+    "imports": "ea72b6e90b5958a1b466f787efba6ac0bacf0e1c",
     "reference": "f88b010ee4e9aad16bbf88bb5c25234193b33d73",
-    "sources": "825e5234a638e5b90f004949e8595e81a3eed0f1"
+    "sources": "1a4ab311c07d398b1351beebf52dde3966bd2e5b"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "ruleset_counts": {
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "d7d14e753d04c0d0e70c705f4763b1f51649e41cfd2942a2357008fc98bcefd8"
+          "sha256": "1135eea7bb24fa206f33b58ff47cb6193a98684d37709a09acc74d43f19e3654"
         },
         {
           "creates_canonical_identities": false,
@@ -193,7 +193,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/creature-races.json",
-          "record_count": 1892,
+          "record_count": 1893,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_CREATURE_RACES/v1",
@@ -201,7 +201,7 @@
             "kind": "source_validator",
             "path": "tools/content-schema/native-gameplay/test_presentation_bindings.py"
           },
-          "sha256": "be4e78e0eac5ce87f6df2b24ef04b1558529552822ea366daa26d38b99697114"
+          "sha256": "658d0a29b65911ba2f9acdd5acc77818ac14f7bae10fe71713dbd414cc8337b4"
         }
       ],
       "Effect": [
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 7028,
+          "record_count": 7030,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "d04bc39bf8ed9aa6e9391aa34719ac0b000031a05b8f4086c1743dfd39582134"
+          "sha256": "6a812a4184d4b57b7b87a8ad5c74ad4809dfccf3f9cedefee43e60528b3d3d87"
         },
         {
           "creates_canonical_identities": false,
@@ -255,7 +255,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "2d1adc40904c8dac81e86fed0d366c41a9cc9945bb5d66af5c193ae5e6a5c7b1"
+          "sha256": "e248da55219cab8555d107347657ba412c3fb0c3d04a2101764b21b0cbadbe51"
         }
       ],
       "Presentation": [
@@ -301,7 +301,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/bindings/client-ids.json",
-          "record_count": 423,
+          "record_count": 427,
           "representation": "client_id_bindings",
           "runtime_activation": false,
           "schema": "OTERYN_PRESENTATION_CLIENT_IDS/v1",
@@ -309,7 +309,7 @@
             "kind": "source_validator",
             "path": "tools/content-schema/native-gameplay/test_presentation_bindings.py"
           },
-          "sha256": "fbc833e1c6b08b31f2e6c091283639c5d782bcdc658c2c2c58bb4fb64cbb68ff"
+          "sha256": "195534f957971140bd14e46a353a1b86220d72dc537147122ad088ee2b2c1d7d"
         },
         {
           "creates_canonical_identities": false,

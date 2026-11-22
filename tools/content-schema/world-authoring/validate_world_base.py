@@ -34,6 +34,7 @@ from convert_world_base import (
     catalogue_keys,
     defined_item_keys,
     key_family,
+    placed_door_keys,
     world_otbm_totals,
 )
 
@@ -885,6 +886,8 @@ def validate(
             and row["target"]["key"] in defined
         ):
             bound.setdefault(int(row["external_id"]), set()).add(row["target"]["key"])
+    for source_id, key in placed_door_keys(root, defined).items():
+        bound.setdefault(source_id, set()).add(key)
     terrain = catalogue_keys("terrain", root)
     world_object = catalogue_keys("world_object", root)
     palette = index["palette"]

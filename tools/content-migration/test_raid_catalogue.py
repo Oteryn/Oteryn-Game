@@ -162,13 +162,13 @@ class RaidCatalogueTest(unittest.TestCase):
         unanchored["waves"][0]["raw_delay_ms"] = 55000
         self.assertFalse(raids.apply_global_timeline(unanchored, timeline, []))
 
-    def test_reviewed_xml_uses_crystal_while_other_global_gates_remain(self):
+    def test_global_conflicts_hold_crystal_raids_with_source_waves(self):
         rows = {r["key"]: r for r in json.loads(raids.outputs(raids.ROOT, register=False)[raids.CATALOGUE])["records"]}
         chayenne = rows["raid:abdendriel.chayenne"]
-        self.assertTrue(chayenne["active"])
+        self.assertFalse(chayenne["active"])
         self.assertEqual(chayenne["wiki_records"], [])
         trolls = rows["raid:carlin.trolls"]
-        self.assertTrue(trolls["active"])
+        self.assertFalse(trolls["active"])
         self.assertEqual([e["amount"]["max"] for w in trolls["variants"][0]["waves"]
                           for e in w["entries"]], [25, 1, 25, 1, 25, 1, 25])
         self.assertTrue(trolls["global_observations"])
@@ -178,13 +178,12 @@ class RaidCatalogueTest(unittest.TestCase):
         self.assertEqual(orshabaal["variants"][0]["waves"][0]["delay_ms"], 400000)
         self.assertEqual(orshabaal["wiki_records"], ["oteryn:raid.edron_raids.orshabaal_raid_near_edron"])
 
-    def test_old_widow_pairs_donor_registry_with_global_variant(self):
+    def test_old_widow_keeps_global_variant_without_custom_clock(self):
         rows = json.loads(raids.outputs(raids.ROOT, register=False)[raids.CATALOGUE])["records"]
         raid, = (row for row in rows if row["key"] == "raid:venore.the_old_widow")
-        self.assertTrue(raid["active"], raid["inactive_reasons"])
-        self.assertEqual(raid["schedule"]["interval_s"], 86400)
-        self.assertEqual(raid["schedule"]["margin_ms"], 7200000)
-        self.assertFalse(raid["schedule"]["repeat"])
+        self.assertFalse(raid["active"])
+        self.assertIn("global_raid_clock_unregistered", raid["inactive_reasons"])
+        self.assertEqual(raid["schedule"], {"kind": "unknown"})
         variant, = raid["variants"]
         self.assertEqual([w["delay_ms"] for w in variant["waves"]], [170000, 181000])
         spider, widow = (w["entries"][0] for w in variant["waves"])

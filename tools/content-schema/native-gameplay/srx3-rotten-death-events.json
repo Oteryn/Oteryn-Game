@@ -154,7 +154,7 @@
     "text_files": 8839
   },
   "schema": "SRX3_ROTTEN_ENTRY_ORDERED_DEATH_EVENTS/v1",
-  "source_definitions_sha256": "15ee8de2a1868d60c1fde4f01063f701f30b60ed15d3bf13027cec6787fa8bc1",
+  "source_definitions_sha256": "00150940a90b3f818b71fd1dc013c18e86a945a61313708ae087ffa300c5aff4",
   "source_repository": "zimbadev/crystalserver",
   "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
   "sources": [

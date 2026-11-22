@@ -101,10 +101,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 /// Crystal 201189f8 Secret Agent tools try rope before shovel, pick and machete.
 pub(super) fn secret_agent_rope(key: &str) -> bool {
-    matches!(
-        key,
-        "oteryn:item.tibia.i9594" | "oteryn:item.tibia.i9596" | "oteryn:item.tibia.i9598"
-    )
+    oteryn_gameplay_items::secret_agent::jammed_successor(key).is_some()
 }
 
 fn carried_rope<'a>(

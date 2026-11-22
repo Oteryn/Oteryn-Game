@@ -731,10 +731,12 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     items = json.loads(generated[item_path])
     import crystal_ordinary_items
     crystal_ordinary_items.apply(root, items, provider_order)
-    # Crystal 201189f8 data/items/items.xml:2122 is an ordinary field that retires at 98 s.
+    crystal_raid_items.admit_ranged_equipment(root, items, parity)
+    # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
+    # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
     energy = next(row for row in items["records"]
                   if row["production_definition"]["production_key"] == "oteryn:item.tibia.i2122")
-    energy["semantics"]["temporal"]["value"]["duration"]["value"] = 98_000
+    energy["semantics"]["temporal"]["value"]["duration"]["value"] = 100_000
     # HEALPAR: Great Mana Potion is for all vocations on Global (TibiaWiki rev 1190635).
     import healing_global_overrides
     healing_global_overrides.apply_native_profiles(items)
@@ -863,6 +865,10 @@ def main() -> int:
         # Native Forge Content and its immutable SQL admission must agree.
         import forge_sql_admission
         forge_sql_admission.check()
+        import crystal_raid_items
+
+        if (ROOT / crystal_raid_items.CORPSE_SQL).read_text() != crystal_raid_items.corpse_sql(ROOT):
+            raise SystemExit("Crystal raid corpse SQL projection drift")
     else:
         for path, data in generated.items():
             destination = ROOT / path

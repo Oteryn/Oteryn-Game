@@ -444,35 +444,45 @@ def test_normal_repin_updates_raw_extent_without_rewriting_history_checks() -> N
         assert f'pub const PLACEMENT_INDEX_SHA256: &str = "{placement_sha}";' in client.read_text()
 
 def test_source_cohort_includes_installed_successors() -> None:
-    installed = []
+    from crystal_creature_parity import BATCH as parity
+    from crystal_spawn_creatures import BATCH as spawns
+    from questpc7_thaian_authoring import BATCH as thaian
 
     class Measured(Exception):
         pass
 
-    def measure():
-        assert installed == [
-            ("thaian", rc.ROOT),
-            ("buddel", rc.ROOT, rc.WORLD),
-            ("crystal", rc.ROOT, rc.WORLD),
-        ], "measure only the complete installed World"
-        raise Measured
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        world = root / "content/world"
+        batches = [{"batch_id": name} for name in (thaian, spawns, parity)]
 
-    with patch.object(sys, "argv", ["regenerate_content.py"]), \
-            patch.object(rc, "run"), \
-            patch.object(rc, "refresh_quest_callback_proof"), \
-            patch.object(rc, "materialize_world"), \
-            patch("questpc7_thaian_authoring.install", side_effect=lambda root: installed.append(("thaian", root))), \
-            patch("buddel_travel.install_buddel", side_effect=lambda *args: installed.append(("buddel", *args))), \
-            patch("crystal_creature_parity.install_documents", side_effect=lambda *args: installed.append(("crystal", *args))), \
-            patch.object(rc, "refresh_source_catalogue_limits"), \
-            patch.object(rc, "canonicalize_world"), \
-            patch.object(rc, "refresh_source_cohort_extent", side_effect=measure):
-        try:
-            rc.main()
-        except Measured:
-            pass
-        else:
-            raise AssertionError("the complete World cohort must be measured")
+        def materialize():
+            write(world, "definitions/reference.json", {"records": []})
+            write(world, "definitions/declarations.json", {"records": [], "authoring_profiles": []})
+            write(world, "provenance/sources.json", {"sources": []})
+            write(world, "provenance/imports.json", {"batches": batches})
+            write(world, "project.json", {"project_revision": "fixture"})
+
+        def measure():
+            assert rc.source_cohort_extent(world)["imports"] == len(batches)
+            assert json.loads((world / "provenance/imports.json").read_bytes())["batches"] == batches
+            raise Measured
+
+        with (
+            patch.object(sys, "argv", ["regenerate_content.py"]),
+            patch.object(rc, "ROOT", root),
+            patch.object(rc, "WORLD", world),
+            patch.object(rc, "run"),
+            patch.object(rc, "refresh_quest_callback_proof"),
+            patch.object(rc, "materialize_world", side_effect=materialize),
+            patch.object(rc, "refresh_source_cohort_extent", side_effect=measure),
+        ):
+            try:
+                rc.main()
+            except Measured:
+                pass
+            else:
+                raise AssertionError("measure the completed World before refreshing pins")
 
 
 def test_normal_generation_orders_native_callback_producers() -> None:
@@ -525,12 +535,7 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
                 patch.object(rc, "run", side_effect=record), \
                 patch.object(rc, "unresolved_worktree_paths", return_value=[]) as unresolved, \
                 patch.object(rc, "refresh_quest_callback_proof"), \
-                patch.object(rc, "materialize_world", side_effect=lambda: events.append(("materialize-world",))), \
-                patch("questpc7_thaian_authoring.install", side_effect=lambda _: record(("install-thaian",))), \
-                patch("buddel_travel.install_buddel", side_effect=lambda *_: record(("install-buddel",))), \
-                patch("crystal_creature_parity.install_documents", side_effect=lambda *_: record(("install-crystal-creatures",))), \
-                patch.object(rc, "refresh_source_catalogue_limits", side_effect=lambda: record(("size-writer",))), \
-                patch.object(rc, "canonicalize_world", side_effect=lambda: record(("canonicalize-world",))), \
+                patch.object(rc, "materialize_world", side_effect=lambda: record(("materialize-world",))), \
                 patch.object(rc, "refresh_source_cohort_extent", side_effect=lambda: record(("source-cohort",))), \
                 patch.object(rc, "repin_rust_inventory", side_effect=lambda: record(("repin-world",))), \
                 patch.object(rc, "refresh_world_metadata", side_effect=lambda: events.append(("world-metadata",))), \
@@ -545,8 +550,7 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
 
 def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them() -> None:
     ordered = [
-        ("materialize-world",), ("install-thaian",), ("install-buddel",),
-        ("install-crystal-creatures",), ("size-writer",), ("canonicalize-world",), ("source-cohort",), ("repin-world",),
+        ("materialize-world",), ("source-cohort",), ("repin-world",),
         ("python3", "tools/content-migration/world_project_v2_to_tree.py"),
     ]
     events = []
@@ -556,20 +560,20 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
     assert positions == sorted(positions), events
 
     def refuse(command, _events):
-        if command == ("canonicalize-world",):
+        if command == ("materialize-world",):
             raise subprocess.CalledProcessError(1, list(command))
 
     refused = []
     try:
         full_generation_trace(refused, refuse)
     except subprocess.CalledProcessError as error:
-        assert error.cmd == ["canonicalize-world"]
+        assert error.cmd == ["materialize-world"]
     else:
         raise AssertionError("canonical rewrite refusal must stop generation")
     assert not any(command in refused for command in ordered[ordered.index(("source-cohort",)):]), refused
 
 
-def test_world_canonicalizer_copies_only_a_complete_document_inventory() -> None:
+def test_materializer_copies_only_a_complete_document_inventory() -> None:
     documents = {"project.json": b"canonical project\n", "definitions/reference.json": b"canonical reference\n"}
     for scenario in ("complete", "missing", "unexpected", "refused"):
         with tempfile.TemporaryDirectory() as temp:
@@ -581,11 +585,11 @@ def test_world_canonicalizer_copies_only_a_complete_document_inventory() -> None
 
             def generate(command):
                 assert command[:8] == [
-                    "cargo", "run", "--locked", "-p", "oteryn-gameplay-content", "--bin",
-                    "oteryn-world-project-canonicalize", "--",
+                    "cargo", "run", "--locked", "-p", "oteryn-game-server", "--example",
+                    "materialize_content_world_project_v2", "--",
                 ]
                 assert command[8] == "--output-root"
-                assert command[10:] == ["--input-root", str(world)]
+                assert command[10] == "--predecessor-root"
                 output = Path(command[9])
                 assert not output.exists()
                 if scenario == "refused":
@@ -602,9 +606,11 @@ def test_world_canonicalizer_copies_only_a_complete_document_inventory() -> None
 
             with patch.object(rc, "WORLD", world), \
                     patch.object(rc, "document_locators", return_value=list(documents)), \
+                    patch.object(rc, "bootstrap_item_index"), \
+                    patch.object(rc, "export_predecessor"), \
                     patch.object(rc, "run", side_effect=generate):
                 try:
-                    rc.canonicalize_world()
+                    rc.materialize_world()
                 except (SystemExit, subprocess.CalledProcessError):
                     assert scenario != "complete"
                 else:
@@ -1136,7 +1142,7 @@ def main() -> None:
         test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work,
         test_normal_generation_orders_native_callback_producers,
         test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them,
-        test_world_canonicalizer_copies_only_a_complete_document_inventory,
+        test_materializer_copies_only_a_complete_document_inventory,
         test_npc_service_counts_follow_final_producers_even_when_checks_are_skipped,
         test_materializer_bootstraps_complete_item_index_before_running,
         test_item_inventory_rejects_incomplete_or_ambiguous_shards_before_materialization,

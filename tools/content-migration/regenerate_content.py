@@ -574,25 +574,6 @@ def literal(length: int, previous: str) -> str:
     return f"{length:_}" if "_" in previous or length >= 10_000 else str(length)
 
 
-def canonicalize_world() -> None:
-    """Serialize installed successors through the same typed writer used by recapture."""
-    with tempfile.TemporaryDirectory() as temp:
-        output = Path(temp) / "world"
-        run([
-            "cargo", "run", "--locked", "-p", "oteryn-gameplay-content", "--bin",
-            "oteryn-world-project-canonicalize", "--", "--output-root", str(output),
-            "--input-root", str(WORLD),
-        ])
-        produced = sorted(
-            p.relative_to(output).as_posix() for p in output.rglob("*") if p.is_file()
-        )
-        expected = sorted(document_locators())
-        if produced != expected:
-            raise SystemExit(f"canonical writer produced {produced}, expected {expected}")
-        for locator in produced:
-            shutil.copyfile(output / locator, WORLD / locator)
-
-
 def repin_rust_inventory() -> None:
     """Rewrite byte lengths and SHA-256 pins so the test pins exactly the regenerated package."""
     text = PIN_TEST.read_text(encoding="utf-8")
@@ -842,15 +823,6 @@ def main() -> int:
     # Repair that derived prerequisite through its normal owner before reading it.
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py", "--items-only"])
     materialize_world()
-    import questpc7_thaian_authoring
-    # install completes authoring through the native writer; no pins name staged Python bytes.
-    questpc7_thaian_authoring.install(ROOT)
-    from buddel_travel import install_buddel
-    install_buddel(ROOT, WORLD)
-    from crystal_creature_parity import install_documents
-    install_documents(ROOT, WORLD)
-    refresh_source_catalogue_limits()
-    canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()
     repin_rust_inventory()

@@ -30,6 +30,8 @@ pub use ground::{GroundActionContext, GroundActionSource};
 mod house;
 pub use house::{HouseActionContext, HouseDecorationBaseItem};
 
+const SECRET_AGENT_JAM: &str = "oteryn:tool.secret-agent-jam";
+
 #[derive(Debug, Clone)]
 pub struct ConsumeTransformRequest {
     pub command: CommandRef,
@@ -85,6 +87,7 @@ pub(super) struct ExtraInput {
 enum ActionContext<'a> {
     #[default]
     Carried,
+    SecretAgentJam,
     CakeBaker(&'a CakeBakerContext),
     Ground(&'a GroundActionContext),
     DispenserTarget(&'a GroundActionContext),
@@ -167,6 +170,27 @@ impl DurabilityRoot {
         .await
     }
 
+    /// Commit the source-selected Secret Agent jam through the carried Item timer owner.
+    #[allow(clippy::too_many_arguments, reason = "existing carried Item write fences")]
+    pub async fn jam_secret_agent_tool<C: ItemLoopContent>(
+        &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: ConsumeTransformRequest,
+        native: &NativeGameplayState,
+        content: &C,
+    ) -> Result<Option<UseDisposition>, DurabilityError> {
+        Ok(self
+            .consume_transform_inner(
+                permit, recovery, node, fence, request, native, content, false,
+                None, ActionContext::SecretAgentJam,
+            )
+            .await?
+            .map(|result| result.disposition))
+    }
+
     /// Probe or commit an action. Replay precedes live handle and custody resolution;
     /// an unknown acknowledgement cannot select a second outcome or repeat its grant.
     #[allow(clippy::too_many_arguments)]
@@ -219,6 +243,7 @@ impl DurabilityRoot {
                         && cake::is_baker(&caller.npc_key)
                         && effects.get("npc_key").and_then(Value::as_str)==Some(caller.npc_key.as_str())
                         && effects.get("reset_epoch").and_then(Value::as_str)==Some(caller.expected_epoch.to_string().as_str()),
+                    ActionContext::SecretAgentJam => recipe == SECRET_AGENT_JAM,
                     _ => recipe!=cake::RECIPE,
                 };
                 let result = if caller_matches && intent == request.intent && character == fence.character_id.as_bytes() {
@@ -310,7 +335,36 @@ async fn write<C: ItemLoopContent>(
     } else {
         None
     };
-    let planting_plan = if cake_plan.is_some() {
+    let planting_plan = if matches!(ground, ActionContext::SecretAgentJam) {
+        let session = *fence.game_session_id.as_bytes();
+        let command = request.command.command_id().get();
+        let jammed = oteryn_gameplay_items::secret_agent::jammed_successor(&definition.production_key)
+            .filter(|_| {
+                request.target.is_none()
+                    && oteryn_gameplay_items::secret_agent::jams(session, command, request.source)
+            })
+            .and_then(|id| native.item_policy_for_source_id(id))
+            .and_then(|policy| {
+                super::spell_items_abi::QualifiedItemDefinition::from_native_policy(policy).ok()
+            });
+        let Some(jammed) = jammed else {
+            return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+        };
+        let Some(decay) = jammed.decay.filter(|decay| decay.target.as_ref() == Some(&definition)) else {
+            return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+        };
+        Some(ActionPlan {
+            recipe: SECRET_AGENT_JAM.into(),
+            outputs: vec![(jammed.definition, 1)],
+            consume_source: true,
+            source_count: 1,
+            effects: json!({"timed_output":{
+                "duration_ms": decay.duration_millis,
+                "decay_to": definition.production_key.rsplit(".i").next().and_then(|id| id.parse::<u32>().ok()),
+            }}),
+            extra_inputs: Vec::new(),
+        })
+    } else if cake_plan.is_some() {
         cake_plan
     } else {
         match dispenser::prepare(

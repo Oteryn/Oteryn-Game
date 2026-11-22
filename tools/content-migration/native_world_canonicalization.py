@@ -64,21 +64,25 @@ def complete_world_project(
     *,
     include_buddel: bool = False,
     canonicalizer_manifest: Path | None = None,
+    materializer_executable: Path | None = None,
 ) -> dict[str, int | str]:
     from buddel_travel import install_buddel
+    from crystal_creature_parity import PACKET as PARITY_PACKET
+    from crystal_creature_parity import install_documents as install_parity
     from crystal_spawn_creatures import PATH as SPAWN_PACKET
     from crystal_spawn_creatures import install as install_spawn_creatures
     from questpc7_thaian_authoring import _install_documents
-    from questpc7_world_seal import refresh
-    from regenerate_content import refresh_source_cohort_extent, source_cohort_extent
+    from regenerate_content import source_cohort_extent
 
     repo_root = repo_root.resolve(strict=True)
     input_root = input_root.absolute()
-    if canonicalizer_manifest is None:
+    if canonicalizer_manifest is None and materializer_executable is None:
         manifest = os.environ.get("OTERYN_WORLD_CANONICALIZER_MANIFEST")
         if manifest is not None:
             canonicalizer_manifest = Path(manifest)
-    if canonicalizer_manifest is None:
+    if materializer_executable is not None:
+        command = [str(materializer_executable.resolve(strict=True))]
+    elif canonicalizer_manifest is None:
         command = ["cargo", "run", "--locked", "-p", "oteryn-gameplay-content",
                    "--bin", "oteryn-world-project-canonicalize", "--"]
     else:
@@ -98,16 +102,17 @@ def complete_world_project(
         _install_documents(repo_root, staging_root)
         if (repo_root / SPAWN_PACKET).is_file():
             install_spawn_creatures(repo_root, staging_root)
-            refresh(repo_root, staging_root)
-            refresh_source_cohort_extent(staging_root, repo_root)
         if include_buddel:
             install_buddel(repo_root, staging_root)
+        if (repo_root / PARITY_PACKET).is_file():
+            install_parity(repo_root, staging_root)
         authored_extent = source_cohort_extent(staging_root)
         # Native capture enforces the existing bounded source limits before serialization.
-        subprocess.run([
-            *command,
-            "--input-root", str(staging_root), "--output-root", str(output_root),
-        ], cwd=repo_root, check=True)
+        if materializer_executable is not None:
+            writer_args = ["--output-root", str(output_root), "--canonicalize-root", str(staging_root)]
+        else:
+            writer_args = ["--input-root", str(staging_root), "--output-root", str(output_root)]
+        subprocess.run([*command, *writer_args], cwd=repo_root, check=True)
         canonical = read_documents(output_root, exact=True)
         if source_cohort_extent(output_root) != authored_extent:
             raise ValueError("native rewrite changed the authored source cohort")
@@ -142,12 +147,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--input-root", type=Path, required=True)
-    parser.add_argument("--canonicalizer-manifest", type=Path,
+    writer = parser.add_mutually_exclusive_group()
+    writer.add_argument("--materializer-executable", type=Path)
+    writer.add_argument("--canonicalizer-manifest", type=Path,
                         help="same-head manifest from content-migration/prebuilt.py build")
     args = parser.parse_args()
     extent = complete_world_project(
         args.repo_root, args.input_root, include_buddel=True,
         canonicalizer_manifest=args.canonicalizer_manifest,
+        materializer_executable=args.materializer_executable,
     )
     print(json.dumps({"canonical_documents": len(DOCUMENTS), "source_cohort": extent}, sort_keys=True))
 

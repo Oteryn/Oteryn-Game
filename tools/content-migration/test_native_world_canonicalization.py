@@ -118,53 +118,39 @@ class NativeWorldCompletion(unittest.TestCase):
             canonical.main()
         self.assertEqual(len(self.calls), 1)
 
-    def test_normal_regeneration_completes_natively_before_refreshing_pins(self):
-        shutil.copytree(self.world, self.repo / "content/world")
+    def test_staged_admissions_precede_writer_and_do_not_rewrite_checkout(self):
+        import crystal_creature_parity as parity
+        import crystal_spawn_creatures as spawn
 
-        class Completed(Exception):
-            pass
+        self.write(self.repo / parity.PACKET, b"fixture")
+        self.write(self.repo / spawn.PATH, b"fixture")
+        paths = [
+            "crates/gameplay/content/src/content/npc_catalogue.rs",
+            regenerate.PIN_PATH,
+            "apps/game-server/tests/content_npc_catalogue.rs",
+        ]
+        for path in paths:
+            self.write(self.repo / path, b"keep checkout untouched")
 
-        canonical_outputs = []
+        def native(command, **kwargs):
+            staged = Path(command[command.index("--input-root") + 1])
+            install_spawn.assert_called_once_with(self.repo, staged)
+            install_buddel.assert_called_once_with(self.repo, staged)
+            install_parity.assert_called_once_with(self.repo, staged)
+            self.native_output(command, **kwargs)
+            raise subprocess.CalledProcessError(1, command)
 
-        def canonical_writer(command):
-            if "--input-root" not in command:
-                return
-            self.assertEqual(command[:8], [
-                "cargo", "run", "--locked", "-p", "oteryn-gameplay-content", "--bin",
-                "oteryn-world-project-canonicalize", "--",
-            ])
-            source = Path(command[command.index("--input-root") + 1])
-            output = Path(command[command.index("--output-root") + 1])
-            self.assertEqual(source, self.repo / "content/world")
-            install_buddel.assert_called_once_with(self.repo, source)
-            install_parity.assert_called_once_with(self.repo, source)
-            self.assertFalse(output.exists())
-            # The real writer emits exactly the managed package, not the caller's
-            # unmanaged sibling. Keep production's strict output-set assertion live.
-            for locator in canonical.DOCUMENTS:
-                self.write(output / locator, (source / locator).read_bytes())
-            canonical_outputs.append(output)
-
-        def measured():
-            self.assertEqual(len(self.calls), 1)
-            self.assertEqual(len(canonical_outputs), 1)
-            raise Completed
-
-        with patch.object(sys, "argv", ["regenerate_content.py"]), \
-                patch.object(regenerate, "ROOT", self.repo), \
-                patch.object(regenerate, "WORLD", self.repo / "content/world"), \
-                patch.object(regenerate, "run", side_effect=canonical_writer), \
-                patch.object(regenerate, "refresh_quest_callback_proof"), \
-                patch.object(regenerate, "materialize_world"), \
-                patch("buddel_travel.install_buddel") as install_buddel, \
-                patch("crystal_creature_parity.install_documents") as install_parity, \
-                patch.object(regenerate, "refresh_source_catalogue_limits"), \
-                patch.object(regenerate, "refresh_source_cohort_extent", side_effect=measured), \
-                patch.object(regenerate, "repin_rust_inventory") as repin, \
-                patch.object(canonical.subprocess, "run", side_effect=self.native_output):
-            with self.assertRaises(Completed):
-                regenerate.main()
-        repin.assert_not_called()
+        with (
+            patch.object(spawn, "install") as install_spawn,
+            patch("buddel_travel.install_buddel") as install_buddel,
+            patch.object(parity, "install_documents") as install_parity,
+            patch.object(canonical.subprocess, "run", side_effect=native),
+        ):
+            with self.assertRaises(subprocess.CalledProcessError):
+                canonical.complete_world_project(self.repo, self.world, include_buddel=True)
+        self.assertEqual(canonical.read_documents(self.world), self.original)
+        for path in paths:
+            self.assertEqual((self.repo / path).read_bytes(), b"keep checkout untouched")
 
     def test_missing_extra_or_changed_unowned_output_refuses_every_replacement(self):
         def missing(output):
