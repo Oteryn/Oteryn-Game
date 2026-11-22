@@ -73,7 +73,7 @@ pub(super) fn check(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, Au
         || !(1..=3).contains(&cause.rank)
         || cause.deadline_unix_ms == 0
         || cause.deadline_unix_ms > i64::MAX as u64
-        || !pit.layout().contains_reset([at.x, at.y, at.z])
+        || !pit.layout().contains_reset([at.x, at.y, -at.z.abs()])
     {
         return Err(AuditError::InvalidInput);
     }
