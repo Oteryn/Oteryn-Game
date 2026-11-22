@@ -1133,20 +1133,20 @@ pub(super) fn scenario_with_catalogue_extension(
         assert!(items.iter().all(|item| filter.matches(item)));
         if let Some(extension) = extension {
             let next = admitted.continuity.next_command_id;
-            let request = |tier: Option<u8>| -> TestResult<Vec<u8>> {
+            let request = |tier: Option<u8>, page: u32| -> TestResult<Vec<u8>> {
                 // Emit the new request shape independently of the protocol encoder.
                 let mut filter = serde_json::json!({});
                 if let Some(tier) = tier {
                     filter["forge_tier"] = tier.into();
                 }
                 let json = serde_json::to_vec(&serde_json::json!({
-                    "query": "Catalogue", "filter": filter, "page": 0,
+                    "query": "Catalogue", "filter": filter, "page": page,
                 }))?;
                 let mut payload = vec![8, 9, 66, u8::try_from(json.len())?];
                 payload.extend(json);
                 Ok(payload)
             };
-            let legacy = routed_market_payloads(&owner, &mut admitted, [(next, request(Some(0))?)]).await?;
+            let legacy = routed_market_payloads(&owner, &mut admitted, [(next, request(Some(0), 0)?)]).await?;
             assert_eq!(details::decode_reply(&legacy[0]).map_err(debug)?, Reply::Refused { code: 9 });
             assert!(first.appearance.is_none());
             admitted.continuity.selected_capabilities =
@@ -1161,7 +1161,7 @@ pub(super) fn scenario_with_catalogue_extension(
                     let replies = routed_market_payloads(
                         &owner,
                         &mut admitted,
-                        [(next, request(Some(0))?), (next + 1, request(Some(1))?)],
+                        [(next, request(Some(0), 0)?), (next + 1, request(Some(1), 0)?)],
                     ).await?;
                     let tier_zero: serde_json::Value = serde_json::from_slice(&replies[0])?;
                     let upgraded: serde_json::Value = serde_json::from_slice(&replies[1])?;
@@ -1169,25 +1169,26 @@ pub(super) fn scenario_with_catalogue_extension(
                     assert_eq!(upgraded["items"], serde_json::json!([]));
                 }
                 CatalogueExtension::Artwork => {
-                    let replies = routed_market_payloads(&owner, &mut admitted, [(next, request(None)?)]).await?;
+                    let item_position = native.market_references().into_iter().filter(|reference| {
+                        index.definition_at(*reference)
+                            .is_some_and(|(key, revision)| native.marketable_definition(key, revision))
+                    }).position(|item| item.get() == reference).ok_or("fixture ware in catalogue")?;
+                    let page = u32::try_from(item_position / details::PAGE_SIZE)?;
+                    let replies = routed_market_payloads(
+                        &owner, &mut admitted, [(next, request(None, page)?)],
+                    ).await?;
                     let Reply::Catalogue { items, .. } =
                         details::decode_reply(&replies[0]).map_err(debug)?
                     else {
                         return Err("artwork catalogue refused".into());
                     };
-                    let mut checked = 0;
-                    for item in items {
-                        let reference = std::num::NonZeroU32::new(item.definition).ok_or("nonzero definition")?;
-                        let (key, revision) = index.definition_at(reference).ok_or("active definition")?;
-                        if let Some(policy) = native.item_policy(key, revision) {
-                            let id = policy.record().production_binding.external_id.parse::<u16>()?;
-                            let artwork = item.appearance.ok_or("qualified item has no appearance")?;
-                            assert_eq!(artwork.object_appearance_id.get(), id);
-                            assert_eq!(artwork.catalogue_digest, generation.identity().client_artifact_digest());
-                            checked += 1;
-                        }
-                    }
-                    assert!(checked > 0);
+                    let item = items.iter().find(|item| item.definition == reference)
+                        .ok_or("fixture ware in returned page")?;
+                    let policy = native.item_policy(&key, &revision).ok_or("qualified item")?;
+                    let id = policy.record().production_binding.external_id.parse::<u16>()?;
+                    let artwork = item.appearance.as_ref().ok_or("qualified item has no appearance")?;
+                    assert_eq!(artwork.object_appearance_id.get(), id);
+                    assert_eq!(artwork.catalogue_digest, generation.identity().client_artifact_digest());
                 }
             }
         }
