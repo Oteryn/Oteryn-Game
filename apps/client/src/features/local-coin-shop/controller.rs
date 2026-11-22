@@ -98,6 +98,10 @@ async fn apply(
                     view.feedback = tr!("The server refused the request").into();
                     return Ok(());
                 }
+                Err(error @ NativeLoginError::Platform(HttpStatus(404))) => {
+                    view.post_refusal_status = None;
+                    return Err(error);
+                }
                 Err(error) => return Err(error),
             }
             refresh(view, client, token, cancel).await?;
@@ -207,6 +211,9 @@ async fn refresh(
     view.quote_until = quote_until;
     view.catalogue = Some(catalogue);
     view.balance = Some(balance);
+    if view.post_refusal_status == Some(403) {
+        view.post_refusal_status = None;
+    }
     Ok(())
 }
 fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
