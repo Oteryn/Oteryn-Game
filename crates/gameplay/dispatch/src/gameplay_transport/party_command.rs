@@ -11,7 +11,7 @@ mod list;
 #[derive(Default)]
 pub struct SessionPartyView {
     handles: BTreeMap<u64, (u8, [u8; 16])>,
-    pub(super) hunt_prices: Vec<oteryn_protocol_oteryn::analyser_party::Price>,
+    pub(super) hunt_request: Option<oteryn_protocol_oteryn::analyser_party::HuntRequest>,
     pub(super) hunt_reply: Option<Vec<u8>>,
 }
 pub(super) fn party_notice_fence(
@@ -199,8 +199,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        let hunt = command_type
-            == oteryn_protocol_oteryn::analyser_party::COMMAND_TYPE_ANALYSER_PARTY_QUERY;
+        use super::analyser_party::shared;
+        use oteryn_protocol_oteryn::analyser_party::HuntRequest;
+        let hunt_request = view.hunt_request.as_ref();
+        let hunt = hunt_request.is_some();
         if hunt && !admitted.continuity.selected_capabilities.contains(10) {
             return None;
         }
@@ -320,6 +322,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => return unavailable("holder_acquire"),
         };
+        let hunt_index = if hunt {
+            Some(super::item_ref_admission::pinned_index(
+                &runtime,
+                self.active_generation,
+            )?)
+        } else {
+            None
+        };
+        if let Some(HuntRequest::Legacy(prices)) = hunt_request
+            && !prices
+                .iter()
+                .all(|p| hunt_index.is_some_and(|index| shared::identity(index, p.item).is_some()))
+        {
+            return None;
+        }
         let mut failed_step = "transaction_begin";
         let mut ctx = (self, &permit, &runtime, &attack, &mut failed_step);
         let outcome = pass.run_with_context(&mut ctx, move |holder, deadline, ctx| {
@@ -349,13 +366,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let refused = visible_target.is_some() && visible.is_none();
                 **step = "party_view_read";
                 let view = world_party::ingress::read_in_transaction(&mut tx, &authority).await.map_err(|_| DurabilityError::Unavailable)?;
+                let shared_hunt = match (hunt_request, hunt_index) {
+                    (Some(request), Some(index)) if !matches!(request, HuntRequest::Legacy(_)) => {
+                        **step = "party_hunt";
+                        Some(shared::prepare(&mut tx, &authority, &view.source, shared::Context {
+                            runtime, streams: &owner.states.analyser, index, request,
+                        }).await?)
+                    }
+                    _ => None,
+                };
                 **step = "transaction_commit";
                 crate::durability::party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
-                Ok((receipt, view, refused))
+                Ok((receipt, view, refused, shared_hunt))
             })
         }).await;
         match outcome {
-            Ok((receipt, source, refused)) => {
+            Ok((receipt, source, refused, shared_hunt)) => {
+                if let Some(plan) = &shared_hunt {
+                    plan.apply(&self.states.analyser)?;
+                }
                 if runtime
                     .project_world_party(actor, admitted.game_session_id, source.source.clone())
                     .is_err()
@@ -427,18 +456,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     return unavailable("session_view_projection");
                 };
-                if hunt
-                    && let Some(index) =
-                        super::item_ref_admission::pinned_index(&runtime, self.active_generation)
-                {
-                    view.hunt_reply = super::analyser_party::project(
-                        &runtime,
-                        &self.states.analyser,
-                        &hunt_members,
-                        &projected,
-                        index,
-                        &view.hunt_prices,
-                    );
+                if let Some(index) = hunt_index {
+                    view.hunt_reply = match shared_hunt {
+                        Some(plan) => plan.finish(&projected, index),
+                        None => match &view.hunt_request {
+                            Some(HuntRequest::Legacy(prices)) => super::analyser_party::project(
+                                &runtime,
+                                &self.states.analyser,
+                                &hunt_members,
+                                &projected,
+                                index,
+                                prices,
+                            ),
+                            _ => None,
+                        },
+                    };
                 }
                 drop(attack);
                 drop(states);

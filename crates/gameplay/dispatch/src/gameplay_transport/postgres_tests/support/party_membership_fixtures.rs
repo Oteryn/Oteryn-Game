@@ -26,34 +26,58 @@ use std::time::Duration;
 use tokio::{io::AsyncWriteExt, sync::Mutex};
 
 pub(super) fn run(partyskull: bool) -> TestResult {
-    run_case(partyskull, false, false, false, false)
+    run_case(partyskull, false, false, false, false, None)
 }
 
 pub(super) fn run_reference_level() -> TestResult {
-    run_case(false, true, false, false, false)
+    run_case(false, true, false, false, false, None)
 }
 
 pub(super) fn run_chat() -> TestResult {
-    run_case(false, false, true, false, false)
+    run_case(false, false, true, false, false, None)
 }
 
 pub(super) fn run_busy_holder() -> TestResult {
-    run_case(false, false, false, true, false)
+    run_case(false, false, false, true, false, None)
 }
 
 pub(super) fn run_notices(admin: String) -> TestResult {
-    run_with_admin(admin, false, false, false, false, true)
+    run_with_admin(admin, false, false, false, false, true, None)
 }
 
-fn run_case(partyskull: bool, reference_level: bool, chat: bool, busy: bool, notices: bool) -> TestResult {
+#[derive(Clone, Copy)]
+pub(super) enum HuntCase {
+    Reset,
+    Valuation,
+    NpcPrices,
+}
+
+pub(super) fn run_hunt(admin: String, case: HuntCase) -> TestResult {
+    run_with_admin(admin, false, false, false, false, false, Some(case))
+}
+
+fn run_case(
+    partyskull: bool,
+    reference_level: bool,
+    chat: bool,
+    busy: bool,
+    notices: bool,
+    hunt: Option<HuntCase>,
+) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
-    run_with_admin(admin, partyskull, reference_level, chat, busy, notices)
+    run_with_admin(admin, partyskull, reference_level, chat, busy, notices, hunt)
 }
 
 fn run_with_admin(
-    admin: String, partyskull: bool, reference_level: bool, chat: bool, busy: bool, notices: bool,
+    admin: String,
+    partyskull: bool,
+    reference_level: bool,
+    chat: bool,
+    busy: bool,
+    notices: bool,
+    hunt: Option<HuntCase>,
 ) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -70,7 +94,7 @@ fn run_with_admin(
                 )
                 .await
                 .map_err(debug)?;
-                let result = scenario(&h, partyskull, reference_level, chat, busy, notices)
+                let result = scenario(&h, partyskull, reference_level, chat, busy, notices, hunt)
                     .await
                     .map_err(|e| e.to_string());
                 h.cleanup().await.map_err(debug)?;
@@ -354,7 +378,15 @@ async fn check_notices(
     Ok(())
 }
 
-async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bool, busy: bool, notices: bool) -> TestResult {
+async fn scenario(
+    h: &Harness,
+    partyskull: bool,
+    reference_level: bool,
+    chat: bool,
+    busy: bool,
+    notices: bool,
+    hunt: Option<HuntCase>,
+) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -387,6 +419,22 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
     let room = crate::content::qualify_native_entry_room(world).map_err(debug)?;
+    let activation = hunt.map(|_| {
+        crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None)
+    });
+    let channel_pin = if let Some((_, pin)) = &activation {
+        ChannelContentPin::from_activation(
+            world,
+            pin.activation_sequence(),
+            pin.identity().server_artifact_digest(),
+            pin.identity().client_artifact_digest(),
+            pin.frame_binding().digest(),
+            room.map_revision_digest(),
+            (0, 0, 0),
+        )
+    } else {
+        ChannelContentPin::test(world)
+    };
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         world,
         channel,
@@ -396,7 +444,7 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
         1,
         "runtime-scope-assignment:1",
         5,
-        ChannelContentPin::test(world),
+        channel_pin,
     )
     .map_err(debug)?;
     let mut admitted = Vec::new();
@@ -477,8 +525,14 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
         return super::party_busy_holder_fixtures::check(&owner, &mut admitted, &targets, h).await;
     }
     if partyskull {
-        super::party_skull_fixtures::check(&owner, &mut admitted[0], &targets, &[0, 0, 0], &[0, 0, 0])
-            .await?;
+        super::party_skull_fixtures::check(
+            &owner,
+            &mut admitted[0],
+            &targets,
+            &[0, 0, 0],
+            &[0, 0, 0],
+        )
+        .await?;
         super::party_skull_fixtures::aggression(h, &targets, &characters, true).await?;
         let result = roundtrip(&owner, &mut admitted[0], &[Step::Invite(targets[1])]).await?;
         assert_eq!(result[0].disposition, PartyDisposition::Rejected);
@@ -542,8 +596,14 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
         assert_eq!(invited[0].disposition, PartyDisposition::Ok);
     }
     if partyskull {
-        super::party_skull_fixtures::check(&owner, &mut admitted[0], &targets, &[4, 2, 2], &[2, 0, 0])
-            .await?;
+        super::party_skull_fixtures::check(
+            &owner,
+            &mut admitted[0],
+            &targets,
+            &[4, 2, 2],
+            &[2, 0, 0],
+        )
+        .await?;
         super::party_skull_fixtures::aggression(h, &targets, &characters, true).await?;
         let result = roundtrip(&owner, &mut admitted[1], &[Step::Query, Step::Accept]).await?;
         assert_eq!(result[1].disposition, PartyDisposition::Rejected);
@@ -557,6 +617,12 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
         assert_eq!(results[0].invitations.len(), 1);
         assert_eq!(results[1].disposition, PartyDisposition::Ok);
     }
+    if let Some(case) = hunt {
+        owner.active_generation = activation
+            .as_ref()
+            .and_then(|(controller, _)| controller.active());
+        return super::analyser_hunt_fixtures::check(h, &owner, &mut admitted, case).await;
+    }
     let chat_line = if chat {
         Some(super::party_chat_fixtures::check(h, &owner, &mut admitted).await?)
     } else {
@@ -564,14 +630,21 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
     };
     if partyskull {
         for observer in &mut admitted {
-            super::party_skull_fixtures::check(&owner, observer, &targets, &[4, 3, 3], &[2, 2, 2]).await?;
+            super::party_skull_fixtures::check(&owner, observer, &targets, &[4, 3, 3], &[2, 2, 2])
+                .await?;
         }
         // Existing shared-XP durable owner preference; no committed activity: every shield blinks.
         sqlx::query("UPDATE game_parties SET shared_xp_enabled=true,revision=revision+1")
             .execute(&h.pool)
             .await?;
-        super::party_skull_fixtures::check(&owner, &mut admitted[2], &targets, &[8, 7, 7], &[2, 2, 2])
-            .await?;
+        super::party_skull_fixtures::check(
+            &owner,
+            &mut admitted[2],
+            &targets,
+            &[8, 7, 7],
+            &[2, 2, 2],
+        )
+        .await?;
         sqlx::query("UPDATE game_parties SET shared_xp_enabled=false,revision=revision+1")
             .execute(&h.pool)
             .await?;
@@ -583,8 +656,14 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
     assert_eq!(result[0].members.len(), 3);
     assert_eq!(result[1].disposition, PartyDisposition::Ok);
     if partyskull {
-        super::party_skull_fixtures::check(&owner, &mut admitted[2], &targets, &[3, 4, 3], &[2, 2, 2])
-            .await?;
+        super::party_skull_fixtures::check(
+            &owner,
+            &mut admitted[2],
+            &targets,
+            &[3, 4, 3],
+            &[2, 2, 2],
+        )
+        .await?;
     }
     let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Kick(2)]).await?;
     assert_eq!(result[1].disposition, PartyDisposition::NotLeader);
@@ -623,8 +702,14 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
     let result = roundtrip(&owner, &mut admitted[2], &[Step::Query]).await?;
     assert!(result[0].members.is_empty());
     if partyskull {
-        super::party_skull_fixtures::check(&owner, &mut admitted[2], &targets, &[11, 11, 0], &[0, 0, 0])
-            .await?;
+        super::party_skull_fixtures::check(
+            &owner,
+            &mut admitted[2],
+            &targets,
+            &[11, 11, 0],
+            &[0, 0, 0],
+        )
+        .await?;
     }
     let actor = admitted[1].runtime_actor.ok_or("actor")?;
     {

@@ -9,6 +9,28 @@ mod gameplay_idle;
 pub use gameplay_idle::{GameplayIdlePolicy, GameplayIdleState};
 mod moved_step;
 mod routing;
+#[cfg(test)]
+pub(super) async fn test_analyser_route(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    view: &mut super::party_command::SessionPartyView,
+) -> Option<Vec<u8>> {
+    let reply = if command.command_type
+        == oteryn_protocol_oteryn::analyser_catalogue::COMMAND_TYPE_ANALYSER_NPC_PRICES
+    {
+        routing::analyser_catalogue::route(owner, admitted, command).await
+    } else {
+        routing::analyser_party::route(owner, admitted, command, view).await
+    };
+    match reply {
+        routing::Dispatch::Reply(crate::foundation::CommandStatus::Accepted, payload) => {
+            Some(payload)
+        }
+        _ => None,
+    }
+}
+
 mod serve;
 use crate::combat_pickup::GroundPickupError;
 use routing::Dispatch;
