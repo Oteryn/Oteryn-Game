@@ -12,6 +12,9 @@ mod dark_trails;
 mod isle_of_evil;
 mod literal_contacts;
 mod questpc7_reward_bounds;
+mod regional_contacts;
+#[cfg(test)]
+mod regional_tests;
 mod world_change_journals;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
@@ -414,8 +417,13 @@ impl NpcTalkBook {
                 YASIR_JOB,
                 YASIR_NAME,
                 YASIR_PASSAGE,
-                literal_contacts::REVISION_MATERIAL,
-                literal_contacts::REGIONAL_SOURCE,
+                format_args!(
+                    "{}\0{}\0{}\0{}",
+                    literal_contacts::REVISION_MATERIAL,
+                    literal_contacts::REGIONAL_SOURCE,
+                    regional_contacts::DATA,
+                    crate::content::npc_catalogue::subtype_trades::REGIONAL_DATA,
+                ),
             )),
             ..Self::default()
         };
@@ -466,6 +474,7 @@ impl NpcTalkBook {
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
                 .any(|service| service.bank);
+            let regional = regional_contacts::get(&reference.key);
             let mut journal_fallback = false;
             let mut regional_source = false;
             let mut regional_walkaway = None;
@@ -685,6 +694,21 @@ impl NpcTalkBook {
                     None,
                     keywords,
                 )
+            } else if let Some(contact) = regional.filter(|_| !bank) {
+                (
+                    contact
+                        .greet
+                        .as_deref()
+                        .unwrap_or(regional_contacts::GREET)
+                        .into(),
+                    contact
+                        .farewell
+                        .as_deref()
+                        .unwrap_or(regional_contacts::FAREWELL)
+                        .into(),
+                    None,
+                    contact.keywords.clone(),
+                )
             } else if let Some(messages) = npc
                 .bank_dialogue
                 .as_ref()
@@ -827,7 +851,7 @@ impl NpcTalkBook {
                     name: npc.name.clone(),
                     admitted_dialogue: !journal_fallback
                         && !matches!(reference.key.as_str(), YASIR | OROCKLE)
-                        && npc.dialogue.is_some()
+                        && (npc.dialogue.is_some() || regional.is_some())
                         && premium_services.is_empty()
                         && travel_routes.is_empty(),
                     travel_routes,
@@ -837,10 +861,19 @@ impl NpcTalkBook {
                         .iter()
                         .filter_map(|reference| model.services().get(reference))
                         .any(|service| service.bank),
-                    greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+                    greetings: GREETINGS
+                        .iter()
+                        .map(|word| (*word).to_owned())
+                        .chain(
+                            regional
+                                .into_iter()
+                                .flat_map(|contact| contact.greet_aliases.iter().cloned()),
+                        )
+                        .collect(),
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank
+                        || regional.is_some()
                         || regional_source
                         || literal_contacts::greeting(&reference.key).is_some()
                         || reference.key == "oteryn:npc.lynda"
@@ -871,6 +904,15 @@ impl NpcTalkBook {
                         regional_walkaway
                             .or_else(|| isle_messages.map(|messages| messages.walkaway))
                             .or_else(|| reward_messages.map(|messages| messages.walkaway.clone()))
+                            .or_else(|| {
+                                regional.map(|contact| {
+                                    contact
+                                        .walkaway
+                                        .as_deref()
+                                        .unwrap_or(regional_contacts::WALKAWAY)
+                                        .into()
+                                })
+                            })
                     },
                     topic_reply,
                     dialogue_keywords,

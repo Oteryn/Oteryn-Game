@@ -74,10 +74,17 @@ def cell_of(position: dict) -> tuple[int, int, int]:
 
 
 def apply_placement_overrides(candidates: dict, scope: dict, admitted: Set[str] = frozenset()) -> dict:
-    """Explicit pinned schedules supersede migration placement hypotheses, not definitions."""
+    """Explicit pinned positions can add or replace a scoped placement hypothesis."""
     result = copy.deepcopy(candidates)
-    for key, override in scope.get("placement_overrides", {}).items():
-        if key not in scope["npcs"] or (key not in result and key not in admitted):
+    overrides = scope.get("placement_overrides", {})
+    new_contacts = scope.get("new_placement_overrides", [])
+    explicit = set(new_contacts)
+    if (len(explicit) != len(new_contacts)
+            or not explicit <= set(overrides)
+            or explicit & candidates.keys()):
+        raise ValueError("new placement overrides must introduce distinct pinned NPC contacts")
+    for key, override in overrides.items():
+        if key not in scope["npcs"] or (key not in result and key not in admitted and key not in explicit):
             raise ValueError("placement override requires a scoped candidate or admitted NPC")
         source, placements = override["source"], override["placements"]
         if (source.get("origin") not in SOURCES
@@ -109,8 +116,9 @@ def apply_placement_overrides(candidates: dict, scope: dict, admitted: Set[str] 
             if retained == old:
                 raise ValueError("superseded alias has no matching cell")
             result[alias]["placements"] = retained
-        result.setdefault(key, {"identity": {"key": key}})["placements"] = copy.deepcopy(placements)
-        result[key]["placement_override_provenance"] = [{
+        candidate = result.setdefault(key, {"identity": {"key": key}})
+        candidate["placements"] = copy.deepcopy(placements)
+        candidate["placement_override_provenance"] = [{
             "origin": source["origin"], "repository": repository,
             "revision": source["revision"], "source_key": source_key,
             "source_row": source["path"], "source_sha256": source["sha256"],

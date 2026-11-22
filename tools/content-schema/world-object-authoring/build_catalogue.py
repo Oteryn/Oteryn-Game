@@ -483,7 +483,13 @@ def outputs(
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += engnpc2_ram_world.NOTE
+        import regional_npc_ground
+
+        files[regional_npc_ground.SHARD] = regional_npc_ground.outputs()[
+            regional_npc_ground.SHARD
+        ].encode()
         index["notes"] = activity_static.compose_terrain_notes(index["notes"])
+        index["notes"] += regional_npc_ground.NOTE
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
@@ -535,6 +541,7 @@ def official_shards():
 def qualified_shards():
     import activity_static
     import feroxa_static
+    import regional_npc_ground
 
     return {
         path
@@ -550,6 +557,7 @@ def qualified_shards():
             "content/world/objects/objects-12917-12931.json",
             *activity_static.SHARDS.values(),
             feroxa_static.SHARD,
+            regional_npc_ground.SHARD,
         )
         if (path := ROOT / relative).exists()
     }

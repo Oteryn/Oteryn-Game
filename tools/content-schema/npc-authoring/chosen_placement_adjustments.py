@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'world-authoring'))
 import world_region_codec as codec
 
-MAX_MISSING_TILE_DISTANCE = 4
+MAX_NEAREST_CLEAR_DISTANCE = 4
 FLAG_PROTECTION_ZONE = 1
 
 
@@ -27,7 +27,8 @@ def ground_item(root, palette_index):
 
 
 def choose_cell(root, actual_source, choice, occupied):
-    if set(choice) != {'source', 'target', 'reason'}:
+    fields = {'source', 'target', 'reason'}
+    if set(choice) not in (fields, fields | {'blocked_source'}):
         raise ValueError('chosen placement requires source, target and reason')
     def point(value):
         if set(value) != {'x', 'y', 'z'} or any(type(v) is not int for v in value.values()):
@@ -65,10 +66,13 @@ def choose_cell(root, actual_source, choice, occupied):
         and ground_item(root, source_tile[5][0][0])
     )
     if distance != 1:
-        # A source cell with no native tile at all may move to the uniquely nearest
-        # clear ground of its own region and floor, never past a nearer clear cell.
-        if (before[:2] in tiles or (before[0]//256, before[1]//256) != (x//256, y//256)
-                or not 1 < distance <= MAX_MISSING_TILE_DISTANCE
+        # An absent or explicitly blocked source can use the uniquely nearest clear tile.
+        source_present = before[:2] in tiles
+        blocked_source = (choice.get("blocked_source") is True and source_present
+                          and not clear(before[:2], walkable=True))
+        if ((source_present and not blocked_source)
+                or (before[0]//256, before[1]//256) != (x//256, y//256)
+                or not 1 < distance <= MAX_NEAREST_CLEAR_DISTANCE
                 or not clear((x, y), walkable=True)
                 or any(clear(cell, walkable=True) for cell in tiles
                        if cell != (x, y)

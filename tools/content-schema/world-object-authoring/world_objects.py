@@ -573,6 +573,14 @@ def validate_record(record):
                     "Soulpit static Terrain differs from its qualified official source"
                 ]
             )
+        import regional_npc_ground
+
+        if record["provenance"]["source_item_id"] in regional_npc_ground.GROUNDS:
+            return (
+                []
+                if record in regional_npc_ground.records()
+                else ["regional NPC ground differs from its qualified official source"]
+            )
         import grizzly_ground
         import sugar_room
         import summer_ground
