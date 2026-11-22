@@ -195,3 +195,36 @@ pub fn show_error(message: &str) {
 fn wide(value: &str) -> Vec<u16> {
     value.encode_utf16().chain(Some(0)).collect()
 }
+
+/// Replace a published file and wait for Windows to commit the move.
+pub(crate) fn rename_write_through(
+    source: &std::path::Path,
+    destination: &std::path::Path,
+) -> io::Result<()> {
+    use std::{os::windows::ffi::OsStrExt, path::Path};
+    use windows_sys::Win32::Storage::FileSystem::{
+        MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH, MoveFileExW,
+    };
+    fn wide(path: &Path) -> io::Result<Vec<u16>> {
+        let mut units: Vec<_> = path.as_os_str().encode_wide().collect();
+        if units.contains(&0) {
+            return Err(io::ErrorKind::InvalidInput.into());
+        }
+        units.push(0);
+        Ok(units)
+    }
+    let source = wide(source)?;
+    let destination = wide(destination)?;
+    // SAFETY: both buffers are NUL-terminated and live until the call returns.
+    if unsafe {
+        MoveFileExW(
+            source.as_ptr(),
+            destination.as_ptr(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH,
+        )
+    } == 0
+    {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(())
+}

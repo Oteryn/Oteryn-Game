@@ -1,5 +1,6 @@
 //! T067 consumer: browser bootstrap, process sessions and opt-in OS-vault families.
 mod attempt;
+mod commerce;
 mod revocation_intent;
 mod revocation_journal;
 pub mod vault;
@@ -29,6 +30,7 @@ struct State {
     remembered: bool,
 }
 pub struct DeviceLogin {
+    commerce: commerce::Commerce,
     enabled: bool,
     forget_requested: AtomicBool,
     journal: Arc<revocation_journal::Journal>,
@@ -43,6 +45,7 @@ impl Default for DeviceLogin {
             forget_requested: AtomicBool::new(false),
             journal: Arc::new(revocation_journal::Journal::new(None)),
             vault: vault::system("Oteryn/native-disabled".into()),
+            commerce: Default::default(),
             state: Default::default(),
             folder: None,
         }
@@ -65,6 +68,7 @@ impl DeviceLogin {
             forget_requested: AtomicBool::new(false),
             journal: Arc::new(revocation_journal::Journal::new(Some(folder.clone()))),
             vault: vault::system(format!("Oteryn/NativeDevice/{key}")),
+            commerce: Default::default(),
             state: Default::default(),
             folder: Some(folder),
         }
@@ -78,6 +82,12 @@ impl DeviceLogin {
         if !self.enabled && self.folder.as_ref().is_none_or(|folder| !folder.exists()) {
             return Ok(None);
         }
+        let deadline = tokio::time::Instant::now() + attempt::RECOVERY_REVOCATION_TIMEOUT;
+        if cancel.is_cancelled() {
+            return tokio::time::timeout_at(deadline, self.cancel_begin(client))
+                .await
+                .unwrap_or_else(|_| Err(storage_error()));
+        }
         let Ok(mut state) =
             tokio::time::timeout(CREDENTIAL_LOCK_TIMEOUT, self.state.clone().lock_owned()).await
         else {
@@ -87,10 +97,20 @@ impl DeviceLogin {
             return Ok(None);
         };
         let pending = self.revocation_pending()?;
-        if !pending && self.journal.replay(client).await.is_err() {
+        let requested = self.forget_requested.load(Ordering::Acquire);
+        let deferred = if requested {
+            &[][..]
+        } else {
+            state.pending.as_slice()
+        };
+        if !pending
+            && !matches!(
+                tokio::time::timeout_at(deadline, self.journal.replay(client, deferred)).await,
+                Ok(Ok(()))
+            )
+        {
             return Ok(None);
         }
-        let requested = self.forget_requested.load(Ordering::Acquire);
         if requested && !pending && self.journal.has_folder() {
             state.session = None;
             state.key = None;
@@ -114,28 +134,53 @@ impl DeviceLogin {
             journal: self.journal.clone(),
         };
         if forget {
-            if !pending && attempt.state.vault_clear_failed {
-                if attempt.revoke_before_vault_clear(client).await.is_err() {
-                    return Ok(None);
+            let drain = async {
+                if !pending && attempt.state.vault_clear_failed {
+                    attempt.revoke_before_vault_clear(client).await
+                } else {
+                    self.finish_attempt_sign_out(&mut attempt, client).await
                 }
-            } else if self
-                .finish_attempt_sign_out(&mut attempt, client)
-                .await
-                .is_err()
-            {
+            };
+            if !matches!(tokio::time::timeout_at(deadline, drain).await, Ok(Ok(()))) {
                 return Ok(None);
             }
-        } else if !options.stay_logged_in || attempt.state.remembered != remembered {
-            attempt.sign_out(client).await;
         } else {
-            let _ = attempt.revoke_pending(client).await;
+            let sign_out = !options.stay_logged_in || attempt.state.remembered != remembered;
+            let revoke_first = sign_out && self.folder.is_some() && attempt.state.remembered;
+            let drain = async {
+                if revoke_first {
+                    attempt.revoke_before_vault_clear(client).await?;
+                } else if sign_out {
+                    attempt.sign_out(client).await;
+                } else {
+                    let _ = attempt.revoke_pending(client).await;
+                }
+                Ok::<(), NativeLoginError>(())
+            };
+            if let Ok(result) = tokio::time::timeout_at(deadline, drain).await {
+                result?;
+            } else if revoke_first {
+                return Ok(None);
+            }
         }
         if cancel.is_cancelled() {
-            attempt.sign_out(client).await;
+            drop(attempt);
+            let _ = tokio::time::timeout_at(deadline, self.cancel_begin(client)).await;
             return Err(storage_error());
         }
         Ok(self.enabled.then_some(attempt))
     }
+    async fn cancel_begin(
+        &self,
+        client: &NativeLoginClient,
+    ) -> Result<Option<DeviceAttempt>, NativeLoginError> {
+        // Explicit UI cancellation has already queued its own worker.
+        if !self.forget_requested.load(Ordering::Acquire) {
+            self.sign_out(client).await?;
+        }
+        Err(storage_error())
+    }
+
     async fn lock_credential(&self) -> Result<Option<std::fs::File>, NativeLoginError> {
         let Some(folder) = self.folder.clone() else {
             return Ok(None);
@@ -218,7 +263,7 @@ impl DeviceLogin {
             .map_err(|_| storage_error())?;
         let lock = self.lock_credential().await?;
         if self.folder.is_some() && !self.revocation_pending()? {
-            self.journal.replay(client).await?;
+            self.journal.replay(client, &[]).await?;
             let mut state = state;
             state.session = None;
             state.remembered = false;
@@ -245,7 +290,7 @@ impl DeviceLogin {
         client: &NativeLoginClient,
     ) -> Result<(), NativeLoginError> {
         if self.journal.has_folder() && !self.revocation_pending()? {
-            self.journal.replay(client).await?;
+            self.journal.replay(client, &[]).await?;
             attempt.state.session = None;
             attempt.state.key = None;
             attempt.state.remembered = false;
