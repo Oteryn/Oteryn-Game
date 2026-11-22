@@ -9,7 +9,7 @@ use oteryn_foundation::{Cancellable, CancellationToken, cancellable};
 use oteryn_input_actions::{ButtonState, NormalizedInputEvent};
 use oteryn_platform_client::native_login::PublicClass;
 use std::sync::{
-    Arc, Mutex, PoisonError,
+    Arc,
     mpsc::{self, Receiver, TryRecvError},
 };
 use std::time::Instant;
@@ -46,7 +46,7 @@ pub struct Reentry {
     client: ClientBootstrap,
     state: EntryState,
     attempt_cancellation: Option<CancellationToken>,
-    browser_delivery: Arc<Mutex<()>>,
+    browser_delivery: Arc<crate::native_entry::BrowserEpoch>,
     progress: Option<tokio::sync::watch::Receiver<Option<AdmissionWait>>>,
     waiting: Option<(AdmissionWait, QueueWait)>,
     last_wait_text: Option<String>,
@@ -97,7 +97,7 @@ impl Reentry {
         {
             previous.reuse_device(&mut config);
         }
-        self.client.native_login = Some(config);
+        self.client.set_native_login(config);
         true
     }
 
@@ -136,15 +136,8 @@ impl Reentry {
         let attempt_cancellation = CancellationToken::new();
         self.attempt_cancellation = Some(attempt_cancellation.clone());
         if let Some(config) = &mut config {
-            // OAuth and Account Services use the same opener for this attempt.
-            // cancel_entry takes this gate before cancelling the attempt token.
-            let gate = Arc::clone(&self.browser_delivery);
-            let cancel = attempt_cancellation.clone();
-            let browser = Arc::clone(&config.open_browser);
-            config.open_browser = Arc::new(move |url| {
-                let _delivery = gate.lock().unwrap_or_else(PoisonError::into_inner);
-                !cancel.is_cancelled() && browser(url)
-            });
+            self.browser_delivery = Arc::default();
+            config.open_browser = self.browser_delivery.opener(config);
         }
         let (progress, updates) = tokio::sync::watch::channel(None);
         self.progress = Some(updates);
@@ -268,7 +261,6 @@ impl Reentry {
             result
         };
         self.pending = None;
-        self.attempt_cancellation = None;
         self.progress = None;
         self.waiting = None;
         self.last_wait_text = None;
@@ -287,12 +279,22 @@ impl Reentry {
         {
             config.training_queue.clear();
         }
+        if result.is_err()
+            && let Some(cancel) = self.attempt_cancellation.take()
+        {
+            self.browser_delivery.close();
+            cancel.cancel();
+        }
         self.state.finish(result.is_ok());
         Some(result)
     }
 
     pub fn leave_play(&mut self) {
         if self.state == EntryState::Playing {
+            if let Some(cancel) = self.attempt_cancellation.take() {
+                self.browser_delivery.close();
+                cancel.cancel();
+            }
             self.state = EntryState::Offline;
             let confirmed = self
                 .training_completion
@@ -310,6 +312,10 @@ impl Reentry {
     }
 
     pub fn shutdown(self) {
+        if let Some(cancel) = self.attempt_cancellation {
+            self.browser_delivery.close();
+            cancel.cancel();
+        }
         self.client.shutdown();
     }
 }

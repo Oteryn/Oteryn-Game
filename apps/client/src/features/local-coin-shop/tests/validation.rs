@@ -175,12 +175,12 @@ fn coin_post_refusals_settle_after_missing_status() -> TestResult {
                 mock.authority.lock().map_err(|_| "lock")?.coin_post_failure = Some(refusal);
                 execute(&mut view, Action::Retry);
                 assert_eq!(view.pending.as_ref(), Some(&request));
-                assert!(!view.can_retry());
+                assert_eq!(view.can_retry(), refusal == 409);
                 execute(&mut view, Action::Status);
             }
             settled.push(!view.pending());
             assert_eq!(mock.with_coins(|coins| coins.creations)?, 0);
-            if retry == Some(403) {
+            if retry.is_some() {
                 let pending = view.pending.clone().ok_or("missing unresolved request")?;
                 assert!(view.can_retry());
                 mock.authority.lock().map_err(|_| "lock")?.coin_post_failure = Some(403);
@@ -198,8 +198,8 @@ fn coin_post_refusals_settle_after_missing_status() -> TestResult {
         }
         assert_eq!(
             settled,
-            [true, true, false],
-            "coin retry 409 and pre-create 403 must settle, but retry 403 plus 404 must keep the original pending"
+            [false, true, false],
+            "only the initial definitive refusal settles the request"
         );
         Ok(())
     })

@@ -293,6 +293,35 @@ pub async fn begin_projection<'a>(
     Ok(tx)
 }
 
+/// Retry checkout only. Once a pass runs, a publication or commit error must
+/// go through the scheduler's normal reconciliation on its next pass.
+async fn issue_snapshot_pass<T, F: Future<Output = ()>>(
+    mut issue: impl FnMut() -> std::result::Result<T, DurabilityError>,
+    mut wait: impl FnMut(tokio::time::Instant, tokio::time::Instant) -> F,
+) -> std::result::Result<T, DurabilityError> {
+    use tokio::time::Instant;
+
+    let deadline = Instant::now() + super::db::ROOT_RECOVERY_WINDOW;
+    loop {
+        let result = issue();
+        if !matches!(result, Err(DurabilityError::RootUnavailable)) {
+            return result;
+        }
+        let now = Instant::now();
+        if now >= deadline {
+            return result;
+        }
+        wait(
+            (now + Duration::from_millis(50)).min(deadline),
+            (now + Duration::from_millis(250)).min(deadline),
+        )
+        .await;
+        if Instant::now() >= deadline {
+            return result;
+        }
+    }
+}
+
 impl DurabilityRoot {
     /// Periodic publication is due after 30 minutes; a planned reset forces one complete cut.
     /// The composition root supplies the actual reset notification, not client command DATA.
@@ -338,7 +367,11 @@ impl DurabilityRoot {
         limits: CutLimits,
         retry_schedule: &mut bool,
     ) -> Result<SnapshotRefresh> {
-        self.try_issue_semantic_pass()?
+        issue_snapshot_pass(
+            || self.try_issue_semantic_pass(),
+            |earliest, latest| self.wait_holder_retry(earliest, latest),
+        )
+        .await?
             .run_with_context(retry_schedule, move |holder, deadline, retry_schedule| {
                 Box::pin(async move {
                     let mut tx = begin_projection(holder, deadline).await?;
