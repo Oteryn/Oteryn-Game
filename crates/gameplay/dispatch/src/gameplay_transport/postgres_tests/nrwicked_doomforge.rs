@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::{channel_content_pin::ChannelContentPin, qualify_native_entry_room};
+use crate::durability::runtime_scope_assignment::{AssignmentReceipt, NodeIncarnationProof};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::boot::{boot, tests as fixture};
@@ -1167,10 +1168,7 @@ async fn exercise_source_boss_handoff(
         return Err("source boss replacement refused".into());
     };
     assert_eq!(moved.assignment.ownership_generation, 2);
-    crate::bestiary_postgres_harness::publish_readiness_for_scope(
-        &h.pool, &h.root, &successor, 2, scope,
-    )
-    .await?;
+    publish_source_boss_successor_readiness(h, &successor, &moved).await?;
 
     assert!(!owner.recover_source_boss_admission().await?);
     assert_eq!(
@@ -1208,5 +1206,102 @@ async fn exercise_source_boss_handoff(
         assert_eq!(retained.0, published.character_id.as_bytes());
         assert_ne!(retained.1, unpublished);
     }
+    Ok(())
+}
+
+async fn publish_source_boss_successor_readiness(
+    h: &Harness,
+    successor: &NodeIncarnationProof,
+    moved: &AssignmentReceipt,
+) -> TestResult {
+    use crate::durability::admission_authority_guards::{
+        AdmissionGuardStore, GuardPublicationDisposition,
+    };
+    use crate::durability::runtime_scope_assignment::AssignmentError;
+    use crate::foundation::admission_authority_publication::{
+        AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
+        AdmissionAuthorityPublicationV1, AdmissionPublicationPreconditionV1,
+    };
+
+    let generation = moved.assignment.ownership_generation;
+    assert_eq!(moved.assignment.holder, Some(successor.fact()));
+    let key = AdmissionAuthorityGuardKeyV1::Runtime(moved.assignment.scope);
+    let previous = AdmissionGuardStore::from_root(h.root.clone())
+        .load(std::slice::from_ref(&key))
+        .await
+        .map_err(debug)?
+        .pop()
+        .flatten()
+        .ok_or("successor readiness predecessor")?;
+    assert_eq!(
+        moved.fenced_publication_revision,
+        Some(previous.publication_revision)
+    );
+    assert!(matches!(
+        previous.state,
+        AdmissionAuthorityGuardStateV1::Runtime {
+            ownership_generation,
+            ready: false,
+            ..
+        } if ownership_generation == generation
+    ));
+
+    let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
+        .fetch_one(&h.pool)
+        .await?;
+    let mut publisher = super::fresh_fixture::fresh::Source::new(now)?;
+    publisher.rows.retain(|row| row.key == key);
+    let [change] = publisher.rows.as_mut_slice() else {
+        return Err("successor runtime publisher".into());
+    };
+    let AdmissionAuthorityGuardStateV1::Runtime {
+        ownership_generation,
+        ..
+    } = &mut change.state
+    else {
+        return Err("successor runtime state".into());
+    };
+    *ownership_generation = generation;
+    change.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+        expected_publication_revision: previous.publication_revision,
+    };
+    change.publication_revision = previous
+        .publication_revision
+        .checked_add(1)
+        .ok_or("successor publication revision")?;
+    change.source.source_revision = previous
+        .source
+        .source_revision
+        .checked_add(1)
+        .ok_or("successor source revision")?;
+    change.source.decision_identity = format!("doomforge-runtime-ready-{generation}");
+
+    // Isolate the authority mismatch in the previous readiness helper.
+    let mut wrong_publisher = change.clone();
+    wrong_publisher.source.authority = "game-runtime-publisher".into();
+    let wrong_publication =
+        crate::bestiary_postgres_harness::ground_native_readiness_enforcement::prepare(
+            wrong_publisher, now,
+        )?;
+    assert_eq!(
+        h.root
+            .publish_runtime_readiness(successor, &wrong_publication)
+            .await
+            .map_err(debug)?,
+        GuardPublicationDisposition::Conflict,
+    );
+
+    let publication = AdmissionAuthorityPublicationV1::prepare(&publisher, now).map_err(debug)?;
+    assert!(matches!(
+        h.root.publish_runtime_readiness(&h.node, &publication).await,
+        Err(AssignmentError::NotCurrentHolder)
+    ));
+    assert_eq!(
+        h.root
+            .publish_runtime_readiness(successor, &publication)
+            .await
+            .map_err(debug)?,
+        GuardPublicationDisposition::Applied,
+    );
     Ok(())
 }
