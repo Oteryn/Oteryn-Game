@@ -110,6 +110,7 @@ impl Mailbox {
         );
         super::super::feature_0287_actor_spell_catalog::protocol::reduce(self, &events);
         super::super::feature_0291_cast_chat::protocol::reduce(self, &events);
+        self.mount_actor_published(&events);
         self.coalesce_events(events);
         self.check_server_messages();
         let notices = std::mem::take(&mut self.pushed.achievements);

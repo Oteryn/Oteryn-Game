@@ -9,8 +9,7 @@ use oteryn_session::LogoutResult;
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
 
-/// How long the session task serves liveness probes while no step is pending; well inside the
-/// server's probe cadence.
+/// How long the idle session task serves liveness probes; well inside the server's probe cadence.
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 pub use super::stepper::Stepper;
@@ -225,11 +224,14 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             Ok(PlayCommand::Feature(command)) => {
                 let item_scope = outbox.bar_action_scope();
                 let started = std::time::Instant::now();
+                outbox.feature_sent(command.capability);
                 match session.feature(&command).await {
                 Ok(result) => {
                     outbox.performance_command_result(started.elapsed());
+                    let mount_accepted = command.capability == 502
+                        && result.status == oteryn_session::CommandStatus::Accepted;
                     match command.capability {
-                        502 => outbox.mount_result(),
+                        502 if !mount_accepted => outbox.mount_result(result.status),
                         7 => outbox.console_result(&result),
                         10 => outbox.analyser_result(&command, &result),
                         63 => outbox.market_details_result(&command, &result),
@@ -285,6 +287,10 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);
+                    // The exchange can drain own-actor motion received before the reply.
+                    if mount_accepted {
+                        outbox.mount_result(result.status);
+                    }
                     continue;
                 }
                 Err(error) => error,
