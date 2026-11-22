@@ -25,7 +25,9 @@ type StashFields = Or<(With<Field>, With<Quantity>)>;
 enum Kind {
     Close,
     Filter,
+    ManageContainers,
     Sort,
+    Reverse,
     Previous,
     Next,
     Refresh,
@@ -81,6 +83,10 @@ fn perform(owner: &HostOwner, state: &mut State, kind: Kind) {
         return;
     };
     match kind {
+        Kind::ManageContainers if state.amount.is_none() => {
+            play.link.stash_close();
+            play.link.discovery_open(98);
+        }
         Kind::Close => {
             play.link.stash_close();
             state.amount = None;
@@ -128,6 +134,7 @@ fn perform(owner: &HostOwner, state: &mut State, kind: Kind) {
                 play.link.stash_request_bound(panel, intent);
             }
         }
+        Kind::Reverse if state.amount.is_none() => play.link.stash_reverse(),
         Kind::Sort if state.amount.is_none() => play.link.stash_sort(),
         Kind::Previous if state.amount.is_none() => play.link.stash_request(Intent::Previous),
         Kind::Next if state.amount.is_none() => play.link.stash_request(Intent::Next),

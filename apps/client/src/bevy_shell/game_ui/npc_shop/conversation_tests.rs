@@ -129,6 +129,35 @@ fn actual_server_conversation_opens_the_single_floating_npc_window_without_shop(
             .0,
         "Welcome. Ask for {trade}."
     );
+    let mode = app
+        .world_mut()
+        .query::<(Entity, &conversation::Control)>()
+        .iter(app.world())
+        .find_map(|(e, c)| matches!(c.kind, conversation::Kind::ChatMode).then_some(e))
+        .ok_or("chat mode")?;
+    let before = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .chat_panel()
+        .console
+        .mode;
+    app.world_mut().trigger(Activate { entity: mode });
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .console
+            .mode,
+        before.next()
+    );
     let keyword = app.world_mut().query::<(Entity, &conversation::Control)>().iter(app.world())
         .find(|(_,control)|matches!(&control.kind, conversation::Kind::Keyword(word) if word == "trade"))
         .map(|(entity,_)|entity).ok_or("server keyword")?;

@@ -13,6 +13,7 @@ pub(in crate::bevy_shell::game_ui::npc_shop) struct Widgets {
     pub progress: Entity,
     pub send: Entity,
     pub trade: Entity,
+    pub chat_mode: Entity,
 }
 pub(in crate::bevy_shell::game_ui::npc_shop) fn build(
     commands: &mut Commands,
@@ -123,6 +124,19 @@ pub(in crate::bevy_shell::game_ui::npc_shop) fn build(
         "Trade",
         70.,
     );
+    let chat_mode = button(
+        commands,
+        skin,
+        actions,
+        Control {
+            generation,
+            target: None,
+            kind: Kind::ChatMode,
+            lines: Vec::new(),
+        },
+        "Chat mode",
+        82.,
+    );
     let progress = commands
         .spawn(source::text("", source::font(skin.font.clone(), false)))
         .id();
@@ -133,6 +147,7 @@ pub(in crate::bevy_shell::game_ui::npc_shop) fn build(
         message,
         controls,
         progress,
+        chat_mode,
         send,
         trade,
     }

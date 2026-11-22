@@ -746,3 +746,178 @@ fn own_refresh_waits_for_catalogue_navigation() -> TestResult {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn character_level_button_requests_usable_market_wares() -> TestResult {
+    let (mut app, mut commands, outbox, _) = setup()?;
+    outbox.bevy_hud_skills_fixture()?;
+    click(&mut app, "market.filter.my_level")?;
+    let query = wire::decode_query(&feature(&mut commands)?.payload).map_err(|_| "query")?;
+    assert_eq!(
+        query,
+        wire::Query::Catalogue {
+            filter: Filter {
+                maximum_level: Some(30),
+                ..default()
+            },
+            page: 0
+        }
+    );
+    Ok(())
+}
+
+#[test]
+fn potion_button_opens_a_filtered_store_catalogue() -> TestResult {
+    let (mut app, mut commands, outbox, _) = setup()?;
+    outbox.bevy_store_initialize();
+    click(&mut app, "market.potions")?;
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    assert!(!link.market_panel().open);
+    let store = link.store_panel();
+    assert!(store.open);
+    assert_eq!(store.browser.search, "potion");
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::ServerMechanic(_)
+    ));
+    Ok(())
+}
+
+#[test]
+fn character_vocation_button_maps_promoted_knight_to_market_family() -> TestResult {
+    use oteryn_client_runtime::cyclopedia_character::{GeneralStats, TabExtension, TabView};
+    let (mut app, mut commands, outbox, _) = setup()?;
+    outbox.bevy_cyclopedia_initialize(true, true, false);
+    click(&mut app, "market.filter.my_vocation")?;
+    assert_eq!(feature(&mut commands)?.capability, 199);
+    let payload = TabView::GeneralStats(GeneralStats {
+        level: 42,
+        experience: 987654,
+        magic_level: 9,
+        skills: [11; 7],
+        stamina_minutes: 125,
+        offline_training_minutes: 60,
+        last_vitals: None,
+    })
+    .encode_extended(&TabExtension {
+        vocation_id: Some(7),
+        deaths: None,
+    })
+    .map_err(|_| "encode")?;
+    outbox.bevy_cyclopedia_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload,
+    });
+    app.update();
+    let query = wire::decode_query(&feature(&mut commands)?.payload).map_err(|_| "query")?;
+    assert_eq!(
+        query,
+        wire::Query::Catalogue {
+            filter: Filter {
+                vocation: Some(2),
+                ..default()
+            },
+            page: 0
+        }
+    );
+    Ok(())
+}
+
+#[test]
+fn funds_button_requests_and_displays_bank_and_carried_gold() -> TestResult {
+    use oteryn_client_runtime::npc_shop::resources;
+    let (mut app, mut commands, outbox, _) = setup()?;
+    outbox.bevy_market_resources_selected();
+    click(&mut app, "market.funds")?;
+    let request = feature(&mut commands)?;
+    assert_eq!(
+        request.capability,
+        resources::CAPABILITY_ATELIER_RESOURCES_V1
+    );
+    assert_eq!(
+        request.kind,
+        resources::COMMAND_TYPE_ATELIER_RESOURCES_QUERY
+    );
+    let balances = resources::ResourceBalances {
+        carried_gold: 19,
+        bank_gold: 83,
+        ..default()
+    };
+    outbox.market_funds_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload: resources::encode_reply(&balances),
+    });
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "102 gold (19 carried, 83 bank)")
+    );
+    Ok(())
+}
+
+#[test]
+fn hand_buttons_filter_catalogue_rows_by_inspected_body_position() -> TestResult {
+    use oteryn_client_ui::inspection::{self, InspectedItem, Reply};
+    let (mut app, mut commands, outbox, _) = setup()?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bevy_item_details_selected(true);
+    click(&mut app, "market.filter.two_handed")?;
+    let command = feature(&mut commands)?;
+    assert_eq!(
+        inspection::decode_request(&command.payload).map_err(|_| "request")?,
+        inspection::Request::Catalogue(42)
+    );
+    let payload = inspection::encode_reply(&Reply {
+        status: 1,
+        catalogue: None,
+        requests: vec![],
+        items: vec![InspectedItem {
+            slot: 0,
+            definition_ref: 42,
+            count: 1,
+            tier: 0,
+            name: "Test blade".into(),
+            attributes: vec![("Body Position".into(), "both hands".into())],
+        }],
+    })
+    .map_err(|_| "reply")?;
+    outbox.trade_inspection_result(
+        &command,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload,
+        },
+    );
+    app.update();
+    let visible = |app: &mut App| {
+        app.world_mut()
+            .query::<&Action>()
+            .iter(app.world())
+            .any(|a| matches!(a.kind, Kind::Item(0)))
+    };
+    assert!(visible(&mut app));
+    click(&mut app, "market.filter.one_handed")?;
+    assert!(!visible(&mut app));
+    click(&mut app, "market.filter.one_handed")?;
+    assert!(visible(&mut app));
+    Ok(())
+}

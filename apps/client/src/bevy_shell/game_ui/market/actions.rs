@@ -1,4 +1,23 @@
 use super::*;
+#[derive(Clone, Copy)]
+pub(super) enum Kind {
+    Close,
+    Coins,
+    Funds,
+    Hands(u8),
+    MyLevel,
+    MyVocation,
+    Potions,
+    Search,
+    Category(usize),
+    Item(usize),
+    Catalogue(i32),
+    Book(i32),
+    Statistics,
+    Intent(Intent),
+    Browse,
+}
+
 fn editing(text: &EditableText) -> bool {
     text.pending_paste.is_some()
         || text
@@ -69,6 +88,7 @@ pub(super) fn perform(owner: &HostOwner, state: &mut State, action: Action, sear
     if !panel.selected || panel.details.pending.is_some() || panel.pending.is_some() {
         return false;
     }
+    state.character_filter = None;
     let query = match action.kind {
         Kind::Intent(intent) => {
             play.link.market_request(intent);
@@ -90,6 +110,59 @@ pub(super) fn perform(owner: &HostOwner, state: &mut State, action: Action, sear
                 }
             }
         }
+        Kind::Hands(hand) => return play.link.market_toggle_hands(hand),
+        Kind::Funds => return play.link.market_request_funds(),
+        Kind::Potions => {
+            return play.link.market_open_potions();
+        }
+        Kind::MyLevel | Kind::MyVocation => {
+            let mut filter = panel.details.filter.clone();
+            if matches!(action.kind, Kind::MyLevel) {
+                let Some(level) = play.link.spellbook_actor_level() else {
+                    let skills = play.link.skill_progress_panel();
+                    if skills.complete_selected {
+                        if !skills.pending {
+                            play.link.skill_progress_request();
+                        }
+                        state.character_filter = Some(action);
+                    }
+                    return false;
+                };
+                let maximum = u16::try_from(level).unwrap_or(u16::MAX);
+                filter.maximum_level = (filter.maximum_level != Some(maximum)).then_some(maximum);
+                filter.minimum_level = None;
+            } else {
+                // General Stats includes promotions. Market filters use the base vocation.
+                let character = play.link.cyclopedia_character_panel();
+                if character.target.is_some() {
+                    return false;
+                }
+                let family = match character.vocation_id {
+                    Some(1) => 6,
+                    Some(2 | 3) => 1,
+                    Some(4 | 5) => 5,
+                    Some(6 | 7) => 2,
+                    Some(8 | 9) => 4,
+                    Some(10 | 11) => 3,
+                    None if character.selected
+                        && character.extensions.vocation
+                        && !character.pending =>
+                    {
+                        use oteryn_client_runtime::cyclopedia_character::CharacterTab;
+                        use oteryn_client_ui::cyclopedia_character::Intent;
+                        if play.link.cyclopedia_character_request(Intent::SelectTab(
+                            CharacterTab::GeneralStats,
+                        )) {
+                            state.character_filter = Some(action);
+                        }
+                        return false;
+                    }
+                    _ => return false,
+                };
+                filter.vocation = (filter.vocation != Some(family)).then_some(family);
+            }
+            MarketQuery::Catalogue { filter, page: 0 }
+        }
         Kind::Search => {
             let mut filter = panel.details.filter.clone();
             filter.search = search.into();
@@ -108,7 +181,12 @@ pub(super) fn perform(owner: &HostOwner, state: &mut State, action: Action, sear
             MarketQuery::Catalogue { filter, page: 0 }
         }
         Kind::Item(index) => {
-            let Some(ware) = panel.details.items.get(index) else {
+            let Some(ware) = panel
+                .details
+                .items
+                .get(index)
+                .filter(|w| panel.matches_hand_filter(w.definition))
+            else {
                 return false;
             };
             if !play.link.market_query(MarketQuery::Book {
@@ -167,4 +245,36 @@ pub(super) fn perform(owner: &HostOwner, state: &mut State, action: Action, sear
         }
     };
     play.link.market_query(query)
+}
+
+pub(super) fn finish_character_filter(owner: &HostOwner, state: &mut State) {
+    let Some(action) = state.character_filter else {
+        return;
+    };
+    let Some(play) = owner.play.as_ref() else {
+        return;
+    };
+    if action.key.generation != owner.generation()
+        || state.key != Some(action.key)
+        || owner.modal_active()
+    {
+        state.character_filter = None;
+        return;
+    }
+    let (waiting, available) = if matches!(action.kind, Kind::MyLevel) {
+        let skills = play.link.skill_progress_panel();
+        (skills.pending, skills.complete.is_some())
+    } else {
+        let stats = play.link.cyclopedia_character_panel();
+        (
+            stats.pending,
+            stats.target.is_none() && stats.vocation_id.is_some(),
+        )
+    };
+    if !waiting {
+        state.character_filter = None;
+        if available {
+            perform(owner, state, action, "");
+        }
+    }
 }

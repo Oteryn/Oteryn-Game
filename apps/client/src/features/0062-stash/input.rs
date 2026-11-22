@@ -7,6 +7,13 @@ use oteryn_client_ui::stash::{Intent, request};
 use oteryn_input_actions::NormalizedInputEvent;
 
 impl PlayLink {
+    pub fn stash_reverse(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.stash.selected || mailbox.stash.pending { return; }
+        mailbox.stash.reverse = !mailbox.stash.reverse;
+        mailbox.stash.last_server_page = None;
+        Self::stash_enqueue_request(&mut mailbox, &self.commands, Intent::Filter);
+    }
     pub fn stash_sort(&self) {
         Self::stash_enqueue_sort(&mut lock(&self.mailbox), &self.commands);
     }

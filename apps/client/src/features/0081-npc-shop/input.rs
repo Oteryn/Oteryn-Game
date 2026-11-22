@@ -24,6 +24,7 @@ pub(in crate::play) fn trade_request(
     amount: u32,
 ) {
     let mut mailbox = lock(shared);
+    mailbox.npc_shop.live.free_capacity = mailbox.inventory.capacity.map(|c| c.free);
     if mailbox.npc_shop.pending {
         return;
     }

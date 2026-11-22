@@ -17,6 +17,7 @@ pub(super) struct Control {
 }
 #[derive(Clone)]
 pub(super) enum Kind {
+    ChatMode,
     Send,
     Trade,
     Keyword(String),
@@ -83,6 +84,11 @@ fn activate(
         return;
     };
     match &control.kind {
+        Kind::ChatMode => {
+            if let Some(play) = &owner.play {
+                play.link.chat_console_mode();
+            }
+        }
         Kind::Send => submission::request(&owner, &mut state, event.entity, widgets.message, actor),
         Kind::Trade | Kind::Keyword(_) => {
             let text = match &control.kind {
@@ -198,12 +204,11 @@ pub(super) fn project(
     let context_changed = changed || state.conversation.lines != dialogue.lines;
     if context_changed {
         state.conversation.lines.clone_from(&dialogue.lines);
-        for entity in [widgets.send, widgets.trade] {
-            let kind = if entity == widgets.send {
-                Kind::Send
-            } else {
-                Kind::Trade
-            };
+        for (entity, kind) in [
+            (widgets.send, Kind::Send),
+            (widgets.trade, Kind::Trade),
+            (widgets.chat_mode, Kind::ChatMode),
+        ] {
             commands.entity(entity).insert(Control {
                 generation,
                 target: dialogue.target,

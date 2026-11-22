@@ -1,7 +1,10 @@
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn npc_shop_panel(&self) -> oteryn_client_ui::npc_shop::NpcShopPanel {
-        lock(&self.mailbox).npc_shop.clone()
+        let mailbox = lock(&self.mailbox);
+        let mut shop = mailbox.npc_shop.clone();
+        shop.live.free_capacity = mailbox.inventory.capacity.map(|c| c.free);
+        shop
     }
 }
 
