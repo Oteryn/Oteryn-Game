@@ -77,10 +77,14 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
 }
 
 // The dedicated PG target uses the same caller and constructor as in-crate tests.
+pub use super::capabilities::SelectedCapabilities;
 pub use super::character_progression_binding::{
     ProgressionBinding, ProgressionDurable, ProgressionRounds, bind_character_progression,
 };
-pub use super::connection::{FreshAdmissionAuthority, UseCommand};
+pub use super::connection::{
+    AdmittedSession, ConnectionEnd, ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority,
+    IDLE_LIVENESS, SessionContinuity, UseCommand, serve_admitted,
+};
 pub use super::item_view::ItemKey;
 
 pub fn empty_capabilities(
@@ -199,4 +203,88 @@ pub fn world_tool_callbacks(
         })
         .map(|c| c.key.clone())
         .collect())
+}
+
+/// Use the live creature death and kill reward owners for a spawned test encounter.
+pub async fn defeat_spawned_creature(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    target: crate::foundation::ExactActorRef,
+    command: u64,
+    creature: &str,
+) -> TestResult {
+    use super::kill_reward::{DrainOutcome, KillSink, record_creature_kill};
+    use crate::foundation::{CommandId, CommandRef, OwnerDamageCommand};
+
+    let actor = admitted.runtime_actor.ok_or("hunter")?;
+    if !owner
+        .refresh_source_party_presence(actor, admitted.game_session_id)
+        .await
+    {
+        return Err("hunter presence unavailable".into());
+    }
+    let native = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("native gameplay")?;
+    let queue = owner.states.attack.lock().await.kills().clone();
+    let observed = owner.owner_now();
+    let now = observed.get() / 1000;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let lease = runtime
+            .bound_attacker_lease(actor, admitted.game_session_id)
+            .map_err(fixture::debug)?;
+        let health = runtime
+            .companion_snapshot(target)
+            .map_err(fixture::debug)?
+            .health;
+        runtime
+            .borrow_exact_actor_commit_at(now)
+            .commit_swing_damage_for_bound_attacker(
+                target,
+                actor,
+                CommandRef::new(
+                    admitted.game_session_id,
+                    CommandId::new(command).map_err(fixture::debug)?,
+                ),
+                1,
+                OwnerDamageCommand {
+                    target: creature.as_bytes(),
+                    occurrence: admitted.game_session_id.as_bytes(),
+                    binding: b"shipped-encounter",
+                    damage: health,
+                },
+            )
+            .map_err(fixture::debug)?;
+        record_creature_kill(
+            &mut runtime,
+            KillSink {
+                prey: None,
+                activity: &[],
+                queue: &queue,
+                rewards: native.reward_table(),
+                charms: None,
+            },
+            target,
+            crate::combat::CapturedRewardPrincipal {
+                character: lease.character_id(),
+                lease_generation: lease.generation(),
+                session: admitted.game_session_id,
+                actor,
+            },
+            now,
+            Some(observed),
+        );
+    }
+    assert_eq!(
+        owner.drain_kill_rewards(admitted.game_session_id).await,
+        DrainOutcome::Drained
+    );
+    Ok(())
+}
+
+/// Run the Channel owner's durable Item decay and projection invalidation.
+pub async fn drain_source_item_deadlines(owner: &ComposedFreshAdmission<'_, '_, '_>) {
+    owner.drain_source_item_deadlines().await;
 }

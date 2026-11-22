@@ -36,7 +36,11 @@ pub fn validate_resolved_world(
     }
     let mut owned = None;
     let mut protected = BTreeSet::new();
+    let mut callback_keys = BTreeSet::new();
     for callback in callbacks {
+        if !callback_keys.insert(&callback.key) {
+            return Err("duplicate resolved World callback".into());
+        }
         if published.owners.contains_key(&callback.key)
             || world_callbacks::gated_binding(callback)?.is_none()
         {
@@ -86,9 +90,10 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
-        assert_eq!(base.len(), 1002);
+        // Twenty Miles adds 44 published callbacks to the Koshei registry.
+        assert_eq!(base.len(), 1053);
         assert_eq!(bindings.world_callbacks().count(), 31);
-        assert_eq!(callbacks.len(), 1033);
+        assert_eq!(callbacks.len(), 1084);
         let expected: BTreeSet<_> = base
             .iter()
             .chain(bindings.world_callbacks())
@@ -105,7 +110,7 @@ mod tests {
         substituted[0] = callbacks[1].clone();
         assert_eq!(
             validate_resolved_world(catalogue, transition, false, &substituted),
-            Err("resolved World source bounds".into())
+            Err("duplicate resolved World callback".into())
         );
         Ok(())
     }

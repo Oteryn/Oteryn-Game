@@ -4,6 +4,7 @@ pub(super) mod carrot;
 pub(crate) mod character_requirements;
 mod completed_quests;
 pub(super) mod completion;
+mod definition_target;
 mod ground_read;
 pub(crate) mod ground_stack;
 #[path = "quest_world_callback_npc_input.rs"]
@@ -11,6 +12,7 @@ mod npc_input;
 mod selected_tool;
 mod tool_reads;
 pub use selected_tool::QuestWorldToolContext;
+pub(crate) use selected_tool::SelectedQuestTool;
 
 /// Test-only entry for the lifted PostgreSQL harness; the opaque transaction
 /// authority and all production Ground locks are checked by the same participant.
@@ -467,6 +469,9 @@ pub(super) async fn consume(
         return Ok(false);
     }
     if !context_is_current(tx, permit, fence, context).await? {
+        return Ok(false);
+    }
+    if !definition_target::require(tx, fence, callback, context).await? {
         return Ok(false);
     }
     if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {

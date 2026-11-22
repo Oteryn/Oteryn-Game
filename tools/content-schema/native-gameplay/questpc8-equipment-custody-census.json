@@ -5,11 +5,11 @@
   "inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "3bc1a4e5752058fabf73303a97bdbfb36ef5f7cf0854eee92bcdfd2ad472b0d2"
+      "sha256": "6faed9790a4cb86f3c1e576c6bf1bcecb51379eaf6a9a078c18a0eb347d20a2e"
     },
     {
       "path": "content/items/definitions/srx1-item-updates.json",
-      "sha256": "d1a17a3fedff6a38fe28c28098eb78251a0b6cbc52b8797159159265d2c41053"
+      "sha256": "f68f7e296924407527c018d64ba703cc7211cd42f29c450b0e7bffb8f77070f4"
     },
     {
       "path": "content/items/definitions/starting-loadout-profiles.json",
@@ -238,6 +238,10 @@
     "oteryn:item.tibia.i18100",
     "oteryn:item.tibia.i18101",
     "oteryn:item.tibia.i1841",
+    "oteryn:item.tibia.i1892",
+    "oteryn:item.tibia.i1895",
+    "oteryn:item.tibia.i1898",
+    "oteryn:item.tibia.i1899",
     "oteryn:item.tibia.i19083",
     "oteryn:item.tibia.i19151",
     "oteryn:item.tibia.i1947",
@@ -940,6 +944,8 @@
     "oteryn:item.tibia.i30877",
     "oteryn:item.tibia.i30878",
     "oteryn:item.tibia.i3103",
+    "oteryn:item.tibia.i3110",
+    "oteryn:item.tibia.i3116",
     "oteryn:item.tibia.i31183",
     "oteryn:item.tibia.i31184",
     "oteryn:item.tibia.i31185",
@@ -2598,12 +2604,14 @@
     "oteryn:item.tibia.i51197",
     "oteryn:item.tibia.i51198",
     "oteryn:item.tibia.i51199",
+    "oteryn:item.tibia.i5120",
     "oteryn:item.tibia.i51204",
     "oteryn:item.tibia.i51205",
     "oteryn:item.tibia.i51206",
     "oteryn:item.tibia.i51207",
     "oteryn:item.tibia.i51208",
     "oteryn:item.tibia.i51209",
+    "oteryn:item.tibia.i5121",
     "oteryn:item.tibia.i51210",
     "oteryn:item.tibia.i51211",
     "oteryn:item.tibia.i51212",
@@ -2714,6 +2722,7 @@
     "oteryn:item.tibia.i6248",
     "oteryn:item.tibia.i6264",
     "oteryn:item.tibia.i6265",
+    "oteryn:item.tibia.i6298",
     "oteryn:item.tibia.i6355",
     "oteryn:item.tibia.i6356",
     "oteryn:item.tibia.i6357",
@@ -2845,6 +2854,11 @@
     "oteryn:item.tibia.i7530",
     "oteryn:item.tibia.i7531",
     "oteryn:item.tibia.i7532",
+    "oteryn:item.tibia.i7535",
+    "oteryn:item.tibia.i7537",
+    "oteryn:item.tibia.i7538",
+    "oteryn:item.tibia.i7539",
+    "oteryn:item.tibia.i7540",
     "oteryn:item.tibia.i764",
     "oteryn:item.tibia.i765",
     "oteryn:item.tibia.i766",

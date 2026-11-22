@@ -12,6 +12,7 @@ mod committed_copy;
 mod court_warlock;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
+mod definition_target;
 mod dreamer_carrot;
 mod effects;
 mod encounter;
@@ -253,6 +254,10 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
+    // Definition selectors are admitted through live Ground handles.
+    if callback.selector.target_definition.is_some() {
+        return false;
+    }
     // These source-bound World ingresses retain no startup UID/AID in B3.
     // An appearance elsewhere in the stack cannot impersonate their source.
     let source_ordinal = match callback.key.as_str() {

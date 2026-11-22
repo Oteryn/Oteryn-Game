@@ -1578,6 +1578,47 @@ pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
                 ("oteryn:quest-progress/qc/twenty_miles/stage", -1),
             ],
         ),
+        // Verified on b538450044 before the amulet exchange.
+        (
+            "oteryn:quest.koshei_the_deathless_quest",
+            [
+                0x1a, 0x1c, 0x54, 0x3d, 0xbe, 0x51, 0x1c, 0x3a, 0x56, 0x54, 0xd1, 0x38, 0x59, 0x56,
+                0x22, 0x4b, 0x73, 0x23, 0x24, 0x3a, 0xce, 0x53, 0xfa, 0x5e, 0xb1, 0x42, 0xe6, 0x76,
+                0x36, 0x1f, 0xc4, 0x20,
+            ],
+            &[
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part1",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part2",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part3",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part4",
+                    0,
+                ),
+                ("oteryn:quest-progress/qnpcfx/koshei/amulet", 0),
+                ("oteryn:quest-progress/qnpcfx/koshei/amulet_started_at", 0),
+                (
+                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs/claimed",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum/claimed",
+                    0,
+                ),
+            ],
+        ),
     ];
     for &(quest, hash, defaults) in PREVIOUS {
         if active
