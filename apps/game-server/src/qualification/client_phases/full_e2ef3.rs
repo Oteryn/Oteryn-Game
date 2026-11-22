@@ -6,6 +6,9 @@ use super::*;
 use oteryn_protocol_oteryn::{container_tree as tree, inspection as inspect};
 use std::collections::BTreeMap;
 
+#[path = "full_e2ef3_e2ei-a.rs"]
+mod e2ei_a;
+
 struct Row {
     id: &'static str,
     source: &'static str,
@@ -14,11 +17,6 @@ struct Row {
 
 // Keep the audit's sub-actions explicit, including the durability assertions.
 const ROWS: &[Row] = &[
-    Row {
-        id: "I01",
-        source: "crates/gameplay/dispatch/src/gameplay_transport/loop_move.rs:3",
-        missing: "ground-inventory,nested-move,split-stack,merge-stack,capacity-refusal,relogin-quantities",
-    },
     Row {
         id: "I04",
         source: "crates/protocol-oteryn/src/mail.rs:14",
@@ -58,11 +56,6 @@ const ROWS: &[Row] = &[
         id: "I15",
         source: "crates/gameplay/dispatch/src/gameplay_transport/timed_item_clock.rs:49",
         missing: "obtain-energy-ring,equip,damage-mana-at-two-to-one,health-spill,unequip-pause,expiry,relogin-timer",
-    },
-    Row {
-        id: "I16",
-        source: "crates/gameplay/dispatch/src/gameplay_transport/inspection.rs:644",
-        missing: "inspect-applied-imbuement,assert-family-tier-time-and-weight,relogin-imbuement",
     },
 ];
 
@@ -268,19 +261,7 @@ pub(super) async fn run(
         let saved_quantities = quantities(&client)?;
         open_backpack(&mut client).await?;
         let before = backpack_inspection(&mut client).await?;
-        let session = client.join_snapshot().game_session_id;
-        let saved_position = client.world_spatial().actor_position;
-        let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(&mut client).await?;
-        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("E2EF3 fresh admission logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
-        }
-        drop(client);
-        client = connect_world(clients, 0x79).await?;
-        if client.join_snapshot().game_session_id == session
-            || client.world_spatial().actor_position != saved_position
-        {
-            return Err("E2EF3 fresh admission session/position mismatch".into());
-        }
+        e2ei_a::relogin_starter(&mut client, clients).await?;
         open_backpack(&mut client).await?;
         if backpack_inspection(&mut client).await? != before
             || quantities(&client)? != saved_quantities
@@ -293,7 +274,7 @@ pub(super) async fn run(
                 started.elapsed().as_secs_f64()
             ));
         }
-        Ok::<_, Box<dyn std::error::Error>>(client)
+        Ok::<_, Box<dyn std::error::Error>>(())
     }
     .await;
     let cause = match &observations {
@@ -320,5 +301,6 @@ pub(super) async fn run(
             &cause,
         );
     }
-    observations
+    let client = e2ei_a::run(client, clients).await;
+    observations.map(|()| client)
 }

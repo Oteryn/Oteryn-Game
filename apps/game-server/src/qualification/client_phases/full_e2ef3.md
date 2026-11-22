@@ -12,7 +12,7 @@ is made. `E2EF3_GAP` explicitly lists unexecuted actions; only strict
 
 | Row | Real client assertions in this file | Remaining sub-actions / expected full result |
 | --- | --- | --- |
-| I01 | Open the starter backpack through CONTAINER_TREE; decode its delta; assert capacity, parent and direct inventory agreement; fresh admission and reopen | Ground/inventory/nested moves, stack split/merge, capacity refusal and quantity persistence are unimplemented: FAIL |
+| I01 | Drop and pick up the starter rope through browse-field custody. Buy six five-slot presents from Lubo, USE one in the starter backpack, move and split/merge the gold stack in it, fill its four remaining slots with presents, require `NoRoom` and unchanged custody, then reopen and verify exact quantities after fresh admission. | Node boot must confirm the route and each assertion. |
 | I04 | None | Write/read rewritable text, text limit, write-once transform, rewrite refusal and fresh-login text/transform are unimplemented: FAIL |
 | I06 | None | Kill, leave loot, wait for real decay, assert remaining loot retirement and fresh-login retirement are unimplemented: FAIL |
 | I07 | None | Manual click/loot-all, accept/skip filters, category recipients, Gold Pouch, quiver ammunition and durable policy/custody are unimplemented: FAIL |
@@ -21,7 +21,7 @@ is made. `E2EF3_GAP` explicitly lists unexecuted actions; only strict
 | I12 | None | Obtain pick/stone, USE-with, assert stone consumption and retained refinement across fresh login are unimplemented: FAIL |
 | I13 | Same conditional bag journey for Bag You Covet, using its separate production pool | No ordinary acquisition route implemented. Expected FAIL on the starter character; conditional PASS only after all assertions succeed |
 | I15 | None | Energy Ring equip, 2:1 mana cost, HP spill, unequip/pause, expiration and durable timer are unimplemented: FAIL |
-| I16 | Inspect the actual starter instance through INSPECTION; assert definition/count/nonzero total weight; fresh admission and compare the complete inspection projection | Applied imbuement family/tier/time and weight projection across fresh login are unimplemented: FAIL |
+| I16 | Route to a placed shrine, seek a Sword from NPC trade and the Basic Strike recipe through ordinary acquisition, then compare the actual slot text, 20-hour duration and 35.00 oz weight before and after fresh admission if application succeeds. | Expected FAIL at `inspect-applied-imbuement` on the town starter unless materials are acquired. The only vendor for 20 Protective Charms (11444) is the Imbuement Assistant, whose placement is absent from the town crop. The crop contains one Valkyrie spawn with a 90-second respawn and a 3.0974% chance of one charm per kill. The existing bounded rat hunt supplies neither the charm nor a confirmed route to the 7,500 gold fee. |
 
 Bag candidates come from `oteryn_gameplay_items::reward_bag::reward_bags`;
 the content index only translates production keys to native references. The
