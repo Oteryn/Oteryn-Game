@@ -292,14 +292,14 @@ def materialize_item_tree(reference, declarations, editor, sources):
     extend_boss_movement_references(item_records, ROOT)
     from boss_corpse_terminal_reference import extend_records as extend_corpse_terminal_reference
     extend_corpse_terminal_reference(item_records, ROOT)
+    from fourth_quarter_corpses import extend_item_references as extend_fourth_quarter_references
+    extend_fourth_quarter_references(ROOT, item_records)
     from qready1_cradle_item_profiles import extend_records as extend_cradle_references
     extend_cradle_references(item_records, ROOT)
     from cake_bridge_reference import extend_records as extend_cake_bridge_reference
     extend_cake_bridge_reference(item_records, ROOT)
     from nrwicked_profiles import extend_records as extend_arbaziloth_fire
     extend_arbaziloth_fire(item_records, ROOT)
-    from ordinary_corpse_cohort import extend_item_references
-    extend_item_references(item_records, ROOT)
     from encounter_loot_item_admissions import apply_admissions as apply_encounter_loot_admissions
     apply_encounter_loot_admissions(item_records, ROOT)
     from itemhold_q import apply_admissions as apply_quest_item_holds
@@ -308,8 +308,6 @@ def materialize_item_tree(reference, declarations, editor, sources):
     apply_tainted_talisman(item_records, ROOT)
     from engclaim_item_profiles import apply_admissions as apply_engclaim_items
     apply_engclaim_items(item_records, ROOT)
-    from ordinary_corpse_slice2 import extend_references as extend_ordinary_corpse_references
-    extend_ordinary_corpse_references(item_records, ROOT)
     # Captured Global client weights win over the legacy package (ITEMGLOB).
     from import_cyclopedia_global import apply_admissions as apply_client_weights
     apply_client_weights(item_records, ROOT)
@@ -318,6 +316,10 @@ def materialize_item_tree(reference, declarations, editor, sources):
     apply_global_potions(item_records)
     from ordinary_corpse_profiles import extend_definitions as extend_corpse_definitions
     extend_corpse_definitions(ROOT, item_records)
+    from ordinary_corpse_slice2 import extend_references as extend_ordinary_corpse_references
+    extend_ordinary_corpse_references(item_records, ROOT)
+    from ordinary_corpse_cohort import extend_item_references as extend_third_quarter_references
+    extend_third_quarter_references(item_records, ROOT)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []

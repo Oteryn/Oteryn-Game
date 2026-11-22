@@ -793,6 +793,22 @@ fn source_exact_corpse_capacity(creature: &str, corpse: &SectionRef) -> Option<u
     }
 }
 
+static FOURTH_QUARTER_PLAIN_CORPSES: LazyLock<BTreeMap<String, String>> = LazyLock::new(|| {
+    #[derive(Deserialize)]
+    struct Source {
+        plain: BTreeMap<String, u32>,
+    }
+    serde_json::from_str::<Source>(super::native_gameplay::FOURTH_QUARTER_CORPSE_SOURCE)
+        .map(|source| {
+            source
+                .plain
+                .into_iter()
+                .map(|(creature, item)| (creature, format!("oteryn:item.tibia.i{item}")))
+                .collect()
+        })
+        .unwrap_or_default()
+});
+
 fn crystal_plain_corpses() -> &'static [(String, u32)] {
     static CORPSES: LazyLock<Vec<(String, u32)>> = LazyLock::new(|| {
         serde_json::from_str(include_str!(
@@ -806,7 +822,7 @@ fn crystal_plain_corpses() -> &'static [(String, u32)] {
 fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
     corpse.family == "Item"
         && corpse.revision == "definition-r1"
-        && (matches!(
+        && (FOURTH_QUARTER_PLAIN_CORPSES.get(creature) == Some(&corpse.key) || matches!(
             (creature, corpse.key.as_str()),
             (
                 "oteryn:creature.symbol_of_hatred",
@@ -904,6 +920,11 @@ fn verified_soul_war_corpses(
             | "oteryn:item.tibia.i33984"))
             && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
             && record.semantics.container == F::NotApplicable;
+        let source_quarter_plain = FOURTH_QUARTER_PLAIN_CORPSES.values().any(|key| key == &definition.production_key)
+            && record.admission.legal_destinations == [NativeItemDestination::Ground]
+            && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
+            && matches!(&record.semantics.physical, F::Known(value) if value.pickupable == F::Known(false))
+            && record.semantics.container == F::NotApplicable;
         let questpc7_capacity = match definition.production_key.as_str() {
             "oteryn:item.tibia.i6048" => Some(36),
             "oteryn:item.tibia.i20972" => Some(38),
@@ -941,7 +962,7 @@ fn verified_soul_war_corpses(
             && matches!(&record.semantics.physical, F::Known(value)
                 if value.weight == F::Known(0) && value.movable == F::Known(movable) && value.pickupable == F::Known(false))
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(capacity)));
-        source_48 || source_plain || source_questpc7 || source_ordinary
+        source_48 || source_plain || source_quarter_plain || source_questpc7 || source_ordinary
     }).map(|record| record.production_definition.production_key.clone()).collect()
 }
 
@@ -1538,6 +1559,77 @@ mod protected_loot_tests {
             "../../../../../tools/content-schema/native-gameplay/loot-tables.json"
         ))?;
         Ok((creatures, loot))
+    }
+
+    #[test]
+    fn fourth_quarter_source_corpses_load_from_pin() -> Result<(), Box<dyn std::error::Error>> {
+        let (_, loot) = documents()?;
+        let world = crate::content::production::test_source(1)?.world_id;
+        let (controller, _) =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or("qualified native generation")?;
+        let table = native.reward_table();
+        #[derive(Deserialize)]
+        struct Expected {
+            admitted: BTreeMap<String, u32>,
+        }
+        let source: Expected =
+            serde_json::from_str(super::super::native_gameplay::FOURTH_QUARTER_CORPSE_SOURCE)?;
+        assert_eq!(source.admitted.len(), 298);
+        let mut protected_loot_refusals = Vec::new();
+        for (creature, item) in source.admitted {
+            let expected = format!("oteryn:item.tibia.i{item}");
+            let outcome = table
+                .reward_boss_corpse(&creature)
+                .map_or_else(|| table.row(&creature), Ok);
+            match outcome {
+                Ok(row) => assert_eq!(
+                    row.corpse_item
+                        .as_ref()
+                        .map(|body| body.production_key.as_str()),
+                    Some(expected.as_str()),
+                    "{creature}"
+                ),
+                Err(NoSettlementReason::LootItemInadmissible) => {
+                    // The body qualified. Existing protected-yield admission still
+                    // refuses the entire settlement when any required yield is absent.
+                    assert!(
+                        loot.items.iter().any(|facts| {
+                            facts.item.key == expected
+                                && facts.materializable
+                                && facts.container_capacity.is_some()
+                        }),
+                        "{creature} has no admitted container"
+                    );
+                    protected_loot_refusals.push(creature);
+                }
+                Err(reason) => return Err(format!("{creature}: {}", reason.as_str()).into()),
+            }
+        }
+        assert_eq!(
+            protected_loot_refusals,
+            [
+                "oteryn:creature.shaper_matriarch",
+                "oteryn:creature.shiversleep",
+                "oteryn:creature.sight_of_surrender",
+                "oteryn:creature.silencer",
+                "oteryn:creature.sineater_inferniarch",
+                "oteryn:creature.sir_leonard",
+                "oteryn:creature.sir_leopold",
+                "oteryn:creature.spellreaper_inferniarch",
+                "oteryn:creature.terrorsleep",
+                "oteryn:creature.the_flaming_orchid",
+                "oteryn:creature.ushuriel",
+                "oteryn:creature.varg",
+                "oteryn:creature.vladrukh",
+                "oteryn:creature.weakened_frazzlemaw",
+                "oteryn:creature.zorvorax",
+            ]
+        );
+        Ok(())
     }
 
     #[test]
