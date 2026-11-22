@@ -45,6 +45,9 @@ pub(super) fn route(
             &NormalizedInputEvent::DeviceLost,
             false,
         );
+        if let Some(play) = &mut owner.play {
+            play.view.cancel_touch_controls();
+        }
         owner.route_input(&reset, true);
         input.generation = Some(owner.generation());
         input.physical_pointer = None;

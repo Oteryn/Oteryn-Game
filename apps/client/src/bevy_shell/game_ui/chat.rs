@@ -37,6 +37,7 @@ struct ChatState {
     rows: Vec<widgets::RenderedRow>,
     row_entities: Vec<Entity>,
     selection: Option<Entity>,
+    source: Option<(u64, ConsoleTab, Option<oteryn_client_ui::chat::ChannelTab>)>,
     menu: Option<Entity>,
 }
 impl Default for ChatState {
@@ -54,6 +55,7 @@ impl Default for ChatState {
             rows: Vec::new(),
             row_entities: Vec::new(),
             selection: None,
+            source: None,
             menu: None,
         }
     }
@@ -424,6 +426,11 @@ fn project(
         state.selection = None;
     }
     if selection_ended || previous.as_ref() != Some(&panel) {
+        state.source = Some((
+            panel.scope,
+            panel.console.tab,
+            panel.console.current.clone(),
+        ));
         let rows = widgets::transcript_rows(&panel);
         if selection_ended || state.rows != rows {
             state.selection = None;

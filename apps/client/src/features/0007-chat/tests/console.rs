@@ -283,6 +283,29 @@ fn communication_form_switches_filter_private_lines_and_preserves_membership() -
     let visible = || panel_text(&link.chat_panel()).contains("letter");
     toggle("Block private messages")?;
     assert!(!visible());
+    {
+        let mut mailbox = crate::play::mailbox::lock(&outbox.0);
+        mailbox.chat.recipients = vec![Some("Bob".into())];
+    }
+    assert!(
+        visible(),
+        "the sender still sees their own outgoing private echo"
+    );
+    {
+        let mut mailbox = crate::play::mailbox::lock(&outbox.0);
+        mailbox.chat.recipients.clear();
+        mailbox.chat.console.sync_conversations(
+            &[ChatLine::Private {
+                speaker_name: "Hidden".into(),
+                text: "blocked".into(),
+            }],
+            &[Some(1)],
+            &[None],
+        );
+        assert!(!mailbox.chat.console.channels.contains(
+            &oteryn_client_ui::chat::ChannelTab::Conversation("Hidden".into())
+        ));
+    }
     toggle("Block private messages")?;
     assert!(visible());
     link.chat_communication(Some(CommunicationList::Ignore), "Alice", true);
@@ -305,27 +328,75 @@ fn communication_form_exempts_vip_names_and_filters_yells_only() -> Result<(), E
     let (link, _, outbox) = play_channel();
     outbox.chat_initialize(true);
     let line = |name: &str, mode| ChatLine::Local {
-        speaker: ChatSpeaker { identity: [1;16], generation: std::num::NonZeroU64::MIN },
-        speaker_name: name.into(), mode, text: format!("message from {name}"),
-        position: ActorPosition { x: 1, y: 2, floor: 7 },
+        speaker: ChatSpeaker {
+            identity: [1; 16],
+            generation: std::num::NonZeroU64::MIN,
+        },
+        speaker_name: name.into(),
+        mode,
+        text: format!("message from {name}"),
+        position: ActorPosition {
+            x: 1,
+            y: 2,
+            floor: 7,
+        },
     };
-    outbox.chat_public_state(ChatRoomSet::default(), vec![
-        line("Alice", ChatSpeechMode::Yell), line("Bob", ChatSpeechMode::Yell), line("Carol", ChatSpeechMode::Say)
-    ]);
+    outbox.chat_public_state(
+        ChatRoomSet::default(),
+        vec![
+            line("Alice", ChatSpeechMode::Yell),
+            line("Bob", ChatSpeechMode::Yell),
+            line("Carol", ChatSpeechMode::Say),
+        ],
+    );
     link.chat_communication(Some(CommunicationList::Ignore), "Alice", true);
     link.chat_lists_open(None);
-    let form = crate::play::FeatureForm::all().iter().copied().find(|form| form.title(&link) == "Communication lists").ok_or("form")?;
-    for label in ["Block yells","Allow VIP speakers"] {
-        let index = link.feature_form_view(form).buttons.iter().position(|button| *button == label).ok_or("filter button")?;
-        link.feature_form_submit(form,index,vec![]);
+    let form = crate::play::FeatureForm::all()
+        .iter()
+        .copied()
+        .find(|form| form.title(&link) == "Communication lists")
+        .ok_or("form")?;
+    for label in ["Block yells", "Allow VIP speakers"] {
+        let index = link
+            .feature_form_view(form)
+            .buttons
+            .iter()
+            .position(|button| *button == label)
+            .ok_or("filter button")?;
+        link.feature_form_submit(form, index, vec![]);
     }
     outbox.vip_result(&oteryn_client_runtime::vip::VipResponse {
         status: oteryn_session::CommandStatus::Accepted,
-        result: oteryn_client_runtime::vip::vip::ResultView { code: 1, revision: 1, number: 0, wait: 0,
-            view: r#"{"entries":[{"number":1,"name":"ALICE"}],"next_entry":0}"#.into() }
+        result: oteryn_client_runtime::vip::vip::ResultView {
+            code: 1,
+            revision: 1,
+            number: 0,
+            wait: 0,
+            view: r#"{"entries":[{"number":1,"name":"ALICE"}],"next_entry":0}"#.into(),
+        },
     });
     let text = panel_text(&link.chat_panel());
     assert!(text.contains("message from Alice") && text.contains("message from Carol"));
     assert!(!text.contains("message from Bob"));
+    outbox.vip_presence_initialize(true, false);
+    outbox.push(vec![oteryn_session::SessionEvent::VipPresence(
+        oteryn_session::AppliedDelta {
+            server_sequence: 2,
+            base_revision: 1,
+            new_revision: 2,
+            value: oteryn_session::VipPresenceBatch {
+                entries: vec![oteryn_session::VipPresenceEntry {
+                    entry: 2,
+                    name: "Bob".into(),
+                    status: oteryn_session::VipPresenceStatus::Offline,
+                    announce: false,
+                    confirmed_for_ms: 0,
+                    channel: None,
+                }],
+            },
+        },
+    )]);
+    let text = panel_text(&link.chat_panel());
+    assert!(text.contains("message from Bob") && !text.contains("message from Alice"));
     Ok(())
 }

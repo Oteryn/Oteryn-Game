@@ -152,6 +152,13 @@ impl Mailbox {
                     self.vip_channel_notices.push((serial, notice));
                 }
             }
+            self.chat.console.communication.vip_names = presence
+                .entries
+                .iter()
+                .map(|entry| entry.name.to_lowercase())
+                .collect();
+            self.chat_private.communication = self.chat.console.communication.clone();
+            self.chat_party_room.communication = self.chat.console.communication.clone();
             self.vip_presence_confirmed_at = Some(received_at);
             oteryn_client_ui::vip_presence::replace(&mut self.vip_presence, presence);
         }
@@ -370,14 +377,38 @@ impl PlayLink {
 
     #[cfg(bevy_shell)]
     pub(crate) fn stalled_logout(&self, now: std::time::Instant) -> Option<std::time::Instant> {
-        lock(&self.mailbox).logout_requested.filter(|sent| {
-            now.saturating_duration_since(*sent) >= std::time::Duration::from_secs(5)
-        })
+        let mailbox = lock(&self.mailbox);
+        mailbox
+            .logout_requested
+            .filter(|sent| {
+                now.saturating_duration_since(*sent) >= std::time::Duration::from_secs(5)
+            })
+            .or_else(|| {
+                mailbox.traffic.as_ref()?.last_read().filter(|read| {
+                    // Two missed five-second idle probes allow ordinary network jitter.
+                    now.saturating_duration_since(*read) >= std::time::Duration::from_secs(10)
+                })
+            })
     }
 
     #[cfg(bevy_shell)]
-    pub(crate) fn awaiting_logout(&self, sent: std::time::Instant) -> bool {
-        lock(&self.mailbox).logout_requested == Some(sent)
+    pub(crate) fn set_session_task(&self, handle: tokio::task::AbortHandle) {
+        lock(&self.mailbox).connection.session_task = Some(handle);
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn force_disconnect(&self, sent: std::time::Instant) -> bool {
+        let mailbox = lock(&self.mailbox);
+        let current = mailbox.logout_requested == Some(sent)
+            || mailbox
+                .traffic
+                .as_ref()
+                .and_then(|traffic| traffic.last_read())
+                == Some(sent);
+        if current && let Some(task) = &mailbox.connection.session_task {
+            task.abort();
+        }
+        current
     }
 
     /// The next event: pushes older than the step outcome, the outcome, coalesced pushes, then end.

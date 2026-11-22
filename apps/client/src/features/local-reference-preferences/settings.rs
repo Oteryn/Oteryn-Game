@@ -169,7 +169,9 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub status_bar_bottom: bool,
     #[serde(default)]
-    pub status_bar_compact: bool,
+    pub status_bar_style: u8,
+    #[serde(default = "enabled")]
+    pub status_bar_experience: bool,
     #[serde(default)]
     pub status_bar_skills: [bool; 8],
     #[serde(default)]
@@ -337,7 +339,8 @@ impl Default for ReferencePreferences {
             status_bar_visible: true,
             top_menu_visible: true,
             status_bar_bottom: false,
-            status_bar_compact: false,
+            status_bar_style: 0,
+            status_bar_experience: true,
             status_bar_skills: [false; 8],
             skill_order: Vec::new(),
             condition_order: Vec::new(),

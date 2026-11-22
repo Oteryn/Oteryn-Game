@@ -72,10 +72,9 @@ impl ConsoleNotices {
         self.serial
     }
     pub(super) fn retain_after(&mut self, serial: u64) {
-        let remove = self
-            .entries
-            .len()
-            .saturating_sub(self.serial.saturating_sub(serial) as usize);
+        let remove = self.entries.len().saturating_sub(
+            usize::try_from(self.serial.saturating_sub(serial)).unwrap_or(usize::MAX),
+        );
         self.entries.drain(..remove);
     }
     pub fn text(&self, filters: ConsoleFilters, display: ConsoleDisplay) -> String {

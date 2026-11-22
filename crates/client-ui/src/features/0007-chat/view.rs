@@ -60,7 +60,9 @@ fn tab_text(
         if !presentation.shows(line) || !panel.console.filters.visible(tab, line) {
             continue;
         }
-        if !panel.console.communication.visible(line) {
+        let own_private = matches!(line, ChatLine::Private { .. })
+            && panel.recipients.get(index).is_some_and(Option::is_some);
+        if !own_private && !panel.console.communication.visible(line) {
             continue;
         }
         if !show_messages {

@@ -43,10 +43,9 @@ impl ChatPanel {
         };
         let mut panel = self.clone();
         panel.console.cleared.clear();
-        let skip = panel
-            .lines
-            .len()
-            .saturating_sub(self.received.wrapping_sub(cut.received) as usize);
+        let skip = panel.lines.len().saturating_sub(
+            usize::try_from(self.received.wrapping_sub(cut.received)).unwrap_or(usize::MAX),
+        );
         panel.lines.drain(..skip);
         panel.recipients.drain(..skip.min(panel.recipients.len()));
         panel.console.metadata.skip_receipts(skip);
@@ -57,11 +56,9 @@ impl ChatPanel {
                 .channel_notices
                 .retain(|line| line.serial > serial);
         }
-        let skip = panel
-            .console
-            .npc_lines
-            .len()
-            .saturating_sub(self.console.npc_serial.saturating_sub(cut.npc) as usize);
+        let skip = panel.console.npc_lines.len().saturating_sub(
+            usize::try_from(self.console.npc_serial.saturating_sub(cut.npc)).unwrap_or(usize::MAX),
+        );
         panel.console.npc_lines.drain(..skip);
         if panel.feedback == cut.feedback {
             panel.feedback = None;

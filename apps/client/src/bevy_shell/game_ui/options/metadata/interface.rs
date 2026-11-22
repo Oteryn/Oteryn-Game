@@ -24,41 +24,11 @@ pub(super) const MAIN: [Row; 5] = [
         cursor_crosshair
     ),
 ];
-pub(super) const HUD: [Row; 34] = [
-    check!(
-        "hud.status_bar_bottom",
-        "Place Status Bar Below Map",
-        status_bar_bottom
-    ),
-    check!(
-        "hud.status_bar_compact",
-        "Compact Game Status Bar",
-        status_bar_compact
-    ),
+pub(super) const HUD: [Row; 35] = [
     check!(
         "hud.status_bar",
         "Show Customisable Status Bar",
         status_bar_visible
-    ),
-    check!(
-        "hud.status_bar_magic",
-        "Status Bar: Magic",
-        status_bar_skills[0]
-    ),
-    check!(
-        "hud.status_bar_fist",
-        "Status Bar: Fist",
-        status_bar_skills[1]
-    ),
-    check!(
-        "hud.status_bar_club",
-        "Status Bar: Club",
-        status_bar_skills[2]
-    ),
-    check!(
-        "hud.status_bar_sword",
-        "Status Bar: Sword",
-        status_bar_skills[3]
     ),
     check!(
         "hud.status_bar_axe",
@@ -66,19 +36,58 @@ pub(super) const HUD: [Row; 34] = [
         status_bar_skills[4]
     ),
     check!(
+        "hud.status_bar_bottom",
+        "Place Status Bar Below Map",
+        status_bar_bottom
+    ),
+    check!(
+        "hud.status_bar_club",
+        "Status Bar: Club",
+        status_bar_skills[2]
+    ),
+    check!(
         "hud.status_bar_distance",
         "Status Bar: Distance",
         status_bar_skills[5]
+    ),
+    check!(
+        "hud.status_bar_experience",
+        "Status Bar: Level and Experience",
+        status_bar_experience
+    ),
+    check!(
+        "hud.status_bar_fishing",
+        "Status Bar: Fishing",
+        status_bar_skills[7]
+    ),
+    check!(
+        "hud.status_bar_fist",
+        "Status Bar: Fist",
+        status_bar_skills[1]
+    ),
+    check!(
+        "hud.status_bar_magic",
+        "Status Bar: Magic",
+        status_bar_skills[0]
     ),
     check!(
         "hud.status_bar_shielding",
         "Status Bar: Shielding",
         status_bar_skills[6]
     ),
+    Row {
+        id: "hud.status_bar_style",
+        label: "Status Bar Style",
+        editor: Editor::Choice {
+            values: &["Default", "Compact", "Large", "Parallel"],
+            read: |p| usize::from(p.status_bar_style.min(3)),
+            write: |p, value| p.status_bar_style = value as u8,
+        },
+    },
     check!(
-        "hud.status_bar_fishing",
-        "Status Bar: Fishing",
-        status_bar_skills[7]
+        "hud.status_bar_sword",
+        "Status Bar: Sword",
+        status_bar_skills[3]
     ),
     check!("hud.health", "Show Health", hud_health),
     check!("hud.mana", "Show Mana", hud_mana),

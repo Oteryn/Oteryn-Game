@@ -156,6 +156,9 @@ impl Default for Console {
     }
 }
 impl Console {
+    pub(super) fn reset_transcript_cutoffs(&mut self) {
+        self.cleared.clear();
+    }
     pub fn select(&mut self, tab: ConsoleTab) {
         self.tab_filters[self.tab as usize] = self.show_messages;
         self.tab = tab;
@@ -421,6 +424,13 @@ impl CommunicationLists {
             || ((self.ignore_suspended || !self.ignored.contains(&name))
                 && !self.blacklist.contains(&name))
     }
+    pub(super) fn allows_private(&self, speaker: &str) -> bool {
+        if self.block_private {
+            self.exempt(&speaker.trim().to_lowercase())
+        } else {
+            self.allows(speaker)
+        }
+    }
     pub fn visible(&self, line: &oteryn_client_runtime::chat::ChatLine) -> bool {
         use oteryn_client_runtime::chat::ChatLine;
         match line {
@@ -429,11 +439,8 @@ impl CommunicationLists {
                 speaker_name,
                 ..
             } if self.block_yells => self.exempt(&speaker_name.trim().to_lowercase()),
-            ChatLine::Private { speaker_name, .. } if self.block_private => {
-                self.exempt(&speaker_name.trim().to_lowercase())
-            }
+            ChatLine::Private { speaker_name, .. } => self.allows_private(speaker_name),
             ChatLine::Local { speaker_name, .. }
-            | ChatLine::Private { speaker_name, .. }
             | ChatLine::Room { speaker_name, .. }
             | ChatLine::Party { speaker_name, .. } => self.allows(speaker_name),
             ChatLine::Guild(line) => self.allows(&line.speaker_name),

@@ -110,6 +110,9 @@ pub(super) enum MessageAction {
 pub(super) struct MessageControl {
     message: MessageRow,
     action: MessageAction,
+    tab: ConsoleTab,
+    channel: Option<oteryn_client_ui::chat::ChannelTab>,
+    scope: u64,
 }
 
 pub(super) fn message_menu(
@@ -136,6 +139,9 @@ pub(super) fn message_menu(
     if let Some(old) = state.menu.take() {
         commands.entity(old).despawn();
     }
+    let Some((scope, tab, channel)) = state.source.clone() else {
+        return;
+    };
     let position = event.pointer.location().position;
     let name = message.row.target();
     let mut actions = Vec::new();
@@ -200,6 +206,9 @@ pub(super) fn message_menu(
             .entity(*entity)
             .insert(MessageControl {
                 message: message.clone(),
+                scope,
+                tab,
+                channel: channel.clone(),
                 action,
             })
             .observe(message_action);
@@ -241,12 +250,25 @@ pub(super) fn message_action(
     if control.message.generation != owner.generation() {
         return;
     }
+    let panel = play.link.chat_panel();
+    if control.scope != panel.scope
+        || control.tab != panel.console.tab
+        || control.channel != panel.console.current
+    {
+        if let Some(menu) = state.menu.take() {
+            commands.entity(menu).despawn();
+        }
+        return;
+    }
     let name = control.message.row.target();
     match control.action {
         MessageAction::Copy => {
             commands.trigger(super::CopyText(control.message.row.text.clone()));
         }
-        MessageAction::Clear => play.link.chat_clear_transcript(),
+        MessageAction::Clear => {
+            play.link
+                .chat_clear_transcript(control.scope, control.tab, control.channel.as_ref())
+        }
         MessageAction::SelectAll => {
             if let Ok(parent) = transcripts.single() {
                 let text: String = state.rows.iter().map(|row| row.text.as_str()).collect();

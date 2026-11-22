@@ -16,9 +16,9 @@ pub(in crate::bevy_shell) enum ViewMode {
 impl ViewMode {
     pub fn cycle(&mut self) {
         *self = match self {
-            Self::Panel => Self::Framed,
-            Self::Framed => Self::Full,
-            Self::Full => Self::Panel,
+            Self::Panel => Self::Full,
+            Self::Framed => Self::Panel,
+            Self::Full => Self::Framed,
         };
     }
 }

@@ -19,17 +19,31 @@ pub(in crate::play) fn form(_link: &PlayLink) -> form::Form {
     form::Form {
         title: "Communication lists",
         labels: &["Player name"],
-        buttons: &["Ignore", "Whitelist", "Blacklist", "Remove from lists",
-            "Block private messages", "Block yells", "Suspend ignore list", "Suspend whitelist", "Allow VIP speakers"],
+        buttons: &[
+            "Ignore",
+            "Whitelist",
+            "Blacklist",
+            "Remove from lists",
+            "Block private messages",
+            "Block yells",
+            "Suspend ignore list",
+            "Suspend whitelist",
+            "Allow VIP speakers",
+        ],
         snapshot: |m| {
             (
                 m.chat_lists.0,
                 false,
                 vec![m.chat_lists.1.clone()],
-                format!("{}\nBlock private messages: {}. Block yells: {}. Suspend ignore list: {}. Suspend whitelist: {}. Allow VIP speakers: {}.",
-                    m.chat.feedback.as_deref().unwrap_or_default(), m.chat.console.communication.block_private,
-                    m.chat.console.communication.block_yells, m.chat.console.communication.ignore_suspended,
-                    m.chat.console.communication.whitelist_suspended, m.chat.console.communication.allow_vips),
+                format!(
+                    "{}\nBlock private messages: {}. Block yells: {}. Suspend ignore list: {}. Suspend whitelist: {}. Allow VIP speakers: {}.",
+                    m.chat.feedback.as_deref().unwrap_or_default(),
+                    m.chat.console.communication.block_private,
+                    m.chat.console.communication.block_yells,
+                    m.chat.console.communication.ignore_suspended,
+                    m.chat.console.communication.whitelist_suspended,
+                    m.chat.console.communication.allow_vips
+                ),
             )
         },
         set_open: |m, open| m.chat_lists.0 = open,
@@ -47,9 +61,16 @@ pub(in crate::play) fn form(_link: &PlayLink) -> form::Form {
                 *toggle = !*toggle;
                 m.chat_private.communication = prefs.clone();
                 m.chat_party_room.communication = prefs.clone();
-                if action == 8 && prefs.allow_vips
-                    && let Some(command) = oteryn_client_ui::vip::request(&mut m.vip, oteryn_client_ui::vip::Intent::Query(0))
-                    && commands.send(crate::combat_input::PlayCommand::Vip(command)).is_err() {
+                if action == 8
+                    && prefs.allow_vips
+                    && let Some(command) = oteryn_client_ui::vip::request(
+                        &mut m.vip,
+                        oteryn_client_ui::vip::Intent::Query(0),
+                    )
+                    && commands
+                        .send(crate::combat_input::PlayCommand::Vip(command))
+                        .is_err()
+                {
                     m.vip.pending = false;
                 }
                 super::console::show_lists(m);

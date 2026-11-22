@@ -393,3 +393,24 @@ fn clear_channel_menu_keeps_other_tabs_and_future_messages() -> TestResult {
     assert!(visible(&mut app, "after clear") && !visible(&mut app, "before clear"));
     Ok(())
 }
+
+#[test]
+fn stale_clear_action_cannot_clear_the_newly_selected_tab() -> TestResult {
+    let (mut app, _) = console_app(
+        ChatRoomSet::default(),
+        vec![ChatLine::Private {
+            speaker_name: "Alice".into(),
+            text: "keep this message".into(),
+        }],
+    )?;
+    open_menu(&mut app, "keep this message")?;
+    with_link(&mut app, |link| link.chat_console_tab(ConsoleTab::Private))?;
+    choose(&mut app, "Clear Messages")?;
+    assert!(
+        app.world_mut()
+            .query_filtered::<&EditableText, With<Transcript>>()
+            .iter(app.world())
+            .any(|row| row.value().to_string().contains("keep this message"))
+    );
+    Ok(())
+}

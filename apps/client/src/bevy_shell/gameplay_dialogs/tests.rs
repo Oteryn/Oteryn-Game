@@ -371,3 +371,40 @@ fn stalled_logout_offers_a_local_disconnect_after_confirmation() -> Result {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn silent_connection_can_disconnect_before_a_logout_request() -> Result {
+    let mut host = HostOwner::new(None)?;
+    let (link, mut commands, _) = play_channel();
+    host.play = Some(super::super::owner::ActivePlay {
+        view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    host.phase = Phase::Playing;
+    let traffic = std::sync::Arc::new(crate::traffic::Traffic::default());
+    let mut stream = crate::traffic::Counting::new(&b"welcome"[..], traffic.clone());
+    let mut received = [0; 7];
+    tokio::runtime::Builder::new_current_thread()
+        .build()?
+        .block_on(tokio::io::AsyncReadExt::read_exact(
+            &mut stream,
+            &mut received,
+        ))?;
+    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+    let task = runtime.spawn(std::future::pending::<()>());
+    let link = &host.play.as_ref().ok_or("play")?.link;
+    link.set_session_task(task.abort_handle());
+    link.set_traffic(traffic);
+    host.request_logout_confirmation_at(
+        std::time::Instant::now() + std::time::Duration::from_secs(10),
+    );
+    let id = host.dialogs.pending.as_ref().ok_or("confirmation")?.id;
+    assert!(host.choose_dialog(id, Choice::ForceLogout));
+    assert!(host.play.is_none() && commands.try_recv().is_err());
+    assert!(
+        runtime
+            .block_on(task)
+            .is_err_and(|error| error.is_cancelled())
+    );
+    Ok(())
+}

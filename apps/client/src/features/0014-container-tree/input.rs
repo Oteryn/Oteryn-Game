@@ -44,25 +44,65 @@ impl PlayLink {
     pub fn container_open(&self, handle: ItemHandle) -> bool {
         self.container_request(|panel| panel.open(handle, None))
     }
-    pub fn container_open_nested(&self, view: u8, parent: ItemHandle, item: ItemHandle, separate: bool) -> bool {
+    pub fn container_open_nested(
+        &self,
+        view: u8,
+        parent: ItemHandle,
+        item: ItemHandle,
+        separate: bool,
+    ) -> bool {
         self.container_request(|panel| {
-            let source = panel.views.as_ref()?.views.iter().find(|entry|
-                entry.view_id == view && entry.container_handle == parent)?;
+            let source = panel
+                .views
+                .as_ref()?
+                .views
+                .iter()
+                .find(|entry| entry.view_id == view && entry.container_handle == parent)?;
             source.entries.iter().find(|entry| entry.handle == item)?;
             panel.open(item, (!separate).then_some(view))
         })
     }
-    pub fn container_move_to_parent(&self, view: u8, container: ItemHandle, item: ItemHandle, parent: ItemHandle) {
+    pub fn container_move_to_parent(
+        &self,
+        view: u8,
+        container: ItemHandle,
+        item: ItemHandle,
+        parent: ItemHandle,
+    ) {
         let mut mailbox = lock(&self.mailbox);
-        if mailbox.inventory_shutdown || mailbox.containers.pending || mailbox.world_input_blocked() { return; }
-        let entry = mailbox.containers.views.as_ref().and_then(|views| views.views.iter()
-            .find(|v| v.view_id == view && v.container_handle == container && v.parent_handle == Some(parent)))
-            .and_then(|v| v.entries.iter().find(|entry| entry.handle == item)).copied();
+        if mailbox.inventory_shutdown || mailbox.containers.pending || mailbox.world_input_blocked()
+        {
+            return;
+        }
+        let entry = mailbox
+            .containers
+            .views
+            .as_ref()
+            .and_then(|views| {
+                views.views.iter().find(|v| {
+                    v.view_id == view
+                        && v.container_handle == container
+                        && v.parent_handle == Some(parent)
+                })
+            })
+            .and_then(|v| v.entries.iter().find(|entry| entry.handle == item))
+            .copied();
         if let Some(entry) = entry {
-            let drag = oteryn_client_ui::inventory::movement::DragItem {handle: item, count: entry.count.get(), equipped: false};
+            let drag = oteryn_client_ui::inventory::movement::DragItem {
+                handle: item,
+                count: entry.count.get(),
+                equipped: false,
+            };
             if mailbox.item_movement.begin(drag) {
-                let request = mailbox.item_movement.drop_on(Some(oteryn_session::ItemMoveDestination::Container(parent, None)), false);
-                crate::play::feature_0004_item_view_move::input::send_move(&mut mailbox, &self.commands, request);
+                let request = mailbox.item_movement.drop_on(
+                    Some(oteryn_session::ItemMoveDestination::Container(parent, None)),
+                    false,
+                );
+                crate::play::feature_0004_item_view_move::input::send_move(
+                    &mut mailbox,
+                    &self.commands,
+                    request,
+                );
             }
         }
     }

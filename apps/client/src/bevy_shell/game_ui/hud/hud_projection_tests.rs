@@ -420,3 +420,15 @@ fn status_bar_projects_selected_skills_and_visibility() -> TestResult {
     assert_eq!(app.world().get::<Node>(bar).ok_or("status region")?.display, Display::None);
     Ok(())
 }
+
+#[test]
+fn compact_bar_fits_vitals_and_experience_on_one_row() -> TestResult {
+    let (mut app, _, _) = app()?;
+    app.world_mut().non_send_mut::<HostOwner>().settings.preferences.status_bar_style = 1;
+    app.update();
+    for name in ["Status bar vitals", "Status bar experience"] {
+        let entity = named(&mut app, name)?;
+        assert_eq!(app.world().get::<Node>(entity).ok_or("status line")?.width, percent(50.));
+    }
+    Ok(())
+}

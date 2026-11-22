@@ -363,7 +363,7 @@ impl HostOwner {
                 if self
                     .play
                     .as_ref()
-                    .is_some_and(|play| play.link.awaiting_logout(sent)) =>
+                    .is_some_and(|play| play.link.force_disconnect(sent)) =>
             {
                 self.leave("Disconnected before logout was confirmed.");
                 true
