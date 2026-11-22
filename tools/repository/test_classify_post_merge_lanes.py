@@ -169,12 +169,12 @@ def shared_cache_completion_regressions() -> None:
             else:
                 assert "actions/cache/save@" not in text, filename
     assert core.validate_post_merge_rust(source) == []
-    # The protected-main producer only compiles tests. Full test execution is
-    # retained in MQ; cache hits never stand in for candidate qualification.
+    # Warm only library-test dependencies here; integration executables would be
+    # discarded by trimming. Full test execution remains exact-candidate MQ work.
     test_commands = re.findall(r"(?m)^        run: (cargo .+ test .+)$", source)
     assert test_commands == [
         "cargo +1.100.0 test --locked --workspace --exclude oteryn-gameplay-dispatch "
-        "--features oteryn-gameplay-quests/test-support --no-run"
+        "--features oteryn-gameplay-quests/test-support --lib --no-run"
     ]
     assert "services:" not in source and "runs-on: windows" not in source
     assert not re.search(r"(?m)^  (durability-postgres|windows):$", source)

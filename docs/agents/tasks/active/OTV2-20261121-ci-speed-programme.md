@@ -7,16 +7,16 @@ mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: chatgpt/ci-bottlenecks-single-pr-20261121
+branch: chatgpt/ci-warmup-balance-20261122
 issue: 3352
-pr: 3367
-base_sha: 5695f7b8af567086efa11bdeb47a2fd609f24c2c
+pr: null
+base_sha: dc0ea80cb74e19d5d21a5907895aead945270263
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT standalone CI programme coordinator, issue 3352
 created_at: 2026-11-21T09:29:01Z
-updated_at: 2026-11-21T21:49:00Z
+updated_at: 2026-11-22T08:38:48Z
 execution_policy: continuous_progress
 owned_paths:
   - .github/workflows/
@@ -46,97 +46,69 @@ measure actual edited Rust builds, and remove redundant migration embedding.
 Preserve test coverage, source provenance, canonical PostgreSQL 18.6, required
 checks and protected-main integration. No achieved latency target is claimed.
 
-## Second wave: one integrated candidate
+## Third wave: measured cache and scheduling follow-up
 
-- Owner request: repair all audited CI bottlenecks in **one PR**; prior merge and
-  force-merge authorization remains in the session. This is standalone CI work,
-  not quest automation or a change to that programme's control plane.
-- Integrated main: `5695f7b8af567086efa11bdeb47a2fd609f24c2c`; sole writer:
-  `chatgpt/ci-bottlenecks-single-pr-20261121`, PR #3367. State: **AUTHORING**
-  for a successor of `90c80488e9c2674515a4c252dd9872a06cca054a`.
-  Root ended the freeze at 21:31:57 UTC: main36ca actually uploaded an
-  11,261,455,903-byte cache from a 61G target, exceeding the verified 10GB repo
-  limit; the later complete inventory had no Rust cache. GitHub documents
-  post-save eviction until under quota; the individual deletion event is unknown.
-  A owns bounded cache preparation/tests, C wires rust.yml/tests; root integrates
-  docs/pins/routing. Keep four existing cache roots and keys, cap raw bytes at
-  4GiB, preserve dependency reuse where possible and finish an active main warmer
-  before the latest queued one. No paid storage or quota change.
-  The proven copied-job resolver, exact-line auxiliary routing, #3366 revert,
-  #3362 build limit and earlier artifact/qualification fixes remain intact.
-- Publication: native Git dry-run returned `fatal: unable to get password from
-  user`. Use the already selected META 3.1.0 API-native new-candidate route with
-  a complete bounded delta, sole-parent commit, fresh expected-head lease,
-  non-force ref update and readback. No Remote Desktop publication workaround.
+The owner renewed execution and push authorization on 2026-11-22 and made
+Molehill-PC available. PR #3367 is already merged as
+`6eda3a4af6d1492baace7b26109c23cdddfbf7a4`; its exact-head Fast and actual
+36-partition PostgreSQL gates passed. Current work is one new CI-only batch
+from `dc0ea80cb74e19d5d21a5907895aead945270263`, not a continuation of writes
+to the merged PR. Main advanced during initial clone; this actual checkout base
+includes #3369/#3387. The measured run/benchmark source remains the earlier
+accepted main `be364525d6965a900b1978f2f34e6bd6c98bd15c`; all ten task paths
+are unchanged between those bases. Root owns publication, review and integration; workers own
+disjoint cache, PG timing and Windows verification slices.
 
-| Work packet | Owner | Implementation and preserved contract |
-| --- | --- | --- |
-| A: compiler and evidence | audit_compile_cache | Exact regression-to-compile-shard resolver; canonical shared Dispatch archive, current-run/head proof and complete result collector; measured PG duration refresh. |
-| B: World and native tools | audit_pg_timing | Combined compatible World tools; bounded migration checks; native executable reuse and cleaned-up fallback; shared release World compiler. Real materialization, pin checks and all qualification cases remain. |
-| C: qualification executables | audit_postmerge_failures | Shared Platform binary; independent Server Seam producer; correct spawn/clock features; per-archive fast workers and older-head compatibility. Fresh databases, keys and real Platform issuance remain per consumer. |
-| Integration and publication | coordinator | Workflow wiring, package ledger completeness, protected pin rotation, one integrated review and CI, exact-head squash/readback. |
+- The next cache consumer, run44957878502/job137013731566, restored the
+  944,217,092-byte bounded archive in12s. Nevertheless, on current main
+  run44996564744/job137129055003 the warmer took30m35; its no-run stage linked
+  264 executables, including186 integration targets, before trimming removes
+  all workspace products. Restrict that cache-only command to library tests
+  and use the existing pinned mold linker. Keep all actual qualification tests,
+  workspace/dev-dependency feature selection, package-specific warmups and the
+  4GiB cap. Whole-workspace fingerprint equivalence is not claimed.
+- Refresh the timing table with all7612 unique PASS results from the36 current
+  main PG partitions in run44996564771:605 to912 estimates,307 additions and20
+  increases, no removals/decreases. The real planner's scheduling model changes
+  the longest worker from1200.608 to1016.955s on main and1412.049 to1266.805s
+  on the independent PR3319 sample. Those are simulations at fixed observed
+  case times, not measured new-run savings. Keep15/7/7/5/2 workers: reallocating
+  them did not improve either model's maximum after the timing refresh.
+- Windows run44996564771/job137129526796 spent22m54s on release compilation
+  before failing strict Clippy. Move the same Clippy command before the same
+  release command. Actual-step PowerShell probes must preserve success and
+  stop immediately on lint/build/smoke failures.
+- Run the existing real-edit benchmark against accepted main in an isolated
+  Molehill checkout, with bounded CPU/disk/time use and a private target/cache.
+  Record cold, no-op and leaf-edit cases separately; do not infer whole-CI,
+  remote-cache, monthly-cost or aggregate-RAM gains from a server-library test.
 
-Offline-death run `44919024484`/job `136890762651` failed after 57m02s;
-its final log was unavailable, so the cause is unknown. Resolve the exact
-case's shard from source and retain separate compile/test resource diagnostics.
+Native Git dry-run publication failed because this isolated environment has no
+GitHub credentials. Root selects the already authorized META3.1.0 API-native
+new-candidate route for this exclusive branch: one complete bounded tree,
+one sole-parent successor, fresh predecessor, non-force update and exact readback.
+Remote Desktop is used only for isolated measurement, never publication.
+Preserve PostgreSQL18.6, required checks, test assertions and source provenance.
+The generated protected pin rotation still needs independent review; its
+protected-base self-audit rejection is not a fabricated passing check.
 
-The final production smoke build is deliberately retained. Its package-scoped
-feature graph differs from the workspace build with examples/dev dependencies;
-reusing that workspace binary would change production qualification.
+Current main's full gate44996564771 is red outside PG: Windows dead code,
+four client integration failures and Node rows. Runtime repairs in active
+PRs #3388/#3389 belong to their existing owners and are not duplicated.
+Keep this programme open: the whole-CI10–15min goal remains unproven, and one
+unchanged end-to-end campaign alone took1016.955s on the measured main.
 
-The protected-base audit rejects changes to its own file by design. This batch
-requires a real pin rotation with the full candidate independently reviewed;
-no green audit result, bypass actor, relaxed required check, or authority receipt
-may be fabricated. Any rejection remains visible. No latency or monetary saving
-is claimed until the integrated head has run; compare both critical-path time
-and summed runner time, including artifact transfer and fallback builds.
+## Previous-wave evidence
 
-Acceptance pending: successor qualification and post-merge observation. On 448,
-fast passed in 19m16 and PG36/36 in26m11; cbdd PG36/36 passed in24m44.
-On 90c, content passed11m02, retained PG10m09, World20m10 and manual2043+38.
-Native initially rejected producer discovery with ValueError; its exact API
-response was not retained and stable snapshot replays did not reproduce it.
-Actual collector/native/World partial reruns passed on90c; native reused its
-original producer in2m04, and collector-only rerun took1m41/90 job-seconds.
-New cache-only changes do not turn earlier-head evidence into current-head PASS.
-No whole-machine RAM, financial saving or universal10–15min claim is made.
-
-Prior main `44920758625` failed Node admission contention and MAX501; the first
-PR run repeated MAX501 with three competing tests. On b75, PG job136951451690
-passed 219/219, including MAX501 with no overlapping sibling test. Slot
-reservation preserves the 2000ms contract and 501-item atomicity. The final
-successor needs its own qualification; no SQL or Node runtime repair is claimed.
-
-### Second-wave local validation on the integrated tree
-
-- Cache-cap/diagnostic successor: 314 repository, 27 native and 18 World tests
-  pass. Real offline Cargo proof retained a dependency fresh, rebuilt the removed
-  workspace executable, and passed its test. The helper has 13 budget/filesystem
-  tests; 4 actual-shell workflow tests and pin/routing mutations pass.
-- Governance: 135 tests and validation pass; repository policy passes for
-  23 files and 78 workflows.
-- World/native helpers: 51 tests pass. Node prebuilt: 15; repaired Platform: 16;
-  Node diagnostics: 38; Node matrix: 16. Shell syntax checks pass.
-- Content aggregate: five tests pass, including actual shell failure propagation;
-  the 40 checks and every original qualification command remain preserved.
-- Real nextest/mold protocol, MAX501 scheduling and linker installer reproduce the
-  first-head errors and pass with the repairs; artifact custody remains strict.
-- Workspace `cargo +1.100.0 fmt --all --check` and actionlint 1.7.12 on all
-  13 changed workflows pass.
-- Full merge-group contract passes, including 54 workflow mutations, four
-  PowerShell native-failure positions, aggregation and protected routing.
-  Nine local fixtures of the actual protected audit pass. These fixtures are
-  not a claim that the live self-modification audit will pass.
-- Derived pin freshness and whitespace checks pass. The reliability checklist
-  selects CI control-plane, Node harness and governance checks; all listed
-  local commands have now run.
-- Not run locally: full project Rust compilation, live PostgreSQL/Platform and
-  the World artifact boot integration target. No Cargo target/registry cache
-  or local PostgreSQL route was available. These remain CI obligations.
-  Manual integration dispatch uses the owner-authorized Molehill GitHub CLI
-  after exact-head verification; no Git publication uses that route.
-
-Local results qualify authoring only; immutable hosted evidence is in #3352.
+Detailed first- and second-wave authoring history remains in issue #3352 and
+this record at immutable commit
+`be364525d6965a900b1978f2f34e6bd6c98bd15c` (before this continuation).
+The first wave merged PRs #3353/#3354/#3355/#3356. The second wave merged
+PR #3367 as `6eda3a4af6d1492baace7b26109c23cdddfbf7a4`.
+Its frozen head `62b780d833b73f458d6bead7b3a955adddcddb76` passed Fast
+run44953597836 in33m23 and actual PG run44955345659 in25m35, plus Content,
+World, Native and retained regression qualifications. These results belong
+to that previous head and are not qualification of the new candidate.
 
 ## First-wave source of truth
 
@@ -186,19 +158,13 @@ before publication. Worker summaries do not replace source inspection.
 
 ## Independent review
 
-Root is the sole dispatcher under OWNER_FUNDED_AI_POLICY.md. Both authorized
-reviews completed clean: 7533 (comment7066802278), then448 (comment7068364491).
-Neither is represented as a review of later heads. The cbdd routing repair was
-assessed as non-material with actual-workflow RED/GREEN and negative cases.
-The execution-alias repair materially changes CI job selection. It has direct
-coordinator source review and independent peer verification with real API pairs,
-an actual result ZIP, all 30 logical job histories and negative identity cases.
-The two native reviews do not cover later code. Cache-cap source review and
-independent filesystem/layout checks passed; a real Rust1.100 dependency-layout
-defect was reproduced and fixed RED/GREEN. No third paid review is dispatched.
-Current-session owner instructions authorize implementing and force-merging this
-bounded single-PR batch. Current-head required gates remain mandatory; actual
-collector/consumer partial-rerun proofs passed on90c before this cache delta.
+Root is the sole dispatcher under OWNER_FUNDED_AI_POLICY.md. A new PR gets
+its own exact-head review after focused deterministic checks and initial
+publication. The prior PR's two reviews and subsequent peer/runtime proofs
+remain scoped to that earlier work; neither is a review of this continuation.
+Current owner integration authorization persists, and required exact-head
+checks remain mandatory. Do not change a frozen head without returning to
+AUTHORING and requalifying the successor.
 
 ## PR and closeout
 

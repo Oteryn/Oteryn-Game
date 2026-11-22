@@ -51,6 +51,14 @@ archives remain untouched. Missing build products must rebuild through Cargo.
 Report actual before/after bytes and preserve exact-candidate tests independently.
 A protected-main warmer finishes before the newest queued main revision starts;
 frequent merges must not continually cancel cache preparation.
+Warm workspace library tests with `--lib --no-run`: keep their dev-dependency
+features, but avoid linking integration executables that the bounded cache
+discards. Full selected tests, binary targets and strict all-target Clippy remain
+in their qualification lanes. Use the archive producers' checksum-pinned mold
+through `LD_PRELOAD`, without adding linker-specific Cargo flags. A cache-only
+warmup is not evidence that the candidate's tests passed. On Windows, run strict
+Clippy before the release build so a lint failure stops before expensive linking;
+retain the release smoke and installer checks after the build.
 
 ## Shared build artifacts and partial reruns
 

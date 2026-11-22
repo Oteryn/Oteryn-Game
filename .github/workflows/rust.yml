@@ -224,10 +224,33 @@ jobs:
           free -m
           du -sh target/ 2>/dev/null || true
 
+      # Match the archive producers' pinned linker through LD_PRELOAD without adding
+      # linker-specific Cargo flags to the shared cache recipe.
+      - name: Install pinned mold linker
+        if: runner.environment == 'github-hosted'
+        env:
+          MOLD_VERSION: 2.42.1
+          MOLD_SHA256: 6ff270c9bf07d2bec5c98aa324eb7c4daf6a1a4d815c05ff1708049616047855
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/mold.tar.gz"
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 40 --retry-delay 15 --retry-all-errors --retry-max-time 600 --connect-timeout 30 -o "$archive" \
+            "https://github.com/rui314/mold/releases/download/v${MOLD_VERSION}/mold-${MOLD_VERSION}-x86_64-linux.tar.gz"
+          echo "${MOLD_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP"
+          mold_dir="$RUNNER_TEMP/mold-${MOLD_VERSION}-x86_64-linux"
+          "$mold_dir/bin/mold" --version
+          echo "MOLD_PATH=$mold_dir/bin/mold" >> "$GITHUB_ENV"
+          echo "MOLD_PRELOAD=$mold_dir/lib/mold/mold-wrapper.so" >> "$GITHUB_ENV"
+
       - name: Build workspace
+        env:
+          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: cargo +1.100.0 build --locked --workspace --lib --bins --examples
 
       - name: Produce public Game catalogue
+        env:
+          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: python3 tools/game-platform-catalog/build.py "$RUNNER_TEMP/game-platform-catalog.json"
 
       - name: Verify public Game catalogue
@@ -244,16 +267,24 @@ jobs:
           retention-days: 14
 
       - name: Strict Clippy
+        env:
+          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: cargo +1.100.0 clippy --locked --workspace --all-targets -- -D warnings
 
-      # Clippy still checks dispatch test targets. The qualification jobs compile and run them.
-      # Keep test-support feature unification for the quest test binaries those jobs restore.
+      # Warm library test dependencies, including client dev-dependencies and quest test-support,
+      # without linking integration binaries that the bounded cache immediately discards.
+      # This cache-only build is not qualification: exact-candidate jobs still compile and run
+      # the full selected test inventory, including dispatch and binary-only packages.
       - name: Compile workspace tests without executing them
-        run: cargo +1.100.0 test --locked --workspace --exclude oteryn-gameplay-dispatch --features oteryn-gameplay-quests/test-support --no-run
+        env:
+          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
+        run: cargo +1.100.0 test --locked --workspace --exclude oteryn-gameplay-dispatch --features oteryn-gameplay-quests/test-support --lib --no-run
 
       # Warm the dependency graphs used by MQ build-smoke, node_boot and server_seam
       # (`-p` resolves features per package); the bounded cache omits final workspace products.
       - name: Build synthetic harness and native game-server
+        env:
+          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: |
           cargo +1.100.0 build --locked -p oteryn-synthetic-client-harness
           cargo +1.100.0 build --locked -p oteryn-game-server --bin oteryn-game-server
