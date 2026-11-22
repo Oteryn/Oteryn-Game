@@ -5,7 +5,13 @@ pub(in super::super) fn position((x, y, floor): (u16, u16, i8)) -> Position {
     Position { x, y, floor }
 }
 
-pub(in super::super) fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>) -> TestResult {
+pub(in super::super) fn exercise(
+    callback: Callback,
+    appearance: u16,
+    ordinal: u8,
+    stage: Option<i64>,
+    main_era_save: bool,
+) -> TestResult {
     let started = std::time::Instant::now();
     let trigger = callback.selector.position.ok_or("position")?;
     let world = world_ordinal(&callback, trigger, appearance, ordinal)?;
@@ -136,13 +142,14 @@ pub(in super::super) fn exercise(callback: Callback, appearance: u16, ordinal: u
             .states
             .chat
             .admit(admitted.game_session_id, "Traveller", owner.owner_now());
+        let mut historical_hash = None;
         if let Some(stage) = stage {
             use oteryn_gameplay_quests::quest::{
                 QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
                 QuestTransition,
             };
             let storage = callback.storage.first().ok_or("guard storage")?;
-            let seed = "oteryn:quest-transition/fixture/stag-stage";
+            let seed = "oteryn:quest-transition/fixture/passage-stage";
             let catalogue = std::sync::Arc::new(
                 QuestStateCatalogue::new(
                     "content-1",
@@ -193,7 +200,55 @@ pub(in super::super) fn exercise(callback: Callback, appearance: u16, ordinal: u
                 crate::durability::quest_state::QuestTransitionOutcome::Committed(_)
             ));
             drop(slot);
-            owner.quest_catalogue = Some(catalogue);
+            if main_era_save {
+                let main = owner.quest_catalogue.as_deref().ok_or("main catalogue")?;
+                let active = main
+                    .with_fixture_transition(
+                        catalogue
+                            .transition(seed)
+                            .ok_or("fixture transition")?
+                            .clone(),
+                    )
+                    .map_err(debug)?;
+                let (active, hash) =
+                    if callback.quest == "oteryn:quest.children_of_the_revolution_quest" {
+                        // The fully loaded deployed definition at 4740f9a8.
+                        // Keep this fixture pinned even when later content is active.
+                        (
+                            active,
+                            [
+                                0xe9, 0x1b, 0x65, 0xcb, 0x6e, 0x0a, 0x69, 0xe9, 0xb4, 0x47, 0x3b,
+                                0xb8, 0x3d, 0xb9, 0x70, 0xa1, 0x15, 0xbd, 0x63, 0x1a, 0xcb, 0xfa,
+                                0xe3, 0x4b, 0x7a, 0x7e, 0x5f, 0x8d, 0x74, 0x0e, 0x52, 0xc2,
+                            ],
+                        )
+                    } else {
+                        (
+                            active
+                                .with_fixture_predecessor(main, &callback.quest)
+                                .map_err(debug)?,
+                            main.definition_hash(&callback.quest).ok_or("main hash")?,
+                        )
+                    };
+                assert_ne!(active.definition_hash(&callback.quest), Some(hash));
+                // Restore the historical pin in both members of the seeded save.
+                let mut save = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role = replica")
+                    .execute(&mut *save)
+                    .await?;
+                let character = fence.character_id.as_bytes().as_slice();
+                let state = sqlx::query("UPDATE game_character_quest_states SET pinned_content_revision='content-main-era', definition_hash=$1 WHERE quest_key=$2 AND character_id=encode($3,'hex')::uuid")
+                    .bind(hash.as_slice()).bind(&callback.quest).bind(character).execute(&mut *save).await?;
+                let receipt = sqlx::query("UPDATE game_character_quest_receipts SET pinned_content_revision='content-main-era', definition_hash=$1 WHERE quest_key=$2 AND character_id=encode($3,'hex')::uuid")
+                    .bind(hash.as_slice()).bind(&callback.quest).bind(character).execute(&mut *save).await?;
+                assert_eq!(state.rows_affected(), 1);
+                assert_eq!(receipt.rows_affected(), 1);
+                save.commit().await?;
+                historical_hash = Some(hash);
+                owner.quest_catalogue = Some(std::sync::Arc::new(active));
+            } else {
+                owner.quest_catalogue = Some(catalogue);
+            }
         }
         let key = oteryn_world_bundle::bundle::placement_key(
             trigger.floor,
@@ -219,30 +274,71 @@ pub(in super::super) fn exercise(callback: Callback, appearance: u16, ordinal: u
             .read_character_quest_state(&authority, fence.character_id)
             .await
             .map_err(debug)?;
-        let receipts_before: i64 =
-            sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
-                .fetch_one(&h.pool)
-                .await?;
-        let allowed = callback
-            .storage
-            .first()
-            .is_none_or(|storage| stage.is_some_and(|stage| stage >= storage.minimum));
-        let reply = wire(
-            &owner,
-            &mut admitted,
-            1,
-            2,
-            oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
-        )
-        .await?;
-        assert_eq!(
-            oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
-            if allowed {
-                UseDisposition::Committed
-            } else {
-                UseDisposition::Rejected
-            }
-        );
+        if main_era_save {
+            let stored = before
+                .states()
+                .get(&callback.quest)
+                .ok_or("main-era state")?;
+            assert!(!stored.completed);
+            assert_eq!(stored.pinned_content_revision, "content-main-era");
+            assert_eq!(Some(stored.definition_hash), historical_hash);
+            assert_eq!(
+                before.tracks().get(&callback.storage[0].track).copied(),
+                stage
+            );
+        }
+        // xmin also catches a write that assigns the existing value back to a row.
+        let quest_rows =
+            "SELECT 'state', xmin::text, to_jsonb(s) FROM game_character_quest_states s
+            WHERE character_id=encode($1,'hex')::uuid
+            UNION ALL SELECT 'track', xmin::text, to_jsonb(t) FROM game_character_quest_tracks t
+            WHERE character_id=encode($1,'hex')::uuid
+            UNION ALL SELECT 'receipt', xmin::text, to_jsonb(r) FROM game_character_quest_receipts r
+            WHERE character_id=encode($1,'hex')::uuid
+            ORDER BY 1, 3";
+        let character = fence.character_id.as_bytes().as_slice();
+        let rows_before: Vec<(String, String, serde_json::Value)> = sqlx::query_as(quest_rows)
+            .bind(character)
+            .fetch_all(&h.pool)
+            .await?;
+        let allowed = callback.storage.first().is_none_or(|storage| {
+            stage.is_some_and(|stage| (storage.minimum..=storage.maximum).contains(&stage))
+        });
+        if callback.trigger == oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn {
+            use oteryn_protocol_oteryn::world_spatial::{
+                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition,
+                decode_step_result, encode_step_intent,
+            };
+            let reply = wire(
+                &owner,
+                &mut admitted,
+                1,
+                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                encode_step_intent(StepDirection::East),
+            )
+            .await?;
+            assert_eq!(
+                decode_step_result(&reply).map_err(debug)?,
+                StepDisposition::Moved
+            );
+        } else {
+            let reply = wire(
+                &owner,
+                &mut admitted,
+                1,
+                2,
+                oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
+            )
+            .await?;
+            assert_eq!(
+                oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
+                if allowed {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                }
+            );
+        }
         assert_eq!(
             owner
                 .runtime
@@ -255,7 +351,9 @@ pub(in super::super) fn exercise(callback: Callback, appearance: u16, ordinal: u
                 local(callback.teleport.ok_or("destination")?)
             } else {
                 origin
-            }
+            },
+            "{} stage {stage:?}",
+            callback.key,
         );
         let messages = owner.states.chat.drain(admitted.game_session_id);
         let expected_message = if allowed {
@@ -272,14 +370,14 @@ pub(in super::super) fn exercise(callback: Callback, appearance: u16, ordinal: u
             .read_character_quest_state(&authority, fence.character_id)
             .await
             .map_err(debug)?;
-        assert_eq!(before, after, "literal USE changed durable quest state");
-        let receipts: i64 =
-            sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
-                .fetch_one(&h.pool)
-                .await?;
-        assert_eq!(receipts, receipts_before);
+        assert_eq!(before, after, "passage changed durable quest state");
+        let rows_after: Vec<(String, String, serde_json::Value)> = sqlx::query_as(quest_rows)
+            .bind(character)
+            .fetch_all(&h.pool)
+            .await?;
+        assert_eq!(rows_after, rows_before, "passage wrote quest rows");
         eprintln!(
-            "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
+            "QUEST_CALLBACK_PASSAGE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
             callback.key,
             started.elapsed()
         );
