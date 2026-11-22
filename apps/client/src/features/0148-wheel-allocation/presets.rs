@@ -112,11 +112,21 @@ fn update_book(
             if [
                 tr!("Cannot inspect presets"),
                 tr!("Cannot read presets"),
-                tr!("Unsupported preset version"),
+
             ]
             .contains(&message) =>
         {
             return Err(message);
+        }
+        Err(message) if message == tr!("Unsupported preset version") => {
+            // load has already bounded and decoded this document under the same lock.
+            let bytes = std::fs::read(path).map_err(|_| error())?;
+            let value: serde_json::Value = serde_json::from_slice(&bytes).map_err(|_| error())?;
+            if value.get("version").is_some() {
+                return Err(message);
+            }
+            crate::atomic_file::preserve_malformed(path).map_err(|_| error())?;
+            PresetBook::default()
         }
         Err(_) => {
             crate::atomic_file::preserve_malformed(path).map_err(|_| error())?;
@@ -232,6 +242,21 @@ mod management_tests {
         mailbox.wheel.preset_fields[0] = "Recovered".into();
         submit_at(&mut mailbox, 0, "", &path);
         assert!(PresetBook::load(&path).is_ok_and(|book| book.0.contains_key("Recovered")));
+        Ok(())
+    }
+
+    #[test]
+    fn c2d_versionless_wheel_book_is_recovered_on_save()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("wheel.json");
+        std::fs::write(&path, b"{}")?;
+        let (link, _, _) = crate::play::play_channel();
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.wheel.preset_fields[0] = "Recovered".into();
+        submit_at(&mut mailbox, 0, "", &path);
+        assert!(PresetBook::load(&path).is_ok_and(|book| book.0.contains_key("Recovered")));
+        assert_eq!(std::fs::read(path.with_added_extension("malformed"))?, b"{}");
         Ok(())
     }
 

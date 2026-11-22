@@ -4,9 +4,9 @@ impl PreferenceStore {
     pub fn apply(&mut self, preferences: ReferencePreferences) -> io::Result<()> {
         #[cfg(bevy_shell)]
         if self.saving() {
-            return self.apply_in_background(preferences);
+            return self.apply_then(preferences, true, |_| ());
         }
-        Self::write_edits(&self.path, &self.preferences, &preferences)?;
+        Self::write_edits(&self.path, &self.preferences, &preferences, true)?;
         self.preferences = preferences;
         Ok(())
     }
@@ -15,12 +15,19 @@ impl PreferenceStore {
         path: &Path,
         before: &ReferencePreferences,
         after: &ReferencePreferences,
+        recover_malformed: bool,
     ) -> io::Result<ReferencePreferences> {
         // Validate even unchanged snapshots, including the supported transfer size.
         Self::serialized(after)?;
         let _lock = crate::atomic_file::lock(path)?;
         Self::finish_pending_backup(path)?;
-        let mut active = Self::read_or_default(path)?;
+        let mut active = match Self::read_or_default(path) {
+            Err(error) if recover_malformed && error.kind() == io::ErrorKind::InvalidData => {
+                crate::atomic_file::preserve_malformed(path)?;
+                ReferencePreferences::default()
+            }
+            result => result?,
+        };
         active.rebase_edits(before, after)?;
         crate::atomic_file::replace(path, &Self::serialized(&active)?, true)?;
         Ok(active)
@@ -204,5 +211,20 @@ fn restore_recovers_original_bytes_after_backup_write_failure() -> io::Result<()
     let mut restarted = SettingsState::new(Some(path));
     restarted.restore_backup()?;
     assert_eq!(restarted.preferences.ui_scale, 125);
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn c2d_apply_recovers_damaged_preferences() -> io::Result<()> {
+    let root = tempfile::tempdir()?;
+    let path = root.path().join("preferences.json");
+    std::fs::write(&path, b"{")?;
+    let mut state = super::super::SettingsState::new(Some(path.clone()));
+    let mut edited = state.preferences.clone();
+    edited.ui_scale = 125;
+    state.apply(edited);
+    assert_eq!(PreferenceStore::read_transfer(&path)?.ui_scale, 125);
+    assert_eq!(std::fs::read(path.with_added_extension("malformed"))?, b"{");
     Ok(())
 }

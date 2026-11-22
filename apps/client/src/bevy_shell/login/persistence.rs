@@ -11,48 +11,48 @@ pub(super) struct PendingSave {
 impl LoginState {
     #[cfg(test)]
     pub(in crate::bevy_shell) fn submit(&mut self) -> Result<crate::NativeLoginConfig, String> {
-        self.start_save()
-            .ok_or_else(|| self.form.message().to_owned())
+        self.show();
+        self.start_save();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+        while self.save_pending() && std::time::Instant::now() < deadline {
+            if let Some((config, _)) = self.poll_save() {
+                return Ok(config);
+            }
+            std::thread::yield_now();
+        }
+        Err(self.form.message().to_owned())
     }
 
-    pub(in crate::bevy_shell) fn start_save(&mut self) -> Option<crate::NativeLoginConfig> {
+    pub(in crate::bevy_shell) fn start_save(&mut self) {
         if self.saving.is_some() || !self.form.can_submit() {
-            return None;
+            return;
         }
         let Some(path) = self.path.clone() else {
             self.form
                 .feedback("Cannot locate the login configuration directory.".into());
-            return None;
+            return;
         };
         let visible = self.form.settings.clone();
         if let Err(error) = visible.validate() {
             self.form.feedback(error);
-            return None;
+            return;
         }
-        match crate::atomic_file::try_lock(&path) {
-            Ok(lock) => self.finish_save(visible.save_edits(&path, &self.baseline, lock)),
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                let edited = visible.clone();
-                let before = self.baseline.clone();
-                let task = bevy_tasks::IoTaskPool::get_or_init(|| {
-                    bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
-                })
-                .spawn(async move {
-                    let lock =
-                        crate::atomic_file::lock(&path).map_err(|error| error.to_string())?;
-                    edited.save_edits(&path, &before, lock)
-                });
-                self.saving = Some(PendingSave {
-                    task,
-                    visible,
-                    revision: self.revision,
-                    assets: None,
-                });
-                self.form.feedback("Waiting to save login settings…".into());
-                None
-            }
-            Err(_) => self.finish_save(Err(LoginSettings::save_error())),
-        }
+        let edited = visible.clone();
+        let before = self.baseline.clone();
+        let task = bevy_tasks::IoTaskPool::get_or_init(|| {
+            bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+        })
+        .spawn(async move {
+            let lock = crate::atomic_file::lock(&path).map_err(|_| LoginSettings::save_error())?;
+            edited.save_edits(&path, &before, lock)
+        });
+        self.saving = Some(PendingSave {
+            task,
+            visible,
+            revision: self.revision,
+            assets: None,
+        });
+        self.form.feedback("Waiting to save login settings…".into());
     }
 
     pub(in crate::bevy_shell) fn poll_save(
@@ -77,7 +77,9 @@ impl LoginState {
     }
 
     pub(in crate::bevy_shell) fn cancel_save(&mut self) {
-        self.saving = None;
+        if self.saving.is_some() {
+            self.revision = self.revision.saturating_add(1);
+        }
     }
 
     fn finish_save(
