@@ -78,7 +78,10 @@ pub enum QuestCallbackProjection {
         restore: EntryFacts,
     },
     /// Hide the selected source and restore exactly its committed revision.
-    TimedRemoval { due: u64, restore: EntryFacts },
+    TimedRemoval {
+        due: u64,
+        restore: EntryFacts,
+    },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,

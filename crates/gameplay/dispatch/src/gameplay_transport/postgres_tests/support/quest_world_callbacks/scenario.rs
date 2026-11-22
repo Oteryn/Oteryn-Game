@@ -130,7 +130,7 @@ fn scenario_case(
         || paradox_journey;
     let start = if alawars_vault {
         super::super::alawars_vault_journey_fixtures::START
-        } else if explorer {
+    } else if explorer {
         super::super::explorer_society_journey::START
     } else if frontier {
         super::super::new_frontier_journey::start()
