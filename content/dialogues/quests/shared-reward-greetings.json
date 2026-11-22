@@ -1025,6 +1025,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.undal",
+      "greet": "Greetings hero. I guess you came to {talk}.",
+      "farewell": "Well, bye then.",
+      "walkaway": "Well, bye then.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/undal.lua:167:sha256:48ff00f79ac6a7e89a4be2ae03e863a86a6349162634a68f940dfe9f0dfe18cc",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/undal.lua:168:sha256:48ff00f79ac6a7e89a4be2ae03e863a86a6349162634a68f940dfe9f0dfe18cc",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/undal.lua:169:sha256:48ff00f79ac6a7e89a4be2ae03e863a86a6349162634a68f940dfe9f0dfe18cc"
+      ]
+    },
+    {
       "npc": "oteryn:npc.ustan",
       "greet": "Crunor's blessing, traveller.",
       "farewell": "Good bye, |PLAYERNAME|.",

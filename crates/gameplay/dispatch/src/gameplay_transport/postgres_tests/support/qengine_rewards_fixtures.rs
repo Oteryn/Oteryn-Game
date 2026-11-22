@@ -243,7 +243,9 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l7-assassin-white" => &["50 white cloth"],
         "l7-assassin-yarn" => &["10 spools of yarn"],
         "l11-makeshift-base" => &["salvage"],
-        "l11-dream-warrior-first" | "l11-dream-warrior-second" => &["addon", "yes", "yes"],
+        "l11-dream-warrior-task-base" | "l11-dream-warrior-undal-base" => &["talk"],
+        "l11-dream-warrior-first" | "l11-dream-warrior-second"
+        | "l11-dream-warrior-undal-first" | "l11-dream-warrior-undal-second" => &["addon", "yes", "yes"],
         "between-the-lines-phillip-accept" => &["book"],
         "l10-brotherhood-join" | "l10-nightmare-join" => &["join", "yes"],
         "l10-brotherhood-officer"

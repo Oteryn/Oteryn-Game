@@ -6262,6 +6262,54 @@
       ]
     },
     {
+      "npc": "oteryn:npc.undal",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [],
+      "reply": [
+        "Would you like to earn an addon for your Dream Warrior outfit?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.undal",
+      "keywords": [
+        "talk"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Ask me about your task for the Court."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.undal",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "storage": [],
+      "reply": [
+        "Bring five pomegranates for the first addon or an ice shield for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.undal",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 8,
+      "storage": [],
+      "reply": [
+        "Which are you turning in, pomegranates or an ice shield?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.ustan",
       "keywords": [
         "paws",
@@ -6290,19 +6338,19 @@
       "next_topic": 6,
       "storage": [],
       "reply": [
-        "Will you help me with this task?"
+        "Would you like to earn an addon for your Dream Warrior outfit?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vanys",
+      "keywords": [
+        "talk"
       ],
-      "requires": [
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
-          "minimum": 3,
-          "maximum": 3
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
-          "minimum": 1,
-          "maximum": 1
-        }
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Ask me about your task for the Court."
       ]
     },
     {
@@ -6314,19 +6362,7 @@
       "next_topic": 7,
       "storage": [],
       "reply": [
-        "Will you help me with this task?"
-      ],
-      "requires": [
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
-          "minimum": 3,
-          "maximum": 3
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
-          "minimum": 1,
-          "maximum": 1
-        }
+        "Bring five pomegranates for the first addon or an ice shield for the second."
       ]
     },
     {
@@ -6338,19 +6374,7 @@
       "next_topic": 8,
       "storage": [],
       "reply": [
-        "Will you help me with this task?"
-      ],
-      "requires": [
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
-          "minimum": 3,
-          "maximum": 3
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
-          "minimum": 1,
-          "maximum": 1
-        }
+        "Which are you turning in, pomegranates or an ice shield?"
       ]
     },
     {

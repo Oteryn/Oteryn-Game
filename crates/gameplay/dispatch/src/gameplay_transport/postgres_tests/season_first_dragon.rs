@@ -514,6 +514,24 @@ fn scenario(victory: bool) -> TestResult {
             cooldown > (clock + 1201) * 1000,
             "returning never clears the personal cooldown"
         );
+        if victory {
+            let [dragon] = super::classic_quests_fixtures::install(
+                &owner, &admitted, ["oteryn:npc.the_first_dragon"],
+            ).await?;
+            owner.refresh_quest_session(admitted.game_session_id, false).await;
+            let next = admitted.continuity.next_command_id;
+            for (command, text) in [(next, "hi"), (next + 1, "reward")] {
+                let result = super::qengine_rewards_fixtures::talk(
+                    &mut owner, &mut admitted, dragon, command, text,
+                ).await?;
+                assert_eq!(result, oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Ok);
+            }
+            let earned: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_appearance_unlock_receipts
+                 WHERE unlock_key='oteryn:outfit.festive/quest-grant/0'",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(earned, 1, "the native victory qualifies the NPC base outfit");
+        }
         if !victory {
             let minted: i64 = sqlx::query_scalar("SELECT count(*) FROM game_boss_reward_items")
                 .fetch_one(&h.pool)

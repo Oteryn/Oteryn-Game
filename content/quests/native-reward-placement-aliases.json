@@ -82,6 +82,54 @@
       ]
     },
     {
+      "claim": "oteryn:reward-claim.kv.edrongoblin1",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6034,
+      "project_position": {
+        "x": 33095,
+        "y": 31800,
+        "z": 10
+      },
+      "appearance": 2469,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L835",
+        "content/world/placements/region-z10-x129-y124.b3:sha256:edd3df00bd8efeb1b29e923fe6f1327839cbddecaf594fe4a7630a566b886892 selector 33095,31800,10 ordinal 1 has appearance 2469 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.edrongoblin2",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6035,
+      "project_position": {
+        "x": 33095,
+        "y": 31801,
+        "z": 10
+      },
+      "appearance": 2469,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L842",
+        "content/world/placements/region-z10-x129-y124.b3:sha256:edd3df00bd8efeb1b29e923fe6f1327839cbddecaf594fe4a7630a566b886892 selector 33095,31801,10 ordinal 1 has appearance 2469 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.fanfare",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6142,
+      "project_position": {
+        "x": 32390,
+        "y": 31769,
+        "z": 9
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1681",
+        "content/world/placements/region-z09-x126-y124.b3:sha256:182c9cc13abf7949f8a777c69ef74e5929e08887954616b4ca09c4f53a176e64 selector 32390,31769,9 ordinal 1 has appearance 2472 and the tile has no unique tags."
+      ]
+    },
+    {
       "claim": "oteryn:reward-claim.kv.ghostsilver_lantern_quest",
       "expected_revision": "reward-claim-r1",
       "expected_source_uid": 6310,
@@ -117,7 +165,11 @@
       "claim": "oteryn:reward-claim.kv.mintwallincyclops",
       "expected_revision": "reward-claim-r1",
       "expected_source_uid": 6138,
-      "project_position": { "x": 32591, "y": 32097, "z": 14 },
+      "project_position": {
+        "x": 32591,
+        "y": 32097,
+        "z": 14
+      },
       "appearance": 2472,
       "ordinal": 1,
       "sources": [
@@ -139,6 +191,70 @@
       "sources": [
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2924",
         "content/world/placements/region-z10-x128-y123.b3:sha256:afb894429ec7d41754d8aa0cfeed1ba08fc8aa3e0add9ac1fa5372a517b6f9fb selector 32883,31686,10 ordinal 1 has appearance 21858 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.key.id3520",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 5018,
+      "project_position": {
+        "x": 32376,
+        "y": 31802,
+        "z": 7
+      },
+      "appearance": 2473,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L508",
+        "content/world/placements/region-z07-x126-y124.b3:sha256:71d0f001114257d94cc70fc7bf7405d0e7dc5f05266e71eb87cfab37ba0d43f6 selector 32376,31802,7 ordinal 1 has appearance 2473 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.key.id3800",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 5003,
+      "project_position": {
+        "x": 32605,
+        "y": 31908,
+        "z": 3
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L394",
+        "content/world/placements/region-z03-x127-y124.b3:sha256:419ed104a313cf6f29347036375b2f94c2bbfdef9721d264d9d442d2792e2b1a selector 32605,31908,3 ordinal 1 has appearance 2472 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.key.id3802",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 5005,
+      "project_position": {
+        "x": 32599,
+        "y": 31923,
+        "z": 6
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L413",
+        "content/world/placements/region-z06-x127-y124.b3:sha256:5e3aa6796ec4ac19ff73372d298189e3503be68a5bdfba08c1fdf8d9f42a2d91 selector 32599,31923,6 ordinal 1 has appearance 2472 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 5004,
+      "project_position": {
+        "x": 32648,
+        "y": 31905,
+        "z": 3
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L402",
+        "content/world/placements/region-z03-x127-y124.b3:sha256:419ed104a313cf6f29347036375b2f94c2bbfdef9721d264d9d442d2792e2b1a selector 32648,31905,3 ordinal 1 has appearance 2472 and the tile has no unique tags."
       ]
     }
   ]

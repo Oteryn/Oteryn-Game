@@ -2386,9 +2386,10 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing and 31 QB routes. The final two terms are
-        // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12);
+        // Shared rewards include 207 earlier rows, 31 QB routes, four Dream
+        // Courts exchanges and one native First Dragon victory exchange.
+        // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
+        assert_eq!(load()?.len(), 243 + 59 + 125 + 1 + 1 + 13 + 12);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

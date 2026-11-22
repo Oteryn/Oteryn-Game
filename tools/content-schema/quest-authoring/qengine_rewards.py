@@ -95,7 +95,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-crystal/scripts/special/addon_doll.lua', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'rock_steady', *qb_barbarian.DONOR_NPCS, *qb_citizen_warrior.DONOR_NPCS, *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn', *questl2_ready.NPCS)]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'undal', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn', *questl2_ready.NPCS)]
     paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
@@ -207,6 +207,19 @@ def build():
         for addon in range(outfit['addon_count']+1):
             target={'kind':'Outfit','outfit_key':key} if addon==0 else {'kind':'Addon','outfit_key':key,'addon':addon}
             mappings.append({'grant_key':f'{key}/quest-grant/{addon}','target':target,'compatible_provenance':[PROVENANCE]})
+    # Crystal 201189f8 task_board_shop.lua:33-92. Use the admitted male/female
+    # pair, keyed by the same offer ids as the Task Board purchase writer.
+    for first, family in ((0, 'feral_trapper'), (3, 'falconer')):
+        key = 'oteryn:outfit.' + family
+        (outfit,) = [outfit for outfit in outfits if outfit['key'] == key]
+        if outfit['addon_count'] != 2:
+            raise ValueError('Task Board outfit lacks its source addons: ' + key)
+        for addon in range(3):
+            target = {'kind': 'Outfit' if addon == 0 else 'Addon', 'outfit_key': key}
+            if addon:
+                target['addon'] = addon
+            mappings.append({'grant_key': f'oteryn:taskboard/shop/offer-{first+addon}',
+                             'target': target, 'compatible_provenance': ['task-board-shop-v1']})
     # Every native source grant must match the complete admitted sex pair.
     for outfit in outfits:
         outfit_looks=sorted([outfit['female']['id'],outfit['male']['id']])
@@ -437,8 +450,13 @@ def build():
             'next_topic':next_topic,'storage':[],'requires':library_done,
             'reply':['I need five sturdy books for the first addon or twenty epaulettes for the second.']})
     feathers=prefix+'u11_02/the_first_dragon/feathers'
+    first_dragon_victory = 'oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5'
     add('l2-festive-base','the_first_dragon_quest','the_first_dragon',['reward'],
         [storage(feathers,1,2)],outfit=('festive',0))
+    # The native fight on main records its selected victory on s5. Feather
+    # credit from the original route continues to qualify via the row above.
+    add('l2-festive-base-earned','the_first_dragon_quest','the_first_dragon',['reward'],
+        [storage(feathers,0,2)],outfit=('festive',0),requires=[requirement(first_dragon_victory,1)])
     festive_ready=[requirement(feathers,2)]
     # Muriel's captured offers require the stage that only those offers initialize.
     # Bootstrap with parent completion and retained matching evidence; only the
@@ -451,6 +469,8 @@ def build():
             [storage(track,-1,1,0)],topic=1,requires=festive_ready,present=[(item,count)])
         add('l2-festive-'+name,'festive_outfits_quest','muriel',[word,word+'s'],
             [storage(track,1,2)],take=[(item,count)],outfit=('festive',bit),requires=festive_ready)
+        callbacks[-1].update(requires_outfits=['oteryn:outfit.festive'],
+            achievement_progress=[{'key':'oteryn:achievement/reason_to_celebrate','target':2}])
     elementalist=prefix+'u9_1/elementalist_outfits/'
     add('l2-elementalist-start','elementalist_outfits_quest','broken_servant_sentry',['yes'],
         [storage(elementalist+'outfit',-1,1,0),storage(elementalist+'questline',-1,1,1)],topic=2)
@@ -503,6 +523,10 @@ def build():
             [storage(glooth+'addon'+str(bit),-1,1,0)],outfit=('glooth_engineer',bit),requires=required)
     declarations=[{'key':votes,'quest':'oteryn:quest.oramond_quest','initial':-1,'min':-1,'max':2147483647,
         'sources':[f'crystal:{PIN}:data-global/npc/ezebeth.lua:93-103:sha256:{sha(inputs["data-global/npc/ezebeth.lua"])}']}]
+    # Reward guards load before the native kill adapter installs this exact track.
+    declarations.append({'key':first_dragon_victory,'quest':'oteryn:quest.the_first_dragon_quest',
+        'initial':0,'min':0,'max':1,
+        'sources':['content/encounters/bosses/selected-first-dragon.json#stage-s5']})
     noble=prefix+'u7_8/nobleman_outfits/'
     first=noble+'nobleman_first_addon'
     second=noble+'nobleman_second_addon'
@@ -922,6 +946,7 @@ def build():
         states=[storage(key,-1,1,0)]
         add('l8-dream-warden-'+name,general,'eruaran',['yes'],states,take=[(item,1)],outfit=('dream_warden',bit),topic=bit)
         callbacks[-1]['requires_premium']=True
+        callbacks[-1]['achievement_progress'] = [{'key': 'oteryn:achievement/dream_warden', 'target': 2}]
         source_offer('eruaran',words,0,bit,states)
     # Gnomally's private config selector is lowered to distinct conversation
     # topics. Source trades are repeatable, with no quest storage side effect.
@@ -1020,34 +1045,58 @@ def build():
             document_path='data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua'
             callback['sources'].append(f'crystal:{PIN}:{document_path}:1-69:sha256:{sha(inputs[document_path])}')
     # L11: source task rewards plus explicitly selected Oteryn qualification desks.
-    dream_ready=[requirement(prefix+'u12_00/the_dream_courts/ward_stones/questline',3),
-        requirement(prefix+'u12_00/the_dream_courts/main/the_summer_court',1)]
+    dream_quest = 'dream_warrior_outfits_quest'
+    dream_outfit = 'oteryn:outfit.dream_warrior'
+    for npc, court, suffix in (('vanys', 'summer', ''), ('undal', 'winter', '-undal')):
+        label = 'l11-dream-warrior' + suffix
+        ready = [requirement(prefix+'u12_00/the_dream_courts/ward_stones/questline',3),
+                 requirement(prefix+f'u12_00/the_dream_courts/main/the_{court}_court',1)]
+        if court == 'summer':
+            # Keep the original Vanys reward keyword as an alternate entry.
+            add(label+'-base',dream_quest,npc,['dream warrior outfit'],[],
+                outfit=('dream_warrior',0),requires=ready)
+            callbacks[-1].update(minimum_level=250,requires_premium=True,forbids_outfits=[dream_outfit])
+        source_offer(npc,['talk'],0,2,[])
+        offers[-1]['reply'] = ['Ask me about your task for the Court.']
+        base = '-task-base' if court == 'summer' else '-base'
+        add(label+base,dream_quest,npc,['task'],[],outfit=('dream_warrior',0),topic=2,requires=ready)
+        callbacks[-1].update(minimum_level=250,requires_premium=True,forbids_outfits=[dream_outfit],
+            reply=['You defeated the Nightmare Beast. Accept this Dream Warrior outfit from the Court.'])
+        # Vanys and Undal allow either exchange as soon as the outfit is earned.
+        for bit, part, word, item, count in ((1,'first','pomegranates',30169,5),
+                                            (2,'second','ice shield',30168,1)):
+            add(label+'-'+part,dream_quest,npc,[word],[],take=[(item,count)],
+                outfit=('dream_warrior',bit),topic=8)
+            callbacks[-1].update(minimum_level=250,requires_premium=True,
+                requires_outfits=[dream_outfit],forbids_addons=[{'outfit':dream_outfit,'addons':bit}],
+                achievement_progress=[{'key':'oteryn:achievement/dream_warrior','target':2}])
+        for word, before, after, reply in (
+            ('addon', 0, 6, 'Would you like to earn an addon for your Dream Warrior outfit?'),
+            ('yes', 6, 7, 'Bring five pomegranates for the first addon or an ice shield for the second.'),
+            ('yes', 7, 8, 'Which are you turning in, pomegranates or an ice shield?'),
+        ):
+            source_offer(npc,[word],before,after,[])
+            offers[-1]['reply'] = [reply]
     wanted='oteryn:quest-progress/chosen-source/kilmaresh_quest/s21'
     declarations.append({'key':wanted,'quest':'oteryn:quest.kilmaresh_quest','initial':0,'min':0,'max':1,
         'sources':['owner:chosen-Kilmaresh-s21:report-three-Wanted-outlaws:read-only']})
-    desks=[('dream-warrior','dream_warrior_outfits_quest','vanys','dream_warrior',250,dream_ready,'dream warrior outfit'),
-        ('issavi','authored.citizen_of_issavi_outfits_quest','eshaya','citizen_of_issavi',250,[requirement(wanted,1)],'issavi attire')]
-    for label,quest,npc,family,level,ready,word in desks:
-        add('l11-'+label+'-base',quest,npc,[word],[],outfit=(family,0),requires=ready)
-        callbacks[-1].update(minimum_level=level,requires_premium=True,forbids_outfits=['oteryn:outfit.'+family])
-        if label=='issavi':callbacks[-1]['sources'].append('owner:chosen-Issavi-attire-keeper-role:Eshaya:Wanted-report-s21')
-    for label,quest,npc,family,level,ready,tokens,carried in [
-            ('dream-warrior','dream_warrior_outfits_quest','vanys','dream_warrior',250,dream_ready,[(30169,5),(30168,1)],False),
-            ('issavi','authored.citizen_of_issavi_outfits_quest','eshaya','citizen_of_issavi',250,[requirement(wanted,1)],[(37003,1),(37002,1)],True),
-            ('makeshift','makeshift_warrior_outfits_quest','gnomadness','makeshift_warrior',100,[],[(27657,1),(27656,1)],True)]:
+    add('l11-issavi-base','authored.citizen_of_issavi_outfits_quest','eshaya',['issavi attire'],[],
+        outfit=('citizen_of_issavi',0),requires=[requirement(wanted,1)])
+    callbacks[-1].update(minimum_level=250,requires_premium=True,forbids_outfits=['oteryn:outfit.citizen_of_issavi'])
+    callbacks[-1]['sources'].append('owner:chosen-Issavi-attire-keeper-role:Eshaya:Wanted-report-s21')
+    for label,quest,npc,family,level,ready,tokens in [
+            ('issavi','authored.citizen_of_issavi_outfits_quest','eshaya','citizen_of_issavi',250,[requirement(wanted,1)],[(37003,1),(37002,1)]),
+            ('makeshift','makeshift_warrior_outfits_quest','gnomadness','makeshift_warrior',100,[],[(27657,1),(27656,1)])]:
         for bit,(item,count) in enumerate(tokens,1):
             add('l11-'+label+'-'+('first' if bit==1 else 'second'),quest,npc,
-                ['document'] if carried else ['pomegranates' if bit==1 else 'ice shield'],[],
-                take=[(item,count)],outfit=(family,bit),topic=0 if carried else 8,requires=ready,
+                ['document'],[],
+                take=[(item,count)],outfit=(family,bit),requires=ready,
                 achievement='oteryn:achievement/cobbled_and_patched' if label=='makeshift' and bit==2 else None)
             callback=callbacks[-1];callback.update(minimum_level=level,requires_premium=True,
                 requires_outfits=['oteryn:outfit.'+family],forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
             if bit==2:callback['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
-            if carried:callback['carried_item']=f'oteryn:item.tibia.i{item}'
+            callback['carried_item']=f'oteryn:item.tibia.i{item}'
             if label=='issavi':callback['sources'].append('owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each')
-        if not carried:
-            for words,before,after in [(['addon'],0,6),(['yes'],6,7),(['yes'],7,8)]:
-                source_offer(npc,words,before,after,[]);offers[-1]['requires']=ready
     qualification=prefix+'makeshift_warrior/qualification'
     declarations.append({'key':qualification,'quest':'oteryn:quest.makeshift_warrior_outfits_quest','initial':0,'min':0,'max':2,
         'writable':True,'sources':['owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:s1-s2:gnomadness-role']})

@@ -1516,6 +1516,129 @@ mod tests {
     use crate::map::boot::{boot, tests as fixture};
 
     #[test]
+    fn quest_routes_load_locked_doors_and_pick_action() {
+        use crate::map::door::DoorUse;
+        use oteryn_world_bundle::sector::{Item, Tile};
+
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes).expect("source bundle");
+        let mut facts = BundleFacts::palette(&bundle.manifest, fixture::items).expect("palette");
+        let mut push = |x, y, floor, appearance, door| {
+            facts.palette[3].facts.appearance_id = appearance;
+            facts.palette[3].door = door;
+            facts.push(
+                &bundle.manifest,
+                &Sector {
+                    floor,
+                    sx: x / 32,
+                    sy: y / 32,
+                    tiles: vec![Tile {
+                        x,
+                        y,
+                        flags: 0,
+                        house: 0,
+                        zones: Vec::new(),
+                        items: vec![
+                            Item {
+                                palette: 0,
+                                depth: 0,
+                                attrs: Attrs::default(),
+                            },
+                            Item {
+                                palette: 3,
+                                depth: 0,
+                                attrs: Attrs::default(),
+                            },
+                        ],
+                    }],
+                },
+                &mut BTreeSet::new(),
+            );
+            placement_key(TilePos { x, y, floor }, 1).expect("placement")
+        };
+        let door_item = |key: &str| {
+            let id = key
+                .strip_prefix("oteryn:item.tibia.i")?
+                .parse::<u32>()
+                .ok()?;
+            let open = matches!(id, 5099 | 5108 | 5112 | 7713 | 7716);
+            Some(ItemDefinition {
+                reference: NonZeroU32::new(id)?,
+                solid: Some(!open),
+                blocks_projectile: !open,
+                pickupable: false,
+                door: true,
+            })
+        };
+        let doors = [
+            (32645, 31906, -3, 7714, 3800),
+            (32600, 31926, -6, 7711, 3801),
+            (32450, 31967, -10, 5106, 3802),
+            (32452, 31972, -10, 5097, 3802),
+            (32456, 31972, -10, 5097, 3802),
+            (32457, 31966, -10, 5106, 3802),
+            (32602, 31975, -14, 7714, 3802),
+            (32603, 31975, -14, 7714, 3802),
+            (32624, 31929, -3, 7714, 3802),
+        ]
+        .map(|(x, y, z, id, action)| {
+            let door = palette_door(&format!("oteryn:item.tibia.i{id}"), &door_item);
+            (push(x, y, z, id, door), action)
+        });
+        let level_door = push(
+            33085,
+            31650,
+            -10,
+            5111,
+            palette_door("oteryn:item.tibia.i5111", &door_item),
+        );
+        let pick_tile = push(33081, 31651, -11, 355, PaletteDoor::No);
+        facts.finish();
+
+        for (key, action) in doors {
+            assert_eq!(
+                facts.doors().toggle(key, 0, false, 100, false),
+                Some(DoorUse::Locked)
+            );
+            assert_eq!(
+                facts.doors().use_key(key, 0, action + 1),
+                Some(DoorUse::Locked)
+            );
+            assert_eq!(
+                facts.doors().use_key(key, 0, action),
+                Some(DoorUse::Toggled {
+                    revision: 1,
+                    open: true
+                })
+            );
+        }
+        assert_eq!(
+            facts.doors().toggle(level_door, 0, false, 59, false),
+            Some(DoorUse::Locked)
+        );
+        assert_eq!(
+            facts.doors().toggle(level_door, 0, false, 60, false),
+            Some(DoorUse::Toggled {
+                revision: 1,
+                open: true
+            })
+        );
+        let action = facts.terrain_tool_action(pick_tile).expect("pick target");
+        assert_eq!(action, Some(101));
+        let catalogue = crate::terrain_tools::crystal_core_bindings();
+        let plan = crate::terrain_tools::dispatch(
+            &catalogue,
+            "oteryn:item.tibia.i3456",
+            355,
+            action,
+            1_000,
+        )
+        .expect("source pick route");
+        assert_eq!(plan.binding.transformed, 394);
+        assert_eq!(plan.first_deadline_unix_ms, Some(301_000));
+    }
+
+    #[test]
     fn source_house_membership_keeps_adjacent_identities_and_refuses_ambiguity() {
         use oteryn_world_bundle::sector::Tile;
         let (bytes, _) = fixture::bundle();

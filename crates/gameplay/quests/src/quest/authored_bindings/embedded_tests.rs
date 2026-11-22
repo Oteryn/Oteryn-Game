@@ -537,7 +537,7 @@ mod main_native_contract {
             }
             Ok(())
         };
-        for (stage, max) in [(4, 2), (5, 1), (6, 1)] {
+        for (stage, max) in [(4, 2), (6, 1)] {
             track(
                 &format!("oteryn:quest-progress/chosen-source/the_first_dragon_quest/s{stage}"),
                 "oteryn:quest.the_first_dragon_quest",
@@ -557,7 +557,7 @@ mod main_native_contract {
             track(&stage.track, &arena.quest, stage.goal)?;
         }
         // Package C adds three Skull of Ratha claim markers and one Legion Helmet marker.
-        assert_eq!(additions.len(), 70);
+        assert_eq!(additions.len(), 69);
 
         let baseline = crate::quest::loader::lower_embedded_quest_state("native-admission-fixture")
             .map_err(|error| format!("{error:?}"))?;
@@ -572,7 +572,18 @@ mod main_native_contract {
         let after = explicit.catalogue();
         // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
-        assert_eq!(before.tracks.len(), 2135 + 7);
+        assert_eq!(before.tracks.len(), 2136 + 7);
+        let festive_guard = "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5";
+        assert_eq!(
+            before.tracks.get(festive_guard),
+            Some(&QuestTrack {
+                key: festive_guard.into(),
+                quest: "oteryn:quest.the_first_dragon_quest".into(),
+                initial: 0,
+                min: 0,
+                max: 1,
+            })
+        );
         for pharaoh in ["omruc", "vashresamun"] {
             let key = format!(
                 "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/{pharaoh}_sarcophagus_claim"
@@ -610,9 +621,10 @@ mod main_native_contract {
         }
         // Empty imported bindings must preserve the complete native admission
         // result, including rule-bound hashes, rather than the raw lowerer's hashes.
-        let expected = arena_completion::extend(completion_sets::extend(native_kills::extend(
-            before.clone(),
-        )?)?)?;
+        let mut expected = arena_completion::extend(completion_sets::extend(
+            native_kills::extend(before.clone())?,
+        )?)?;
+        crate::quest::published_quest_pins::retain_predecessors(&mut expected);
         assert_eq!(expected.tracks, after.tracks);
         assert_eq!(expected.transitions, after.transitions);
         assert_eq!(expected.hashes, after.hashes);
@@ -632,7 +644,7 @@ mod main_native_contract {
             }
         }
         assert_eq!(before.npc_legacy, after.npc_legacy);
-        assert_eq!(before.predecessors, after.predecessors);
+        assert_eq!(expected.predecessors, after.predecessors);
         assert_eq!(before.authored_bindings, after.authored_bindings);
         assert!(after.native_recipe_evidence.is_some());
         Ok(())

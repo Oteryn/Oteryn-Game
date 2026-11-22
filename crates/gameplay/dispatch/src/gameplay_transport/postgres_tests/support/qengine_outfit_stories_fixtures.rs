@@ -2612,6 +2612,20 @@ pub(super) async fn exercise(
                 "source achievement rides the same committed reward"
             );
         }
+        let full_outfit_award = match family {
+            "festive" => Some("oteryn:achievement/reason_to_celebrate"),
+            "dream-warden" => Some("oteryn:achievement/dream_warden"),
+            _ => None,
+        };
+        if let Some(key) = full_outfit_award {
+            let earned: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
+            )
+            .bind(key)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(earned, i64::from(step_index + 1 == callbacks.len()));
+        }
         if family == "demon" {
             let earned: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
