@@ -65,7 +65,9 @@ Fast Rust selection on the PR:
 | Audited Atlas fullworld producer/self-test surface | always-required fast PR checks and any applicable dedicated workflow; add Rust checks only if another consumer selects them |
 | Server-only, including server-consumed auxiliary inputs | changed-crate Clippy/unit tests + Rust policy/supply chain |
 | Client/shared/simulation, including their consumed auxiliary inputs | changed-crate Clippy/unit tests + Rust policy/supply chain |
-| Canonical routing controls (`merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`), `.github/actions/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | conservative workspace fast Rust checks + policy/supply chain |
+| Canonical routing controls (`merge-gate.yml`, `merge-group-gate.yml`, `rust-fast-archive.yml`, `rust.yml`), `.github/actions/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | conservative workspace fast Rust checks + policy/supply chain |
+
+The reusable fast archive producer `rust-fast-archive.yml` is also a canonical control and a source of exact-candidate consumer references. Its own changes and referenced build-helper changes remain fully qualified.
 
 Physical server qualification runs only in the post-merge full gate (`merge-group-gate.yml`). It runs node boot and Server Seam against the real Platform (`Merge Queue / Node boot against the real Platform`, `Merge Queue / Server Seam over TCP+TLS`). These run when a change can reach the shipped server's boot, admission, transport, durability or reconnect paths:
 

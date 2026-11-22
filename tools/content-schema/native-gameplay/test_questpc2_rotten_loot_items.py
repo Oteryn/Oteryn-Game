@@ -7,6 +7,7 @@ from pathlib import Path
 import questpc2_rotten_loot_items as tool
 
 ROOT = Path(__file__).resolve().parents[3]
+WEIGHTS = json.loads((ROOT / 'tools/content-schema/native-gameplay/item-detail-weight-facts.json').read_bytes())
 
 
 def outside_snapshot(records, keys):
@@ -39,24 +40,9 @@ class RottenItemAdmissionTests(unittest.TestCase):
                 self.assertTrue(profiles[key]['admission']['materializable'])
                 self.assertEqual(definitions[key]['stack_class'], profiles[key]['admission']['stack_class'])
                 for group in tool.source.GROUPS:
-                    if group == 'physical' and key in {'oteryn:item.tibia.i43899', 'oteryn:item.tibia.i43900'}:
-                        # Their admitted native zero weight remains owned by its original source.
-                        self.assertEqual(profiles[key]['semantics'][group]['value']['weight'],
-                                         {'state': 'KNOWN', 'value': 0})
+                    if group == 'physical':
                         self.assertEqual(definitions[key]['semantics'][group]['value']['weight'],
-                                         {'state': 'KNOWN', 'value': 450})
-                        continue
-                    if group == 'physical' and key in {
-                            'oteryn:item.tibia.i43501', 'oteryn:item.tibia.i43502',
-                            'oteryn:item.tibia.i43503', 'oteryn:item.tibia.i43504'}:
-                        # The earlier BossYield owner retains its source weight;
-                        # canonical reference weights remain independently fixed.
-                        expected = copy.deepcopy(definitions[key]['semantics'][group])
-                        self.assertEqual(expected['value']['weight'],
-                                         {'state': 'KNOWN', 'value': 150})
-                        expected['value']['weight'] = {'state': 'KNOWN', 'value': 0}
-                        self.assertEqual(profiles[key]['semantics'][group], expected)
-                        continue
+                                         {'state': 'KNOWN', 'value': WEIGHTS[key.rsplit('.i', 1)[1]]})
                     self.assertEqual(definitions[key]['semantics'][group], profiles[key]['semantics'][group])
         canonical_outside = outside_snapshot(definitions, keys)
         native_outside = outside_snapshot(profiles, keys)
@@ -87,7 +73,7 @@ class RottenItemAdmissionTests(unittest.TestCase):
         self.assertEqual(json.loads(generated[manifest_path])['item_profiles']['sha256'],
                          hashlib.sha256(generated[profile_path]).hexdigest())
 
-    def test_client_weight_overlay_keeps_native_zero_and_refuses_unproved_physical_changes(self):
+    def test_client_weight_overlay_keeps_qualified_weight_and_refuses_unproved_physical_changes(self):
         from qualification_inputs import appearance_input_scope
 
         profile_path, manifest_path = 'profiles', 'manifest'
@@ -115,7 +101,7 @@ class RottenItemAdmissionTests(unittest.TestCase):
                 self.assertEqual(outside_snapshot(records, keys), outside_snapshot(prior, keys))
                 for key in keys:
                     self.assertEqual(records[key]['semantics']['physical']['value']['weight'],
-                                     {'state': 'KNOWN', 'value': 0})
+                                     {'state': 'KNOWN', 'value': WEIGHTS[key.rsplit('.i', 1)[1]]})
                 self.assertEqual(json.loads(generated[manifest_path])['item_profiles']['sha256'],
                                  hashlib.sha256(generated[profile_path]).hexdigest())
 
@@ -152,8 +138,8 @@ class RottenItemAdmissionTests(unittest.TestCase):
         self.assertEqual(set(definitions), selected)
         for key in selected:
             expected = copy.deepcopy(definitions[key]['semantics']['physical'])
-            self.assertEqual(expected['value']['weight'], {'state': 'KNOWN', 'value': 150})
-            expected['value']['weight'] = {'state': 'KNOWN', 'value': 0}
+            self.assertEqual(expected['value']['weight'],
+                             {'state': 'KNOWN', 'value': WEIGHTS[key.rsplit('.i', 1)[1]]})
             self.assertEqual(actual[key]['semantics']['physical'], expected, key)
         for path, expected_hash in canonical_inputs.items():
             self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), expected_hash, str(path))

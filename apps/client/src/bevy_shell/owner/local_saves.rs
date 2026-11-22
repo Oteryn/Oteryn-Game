@@ -39,3 +39,31 @@ impl HostOwner {
         }
     }
 }
+
+#[cfg(test)]
+#[test]
+fn review_3376_recovery_notice_reaches_the_player_once() -> Result<(), Box<dyn std::error::Error>> {
+    let folder = tempfile::tempdir()?;
+    let path = folder.path().join("profile.json");
+    let backup = path.with_added_extension("malformed");
+    let mut owner = HostOwner::new(None)?;
+    let _lock = crate::atomic_file::lock(&path)?;
+    std::fs::write(&path, b"{first")?;
+    crate::atomic_file::preserve_malformed(&path)?;
+    owner.poll([640, 480]);
+    assert!(owner.login.visible);
+    assert!(
+        owner
+            .login
+            .form
+            .alert()
+            .is_some_and(|(_, message)| message.contains("profile.json.malformed"))
+    );
+    owner.login.form.dismiss_alert();
+    std::fs::write(&path, b"{second")?;
+    crate::atomic_file::preserve_malformed(&path)?;
+    owner.poll([640, 480]);
+    assert!(owner.login.form.alert().is_none());
+    assert_eq!(std::fs::read(backup)?, b"{first");
+    Ok(())
+}

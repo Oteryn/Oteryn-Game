@@ -42,6 +42,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   build:
@@ -52,6 +53,7 @@ jobs:
       CARGO_BUILD_JOBS: "2"
     permissions:
       contents: read
+      actions: read
     strategy:
       fail-fast: true
       matrix:
@@ -91,11 +93,43 @@ jobs:
           git fetch --no-tags --depth=1 origin "$BASE_SHA"
           test "$(git rev-parse FETCH_HEAD)" = "$BASE_SHA"
 
+      # Reuse only an exact-head archive produced by the identical canonical
+      # recipe. Absent evidence permits a local build; invalid evidence fails.
+      - name: Restore an equivalent Dispatch archive from the fast gate
+        id: shared_dispatch
+        if: matrix.archive != 'e2e' && matrix.archive != 'lib' && inputs.current_ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          ARCHIVE: ${{ matrix.archive }}
+        run: |
+          set -euo pipefail
+          echo 'reused=false' >> "$GITHUB_OUTPUT"
+          if [[ ! -f tools/ci/shared_dispatch_archive.py ]]; then
+            exit 0
+          fi
+          role="dispatch-${ARCHIVE#lib-}"
+          directory="$RUNNER_TEMP/shared-dispatch/$role"
+          code=0
+          python3 tools/ci/shared_dispatch_archive.py restore "$role" "$directory" || code=$?
+          case "$code" in
+            0)
+              mkdir -p "$RUNNER_TEMP/pg-archives"
+              cp "$directory/unit-tests.tar.zst" "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.tar.zst"
+              cp "$directory/inventory.json" "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.json"
+              cp "$directory/shared-dispatch.json" "$RUNNER_TEMP/pg-archives/shared-dispatch-$ARCHIVE.json"
+              echo 'reused=true' >> "$GITHUB_OUTPUT"
+              ;;
+            3) echo 'No equivalent fast-gate archive available; building this exact head locally' ;;
+            *) exit "$code" ;;
+          esac
+
       - name: Install Rust toolchain
+        if: steps.shared_dispatch.outputs.reused != 'true'
         run: rustup toolchain install 1.100.0 --profile minimal
 
       - name: Free hosted disk for the Cargo cache and library build
-        if: contains(fromJSON(inputs.archives), matrix.archive)
+        if: contains(fromJSON(inputs.archives), matrix.archive) && steps.shared_dispatch.outputs.reused != 'true'
         run: |
           # Budget for the ~26 GiB restored target, 16 GiB swap, and build/archive output.
           available_kib=$(df -Pk / | awk 'END {print $4}')
@@ -109,7 +143,7 @@ jobs:
 
       # The protected-main target costs more to unpack than it saves compiling this shard.
       - name: Restore Cargo dependencies for dispatch lib-3
-        if: matrix.archive == 'lib-3' && contains(fromJSON(inputs.archives), matrix.archive) && inputs.current_ci
+        if: matrix.archive == 'lib-3' && contains(fromJSON(inputs.archives), matrix.archive) && inputs.current_ci && steps.shared_dispatch.outputs.reused != 'true'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
@@ -119,7 +153,7 @@ jobs:
           key: pg-cargo-deps-linux-v1-${{ hashFiles('Cargo.lock') }}
 
       - name: Restore trimmed Cargo cache from protected main
-        if: matrix.archive != 'lib-3' && contains(fromJSON(inputs.archives), matrix.archive) && inputs.current_ci
+        if: matrix.archive != 'lib-3' && contains(fromJSON(inputs.archives), matrix.archive) && inputs.current_ci && steps.shared_dispatch.outputs.reused != 'true'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
@@ -133,16 +167,16 @@ jobs:
             rust-linux-v2-1.100.0-
 
       - name: Normalize source mtimes for the restored Cargo cache
-        if: matrix.archive != 'lib-3' && contains(fromJSON(inputs.archives), matrix.archive) && inputs.current_ci
+        if: matrix.archive != 'lib-3' && contains(fromJSON(inputs.archives), matrix.archive) && inputs.current_ci && steps.shared_dispatch.outputs.reused != 'true'
         run: python tools/repository/normalize_cargo_mtimes.py
 
       - name: Verify locked metadata
-        if: contains(fromJSON(inputs.archives), matrix.archive)
+        if: contains(fromJSON(inputs.archives), matrix.archive) && steps.shared_dispatch.outputs.reused != 'true'
         run: cargo +1.100.0 metadata --locked --format-version 1 >/dev/null
 
       # cargo-nextest 0.9.146, pinned by SHA-256 as in the Rust Linux legs.
       - name: Install pinned cargo-nextest
-        if: contains(fromJSON(inputs.archives), matrix.archive)
+        if: contains(fromJSON(inputs.archives), matrix.archive) && steps.shared_dispatch.outputs.reused != 'true'
         env:
           NEXTEST_VERSION: 0.9.146
           NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
@@ -168,7 +202,7 @@ jobs:
       # LD_PRELOAD wrapper, so RUSTFLAGS and the linker setting stay as in the protected-main
       # cache producer and the restored target/ keeps matching; only the link step gets faster.
       - name: Install pinned mold linker
-        if: contains(fromJSON(inputs.archives), matrix.archive)
+        if: contains(fromJSON(inputs.archives), matrix.archive) && steps.shared_dispatch.outputs.reused != 'true'
         env:
           MOLD_VERSION: 2.42.1
           MOLD_SHA256: 6ff270c9bf07d2bec5c98aa324eb7c4daf6a1a4d815c05ff1708049616047855
@@ -299,11 +333,9 @@ jobs:
       # Keep swap and disable dispatch debug info for the library build (owner decision
       # 2026-11-18). Other crates keep line tables so the cache restored from main stays valid.
       - name: Add swap for the library test build
-        if: matrix.archive != 'e2e'
+        if: matrix.archive != 'e2e' && steps.shared_dispatch.outputs.reused != 'true'
         run: |
           set -euo pipefail
-          mkdir -p "$HOME/.cargo"
-          printf '[profile.dev.package.oteryn-gameplay-dispatch]\ndebug = 0\n' >> "$HOME/.cargo/config.toml"
           sudo fallocate -l 16G /mnt/oteryn-extra.swap
           sudo chmod 600 /mnt/oteryn-extra.swap
           sudo mkswap /mnt/oteryn-extra.swap
@@ -314,15 +346,23 @@ jobs:
       # Library tests that need PostgreSQL skip in the Rust Linux lib shards, which have no database;
       # these archives hold the library tests the partition jobs run against the service.
       - name: Archive PostgreSQL-backed library tests
-        if: matrix.archive != 'e2e'
+        if: matrix.archive != 'e2e' && steps.shared_dispatch.outputs.reused != 'true'
         env:
           ARCHIVE: ${{ matrix.archive }}
           LIB_PACKAGES: ${{ inputs.lib_packages }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
           LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/pg-archives"
-          if [[ "$ARCHIVE" == lib ]]; then
+          if [[ "$ARCHIVE" =~ ^lib-[123]$ && -f tools/ci/shared_dispatch_archive.py ]]; then
+            role="dispatch-${ARCHIVE#lib-}"
+            directory="$RUNNER_TEMP/shared-dispatch-local/$role"
+            python3 tools/ci/shared_dispatch_archive.py build "$directory" "$role"
+            cp "$directory/unit-tests.tar.zst" "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.tar.zst"
+            cp "$directory/inventory.json" "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.json"
+            cp "$directory/shared-dispatch.json" "$RUNNER_TEMP/pg-archives/shared-dispatch-$ARCHIVE.json"
+          elif [[ "$ARCHIVE" == lib ]]; then
             packages=$(jq -er '.[]' <<< "$LIB_PACKAGES")
             mapfile -t packages <<< "$packages"
             args=()
@@ -335,16 +375,18 @@ jobs:
             done
             unset OTERYN_DISPATCH_PG_SHARD
             cargo +1.100.0 nextest archive --locked "${args[@]}" --lib \
+              --config profile.dev.package.oteryn-gameplay-dispatch.debug=0 \
               --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
           else
             [[ "$ARCHIVE" =~ ^lib-[123]$ ]]
             OTERYN_DISPATCH_PG_SHARD="${ARCHIVE#lib-}/3" cargo +1.100.0 nextest archive --locked \
+              --config profile.dev.package.oteryn-gameplay-dispatch.debug=0 \
               -p oteryn-gameplay-dispatch --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.tar.zst"
           fi
 
       # Fail closed if mold did not link: every test binary relinked in this job must carry its tag.
       - name: Confirm mold linked the test binaries
-        if: contains(fromJSON(inputs.archives), matrix.archive)
+        if: contains(fromJSON(inputs.archives), matrix.archive) && steps.shared_dispatch.outputs.reused != 'true'
         run: |
           set -euo pipefail
           mapfile -t linked < <(find target/debug/deps -maxdepth 1 -type f -executable -newer "$RUNNER_TEMP/mold.tar.gz")
@@ -361,15 +403,17 @@ jobs:
           ARCHIVE: ${{ matrix.archive }}
         run: |
           set -euo pipefail
-          # Use archive metadata to list the already-built executables once.
-          # GNU tar stops after the metadata entries, without materializing the binaries.
-          meta="$RUNNER_TEMP/pg-metadata"
-          mkdir -p "$meta"
-          tar --zstd --occurrence -xf "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.tar.zst" -C "$meta" \
-            target/nextest/cargo-metadata.json target/nextest/binaries-metadata.json
-          cargo-nextest nextest list --cargo-metadata "$meta/target/nextest/cargo-metadata.json" \
-            --binaries-metadata "$meta/target/nextest/binaries-metadata.json" --message-format json \
-            > "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.json"
+          if [[ ! -s "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.json" ]]; then
+            # Locally built legacy/E2E archives still have their executables here.
+            # Reused canonical archives carry a digest-bound producer inventory.
+            meta="$RUNNER_TEMP/pg-metadata"
+            mkdir -p "$meta"
+            tar --zstd --occurrence -xf "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.tar.zst" -C "$meta" \
+              target/nextest/cargo-metadata.json target/nextest/binaries-metadata.json
+            cargo-nextest nextest list --cargo-metadata "$meta/target/nextest/cargo-metadata.json" \
+              --binaries-metadata "$meta/target/nextest/binaries-metadata.json" --message-format json \
+              > "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.json"
+          fi
           cd "$RUNNER_TEMP/pg-archives"
           printf '%s\n' "$HEAD_SHA" > head-sha
           printf '%s\n' "$GITHUB_WORKSPACE" > workspace
@@ -638,7 +682,7 @@ jobs:
           set -euo pipefail
           test "$PG_WORKSPACE" = "$BUILD_WORKSPACE"
           planner="$RUNNER_TEMP/pg-planner/plan_pg_partitions.py"
-          printf '%s  %s\n' '1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321' "$planner" | sha256sum -c -
+          printf '%s  %s\n' 'ae799f44591c0b5f73fa16c177e71c523da9a53923c4791ebb88c99521537ee9' "$planner" | sha256sum -c -
           printf '%s  %s\n' 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a' "$RUNNER_TEMP/pg-planner/pg_archive_affinity.py" | sha256sum -c -
           python3 "$RUNNER_TEMP/pg-planner/pg_archive_affinity.py" verify "$RUNNER_TEMP" pr \
             "$EXPECTED_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$BUILD_WORKSPACE" "$planner"
@@ -728,7 +772,7 @@ jobs:
             test "$LABEL" = "$((JOB_INDEX + 1))"
           fi
           # Verify the reviewed planner before it chooses which tests to run.
-          printf '%s  %s\n' '1d26d89fd1faff1752d47a7f2ae59dde980f8683fa791b85da35f92b79607321' "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" | sha256sum -c -
+          printf '%s  %s\n' 'ae799f44591c0b5f73fa16c177e71c523da9a53923c4791ebb88c99521537ee9' "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" | sha256sum -c -
           python3 "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" "$plan" "$JOB_INDEX" "$JOB_TOTAL" \
             tools/ci/pg_test_durations.json --optional-archives
 

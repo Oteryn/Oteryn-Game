@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import galthen_boss_loot as producer
+from item_detail_source_facts import WEIGHT_FACTS
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -44,8 +45,14 @@ class GalthenBossLootTests(unittest.TestCase):
         packet = json.loads((ROOT / producer.PATH).read_bytes())
         native = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())
         actual = {row['production_definition']['production_key']: row for row in native['records']}
+        weights = json.loads((ROOT / WEIGHT_FACTS).read_bytes())
         self.assertEqual(len(packet['records']), 19)
         for row in packet['records']:
+            identifier = row['production_binding']['external_id']
+            if identifier in weights:
+                physical = row['semantics']['physical']['value']
+                self.assertEqual(physical['weight'], {'state': 'KNOWN', 'value': 0})
+                physical['weight'] = {'state': 'KNOWN', 'value': weights[identifier]}
             self.assertEqual(actual.get(row['production_definition']['production_key']), row)
 
     def test_known_policy_is_never_replaced(self):

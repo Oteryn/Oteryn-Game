@@ -200,7 +200,9 @@ pub fn load_embedded_quest_state(
 ) -> Result<LoweredQuestState, QuestLoadError> {
     let lowered = lower_embedded_quest_state(content_revision)?;
     let bindings = super::authored_bindings::embedded::load().map_err(QuestLoadError::Json)?;
-    admit_native_bindings(lowered, bindings.as_ref())
+    let mut lowered = admit_native_bindings(lowered, bindings.as_ref())?;
+    super::reward_callbacks::retain_qc_reward_predecessors(&mut lowered.catalogue);
+    Ok(lowered)
 }
 
 /// Admit a complete explicit binding snapshot instead of the compiled binding registry.
@@ -660,6 +662,8 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/m09-treasure.json"),
             include_str!("../../../../../content/quests/world-callbacks/m39-stories.json"),
             include_str!("../../../../../content/quests/world-callbacks/oramond-native-roots.json"),
+            include_str!("../../../../../content/quests/world-callbacks/qc-chests.json"),
+            include_str!("../../../../../content/quests/world-callbacks/qc-lizard-sanctuary.json"),
             include_str!("../../../../../content/quests/world-callbacks/qm48-mammoth.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-clocks.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-crafts.json"),

@@ -96,7 +96,7 @@
     },
     "Service.Travel": {
       "index": "content/services/travel/index.json",
-      "records": 56
+      "records": 57
     },
     "StarterKit": {
       "index": "content/starter/index.json",
@@ -766,7 +766,7 @@
       "path": "content/services/travel/index.json"
     },
     {
-      "path": "content/services/travel/travel-00000-00055.json"
+      "path": "content/services/travel/travel-00000-00056.json"
     },
     {
       "path": "content/spells.manifest.json"
@@ -863,6 +863,9 @@
     },
     {
       "path": "tools/content-schema/native-gameplay/engnpc2-slug-corpse-profiles.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/item-detail-weight-facts.json"
     },
     {
       "path": "tools/content-schema/native-gameplay/loot-tables.json"
@@ -981,7 +984,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "f6b2bec6e73f735c0aa55186f3cbc37d6204cd5432682ebc88d98d36b1ba285e"
+          "sha256": "3e3a78732a69be44fe11e3df17171973d4714f52155e2ca757be029133e196d2"
         },
         {
           "creates_canonical_identities": false,
@@ -1052,7 +1055,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6570,
+          "record_count": 6573,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1060,7 +1063,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "f558fe0c2247516cf58bd7dedd39b40ac12eeaba2021e01803ff389891fdab3b"
+          "sha256": "28488496d03cfb0a6f2acbac18c9ff0a1b9591d3dbf6ed23970830ad2879f40c"
         },
         {
           "creates_canonical_identities": false,

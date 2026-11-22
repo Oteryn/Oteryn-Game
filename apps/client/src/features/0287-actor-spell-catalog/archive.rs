@@ -34,24 +34,22 @@ impl ArchivedSpell {
     }
 }
 fn display_name_matches(saved: &str, current: &str, rune_item: Option<u32>) -> bool {
-    if saved == current {
-        return true;
-    }
     let Some(item) = rune_item else {
-        return false;
+        return saved == current;
     };
-    saved.eq_ignore_ascii_case(current)
-        || match item {
-            3149 => legacy_rune_name(saved, current, "energybomb rune", "Energy Bomb Rune"),
-            3153 => legacy_rune_name(saved, current, "antidote rune", "Cure Poison Rune"),
-            3192 => legacy_rune_name(saved, current, "firebomb rune", "Fire Bomb Rune"),
-            3197 => legacy_rune_name(saved, current, "desintegrate rune", "Disintegrate Rune"),
-            _ => false,
+    for (expected, legacy, canonical) in [
+        (3149, "energybomb rune", "Energy Bomb Rune"),
+        (3153, "antidote rune", "Cure Poison Rune"),
+        (3192, "firebomb rune", "Fire Bomb Rune"),
+        (3197, "desintegrate rune", "Disintegrate Rune"),
+    ] {
+        if saved.eq_ignore_ascii_case(legacy) || saved.eq_ignore_ascii_case(canonical) {
+            return item == expected
+                && (current.eq_ignore_ascii_case(legacy)
+                    || current.eq_ignore_ascii_case(canonical));
         }
-}
-fn legacy_rune_name(saved: &str, current: &str, legacy: &str, canonical: &str) -> bool {
-    (saved.eq_ignore_ascii_case(legacy) && current.eq_ignore_ascii_case(canonical))
-        || (saved.eq_ignore_ascii_case(canonical) && current.eq_ignore_ascii_case(legacy))
+    }
+    saved.eq_ignore_ascii_case(current)
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]

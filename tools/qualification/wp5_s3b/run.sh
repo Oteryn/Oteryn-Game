@@ -119,9 +119,26 @@ if [[ "${WP5_QUALIFICATION:-s3b}" == spell-seam ]]; then
   evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$OTERYN_SEAM_SPELL_MANIFEST" | cut -d ' ' -f 1)"
 fi
 
-# Compile before disposable services start: reduce peak scratch storage and
-# keep the 300 s intent validity available for the actual run.
-cargo +1.100.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" --no-run
+# The early lib-only producer runs independently of the Node boot binary matrix
+# and the Platform producer. Local runs retain their ordinary Cargo path.
+prepare_seam_test() {
+  SEAM_TEST_CWD="$GAME_SOURCE"
+  SEAM_TEST_COMMAND=(cargo +1.100.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}"
+    "$TEST_NAME" -- --ignored --exact --nocapture)
+  if [[ -n "${SERVER_SEAM_PREBUILT_DIR:-}" ]]; then
+    [[ "${WP5_QUALIFICATION:-s3b}" == seam || "${WP5_QUALIFICATION:-s3b}" == spell-seam ]] \
+      || { echo 'S3B_RESULT=BLOCKED reason=prebuilt_variant_mismatch'; return 2; }
+    python3 "$GAME_SOURCE/tools/qualification/node_boot/prebuilt.py" verify server-seam "$SERVER_SEAM_PREBUILT_DIR" \
+      || { echo 'S3B_RESULT=BLOCKED reason=invalid_prebuilt_seam'; return 2; }
+    SEAM_TEST_CWD="$GAME_SOURCE/apps/game-server"
+    SEAM_TEST_COMMAND=("$SERVER_SEAM_PREBUILT_DIR/server-seam/node-boot-libtest"
+      "$TEST_NAME" --ignored --exact --nocapture)
+  else
+    # Compile before services and short-lived bootstrap intents are created.
+    cargo +1.100.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" --no-run
+  fi
+}
+prepare_seam_test
 
 game_platform_start
 evidence "platform_seed=synthetic_accounts=2 fresh_trust=published_public_key_only"
@@ -156,9 +173,11 @@ for account in "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID"; do
   index=$((index + 1))
 done
 evidence "platform_intents=issued count=2 path=operator_command ttl_seconds=300"
-WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
-WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
-  cargo +1.100.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" \
-  "$TEST_NAME" -- --ignored --exact --nocapture
+(
+  cd "$SEAM_TEST_CWD"
+  WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
+  WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
+    "${SEAM_TEST_COMMAND[@]}"
+)
 unset FRESH_SEED_HEX RECOVERY_SEED_HEX
 result="$PASS_RESULT"

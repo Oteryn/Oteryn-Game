@@ -26,6 +26,7 @@ const WINDOW_EXTENT: &str = "window.logical.extent";
 pub(in crate::bevy_shell) struct LayoutStore {
     path: Option<PathBuf>,
     layout: WindowLayout,
+    baseline: WindowLayout,
     pending_save: bool,
     #[cfg(test)]
     rejection_count: usize,
@@ -41,6 +42,7 @@ impl LayoutStore {
             .unwrap_or_default();
         Self {
             path,
+            baseline: layout.clone(),
             layout,
             ..default()
         }
@@ -200,8 +202,11 @@ fn remember(
         && time.elapsed() >= store.retry_after
         && let Some(path) = &store.path
     {
-        match store.layout.save(path) {
-            Ok(()) => store.pending_save = false,
+        match store.layout.save_edits(path, &store.baseline) {
+            Ok(()) => {
+                store.baseline = store.layout.clone();
+                store.pending_save = false;
+            }
             Err(error) => {
                 store.retry_after = time.elapsed() + std::time::Duration::from_secs(1);
                 leprintln!("Could not save window layout: {error}", error = error);

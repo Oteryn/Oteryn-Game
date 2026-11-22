@@ -215,11 +215,22 @@ impl HostOwner {
         if self.phase != Phase::Offline || !self.login.visible {
             return;
         }
-        let mut config = match self.login.submit() {
-            Ok(config) => config,
-            Err(_) => return,
-        };
-        if let Err(message) = super::live_assets::preflight(lookup()) {
+        if self.login.save_pending() {
+            return;
+        }
+        if let Some(config) = self.login.start_save() {
+            self.start_saved_login(config, lookup());
+        } else if self.login.save_pending() {
+            self.login.set_pending_assets(lookup());
+        }
+    }
+
+    fn start_saved_login(
+        &mut self,
+        mut config: crate::NativeLoginConfig,
+        assets: Option<std::ffi::OsString>,
+    ) {
+        if let Err(message) = super::live_assets::preflight(assets) {
             self.login
                 .form
                 .finish(Err(crate::GameplayEntryError::InvalidConfiguration));
@@ -249,15 +260,6 @@ impl HostOwner {
                 )));
         }
     }
-    pub fn cancel_login(&mut self) {
-        self.selection.cancel();
-        self.services.cancel();
-        if let Some(entry) = &mut self.entry
-            && entry.cancel_entry()
-        {
-            entry.forget_native_session();
-        }
-    }
     /// Opens a Platform page (support tickets, cookie policy) from the login window with the
     /// Platform the connection settings name.
     pub fn open_web_link(&mut self, link: crate::web_links::WebLink) {
@@ -281,6 +283,11 @@ impl HostOwner {
         if self.phase == Phase::Closed {
             return;
         }
+        if self.phase == Phase::Offline
+            && let Some((config, assets)) = self.login.poll_save()
+        {
+            self.start_saved_login(config, assets);
+        }
         self.poll_device_sign_out();
         self.poll_retired_minimaps();
         let completion = self.settings.poll_background_save();
@@ -291,6 +298,20 @@ impl HostOwner {
             self.status.clone_from(&error);
             if self.login.visible {
                 self.login.form.feedback(error);
+            }
+        }
+        let notices = crate::atomic_file::take_malformed_notices();
+        if !notices.is_empty() {
+            let message = notices.join("\n");
+            self.settings.feedback.clone_from(&message);
+            self.status.clone_from(&message);
+            if let Some(play) = &self.play {
+                play.link.local_persistence_notice(message);
+            } else {
+                self.login.form.feedback(message);
+                if self.phase == Phase::Offline && !self.login.visible {
+                    self.login.show();
+                }
             }
         }
         if self.entry.as_ref().is_some_and(Reentry::is_entering) {
@@ -445,6 +466,7 @@ impl HostOwner {
         self.login.visible = false;
         self.login.bulletin.visible = false;
         self.flush_local_saves();
+        // An explicit device revocation has already recorded its intent on disk.
         if let Some(mut entry) = self.entry.take() {
             entry.cancel_entry();
             entry.shutdown();
@@ -490,39 +512,6 @@ mod selection_return_tests {
 
 #[cfg(test)]
 #[test]
-fn cancel_login_schedules_remembered_device_revocation() -> Result<(), Box<dyn std::error::Error>> {
-    use std::sync::Arc;
-
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?;
-    let config = crate::NativeLoginConfig::from_env(|name| {
-        Some(match name {
-            "OTERYN_PLATFORM_URL" | "OTERYN_GATEWAY_URL" => "https://localhost:1".into(),
-            "OTERYN_OAUTH_CLIENT_ID" => "019a5f4a-1000-7000-8000-000000000001".into(),
-            "OTERYN_DEV_ROOT" => "/tmp/reentry-unused-root".into(),
-            _ => String::new(),
-        })
-    })?
-    .ok_or("native login config")?;
-    let device = Arc::clone(&config.device_sessions);
-    let held_session = runtime.block_on(device.hold_session_for_reentry_test());
-    let mut owner = HostOwner::new(None)?;
-    let entry = owner.entry.as_mut().ok_or("reentry")?;
-    assert!(entry.configure(config));
-    entry.arm_cancel_fixture();
-    owner.phase = Phase::Entering;
-    let owners = Arc::strong_count(&device);
-    owner.cancel_login();
-    assert_eq!(Arc::strong_count(&device), owners + 1);
-
-    drop(held_session);
-    owner.close();
-    Ok(())
-}
-
-#[cfg(test)]
-#[test]
 fn logout_reaches_the_picker_even_when_quick_login_has_a_valid_selection()
 -> Result<(), Box<dyn std::error::Error>> {
     std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
@@ -541,7 +530,7 @@ fn logout_reaches_the_picker_even_when_quick_login_has_a_valid_selection()
                 ..Default::default()
             }.save(&preferences.with_extension("session-options.json"))?;
             config.preference_path = Some(preferences);
-            config.device_sessions = Arc::new(crate::device_login::DeviceLogin::quick_login_fixture(
+            config.device_sessions = Arc::new(crate::device_login::DeviceLogin::test_fixture(
                 folder.path().to_path_buf(),
             ));
             std::fs::write(folder.path().join("last-character.json"), serde_json::to_vec(
@@ -569,6 +558,10 @@ fn logout_reaches_the_picker_even_when_quick_login_has_a_valid_selection()
         run().map_err(|error| error.to_string())
     })?.join().map_err(|_| "logout picker scenario panicked")?.map_err(Into::into)
 }
+
+#[cfg(test)]
+#[path = "owner/options_revoke_tests.rs"]
+mod options_revoke_tests;
 
 #[cfg(test)]
 #[path = "owner/admission_tests.rs"]

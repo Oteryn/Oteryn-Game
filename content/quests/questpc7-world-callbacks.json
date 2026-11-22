@@ -159,7 +159,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:f6a1436e423ae1b3835f9decc1b4d8e84559ec6d95e38ef1207c972498643a5f",
+        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -229,7 +229,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:f6a1436e423ae1b3835f9decc1b4d8e84559ec6d95e38ef1207c972498643a5f",
+        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -299,7 +299,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:f6a1436e423ae1b3835f9decc1b4d8e84559ec6d95e38ef1207c972498643a5f",
+        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -2220,7 +2220,7 @@
       "success_message": "You have visited the haunted grave in Ghostlands. The spectral trail continues.",
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "content/world/placements/region-z08-x125-y124.b3:1:sha256:7b242ff38bde9a76b638b7fca72228e0e9f13fb8484f452f37d94fb175bbd14b",
+        "content/world/placements/region-z08-x125-y124.b3:1:sha256:b37687ad30db1d15d0ce2af67348a70d979a9b61e002123e7b6547ecaf9cfc3a",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
     },
@@ -2668,7 +2668,7 @@
       "success_message": "You have visited the haunted grave in Orclands entrance. The spectral trail continues.",
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
-        "content/world/placements/region-z08-x128-y124.b3:1:sha256:ad469c724c7c335b4906f5a834f38a19ba274cbe091c5a739f6d9027cc66d6f3",
+        "content/world/placements/region-z08-x128-y124.b3:1:sha256:56853b840ff3bd613ec2a37e75ae8dd8ac0eee96db652f6feaba5eccdd506368",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
     },

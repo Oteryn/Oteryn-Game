@@ -8,6 +8,11 @@ fn m09_treasure_telescope_once_and_replay() -> TestResult {
 }
 
 #[test]
+fn m09_treasure_legacy_telescope_claim_finishes_without_a_second_mint() -> TestResult {
+    run("m09-treasure-telescope-legacy")
+}
+
+#[test]
 fn m09_treasure_three_ingots_once_and_replay() -> TestResult {
     run("m09-treasure-ingots")
 }

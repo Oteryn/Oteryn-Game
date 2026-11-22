@@ -12,12 +12,23 @@ OLD_RUNE_CASE = f"{RUNE_CASE_PREFIX}real_dispatch_casts_once_and_reloads_one_deb
 EXIVA_CASE_PREFIX = f"oteryn-gameplay-dispatch {DISPATCH_MOUNT}exiva_world_types::p17_exiva_rules_"
 OLD_EXIVA_CASES = tuple(f"{EXIVA_CASE_PREFIX}{world}_postgres"
                        for world in ("optional_pvp", "open_pvp", "enforced_pvp"))
+MAX501_TEST = (
+    "oteryn-game-server::character_authority_postgres",
+    "player_death_item_primitives::player_death_nested_maximum_501_item_reset_makes_bounded_atomic_progress",
+)
 
 
 def estimate(case, durations):
     key = " ".join(case)
     if key in durations:
         return durations[key]
+    # The canonical dedicated target has the same named cases as the library
+    # harness. Reuse its measurements until this target has its own observations;
+    # filters and inventory identity always retain the real binary ID.
+    if case[0] == "oteryn-gameplay-dispatch::oteryn-gameplay-dispatch":
+        key = f"oteryn-gameplay-dispatch {case[1]}"
+        if key in durations:
+            return durations[key]
     if key.startswith(RUNE_CASE_PREFIX) and OLD_RUNE_CASE in durations:
         # Ten isolated cases replaced the previous serial test. Use an equal
         # share of its observed runtime until each case has its own measurement.
@@ -83,10 +94,17 @@ def write_partition(plan_dir, index, total, durations, optional):
             filterset = f"binary_id(={binary}) & test(={name})"
             filters.append(f"--filterset={filterset}\n")
             duration = estimate((binary, name), durations)
+            settings = []
             if duration >= 30:
+                settings.append(f"priority = {min(100, duration // 5)}\n")
+            if (binary, name) == MAX501_TEST:
+                # Keep the production two-second budget while preventing
+                # unrelated fixture processes from competing for its runner.
+                settings.append('threads-required = "num-test-threads"\n')
+            if settings:
                 overrides.append(
                     f"[[profile.default.overrides]]\nfilter = '{filterset}'\n"
-                    f"priority = {min(100, duration // 5)}\n"
+                    + "".join(settings)
                 )
         (plan_dir / f"{archive}.filters").write_text("".join(filters))
         print(f"{archive}: {len(cases)} of {len(assigned)} tests")
