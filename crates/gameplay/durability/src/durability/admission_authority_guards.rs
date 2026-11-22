@@ -1,4 +1,5 @@
 //! Lossless historical guard encoding. Decoding never registers an owning source.
+use crate::durability::monster_profile_metrics::query as profile_query;
 use super::DurabilityError;
 use crate::foundation::admission_authority_publication::*;
 use crate::foundation::fnd04_verifier::*;
@@ -727,7 +728,7 @@ impl AdmissionGuardStore {
             .push_bind(super::MAX_ADMISSION_ROW_BYTES)
             .push(" THEN (SELECT jsonb_object_agg(key, value) FROM jsonb_each_text(to_jsonb(g) - 'change_json')) END AS mirrors FROM ").push(table).push(" g WHERE ");
         key_predicate(&mut query, fields);
-        let row = query.build().fetch_optional(&mut **transaction).await?;
+        let row = profile_query(query.build().fetch_optional(&mut **transaction)).await?;
         Ok((row, encoded_key))
     }
 
@@ -771,7 +772,7 @@ impl AdmissionGuardStore {
         use sqlx::Row;
         let (row, encoded_key) = self.guard_projection_locked(transaction, key).await?;
         let Some(row) = row else {
-            let history: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_admission_guard_history WHERE guard_key = $1)").bind(encoded_key).fetch_one(&mut **transaction).await?;
+            let history: bool = profile_query(sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_admission_guard_history WHERE guard_key = $1)").bind(encoded_key).fetch_one(&mut **transaction)).await?;
             if history {
                 return invalid();
             }
@@ -797,8 +798,8 @@ impl AdmissionGuardStore {
         if mirrors != serde_json::Value::Object(expected) {
             return invalid();
         }
-        let history_matches: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_admission_guard_history WHERE guard_key = $1 AND publication_revision = $2::text::numeric(20,0) AND source_authority = $3 AND source_revision = $4::text::numeric(20,0) AND decision_identity = $5 AND change_json = $6) AND NOT EXISTS (SELECT 1 FROM game_durability_admission_guard_history WHERE guard_key = $1 AND publication_revision > $2::text::numeric(20,0))")
-            .bind(encoded_key).bind(change.publication_revision.to_string()).bind(&change.source.authority).bind(change.source.source_revision.to_string()).bind(&change.source.decision_identity).bind(&payload).fetch_one(&mut **transaction).await?;
+        let history_matches: bool = profile_query(sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_admission_guard_history WHERE guard_key = $1 AND publication_revision = $2::text::numeric(20,0) AND source_authority = $3 AND source_revision = $4::text::numeric(20,0) AND decision_identity = $5 AND change_json = $6) AND NOT EXISTS (SELECT 1 FROM game_durability_admission_guard_history WHERE guard_key = $1 AND publication_revision > $2::text::numeric(20,0))")
+            .bind(encoded_key).bind(change.publication_revision.to_string()).bind(&change.source.authority).bind(change.source.source_revision.to_string()).bind(&change.source.decision_identity).bind(&payload).fetch_one(&mut **transaction)).await?;
         if !history_matches {
             return invalid();
         }

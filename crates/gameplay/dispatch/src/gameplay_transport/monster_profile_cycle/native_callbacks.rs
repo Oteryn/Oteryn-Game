@@ -659,7 +659,7 @@ impl NativeCallbacks {
         now: u64,
         native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
     ) -> Result<(), ()> {
-        let mut owner = self.owner.lock().await;
+        let mut owner = super::AI_STATE_LOCK.measure(self.owner.lock()).await;
         owner.bind_current(runtime, room, native)?;
         owner
             .drain_retained_due_through(
@@ -841,8 +841,8 @@ impl NativeCallbacks {
         occurrences: &[crate::foundation::ThinkOccurrence],
         now: u64,
     ) -> Result<(), ()> {
-        self.retained_owner()
-            .lock_owned()
+        super::AI_STATE_LOCK
+            .measure(self.retained_owner().lock_owned())
             .await
             .think(active, runtime, room, native, map, ai, occurrences, now)
             .await

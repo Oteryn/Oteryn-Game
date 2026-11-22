@@ -11,16 +11,16 @@ impl FreshAdmissionStore {
     ) -> Result<RetainedRecoveryBudgetV1> {
         use sqlx::Row;
         let prefix = complete_reconnect_prefix(COMPLETE_PREPARE_KEY, session, epoch.get());
-        let prepared: Option<Vec<u8>> = sqlx::query_scalar("SELECT prepared_attempt_ref FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid")
-            .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?
+        let prepared: Option<Vec<u8>> = profile_query(sqlx::query_scalar("SELECT prepared_attempt_ref FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid")
+            .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx)).await?
             .ok_or(DurabilityError::InvalidStoredState)?;
-        let rows = sqlx::query("SELECT substring(r.operation_key from $2) AS attempt, t.transport_ref, EXISTS (SELECT 1 FROM game_durability_admission_lifecycle_receipts c WHERE c.operation_key = $3 || substring(r.operation_key from $2)) AS committed FROM game_durability_admission_lifecycle_receipts r JOIN game_durability_transport_ref_reservations t ON t.game_session_id = encode($4,'hex')::uuid AND t.reservation_owner = 1 AND t.reconnect_attempt_ref = substring(r.operation_key from $2) WHERE r.operation_key > $1 AND r.operation_key < $1 || '\\xffffffffffffffffff'::bytea AND octet_length(r.operation_key) = $5 + 8 ORDER BY r.decided_at, r.operation_key")
+        let rows = profile_query(sqlx::query("SELECT substring(r.operation_key from $2) AS attempt, t.transport_ref, EXISTS (SELECT 1 FROM game_durability_admission_lifecycle_receipts c WHERE c.operation_key = $3 || substring(r.operation_key from $2)) AS committed FROM game_durability_admission_lifecycle_receipts r JOIN game_durability_transport_ref_reservations t ON t.game_session_id = encode($4,'hex')::uuid AND t.reservation_owner = 1 AND t.reconnect_attempt_ref = substring(r.operation_key from $2) WHERE r.operation_key > $1 AND r.operation_key < $1 || '\\xffffffffffffffffff'::bytea AND octet_length(r.operation_key) = $5 + 8 ORDER BY r.decided_at, r.operation_key")
             .bind(&prefix)
             .bind(i32::try_from(prefix.len() + 1).map_err(|_| DurabilityError::InvalidStoredState)?)
             .bind(complete_reconnect_prefix(COMPLETE_COMMIT_KEY, session, epoch.get()))
             .bind(session.as_bytes().as_slice())
             .bind(i32::try_from(prefix.len()).map_err(|_| DurabilityError::InvalidStoredState)?)
-            .fetch_all(&mut **tx).await?;
+            .fetch_all(&mut **tx)).await?;
         let mut entries = Vec::with_capacity(rows.len());
         let mut restored = false;
         for row in rows {

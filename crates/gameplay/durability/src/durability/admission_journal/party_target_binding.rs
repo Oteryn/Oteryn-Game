@@ -4,6 +4,7 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+use crate::durability::monster_profile_metrics::query as profile_query;
 use super::{ACTIVE, active_committed_binding_is_valid, load_session_for_update};
 use crate::durability::{
     DurabilityError, DurabilityRoot,
@@ -230,11 +231,11 @@ async fn canonical_current_source_session(
     if matches!(scope, RuntimeScopeRefV1::Instance { .. }) {
         key[0] = 2;
     }
-    let fresh_origin: bool = sqlx::query_scalar("SELECT fresh_replay_key IS NOT NULL OR initial_fresh_replay_key IS NOT NULL FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
-        .bind(session.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    let fresh_origin: bool = profile_query(sqlx::query_scalar("SELECT fresh_replay_key IS NOT NULL OR initial_fresh_replay_key IS NOT NULL FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
+        .bind(session.as_bytes().as_slice()).fetch_one(&mut **tx)).await?;
     // The immutable receipt cannot supersede independently current account/Character claims.
-    let claims_current: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s JOIN game_character_roots r USING(character_id) JOIN game_durability_admission_character_guards c USING(character_id) JOIN game_durability_admission_account_guards a ON a.account_id=c.account_id JOIN game_durability_admission_runtime_guards g ON g.scope_key=$2 WHERE s.game_session_id=encode($1,'hex')::uuid AND c.account_id=r.account_id AND c.world_id=r.world_id AND c.eligible AND c.lease_generation=s.character_lease_generation AND c.holder_game_session_id=s.game_session_id AND a.presence_character_id=s.character_id AND a.holder_game_session_id=s.game_session_id AND g.ready AND g.ownership_generation=s.scope_ownership_generation)")
-        .bind(session.as_bytes().as_slice()).bind(key.as_slice()).fetch_one(&mut **tx).await?;
+    let claims_current: bool = profile_query(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s JOIN game_character_roots r USING(character_id) JOIN game_durability_admission_character_guards c USING(character_id) JOIN game_durability_admission_account_guards a ON a.account_id=c.account_id JOIN game_durability_admission_runtime_guards g ON g.scope_key=$2 WHERE s.game_session_id=encode($1,'hex')::uuid AND c.account_id=r.account_id AND c.world_id=r.world_id AND c.eligible AND c.lease_generation=s.character_lease_generation AND c.holder_game_session_id=s.game_session_id AND a.presence_character_id=s.character_id AND a.holder_game_session_id=s.game_session_id AND g.ready AND g.ownership_generation=s.scope_ownership_generation)")
+        .bind(session.as_bytes().as_slice()).bind(key.as_slice()).fetch_one(&mut **tx)).await?;
     if !claims_current {
         return Ok(false);
     }

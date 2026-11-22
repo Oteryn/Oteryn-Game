@@ -1077,6 +1077,7 @@ stage() { # name prerequisite... -- function
         | sort -rn | head -n 30 || true
     echo "--- monster profile pass phases over the run"
     # Snapshots are cumulative and can reach stderr out of order across channels.
+    # Print every *_ns/*_count pair, including nested AI timings and SQL query counts.
     grep -oE 'module=durability event=monster_profile_pass_phases .*' "$node_log" 2>/dev/null \
         | awk '{
             for (i = 3; i <= NF; i++) {

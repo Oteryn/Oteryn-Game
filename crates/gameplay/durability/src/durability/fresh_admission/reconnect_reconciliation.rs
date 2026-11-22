@@ -46,8 +46,8 @@ impl FreshAdmissionStore {
         let mut key = b"owning-loss-v1".to_vec();
         key.extend_from_slice(session.as_bytes());
         key.extend_from_slice(&epoch.get().to_be_bytes());
-        let Some(row) = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
-            .bind(&key).fetch_optional(&mut **tx).await? else {
+        let Some(row) = profile_query(sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
+            .bind(&key).fetch_optional(&mut **tx)).await? else {
             return Ok(None);
         };
         let stored: Option<String> = row.try_get("operation_json")?;
@@ -118,8 +118,8 @@ impl FreshAdmissionStore {
         };
         let mut key = complete_reconnect_prefix(COMPLETE_COMMIT_KEY, session, epoch.get());
         key.extend_from_slice(&committed.attempt.to_be_bytes());
-        let committed_at: i64 = sqlx::query_scalar("SELECT decided_at FROM game_durability_admission_lifecycle_receipts WHERE operation_key = $1 FOR SHARE")
-            .bind(&key).fetch_optional(&mut **tx).await?
+        let committed_at: i64 = profile_query(sqlx::query_scalar("SELECT decided_at FROM game_durability_admission_lifecycle_receipts WHERE operation_key = $1 FOR SHARE")
+            .bind(&key).fetch_optional(&mut **tx)).await?
             .ok_or(DurabilityError::InvalidStoredState)?;
         let (loss, _) = self
             .owning_loss_locked(tx, session, epoch)

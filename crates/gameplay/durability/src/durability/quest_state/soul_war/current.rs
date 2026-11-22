@@ -1,4 +1,5 @@
 //! Bounded DATA snapshot for actual source combat callbacks, inside their existing scope read.
+use crate::durability::monster_profile_metrics::query as profile_query;
 use super::{DurabilityError, DurabilityRoot, SoulWarState};
 use crate::durability::spell_item_transaction::{SpellItemScopeAuthority, check_scope_transaction};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
@@ -58,8 +59,8 @@ pub async fn read_current_soul_war_taints_in_transaction(
         return Ok(Vec::new());
     }
     let observed: i64 =
-        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
-            .fetch_one(&mut **tx)
+        profile_query(sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&mut **tx))
             .await?;
     let mut facts = Vec::with_capacity(actors.len());
     let mut characters = std::collections::BTreeSet::new();
@@ -135,14 +136,14 @@ async fn read_work_page(
         })
         .collect::<Vec<_>>();
     // Every bounded statement uses the enclosing owner pass's one database clock sample.
-    let rows = sqlx::query(
+    let rows = profile_query(sqlx::query(
         "WITH requested AS (SELECT character,ordinal FROM unnest($1::text[]) WITH ORDINALITY AS p(character,ordinal)), \
          observed AS MATERIALIZED (SELECT $2::bigint AS seconds) \
          SELECT requested.ordinal,observed.seconds,coalesce(s.teleport_access,false) AS teleport_access, \
          coalesce(s.defeated_bosses,0)::smallint AS defeated_bosses,s.first_taint_at, \
          coalesce(s.megalomania_completed,false) AS megalomania_completed,coalesce(s.final_reward_claimed,false) AS final_reward_claimed \
          FROM requested CROSS JOIN observed LEFT JOIN game_character_soul_war s ON s.character_id=requested.character::uuid ORDER BY requested.ordinal"
-    ).bind(keys).bind(observed_at_seconds).fetch_all(&mut **tx).await?;
+    ).bind(keys).bind(observed_at_seconds).fetch_all(&mut **tx)).await?;
     if rows.len() != actors.len() {
         return Err(DurabilityError::InvalidStoredState);
     }

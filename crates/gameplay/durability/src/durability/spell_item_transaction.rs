@@ -9,6 +9,7 @@
 mod movement_read;
 pub use movement_read::read_player_step_tile_in_transaction;
 
+use crate::durability::monster_profile_metrics::query as profile_query;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
@@ -873,8 +874,8 @@ pub async fn check_scope_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
 ) -> Result<()> {
-    let current: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
-        .fetch_one(&mut **tx)
+    let current: String = profile_query(sqlx::query_scalar("SELECT pg_current_xact_id()::text")
+        .fetch_one(&mut **tx))
         .await?;
     if current != authority.physical_transaction {
         return Err(SpellItemError::Rejected(
@@ -1364,8 +1365,8 @@ pub async fn locked_tile_rows_for_scope(
     authority: &SpellItemScopeAuthority,
     target: &SpellGroundTarget,
 ) -> Result<Vec<sqlx::postgres::PgRow>> {
-    let current: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
-        .fetch_one(&mut **tx)
+    let current: String = profile_query(sqlx::query_scalar("SELECT pg_current_xact_id()::text")
+        .fetch_one(&mut **tx))
         .await?;
     if current != authority.physical_transaction {
         return Err(SpellItemError::Rejected(
@@ -1374,14 +1375,14 @@ pub async fn locked_tile_rows_for_scope(
     }
     let (scope_kind, channel, instance) =
         super::item_mint::ground_scope_columns(authority.runtime_scope());
-    let unknown:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$7 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($8,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR (g.spatial_position=$3 AND (g.map_revision<>$4 OR g.content_revision<>$5 OR g.native_room_placement_context<>$6))))")
-        .bind(authority.world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(&target.spatial_position).bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context).bind(scope_kind).bind(instance.map(|id| id.to_vec())).fetch_one(&mut **tx).await?;
+    let unknown:bool=profile_query(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$7 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($8,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR (g.spatial_position=$3 AND (g.map_revision<>$4 OR g.content_revision<>$5 OR g.native_room_placement_context<>$6))))")
+        .bind(authority.world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(&target.spatial_position).bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context).bind(scope_kind).bind(instance.map(|id| id.to_vec())).fetch_one(&mut **tx)).await?;
     if unknown {
         return Err(SpellItemError::Rejected(
             "unreconciled opaque or incompatible Ground placement",
         ));
     }
-    let rows = sqlx::query(TILE_ROWS)
+    let rows = profile_query(sqlx::query(TILE_ROWS)
         .bind(authority.world.as_slice())
         .bind(channel.map(|id| id.to_vec()))
         .bind(&target.spatial_position)
@@ -1390,7 +1391,7 @@ pub async fn locked_tile_rows_for_scope(
         .bind(&target.placement_context)
         .bind(scope_kind)
         .bind(instance.map(|id| id.to_vec()))
-        .fetch_all(&mut **tx)
+        .fetch_all(&mut **tx))
         .await?;
     if rows.len() > 500 {
         return Err(SpellItemError::Rejected(
@@ -3824,13 +3825,13 @@ pub async fn read_creature_empty_tiles_in_transaction(
     // An opaque live placement invalidates emptiness everywhere, just as in
     // locked_tile_rows_for_scope. With <=256 distinct requested addresses,
     // LIMIT 257 cannot hide an opaque address behind requested cells.
-    Ok(sqlx::query_scalar("WITH occupied AS MATERIALIZED (SELECT DISTINCT g.spatial_position FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR g.spatial_position=ANY($3::bytea[])) LIMIT 257) SELECT p FROM unnest($3::bytea[]) AS requested(p) WHERE NOT EXISTS(SELECT 1 FROM occupied WHERE octet_length(spatial_position)<>10 OR spatial_position=p)")
+    Ok(profile_query(sqlx::query_scalar("WITH occupied AS MATERIALIZED (SELECT DISTINCT g.spatial_position FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR g.spatial_position=ANY($3::bytea[])) LIMIT 257) SELECT p FROM unnest($3::bytea[]) AS requested(p) WHERE NOT EXISTS(SELECT 1 FROM occupied WHERE octet_length(spatial_position)<>10 OR spatial_position=p)")
         .bind(authority.world.as_slice())
         .bind(channel.map(|id| id.to_vec()))
         .bind(positions)
         .bind(scope_kind)
         .bind(instance.map(|id| id.to_vec()))
-        .fetch_all(&mut **tx)
+        .fetch_all(&mut **tx))
         .await?)
 }
 

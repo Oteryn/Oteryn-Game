@@ -254,7 +254,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Compare that retained generation without bulk hashing under the runtime lock.
         #[cfg(test)]
         trace.set("ai_arbiter");
-        let mut runtime = self.runtime.lock().await;
+        let lock = &super::monster_profile_cycle::PROFILE_RUNTIME_STATE_LOCK;
+        let mut runtime = lock.measure(self.runtime.lock()).await;
         let (retained_work, source_due) = {
             let Ok(states) = self.states.spell_states.try_lock() else {
                 return;
@@ -435,11 +436,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // owner locks before yielding; revalidate each exact actor afterwards.
                 for chunk in pending.chunks(32) {
                     tokio::task::yield_now().await;
-                    let runtime = self.runtime.lock().await;
+                    let runtime = lock.measure(self.runtime.lock()).await;
                     if runtime.owner_fence().is_err() {
                         return;
                     }
-                    let mut states = self.states.spell_states.lock().await;
+                    let mut states = lock.measure(self.states.spell_states.lock()).await;
                     for &actor in chunk {
                         if states.monster_melee.creature_ai.state(actor).is_some() {
                             continue;
@@ -461,8 +462,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-                runtime = self.runtime.lock().await;
-                states = self.states.spell_states.lock().await;
+                runtime = lock.measure(self.runtime.lock()).await;
+                states = lock.measure(self.states.spell_states.lock()).await;
                 // Another caller may have completed the coalesced pass while this
                 // one yielded. Never repeat its sequence or use a retired owner.
                 if runtime.owner_fence().is_err()

@@ -296,7 +296,7 @@ impl FreshAdmissionStore {
         current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
     ) -> Result<Option<CommittedHousePredecessor>> {
         let session = current.current_game_session_id();
-        let Some(row) = sqlx::query(
+        let Some(row) = profile_query(sqlx::query(
             "SELECT uuid_send(t.transfer_id) AS transfer,uuid_send(t.source_game_session_id) AS source, \
                 t.source_transport,t.source_connection_generation::text AS source_generation, \
                 t.source_character_lease_generation::text AS source_lease \
@@ -317,7 +317,7 @@ impl FreshAdmissionStore {
                  AND d.runtime_scope_instance_id=game_house_scope_instance_id(t.world_id,t.house_key)) \
                 OR (t.direction=2 AND d.runtime_scope_kind=1 AND d.runtime_scope_channel_id=t.origin_channel_id)) \
              FOR SHARE OF t,s,d",
-        ).bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await? else { return Ok(None); };
+        ).bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx)).await? else { return Ok(None); };
         Ok(Some(CommittedHousePredecessor {
             transfer: checked(row.try_get::<Vec<u8>, _>("transfer")?.try_into())?,
             source: checked(GameSessionId::decode(&row.try_get::<Vec<u8>, _>("source")?))?,

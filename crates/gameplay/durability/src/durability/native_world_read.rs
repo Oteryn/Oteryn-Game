@@ -1,6 +1,7 @@
 //! Transaction-bound native tile reads shared by Movement, Creature and Spell owners.
 mod prepared;
 use crate::content::{CollisionClass, LogicalCell};
+use crate::durability::monster_profile_metrics::query as profile_query;
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 pub use prepared::{
     PreparedCreatureTileRead, ReadCreatureTile, prepare_creature_tile_read,
@@ -231,8 +232,8 @@ async fn initialized_tile_in_transaction<'owner, E>(
             position.floor,
             placement.ordinal()
         );
-        let row=sqlx::query("SELECT r.source_binding,r.spatial_position,r.map_revision,r.content_revision,r.placement_context,COALESCE((SELECT MAX(ad.ownership_generation) FROM game_native_map_scope_adoptions ad WHERE ad.source_transaction_id=r.transaction_id),r.scope_generation)::text FROM game_native_map_item_receipts r JOIN game_native_map_item_audit a USING(transaction_id) JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id WHERE r.world_id=encode($1,'hex')::uuid AND r.channel_id=encode($2,'hex')::uuid AND r.content_digest=$3 AND r.placement_key=$4 AND a.envelope=r.source_intent FOR SHARE OF i")
-            .bind(runtime.binding().world_id().as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(runtime.content_pin().server_artifact_digest().as_slice()).bind(key).fetch_optional(&mut **tx).await.map_err(crate::durability::spell_item_transaction::SpellItemError::from).map_err(NativeWorldReadError::Items)?
+        let row=profile_query(sqlx::query("SELECT r.source_binding,r.spatial_position,r.map_revision,r.content_revision,r.placement_context,COALESCE((SELECT MAX(ad.ownership_generation) FROM game_native_map_scope_adoptions ad WHERE ad.source_transaction_id=r.transaction_id),r.scope_generation)::text FROM game_native_map_item_receipts r JOIN game_native_map_item_audit a USING(transaction_id) JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id WHERE r.world_id=encode($1,'hex')::uuid AND r.channel_id=encode($2,'hex')::uuid AND r.content_digest=$3 AND r.placement_key=$4 AND a.envelope=r.source_intent FOR SHARE OF i")
+            .bind(runtime.binding().world_id().as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(runtime.content_pin().server_artifact_digest().as_slice()).bind(key).fetch_optional(&mut **tx)).await.map_err(crate::durability::spell_item_transaction::SpellItemError::from).map_err(NativeWorldReadError::Items)?
             .ok_or(NativeWorldReadError::MissingTileMetadata)?;
         let expected = serde_json::to_vec(placement.binding())
             .map_err(|_| NativeWorldReadError::AuthorityMismatch)?;

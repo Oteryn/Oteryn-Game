@@ -2,14 +2,11 @@
 use super::{ComposedFreshAdmission, actor_spell::ChannelSpellStates, attack::ChannelAttackStates};
 use crate::ai_think::summon_plan::summon_path::NativeMonsterThinkRead;
 use crate::content::{QualifiedNativeEntryRoom, native_gameplay::NativeGameplayState};
+use crate::durability::monster_profile_metrics::{self, PhaseUsage};
 use crate::foundation::ChannelRuntimeV1;
 use crate::movement::monster_map::CurrentMonsterMap;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
-use std::sync::{
-    Arc,
-    atomic::{AtomicU64, Ordering},
-};
-use std::time::Instant;
+use std::sync::Arc;
 
 mod bloodjaw_targeting;
 pub(super) mod native_callbacks;
@@ -20,39 +17,19 @@ pub(super) mod rotten_waves;
 pub(super) mod source_heals;
 mod source_items;
 
-struct PhaseUsage {
-    elapsed_ns: AtomicU64,
-    count: AtomicU64,
-}
-
-impl PhaseUsage {
-    const fn new() -> Self {
-        Self {
-            elapsed_ns: AtomicU64::new(0),
-            count: AtomicU64::new(0),
-        }
-    }
-
-    fn start(&self) -> PhaseTimer<'_> {
-        PhaseTimer(self, Instant::now())
-    }
-}
-
-struct PhaseTimer<'a>(&'a PhaseUsage, Instant);
-
-impl Drop for PhaseTimer<'_> {
-    fn drop(&mut self) {
-        let elapsed_ns = u64::try_from(self.1.elapsed().as_nanos()).unwrap_or(u64::MAX);
-        self.0.elapsed_ns.fetch_add(elapsed_ns, Ordering::Relaxed);
-        self.0.count.fetch_add(1, Ordering::Relaxed);
-    }
-}
-
 static BEGIN_AND_SCOPE: PhaseUsage = PhaseUsage::new();
 static REFERENCE_PARTIES: PhaseUsage = PhaseUsage::new();
 static SESSION_READ: PhaseUsage = PhaseUsage::new();
 static DOOR_AND_MAP: PhaseUsage = PhaseUsage::new();
 static AI_PROFILE: PhaseUsage = PhaseUsage::new();
+static AI_STATE_LOCK: PhaseUsage = PhaseUsage::new();
+static AI_SOURCE_DEATH: PhaseUsage = PhaseUsage::new();
+static AI_SOURCE_CALLBACKS: PhaseUsage = PhaseUsage::new();
+static AI_FIELD_TICKS: PhaseUsage = PhaseUsage::new();
+static AI_THINK_MOVEMENT: PhaseUsage = PhaseUsage::new();
+static DOOR_LOCK: PhaseUsage = PhaseUsage::new();
+// Runtime and spell-state locks can be awaited by the caller before holder checkout.
+pub(super) static PROFILE_RUNTIME_STATE_LOCK: PhaseUsage = PhaseUsage::new();
 static COMMIT_OR_ROLLBACK: PhaseUsage = PhaseUsage::new();
 
 fn report_profile_phases() {
@@ -60,6 +37,7 @@ fn report_profile_phases() {
 
     // One cumulative snapshot per completed pass, after the holder is returned.
     // Retain nanosecond precision until the run report converts to milliseconds.
+    // Work phases include their nested SQL, validation and lock waits.
     let mut line = Line::new(Level::Info, "durability", "monster_profile_pass_phases");
     for (phase, elapsed_field, count_field) in [
         (
@@ -76,20 +54,52 @@ fn report_profile_phases() {
         (&DOOR_AND_MAP, "door_and_map_ns", "door_and_map_count"),
         (&AI_PROFILE, "ai_profile_ns", "ai_profile_count"),
         (
+            &monster_profile_metrics::POSTGRES,
+            "ai_postgres_ns",
+            "ai_postgres_count",
+        ),
+        (
+            &monster_profile_metrics::MAP_VALIDATION,
+            "ai_map_validation_ns",
+            "ai_map_validation_count",
+        ),
+        (&AI_STATE_LOCK, "ai_state_lock_ns", "ai_state_lock_count"),
+        (
+            &AI_SOURCE_DEATH,
+            "ai_source_death_ns",
+            "ai_source_death_count",
+        ),
+        (
+            &AI_SOURCE_CALLBACKS,
+            "ai_source_callbacks_ns",
+            "ai_source_callbacks_count",
+        ),
+        (&AI_FIELD_TICKS, "ai_field_ticks_ns", "ai_field_ticks_count"),
+        (
+            &AI_THINK_MOVEMENT,
+            "ai_think_movement_ns",
+            "ai_think_movement_count",
+        ),
+        (
+            &DOOR_LOCK,
+            "profile_door_lock_ns",
+            "profile_door_lock_count",
+        ),
+        (
+            &PROFILE_RUNTIME_STATE_LOCK,
+            "profile_runtime_state_lock_ns",
+            "profile_runtime_state_lock_count",
+        ),
+        (
             &COMMIT_OR_ROLLBACK,
             "commit_or_rollback_ns",
             "commit_or_rollback_count",
         ),
     ] {
+        let (elapsed_ns, count) = phase.snapshot();
         line = line
-            .field(
-                elapsed_field,
-                FieldValue::U64(phase.elapsed_ns.load(Ordering::Relaxed)),
-            )
-            .field(
-                count_field,
-                FieldValue::U64(phase.count.load(Ordering::Relaxed)),
-            );
+            .field(elapsed_field, FieldValue::U64(elapsed_ns))
+            .field(count_field, FieldValue::U64(count));
     }
     emit("oteryn-game-server", &line);
 }
@@ -365,7 +375,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 native_health_names,
             );
             let result = pass.run_with_context(&mut context, move |holder, deadline, context| {
-            Box::pin(async move {
+            Box::pin(monster_profile_metrics::scope(async move {
                 let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names) =
                     context;
                 let begin_and_scope = BEGIN_AND_SCOPE.start();
@@ -428,11 +438,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }).map_err(|_| crate::durability::DurabilityError::Unavailable)?
                 } else { Vec::new() };
                 let door_and_map = DOOR_AND_MAP.start();
-                let objects = owner.door.lock().await;
+                let objects = DOOR_LOCK.measure(owner.door.lock()).await;
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 drop(door_and_map);
-                let ai_profile = AI_PROFILE.start();
+                let ai_profile = (AI_PROFILE.start(), monster_profile_metrics::start_ai_measurements());
                 map.bind_source_ground_steps(Arc::clone(&states.spite_steps.creatures), owner.reset_epoch)
                     .inspect_err(|_| {
                         #[cfg(test)]
@@ -443,8 +453,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // fresh turn. No invented Think reservation is needed to drain it.
                 if !resume_profile && (has_due_source || runtime.has_pending_source_creature_deaths()
                     || native_pending.is_some() || states.spite_steps.creatures.is_pending()) {
-                    let complete = owner.drive_one_source_creature_death(runtime, states, attack,
-                        room, native, &mut map, &source_parties, execution_now, native_health_names).await
+                    let complete = AI_SOURCE_DEATH.measure(owner.drive_one_source_creature_death(
+                        runtime, states, attack, room, native, &mut map, &source_parties,
+                        execution_now, native_health_names,
+                    )).await
                         .inspect_err(|_| {
                             #[cfg(test)]
                             native_owner_turn(room, "profile_source", "work_drive_refused");
@@ -507,6 +519,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let player_waiting = attack.players_waiting(now);
                 if native_pending.is_none() && primal_pending.is_none() {
+                let _movement = AI_THINK_MOVEMENT.start();
                 // Carried creature requests precede player chase and fresh thinks.
                 table
                     .drive_current_movement_through(
@@ -611,6 +624,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 let batch = pending.batch();
                 if !pending.source_known() {
+                let source_callbacks = AI_SOURCE_CALLBACKS.start();
                 if let Some(claim) = super::rotten_blood_callbacks::prepare_bak_first_think(
                     runtime, states, room, native, batch.occurrences(), now,
                 ).inspect(|_claim| {
@@ -626,6 +640,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if !map.validate_transaction(runtime).await {
                         return Err(crate::durability::DurabilityError::Unavailable);
                     }
+                    drop(source_callbacks);
                     drop(ai_profile);
                     drop(map);
                     crate::durability::quest_state::rotten_flame::capture_bak_first_think_in_transaction(
@@ -645,6 +660,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // cohort finishes. This branch issued no physical/Quest
                     // writes. Drop the existing read transaction, then perform
                     // the detached scoped read outside runtime/state guards.
+                    drop(source_callbacks);
                     drop(ai_profile);
                     drop(map);
                     drop(tx);
@@ -660,6 +676,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if primal_pending.is_none() {
                         states.primal_callbacks.prepare_normal_shared(pending.shared_batch())
                             .map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                        drop(source_callbacks);
                         drop(ai_profile);
                         drop(map); drop(tx);
                         return Ok((Some(0),Vec::new(),Vec::new(), false));
@@ -689,7 +706,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .map_err(|()|crate::durability::DurabilityError::Unavailable)?;
                 }
                 pending.finish_source(primal_due, rotten_due);
+                drop(source_callbacks);
                 }
+                let think_movement = AI_THINK_MOVEMENT.start();
                 let table = &mut states.monster_melee.creature_ai;
                 if !pending.ai_known() { for occurrence in batch.occurrences() {
                     if runtime.contains_live_creature(occurrence.actor) {
@@ -816,6 +835,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     pending.finish_movement(due);
                     due }
                 };
+                drop(think_movement);
                 if !reader.map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
@@ -827,9 +847,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     pending.finish_heals();
                 }
                 if !pending.fields_known() {
-                owner
-                    .tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
-                    .await?;
+                AI_FIELD_TICKS.measure(
+                    owner.tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
+                ).await?;
                 pending.finish_fields();
                 }
                 if !map.validate_transaction(runtime).await {
@@ -891,7 +911,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 drop(finish_transaction);
                 Ok((next_due, proposals, native_actors, true))
-            })
+            }))
         })
         .await;
             report_profile_phases();

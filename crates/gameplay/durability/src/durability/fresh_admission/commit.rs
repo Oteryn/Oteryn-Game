@@ -193,8 +193,8 @@ impl FreshAdmissionStore {
         replay: &[u8],
     ) -> Result<Option<FreshAdmissionCommitReceiptV1>> {
         use sqlx::Row;
-        let row = sqlx::query("SELECT CASE WHEN octet_length(operation_json) <= $2 AND octet_length(to_jsonb(r)::text) <= $3 THEN operation_json END AS payload, CASE WHEN octet_length(to_jsonb(r)::text) <= $3 THEN to_jsonb(r) - 'operation_json' END AS mirrors FROM game_durability_fresh_admission_receipts r WHERE replay_key = $1")
-            .bind(replay).bind(checked(i64::try_from(self.maximum_operation_bytes))?).bind(super::MAX_ADMISSION_ROW_BYTES).fetch_optional(&mut **tx).await?;
+        let row = profile_query(sqlx::query("SELECT CASE WHEN octet_length(operation_json) <= $2 AND octet_length(to_jsonb(r)::text) <= $3 THEN operation_json END AS payload, CASE WHEN octet_length(to_jsonb(r)::text) <= $3 THEN to_jsonb(r) - 'operation_json' END AS mirrors FROM game_durability_fresh_admission_receipts r WHERE replay_key = $1")
+            .bind(replay).bind(checked(i64::try_from(self.maximum_operation_bytes))?).bind(super::MAX_ADMISSION_ROW_BYTES).fetch_optional(&mut **tx)).await?;
         let Some(row) = row else {
             return Ok(None);
         };

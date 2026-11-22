@@ -2,6 +2,7 @@ pub mod party_target_binding;
 mod prepare;
 pub mod spell_reconnect;
 #[cfg(any(test, feature = "test-support"))]
+use crate::durability::monster_profile_metrics::query as profile_query;
 use crate::durability::schema;
 use crate::durability::{DurabilityError, DurabilityRoot, db};
 use crate::foundation::{
@@ -771,10 +772,10 @@ async fn load_protection_row(
          WHERE character_id = encode($1, 'hex')::uuid \
            AND control_loss_epoch = $2::text::numeric(20, 0)"
     };
-    sqlx::query(sql)
+    profile_query(sqlx::query(sql)
         .bind(character_id)
         .bind(epoch)
-        .fetch_optional(&mut **transaction)
+        .fetch_optional(&mut **transaction))
         .await
         .map_err(DurabilityError::from)
 }
@@ -999,13 +1000,13 @@ async fn recovery_grant_binding_is_valid(
     let Some(recovery_grant_nonce) = recovery_grant_nonce else {
         return Ok(true);
     };
-    let owner = sqlx::query(
+    let owner = profile_query(sqlx::query(
         "SELECT uuid_send(game_session_id) AS game_session_id, reconnect_attempt_ref \
          FROM game_durability_recovery_grant_consumptions \
          WHERE recovery_grant_nonce = $1",
     )
     .bind(recovery_grant_nonce)
-    .fetch_optional(&mut **transaction)
+    .fetch_optional(&mut **transaction))
     .await?;
     let Some(owner) = owner else {
         return Ok(false);
@@ -1019,7 +1020,7 @@ async fn load_session_for_update(
     transaction: &mut Transaction<'_, Postgres>,
     session_id: &[u8],
 ) -> Result<Option<PgRow>, DurabilityError> {
-    sqlx::query(
+    profile_query(sqlx::query(
         "SELECT account_id::text AS account_id, uuid_send(character_id) AS character_id, \
                 uuid_send(world_id) AS world_id, runtime_scope_kind, \
                 uuid_send(runtime_scope_world_id) AS runtime_scope_world_id, \
@@ -1037,7 +1038,7 @@ async fn load_session_for_update(
          WHERE game_session_id = encode($1, 'hex')::uuid FOR UPDATE",
     )
     .bind(session_id)
-    .fetch_optional(&mut **transaction)
+    .fetch_optional(&mut **transaction))
     .await
     .map_err(DurabilityError::from)
 }
@@ -1162,7 +1163,7 @@ async fn active_committed_binding_is_valid(
     let Some(current_ref) = current_ref else {
         return Ok(false);
     };
-    let rows = sqlx::query(
+    let rows = profile_query(sqlx::query(
         "SELECT reconnect_attempt_ref, control_loss_epoch::text AS control_loss_epoch, \
                 transport_ref, account_id::text AS account_id, \
                 uuid_send(character_id) AS character_id, uuid_send(world_id) AS world_id, \
@@ -1180,7 +1181,7 @@ async fn active_committed_binding_is_valid(
     .bind(session_id)
     .bind(COMMITTED)
     .bind(current_ref.as_slice())
-    .fetch_all(&mut **transaction)
+    .fetch_all(&mut **transaction))
     .await?;
     if rows.len() != 1 {
         return Ok(false);
@@ -1284,12 +1285,12 @@ async fn active_committed_binding_is_valid(
         return Ok(false);
     }
 
-    let reservation = sqlx::query(
+    let reservation = profile_query(sqlx::query(
         "SELECT uuid_send(game_session_id) AS game_session_id, reconnect_attempt_ref \
          FROM game_durability_transport_ref_reservations WHERE transport_ref = $1 FOR SHARE",
     )
     .bind(current_ref.as_slice())
-    .fetch_optional(&mut **transaction)
+    .fetch_optional(&mut **transaction))
     .await?;
     let Some(reservation) = reservation else {
         return Ok(false);
@@ -1555,7 +1556,7 @@ async fn canonical_fnd02_mirrors_are_valid(
     {
         return Ok(false);
     }
-    let stored_pending = sqlx::query(
+    let stored_pending = profile_query(sqlx::query(
         "SELECT command_id::text AS command_id, disposition \
          FROM game_durability_reconnect_pending_commands \
          WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2 \
@@ -1563,7 +1564,7 @@ async fn canonical_fnd02_mirrors_are_valid(
     )
     .bind(session_id)
     .bind(attempt_ref)
-    .fetch_all(&mut **transaction)
+    .fetch_all(&mut **transaction))
     .await?;
     if stored_pending.len() != canonical_pending.len() {
         return Ok(false);

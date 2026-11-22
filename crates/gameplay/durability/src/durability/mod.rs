@@ -44,6 +44,7 @@ pub mod inspection;
 pub mod inventory_capacity;
 pub mod journal;
 pub mod mail_text_policy;
+pub mod monster_profile_metrics;
 #[allow(dead_code)]
 pub mod native_world_items;
 #[allow(dead_code)]

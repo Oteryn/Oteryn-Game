@@ -45,7 +45,7 @@ impl FreshAdmissionStore {
             return Ok(FreshReconciliation::Conflict);
         }
         let b = receipt.binding();
-        let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(s)::text) <= $2 THEN to_jsonb(s) END AS state FROM game_durability_reconnect_sessions s WHERE game_session_id = encode($1,'hex')::uuid").bind(current_id.as_bytes().as_slice()).bind(super::MAX_ADMISSION_ROW_BYTES).fetch_optional(&mut **tx).await?.ok_or(DurabilityError::InvalidStoredState)?;
+        let row = profile_query(sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(s)::text) <= $2 THEN to_jsonb(s) END AS state FROM game_durability_reconnect_sessions s WHERE game_session_id = encode($1,'hex')::uuid").bind(current_id.as_bytes().as_slice()).bind(super::MAX_ADMISSION_ROW_BYTES).fetch_optional(&mut **tx)).await?.ok_or(DurabilityError::InvalidStoredState)?;
         let state: Option<serde_json::Value> = row.try_get("state")?;
         let state = state.ok_or(DurabilityError::InvalidStoredState)?;
         let initial = checked(b.initial_commit())?;
@@ -157,7 +157,7 @@ impl FreshAdmissionStore {
             }
             _ => return Err(DurabilityError::InvalidStoredState),
         }
-        let reservation: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_transport_ref_reservations WHERE transport_ref = $1 AND game_session_id = encode($2,'hex')::uuid AND reservation_owner = 2 AND fresh_replay_key = $3 AND reconnect_attempt_ref IS NULL)").bind(b.transport.to_bytes().as_slice()).bind(b.candidate_session.as_bytes().as_slice()).bind(replay.as_slice()).fetch_one(&mut **tx).await?;
+        let reservation: bool = profile_query(sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_transport_ref_reservations WHERE transport_ref = $1 AND game_session_id = encode($2,'hex')::uuid AND reservation_owner = 2 AND fresh_replay_key = $3 AND reconnect_attempt_ref IS NULL)").bind(b.transport.to_bytes().as_slice()).bind(b.candidate_session.as_bytes().as_slice()).bind(replay.as_slice()).fetch_one(&mut **tx)).await?;
         if !reservation {
             return Err(DurabilityError::InvalidStoredState);
         }

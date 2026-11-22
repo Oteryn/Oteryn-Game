@@ -5,6 +5,7 @@ mod house_lifecycle;
 mod retired_holder_release;
 mod terminal_release;
 mod training_lineage;
+use crate::durability::monster_profile_metrics::query as profile_query;
 use super::DurabilityError;
 use super::admission_authority_guards::*;
 use crate::foundation::admission_authority_publication::*;

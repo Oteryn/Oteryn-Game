@@ -194,9 +194,9 @@ impl FreshAdmissionStore {
         tx: &mut Transaction<'_, Postgres>,
         session: GameSessionId,
     ) -> Result<Option<FreshAdmissionOperationV1>> {
-        let payload: Option<Option<String>> = sqlx::query_scalar(
+        let payload: Option<Option<String>> = profile_query(sqlx::query_scalar(
             "SELECT CASE WHEN octet_length(r.operation_json)<=65536 THEN r.operation_json END FROM game_durability_reconnect_sessions s JOIN game_durability_fresh_admission_receipts r ON r.replay_key=COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key) WHERE s.game_session_id=encode($1,'hex')::uuid FOR SHARE OF s,r")
-            .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+            .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx)).await?;
         let Some(payload) = payload else {
             return Ok(None);
         };
@@ -224,8 +224,8 @@ impl FreshAdmissionStore {
                     return Err(DurabilityError::Unavailable);
                 }
             }
-            let valid: bool = sqlx::query_scalar("SELECT COALESCE(game_activity_session_origin_valid(game_session_id,character_id),false) FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
-                .bind(session.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+            let valid: bool = profile_query(sqlx::query_scalar("SELECT COALESCE(game_activity_session_origin_valid(game_session_id,character_id),false) FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
+                .bind(session.as_bytes().as_slice()).fetch_one(&mut **tx)).await?;
             if !valid {
                 return Err(DurabilityError::Unavailable);
             }

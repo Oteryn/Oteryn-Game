@@ -3,6 +3,7 @@
 pub mod phase;
 pub use phase::{BakPhaseOrigin, capture_bak_first_think_in_transaction};
 
+use crate::durability::monster_profile_metrics::query as profile_query;
 use super::super::quest_world_callback::QuestWorldContext;
 use super::*;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
@@ -353,11 +354,11 @@ pub async fn read_prepared_bak_in_transaction(
         return Ok(None);
     };
     let pin = runtime.content_pin();
-    let mask:Option<i16>=sqlx::query_scalar("SELECT p.essence_mask FROM game_rotten_bak_phase_preparations p JOIN game_activity_handoff_groups g USING(handoff_id) JOIN game_activity_runtime_entries e USING(handoff_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.instance_id=encode($2,'hex')::uuid AND g.ownership_generation=$3::text::numeric(20,0) AND g.activity_key='oteryn:boss.bakragore' AND g.state=2 AND e.destination_server_artifact_digest=$4 AND e.destination_coordinate_frame_digest=$5 AND e.destination_map_revision_digest=$6 AND EXISTS(SELECT 1 FROM game_rotten_bak_phase_publications done WHERE done.handoff_id=p.handoff_id)")
+    let mask:Option<i16>=profile_query(sqlx::query_scalar("SELECT p.essence_mask FROM game_rotten_bak_phase_preparations p JOIN game_activity_handoff_groups g USING(handoff_id) JOIN game_activity_runtime_entries e USING(handoff_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.instance_id=encode($2,'hex')::uuid AND g.ownership_generation=$3::text::numeric(20,0) AND g.activity_key='oteryn:boss.bakragore' AND g.state=2 AND e.destination_server_artifact_digest=$4 AND e.destination_coordinate_frame_digest=$5 AND e.destination_map_revision_digest=$6 AND EXISTS(SELECT 1 FROM game_rotten_bak_phase_publications done WHERE done.handoff_id=p.handoff_id)")
         .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice())
         .bind(runtime.binding().scope_generation().get().to_string())
         .bind(pin.server_artifact_digest().as_slice()).bind(pin.frame_binding_digest().as_slice())
-        .bind(pin.map_revision_digest().as_slice()).fetch_optional(&mut **tx).await?;
+        .bind(pin.map_revision_digest().as_slice()).fetch_optional(&mut **tx)).await?;
     check_scope_transaction(tx, authority)
         .await
         .map_err(|_| DurabilityError::Unavailable)?;

@@ -57,8 +57,8 @@ async fn session_use_state(
     character: CharacterId,
 ) -> Result<SessionUseState> {
     use sqlx::Row;
-    let row = sqlx::query("SELECT version, complete, revision::text, revision_floor::text FROM game_durability_session_use_ledgers WHERE character_id = encode($1, 'hex')::uuid FOR UPDATE")
-        .bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let row = profile_query(sqlx::query("SELECT version, complete, revision::text, revision_floor::text FROM game_durability_session_use_ledgers WHERE character_id = encode($1, 'hex')::uuid FOR UPDATE")
+        .bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx)).await?;
     let (revision, complete) = if let Some(row) = row {
         let revision = checked(row.try_get::<String, _>("revision")?.parse::<u64>())?;
         let floor = checked(row.try_get::<String, _>("revision_floor")?.parse::<u64>())?;
@@ -70,15 +70,15 @@ async fn session_use_state(
         }
         (revision, row.try_get::<bool, _>("complete")?)
     } else {
-        let existing: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE character_id = encode($1, 'hex')::uuid)")
-            .bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        let existing: bool = profile_query(sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE character_id = encode($1, 'hex')::uuid)")
+            .bind(character.as_bytes().as_slice()).fetch_one(&mut **tx)).await?;
         if existing {
             return Err(DurabilityError::InvalidStoredState);
         }
         (0, true)
     };
-    let (count, maximum): (i64, Option<String>) = sqlx::query_as("SELECT count(*), max(membership_revision)::text FROM game_durability_session_use_memberships WHERE character_id = encode($1, 'hex')::uuid")
-        .bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    let (count, maximum): (i64, Option<String>) = profile_query(sqlx::query_as("SELECT count(*), max(membership_revision)::text FROM game_durability_session_use_memberships WHERE character_id = encode($1, 'hex')::uuid")
+        .bind(character.as_bytes().as_slice()).fetch_one(&mut **tx)).await?;
     let maximum = maximum
         .map(|n| checked(n.parse::<u64>()))
         .transpose()?
@@ -116,7 +116,7 @@ impl FreshAdmissionStore {
         // Find an original fresh receipt by its immutable, unique session identity,
         // independently of the live projection's origin pointers. A damaged
         // projection must not hide that retained origin by dropping both pointers.
-        let row = sqlx::query(
+        let row = profile_query(sqlx::query(
             "SELECT m.operation_binding,s.fresh_replay_key,s.initial_fresh_replay_key, \
                     r.replay_key AS issued_replay_key \
              FROM game_durability_session_use_memberships m \
@@ -129,13 +129,13 @@ impl FreshAdmissionStore {
         )
         .bind(session.as_bytes().as_slice())
         .bind(character.as_bytes().as_slice())
-        .fetch_optional(&mut **tx)
+        .fetch_optional(&mut **tx))
         .await?;
         let Some(row) = row else {
             return Ok(false);
         };
-        let activity_origin: bool = sqlx::query_scalar("SELECT COALESCE(game_activity_session_origin_valid(encode($1,'hex')::uuid,encode($2,'hex')::uuid),false)")
-            .bind(session.as_bytes().as_slice()).bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        let activity_origin: bool = profile_query(sqlx::query_scalar("SELECT COALESCE(game_activity_session_origin_valid(encode($1,'hex')::uuid,encode($2,'hex')::uuid),false)")
+            .bind(session.as_bytes().as_slice()).bind(character.as_bytes().as_slice()).fetch_one(&mut **tx)).await?;
         if !activity_origin {
             return Ok(false);
         }

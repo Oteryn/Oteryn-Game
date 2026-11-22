@@ -5,6 +5,7 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+use crate::durability::monster_profile_metrics::query as profile_query;
 use super::admission_journal::party_target_binding::QualifiedPartyVisibleTarget;
 use super::spell_item_transaction::{SpellItemAuthority, SpellItemError, check_transaction};
 use crate::foundation::{
@@ -164,9 +165,9 @@ pub async fn read_world_party_views_for_scope_in_transaction(
         }
     }
     let world = scope.world_bytes();
-    sqlx::query("SELECT pg_advisory_xact_lock(45,hashtext($1))")
+    profile_query(sqlx::query("SELECT pg_advisory_xact_lock(45,hashtext($1))")
         .bind(world.iter().map(|b| format!("{b:02x}")).collect::<String>())
-        .execute(&mut **tx)
+        .execute(&mut **tx))
         .await?;
     observe_world_party_batch(tx, world, characters.into_iter().collect()).await
 }
@@ -185,14 +186,14 @@ async fn observe_world_party_batch(
         .collect();
     // One statement snapshot prevents torn membership/revision/presence reads. The World
     // advisory lock also serializes it with this owner's membership and presence writers.
-    let rows = sqlx::query(
+    let rows = profile_query(sqlx::query(
         "WITH requested AS (SELECT unnest($1::text[]) AS character), observed AS MATERIALIZED (SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint AS micros) \
          SELECT requested.character, r.world_id::text AS character_world, p.world_id::text AS party_world, p.party_id::text, p.revision::text, p.leader_character_id::text, p.shared_xp_enabled, \
          m.character_id::text AS member, m.seq::text, m.presence_revision::text, m.presence_state, m.presence_channel_id::text, observed.micros \
          FROM requested CROSS JOIN observed LEFT JOIN game_character_roots r ON r.character_id=requested.character::uuid \
          LEFT JOIN game_party_members own ON own.character_id=r.character_id LEFT JOIN game_parties p ON p.party_id=own.party_id \
          LEFT JOIN game_party_members m ON m.party_id=p.party_id ORDER BY requested.character,m.seq"
-    ).bind(requested).fetch_all(&mut **tx).await?;
+    ).bind(requested).fetch_all(&mut **tx)).await?;
     let mut snapshots = std::collections::BTreeMap::new();
     for row in rows {
         let character = uuid(row.try_get("character")?)?;

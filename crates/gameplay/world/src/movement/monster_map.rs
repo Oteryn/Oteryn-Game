@@ -425,11 +425,12 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         let observed = if let Some(observed) = self.source_observed_seconds {
             observed
         } else {
-            let observed: i64 =
+            let observed: i64 = crate::durability::monster_profile_metrics::query(
                 sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
-                    .fetch_one(&mut **self.tx)
-                    .await
-                    .ok()?;
+                    .fetch_one(&mut **self.tx),
+            )
+            .await
+            .ok()?;
             u64::try_from(observed).ok()?
         };
         if !self.validate_transaction(runtime).await {
@@ -441,6 +442,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
     /// Recheck the actual transaction after awaited reads, before a synchronous consumer.
     /// An aborted/lost transaction invalidates even its formerly known empty tiles.
     pub async fn validate_transaction(&mut self, runtime: &ChannelRuntimeV1) -> bool {
+        let _timer = crate::durability::monster_profile_metrics::start_map_validation();
         let binding = runtime.binding();
         let valid = self.view.matches(runtime)
             && self.authority.runtime_scope() == binding.runtime_scope()
