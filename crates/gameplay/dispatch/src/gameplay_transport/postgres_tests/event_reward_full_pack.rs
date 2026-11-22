@@ -7,6 +7,7 @@ use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
     FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
 };
+use crate::gameplay_transport::item_view::ItemKey;
 use oteryn_gameplay_items::reward_bag::{reward_bag_conversion, reward_bag_draw};
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
@@ -172,7 +173,6 @@ fn scenario(admin: &str) -> TestResult {
         let [(reward, amount)] = expected.outputs.as_slice() else {
             return Err("Blue Present must select one reward".into());
         };
-        assert_eq!(*amount, 1);
         let intent = UseIntent {
             target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("source handle")?),
             use_with: None,
@@ -187,8 +187,42 @@ fn scenario(admin: &str) -> TestResult {
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
                 .ok_or("reward use capabilities")?;
-        let (next, result, actual) =
-            exchange(&owner, admitted, 1, &payload, Some(source_ref)).await?;
+        let command = UseCommand {
+            game_session_id: fence.game_session_id,
+            command_id: 1,
+            item_fence: Some(fence),
+        };
+        // Fail after the source debit, when the transaction inserts the reward's custody.
+        sqlx::raw_sql(
+            "CREATE FUNCTION refuse_test_present_drop() RETURNS trigger LANGUAGE plpgsql AS $$
+                 BEGIN RAISE EXCEPTION 'injected Blue Present Ground insert failure'; END $$;
+             CREATE TRIGGER refuse_test_present_drop AFTER INSERT ON game_item_ground_locations
+                 FOR EACH ROW EXECUTE FUNCTION refuse_test_present_drop();",
+        )
+        .execute(&harness.pool)
+        .await?;
+        assert!(matches!(
+            owner
+                .use_reward_bag(deps.actor, command, ItemKey::Instance(source))
+                .await,
+            Some(None)
+        ));
+        let rolled_back: (i64, i64, i64, i64) = sqlx::query_as(
+            "SELECT i.quantity,
+             (SELECT count(*) FROM game_item_craft_records),
+             (SELECT count(*) FROM game_item_ground_locations),
+             (SELECT count(*) FROM game_item_audit_outbox)
+             FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(source.as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(rolled_back, (2, 0, 0, 0));
+        sqlx::query("DROP TRIGGER refuse_test_present_drop ON game_item_ground_locations")
+            .execute(&harness.pool)
+            .await?;
+
+        let (_, result, _) = exchange(&owner, admitted, 1, &payload, Some(source_ref)).await?;
         assert_eq!(result, UseDisposition::Committed);
 
         let check = async || -> TestResult {
@@ -221,7 +255,7 @@ fn scenario(admin: &str) -> TestResult {
                 placements,
                 [(
                     reward.production_key.clone(),
-                    1,
+                    i64::from(*amount),
                     position,
                     id(43).to_vec(),
                     1
@@ -239,25 +273,10 @@ fn scenario(admin: &str) -> TestResult {
         };
         check().await?;
 
-        let replay = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
-            next.continuity.selected_capabilities.as_slice(),
-            &actual,
-        )
-        .map_err(debug)?;
         let replay = owner
-            .use_event_item(
-                deps.actor,
-                UseCommand {
-                    game_session_id: fence.game_session_id,
-                    command_id: 1,
-                    item_fence: Some(fence),
-                },
-                replay,
-                None,
-                true,
-            )
+            .use_reward_bag(deps.actor, command, ItemKey::Instance(source))
             .await
-            .map_err(|()| "ambiguous reward replay")?
+            .ok_or("reward route")?
             .ok_or("reward replay")?;
         assert_eq!(replay.disposition, UseDisposition::Committed);
         check().await?;
