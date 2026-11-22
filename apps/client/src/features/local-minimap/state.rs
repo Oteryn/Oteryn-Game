@@ -225,15 +225,6 @@ impl Minimap {
         true
     }
 
-    #[cfg(windows)]
-    pub fn displayed_markers(&self) -> Vec<Marker> {
-        self.markers
-            .iter()
-            .chain(&self.quest_markers)
-            .cloned()
-            .collect()
-    }
-
     pub fn bind_world(&mut self, world: &str) {
         #[cfg(bevy_shell)]
         if self.world.as_deref() != Some(world) {

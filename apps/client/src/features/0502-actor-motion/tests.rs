@@ -13,6 +13,7 @@ use std::{cell::Cell, time::Duration};
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Scenario {
     DelayedMount,
+    RedundantMount,
     NoMountOutfit,
     DeltaBeforeReply,
 }
@@ -83,12 +84,19 @@ impl Stepper for MountPeer<'_> {
         command: &FeatureCommand,
     ) -> Result<GatedCommandResult, SessionError> {
         if (command.capability, command.kind) == (25, 25) {
-            assert!(self.scenario == Scenario::NoMountOutfit);
+            assert!(matches!(
+                self.scenario,
+                Scenario::NoMountOutfit | Scenario::RedundantMount
+            ));
             assert_eq!(self.received, [1]);
             let change = appearance::Change::decode(&command.payload)
                 .map_err(|_| SessionError::SessionUnusable)?;
             assert_eq!(change.selection.mount_key, None);
-            self.sample_motion(0);
+            self.sample_motion(if self.scenario == Scenario::RedundantMount {
+                139
+            } else {
+                0
+            });
             return Ok(GatedCommandResult {
                 command_id: 2,
                 server_sequence: 2,
@@ -103,7 +111,13 @@ impl Stepper for MountPeer<'_> {
             return Err(SessionError::SessionUnusable);
         };
         self.received.push(mount);
-        if mount == 0 || (self.received == [1] && self.scenario == Scenario::DeltaBeforeReply) {
+        if mount == 0
+            || (self.received == [1]
+                && matches!(
+                    self.scenario,
+                    Scenario::DeltaBeforeReply | Scenario::RedundantMount
+                ))
+        {
             self.sample_motion(0);
         }
         let sequence = self.received.len() as u64;
@@ -130,6 +144,27 @@ impl Stepper for MountPeer<'_> {
 
     async fn serve(&mut self, _: Duration) -> Result<(), SessionError> {
         tokio::task::yield_now().await;
+        if self.scenario == Scenario::RedundantMount {
+            match self.idle_turn {
+                0 => self.link.mount_request(),
+                1 => {
+                    self.request_no_mount_outfit()?;
+                    self.link.mount_request();
+                }
+                2 => {
+                    assert_eq!(self.received, [1, 1]);
+                    assert_eq!(self.link.riding(), Some(true));
+                    self.link.mount_request();
+                }
+                3 => {
+                    assert_eq!(self.received, [1, 1, 0]);
+                    self.link.request_logout();
+                }
+                _ => return Err(SessionError::SessionUnusable),
+            }
+            self.idle_turn += 1;
+            return Ok(());
+        }
         if self.scenario != Scenario::DelayedMount {
             return self.serve_unmounted();
         }
@@ -288,4 +323,9 @@ fn run_mount_scenario(scenario: Scenario) -> TestResult {
         })?
         .join()
         .map_err(|_| "mount session test panicked")?
+}
+
+#[test]
+fn accepted_redundant_mount_allows_dismount_without_another_delta() -> TestResult {
+    run_mount_scenario(Scenario::RedundantMount)
 }

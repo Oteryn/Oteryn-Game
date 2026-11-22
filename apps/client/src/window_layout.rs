@@ -2,6 +2,14 @@
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, io, path::Path};
 
+/// Layout entry of the main window: physical desktop position and logical size.
+#[cfg(bevy_shell)]
+pub(crate) const WINDOW: &str = "window.logical";
+// The layout format caps rectangle sizes at 4096 but supports desktop coordinates
+// up to 32768. A point in window-local pixels records the full logical extent.
+#[cfg(bevy_shell)]
+pub(crate) const WINDOW_EXTENT: &str = "window.logical.extent";
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct WindowLayout(BTreeMap<String, [i32; 4]>);
@@ -55,8 +63,32 @@ impl WindowLayout {
     }
 
     #[cfg(bevy_shell)]
+    pub(crate) fn bounds_with_extent(&self, id: &str, extent: &str) -> Option<[i32; 4]> {
+        let [x, y, width, height] = self.bounds(id)?;
+        if let Some([w, h, 1, 1]) = self.bounds(extent)
+            && w.min(4096) == width
+            && h.min(4096) == height
+        {
+            return Some([x, y, w, h]);
+        }
+        Some([x, y, width, height])
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn record_window(&mut self, bounds: [i32; 4]) -> std::io::Result<()> {
+        let [x, y, width, height] = bounds;
+        let base = [x, y, width.min(4096), height.min(4096)];
+        if base != bounds || self.bounds(WINDOW_EXTENT).is_some() {
+            // Validate the origin before changing the extent of an existing window.
+            WindowLayout::default().record(WINDOW, base)?;
+            self.record(WINDOW_EXTENT, [width, height, 1, 1])?;
+        }
+        self.record(WINDOW, base)
+    }
+
+    #[cfg(bevy_shell)]
     pub(crate) fn save_edits(&self, path: &Path, before: &Self) -> io::Result<()> {
-        let _lock = crate::atomic_file::try_lock(path)?;
+        let _lock = crate::atomic_file::lock(path)?;
         let mut active = match Self::load(path) {
             Err(error) if error.kind() == io::ErrorKind::InvalidData => {
                 crate::atomic_file::preserve_malformed(path)?;
@@ -64,10 +96,20 @@ impl WindowLayout {
             }
             result => result?,
         };
-        for (id, &bounds) in &self.0 {
-            let previous = before.bounds(id);
+        // Merge the full logical rectangle once. Its capped base and optional
+        // extent must describe the same edit even for a writer with no extent.
+        for id in self.0.keys().filter(|id| id.as_str() != WINDOW_EXTENT) {
+            let read = |layout: &Self| {
+                if id == WINDOW {
+                    layout.bounds_with_extent(WINDOW, WINDOW_EXTENT)
+                } else {
+                    layout.bounds(id)
+                }
+            };
+            let bounds = read(self).ok_or(io::ErrorKind::InvalidData)?;
+            let previous = read(before);
             if previous != Some(bounds) {
-                let merged = match (previous, active.bounds(id)) {
+                let merged = match (previous, read(&active)) {
                     (Some(previous), Some(latest)) => std::array::from_fn(|index| {
                         if bounds[index] == previous[index] {
                             latest[index]
@@ -77,7 +119,11 @@ impl WindowLayout {
                     }),
                     _ => bounds,
                 };
-                active.record(id, merged)?;
+                if id == WINDOW {
+                    active.record_window(merged)?;
+                } else {
+                    active.record(id, merged)?;
+                }
             }
         }
         active.save(path)

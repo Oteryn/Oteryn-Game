@@ -66,14 +66,17 @@ fn parse_pointer(contents: &[u8]) -> Result<&str, LaunchError> {
 
 /// The executable of the active release under `install_dir`.
 fn active_client(install_dir: &Path) -> Result<PathBuf, LaunchError> {
-    let contents = match std::fs::read(install_dir.join("current.txt")) {
+    let contents = match oteryn_client::updater::read_release_pointer(install_dir) {
         Ok(contents) => contents,
         Err(error) if error.kind() == io::ErrorKind::NotFound => {
             return Err(LaunchError::MissingPointer);
         }
+        Err(error) if error.kind() == io::ErrorKind::InvalidData => {
+            return Err(LaunchError::MalformedPointer);
+        }
         Err(error) => return Err(LaunchError::UnreadablePointer(error)),
     };
-    let release = parse_pointer(&contents)?;
+    let release = parse_pointer(contents.as_bytes())?;
     let client = install_dir
         .join("releases")
         .join(release)
@@ -313,6 +316,35 @@ mod tests {
             active_client(directory),
             Err(LaunchError::MalformedPointer)
         ));
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn oversized_pointer_is_rejected_before_eof() -> Result<(), Box<dyn std::error::Error>> {
+        use std::{io::Write, sync::mpsc, thread, time::Duration};
+        let fixture = install_dir()?;
+        let path = fixture.path().join("current.txt");
+        assert!(
+            std::process::Command::new("mkfifo")
+                .arg(&path)
+                .status()?
+                .success()
+        );
+        let (send, receive) = mpsc::channel();
+        let directory = fixture.path().to_owned();
+        let reader = thread::spawn(move || {
+            send.send(matches!(
+                active_client(&directory),
+                Err(LaunchError::MalformedPointer)
+            ))
+        });
+        let mut writer = std::fs::OpenOptions::new().write(true).open(path)?;
+        writer.write_all(&[b'x'; 1025])?;
+        let result = receive.recv_timeout(Duration::from_secs(2));
+        drop(writer);
+        reader.join().map_err(|_| "reader panicked")??;
+        assert!(result?);
         Ok(())
     }
 

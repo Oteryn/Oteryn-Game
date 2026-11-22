@@ -82,6 +82,14 @@ impl Door {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DoorStates(Arc<[u64]>);
 
+/// A closed authored door of one of the ordinary, non-quest families.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AuthoredClosedDoor {
+    Plain,
+    KeyUnlocked,
+    KeyLocked,
+}
+
 /// The outcome of one `USE` on a door.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DoorUse {
@@ -333,6 +341,24 @@ impl DoorBook {
             .iter()
             .take_while(|door| door.key <= tile | 0xFF)
             .any(|door| !projected(door.key) && door.solid())
+    }
+
+    /// Classifies the original placement, independently of channel toggles.
+    pub fn authored_closed(&self, key: u64) -> Option<AuthoredClosedDoor> {
+        let door = self.find(key)?;
+        if !door.closed_solid
+            || door.open_solid
+            || door.required_level.is_some()
+            || door.required_storage.is_some()
+        {
+            return None;
+        }
+        match (door.initial_state, door.key_forms.is_some(), door.action) {
+            (0, false, None) => Some(AuthoredClosedDoor::Plain),
+            (0, true, Some(101 | 1001)) | (2, true, _) => Some(AuthoredClosedDoor::KeyLocked),
+            (0, true, _) => Some(AuthoredClosedDoor::KeyUnlocked),
+            _ => None,
+        }
     }
 
     /// Whether any door entry of `pos` exists.
