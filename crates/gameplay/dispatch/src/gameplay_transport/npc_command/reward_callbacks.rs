@@ -301,6 +301,53 @@ fn sterling_marker_offer_and_refusal_follow_the_source_topics() -> Result<(), se
     Ok(())
 }
 
+#[cfg(test)]
+#[test]
+fn cwdoor_key_dialogue_follows_native_offer_topics()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let offers: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/shared-reward-offers.json"
+    ))?;
+    let state = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let tracks = std::collections::BTreeMap::new();
+    for (npc, routes) in [
+        (
+            "oteryn:npc.a_prisoner",
+            &[
+                (4, "riddle", 1),
+                (1, "pd-d-ks-p-pd", 2),
+                (3, "yes", 4),
+                (4, "yes", 5),
+            ][..],
+        ),
+        ("oteryn:npc.shirith", &[(1, "key", 1)]),
+        (
+            "oteryn:npc.skjaar",
+            &[
+                (6, "key", 1),
+                (1, "yes", 2),
+                (3, "redips", 4),
+                (4, "7", 5),
+                (5, "black", 6),
+            ],
+        ),
+    ] {
+        for &(topic, text, next) in routes {
+            let choice = offers
+                .offers
+                .iter()
+                .find(|offer| offer.admits(npc, topic, text, state.catalogue(), &tracks));
+            assert_eq!(
+                choice.map(|offer| offer.next_topic),
+                Some(next),
+                "{npc} {text}"
+            );
+        }
+    }
+    Ok(())
+}
+
 #[cfg(any(test, feature = "test-support"))]
 pub(in crate::gameplay_transport) fn fixture_rafzan_resume(
     npc: &str,

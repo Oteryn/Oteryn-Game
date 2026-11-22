@@ -298,6 +298,8 @@ def materialize_item_tree(reference, declarations, editor, sources):
     extend_cake_bridge_reference(item_records, ROOT)
     from nrwicked_profiles import extend_records as extend_arbaziloth_fire
     extend_arbaziloth_fire(item_records, ROOT)
+    from galthen_door_reference import extend_records as extend_galthen_door_references
+    extend_galthen_door_references(item_records)
     from encounter_loot_item_admissions import apply_admissions as apply_encounter_loot_admissions
     apply_encounter_loot_admissions(item_records, ROOT)
     from itemhold_q import apply_admissions as apply_quest_item_holds

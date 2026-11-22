@@ -1,5 +1,5 @@
 //! GAP-SV3 W23: all Crystal citizen registrations in a synthetic bundle through paced movement
-//! and PostgreSQL. This does not qualify the shipped World placement bindings.
+//! and PostgreSQL, including the canonical and legacy Barbarian Test track keys.
 use super::fixture::{Harness, debug, fence, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::{CharacterLease, MovementLocalPosition};
@@ -50,11 +50,12 @@ fn scenario() -> TestResult {
             .await
             .map_err(debug)?;
         let world_id = fence(1)?.runtime_scope.world_id();
-        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_source(
-            world_id,
-            "content-1",
-            None,
-        )?;
+        let (controller, pin) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_source(
+                world_id,
+                "content-1",
+                None,
+            )?;
         let active = controller.active().ok_or("active generation")?;
         let bundle = world(world_id)?;
         let cells = bundle
@@ -129,12 +130,20 @@ fn scenario() -> TestResult {
         let mut current_town = 8;
         let mut expected_receipts = 0_i64;
         for (index, (unique, town)) in CITIZENS.into_iter().enumerate() {
-            let progress_cases: &[Option<i64>] = if town == 16 {
-                &[None, Some(7), Some(8)]
+            let legacy = "oteryn:quest-progress/storage/41174";
+            let canonical = oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0];
+            let progress_cases: &[(Option<i64>, &str, &str)] = if town == 16 {
+                &[
+                    (None, legacy, "oteryn:quest.barbarian_test"),
+                    (Some(7), legacy, "oteryn:quest.barbarian_test"),
+                    (Some(8), legacy, "oteryn:quest.barbarian_test"),
+                    (Some(7), canonical, "oteryn:quest.the_ice_islands_quest"),
+                    (Some(8), canonical, "oteryn:quest.the_ice_islands_quest"),
+                ]
             } else {
-                &[None]
+                &[(None, legacy, "oteryn:quest.barbarian_test")]
             };
-            for &progress in progress_cases {
+            for &(progress, track, quest) in progress_cases {
                 let started = std::time::Instant::now();
                 if let Some(progress) = progress {
                     // Administrator seeds only the predecessor quest fact, as in npc_paid_travel.
@@ -143,8 +152,8 @@ fn scenario() -> TestResult {
                     sqlx::query("SET LOCAL session_replication_role=replica")
                         .execute(&mut *tx)
                         .await?;
-                    sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,'oteryn:quest-progress/storage/41174','oteryn:quest.barbarian_test',$2,2) ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
-                        .bind(id(41).as_slice()).bind(progress).execute(&mut *tx).await?;
+                    sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,2) ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
+                        .bind(id(41).as_slice()).bind(track).bind(quest).bind(progress).execute(&mut *tx).await?;
                     tx.commit().await?;
                 }
                 // Set up the predecessor position only; the tested step uses the real movement lane.
@@ -162,6 +171,11 @@ fn scenario() -> TestResult {
                         },
                     )
                     .map_err(debug)?;
+                if track == canonical && progress == Some(7) {
+                    assert_eq!(owner.home_town(session, Some((actor, 8))).await, Some(8));
+                    current_town = 8;
+                    expected_receipts += 1;
+                }
                 let accepted = town != 16 || progress.is_some_and(|value| value >= 8);
                 if accepted && current_town != town {
                     current_town = town;
