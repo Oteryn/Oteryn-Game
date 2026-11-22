@@ -1,7 +1,23 @@
 """Source-bound mount population and bindings for existing acquisition owners."""
+import hashlib
 import json
 import re
 import xml.etree.ElementTree as ET
+
+
+MOUNTS_XML = 'data/XML/mounts.xml'
+CATALOGUE_REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
+CATALOGUE_INPUT = CATALOGUE_REVISION + ':' + MOUNTS_XML
+
+
+def read_catalogue_xml(corpus, manifest):
+    # The 201189f8 Git tree names the same blob as the retained Crystal Summer XML.
+    row = next(row for row in manifest['files'] if row['path'] == MOUNTS_XML
+               and row['git_blob_sha1'] == '1c93421c1141265988eb32afb9c56238eae30716')
+    raw = corpus.extractfile(row.get('blob_path', row.get('cache_path'))).read()
+    if hashlib.sha256(raw).hexdigest() != row['sha256']:
+        raise ValueError('mount catalogue XML source drift')
+    return raw
 
 
 def name_key(value):
@@ -9,7 +25,7 @@ def name_key(value):
 
 
 def populate(root, inputs, looks, source, item_packet):
-    rows = [row.attrib for row in ET.fromstring(inputs['data/XML/mounts.xml'])]
+    rows = [row.attrib for row in ET.fromstring(inputs[MOUNTS_XML])]
     by_name = {name_key(row['name']): row for row in rows}
     by_id = {int(row['id']): row for row in rows}
     # Source action config: mounts.lua:70 explicitly maps wind-up loco to mount194.
@@ -26,20 +42,24 @@ def populate(root, inputs, looks, source, item_packet):
         previous = stable_keys.setdefault(int(row['id']), rule['mount_key'])
         if previous != rule['mount_key']:
             raise ValueError('conflicting retained mount identities')
-    mounts, mappings = [], []
-    admitted = {}
-    for row in rows:
+    def definition(row, key, citation):
         look = int(row['clientid'])
         if look not in looks:
             raise ValueError('mount appearance not admitted: ' + row['name'])
-        key = stable_keys.get(int(row['id'])) or identities.get(name_key(row['name']))
         if key is None:
             key = 'oteryn:content.mount.' + re.sub(r'[^a-z0-9]+', '_', row['name'].lower()).strip('_')
-        admitted[int(row['id'])] = key
-        mounts.append({'key': key, 'revision': 'crystal-9f5a72c-r1',
-                       'look': {'id': look, 'source_record_sha256': looks[look]},
-                       'speed_bonus': int(row['speed']), 'premium': row['premium'] == 'yes',
-                       'source': source})
+        return {'key': key, 'revision': 'crystal-' + citation['revision'][:7] + '-r1',
+                'look': {'id': look, 'source_record_sha256': looks[look]},
+                'speed_bonus': int(row['speed']), 'premium': row['premium'] == 'yes',
+                'source': citation}
+
+    mounts, mappings = [], []
+    admitted = {}
+    for row in rows:
+        key = stable_keys.get(int(row['id'])) or identities.get(name_key(row['name']))
+        mount = definition(row, key, source)
+        admitted[int(row['id'])] = mount['key']
+        mounts.append(mount)
     taming_mappings = {}
     for rule in rules:
         mapping = {'grant_key': rule['grant_key'],
@@ -57,4 +77,11 @@ def populate(root, inputs, looks, source, item_packet):
         mappings.append({'grant_key': grant['key'],
                          'target': {'kind': 'Mount', 'mount_key': admitted[grant['mount_id']]},
                          'compatible_provenance': [item_packet['provenance']]})
+    # The current ordinals overlap retained acquisition inputs (Reliable Ram was 250).
+    raw = inputs[CATALOGUE_INPUT]
+    catalogue_source = {'reference': 'crystal:' + MOUNTS_XML, 'revision': CATALOGUE_REVISION,
+                        'sha256': hashlib.sha256(raw).hexdigest()}
+    catalogue_rows = {row.get('name'): row.attrib for row in ET.fromstring(raw)}
+    for name in ('Jaracal', 'Radiant Nimbus'):
+        mounts.append(definition(catalogue_rows[name], identities.get(name_key(name)), catalogue_source))
     return sorted(mounts, key=lambda r: r['key']), mappings
