@@ -59,16 +59,12 @@ fn rune_display_alias<'a>(
     if spell["carrier"].as_str()? != "rune" {
         return None;
     }
-    let item = spell.get("rune")?.get("item")?;
+    let item = item_id(&spell["rune"]["item"])?;
     let mut label = None;
     for row in bundles {
         let creator = &row["bundle"]["spell"];
         if creator["carrier"].as_str() != Some("instant")
-            || creator
-                .get("execution")
-                .and_then(|execution| execution.get("conjure"))
-                .and_then(|conjure| conjure.get("result"))
-                != Some(item)
+            || item_id(&creator["execution"]["conjure"]["result"]) != Some(item)
         {
             continue;
         }
@@ -80,4 +76,38 @@ fn rune_display_alias<'a>(
         }
     }
     label
+}
+
+fn item_id(reference: &serde_json::Value) -> Option<u32> {
+    if reference["family"].as_str()? != "Item" {
+        return None;
+    }
+    let key = reference["key"].as_str()?;
+    key.strip_prefix("candidate:item/")
+        .or_else(|| key.strip_prefix("oteryn:item.tibia.i"))?
+        .parse()
+        .ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::rune_display_alias;
+    use serde_json::json;
+
+    #[test]
+    fn rune_alias_matches_numeric_id_across_reference_formats() {
+        let rune = json!({"carrier":"rune", "rune":{"item":{
+            "family":"Item", "key":"candidate:item/3153", "revision":"candidate"
+        }}});
+        let bundles = [json!({"bundle":{"spell":{
+            "carrier":"instant", "name":"Cure Poison Rune",
+            "execution":{"conjure":{"result":{
+                "family":"Item", "key":"oteryn:item.tibia.i3153", "revision":"native"
+            }}}
+        }}})];
+        assert_eq!(
+            rune_display_alias(&rune, &bundles),
+            Some("Cure Poison Rune")
+        );
+    }
 }

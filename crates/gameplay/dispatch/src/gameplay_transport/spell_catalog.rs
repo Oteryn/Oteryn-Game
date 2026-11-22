@@ -25,7 +25,9 @@ fn display_name<'a>(book: &'a SpellBook, spell: &'a crate::spell::SpellDefinitio
             _ => {}
         }
     }
-    label.unwrap_or(&spell.name)
+    label
+        .filter(|name| name.len() <= wire::MAX_TEXT_BYTES)
+        .unwrap_or(&spell.name)
 }
 
 pub(super) fn catalog(
@@ -300,6 +302,24 @@ mod display_name_tests {
                 legacy
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn oversized_creator_label_keeps_visible_rune_catalog_encodable() -> Result<(), String> {
+        use crate::spell::Vocation;
+        let label = "x".repeat(wire::MAX_TEXT_BYTES + 1);
+        let (mut rune, mut creator) = rune_and_creator(3153, "antidote rune", &label)?;
+        rune.vocations = [Vocation::Knight].into();
+        creator.vocations = [Vocation::Druid].into();
+        let book = SpellBook::new(vec![rune, creator]).map_err(|e| e.to_string())?;
+        let mut facts = crate::gameplay_transport::actor_spell::tests::FACTS;
+        facts.vocation = Vocation::Knight;
+        let state = PlayerSpellState::new(facts, 0, 0).ok_or("state")?;
+        let entries = catalog(&book, &state, 0).ok_or("catalog")?;
+        assert_eq!(entries.len(), 1);
+        wire::encode_catalog(&entries).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(entries[0].name, "antidote rune");
         Ok(())
     }
 
