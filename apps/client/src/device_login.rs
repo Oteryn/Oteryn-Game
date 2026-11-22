@@ -94,10 +94,15 @@ impl DeviceLogin {
             return Ok(None);
         };
         let pending = self.revocation_pending()?;
-        if !pending && self.journal.replay(client).await.is_err() {
+        let requested = self.forget_requested.load(Ordering::Acquire);
+        let deferred = if requested {
+            &[][..]
+        } else {
+            state.pending.as_slice()
+        };
+        if !pending && self.journal.replay(client, deferred).await.is_err() {
             return Ok(None);
         }
-        let requested = self.forget_requested.load(Ordering::Acquire);
         if requested && !pending && self.journal.has_folder() {
             state.session = None;
             state.key = None;
@@ -252,7 +257,7 @@ impl DeviceLogin {
             .map_err(|_| storage_error())?;
         let lock = self.lock_credential().await?;
         if self.folder.is_some() && !self.revocation_pending()? {
-            self.journal.replay(client).await?;
+            self.journal.replay(client, &[]).await?;
             let mut state = state;
             state.session = None;
             state.remembered = false;
@@ -279,7 +284,7 @@ impl DeviceLogin {
         client: &NativeLoginClient,
     ) -> Result<(), NativeLoginError> {
         if self.journal.has_folder() && !self.revocation_pending()? {
-            self.journal.replay(client).await?;
+            self.journal.replay(client, &[]).await?;
             attempt.state.session = None;
             attempt.state.key = None;
             attempt.state.remembered = false;

@@ -115,7 +115,11 @@ impl Journal {
         Ok(true)
     }
 
-    pub(super) async fn replay(&self, client: &NativeLoginClient) -> Result<(), NativeLoginError> {
+    pub(super) async fn replay(
+        &self,
+        client: &NativeLoginClient,
+        deferred: &[DeviceCredential],
+    ) -> Result<(), NativeLoginError> {
         let pending = self
             .process
             .lock()
@@ -146,6 +150,14 @@ impl Journal {
             let Some(reference) = name.to_str().and_then(|name| name.strip_prefix(PREFIX)) else {
                 continue;
             };
+            // The live attempt retries these under its recovery deadline. After a
+            // restart the in-memory queue is empty and every marker is replayed.
+            if deferred
+                .iter()
+                .any(|credential| credential_reference(credential.expose()) == reference)
+            {
+                continue;
+            }
             let marker = entry.path();
             self.revoke_reference(client, &marker, reference).await?;
         }

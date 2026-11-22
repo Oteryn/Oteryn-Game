@@ -177,7 +177,7 @@ impl DeviceAttempt {
             }
             self.clear_vault()?;
             self.state.pending.clear();
-            self.journal.replay(client).await
+            self.journal.replay(client, &[]).await
         } else {
             self.revoke_pending(client).await?;
             self.clear_vault()
