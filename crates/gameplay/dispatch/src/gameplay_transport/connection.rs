@@ -202,8 +202,7 @@ use oteryn_protocol_oteryn::world_object::{
     DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1, MAX_GATE_MESSAGE_ID, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
     STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, UseIntent, UseTarget,
     WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
-    encode_use_result_with_gate, encode_world_object_overlay_delta,
-    encode_world_object_overlay_snapshot,
+    encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef as WireEntityRef;
 use oteryn_protocol_oteryn::world_weather::{
@@ -613,6 +612,7 @@ pub struct UseOutcome {
     /// The gate message id of a `SEALED` outcome (1 to 127): carried to the result under
     /// capability 11, required by the codec for `SEALED` and absent for every other disposition.
     pub gate_message_id: Option<u8>,
+    pub potion_utterance: Option<oteryn_protocol_oteryn::world_object::PotionUtterance>,
     /// PARITY-REFUSAL-DETAIL-1: the refusal detail the disposition alone does not name (the
     /// floor of a target out of reach). `None` sends the disposition's own detail under
     /// capability 66; nothing is sent without it.
@@ -626,6 +626,7 @@ impl UseOutcome {
             committed: None,
             earned: EarnedNotice::NoneEarned,
             gate_message_id: None,
+            potion_utterance: None,
             refusal_detail: None,
         }
     }

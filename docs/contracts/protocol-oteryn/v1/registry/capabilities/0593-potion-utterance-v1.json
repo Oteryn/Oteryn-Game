@@ -1,0 +1,11 @@
+{
+  "id": 593,
+  "name": "POTION_UTTERANCE_V1",
+  "owner_decision": "Server protocol gaps owner allocation 2026-11-22",
+  "owner": "Item use",
+  "requires": [15],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Bundle World with ITEM_USE_V1. Negotiates optional field 3 on committed potion results of command 2."
+}

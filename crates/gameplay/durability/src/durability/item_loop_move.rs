@@ -93,7 +93,7 @@ const KIND_INBOX: i16 = 6;
 const KIND_CUSTODY_NESTED: i16 = 7;
 #[path = "item_quick_loot.rs"]
 mod quick_loot;
-pub use quick_loot::is_loot_coin;
+pub use quick_loot::{QuickLootCommand, is_loot_coin};
 pub(super) use quick_loot::pouch_weight;
 #[path = "depot_move.rs"]
 mod depot_move;
@@ -333,7 +333,7 @@ fn definition_of(row: &sqlx::postgres::PgRow) -> LoopResult<TypedDefinitionRef> 
 }
 
 /// The per-CommandRef serialization point of the loop writer and its replay read.
-async fn lock_loop_command(
+pub(super) async fn lock_loop_command(
     tx: &mut Transaction<'_, Postgres>,
     command: CommandRef,
 ) -> std::result::Result<(), sqlx::Error> {

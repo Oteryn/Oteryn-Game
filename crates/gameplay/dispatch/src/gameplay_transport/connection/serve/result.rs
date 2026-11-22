@@ -109,9 +109,18 @@ pub(super) fn encode(
                 },
                 detailed(
                     session,
-                    encode_use_result_with_gate(disposition, gate_message_id).unwrap_or_else(
-                        |_| encode_use_result(UseDisposition::Rejected).unwrap_or_default(),
-                    ),
+                    oteryn_protocol_oteryn::world_object::encode_use_result_with_utterance(
+                        disposition,
+                        gate_message_id,
+                        outcome.potion_utterance.filter(|_| {
+                            session.selected_capabilities.contains(
+                            oteryn_protocol_oteryn::world_object::CAPABILITY_POTION_UTTERANCE_V1,
+                        )
+                        }),
+                    )
+                    .unwrap_or_else(|_| {
+                        encode_use_result(UseDisposition::Rejected).unwrap_or_default()
+                    }),
                     outcome
                         .refusal_detail
                         .or(RefusalDetail::of_use(outcome.disposition)),

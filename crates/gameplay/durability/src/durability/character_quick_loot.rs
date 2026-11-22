@@ -50,6 +50,34 @@ pub(super) async fn store(
     Ok(())
 }
 
+/// Apply a list edit while the caller holds the current Character item fence.
+pub(super) async fn edit_filter_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: crate::domain::CharacterId,
+    settings: DurableQuickLootSettings,
+    key: &str,
+    add: bool,
+) -> Result<bool, DurabilityError> {
+    let accepted = settings.accept_only;
+    let list = if accepted { &settings.accepted_items } else { &settings.skipped_items };
+    if add && list.len() >= oteryn_gameplay_items::quick_loot::MAX_FILTER_ITEMS && !list.contains(key) {
+        return Ok(false);
+    }
+    let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    store(tx, character, revision.parse().map_err(|_| DurabilityError::InvalidStoredState)?, settings).await?;
+    if add {
+        sqlx::query("INSERT INTO game_character_quick_loot_filters(character_id,accepted,item_production_key)
+            VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
+            .bind(character.as_bytes().as_slice()).bind(accepted).bind(key).execute(&mut **tx).await?;
+    } else {
+        sqlx::query("DELETE FROM game_character_quick_loot_filters WHERE character_id=encode($1,'hex')::uuid
+            AND accepted=$2 AND item_production_key=$3")
+            .bind(character.as_bytes().as_slice()).bind(accepted).bind(key).execute(&mut **tx).await?;
+    }
+    Ok(true)
+}
+
 fn category_id(value: LootCategory) -> i16 {
     match value {
         LootCategory::Gold => 0,

@@ -201,6 +201,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
+                potion_utterance: None,
                 refusal_detail: None,
             };
         }
@@ -300,6 +301,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     committed: None,
                     earned: connection::EarnedNotice::NoneEarned,
                     gate_message_id: None,
+                    potion_utterance: None,
                     refusal_detail:
                         oteryn_protocol_oteryn::refusal_detail::RefusalDetail::of_floors(
                             -i32::from(position.floor),
@@ -353,6 +355,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             committed: None,
             earned: earned_notice(self.achievements, notice, &mut operator_event),
             gate_message_id: None,
+            potion_utterance: None,
             refusal_detail: None,
         }
     }
@@ -459,6 +462,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
+                potion_utterance: None,
                 refusal_detail: None,
             };
         }
@@ -470,6 +474,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
+                potion_utterance: None,
                 refusal_detail: None,
             };
         }
@@ -503,6 +508,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ),
                     earned: connection::EarnedNotice::NoneEarned,
                     gate_message_id: None,
+                    potion_utterance: None,
                     refusal_detail: None,
                 }
             }
@@ -511,6 +517,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
+                potion_utterance: None,
                 refusal_detail: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::Occupied) => UseOutcome {
@@ -518,6 +525,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
+                potion_utterance: None,
                 refusal_detail: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::StaleState) => UseOutcome {
@@ -525,6 +533,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
+                potion_utterance: None,
                 refusal_detail: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::Rejected) | Err(_) => {

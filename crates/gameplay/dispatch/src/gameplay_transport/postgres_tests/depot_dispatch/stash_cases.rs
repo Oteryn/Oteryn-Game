@@ -653,3 +653,281 @@ async fn runtime_role(root: &crate::durability::DurabilityRoot) -> TestResult {
     ));
     Ok(())
 }
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum ActionCase {
+    Row,
+    Quantity,
+    Matching,
+    Contents,
+}
+
+pub(super) async fn nest_contents(pool: &sqlx::PgPool, stacks: &[[u8; 16]]) -> TestResult {
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (item, ordinal) in [(stacks[0], 1_i64), (stacks[2], 2)] {
+        let affected = sqlx::query("WITH source AS (
+            DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid
+            RETURNING item_instance_id,world_id,placed_transaction_id
+          ) INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id)
+            SELECT item_instance_id,world_id,encode($2,'hex')::uuid,$3,placed_transaction_id FROM source")
+            .bind(item.as_slice()).bind(stacks[1].as_slice()).bind(ordinal).execute(&mut *tx).await?;
+        assert_eq!(affected.rows_affected(), 1);
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+pub(super) async fn actions(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+    handle: ItemHandle,
+    stacks: &[[u8; 16]],
+    pool: &sqlx::PgPool,
+    case: ActionCase,
+) -> TestResult {
+    runtime_role(owner.root).await?;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        owner.offered_capabilities(),
+        &[4, 6, 37, 62, 63, 98, CAPABILITY_STASH_ACTIONS_V1],
+    )
+    .ok_or("stash action selection")?;
+    assert!(
+        admitted
+            .continuity
+            .selected_capabilities
+            .command_selected(COMMAND_TYPE_STASH_ROW_ACTION)
+    );
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let server_run =
+        async move { serve_admitted(&mut server, admitted, owner, SCENARIO_LIVENESS).await };
+    let client_run = async move {
+        let mut deltas = 0;
+        let mut command_id = 1;
+        if case == ActionCase::Row {
+            use oteryn_protocol_oteryn::quick_loot as loot;
+            let choose_list = loot::encode_quick_loot_request(&loot::QuickLootRequest {
+                action: loot::QuickLootAction::FilterSelect,
+                corpse: None,
+                category: None,
+                recipient: None,
+                recipient_id: None,
+                fallback_to_main: false,
+                filter_mode: Some(loot::QuickLootFilterMode::Accept),
+                filter_definition_ref: None,
+            })
+            .map_err(debug)?;
+            send_bytes(
+                &mut client,
+                command_id,
+                loot::COMMAND_TYPE_QUICK_LOOT,
+                &choose_list,
+            )
+            .await?;
+            let reply = raw_result(&mut client, command_id, CommandStatus::Accepted).await?;
+            assert!(
+                loot::decode_quick_loot_result(&reply)
+                    .map_err(debug)?
+                    .items
+                    .is_empty()
+            );
+            command_id += 1;
+        }
+        let opened = conversion(&mut client, command_id, StashAction::Browse, &mut deltas).await?;
+        assert_eq!(opened.outcome, StashOutcome::Opened);
+        assert!(opened.rows.is_empty());
+        command_id += 1;
+        let action = match case {
+            ActionCase::Row => StashAction::Stow(handle),
+            ActionCase::Quantity => StashAction::StowQuantity { handle, amount: 37 },
+            ActionCase::Matching => StashAction::StowMatching(handle),
+            ActionCase::Contents => StashAction::StowContents(handle),
+        };
+        let stowed = conversion(&mut client, command_id, action, &mut deltas).await?;
+        assert_eq!(stowed.outcome, StashOutcome::Committed);
+        let transaction = stowed.transaction.ok_or("conversion receipt")?;
+        let expected = match case {
+            ActionCase::Row => 100,
+            ActionCase::Quantity => 37,
+            ActionCase::Matching => 300,
+            ActionCase::Contents => 200,
+        };
+        assert_eq!(stowed.stowed_quantity, expected);
+        assert_eq!(
+            stowed.rows.iter().map(|row| row.quantity).sum::<u32>(),
+            expected
+        );
+        let replay = conversion_result(
+            &mut client,
+            command_id,
+            action,
+            CommandStatus::DuplicateReplay,
+        )
+        .await?;
+        assert_eq!(replay.transaction, Some(transaction));
+        assert_eq!(replay.stowed_quantity, expected);
+        let quantities = match case {
+            ActionCase::Row => vec![0, 100, 100],
+            ActionCase::Quantity => vec![63, 100, 100],
+            ActionCase::Matching => vec![0, 0, 0],
+            ActionCase::Contents => vec![0, 1, 0, 100],
+        };
+        for (item, quantity) in stacks.iter().zip(quantities) {
+            let actual: (i64,i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(item.as_slice()).fetch_one(pool).await?;
+            assert_eq!(actual, (quantity, if quantity == 0 { 2 } else { 1 }));
+        }
+        if case == ActionCase::Quantity {
+            command_id += 1;
+            let refused = conversion(
+                &mut client,
+                command_id,
+                StashAction::StowQuantity { handle, amount: 64 },
+                &mut deltas,
+            )
+            .await?;
+            assert_eq!(refused.outcome, StashOutcome::Insufficient);
+            assert_eq!(refused.rows[0].quantity, 37);
+        }
+        if case == ActionCase::Row {
+            let row = &stowed.rows[0];
+            let expected_ref = owner
+                .active_generation
+                .ok_or("generation")?
+                .native_gameplay()
+                .ok_or("native")?
+                .item_index()
+                .ok_or("item index")?
+                .definition_ref("Item", &row.definition_key, &row.definition_revision)
+                .ok_or("item reference")?;
+            let mut count = 0;
+            for action in [
+                StashRowAction::Inspect,
+                StashRowAction::Market,
+                StashRowAction::LootAdd,
+                StashRowAction::LootRemove,
+            ] {
+                command_id += 1;
+                let payload = encode_stash_row_intent(StashRowIntent {
+                    row: row.handle,
+                    action,
+                })
+                .map_err(debug)?;
+                send_bytes(
+                    &mut client,
+                    command_id,
+                    COMMAND_TYPE_STASH_ROW_ACTION,
+                    &payload,
+                )
+                .await?;
+                let reply = raw_result(&mut client, command_id, CommandStatus::Accepted).await?;
+                assert_eq!(
+                    decode_stash_row_result(&reply).map_err(debug)?,
+                    expected_ref
+                );
+                if action.changes_loot_list() {
+                    count = i64::from(action == StashRowAction::LootAdd);
+                }
+                let actual: (i64, i64) = sqlx::query_as(
+                    "SELECT count(*) FILTER (WHERE accepted),
+                    count(*) FILTER (WHERE NOT accepted) FROM game_character_quick_loot_filters
+                    WHERE item_production_key=$1",
+                )
+                .bind(&row.definition_key)
+                .fetch_one(pool)
+                .await?;
+                assert_eq!(actual, (count, 0));
+            }
+            command_id += 1;
+            let payload = encode_stash_row_intent(StashRowIntent {
+                row: id(200),
+                action: StashRowAction::LootAdd,
+            })
+            .map_err(debug)?;
+            send_bytes(
+                &mut client,
+                command_id,
+                COMMAND_TYPE_STASH_ROW_ACTION,
+                &payload,
+            )
+            .await?;
+            assert!(
+                raw_result(&mut client, command_id, CommandStatus::Rejected)
+                    .await?
+                    .is_empty()
+            );
+        }
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (end, result) = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        super::super::fixture::join_two(server_run, client_run),
+    )
+    .await?;
+    result?;
+    assert!(matches!(
+        end,
+        crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(_)
+    ));
+    Ok(())
+}
+
+async fn conversion(
+    client: &mut DuplexStream,
+    command_id: u64,
+    action: StashAction,
+    deltas: &mut usize,
+) -> TestResult<StashReply> {
+    let payload = encode_stash_intent(StashIntent { page: 0, action }).map_err(debug)?;
+    send_bytes(client, command_id, COMMAND_TYPE_STASH_INTENT, &payload).await?;
+    result(client, command_id, deltas).await
+}
+
+async fn conversion_result(
+    client: &mut DuplexStream,
+    command_id: u64,
+    action: StashAction,
+    status: CommandStatus,
+) -> TestResult<StashReply> {
+    let payload = encode_stash_intent(StashIntent { page: 0, action }).map_err(debug)?;
+    send_bytes(client, command_id, COMMAND_TYPE_STASH_INTENT, &payload).await?;
+    decode_stash_reply(&raw_result(client, command_id, status).await?).map_err(debug)
+}
+
+async fn send_bytes(
+    client: &mut DuplexStream,
+    command_id: u64,
+    command_type: u32,
+    payload: &[u8],
+) -> TestResult {
+    let frame = oteryn_protocol_oteryn::encode_client_command(
+        1,
+        &oteryn_protocol_oteryn::ClientCommandValue {
+            command_id,
+            command_type,
+            payload,
+        },
+    )
+    .map_err(debug)?;
+    crate::gameplay_transport::tcp_tls::write_frame(client, &frame).await?;
+    Ok(())
+}
+
+async fn raw_result(
+    client: &mut DuplexStream,
+    command_id: u64,
+    status: CommandStatus,
+) -> TestResult<Vec<u8>> {
+    loop {
+        let frame = crate::gameplay_transport::tcp_tls::read_frame(client).await?;
+        let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame).map_err(debug)?;
+        if envelope.message_type() == MessageType::CommandResult {
+            let result =
+                oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
+            assert_eq!((result.command_id, result.status), (command_id, status));
+            return Ok(result.payload.to_vec());
+        }
+    }
+}

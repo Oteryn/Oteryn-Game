@@ -214,6 +214,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             return None;
         };
+        let revoke = matches!(intent, Some(PartyIntent::Revoke(_)));
+        if revoke
+            && !admitted
+                .continuity
+                .selected_capabilities
+                .contains(CAPABILITY_PARTY_REVOKE_V1)
+        {
+            return None;
+        }
         let Some(actor) = admitted.runtime_actor else {
             return bytes(PartyDisposition::Rejected);
         };
@@ -247,33 +256,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let states = self.states.spell_states.lock().await;
         let attack = self.states.attack.lock().await;
         let now = self.owner_now();
-        let invite_target = if let Some(PartyIntent::Invite(target)) = intent {
-            let visible = runtime.visible_entities();
-            let Some(target_actor) = visible
-                .players
-                .iter()
-                .find(|p| {
-                    p.actor.placement_identity() == target.identity
-                        && p.generation == target.generation
-                })
-                .map(|p| p.actor)
-            else {
-                return bytes(PartyDisposition::NotVisible);
+        let visible_target =
+            if let Some(PartyIntent::Invite(target) | PartyIntent::Revoke(target)) = intent {
+                let visible = runtime.visible_entities();
+                let Some(target_actor) = visible
+                    .players
+                    .iter()
+                    .find(|p| {
+                        p.actor.placement_identity() == target.identity
+                            && p.generation == target.generation
+                    })
+                    .map(|p| p.actor)
+                else {
+                    return bytes(PartyDisposition::NotVisible);
+                };
+                let Ok(census) = runtime.positioned_actor_census() else {
+                    return unavailable("invite_census");
+                };
+                let Some(target_session) = census
+                    .into_iter()
+                    .find(|(a, _, _)| *a == target_actor)
+                    .and_then(|(_, _, s)| s)
+                else {
+                    return bytes(PartyDisposition::NotVisible);
+                };
+                Some((target_actor, target_session))
+            } else {
+                None
             };
-            let Ok(census) = runtime.positioned_actor_census() else {
-                return unavailable("invite_census");
-            };
-            let Some(target_session) = census
-                .into_iter()
-                .find(|(a, _, _)| *a == target_actor)
-                .and_then(|(_, _, s)| s)
-            else {
-                return bytes(PartyDisposition::NotVisible);
-            };
-            Some((target_actor, target_session))
-        } else {
-            None
-        };
         let action = match intent {
             Some(PartyIntent::Accept(h)) => Some(PartyAction::Accept {
                 party: match view.resolve(2, h) {
@@ -294,7 +304,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             }),
             Some(PartyIntent::Leave) => Some(PartyAction::Leave),
-            Some(PartyIntent::Invite(_)) | None => None,
+            Some(PartyIntent::Invite(_) | PartyIntent::Revoke(_)) | None => None,
         };
         let mut binding_bytes = b"oteryn.party.wire.v1".to_vec();
         binding_bytes.extend_from_slice(&command_type.to_be_bytes());
@@ -319,10 +329,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 **step = "item_authority";
                 let authority = item_tx::assert_spell_item_authority_in_transaction(&mut tx, permit, owner.root, owner.character, owner.holder, &fence, CommandRef::new(admitted.game_session_id, command), binding).await.map_err(|_| DurabilityError::Unavailable)?;
                 **step = "invite_target_proof";
-                let visible = if let Some((target, session)) = invite_target {
+                let visible = if let Some((target, session)) = visible_target {
                     crate::durability::admission_journal::party_target_binding::prove_visible_party_target_in_transaction(&mut tx, owner.root, &authority, runtime, actor, target, session).await?
                 } else { None };
-                let action = visible.as_ref().map(|v| PartyAction::Invite { target: v.character() }).or(action);
+                let action = visible.as_ref().map(|v| {
+                    let target = v.character();
+                    if revoke { PartyAction::Revoke { target } } else { PartyAction::Invite { target } }
+                }).or(action);
                 **step = "party_apply";
                 let receipt = if let Some(action) = action {
                     let receipt = if matches!(action, PartyAction::Leave) {
@@ -333,7 +346,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(receipt)
                 } else { None };
                 // Never turn a failed visibility proof into a successful query result.
-                let refused = invite_target.is_some() && visible.is_none();
+                let refused = visible_target.is_some() && visible.is_none();
                 **step = "party_view_read";
                 let view = world_party::ingress::read_in_transaction(&mut tx, &authority).await.map_err(|_| DurabilityError::Unavailable)?;
                 **step = "transaction_commit";

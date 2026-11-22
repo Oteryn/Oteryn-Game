@@ -784,6 +784,7 @@ mod connection {
                 committed: None,
                 earned: EarnedNotice::NoneEarned,
                 gate_message_id: None,
+                potion_utterance: None,
                 refusal_detail: None,
             }
         }

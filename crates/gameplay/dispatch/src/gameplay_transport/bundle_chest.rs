@@ -20,6 +20,7 @@ pub(super) fn outcome(disposition: UseDisposition) -> UseOutcome {
         committed: None,
         earned: EarnedNotice::NoneEarned,
         gate_message_id: None,
+        potion_utterance: None,
         refusal_detail: None,
     }
 }

@@ -12,6 +12,7 @@ mod list;
 pub use list::PartyListEntity;
 /// Negotiates member effect durations on the existing party query.
 pub const CAPABILITY_PARTY_MEMBER_EFFECTS_V1: u32 = 383;
+pub const CAPABILITY_PARTY_REVOKE_V1: u32 = 592;
 pub const COMMAND_TYPE_PARTY_INTENT: u32 = 45;
 pub const COMMAND_TYPE_PARTY_QUERY: u32 = 46;
 pub const MAX_PARTY_INTENT_BYTES: usize = 48;
@@ -28,6 +29,7 @@ pub enum PartyIntent {
     Leave,
     Kick(u64),
     PassLeadership(u64),
+    Revoke(EntityRef),
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PartyDisposition {
@@ -133,13 +135,20 @@ fn bounded(input: &[u8], limit: usize) -> Result<()> {
 pub fn encode_party_intent(intent: PartyIntent) -> Result<Vec<u8>> {
     let mut out = Vec::new();
     let (kind, handle) = match intent {
-        PartyIntent::Invite(entity) => {
+        PartyIntent::Invite(entity) | PartyIntent::Revoke(entity) => {
             if entity.generation == 0 {
                 return bad();
             }
             push_message_field(&mut out, 2, &entity.identity);
             push_varint_field(&mut out, 3, entity.generation);
-            (1, None)
+            (
+                if matches!(intent, PartyIntent::Revoke(_)) {
+                    6
+                } else {
+                    1
+                },
+                None,
+            )
         }
         PartyIntent::Accept(h) => (2, Some(h)),
         PartyIntent::Leave => (3, None),
@@ -176,6 +185,12 @@ pub fn decode_party_intent(input: &[u8]) -> Result<PartyIntent> {
     match (kind, identity, generation, handle) {
         (Some(1), Some(identity), Some(generation), None) if generation != 0 => {
             Ok(PartyIntent::Invite(EntityRef {
+                identity,
+                generation,
+            }))
+        }
+        (Some(6), Some(identity), Some(generation), None) if generation != 0 => {
+            Ok(PartyIntent::Revoke(EntityRef {
                 identity,
                 generation,
             }))

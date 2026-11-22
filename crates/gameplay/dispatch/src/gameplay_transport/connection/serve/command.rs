@@ -234,7 +234,11 @@ where
         } else {
             None
         };
-    if command.command_type != oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_INTENT {
+    if !matches!(
+        command.command_type,
+        oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_INTENT
+            | oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_ROW_ACTION
+    ) {
         session.stash_rows = None;
     }
     let walk_target = autowalk::target(session, command);

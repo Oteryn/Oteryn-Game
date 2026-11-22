@@ -3,6 +3,7 @@ use super::{
     ComposedFreshAdmission,
     connection::{AdmittedSession, UseCommand},
 };
+use crate::durability::item_loop_move::QuickLootCommand;
 use crate::foundation::CommandStatus;
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::quick_loot::{QuickLootRequest, QuickLootResult};
@@ -63,6 +64,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             dead,
             pending,
         )?;
+        // D85 corpse identity and the durable instance have different lifetimes.
+        // Keep the incoming bytes for replay, and move only from the bound item.
+        let corpse = request.corpse.map(|identity| {
+            runtime.bound_corpse(identity).map_or(identity, |corpse| corpse.item.item_instance_id)
+        });
         let position = runtime.read_actor_position(actor).ok()?.position();
         let floor = position.floor;
         let cell = [
@@ -85,14 +91,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.character,
                 self.holder,
                 fence,
-                CommandRef::new(
-                    command.game_session_id,
-                    CommandId::new(command.command_id).ok()?,
-                ),
                 &super::item_ref_admission::NativeItemWeights(content).with_wheel(self.premium_coordinator),
-                cell,
-                premium,
-                request,
+                QuickLootCommand {
+                    command: CommandRef::new(
+                        command.game_session_id,
+                        CommandId::new(command.command_id).ok()?,
+                    ),
+                    cell,
+                    premium,
+                    request,
+                    selected_corpse: corpse,
+                },
             )
             .await
             .ok()?;

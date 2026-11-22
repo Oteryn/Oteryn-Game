@@ -844,6 +844,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         stash::execute(self, actor, command, intent, filter, item, row_open).await
     }
 
+    async fn stash_row_action(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::stash::StashRowIntent,
+        row_open: bool,
+    ) -> Result<Option<std::num::NonZeroU32>, crate::durability::DurabilityError> {
+        stash::row_action(self, actor, command, intent, row_open).await
+    }
+
     async fn depot(
         &self,
         actor: ExactActorRef,
