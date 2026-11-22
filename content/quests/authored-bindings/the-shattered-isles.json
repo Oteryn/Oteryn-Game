@@ -1,0 +1,1502 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "recipe_sha256": "3c8d5376cbae7c41b72516ac44f812fed4885878ee99913e9212b6646550e51d",
+      "admission": {
+        "minimum_level": 20,
+        "premium": true
+      },
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/default_start",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_governor_daughter",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 4
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_meriana",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/shipwrecked",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_goroma",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 5
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/poem_purchased",
+          "initial": -1,
+          "minimum": -1,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_laguna_island",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission2",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 22
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map1",
+          "initial": -1,
+          "minimum": -1,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map2",
+          "initial": -1,
+          "minimum": -1,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map3",
+          "initial": -1,
+          "minimum": -1,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 5
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/s1",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.eleonore",
+              "keywords": [
+                "ring",
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/default_start",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_governor_daughter",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "A parrot took my ring. Look for its perch and bring a rake."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:61-70"
+              ]
+            }
+          }
+        },
+        {
+          "key": "ring",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-shattered-isles-ring",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32421,
+                  "y": 32770,
+                  "floor": -1
+                },
+                "appearance": 6094,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_governor_daughter",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "requires_world_admission": true,
+              "sources": [
+                "oteryn-authored:the-shattered-isles/ring",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/rake.lua:9-15"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i3452",
+                "count": 1,
+                "reusable": true,
+                "selected_instance": true
+              },
+              "item_reward": {
+                "item": "oteryn:item.tibia.i6093",
+                "count": 1
+              },
+              "success_message": "You find the ring."
+            }
+          }
+        },
+        {
+          "key": "ring-return",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/ring-return",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.eleonore",
+              "keywords": [
+                "ring"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_governor_daughter",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i6093",
+                  "count": 1
+                }
+              ],
+              "give": {
+                "item": "oteryn:item.tibia.i3031",
+                "count": 100,
+                "additional": [
+                  {
+                    "item": "oteryn:item.tibia.i3031",
+                    "count": 50
+                  }
+                ]
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Thank you for my ring. I have an errand for you."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:68-73",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:100-114"
+              ]
+            }
+          }
+        },
+        {
+          "key": "errand",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/errand",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.eleonore",
+              "keywords": [
+                "errand"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i3031",
+                "count": 100,
+                "additional": [
+                  {
+                    "item": "oteryn:item.tibia.i3031",
+                    "count": 100
+                  }
+                ]
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Deliver this payment to Charlotta and tell me when it is done."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:72-85",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:115-122"
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_governor_daughter",
+                  "minimum": 3,
+                  "maximum": 3
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "errand-payment",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/errand-payment",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.charlotta",
+              "keywords": [
+                "errand",
+                "gold"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The payment is settled. You may report back to Eleonore."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/charlotta.lua:61-75"
+              ],
+              "fee": {
+                "gold": 200,
+                "include_bank": true
+              }
+            }
+          }
+        },
+        {
+          "key": "errand-return",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/errand-return",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.eleonore",
+              "keywords": [
+                "errand"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i3031",
+                "count": 5
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Thank you. You have my trust. Ask me about the peg leg."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:77-85"
+              ]
+            }
+          }
+        },
+        {
+          "key": "meriana-access",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/meriana-access",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.eleonore",
+              "keywords": [
+                "peg leg"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_meriana",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Say peg leg to Captain Waverider. He can take you to Meriana."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:84-88",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:123-133",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_waverider.lua:58-65"
+              ]
+            }
+          }
+        },
+        {
+          "key": "wood-request",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/wood-request",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.jack_fate_goroma",
+              "keywords": [
+                "sail",
+                "passage",
+                "wreck",
+                "ship"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/shipwrecked",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Bring thirty pieces of wood for repairs."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:65-90"
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_meriana",
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "s2",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/s2",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.jack_fate_goroma",
+              "keywords": [
+                "sail",
+                "passage",
+                "wreck",
+                "ship"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/shipwrecked",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_goroma",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i5901",
+                  "count": 30
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The ship is ready. You have passage to Goroma."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:91-103",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate.lua:65-81"
+              ],
+              "failure_reply": [
+                "Bring thirty pieces of wood."
+              ]
+            }
+          }
+        },
+        {
+          "key": "poem-start",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/poem-start",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.raymond_striker",
+              "keywords": [
+                "mermaid"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Speak to Marina about me."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:134-141"
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_goroma",
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "marina-introduction",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/marina-introduction",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.marina",
+              "keywords": [
+                "raymond striker"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Find someone who can persuade me to let Raymond go."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:69-75"
+              ]
+            }
+          }
+        },
+        {
+          "key": "date-request",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/date-request",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.ocelus",
+              "keywords": [
+                "date"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Ask Marina whether she would meet me."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:62-90"
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+                  "minimum": 2,
+                  "maximum": 2
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "date-first",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/date-first",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.marina",
+              "keywords": [
+                "date"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "I will consider it if he sends me a poem."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:75-84"
+              ]
+            }
+          }
+        },
+        {
+          "key": "poem-request",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/poem-request",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.ocelus",
+              "keywords": [
+                "marina",
+                "mermaid"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Elvith can sell you the love poem I need."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:69-99"
+              ]
+            }
+          }
+        },
+        {
+          "key": "poem-purchase",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/poem-purchase",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.elvith",
+              "keywords": [
+                "love poem"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/poem_purchased",
+                  "minimum": -1,
+                  "maximum": -1,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i6119",
+                "count": 1
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Here is the love poem."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elvith.lua:81-94"
+              ],
+              "fee": {
+                "gold": 200,
+                "include_bank": true
+              },
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+                  "minimum": 3,
+                  "maximum": 3
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "poem-handoff",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/poem-handoff",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.ocelus",
+              "keywords": [
+                "love poem"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i6119",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Thank you for the poem. Tell Marina the date is arranged."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:88-99"
+              ],
+              "failure_reply": [
+                "Bring the love poem first."
+              ]
+            }
+          }
+        },
+        {
+          "key": "s3",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/s3",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.marina",
+              "keywords": [
+                "date"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_laguna_island",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "I will meet Ocelus. You may ride my sea turtles."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:81-87"
+              ]
+            }
+          }
+        },
+        {
+          "key": "laguna",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-shattered-isles-laguna",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32340,
+                  "y": 32539,
+                  "floor": -7
+                },
+                "appearance": 5769
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32359,
+                "y": 32901,
+                "floor": -7
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_laguna_island",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "read_only": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "Sorry, not possible.",
+              "requires_world_admission": false,
+              "sources": [
+                "oteryn-authored:the-shattered-isles/laguna",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1-26"
+              ],
+              "failure_teleport": {
+                "x": 32340,
+                "y": 32540,
+                "floor": -7
+              }
+            }
+          }
+        },
+        {
+          "key": "sabotage-start",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/sabotage-start",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.raymond_striker",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission2",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Take Sebastian’s boat to Nargor and use a fire bug on the catapult lever."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:83-96",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sebastian.lua:58-74"
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+                  "minimum": 3,
+                  "maximum": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_laguna_island",
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "s4",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-shattered-isles-s4",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 31978,
+                  "y": 32887,
+                  "floor": -6
+                },
+                "appearance": 5601,
+                "ordinal": 1
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission2",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "requires_world_admission": true,
+              "sources": [
+                "oteryn-authored:the-shattered-isles/s4",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4199-4203",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_fire_bug.lua:110-116"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i5467",
+                "count": 1,
+                "reusable": true,
+                "selected_instance": true
+              },
+              "success_message": "The catapult catches fire."
+            }
+          }
+        },
+        {
+          "key": "sabotage-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/sabotage-report",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.raymond_striker",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission2",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+                  "minimum": 0,
+                  "maximum": 14,
+                  "set": 15
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The catapult is out of action."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:96-100"
+              ]
+            }
+          }
+        },
+        {
+          "key": "plans-start",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/plans-start",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.raymond_striker",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Read all three plans in the Nargor tavern."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:100-109"
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission2",
+                  "minimum": 3,
+                  "maximum": 3
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "plan-1",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-shattered-isles-plan-1",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 31978,
+                  "y": 32828,
+                  "floor": -2
+                },
+                "appearance": 6118,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map1",
+                  "minimum": -1,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "requires_world_admission": true,
+              "sources": [
+                "oteryn-authored:the-shattered-isles/plan-1",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4576-4588",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18-40"
+              ],
+              "success_message": "You read pirate plan 1."
+            }
+          }
+        },
+        {
+          "key": "plan-2",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-shattered-isles-plan-2",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 31982,
+                  "y": 32844,
+                  "floor": -2
+                },
+                "appearance": 6118,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map2",
+                  "minimum": -1,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "requires_world_admission": true,
+              "sources": [
+                "oteryn-authored:the-shattered-isles/plan-2",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4576-4588",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18-40"
+              ],
+              "success_message": "You read pirate plan 2."
+            }
+          }
+        },
+        {
+          "key": "plan-3",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-shattered-isles-plan-3",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 31992,
+                  "y": 32847,
+                  "floor": -2
+                },
+                "appearance": 6118,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map3",
+                  "minimum": -1,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "requires_world_admission": true,
+              "sources": [
+                "oteryn-authored:the-shattered-isles/plan-3",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4576-4588",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18-40"
+              ],
+              "success_message": "You read pirate plan 3."
+            }
+          }
+        },
+        {
+          "key": "s5",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/s5",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.raymond_striker",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+                  "minimum": 15,
+                  "maximum": 15,
+                  "set": 16
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Find out what proof Klaus wants of my death."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:109-120"
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map1",
+                  "minimum": 1,
+                  "maximum": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map2",
+                  "minimum": 1,
+                  "maximum": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map3",
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "pillow-request",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/pillow-request",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.klaus",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Bring me Raymond’s lucky pillow as proof."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:61-66"
+              ]
+            }
+          }
+        },
+        {
+          "key": "pillow-issue",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/pillow-issue",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.raymond_striker",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i6105",
+                "count": 1
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Take my lucky pillow to Klaus."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:119-123"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s6",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/s6",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.klaus",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i6105",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You brought the pillow. I believe you."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:66-73"
+              ],
+              "failure_reply": [
+                "Bring me the lucky pillow."
+              ]
+            }
+          }
+        },
+        {
+          "key": "s7",
+          "completes": true,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shattered-isles/s7",
+              "quest": "oteryn:quest.the_shattered_isles_quest",
+              "npc": "oteryn:npc.raymond_striker",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+                  "minimum": 16,
+                  "maximum": 16,
+                  "set": 17
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You have earned passage to Meriana, the Laguna Islands, Goroma and Nargor."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:123-130"
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_meriana",
+                  "minimum": 1,
+                  "maximum": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_laguna_island",
+                  "minimum": 1,
+                  "maximum": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_goroma",
+                  "minimum": 1,
+                  "maximum": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor",
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/41/definition/oteryn_recipe/payload/recipe:sha256:3c8d5376cbae7c41b72516ac44f812fed4885878ee99913e9212b6646550e51d",
+        "https://www.tibiawiki.com.br/index.php?title=The_Shattered_Isles_Quest&oldid=431740"
+      ]
+    }
+  ]
+}

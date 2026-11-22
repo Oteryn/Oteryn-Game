@@ -16,6 +16,7 @@ pub(super) struct Prompt {
     opened: u64,
     route: TravelRoute,
     fare: u64,
+    storm_warned: bool,
 }
 
 fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalkOutcome {
@@ -136,11 +137,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(_) => return ordinary,
         };
         let prompt = if text == "yes" {
-            let Some(prompt) = previous else {
+            let Some(mut prompt) = previous else {
                 return ordinary;
             };
             if !prompt.matches_confirmation(intent.npc_actor, &context, fence, now) {
                 return refusal(intent, TravelRefusal::StaleQuote);
+            }
+            if prompt.route.service == "oteryn:service.travel.jack_fate"
+                && prompt.route.route.key == "thais"
+            {
+                // Crystal 201189f8, npc/jack_fate.lua:86–99. The warning and the
+                // second confirmation are part of the same fenced conversation.
+                if !prompt.storm_warned {
+                    prompt.storm_warned = true;
+                    let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() else {
+                        return ordinary;
+                    };
+                    prompts.insert(session, prompt);
+                    return npc_command::NpcConversations::bank_reply(
+                        intent,
+                        "A tropical storm may wreck the ship. Do you still want to sail?".into(),
+                    );
+                }
+                // Use the same command-derived occurrence domain as the receipt,
+                // with an independent salt so a retry cannot reroll the landing.
+                let storm = super::super::npc_trade_command::derived(
+                    b"oteryn:npc-travel:jack-fate-storm",
+                    session,
+                    command.command_id,
+                );
+                if storm[0] & 7 == 0 {
+                    let destination = &mut prompt.route.route.destination;
+                    (destination.x, destination.y, destination.floor) = (32161, 32558, 6);
+                }
             }
             prompt
         } else {
@@ -191,6 +220,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         opened: now,
                         route,
                         fare,
+                        storm_warned: false,
                     },
                 );
             }
