@@ -142,6 +142,7 @@ pub(super) fn encode(
                 ),
             )
         }
+        Dispatch::CarriedBatch(reply) => (CommandStatus::Accepted, reply.encode().to_vec()),
         Dispatch::ContainerSort(_) => (CommandStatus::Accepted, vec![1]),
         Dispatch::ContainerView(outcome, _) => (
             CommandStatus::Accepted,

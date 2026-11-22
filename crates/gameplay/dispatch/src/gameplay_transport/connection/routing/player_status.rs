@@ -11,7 +11,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     payload: &[u8],
     visibility: Option<&SessionVisibility>,
 ) -> Dispatch {
-    if !admitted.continuity.selected_capabilities.contains(CAPABILITY_PLAYER_STATUS_V1) {
+    if !admitted
+        .continuity
+        .selected_capabilities
+        .contains(CAPABILITY_PLAYER_STATUS_V1)
+    {
         return Dispatch::Unregistered;
     }
     let Some(target) = decode_player_status_query(payload) else {

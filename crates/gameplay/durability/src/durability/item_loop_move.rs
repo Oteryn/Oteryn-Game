@@ -80,6 +80,7 @@ pub const ITEM_LOOP_DROP_REF_PREFIX: &[u8] = b"OTERYN_ITEM_LOOP_DROP/v1:";
 
 #[path = "container_sort.rs"]
 pub mod container_sort;
+pub mod managed_container_move;
 
 const KIND_NONE: i16 = 0;
 const KIND_MAIN: i16 = 1;
@@ -1053,6 +1054,12 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     })
 }
 
+#[derive(Clone, Copy)]
+enum MoveBatch {
+    Corpse(quick_loot::MoveContext),
+    Managed(i16),
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn apply_loop_move<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
@@ -1065,7 +1072,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     request: &LoopMoveRequest,
     intent: &[u8],
     depot: Option<DepotMove>,
-    quick: Option<quick_loot::MoveContext>,
+    batch: Option<MoveBatch>,
     search: Option<i16>,
     house: Option<&house::HouseLoopContext>,
 ) -> LoopResult<LoopMoveReceipt> {
@@ -1144,7 +1151,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     }
     let depot_character = optional_uuid(row.try_get("depot_character")?)?;
     let inbox_character = optional_uuid(row.try_get("inbox_character")?)?;
-    let source = if let Some(context) = quick {
+    let source = if let Some(MoveBatch::Corpse(context)) = batch {
         quick_loot::assert_corpse_source(tx, fence, request.item, context).await?;
         SourceKind::Corpse
     } else if search.is_some() && depot_character.is_none() {
@@ -1487,7 +1494,11 @@ async fn apply_loop_move<C: ItemLoopContent>(
     .bind(intent)
     .bind(depot.map(|access| i32::from(access.town)))
     .bind(depot.map(|access| i16::from(access.box_number)))
-    .bind(quick.map_or(search.unwrap_or(0), |q| q.ordinal))
+    .bind(match batch {
+        Some(MoveBatch::Corpse(context)) => context.ordinal,
+        Some(MoveBatch::Managed(ordinal)) => ordinal,
+        None => search.unwrap_or(0),
+    })
     .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
     .execute(&mut **tx)
     .await?;
@@ -1652,7 +1663,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     // Run the deferred proofs inside the attempt, so a violation is a refusal, not a commit error.
     // A quick-loot or depot-search batch proves each exact line before the next child may top
     // it up. Its terminal parent receipt and all other deferred guards still run at batch commit.
-    sqlx::query(if quick.is_some() || search.is_some() {
+    sqlx::query(if batch.is_some() || search.is_some() {
         "SET CONSTRAINTS game_item_loop_line_proven IMMEDIATE"
     } else {
         "SET CONSTRAINTS ALL IMMEDIATE"

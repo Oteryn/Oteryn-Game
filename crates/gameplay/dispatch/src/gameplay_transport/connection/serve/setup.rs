@@ -485,6 +485,8 @@ async fn live<A: FreshAdmissionAuthority>(
         spell_catalog,
         integrity,
         stash_rows: None,
+        managed_container_move_pending: None,
+        stash_container_pending: None,
         stash_revision: 0,
         target_walk: None,
         target_move_window: crate::gameplay_transport::attack::IntentWindow::EMPTY,

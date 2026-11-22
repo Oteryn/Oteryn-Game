@@ -122,6 +122,8 @@ struct ServeState {
     selected_capabilities: SelectedCapabilities,
     item_view: Option<SessionItemView>,
     stash_rows: Option<Vec<[u8; 16]>>,
+    managed_container_move_pending: Option<routing::managed_container_move::Pending>,
+    stash_container_pending: Option<routing::stash_container::Pending>,
     stash_revision: u64,
     party_icons: Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
     /// GUILD-EMBLEM-1: the emblems last sent on this connection under capability 509.

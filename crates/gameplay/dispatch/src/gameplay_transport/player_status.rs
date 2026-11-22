@@ -10,7 +10,9 @@ macro_rules! authority_methods {
             &self,
             _admitted: AdmittedSession,
             _target: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
-        ) -> impl std::future::Future<Output = Option<oteryn_protocol_oteryn::zones_nologout::PlayerStatus>> {
+        ) -> impl std::future::Future<
+            Output = Option<oteryn_protocol_oteryn::zones_nologout::PlayerStatus>,
+        > {
             async { None }
         }
     };
@@ -38,7 +40,11 @@ pub(super) async fn observe(
     let observer = admitted.runtime_actor?;
     let mut runtime = owner.runtime.lock().await;
     runtime.owner_fence().ok()?;
-    if runtime.player_control_facts(observer, admitted.game_session_id).ok()?.control_loss.is_some()
+    if runtime
+        .player_control_facts(observer, admitted.game_session_id)
+        .ok()?
+        .control_loss
+        .is_some()
         || observer.placement_identity() == target.identity
     {
         return None;
@@ -52,12 +58,19 @@ pub(super) async fn observe(
     let away = if facts.control_loss.is_some() {
         true
     } else {
-        let idle = owner.states.gameplay_idle_presence.retained_idle(session, actor)?;
+        let idle = owner
+            .states
+            .gameplay_idle_presence
+            .retained_idle(session, actor)?;
         let last = idle.last_activity()?;
         last.elapsed().as_millis() >= u128::from(owner.states.gameplay_idle_policy.warning_after_ms)
     };
     Some(PlayerStatus {
-        presence: if away { PlayerPresence::Away } else { PlayerPresence::Online },
+        presence: if away {
+            PlayerPresence::Away
+        } else {
+            PlayerPresence::Online
+        },
         no_logout: owner.no_logout_tile(&mut runtime, actor)?,
     })
 }
