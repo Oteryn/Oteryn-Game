@@ -148,7 +148,7 @@ pub(super) async fn exercise_open_pvp(
         (1, wire::COMMAND_TYPE_HOTKEY_EQUIP, payload),
         (2, wire::COMMAND_TYPE_HOTKEY_EQUIP, Vec::new()),
     ];
-    let mut serving = std::pin::pin!(support::events(owner, *admitted, &commands));
+    let mut serving = std::pin::pin!(support::events(owner, admitted, &commands));
     let mut rejection_events = 0;
     let frames = poll_fn(|cx| {
         let mut outcome = Poll::Pending;
