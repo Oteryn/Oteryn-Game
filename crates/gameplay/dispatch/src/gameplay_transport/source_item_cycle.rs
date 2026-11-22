@@ -112,8 +112,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Rotten slots retain cyclic pre/AI/post order across resumed sweeps;
             // monster melee runs with the AI phase, between them.
             // No whole-population grant is introduced.
-            let start = self.background_start("source-cycle", 15);
-            for index in (start..15).chain(0..start) {
+            let start = self.background_start("source-cycle", 17);
+            for index in (start..17).chain(0..start) {
                 self.background_turn("source-cycle", index + 1, async {
                     match index {
                         0 => {
@@ -205,6 +205,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     .with_background_operation(self.drain_primal_pod_expiries())
                                     .await;
                             }
+                        }
+                        14 => {
+                            let _ = self.refresh_cake_regeneration().await;
+                        }
+                        15 => {
+                            self.root
+                                .with_background_operation(
+                                    self.refund_unpublished_source_boss_lever(),
+                                )
+                                .await;
                         }
                         _ => {
                             if self.ensure_source_map_initialized().await {

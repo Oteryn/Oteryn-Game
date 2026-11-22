@@ -101,6 +101,9 @@ struct ObservedWorldCallback {
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
+    source_boss_refunds: std::sync::Mutex<Vec<court_warlock::UnpublishedAdmission>>,
+    #[cfg(test)]
+    pub(super) lose_source_boss_commit_ack: std::sync::atomic::AtomicBool,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     encounters: std::sync::Mutex<Vec<encounter::EncounterVisit>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,

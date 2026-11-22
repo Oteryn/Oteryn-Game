@@ -1,6 +1,6 @@
 //! Source lever admission uses the shared Character boss cooldown owner.
 use super::super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::super::character_progression::assert_item_only_fence;
+use super::super::character_progression::{assert_item_only_fence, assert_runtime_scope_fence};
 use super::super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
@@ -14,6 +14,13 @@ use oteryn_gameplay_quests::quest::world_callbacks::court_warlock as source;
 pub enum SourceBossLever {
     CourtWarlock,
     Arbaziloth,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum SourceBossAdmission {
+    Reserve,
+    Reconcile,
+    Refund,
 }
 
 impl SourceBossLever {
@@ -49,7 +56,7 @@ impl DurabilityRoot {
         mut party: Vec<CurrentCharacterItemFence>,
         admission: [u8; 16],
         reset_epoch: u64,
-        release: bool,
+        operation: SourceBossAdmission,
     ) -> Result<bool, DurabilityError> {
         if !(1..=5).contains(&party.len()) || !cooldown_storage::reward_uuid(&admission) {
             return Ok(false);
@@ -76,16 +83,39 @@ impl DurabilityRoot {
                 lock_admission_relations(&mut tx).await?;
                 let mut keys = Vec::new();
                 for fence in &party {
-                    if assert_item_only_fence(&mut tx, fence, &node).await?.is_err() { return Ok(false); }
+                    if operation != SourceBossAdmission::Refund
+                        && assert_item_only_fence(&mut tx, fence, &node).await?.is_err()
+                    {
+                        return Ok(false);
+                    }
                     keys.push(BossRewardKey::new(fence.character_id, lever.boss()).map_err(|_| DurabilityError::InvalidStoredState)?);
                 }
+                // Compensation is scoped to the exact unpublished admission.
+                // A member may have disconnected while its commit was uncertain.
+                if operation == SourceBossAdmission::Refund
+                    && !assert_runtime_scope_fence(
+                        &mut tx, party[0].runtime_scope, party[0].scope_ownership_generation, &node,
+                    ).await?
+                {
+                    return Ok(false);
+                }
                 cooldown_storage::lock_reward_roots(&mut tx, &keys).await.map_err(|_| DurabilityError::InvalidStoredState)?;
-                if release {
+                if operation == SourceBossAdmission::Refund {
                     for key in &keys {
                         sqlx::query("DELETE FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 AND admission=encode($3,'hex')::uuid")
                             .bind(key.character.as_bytes().as_slice()).bind(lever.boss()).bind(admission.as_slice()).execute(&mut *tx).await?;
                     }
                 } else {
+                    // An exact command replay retains its originally committed time.
+                    let mut replay = 0;
+                    for key in &keys {
+                        if cooldown_storage::read_boss_cooldown_data(&mut tx, key).await.map_err(|_| DurabilityError::InvalidStoredState)?
+                            .is_some_and(|old| old.admission == admission) { replay += 1; }
+                    }
+                    if replay != 0 && replay != keys.len() { return Ok(false); }
+                    if operation == SourceBossAdmission::Reconcile {
+                        return Ok(replay == keys.len());
+                    }
                     for fence in &party {
                         if matches!(lever, SourceBossLever::CourtWarlock) {
                             let stage: Option<i64> = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND track_key=$3")
@@ -95,15 +125,8 @@ impl DurabilityRoot {
                         if sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns WHERE character_id=encode($1,'hex')::uuid)")
                             .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await? { return Ok(false); }
                     }
-                    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
-                    // An exact command replay retains its originally committed time.
-                    let mut replay = 0;
-                    for key in &keys {
-                        if cooldown_storage::read_boss_cooldown_data(&mut tx, key).await.map_err(|_| DurabilityError::InvalidStoredState)?
-                            .is_some_and(|old| old.admission == admission) { replay += 1; }
-                    }
-                    if replay != 0 && replay != keys.len() { return Ok(false); }
                     if replay == 0 {
+                        let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
                         let change = cooldown_storage::set_boss_cooldowns_data(&mut tx, &keys, &BossCooldownAdmissionData {
                             admission, now, reset_epoch, cooldown_s:lever.cooldown_seconds(), boosted:false,
                         }).await.map_err(|_| DurabilityError::InvalidStoredState)?;

@@ -1,7 +1,18 @@
 //! Source boss lever USE uses shared encounter admission and Character cooldowns.
 use super::*;
-use crate::durability::boss_encounter::SourceBossLever;
+use crate::durability::{
+    DurabilityError,
+    boss_encounter::{SourceBossAdmission, SourceBossLever},
+    item_transfer::CurrentCharacterItemFence,
+};
 use oteryn_gameplay_quests::quest::world_callbacks::court_warlock as source;
+
+#[derive(Clone)]
+pub(super) struct UnpublishedAdmission {
+    id: [u8; 16],
+    lever: SourceBossLever,
+    party: Vec<CurrentCharacterItemFence>,
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(
@@ -64,49 +75,75 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             party.push(fence.item_fence());
         }
-        // A command replay belongs to its immutable physical observation and
-        // exact party fences. A later lever revision or reconnect must still
-        // pay the existing cooldown, even if a client repeats a command number.
-        party.sort_by_key(|fence| *fence.character_id.as_bytes());
+        // Key and revision describe the wire target. Current party fences
+        // authorize the write but are never part of the command identity.
         let mut identity = match lever {
-            SourceBossLever::CourtWarlock => b"cwarlock:lever:v1".to_vec(),
-            SourceBossLever::Arbaziloth => b"arbaziloth:lever:v1".to_vec(),
+            SourceBossLever::CourtWarlock => b"cwarlock:lever:v2".to_vec(),
+            SourceBossLever::Arbaziloth => b"arbaziloth:lever:v2".to_vec(),
         };
         identity.extend_from_slice(&key.to_be_bytes());
         identity.extend_from_slice(&revision.to_be_bytes());
-        identity.extend_from_slice(&self.reset_epoch.to_be_bytes());
-        identity.extend_from_slice(&runtime.content_pin().server_artifact_digest());
-        identity.extend_from_slice(&runtime.content_pin().frame_binding_digest());
-        for fence in &party {
-            identity.extend_from_slice(fence.character_id.as_bytes());
-            identity.extend_from_slice(fence.game_session_id.as_bytes());
-            identity.extend_from_slice(&fence.connection_generation.get().to_be_bytes());
-            identity.extend_from_slice(&fence.character_lease_generation.to_be_bytes());
-            identity.extend_from_slice(&fence.scope_ownership_generation.get().to_be_bytes());
-        }
-        let admission = super::super::npc_trade_command::derived(
-            &identity,
-            session,
-            command.command_id().get(),
-        );
-        match self
-            .root
-            .source_boss_lever_admission(
-                self.character,
-                self.holder,
-                lever,
-                party.clone(),
-                admission,
-                self.reset_epoch,
-                false,
-            )
-            .await
+        let admission = UnpublishedAdmission {
+            id: super::super::npc_trade_command::derived(
+                &identity,
+                command.game_session_id(),
+                command.command_id().get(),
+            ),
+            lever,
+            party,
+        };
         {
+            let Ok(mut refunds) = self.states.quest_callbacks.source_boss_refunds.lock() else {
+                return UseDisposition::Rejected;
+            };
+            // Register compensation before writing. Even cancellation of the
+            // outer USE leaves the exact unpublished transaction recoverable.
+            if refunds.len() >= 64 || refunds.iter().any(|pending| pending.id == admission.id) {
+                return UseDisposition::Rejected;
+            }
+            refunds.push(admission.clone());
+        }
+        let reserved = self
+            .source_boss_admission(&admission, SourceBossAdmission::Reserve)
+            .await;
+        #[cfg(test)]
+        let reserved = if matches!(reserved, Ok(true))
+            && self
+                .states
+                .quest_callbacks
+                .lose_source_boss_commit_ack
+                .swap(false, std::sync::atomic::Ordering::AcqRel)
+        {
+            Err(DurabilityError::CommitOutcomeUnknown)
+        } else {
+            reserved
+        };
+        let uncertain = matches!(
+            reserved,
+            Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::RootPassDeadlineExceeded)
+        );
+        let reserved = if uncertain {
+            super::super::AdmissionRetryBudget::for_command(self.root)
+                .retry_durability("source_boss_admission_reconcile", || {
+                    self.source_boss_admission(&admission, SourceBossAdmission::Reconcile)
+                })
+                .await
+        } else {
+            reserved
+        };
+        match reserved {
             Ok(true) => {}
-            Ok(false) => return UseDisposition::Rejected,
+            Ok(false) => {
+                if uncertain {
+                    self.try_refund_source_boss_lever(&admission).await;
+                } else {
+                    self.forget_unpublished_source_boss_lever(admission.id);
+                }
+                return UseDisposition::Rejected;
+            }
             Err(error) => {
                 super::super::operator_event(&format!(
-                    "cwarlock_admission_deferred reason={error:?}"
+                    "source_boss_admission_deferred reason={error:?}"
                 ));
                 return UseDisposition::Rejected;
             }
@@ -115,23 +152,72 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime, states, actor, session, map, callback, key, revision, after, false, cause,
             None, None,
         );
-        if disposition != UseDisposition::Committed
-            && let Err(error) = self
-                .root
-                .source_boss_lever_admission(
-                    self.character,
-                    self.holder,
-                    lever,
-                    party,
-                    admission,
-                    self.reset_epoch,
-                    true,
-                )
-                .await
-        {
-            super::super::operator_event(&format!("cwarlock_refund_deferred reason={error:?}"));
+        if disposition == UseDisposition::Committed {
+            self.forget_unpublished_source_boss_lever(admission.id);
+        } else {
+            self.try_refund_source_boss_lever(&admission).await;
         }
         disposition
+    }
+
+    async fn source_boss_admission(
+        &self,
+        admission: &UnpublishedAdmission,
+        operation: SourceBossAdmission,
+    ) -> Result<bool, DurabilityError> {
+        self.root
+            .source_boss_lever_admission(
+                self.character,
+                self.holder,
+                admission.lever,
+                admission.party.clone(),
+                admission.id,
+                self.reset_epoch,
+                operation,
+            )
+            .await
+    }
+
+    fn forget_unpublished_source_boss_lever(&self, id: [u8; 16]) {
+        if let Ok(mut refunds) = self.states.quest_callbacks.source_boss_refunds.lock() {
+            refunds.retain(|pending| pending.id != id);
+        }
+    }
+
+    async fn try_refund_source_boss_lever(&self, admission: &UnpublishedAdmission) {
+        match self
+            .source_boss_admission(admission, SourceBossAdmission::Refund)
+            .await
+        {
+            Ok(true) => self.forget_unpublished_source_boss_lever(admission.id),
+            Ok(false) => {}
+            Err(error) => super::super::operator_event(&format!(
+                "source_boss_refund_deferred reason={error:?}"
+            )),
+        }
+    }
+
+    pub(in crate::gameplay_transport) async fn refund_unpublished_source_boss_lever(&self) {
+        let pending = {
+            // The USE owns runtime through reservation, COMMIT and publication.
+            // Never refund while that turn can still publish the encounter.
+            let Ok(runtime) = self.runtime.try_lock() else {
+                return;
+            };
+            if runtime.owner_fence().is_err() {
+                return;
+            }
+            let Ok(mut refunds) = self.states.quest_callbacks.source_boss_refunds.lock() else {
+                return;
+            };
+            if !refunds.is_empty() {
+                refunds.rotate_left(1);
+            }
+            refunds.last().cloned()
+        };
+        if let Some(pending) = pending {
+            self.try_refund_source_boss_lever(&pending).await;
+        }
     }
 }
 

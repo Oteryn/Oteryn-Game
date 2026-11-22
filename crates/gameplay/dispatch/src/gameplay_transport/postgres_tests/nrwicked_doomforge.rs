@@ -67,11 +67,29 @@ fn nrwicked_abandoned_attempt_releases_actors_but_retains_admission_cooldown() -
     run_case(admin, "nrwicked_abandonment", FORGE, Scenario::Abandonment)
 }
 
+#[test]
+fn nrwicked_lost_admission_commit_ack_replays_and_publishes() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, "nrwicked_admission_ack", FORGE, Scenario::AdmissionAckLost)
+}
+
+#[test]
+fn nrwicked_reconnect_grace_retains_the_fight_until_expiry() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, "nrwicked_reconnect", FORGE, Scenario::ReconnectGrace)
+}
+
 #[derive(Clone, Copy)]
 enum Scenario {
     Portal,
     HardWin,
     Abandonment,
+    ReconnectGrace,
+    AdmissionAckLost,
 }
 
 fn run(admin: String, fixture_name: &'static str, destination: TilePos) -> TestResult {
@@ -257,7 +275,7 @@ fn portal_fixture(
         min_x: if native.is_some() { 34025 } else { START.x - 3 },
         min_y: if native.is_some() { 32322 } else { START.y },
         max_x: if native.is_some() { destination.x.max(STAGING.x) + 1 } else { destination.x + 1 },
-        max_y: if native.is_some() { ARENA_EXIT.y } else { destination.y + 1 },
+        max_y: if native.is_some() { ARENA_EXIT.y + 1 } else { destination.y + 1 },
         floors: vec![START.floor],
     };
     let mut portal = manifest.palette.pop().ok_or("portal palette")?;
@@ -463,10 +481,23 @@ async fn two_player_encounter(
     }
     let fence = owner.current_quest_fence(session).await
         .map_err(|()| "Arbaziloth lever fence")?.ok_or("missing Arbaziloth lever fence")?;
+    use std::sync::atomic::Ordering;
+    if matches!(case, Scenario::AdmissionAckLost) {
+        owner.states.quest_callbacks.lose_source_boss_commit_ack.store(true, Ordering::Release);
+    }
     let outcome = owner.use_object(first, UseCommand {
         game_session_id: session, command_id: 1, item_fence: Some(fence.item_fence()),
     }, WorldObjectTarget { placement: lever_placement.clone(), expected_revision: 0 }).await;
     assert_eq!(outcome.disposition, UseDisposition::Committed, "production Arbaziloth lever");
+    if matches!(case, Scenario::AdmissionAckLost) {
+        assert!(!owner.states.quest_callbacks.lose_source_boss_commit_ack.load(Ordering::Acquire));
+        owner.refund_unpublished_source_boss_lever().await;
+        let cooldowns: (i64, i64, i64) = sqlx::query_as(
+            "SELECT count(*), count(DISTINCT admission), count(DISTINCT available_at)
+               FROM game_character_boss_cooldowns WHERE boss_key='oteryn:boss.arbaziloth'",
+        ).fetch_one(&h.pool).await?;
+        assert_eq!(cooldowns, (2, 1, 1), "replay retains the paid party admission");
+    }
     if matches!(case, Scenario::HardWin) {
         // Complete the prior win's persisted count after admitting the current
         // fight. The following real lethal settlement must choose the unlock.
@@ -507,6 +538,37 @@ async fn two_player_encounter(
         runtime.companion_snapshot(forgemaster).map_err(debug)?.health,
         10_500
     );
+    if matches!(case, Scenario::AdmissionAckLost) {
+        assert_eq!(states.encounter_phases.active.lock().map_err(|_| "phases")?.len(), 1);
+        return Ok(());
+    }
+    if matches!(case, Scenario::ReconnectGrace) {
+        use crate::foundation::ControlLossMark;
+        let wall_now = crate::gameplay_transport::unix_seconds().ok_or("reconnect clock")?;
+        let grace_deadline = wall_now + crate::gameplay_transport::SAME_SESSION_GRACE_SECONDS;
+        let tick = |runtime: &mut _, wall| {
+            encounter_phases::tick_at(runtime, &states, owner.owner_now().get(), Some(wall));
+        };
+        // Mirror the session owner's committed loss and resume onto the same placed actors.
+        for (actor, session) in players {
+            runtime.record_control_loss(actor, session, ControlLossMark { epoch: 1, grace_deadline }).map_err(debug)?;
+        }
+        tick(&mut runtime, grace_deadline - 1);
+        assert!(runtime.contains_live_creature(boss));
+        runtime.restore_control(first, session, 1).map_err(debug)?;
+        tick(&mut runtime, grace_deadline);
+        assert!(runtime.contains_live_creature(boss));
+        assert_eq!(runtime.read_actor_position(first).map_err(debug)?.position(), ARENA_ENTRY);
+        let grace_deadline = grace_deadline + crate::gameplay_transport::SAME_SESSION_GRACE_SECONDS;
+        runtime.record_control_loss(first, session, ControlLossMark { epoch: 2, grace_deadline }).map_err(debug)?;
+        tick(&mut runtime, grace_deadline - 1);
+        assert!(runtime.contains_live_creature(boss));
+        tick(&mut runtime, grace_deadline);
+        assert!(!runtime.contains_live_creature(boss));
+        assert!(!runtime.contains_live_creature(forgemaster));
+        assert!(states.encounter_phases.active.lock().map_err(|_| "phases")?.is_empty());
+        return Ok(());
+    }
     let boss_home = runtime.read_actor_position(boss).map_err(debug)?.position();
     let purple_fire = || {
         facts

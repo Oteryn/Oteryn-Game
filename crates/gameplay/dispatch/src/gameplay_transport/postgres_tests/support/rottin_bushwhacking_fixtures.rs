@@ -105,6 +105,10 @@ pub(super) async fn accept(
         talk(owner, admitted, npc, 1612, "mission").await?,
         source_reply("line-131")?
     );
+    assert_eq!(
+        talk(owner, admitted, npc, 1613, "mission").await?,
+        ["I can only get you more traps in half an hour."]
+    );
     for source in [START, "oteryn:quest-reward/rottin-wood/replace-nets"] {
         let shape: (i64, i64) = sqlx::query_as(
             "SELECT count(*), COALESCE(sum(jsonb_array_length(m.additional_plan)),0)::bigint

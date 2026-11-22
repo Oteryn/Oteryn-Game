@@ -34,41 +34,57 @@ pub(super) struct SourceCache(std::sync::Mutex<Option<CachedCakeMapSources>>);
 
 pub(super) const CAKE_REGENERATION_KEY: &str = "world.cake.regeneration";
 
-/// Cache the durable world window across player ticks in this Channel.
+/// Shared by the Channel and its House residents. Periodic actor ticks only read it.
 #[derive(Default)]
-pub(super) struct BonusCache(tokio::sync::Mutex<Option<BonusSample>>);
+pub(super) struct BonusCache(std::sync::Mutex<Option<BonusSample>>);
 
 struct BonusSample {
     checked_at: std::time::Instant,
     expires_at: Option<std::time::Instant>,
 }
 
-impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn cake_regeneration_deadline(&self) -> Option<std::time::Instant> {
-        use std::time::{Duration, Instant};
-        const REFRESH_INTERVAL: Duration = Duration::from_secs(5);
-        // A concurrent refresh must not hold up other players' condition ticks.
-        // Those ticks can install the bonus on their next turn.
-        let mut cache = self.states.cake_bonus.0.try_lock().ok()?;
-        if cache
-            .as_ref()
-            .is_none_or(|sample| sample.checked_at.elapsed() >= REFRESH_INTERVAL)
+impl BonusCache {
+    fn publish(
+        &self,
+        checked_at: std::time::Instant,
+        bonus: Option<crate::durability::cake_event::CakeWorldBonus>,
+    ) {
+        if let Ok(mut cache) = self.0.lock()
+            && cache
+                .as_ref()
+                .is_none_or(|sample| sample.checked_at <= checked_at)
         {
-            let checked_at = Instant::now();
-            let expires_at = match self.root.cake_world_bonus(self.world_id).await {
-                Ok(bonus) => bonus.and_then(|bonus| {
-                    checked_at.checked_add(Duration::from_millis(bonus.remaining_ms))
-                }),
-                // A failed poll cannot extend the durable window. Rate-limit retries
-                // during a database outage so each player tick does not poll again.
-                Err(_) => cache.as_ref().and_then(|sample| sample.expires_at),
-            };
             *cache = Some(BonusSample {
                 checked_at,
-                expires_at,
+                expires_at: bonus.and_then(|bonus| {
+                    checked_at.checked_add(std::time::Duration::from_millis(bonus.remaining_ms))
+                }),
             });
         }
-        cache.as_ref()?.expires_at
+    }
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn cake_regeneration_deadline(&self) -> Option<std::time::Instant> {
+        self.states.cake_bonus.0.lock().ok()?.as_ref()?.expires_at
+    }
+
+    pub(in crate::gameplay_transport) async fn refresh_cake_regeneration(
+        &self,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        use std::time::{Duration, Instant};
+        const REFRESH_INTERVAL: Duration = Duration::from_secs(5);
+        let checked_at = Instant::now();
+        if self.states.cake_bonus.0.lock().is_ok_and(|cache| {
+            cache
+                .as_ref()
+                .is_some_and(|sample| sample.checked_at.elapsed() < REFRESH_INTERVAL)
+        }) {
+            return Ok(());
+        }
+        let bonus = self.root.cake_world_bonus(self.world_id).await?;
+        self.states.cake_bonus.publish(checked_at, bonus);
+        Ok(())
     }
 }
 
@@ -553,11 +569,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Some(outcome(UseDisposition::Exhausted));
             }
         }
-        let disposition = self
+        let checked_at = std::time::Instant::now();
+        let disposition = match self
             .root
             .bite_world_cake(&permit, self.character, self.holder, fence, request)
             .await
-            .unwrap_or(UseDisposition::NotPossible);
+        {
+            Ok((disposition, Some(bonus))) => {
+                self.states.cake_bonus.publish(checked_at, Some(bonus));
+                disposition
+            }
+            Ok((disposition, None)) => disposition,
+            Err(_) => UseDisposition::NotPossible,
+        };
         if disposition == UseDisposition::Committed {
             let _ = self.refresh_cake_world_map().await;
         }

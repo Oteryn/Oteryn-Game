@@ -120,7 +120,6 @@ pub(super) fn retain_predecessor(catalogue: &mut super::QuestStateCatalogue) -> 
                 | "oteryn:quest-progress/crystalserver/kv/nest-timer"
                 | "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount"
                 | "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count"
-                | "oteryn:quest-progress/rottin-wood/net-replacements"
         )
     };
     for before_hammer in [true, false] {

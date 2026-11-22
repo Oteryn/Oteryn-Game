@@ -511,15 +511,11 @@ impl State {
     ) -> Result<(), ServeEnd> {
         // The existing owner advances/checkpoints gourmet conditions even when
         // the client did not select the optional vitals projection.
-        let changed = if tick {
-            authority
-                .tick_vitals(self.actor, admitted.game_session_id)
-                .await
+        let current = if tick {
+            authority.tick_house_vitals(self.actor, *admitted).await
         } else {
-            None
+            authority.observe_house_vitals(self.actor, *admitted).await
         };
-        let current = authority.observe_house_vitals(self.actor, *admitted).await;
-        let current = current.or(changed);
         if let Some((_, vitals)) = &current
             && self
                 .capacity_vitals_max

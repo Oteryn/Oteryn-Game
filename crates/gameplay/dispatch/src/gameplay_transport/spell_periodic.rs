@@ -357,7 +357,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         clock: impl FnOnce() -> oteryn_simulation_determinism::SemanticTimeMicros,
     ) -> Option<(u64, ActorVitals)> {
-        let cake_deadline = self.cake_regeneration_deadline().await;
+        let cake_deadline = self.cake_regeneration_deadline();
         // Lock order (§1.2): the lane before any Channel guard.
         let mut permit = self.spell_lane_permit().await?;
         let mut runtime = self.runtime.lock().await;

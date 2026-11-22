@@ -7,6 +7,7 @@ pub(super) async fn assert_regeneration(
 ) -> TestResult {
     use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
     use oteryn_simulation_determinism::SemanticTimeMicros;
+    owner.refresh_cake_regeneration().await?;
     for (index, (actor, session)) in players.iter().copied().enumerate() {
         owner.tick_actor_vitals(actor, session).await;
         let (started_at, health_interval_ms, mana_interval_ms) = {
@@ -121,7 +122,7 @@ pub(super) async fn assert_house_regeneration(
             .ok_or("scheduled ordinary food regeneration")?
     };
     let ordinary = owner
-        .observe_actor_vitals(actor, session)
+        .observe_house_vitals(actor, admitted)
         .await
         .ok_or("House vitals")?;
     assert_eq!((ordinary.1.health, ordinary.1.mana), (1, 0));
@@ -143,8 +144,9 @@ pub(super) async fn assert_house_regeneration(
     .execute(&h.pool)
     .await?;
 
+    owner.refresh_cake_regeneration().await?;
     owner
-        .tick_vitals(actor, session)
+        .tick_house_vitals(actor, admitted)
         .await
         .ok_or("House vitals during Cake window")?;
     let (started_at, health_interval_ms, mana_interval_ms) = {
@@ -181,14 +183,14 @@ pub(super) async fn assert_house_regeneration(
         // The test clock stores the requested microsecond plus one.
         owner.states.test_owner_time.store(due, Ordering::Relaxed);
         let before = owner
-            .tick_vitals(actor, session)
+            .tick_house_vitals(actor, admitted)
             .await
             .ok_or("House vitals before pulse")?;
         assert_eq!((before.1.health, before.1.mana), vitals);
 
         owner.states.test_owner_time.store(due + 1, Ordering::Relaxed);
         let after = owner
-            .tick_vitals(actor, session)
+            .tick_house_vitals(actor, admitted)
             .await
             .ok_or("House vitals after pulse")?;
         vitals.0 += u32::from(interval.is_multiple_of(health_interval_ms));

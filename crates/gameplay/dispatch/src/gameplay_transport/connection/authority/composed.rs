@@ -1714,6 +1714,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.tick_actor_vitals(actor, game_session_id).await
     }
 
+    async fn tick_house_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        self.expire_house_furniture_on_tick(actor, admitted.game_session_id)
+            .await;
+        self.tick_house_actor_vitals(actor, admitted).await
+    }
+
     /// ATTACK-1b: one `ATTACK_TARGET_INTENT` as one Channel-owner work item, under the runtime
     /// lock; a dead or unbound actor takes no target.
     async fn attack_target(
