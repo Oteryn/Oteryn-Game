@@ -1,5 +1,7 @@
 //! BED0 §7.2: offline bed credits, independent of vocation and online tick phase.
 
+use oteryn_gameplay_domain::domain::condition::FOOD_REGENERATION_MAX_DURATION_MS;
+
 /// Apply bounded sleep to durable pools and food milliseconds. Online fractional
 /// periods ride through unchanged; food is charged even when both pools are full.
 /// Saved Soul survives a lower maximum until sleep grants a positive Soul gain.
@@ -10,7 +12,7 @@ pub fn settle(
     food_ms: u32,
     sleep_s: u64,
 ) -> Option<([u32; 3], u32)> {
-    if food_ms > 1_200_000 || maxima[0] == 0 || pools[0] == 0 {
+    if food_ms > FOOD_REGENERATION_MAX_DURATION_MS || maxima[0] == 0 || pools[0] == 0 {
         return None;
     }
     let sleep_s = sleep_s.min(1_814_400);

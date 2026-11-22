@@ -3,6 +3,9 @@
 pub mod attributes;
 use attributes::AttributeModifiers;
 
+/// The persistent food clock must hold a first meal's entire u16-second duration.
+pub const FOOD_REGENERATION_MAX_DURATION_MS: u32 = u16::MAX as u32 * 1_000;
+
 /// The damage-over-time elements, one conflict key each (§3).
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,

@@ -8,10 +8,12 @@ use super::combat_batch::OwnerCombatChange;
 use super::executable_catalog::EffectProfile;
 use oteryn_gameplay_domain::domain::condition::ConditionType;
 use oteryn_gameplay_domain::domain::condition::ConditionValues;
+use oteryn_gameplay_domain::domain::condition::ConflictKey;
 use oteryn_gameplay_foundation::foundation::condition::ApplicationFacts;
 use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
 use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
 use oteryn_gameplay_foundation::foundation::condition::ConditionTick;
+use oteryn_gameplay_foundation::foundation::condition::FOOD_REGENERATION_CAP_MS;
 use oteryn_gameplay_foundation::foundation::condition::TickFacts;
 use oteryn_gameplay_foundation::foundation::condition::TickKind;
 use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
@@ -644,15 +646,26 @@ pub(super) fn restore_bed_food(
         .restore_bed_food_duration(remaining_ms, now_us(now_ms).ok()?)
 }
 
-/// FOOD-REGEN-1: eating food adds `regeneration_seconds` to the fed time (cap 1,200 s).
-/// A full fed time or an unrepresentable food is refused and leaves the state unchanged.
+/// Crystal foods.lua:144–150: the 1,200-second threshold applies only while fed.
+/// A zero-second meal checks fullness without creating or changing a condition.
 pub fn eat_food(
     state: &mut PlayerSpellState,
     regeneration_seconds: u16,
     now_ms: u64,
 ) -> Result<(), SpellCastDisposition> {
     if regeneration_seconds == 0 {
-        return rejected();
+        let now = now_us(now_ms)?;
+        let remaining_ms = state
+            .conditions
+            .active_at(ConflictKey::FoodRegeneration, now)
+            .and_then(|food| food.remaining_duration_ms(now))
+            .and_then(|duration| u32::try_from(duration).ok())
+            .unwrap_or(0);
+        return if remaining_ms >= FOOD_REGENERATION_CAP_MS {
+            rejected()
+        } else {
+            Ok(())
+        };
     }
     let added_ms = u32::from(regeneration_seconds) * 1_000;
     let mut staged = state.clone();
