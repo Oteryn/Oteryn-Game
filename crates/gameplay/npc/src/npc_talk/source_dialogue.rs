@@ -1,4 +1,4 @@
-//! Focus messages and effect-free top-level keywords from Crystal 201189f8.
+//! Focus messages and literal replies from Crystal 201189f8.
 //! Keys name the script in data-global/npc. Native owners still evaluate
 //! conditional greetings, quest topics, shop actions and travel confirmations.
 

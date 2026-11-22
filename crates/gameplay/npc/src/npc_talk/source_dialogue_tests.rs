@@ -226,3 +226,160 @@ pub(super) fn assert_reward_lore(name: &str, entry: &NpcTalkEntry) {
         .collect();
     assert_eq!(topics, expected, "only source lore opens for {name}");
 }
+
+#[test]
+fn source_callback_lore_and_passage_replies() -> Result<(), String> {
+    let book = book()?;
+    let position = ChatPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    let cases: &[(&str, &str, &[&str])] = &[
+        (
+            "brewster",
+            "cough syrup",
+            &[
+                "The only person who might have some cough syrup is this druid Ustan. You find him in the tavern. Hmmm the tavern ... <hicks>",
+            ],
+        ),
+        (
+            "dedoras",
+            "search",
+            &[
+                "I gathered some lore on my own, but I desperately need more information that you might provide me. ...",
+                "My leads are the {museum} in thais, something strange in the darashian {desert}, rumors about {fishmen}, an ancient {order}, the mysterious {asuri}, or a lost {isle}?",
+            ],
+        ),
+        (
+            "the_first_dragon",
+            "fight",
+            &[
+                "Even in {retirement} I sometimes succumb to the temptation of sweet battle. Fighting was so different back in the old {times}. You can read about it in my {memoirs}. There should be a copy lying here somewhere.",
+            ],
+        ),
+        (
+            "the_first_dragon",
+            "retirement",
+            &[
+                "When you are young, you are much more tolerant towards the burden of life. At a certain age even a {dragon} will start to think about if things will go on forever. ...",
+                "Eventually there comes a time when you decide all the {hassle} isn't worth it anymore and you decide to concentrate on the {finer} things life has to offer.",
+            ],
+        ),
+        (
+            "the_first_dragon",
+            "memoirs",
+            &[
+                "I dictated my memoirs to a human servant. I like the idea to share my thoughts and memories with humanity with the help of a {book}. ...",
+                "You are my greatest fans after all. ...",
+                "If it becomes popular, I might consider an orcish translation or even one in bonelord language. ...",
+                "By the way, it's a funny story how I learnt the bonelord language. However, I saved it for a possible part two of my memoirs.",
+            ],
+        ),
+        (
+            "the_first_dragon",
+            "hassle",
+            &[
+                "I really enjoy a good fight now and then. ...",
+                "A real pain, however, is the constant annoyance caused by tedious fights against adventurers with more healing pots than brain.",
+            ],
+        ),
+        (
+            "the_first_dragon",
+            "worthy",
+            &[
+                "To be honest, the first dragon hunters weren't {worthy}. ...",
+                "They used {weaknesses} to their advantage. It took some time before a dragon could be killed in a fair fight.",
+            ],
+        ),
+        (
+            "the_first_dragon",
+            "weaknesses",
+            &[
+                "The first awoken dragons were quite disoriented when leaving the {mists} and re-entering reality. ...",
+                "This led to certain vulnerabilities. However, the dragons overcame such shortcomings quickly and soon took their rightful place in the food chain, so to say.",
+            ],
+        ),
+        (
+            "the_first_dragon",
+            "mists",
+            &[
+                "There was a time before the gods cast the mists of healing over the world. At that time the dragons ruled and burnt the {world}. ...",
+                "In hindsight I'm not too proud of this. This was some kind of juvenile bullying.",
+            ],
+        ),
+        (
+            "the_first_dragon",
+            "world",
+            &[
+                "The world has changed so much; I'm beginning to feel really old. People have changed, the face of the world has changed, even the laws of nature are no longer the same. ...",
+                "I think it is the greatest advantage of you {humans} to be more flexible and adaptable.",
+            ],
+        ),
+        (
+            "the_first_dragon",
+            "books",
+            &[
+                "Your books are an amazing thing. Draconic glyphs are so different. ...",
+                "They are not only more complicated but also more specific. A single word which always keeps the same meaning is astonishingly effective in its primitive way. ...",
+                "It helps you to conserve thoughts, stories and history and to share them with others - a {concept} I really appreciate. ...",
+                "Books are a wonderful {invention}. If you are ever tired of your heroic exploits, take the time to read one.",
+            ],
+        ),
+        (
+            "the_first_dragon",
+            "invention",
+            &[
+                "Being powerful creatures themselves, dragons had no need for inventions. ...",
+                "However, now that times have changed and the pressure increases, even my kin might slowly start to change in order to {adapt}.",
+            ],
+        ),
+        (
+            "the_first_dragon",
+            "adapt",
+            &[
+                "Well, surely some of my kin might whine and complain as they always do. ...",
+                "You have no idea how backwards thinking some dragons can be. A few are even still idealising the times before the {mists}.",
+            ],
+        ),
+        (
+            "the_first_dragon",
+            "finer",
+            &[
+                "The definition of finer things is different for a dragon than for a human. ...",
+                "A young dragon appreciates diving into a lava pool, while an old dragon just can't stand to get rid of the {lava} afterwards and prefers bathing in boiling water.",
+            ],
+        ),
+        (
+            "tom",
+            "cough syrup",
+            &[
+                "I had some cough syrup a while ago. It was stolen in an ape raid. I fear if you want more cough syrup you will have to buy it in the druids guild in carlin.",
+            ],
+        ),
+        ("captain_jack", "passage", &["I can travel you to {Tibia}."]),
+    ];
+    let mut differences = Vec::new();
+    for &(name, keyword, expected) in cases {
+        let key = format!("oteryn:npc.{name}");
+        let entry = book.get(&key).ok_or_else(|| format!("missing {key}"))?;
+        let npc = [TalkNpc {
+            id: 1u8,
+            position,
+            entry,
+        }];
+        let mut focused = None;
+        assert!(talk(position, "hi", &npc, &mut focused).is_some(), "{key}");
+        let actual: Vec<_> = talk(position, keyword, &npc, &mut focused)
+            .map(|reply| reply.into_lines().collect())
+            .unwrap_or_default();
+        if actual != expected {
+            differences.push(format!(
+                "{key} {keyword}: expected {expected:?}, got {actual:?}"
+            ));
+        }
+        assert_eq!(focused, Some(1), "{key} {keyword}");
+    }
+    assert!(differences.is_empty(), "{}", differences.join("\n"));
+    Ok(())
+}

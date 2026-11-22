@@ -377,7 +377,8 @@
       {"key": "phoenix", "triggers": ["phoenix"], "reply": ["The spark of the phoenix is given by the dwarven priests of earth and fire in Kazordoon."]},
       {"key": "spark", "triggers": ["spark"], "reply": ["The spark of the phoenix is given by the dwarven priests of earth and fire in Kazordoon."]},
       {"key": "solitude", "triggers": ["solitude"], "reply": ["Talk to the hermit Eremo on the isle of Cormaya about this blessing."]},
-      {"key": "wisdom", "triggers": ["wisdom"], "reply": ["Talk to the hermit Eremo on the isle of Cormaya about this blessing."]}
+      {"key": "wisdom", "triggers": ["wisdom"], "reply": ["Talk to the hermit Eremo on the isle of Cormaya about this blessing."]},
+      {"key": "cough_syrup", "triggers": ["cough syrup"], "reply": ["The only person who might have some cough syrup is this druid Ustan. You find him in the tavern. Hmmm the tavern ... <hicks>"]}
     ]
   },
   "oteryn:npc.bron": {
@@ -467,7 +468,8 @@
     "farewell": "Good bye, |PLAYERNAME|.",
     "walkaway": "Good bye.",
     "keywords": [
-      {"key": "job", "triggers": ["job"], "reply": ["I can travel you to {Tibia}."]}
+      {"key": "job", "triggers": ["job"], "reply": ["I can travel you to {Tibia}."]},
+      {"key": "passage", "triggers": ["passage"], "reply": ["I can travel you to {Tibia}."]}
     ]
   },
   "oteryn:npc.captain_waverider_island": {
@@ -699,7 +701,8 @@
       {"key": "peril", "triggers": ["peril"], "reply": ["Regardless of the dangers, the cult of Zathroth refused to destroy the knowledge of the godbreaker for good. ...", "They {value} dangerous knowledge that much, that they are unable to part from it, even when faced with the utter destruction of creation."]},
       {"key": "find", "triggers": ["find"], "reply": ["I know it's asked much but it's no longer a matter of choice. ...", "The enemy is moving and I have reports that suggest the minions of Variphor are actively searching for Zathroth's library. They must not be allowed to succeed. ...", "We must be the first to {reach} the hoard and make sure the enemy doesn't get the information he needs."]},
       {"key": "reach", "triggers": ["reach"], "reply": ["I'd recommend to follow the few leads me and my associates could gather so far. ...", "Old myths, some {rumors} about old texts and other pieces of knowledge that I could use to figure out where to locate the hidden library and how to enter it."]},
-      {"key": "rumors", "triggers": ["rumors"], "reply": ["Hints about the shrouded hoard are numerous, though most are general mentions in texts that deal with Zathroth. But there are other sources. ...", "Like texts about ancient liturgies of Zathroth and historical documents that might give us clues. I already compiled everything of value from the sources that were openly available. ...", "To gather the more {obscure} parts of knowledge, however, I'll need your help."]}
+      {"key": "rumors", "triggers": ["rumors"], "reply": ["Hints about the shrouded hoard are numerous, though most are general mentions in texts that deal with Zathroth. But there are other sources. ...", "Like texts about ancient liturgies of Zathroth and historical documents that might give us clues. I already compiled everything of value from the sources that were openly available. ...", "To gather the more {obscure} parts of knowledge, however, I'll need your help."]},
+      {"key": "search", "triggers": ["search"], "reply": ["I gathered some lore on my own, but I desperately need more information that you might provide me. ...", "My leads are the {museum} in thais, something strange in the darashian {desert}, rumors about {fishmen}, an ancient {order}, the mysterious {asuri}, or a lost {isle}?"]}
     ]
   },
   "oteryn:npc.dermot": {
@@ -1730,30 +1733,6 @@
       {"key": "name", "triggers": ["name"], "reply": ["Haven't you heard of me? I'm Percybald, the Magnificent!"]}
     ]
   },
-  "oteryn:npc.peter": {
-    "greet": [
-      "Hello. Unless you have official business here or want to pass the gate, please move on."
-    ],
-    "farewell": "Goodbye citizen!",
-    "walkaway": "Good bye.",
-    "keywords": [
-      {"key": "alchemist_quarter", "triggers": ["alchemist quarter"], "reply": ["There it's even more smelly than in the factory quarter. Smells a bit like rotten eggs."]},
-      {"key": "arena_quarter", "triggers": ["arena quarter"], "reply": ["You don't look as if you would last one second there."]},
-      {"key": "augur", "triggers": ["augur"], "reply": ["One day I will walk into the office of my superior and announce my resignment. Probably not long from now."]},
-      {"key": "cemetery_quarter", "triggers": ["cemetery quarter"], "reply": ["Good idea. Go for a walk there. Preferably six feet down."]},
-      {"key": "factory_quarter", "triggers": ["factory quarter"], "reply": ["It's too noisy and smelly."]},
-      {"key": "foreign_quarter", "triggers": ["foreign quarter"], "reply": ["Go there if you wanna get beaten up."]},
-      {"key": "job", "triggers": ["job"], "reply": ["Sergeant first class of the Yalaharian Guard Force. But I don't care about ranks and titles."]},
-      {"key": "official", "triggers": ["official"], "reply": ["Sergeant first class of the Yalaharian Guard Force. But I don't care about ranks and titles."]},
-      {"key": "magician_quarter", "triggers": ["magician quarter"], "reply": ["I can't stand those arrogant fools."]},
-      {"key": "mission", "triggers": ["mission"], "reply": ["Leave me alone with your 'mission' unless you have precise orders from my superiors."]},
-      {"key": "name", "triggers": ["name"], "reply": ["Peter."]},
-      {"key": "sunken_quarter", "triggers": ["sunken quarter"], "reply": ["That quara brood should be extinguished."]},
-      {"key": "trade_quarter", "triggers": ["trade quarter"], "reply": ["The leader of their pack is the biggest criminal among them all."]},
-      {"key": "quarter", "triggers": ["quarter"], "reply": ["Count them yourself."]},
-      {"key": "yalahar", "triggers": ["yalahar"], "reply": ["You're here. So what?"]}
-    ]
-  },
   "oteryn:npc.petros": {
     "greet": [
       "Welcome on board, |PLAYERNAME|. Where can I {sail} you today?"
@@ -2119,7 +2098,19 @@
       {"key": "style", "triggers": ["style"], "reply": ["Breathing fire is an art! Instead of setting everything on fire, you exhale a cone of fire to give a worthy opponent a chance to avoid it."]},
       {"key": "humans", "triggers": ["humans"], "reply": ["Your lives are so short and meaningless and yet you are here! And as a race you even have your own history and remember things with the help of {books}, which amazes me."]},
       {"key": "concept", "triggers": ["concept"], "reply": ["I like the idea of books so much that I acquired a human servant to record my memoirs. You find a copy somewhere in my lair."]},
-      {"key": "lava", "triggers": ["lava"], "reply": ["Lava is only fun as long as it doesn't harden - then it turns into an annoyance."]}
+      {"key": "lava", "triggers": ["lava"], "reply": ["Lava is only fun as long as it doesn't harden - then it turns into an annoyance."]},
+      {"key": "fight", "triggers": ["fight"], "reply": ["Even in {retirement} I sometimes succumb to the temptation of sweet battle. Fighting was so different back in the old {times}. You can read about it in my {memoirs}. There should be a copy lying here somewhere."]},
+      {"key": "retirement", "triggers": ["retirement"], "reply": ["When you are young, you are much more tolerant towards the burden of life. At a certain age even a {dragon} will start to think about if things will go on forever. ...", "Eventually there comes a time when you decide all the {hassle} isn't worth it anymore and you decide to concentrate on the {finer} things life has to offer."]},
+      {"key": "memoirs", "triggers": ["memoirs"], "reply": ["I dictated my memoirs to a human servant. I like the idea to share my thoughts and memories with humanity with the help of a {book}. ...", "You are my greatest fans after all. ...", "If it becomes popular, I might consider an orcish translation or even one in bonelord language. ...", "By the way, it's a funny story how I learnt the bonelord language. However, I saved it for a possible part two of my memoirs."]},
+      {"key": "hassle", "triggers": ["hassle"], "reply": ["I really enjoy a good fight now and then. ...", "A real pain, however, is the constant annoyance caused by tedious fights against adventurers with more healing pots than brain."]},
+      {"key": "worthy", "triggers": ["worthy"], "reply": ["To be honest, the first dragon hunters weren't {worthy}. ...", "They used {weaknesses} to their advantage. It took some time before a dragon could be killed in a fair fight."]},
+      {"key": "weaknesses", "triggers": ["weaknesses"], "reply": ["The first awoken dragons were quite disoriented when leaving the {mists} and re-entering reality. ...", "This led to certain vulnerabilities. However, the dragons overcame such shortcomings quickly and soon took their rightful place in the food chain, so to say."]},
+      {"key": "mists", "triggers": ["mists"], "reply": ["There was a time before the gods cast the mists of healing over the world. At that time the dragons ruled and burnt the {world}. ...", "In hindsight I'm not too proud of this. This was some kind of juvenile bullying."]},
+      {"key": "world", "triggers": ["world"], "reply": ["The world has changed so much; I'm beginning to feel really old. People have changed, the face of the world has changed, even the laws of nature are no longer the same. ...", "I think it is the greatest advantage of you {humans} to be more flexible and adaptable."]},
+      {"key": "books", "triggers": ["books"], "reply": ["Your books are an amazing thing. Draconic glyphs are so different. ...", "They are not only more complicated but also more specific. A single word which always keeps the same meaning is astonishingly effective in its primitive way. ...", "It helps you to conserve thoughts, stories and history and to share them with others - a {concept} I really appreciate. ...", "Books are a wonderful {invention}. If you are ever tired of your heroic exploits, take the time to read one."]},
+      {"key": "invention", "triggers": ["invention"], "reply": ["Being powerful creatures themselves, dragons had no need for inventions. ...", "However, now that times have changed and the pressure increases, even my kin might slowly start to change in order to {adapt}."]},
+      {"key": "adapt", "triggers": ["adapt"], "reply": ["Well, surely some of my kin might whine and complain as they always do. ...", "You have no idea how backwards thinking some dragons can be. A few are even still idealising the times before the {mists}."]},
+      {"key": "finer", "triggers": ["finer"], "reply": ["The definition of finer things is different for a dragon than for a human. ...", "A young dragon appreciates diving into a lava pool, while an old dragon just can't stand to get rid of the {lava} afterwards and prefers bathing in boiling water."]}
     ]
   },
   "oteryn:npc.the_queen_of_the_banshees": {
@@ -2241,7 +2232,8 @@
       {"key": "hyacinth", "triggers": ["hyacinth"], "reply": ["I wonder if he's angry because his potion monopoly fell."]},
       {"key": "cipfried", "triggers": ["cipfried"], "reply": ["I'm not what you'd call a 'believer'."]},
       {"key": "dallheim", "triggers": ["dallheim"], "reply": ["He's okay."]},
-      {"key": "zerbrus", "triggers": ["zerbrus"], "reply": ["He's okay."]}
+      {"key": "zerbrus", "triggers": ["zerbrus"], "reply": ["He's okay."]},
+      {"key": "cough_syrup", "triggers": ["cough syrup"], "reply": ["I had some cough syrup a while ago. It was stolen in an ape raid. I fear if you want more cough syrup you will have to buy it in the druids guild in carlin."]}
     ]
   },
   "oteryn:npc.tonar": {
