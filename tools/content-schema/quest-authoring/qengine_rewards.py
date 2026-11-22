@@ -469,11 +469,22 @@ def build():
     annihilator=prefix+'u7_24/the_annihilator/reward'
     add('l3-demon-base','the_annihilator_quest','avar_tar',['base'],
         [storage(annihilator,1,2)],outfit=('demon',0),topic=2)
-    for name,quest,track,before,after,bit in [
-        ('shield','demon_helmet_quest',prefix+'u6_4/demon_helmet/rewards/demon_helmet',1,2,1),
-        ('helmet','demon_oak',prefix+'u8_2/the_demon_oak/done',3,4,2)]:
-        add('l3-demon-'+name,quest,'avar_tar',[name],[storage(track,before,after)],
-            outfit=('demon',bit),topic=2,requires=[requirement(annihilator,2)])
+    demon_helmet = prefix+'u6_4/demon_helmet/rewards/demon_helmet'
+    demon_oak = prefix+'u8_2/the_demon_oak/done'
+    for name,quest,track,before,after,bit,other,other_done in [
+        ('shield','demon_helmet_quest',demon_helmet,1,2,1,demon_oak,4),
+        ('helmet','demon_oak',demon_oak,3,4,2,demon_helmet,2)]:
+        for complete in (False, True):
+            guard = requirement(other,other_done) if complete else requirement(other,-1,other_done-1)
+            add('l3-demon-'+name+('-complete' if complete else ''),quest,'avar_tar',[name],
+                [storage(track,before,after)],outfit=('demon',bit),topic=2,
+                requires=[requirement(annihilator,2),guard],
+                achievement='oteryn:achievement/true_dedication' if complete else None)
+            if complete:
+                callbacks[-1]['requires_addons'] = [
+                    {'outfit':'oteryn:outfit.demon','addons':3-bit}
+                ]
+                callbacks[-1]['sources'].append('wiki:True Dedication:achievementid=324:full Demon Outfits')
     # Avar Tar's donor selector matches the word outfit in the Demon Outfit phrase.
     for words,topic,next_topic in [(['outfit','demon outfit'],0,1),(['yes'],1,2)]:
         offers.append({'npc':'oteryn:npc.avar_tar','keywords':words,'topic':topic,
@@ -1116,8 +1127,10 @@ def build():
     ready_callbacks.sort(key=lambda c:c['key'])
     lane=load_module('questpc7_integration','tools/content-schema/quest-authoring/questpc7_integration.py')
     lane_data=lane.extend(ROOT,callbacks,offers,inputs,PIN,load_module)
-    fibula_callbacks = []
-    load_module('fibula_reward_authoring', 'tools/content-schema/quest-authoring/fibula_rewards.py').append(fibula_callbacks, offers, inputs)
+    fibula_callbacks, fibula_tracks = [], []
+    fibula = load_module('fibula_reward_authoring', 'tools/content-schema/quest-authoring/fibula_rewards.py')
+    fibula.append(fibula_callbacks, offers, inputs)
+    fibula.append_simon(fibula_callbacks, offers, fibula_tracks, inputs)
     # Keep every registered document within the runtime's 256-record bound.
     l13_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith('l13-')]
     callbacks = [c for c in callbacks if c not in l13_callbacks]
@@ -1142,7 +1155,7 @@ def build():
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises})
-    validate_callbacks({'schema':1,'callbacks':fibula_callbacks})
+    validate_callbacks({'schema':1,'tracks':fibula_tracks,'callbacks':fibula_callbacks})
     validate_callbacks({'schema':1,'callbacks':l13_callbacks})
     validate_callbacks({'schema':1,'callbacks':programme_callbacks})
     native_cosmetics = cosmetics.provisioning_input(
@@ -1156,7 +1169,7 @@ def build():
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises}),
-            'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'callbacks':fibula_callbacks}),
+            'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'tracks':fibula_tracks,'callbacks':fibula_callbacks}),
             'content/quests/npc-callbacks/l13-outfits.json': encoded({'schema':1,'callbacks':l13_callbacks}),
             'content/quests/npc-callbacks/questpc7-programmes.json': encoded({'schema':1,'callbacks':programme_callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}

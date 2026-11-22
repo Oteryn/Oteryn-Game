@@ -483,6 +483,12 @@ def outputs(
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += engnpc2_ram_world.NOTE
+        import blood_vestibule_ground
+
+        files[blood_vestibule_ground.SHARD] = blood_vestibule_ground.outputs()[
+            blood_vestibule_ground.SHARD
+        ]
+        index["notes"] += blood_vestibule_ground.NOTE
         index["notes"] = activity_static.compose_terrain_notes(index["notes"])
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
@@ -535,6 +541,7 @@ def official_shards():
 def qualified_shards():
     import activity_static
     import feroxa_static
+    import blood_vestibule_ground
 
     return {
         path
@@ -550,6 +557,7 @@ def qualified_shards():
             "content/world/objects/objects-12917-12931.json",
             *activity_static.SHARDS.values(),
             feroxa_static.SHARD,
+            blood_vestibule_ground.SHARD,
         )
         if (path := ROOT / relative).exists()
     }

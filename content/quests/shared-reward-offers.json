@@ -5534,6 +5534,26 @@
     {
       "npc": "oteryn:npc.simon_the_beggar",
       "keywords": [
+        "help"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/simon-donations",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Could you spare 100 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
         "outfit"
       ],
       "topic": 0,

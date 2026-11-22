@@ -1055,7 +1055,16 @@ pub(super) async fn exercise(
             &[
                 ("base", None, None, Some(0)),
                 ("shield", None, None, Some(1)),
+                ("helmet-complete", None, None, Some(2)),
+            ],
+            542,
+        ),
+        "qengine-rewards-l3-demon-helmet-first-story" => (
+            "demon",
+            &[
+                ("base", None, None, Some(0)),
                 ("helmet", None, None, Some(2)),
+                ("shield-complete", None, None, Some(1)),
             ],
             542,
         ),
@@ -1584,11 +1593,24 @@ pub(super) async fn exercise(
                 maximum: 2,
             }]
         } else if family == "demon" && *suffix != "base" {
-            vec![Requirement {
-                track: ANNIHILATOR.into(),
-                minimum: 2,
-                maximum: 2,
-            }]
+            let complete = suffix.ends_with("-complete");
+            let (other, done) = if suffix.starts_with("shield") {
+                (DEMON_OAK, 4)
+            } else {
+                (DEMON_HELMET, 2)
+            };
+            vec![
+                Requirement {
+                    track: ANNIHILATOR.into(),
+                    minimum: 2,
+                    maximum: 2,
+                },
+                Requirement {
+                    track: other.into(),
+                    minimum: if complete { done } else { -1 },
+                    maximum: if complete { done } else { done - 1 },
+                },
+            ]
         } else if family == "pirate" && *suffix == "base" {
             vec![
                 Requirement {
@@ -2590,6 +2612,19 @@ pub(super) async fn exercise(
                 "source achievement rides the same committed reward"
             );
         }
+        if family == "demon" {
+            let earned: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
+            )
+            .bind("oteryn:achievement/true_dedication")
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(
+                earned,
+                i64::from(step_index == 2),
+                "True Dedication requires the complete Demon outfit"
+            );
+        }
         for item in &callback.take {
             assert_eq!(
                 quantity(h, &item.item).await?,
@@ -2610,9 +2645,11 @@ pub(super) async fn exercise(
         }
         for state in &required {
             let row: (String,i64) = sqlx::query_as("SELECT quest_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(fence.character_id.as_bytes().as_slice()).bind(&state.track).fetch_one(&h.pool).await?;
+            // The Demon fixture starts the unclaimed source quest at its earned reward stage.
+            let value = if family == "demon" { state.maximum } else { state.minimum };
             assert_eq!(
                 row,
-                (tracks[&state.track].quest.clone(), state.minimum),
+                (tracks[&state.track].quest.clone(), value),
                 "read-only parent ownership and progress retained"
             );
         }
