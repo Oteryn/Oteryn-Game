@@ -16,6 +16,9 @@ pub(super) enum Route {
     Entry,
     Combat,
     Complete,
+    ClaimedStation,
+    ArenaDeadline,
+    DemonHelmetPlates,
     ObjectiveAtomicity,
     ObjectiveAtomicityStale,
     ElvenbaneExploration,
@@ -49,8 +52,10 @@ pub(super) fn elvenbane_source_exploration() -> TestResult {
 }
 
 pub(super) fn run(route: Route) -> TestResult {
-    let combat = route != Route::Entry;
-    let start = if matches!(
+    let combat = !matches!(route, Route::Entry | Route::ClaimedStation | Route::ArenaDeadline | Route::DemonHelmetPlates);
+    let start = if route == Route::DemonHelmetPlates {
+        Position { x: 33190, y: 31630, floor: -13 }
+    } else if matches!(
         route,
         Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
     ) {
@@ -114,7 +119,7 @@ pub(super) fn run(route: Route) -> TestResult {
                 .await?;
         let mut currents = Vec::new();
         let mut operations = Vec::new();
-        for index in 0..4_u8 {
+        for index in 0..if route == Route::DemonHelmetPlates { 3_u8 } else { 4_u8 } {
             let (current, operation) =
                 crate::world_party_runtime_postgres_cases::committed_fresh_player_with_operation(
                     &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
@@ -236,7 +241,15 @@ pub(super) fn run(route: Route) -> TestResult {
             runtime
                 .bind_attacker_lease(actor, session, current.current_character_lease())
                 .map_err(debug)?;
-            let at = start;
+            let at = if route == Route::DemonHelmetPlates {
+                match index {
+                    1 => Position { x: 33191, ..start },
+                    2 => Position { x: 33211, y: 31631, ..start },
+                    _ => start,
+                }
+            } else {
+                start
+            };
             runtime
                 .initialize_pinned_test_position(actor, local(at))
                 .map_err(debug)?;
@@ -461,6 +474,14 @@ pub(super) fn run(route: Route) -> TestResult {
             return Err("native bundle collision index".into());
         };
         let map = index.map();
+        if route == Route::DemonHelmetPlates {
+            let result = super::plate_predicates_fixtures::demon_helmet(&mut owner, &mut admitted, map).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
         if matches!(
             route,
             Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
@@ -534,6 +555,14 @@ pub(super) fn run(route: Route) -> TestResult {
             }
         }
         let lever = target(map, 33226, 31671)?;
+        if route == Route::ClaimedStation {
+            let result = super::plate_predicates_fixtures::claimed_station(&mut owner, &mut admitted, &lever, &h.pool).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
         assert_eq!(
             use_target(&mut owner, &mut admitted[0], &lever).await?,
             UseDisposition::Committed
@@ -548,6 +577,9 @@ pub(super) fn run(route: Route) -> TestResult {
         }
         assert_eq!(runtime.visible_entities().creatures.len(), 6);
         drop(runtime);
+        if route == Route::ArenaDeadline {
+            super::plate_predicates_fixtures::arena_deadline(&mut owner, &admitted, map).await?;
+        }
         if combat {
             super::annihilator_combat::clear_corridor(&mut owner, &mut admitted[0]).await?;
         }
