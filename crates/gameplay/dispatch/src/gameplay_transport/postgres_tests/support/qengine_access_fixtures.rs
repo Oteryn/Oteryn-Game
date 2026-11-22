@@ -738,6 +738,7 @@ async fn wardrobe(
         present: vec![],
         inventory: vec![],
         give: None,
+        weighted_exchange: None,
         outfit: Some(reward.clone()),
         outfits: vec![],
         exact_take: false,

@@ -146,6 +146,7 @@ struct Pending {
     context: Context,
     next_topic: Option<Topic>,
     reply: Vec<String>,
+    weighted: bool,
 }
 
 /// Bind a pure, source-backed selector to the actual current conversation.
@@ -391,6 +392,31 @@ pub(super) async fn apply(
         transition_key: transition,
         cause: QuestCause::Command(CommandRef::new(command.game_session_id, id)),
     };
+    let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
+        .ok()
+        .and_then(|callbacks| {
+            callbacks
+                .into_iter()
+                .find(|c| c.key == request.transition_key)
+        });
+    let weighted = reward_callback
+        .as_ref()
+        .and_then(|callback| callback.weighted_exchange.as_ref());
+    if weighted.is_some_and(|exchange| {
+        exchange.outcomes.iter().any(|outcome| {
+            reply(
+                &admission.states.chat,
+                command.game_session_id,
+                &step.context,
+                &intent,
+                outcome.reply.clone(),
+            )
+            .disposition
+                != NpcIntentDisposition::Ok
+        })
+    }) {
+        return rejected();
+    }
     {
         let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
             return rejected();
@@ -413,15 +439,9 @@ pub(super) async fn apply(
             context: step.context.clone(),
             next_topic: step.next_topic,
             reply: step.reply.clone(),
+            weighted: weighted.is_some(),
         });
     }
-    let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
-        .ok()
-        .and_then(|callbacks| {
-            callbacks
-                .into_iter()
-                .find(|c| c.key == request.transition_key)
-        });
     let value_callback = reward_callback.is_some();
     let fee_payment = if reward_callback.as_ref().is_some_and(|c| c.fee.is_some()) {
         match super::endgame::prepare_reward_fee(admission, command, fence).await {
@@ -449,7 +469,7 @@ pub(super) async fn apply(
             admission.character,
             admission.holder,
             fence,
-            request,
+            request.clone(),
             std::sync::Arc::clone(catalogue),
             crate::durability::reward_claim_mint::QuestRewardAdmission {
                 native,
@@ -469,7 +489,7 @@ pub(super) async fn apply(
             admission.character,
             admission.holder,
             fence,
-            request,
+            request.clone(),
             std::sync::Arc::clone(catalogue),
         )
         .await
@@ -489,6 +509,27 @@ pub(super) async fn apply(
             {
                 state.quest_dialogue.interrupt_after_commit = None;
                 return unknown();
+            }
+            if weighted.is_some() {
+                let Ok(Some(lines)) = admission
+                    .root
+                    .reconcile_weighted_npc_exchange(
+                        admission.character,
+                        fence.character_id,
+                        request,
+                    )
+                    .await
+                else {
+                    return unknown();
+                };
+                rendered = reply(
+                    &admission.states.chat,
+                    command.game_session_id,
+                    &step.context,
+                    &intent,
+                    lines,
+                );
+                rendered.inventory_changed = true;
             }
             finish(admission, command.game_session_id, true);
             admission
@@ -580,18 +621,30 @@ pub(in crate::gameplay_transport) async fn resume(
         .request
         .transition_key
         .starts_with("oteryn:quest-reward/");
-    match admission
-        .root
-        .reconcile_character_quest_transition(
-            admission.character,
-            pending.character,
-            pending.request,
-        )
-        .await
-    {
-        Ok(receipt) => {
-            finish(admission, command.game_session_id, receipt.is_some());
-            if receipt.is_some() {
+    let result = if pending.weighted {
+        admission
+            .root
+            .reconcile_weighted_npc_exchange(
+                admission.character,
+                pending.character,
+                pending.request,
+            )
+            .await
+    } else {
+        admission
+            .root
+            .reconcile_character_quest_transition(
+                admission.character,
+                pending.character,
+                pending.request,
+            )
+            .await
+            .map(|receipt| receipt.map(|_| pending.reply))
+    };
+    match result {
+        Ok(lines) => {
+            finish(admission, command.game_session_id, lines.is_some());
+            if let Some(lines) = lines {
                 admission
                     .refresh_quest_session(command.game_session_id, false)
                     .await;
@@ -603,7 +656,7 @@ pub(in crate::gameplay_transport) async fn resume(
                     command.game_session_id,
                     &pending.context,
                     &pending.intent,
-                    pending.reply,
+                    lines,
                 );
                 rendered.inventory_changed = value_callback;
                 let runtime = admission.runtime.lock().await;

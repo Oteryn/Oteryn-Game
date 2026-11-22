@@ -464,6 +464,25 @@ pub(crate) async fn apply(
             .await?,
         );
     }
+    // Historical quest receipts return before apply. Roll after the carried
+    // payment succeeds, within the transaction that commits both MINT and Quest.
+    let weighted = if let Some(exchange) = &callback.weighted_exchange {
+        let draw: i64 = sqlx::query_scalar("SELECT random(1::bigint, $1::bigint)")
+            .bind(exchange.total_weight())
+            .fetch_one(&mut **tx)
+            .await?;
+        let outcome = exchange.outcome(draw).ok_or(DurabilityError::InvalidStoredState)?;
+        let mut selected = callback.clone();
+        selected.give = Some(outcome.give.clone());
+        selected.weighted_exchange = None;
+        // The event ledger owns eligibility. The existing paid exchange MINT
+        // still needs a fresh per-command claim when a new event can pay again.
+        selected.repeatable = exchange.world_change.is_some();
+        Some((selected, serde_json::json!({"draw": draw, "reply": outcome.reply})))
+    } else {
+        None
+    };
+    let callback = weighted.as_ref().map_or(callback, |(selected, _)| selected);
     let minted = if let Some(reward) = &callback.give {
         let Some(transaction) =
             mint_npc(tx, tuple, node, fence, command, callback, reward, admission).await?
@@ -503,8 +522,15 @@ pub(crate) async fn apply(
             .await?
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
+    let mut plan = oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if let Some((_, outcome)) = &weighted {
+        plan.as_object_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .insert("weighted_outcome".into(), outcome.clone());
+    }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
     if callback.corpse_target.is_some() {
         let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
             return Ok(false);

@@ -43,8 +43,26 @@ impl DurabilityRoot {
         request: QuestTransitionRequest,
     ) -> Result<Option<CommittedQuestTransition>> {
         let binding = request_binding(character, &request);
-        self.reconcile_quest_binding(authority, character, request, binding)
+        self.reconcile_quest_binding(authority, character, request, binding, false)
             .await
+            .map(|receipt| receipt.map(|(transition, _)| transition))
+    }
+
+    /// Recover the selected branch from the original NPC exchange's immutable
+    /// source receipt, under the same recovery fence as the quest receipt.
+    pub async fn reconcile_weighted_npc_exchange(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        request: QuestTransitionRequest,
+    ) -> Result<Option<Vec<String>>> {
+        if !matches!(request.cause, QuestCause::Command(_)) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let binding = request_binding(character, &request);
+        self.reconcile_quest_binding(authority, character, request, binding, true)
+            .await
+            .map(|receipt| receipt.map(|(_, reply)| reply))
     }
 
     /// A retained native handover freezes its original source fingerprint. This reads
@@ -64,8 +82,9 @@ impl DurabilityRoot {
         };
         let mut binding = request_binding(character, &request);
         handover.bind(&mut binding)?;
-        self.reconcile_quest_binding(authority, character, request, binding)
+        self.reconcile_quest_binding(authority, character, request, binding, false)
             .await
+            .map(|receipt| receipt.map(|(transition, _)| transition))
     }
 
     async fn reconcile_quest_binding(
@@ -74,7 +93,8 @@ impl DurabilityRoot {
         character: CharacterId,
         request: QuestTransitionRequest,
         binding: [u8; 33],
-    ) -> Result<Option<CommittedQuestTransition>> {
+        weighted: bool,
+    ) -> Result<Option<(CommittedQuestTransition, Vec<String>)>> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -92,8 +112,22 @@ impl DurabilityRoot {
                         return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
                     }
                     let committed = decode_receipt(&row)?;
+                    let reply = if weighted {
+                        let (cause, ordinal) = request.cause.key();
+                        let reply: Option<sqlx::types::Json<Vec<String>>> = sqlx::query_scalar(
+                            "SELECT plan #> '{weighted_outcome,reply}' FROM game_quest_reward_sources \
+                             WHERE character_id=encode($1,'hex')::uuid AND cause_id=encode($2,'hex')::uuid \
+                               AND cause_ordinal=$3::text::numeric AND transition_key=$4",
+                        )
+                        .bind(character.as_bytes().as_slice()).bind(cause.as_slice())
+                        .bind(ordinal.to_string()).bind(&request.transition_key)
+                        .fetch_one(&mut *tx).await?;
+                        reply.ok_or(DurabilityError::InvalidStoredState)?.0
+                    } else {
+                        Vec::new()
+                    };
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(Some(committed)))
+                    Ok(Ok(Some((committed, reply))))
                 })
             })
             .await?

@@ -87,7 +87,9 @@ impl ItemReward {
 }
 
 mod reward_text;
+mod weighted_exchange;
 pub use reward_text::{RewardContentText, RewardText};
+pub use weighted_exchange::{WeightedExchange, WeightedOutcome};
 
 #[cfg(test)]
 mod literal_text_tests;
@@ -334,6 +336,8 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub inventory: Vec<InventoryRequirement>,
     pub give: Option<ItemReward>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weighted_exchange: Option<WeightedExchange>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub per_occurrence_mint: bool,
     pub outfit: Option<OutfitReward>,
@@ -443,7 +447,8 @@ impl RewardCallback {
     fn value_only_guarded(&self) -> bool {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
-        temporal_payment::guarded(self)
+        self.weighted_exchange.is_some()
+            || temporal_payment::guarded(self)
             || (self.repeatable
                 && (!self.take.is_empty() || self.fee.is_some())
                 && (self.give.is_some() || self.experience.is_some()))
@@ -763,9 +768,12 @@ fn validate_document_with_capacity(
         {
             return Err(format!("invalid lane reward extension {}", c.key));
         }
-        if c.give
+        if c.weighted_exchange
             .as_ref()
-            .is_some_and(|reward| !valid_item_reward(reward))
+            .is_some_and(|exchange| !exchange.valid(c))
+            || c.give
+                .as_ref()
+                .is_some_and(|reward| !valid_item_reward(reward))
             || (c.per_occurrence_mint
                 && (c.give.is_none()
                     || c.cosmetic_targets().next().is_some()
@@ -1104,7 +1112,7 @@ fn validate_document_with_capacity(
             || c.failure_reply.iter().any(|line| {
                 line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)
             })
-            || c.reply.is_empty()
+            || (c.reply.is_empty() && c.weighted_exchange.is_none())
             || c.achievement_progress.len() > 8
             || c.achievement_progress
                 .iter()
@@ -1137,7 +1145,8 @@ fn validate_document_with_capacity(
 // changes the owning unfinished quest pin; speech/citations are not reward terms.
 /// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
 pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
-    if callback.minimum_level.is_none()
+    if callback.weighted_exchange.is_none()
+        && callback.minimum_level.is_none()
         && callback.inventory.is_empty()
         && callback.world_claim.is_none()
         && callback.peer_requires.is_none()
@@ -1159,6 +1168,18 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
     terms.remove("reply");
     terms.remove("failure_reply");
     terms.remove("sources");
+    if let Some(outcomes) = terms
+        .get_mut("weighted_exchange")
+        .and_then(|exchange| exchange.get_mut("outcomes"))
+        .and_then(serde_json::Value::as_array_mut)
+    {
+        for outcome in outcomes
+            .iter_mut()
+            .filter_map(serde_json::Value::as_object_mut)
+        {
+            outcome.remove("reply");
+        }
+    }
     let bytes = serde_json::to_vec(terms).map_err(|e| e.to_string())?;
     Ok(Some(Sha256::digest(bytes).into()))
 }
@@ -1675,7 +1696,10 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
         .or_else(|| (!callback.storage.is_empty()).then_some(0));
     let stamp_binding = binding.filter(|_| temporal_payment::guarded(callback));
     Ok(QuestTransition {
-        world_change: None,
+        world_change: callback
+            .weighted_exchange
+            .as_ref()
+            .and_then(|exchange| exchange.world_change.clone()),
         key: callback.key.clone(),
         quest: callback.quest.clone(),
         effects: callback
