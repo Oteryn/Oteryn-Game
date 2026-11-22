@@ -2,8 +2,7 @@ use super::*;
 use std::ffi::OsString;
 
 pub(super) struct PendingSave {
-    task: bevy_tasks::Task<Result<LoginSettings, String>>,
-    path: PathBuf,
+    task: bevy_tasks::Task<Result<(), String>>,
     visible: LoginSettings,
     revision: u64,
     assets: Option<OsString>,
@@ -33,33 +32,27 @@ impl LoginState {
                 .feedback("Cannot locate the login configuration directory.".into());
             return;
         };
+        self.record_edits();
+        let edited_fields = self.edited_fields;
         let visible = self.form.settings.clone();
         if let Err(error) = visible.validate() {
             self.form.feedback(error);
             return;
         }
         let edited = visible.clone();
-        let mut before = self.baseline.clone();
-        let save_path = path.clone();
         let previous = self.saving.take();
         let task = bevy_tasks::IoTaskPool::get_or_init(|| {
             bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
         })
         .spawn(async move {
-            // A cancelled submission may still own or be waiting for the file lock.
-            if let Some(previous) = previous
-                && previous.task.await.is_ok()
-                && previous.path == path
-            {
-                // The previous form records our edits, excluding concurrent disk-only changes.
-                before = previous.visible;
+            // Each submission writes its form values after every earlier writer has finished.
+            if let Some(previous) = previous {
+                let _ = previous.task.await;
             }
-            let lock = crate::atomic_file::lock(&path).map_err(|_| LoginSettings::save_error())?;
-            edited.save_edits(&path, &before, lock)
+            edited.save_fields(&path, edited_fields)
         });
         self.saving = Some(PendingSave {
             task,
-            path: save_path,
             visible,
             revision: self.revision,
             assets: None,
@@ -72,9 +65,6 @@ impl LoginState {
     ) -> Option<(crate::NativeLoginConfig, Option<OsString>)> {
         let saved = bevy_tasks::futures::check_ready(&mut self.saving.as_mut()?.task)?;
         let save = self.saving.take()?;
-        if saved.is_ok() && self.path.as_ref() == Some(&save.path) {
-            self.baseline = save.visible.clone();
-        }
         if self.revision != save.revision || !self.visible || self.form.settings != save.visible {
             return None;
         }
@@ -99,10 +89,7 @@ impl LoginState {
         }
     }
 
-    fn finish_save(
-        &mut self,
-        saved: Result<LoginSettings, String>,
-    ) -> Option<crate::NativeLoginConfig> {
+    fn finish_save(&mut self, saved: Result<(), String>) -> Option<crate::NativeLoginConfig> {
         if let Err(error) = saved {
             self.form.feedback(error);
             return None;
