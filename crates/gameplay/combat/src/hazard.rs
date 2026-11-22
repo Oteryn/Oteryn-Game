@@ -54,21 +54,23 @@ pub fn effective_level(
     Some(level)
 }
 
-/// Both exact actors must be in the qualified source zone of this runtime.
-/// The player projection proves the active map frame; summoned creatures are not hazard mobs.
+/// Both exact actors must be in the qualified source zone of this runtime, and the
+/// creature's source policy and master must permit Hazard.
 pub fn effects_for_monster(
     runtime: &ChannelRuntimeV1,
     player: ExactActorRef,
     session: GameSessionId,
     monster: ExactActorRef,
 ) -> Option<HazardAreaEffects> {
-    if !source_position(runtime, monster)
-        || runtime
-            .companion_snapshot_including_dead(monster)
-            .ok()?
-            .state
-            .master
-            .is_some()
+    if !source_position(runtime, monster) {
+        return None;
+    }
+    let creature = runtime.companion_snapshot_including_dead(monster).ok()?;
+    // Crystal 201189f hazard_primal.lua:84-94 checks the monster's source name.
+    if creature.state.master.is_some()
+        || ["Primal Menace", "Fungosaurus", "Primal Pack Beast"]
+            .into_iter()
+            .any(|name| creature.state.policy.display_name.contains(name))
     {
         return None;
     }
