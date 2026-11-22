@@ -435,6 +435,10 @@ pub(super) async fn walk_group(
     world: &BundleWorld,
     paths: Vec<(TilePos, Vec<StepDirection>)>,
 ) -> TestResult {
+    // Budget the original steps once. Serializing overlapping paths can spend
+    // more rounds than the longest path alone, but replans add no rounds.
+    let round_budget = paths.iter().map(|(_, path)| path.len()).sum::<usize>();
+    let mut rounds_left = round_budget;
     let mut routes: Vec<_> = paths
         .into_iter()
         .map(|(goal, path)| GroupRoute {
@@ -442,10 +446,7 @@ pub(super) async fn walk_group(
             remaining: path.into(),
         })
         .collect();
-    // Replanning can change a route but cannot extend the walk's round limit.
-    const MAX_ROUNDS: usize = 4096;
     let mut seen = BTreeSet::new();
-    let mut rounds_left = MAX_ROUNDS;
     loop {
         let positions = positions(bots)?;
         if routes
@@ -456,7 +457,7 @@ pub(super) async fn walk_group(
             return Ok(());
         }
         rounds_left = rounds_left.checked_sub(1).ok_or_else(|| {
-            format!("MP group route exhausted {MAX_ROUNDS} rounds;positions={positions:?}")
+            format!("MP group route exhausted {round_budget} rounds;positions={positions:?}")
         })?;
         let remaining: Vec<Vec<u8>> = routes
             .iter()
