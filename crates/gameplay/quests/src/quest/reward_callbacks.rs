@@ -2248,7 +2248,7 @@ mod tests {
         for (key, expected) in [
             (
                 "oteryn:quest.outfit_and_addon_quests",
-                "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8",
+                "de0d90685da65e806d7d1c86a6c067a62479af04f6e79f29b8d042d43237e7db",
             ),
             // Includes the source seal callbacks, packed counter and Siflind vial grant.
             (
@@ -3000,7 +3000,7 @@ mod lane_counter_tests {
     fn occurrence_mint_is_explicit_portable_and_part_of_the_value_hash() -> Result<(), String> {
         let mut callback = load()?
             .into_iter()
-            .find(|c| c.key.ends_with("/venore-daily/accept"))
+            .find(|c| c.key.ends_with("/venore-daily/maintenance/accept"))
             .ok_or("accept")?;
         let legacy = value_plan(&callback)?;
         let encoded = serde_json::to_value(&callback).map_err(|e| e.to_string())?;
@@ -3212,7 +3212,7 @@ mod outfit_reward_predecessor_tests {
         );
         assert_eq!(
             hex(&full_hash),
-            "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8"
+            "de0d90685da65e806d7d1c86a6c067a62479af04f6e79f29b8d042d43237e7db"
         );
         assert_eq!((declared.1.len(), full_defaults.len()), (51, 52));
         assert!(

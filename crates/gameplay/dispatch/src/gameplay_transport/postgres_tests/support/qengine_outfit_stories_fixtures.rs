@@ -1325,7 +1325,9 @@ pub(super) async fn exercise(
         } else {
             "l2"
         };
-        let key = if family == "knight" && *suffix == "sword" {
+        let key = if family == "hunter" && *suffix == "gloves" && name.contains("-female-") {
+            "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves".into()
+        } else if family == "knight" && *suffix == "sword" {
             "oteryn:quest-reward/knight-sword".into()
         } else if family == "pirate" && *suffix == "sabre" {
             "oteryn:quest-reward/pirate-sabre".into()

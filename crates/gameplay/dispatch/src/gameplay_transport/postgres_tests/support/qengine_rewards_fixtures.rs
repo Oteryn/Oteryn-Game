@@ -258,7 +258,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l8-hunter-leather" => &["leather"],
         "l8-hunter-wings" => &["chicken wing"],
         "l8-hunter-hat" => &["steel"],
-        "l8-hunter-gloves" => &["sniper gloves"],
+        "l8-hunter-gloves" | "elane-gloves" => &["sniper gloves"],
         "l8-mage-male-wand-start" => &["angelina", "yes"],
         "l8-mage-male-wands" => &["wand"],
         "l8-mage-male-sulphur" => &["sulphur"],

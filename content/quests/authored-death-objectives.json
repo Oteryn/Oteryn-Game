@@ -450,8 +450,8 @@
       "key": "oteryn:quest-death/authored-venore-coryms",
       "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
       "creature": "oteryn:creature.little_corym_charlatan",
-      "stage": "oteryn:quest-progress/chosen/venore-daily/stage",
-      "stage_value": 12,
+      "stage": "oteryn:quest-progress/chosen/venore-daily/sabotage/stage",
+      "stage_value": 1,
       "counter": "oteryn:quest-progress/chosen/venore-daily/kills",
       "required": 5,
       "minimum": {
@@ -496,7 +496,7 @@
       },
       "sources": [
         "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: five native Little Corym Charlatans in the source-verified walkable southern construction basement, not claimed source spawn IDs. Native captured death and present principal only; CONTRACT-NOTES.md."
+        "Existing map-qualified Little Corym room and five captured native spawns."
       ]
     },
     {

@@ -543,6 +543,7 @@ fn effect_kind(effect: &Tagged) -> Option<QuestEffectKind> {
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+    mod donor_quest_tests;
     use super::super::{QuestRefusal, valid_quest_key};
     use super::*;
 

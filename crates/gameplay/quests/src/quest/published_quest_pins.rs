@@ -73,6 +73,21 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
 // new rules bound to the new hash. Existing absent-track defaults did not change.
 const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
+    // Predecessors measured on main 3e0991642 with quest_definition_hashes.
+    (
+        "oteryn:quest.authored.venore_daily_tasks_quest",
+        hash(b"4a3a65c5e76cb8e0b5cd57d6721cc5d1634d91bdeb7339a667485dc867c9ade7"),
+        &[hash(
+            b"ef8a4b6d2a00bac0fe4ac8db70d91b81ce31bc68c27924539079714bbdbe15e3",
+        )],
+    ),
+    (
+        "oteryn:quest.authored.voodoo_doll_quest",
+        hash(b"ca164208efed0f55b22206e2fe29f6cf706c693f17d8c4f59d3b466df6f4faff"),
+        &[hash(
+            b"99642b43c08d8bba83b6eac982a1a0da4fd67c054dad406fd473c1645bb78721",
+        )],
+    ),
     (
         "oteryn:quest.ferumbras_ascension_quest",
         hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
@@ -86,6 +101,14 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
         &[hash(
             b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a",
         )],
+    ),
+    (
+        "oteryn:quest.outfit_and_addon_quests",
+        hash(b"8ad5b2673382523cc269396f2c2016226e18ac9f894ac2049264993ae5982d19"),
+        &[
+            hash(b"ce65daca1c0a3c499c3f23fe60ae01aeb517e1aaea4689022c055971de786e6f"),
+            hash(b"bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8"),
+        ],
     ),
     (
         "oteryn:quest.the_ancient_tombs_quest",
@@ -144,6 +167,29 @@ mod tests {
             )
             .is_some()
         );
+        Ok(())
+    }
+
+    #[test]
+    fn donor_quest_saved_voodoo_and_venore_pins_remain_admitted() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        for (quest, predecessor) in [
+            (
+                "oteryn:quest.authored.venore_daily_tasks_quest",
+                hash(b"ef8a4b6d2a00bac0fe4ac8db70d91b81ce31bc68c27924539079714bbdbe15e3"),
+            ),
+            (
+                "oteryn:quest.authored.voodoo_doll_quest",
+                hash(b"99642b43c08d8bba83b6eac982a1a0da4fd67c054dad406fd473c1645bb78721"),
+            ),
+        ] {
+            assert!(
+                npc_rules::legacy_defaults(catalogue, quest, &predecessor).is_some(),
+                "source-era progress at the requested base must remain admitted: {quest}"
+            );
+        }
         Ok(())
     }
 
