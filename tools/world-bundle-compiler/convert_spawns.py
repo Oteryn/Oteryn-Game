@@ -31,6 +31,7 @@ HELD = IMPORT / "map-content-linking/spawns/held-groups.json"
 HELD_SHA256 = "8a666c3d409edda5ac5996d6dec64cce24b30d5f43c75aa9a1175f1d07297c57"
 BOSSES = Path(__file__).with_name("boss-spawns.json")
 BOSS_CHANCES = Path(__file__).with_name("held-boss-chances.json")
+MAP_RECONCILIATION = Path(__file__).with_name("spawn-map-slice-3.json")
 FRAME = "global-target-2026-09-27"
 SHARD_SIZE = 2000
 SOURCE = {
@@ -239,6 +240,10 @@ def convert(xml: bytes) -> dict[str, str]:
             "coordinate_frame": FRAME,
             "family": "Spawn.Source",
             "generator": "tools/world-bundle-compiler/convert_spawns.py",
+            "map_reconciliation": {
+                "path": MAP_RECONCILIATION.relative_to(ROOT).as_posix(),
+                "sha256": hashlib.sha256(MAP_RECONCILIATION.read_bytes()).hexdigest(),
+            },
             "held_groups": {
                 "group_count": len(held_records),
                 "path": "imports/crystalserver/summer-update/map-content-linking/spawns/held-groups.json",

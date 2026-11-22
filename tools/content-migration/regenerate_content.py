@@ -128,6 +128,8 @@ CHECKS = (
     ["python3", "tools/content-schema/quest-authoring/arena_completion.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
     ["python3", "tools/content-schema/world-object-authoring/feroxa_static.py", "--check"],
+    ["python3", "tools/content-schema/world-object-authoring/spawn_map_ground.py", "--check"],
+    ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
     ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
@@ -836,6 +838,8 @@ def main() -> int:
     install_buddel(ROOT, WORLD)
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
+    run(["python3", "tools/content-schema/world-object-authoring/spawn_map_ground.py"])
+    run(["python3", "tools/world-bundle-compiler/convert_spawns.py"])
     refresh_source_cohort_extent()
     repin_rust_inventory()
     run(["python3", "tools/content-migration/import_cyclopedia_global.py"])

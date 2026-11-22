@@ -504,6 +504,15 @@ def validate_record(record):
     if errors:
         return errors
     import activity_static
+    import spawn_map_ground
+
+    identifier = record["provenance"]["source_item_id"]
+    if family == "Terrain" and identifier in spawn_map_ground.GROUND_IDS:
+        return (
+            []
+            if record == spawn_map_ground.records()[identifier]
+            else ["spawn-map ground differs from its qualified source"]
+        )
 
     if (
         record["provenance"]["source"].get("profile")
