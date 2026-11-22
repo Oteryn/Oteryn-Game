@@ -103,11 +103,14 @@ pub(crate) enum QuestOutfitGrant {
     Revenant,
     /// PR2784 answer6547536027: base only; no unverified addon.
     DecayingDefender,
+    /// Crystal 201189f8 arbaziloth_death.lua:35-39.
+    FiendSlayer,
 }
 
 impl QuestOutfitGrant {
     fn key(self) -> &'static str {
         match self {
+            Self::FiendSlayer => "oteryn:outfit.fiend_slayer/quest-grant/0",
             Self::Revenant => "oteryn:appearance-grant/quest/soul-war/revenant-base",
             Self::DecayingDefender => {
                 "oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base"
@@ -117,6 +120,7 @@ impl QuestOutfitGrant {
 
     fn provenance(self) -> &'static str {
         match self {
+            Self::FiendSlayer => PROVENANCE,
             Self::Revenant => "crystal-201189f-soul-war-revenant-v1",
             Self::DecayingDefender => "owner-pr2784-decaying-defender-base-v1",
         }
