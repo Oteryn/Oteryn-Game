@@ -1,17 +1,132 @@
 use crate::CLIENT_BUILD;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError, mpsc};
 use std::time::Duration;
 
+const HELPER_OBSERVATION: Duration = Duration::from_secs(3);
 const DEFAULT_CALLBACK_TIMEOUT: Duration = Duration::from_secs(300);
 
 use oteryn_foundation::CancellationToken;
 
-static SYSTEM_BROWSER: std::sync::LazyLock<BrowserOpener> =
-    std::sync::LazyLock::new(|| Arc::new(open_system_browser));
-
 pub type BrowserOpener = Arc<dyn Fn(&str) -> bool + Send + Sync>;
+
+#[derive(Default)]
+struct BrowserWorkers {
+    shutdown: CancellationToken,
+    handles: Mutex<Vec<std::thread::JoinHandle<()>>>,
+}
+
+#[derive(Clone)]
+pub(crate) struct SystemBrowser {
+    opener: BrowserOpener,
+    workers: Arc<BrowserWorkers>,
+}
+
+impl Default for SystemBrowser {
+    fn default() -> Self {
+        let workers = Arc::<BrowserWorkers>::default();
+        let owner = workers.clone();
+        Self {
+            opener: Arc::new(move |url| deliver_system_url(url, &owner, None, None)),
+            workers,
+        }
+    }
+}
+
+impl SystemBrowser {
+    pub(crate) fn shutdown(&self) {
+        self.workers.shutdown.cancel();
+        let handles = std::mem::take(
+            &mut *self
+                .workers
+                .handles
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner),
+        );
+        let deadline = std::time::Instant::now() + Duration::from_secs(2);
+        for handle in handles {
+            while !handle.is_finished() {
+                if std::time::Instant::now() >= deadline {
+                    return;
+                }
+                std::thread::sleep(Duration::from_millis(1));
+            }
+            let _ = handle.join();
+        }
+    }
+}
+
+/// One admission attempt or Store session. A replacement gets a fresh epoch.
+#[derive(Default)]
+pub(crate) struct BrowserEpoch {
+    ended: CancellationToken,
+    delivery: Mutex<Delivery>,
+}
+
+#[derive(Default)]
+struct Delivery {
+    callbacks: usize,
+    helpers: Vec<mpsc::Receiver<()>>,
+}
+
+impl BrowserEpoch {
+    pub(crate) fn opener(self: &Arc<Self>, config: &NativeLoginConfig) -> BrowserOpener {
+        let epoch = self.clone();
+        if Arc::ptr_eq(&config.open_browser, &config.system_browser.opener) {
+            let workers = config.system_browser.workers.clone();
+            return Arc::new(move |url| {
+                deliver_system_url(url, &workers, None, Some(epoch.clone()))
+            });
+        }
+        let browser = config.open_browser.clone();
+        Arc::new(move |url| {
+            {
+                let mut delivery = epoch
+                    .delivery
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner);
+                if epoch.ended.is_cancelled() {
+                    return false;
+                }
+                delivery.callbacks += 1;
+            }
+            let delivered = browser(url);
+            let mut delivery = epoch
+                .delivery
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner);
+            delivery.callbacks -= 1;
+            delivered && !epoch.ended.is_cancelled()
+        })
+    }
+
+    pub(crate) fn close(&self) {
+        let mut delivery = self.delivery.lock().unwrap_or_else(PoisonError::into_inner);
+        if self.ended.is_cancelled() {
+            return;
+        }
+        self.ended.cancel();
+        delivery.prune();
+        if delivery.callbacks > 0 || !delivery.helpers.is_empty() {
+            eprintln!("Browser delivery cancelled: URL may already have been delivered.");
+        }
+        let helpers = std::mem::take(&mut delivery.helpers);
+        drop(delivery);
+        let deadline = std::time::Instant::now() + HELPER_OBSERVATION + Duration::from_secs(2);
+        for helper in helpers {
+            let _ =
+                helper.recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()));
+        }
+    }
+}
+
+impl Delivery {
+    fn prune(&mut self) {
+        self.helpers
+            .retain(|helper| matches!(helper.try_recv(), Err(mpsc::TryRecvError::Empty)));
+    }
+}
 
 /// A required native login setting that is absent or empty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,6 +161,7 @@ pub struct NativeLoginConfig {
     /// Backoff unit of every retry; one second in production.
     pub retry_unit: Duration,
     pub open_browser: BrowserOpener,
+    pub(crate) system_browser: SystemBrowser,
     pub select_character: crate::character_selection::CharacterSelector,
     pub training_queue: crate::character_selection::TrainingQueue,
     pub account_services: crate::account_services::Presenter,
@@ -92,6 +208,7 @@ impl NativeLoginConfig {
             &oauth_client_id,
             lookup("OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED").as_deref() == Some("true"),
         ));
+        let system_browser = SystemBrowser::default();
         Ok(Some(Self {
             session_options: None,
             device_sessions,
@@ -105,7 +222,8 @@ impl NativeLoginConfig {
             preference_path: crate::play::PreferenceStore::path(),
             callback_timeout: DEFAULT_CALLBACK_TIMEOUT,
             retry_unit: Duration::from_secs(1),
-            open_browser: Arc::clone(&SYSTEM_BROWSER),
+            open_browser: system_browser.opener.clone(),
+            system_browser,
             select_character: Arc::new(crate::character_selection::select),
             training_queue: Default::default(),
             account_services: Arc::new(crate::account_services::present),
@@ -117,12 +235,12 @@ impl NativeLoginConfig {
     }
 }
 
-/// Observes early helper failures. Call from a worker thread.
-pub fn open_system_browser(url: &str) -> bool {
-    deliver_system_url(url, None)
-}
-
-fn deliver_system_url(url: &str, cancel: Option<&CancellationToken>) -> bool {
+fn deliver_system_url(
+    url: &str,
+    workers: &BrowserWorkers,
+    cancel: Option<&CancellationToken>,
+    epoch: Option<Arc<BrowserEpoch>>,
+) -> bool {
     let platform = if cfg!(windows) {
         BrowserPlatform::Windows
     } else if cfg!(target_os = "macos") {
@@ -133,10 +251,35 @@ fn deliver_system_url(url: &str, cancel: Option<&CancellationToken>) -> bool {
     let mut command = browser_command(platform, url);
     let cancel = cancel.cloned();
     let (result, delivery) = std::sync::mpsc::channel();
+    // Register before shutdown can take the handles. Delivery itself runs outside the lock.
+    let mut handles = workers
+        .handles
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner);
+    if workers.shutdown.is_cancelled() {
+        return false;
+    }
+    handles.retain(|handle| !handle.is_finished());
+    let shutdown = workers.shutdown.clone();
     let worker = std::thread::Builder::new()
         .name("browser-helper".into())
         .spawn(move || {
-            if cancel.as_ref().is_some_and(CancellationToken::is_cancelled) {
+            let mut gate = epoch.as_ref().map(|scope| {
+                scope
+                    .delivery
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+            });
+            let ended = || {
+                epoch
+                    .as_ref()
+                    .is_some_and(|scope| scope.ended.is_cancelled())
+            };
+            let cancelled = || {
+                shutdown.is_cancelled()
+                    || cancel.as_ref().is_some_and(CancellationToken::is_cancelled)
+            };
+            if cancelled() || ended() {
                 return;
             }
             let Ok(mut child) = command
@@ -147,13 +290,22 @@ fn deliver_system_url(url: &str, cancel: Option<&CancellationToken>) -> bool {
             else {
                 return;
             };
-            let deadline = std::time::Instant::now() + Duration::from_secs(3);
+            // Spawn and registration are atomic with closing the epoch. Disconnect
+            // only after the child exits or is killed and reaped.
+            let _completion = gate.as_mut().map(|delivery| {
+                delivery.prune();
+                let (done, finished) = mpsc::channel();
+                delivery.helpers.push(finished);
+                done
+            });
+            drop(gate);
+            let deadline = std::time::Instant::now() + HELPER_OBSERVATION;
             let mut pending = Some(result);
-            while !cancel.as_ref().is_some_and(CancellationToken::is_cancelled) {
+            while !cancelled() {
                 match child.try_wait() {
                     Ok(Some(status)) => {
                         if let Some(result) = pending {
-                            let _ = result.send(status.success());
+                            let _ = result.send(status.success() && !ended());
                         }
                         return;
                     }
@@ -162,11 +314,13 @@ fn deliver_system_url(url: &str, cancel: Option<&CancellationToken>) -> bool {
                         if std::time::Instant::now() >= deadline
                             && let Some(result) = pending.take()
                         {
-                            let _ = result.send(true);
-                            if cancel.is_none() {
-                                let _ = child.wait();
-                                return;
+                            if ended() {
+                                break;
                             }
+                            let _ = result.send(true);
+                        }
+                        if pending.is_none() && ended() {
+                            break;
                         }
                         std::thread::sleep(Duration::from_millis(10));
                     }
@@ -175,7 +329,10 @@ fn deliver_system_url(url: &str, cancel: Option<&CancellationToken>) -> bool {
             let _ = child.kill();
             let _ = child.wait();
         });
-    worker.is_ok() && delivery.recv().unwrap_or(false)
+    let Ok(worker) = worker else { return false };
+    handles.push(worker);
+    drop(handles);
+    delivery.recv().unwrap_or(false)
 }
 
 enum BrowserPlatform {
@@ -198,9 +355,17 @@ fn browser_command(platform: BrowserPlatform, url: &str) -> std::process::Comman
 }
 
 impl NativeLoginConfig {
+    pub(crate) fn bind_system_browser(&mut self, system: SystemBrowser) {
+        if Arc::ptr_eq(&self.open_browser, &self.system_browser.opener) {
+            self.open_browser = system.opener.clone();
+        }
+        self.system_browser = system;
+    }
+
     pub(crate) fn scoped_browser(&self, cancel: CancellationToken) -> BrowserOpener {
-        if Arc::ptr_eq(&self.open_browser, &SYSTEM_BROWSER) {
-            Arc::new(move |url| deliver_system_url(url, Some(&cancel)))
+        if Arc::ptr_eq(&self.open_browser, &self.system_browser.opener) {
+            let workers = self.system_browser.workers.clone();
+            Arc::new(move |url| deliver_system_url(url, &workers, Some(&cancel), None))
         } else {
             Arc::clone(&self.open_browser)
         }
@@ -247,13 +412,14 @@ mod browser_command_tests {
             assert!(status.success());
             return Ok(());
         };
-        assert!(!open_system_browser("fail"));
+        let system = SystemBrowser::default();
+        assert!(!(system.opener)("fail"));
+        let cancel = CancellationToken::new();
         for delay in ["4", "60"] {
-            let cancel = CancellationToken::new();
             assert!(if delay == "4" {
-                open_system_browser(delay)
+                (system.opener)(delay)
             } else {
-                deliver_system_url(delay, Some(&cancel))
+                deliver_system_url(delay, &system.workers, Some(&cancel), None)
             });
             let pid = std::fs::read_to_string(PathBuf::from(&root).join("pid"))?;
             let process = PathBuf::from("/proc").join(pid.trim());
@@ -267,6 +433,25 @@ mod browser_command_tests {
             }
             assert!(!process.exists());
         }
+        let config = NativeLoginConfig::from_env(|name| match name {
+            "OTERYN_PLATFORM_URL" | "OTERYN_GATEWAY_URL" => Some("https://example.invalid".into()),
+            "OTERYN_OAUTH_CLIENT_ID" => Some("browser-test".into()),
+            _ => None,
+        })?
+        .ok_or("missing native config")?;
+        let client = crate::ClientBootstrap::new()?.with_native_login(config);
+        let browser = client
+            .native_login
+            .as_ref()
+            .ok_or("missing native config")?
+            .scoped_browser(client.runtime.cancellation());
+        let entry = crate::reentry::Reentry::new(client);
+        assert!(browser("60"));
+        let pid = std::fs::read_to_string(PathBuf::from(root).join("pid"))?;
+        let process = PathBuf::from("/proc").join(pid.trim());
+        assert!(process.exists());
+        entry.shutdown();
+        assert!(!process.exists(), "browser helper survived shutdown");
         Ok(())
     }
 

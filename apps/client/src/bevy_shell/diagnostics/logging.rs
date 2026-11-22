@@ -361,8 +361,12 @@ fn custom_layer(app: &mut App) -> Option<BoxedLayer> {
         .unwrap_or_else(PoisonError::into_inner)
         .take()?;
     let directives = environment().unwrap_or_else(|| setup.level.to_owned());
-    let (filter, handle) = reload::Layer::new(level_filter(&directives));
-    let file = setup.base.map(|base| {
+    Some(file_layer(app, setup.base, &directives))
+}
+
+fn file_layer(app: &mut App, base: Option<PathBuf>, directives: &str) -> BoxedLayer {
+    let (filter, handle) = reload::Layer::new(level_filter(directives));
+    let file = base.map(|base| {
         RollingFile::new(
             base.join(crate::crash_report::LOG_DIRECTORY),
             KEEP_FILES,
@@ -378,7 +382,7 @@ fn custom_layer(app: &mut App) -> Option<BoxedLayer> {
         stderr: false,
         ring: true,
     };
-    Some(Box::new(filter.and_then(format_layer(sink))))
+    Box::new(filter.and_then(format_layer(sink)))
 }
 
 fn fmt_layer(_: &mut App) -> Option<BoxedFmtLayer> {

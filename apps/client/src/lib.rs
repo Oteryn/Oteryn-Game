@@ -97,8 +97,18 @@ impl ClientBootstrap {
     /// Enables native gameplay entry (ADR-0011 order: availability, credential, connect).
     #[must_use]
     pub fn with_native_login(mut self, config: NativeLoginConfig) -> Self {
-        self.native_login = Some(config);
+        self.set_native_login(config);
         self
+    }
+
+    fn set_native_login(&mut self, mut config: NativeLoginConfig) {
+        config.bind_system_browser(
+            self.native_login
+                .as_ref()
+                .map(|previous| previous.system_browser.clone())
+                .unwrap_or_default(),
+        );
+        self.native_login = Some(config);
     }
 
     #[must_use]
@@ -181,6 +191,9 @@ impl ClientBootstrap {
     }
 
     pub fn shutdown(self) {
+        if let Some(config) = self.native_login {
+            config.system_browser.shutdown();
+        }
         self.runtime.shutdown(Duration::from_millis(250));
     }
 }

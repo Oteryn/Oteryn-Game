@@ -186,6 +186,7 @@ impl Stack {
             preference_path: None,
             callback_timeout: Duration::from_secs(10),
             retry_unit: Duration::from_millis(10),
+            system_browser: Default::default(),
             open_browser: Arc::new(complete_browser_sign_in),
             account_services: Arc::new(crate::account_services::present),
             coin_shop: Arc::new(crate::coin_shop::present),
