@@ -3931,6 +3931,82 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/scale-armor-well-32353",
+      "quest": "oteryn:quest.scale_armor_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32353,
+          "y": 32131,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 102,
+        "appearance": 1930
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32354,
+        "y": 32131,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/down_floor.lua:1-11"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/scale-armor-well-32354",
+      "quest": "oteryn:quest.scale_armor_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32354,
+          "y": 32131,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 102,
+        "appearance": 1931
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32355,
+        "y": 32131,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/down_floor.lua:1-11"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/thais-lighthouse-plate",
       "quest": "oteryn:quest.thais_lighthouse_quest",
       "trigger": "step_in",

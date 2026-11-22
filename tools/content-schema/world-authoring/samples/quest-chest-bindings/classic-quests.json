@@ -140,6 +140,160 @@
       "source_line": 571
     },
     {
+      "claim": "oteryn:reward-claim.kv.present_box",
+      "position": [
+        32149,
+        32105,
+        11
+      ],
+      "appearance": 2472,
+      "unique": 6113,
+      "source_line": 1448
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.ringquest1",
+      "position": [
+        33131,
+        31624,
+        15
+      ],
+      "appearance": 2469,
+      "unique": 6037,
+      "source_line": 858
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.ringquest2",
+      "position": [
+        33134,
+        31624,
+        15
+      ],
+      "appearance": 2469,
+      "unique": 6038,
+      "source_line": 865
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.scalearmor",
+      "position": [
+        32357,
+        32130,
+        9
+      ],
+      "appearance": 2472,
+      "unique": 6153,
+      "source_line": 1770
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.shamantreasure",
+      "position": [
+        33127,
+        31885,
+        9
+      ],
+      "appearance": 4024,
+      "unique": 6069,
+      "source_line": 1099
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.shortswordbook",
+      "position": [
+        32171,
+        32197,
+        7
+      ],
+      "appearance": 2472,
+      "unique": 6013,
+      "source_line": 676
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.silverbrooch",
+      "position": [
+        32775,
+        32006,
+        11
+      ],
+      "appearance": 2476,
+      "unique": 6155,
+      "source_line": 1788
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.spikesword",
+      "position": [
+        32568,
+        32085,
+        12
+      ],
+      "appearance": 3990,
+      "unique": 6171,
+      "source_line": 1925
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.stealhring1",
+      "position": [
+        33315,
+        32277,
+        11
+      ],
+      "appearance": 1983,
+      "unique": 6174,
+      "source_line": 1949
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.stealhring2",
+      "position": [
+        33315,
+        32282,
+        11
+      ],
+      "appearance": 1983,
+      "unique": 6175,
+      "source_line": 1956
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.steelhelmet1",
+      "position": [
+        32460,
+        31951,
+        5
+      ],
+      "appearance": 2434,
+      "unique": 6176,
+      "source_line": 1964
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.steelhelmet2",
+      "position": [
+        32464,
+        31957,
+        5
+      ],
+      "appearance": 2469,
+      "unique": 6177,
+      "source_line": 1971
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.steelhelmet3",
+      "position": [
+        32462,
+        31947,
+        4
+      ],
+      "appearance": 2473,
+      "unique": 6178,
+      "source_line": 1978
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.steelhelmet4",
+      "position": [
+        32467,
+        31962,
+        4
+      ],
+      "appearance": 2472,
+      "unique": 6179,
+      "source_line": 1985
+    },
+    {
       "claim": "oteryn:reward-claim.quest.key.id3620",
       "position": [
         32411,
@@ -204,6 +358,17 @@
       "appearance": 2472,
       "unique": 6219,
       "source_line": 2299
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.strong_potions.reward",
+      "position": [
+        33163,
+        31603,
+        15
+      ],
+      "appearance": 2469,
+      "unique": 6070,
+      "source_line": 1110
     }
   ],
   "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
@@ -344,7 +509,7 @@
         {
           "appearance": 3506,
           "attrs": {
-            "text": "Muriel, I suspect Porgol stole your books on necromancy. He has yet to discover the fountain of life or the caves of inferno. I will send Laira to town. If I am right about him, she is safer there. — Arcian"
+            "text": "Muriel, I suspect Porgol stole your books on necromancy. He has yet to discover the fountain of life or the caves of inferno. I will send Laira to town. If I am right about him, she is safer there. \u2014 Arcian"
           }
         }
       ],
@@ -419,5 +584,94 @@
       "placement_basis": "Pickup tile adjacent to the Small Diamond reward chest."
     }
   ],
-  "key_table": "data-global/startup/tables/door_key.lua"
+  "key_table": "data-global/startup/tables/door_key.lua",
+  "pick_source_sha256": "b4839e13c284d32724d0b304bde18bb0d5d9924f6dd3cbd27c884e76c69a48a6",
+  "pick_access": [
+    {
+      "position": [
+        32149,
+        32110,
+        11
+      ],
+      "appearance": 355,
+      "action": 101,
+      "claims": [
+        "oteryn:reward-claim.kv.present_box"
+      ]
+    },
+    {
+      "position": [
+        32775,
+        32012,
+        10
+      ],
+      "appearance": 355,
+      "action": 101,
+      "claims": [
+        "oteryn:reward-claim.kv.silverbrooch"
+      ]
+    },
+    {
+      "position": [
+        32595,
+        32068,
+        9
+      ],
+      "appearance": 355,
+      "action": 101,
+      "claims": [
+        "oteryn:reward-claim.kv.spikesword"
+      ]
+    },
+    {
+      "position": [
+        32580,
+        32103,
+        11
+      ],
+      "appearance": 355,
+      "action": 101,
+      "claims": [
+        "oteryn:reward-claim.kv.spikesword"
+      ]
+    }
+  ],
+  "well_source_sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad",
+  "well_access": [
+    {
+      "position": [
+        32353,
+        32131,
+        8
+      ],
+      "appearance": 1930,
+      "action": 102,
+      "claims": [
+        "oteryn:reward-claim.kv.scalearmor"
+      ]
+    },
+    {
+      "position": [
+        32354,
+        32131,
+        8
+      ],
+      "appearance": 1931,
+      "action": 102,
+      "claims": [
+        "oteryn:reward-claim.kv.scalearmor"
+      ]
+    }
+  ],
+  "lamp_source_sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad",
+  "marid_lamp": {
+    "position": [
+      33048,
+      32630,
+      1
+    ],
+    "appearance": 3263,
+    "unique": 3024,
+    "source_line": 4215
+  }
 }

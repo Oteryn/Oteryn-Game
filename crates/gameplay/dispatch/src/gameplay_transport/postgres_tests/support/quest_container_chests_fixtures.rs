@@ -74,7 +74,7 @@ fn definition(key: &str) -> TypedDefinitionRef {
 }
 
 fn scenario(case: Case) -> TestResult {
-    scenario_case(case, None, None, None)
+    scenario_case(case, None, None, None, false)
 }
 
 pub(super) struct CatalogueBatch<'a> {
@@ -93,15 +93,16 @@ pub(super) fn catalogue_scenario(
     chest: &super::quest_catalogue_chests_fixtures::CatalogueChest,
     activation: &super::quest_catalogue_chests_fixtures::CatalogueActivation,
 ) -> TestResult {
-    scenario_case(Case::Catalogue, Some(chest), Some(activation), None)
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), None, false)
 }
 
 pub(super) fn catalogue_scenario_in_batch(
     chest: &super::quest_catalogue_chests_fixtures::CatalogueChest,
     activation: &super::quest_catalogue_chests_fixtures::CatalogueActivation,
     batch: &CatalogueBatch,
+    committed: bool,
 ) -> TestResult {
-    scenario_case(Case::Catalogue, Some(chest), Some(activation), Some(batch))
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), Some(batch), committed)
 }
 
 type NativeRegion = (&'static [u8], (u8, u16, u16));
@@ -134,6 +135,7 @@ fn scenario_case(
     catalogue: Option<&super::quest_catalogue_chests_fixtures::CatalogueChest>,
     activation: Option<&super::quest_catalogue_chests_fixtures::CatalogueActivation>,
     batch: Option<&CatalogueBatch>,
+    committed: bool,
 ) -> TestResult {
     let (claim, chest, unique, root_key, expected) = match case {
         Case::Catalogue => {
@@ -333,10 +335,25 @@ fn scenario_case(
                 6192 => (chest.0, chest.1),
                 _ => (chest.0 - 1, chest.1),
             }
+        } else if committed {
+            match unique {
+                6038 | 6113 | 6155 => (chest.0, chest.1 + 1),
+                6171 | 6176 | 6178 => (chest.0 + 1, chest.1),
+                _ => (chest.0 - 1, chest.1),
+            }
         } else {
             (chest.0 - u16::from(!matches!(case, Case::ChoiceDoor)), chest.1)
         };
-        let world = if pinned_completion_chest {
+        let pinned_source = pinned_completion_chest || committed || classic_region.is_some();
+        let world = if committed && classic_region.is_none() {
+            use oteryn_gameplay_quests::quest::world_callbacks::Position;
+            let floor = chest.2;
+            super::qc_pinned_world::crop(
+                native,
+                Position { x: start.0, y: start.1, floor },
+                &[Position { x: chest.0, y: chest.1, floor }],
+            )?
+        } else if pinned_completion_chest {
             super::qc_pinned_world::world(native)?
         } else if let Some((bytes, region)) = classic_region {
             use super::l6_world_pickups_fixtures::{NativeCrop, native_crop};
@@ -485,7 +502,7 @@ fn scenario_case(
                 deps.room.movement_cells()
             })
             .map_err(debug)?;
-        let frame_binding = if pinned_completion_chest || classic_region.is_some() {
+        let frame_binding = if pinned_source {
             world.frame_binding_digest(deps.admitted.world_id)
         } else {
             activated_pin.frame_binding().digest()
@@ -498,7 +515,7 @@ fn scenario_case(
             frame_binding,
             world.map_revision_digest(),
             (
-                i32::from(if classic_region.is_some() { start.0 } else { chest.0 - 1 }),
+                i32::from(if classic_region.is_some() || committed { start.0 } else { chest.0 - 1 }),
                 i32::from(start.1),
                 -i16::from(chest.2),
             ),
@@ -570,7 +587,7 @@ fn scenario_case(
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
         let target_at = |x| -> TestResult<WorldObjectTarget> {
-            let ordinal = if pinned_completion_chest || classic_region.is_some() {
+            let ordinal = if pinned_source {
                 let source = catalogue.ok_or("completion chest")?;
                 let tile = world
                     .base()

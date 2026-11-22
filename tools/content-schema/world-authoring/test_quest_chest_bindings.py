@@ -13,6 +13,49 @@ import world_region_codec as codec
 
 
 class QuestChestBindings(unittest.TestCase):
+    def test_classic_quest_selectors_from_committed_regions(self):
+        expected = (
+            (32171, 32197, 7, 2472, "unique", 6013),
+            (33131, 31624, 15, 2469, "unique", 6037),
+            (33134, 31624, 15, 2469, "unique", 6038),
+            (33048, 32630, 1, 3263, "unique", 3024),
+            (33127, 31885, 9, 4024, "unique", 6069),
+            (33163, 31603, 15, 2469, "unique", 6070),
+            (32149, 32105, 11, 2472, "unique", 6113),
+            (32357, 32130, 9, 2472, "unique", 6153),
+            (32775, 32006, 11, 2476, "unique", 6155),
+            (32568, 32085, 12, 3990, "unique", 6171),
+            (33315, 32277, 11, 1983, "unique", 6174),
+            (33315, 32282, 11, 1983, "unique", 6175),
+            (32460, 31951, 5, 2434, "unique", 6176),
+            (32464, 31957, 5, 2469, "unique", 6177),
+            (32462, 31947, 4, 2473, "unique", 6178),
+            (32467, 31962, 4, 2472, "unique", 6179),
+            (32149, 32110, 11, 355, "action", 101),
+            (32775, 32012, 10, 355, "action", 101),
+            (32595, 32068, 9, 355, "action", 101),
+            (32580, 32103, 11, 355, "action", 101),
+            (32353, 32131, 8, 1930, "action", 102),
+            (32354, 32131, 8, 1931, "action", 102),
+        )
+        world = chests.ROOT / chests.INDEX
+        palette = json.loads(world.read_bytes())["palette"]
+        regions = {}
+        for x, y, z, appearance, attr, value in expected:
+            with self.subTest(position=(x, y, z), appearance=appearance):
+                name = codec.region_name(z, x // 256, y // 256)
+                if name not in regions:
+                    _, _, _, sectors = codec.decode_region(
+                        world.with_name(name).read_bytes()
+                    )
+                    regions[name] = {tile[:2]: tile[-1] for _, tiles in sectors for tile in tiles}
+                actual = [
+                    (attrs or {}).get(attr)
+                    for index, depth, attrs in regions[name][(x, y)]
+                    if not depth and palette[index]["source_item_id"] == appearance
+                ]
+                self.assertEqual(actual, [value])
+
     def test_current_committed_corpus_captures_exact_elvenbane_startup_uids(self):
         from pathlib import Path
 

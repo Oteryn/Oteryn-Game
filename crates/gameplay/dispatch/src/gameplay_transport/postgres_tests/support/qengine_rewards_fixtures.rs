@@ -389,7 +389,12 @@ pub(super) async fn wire_reward_with_prefix_refusal(
     Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
     u64,
 )> {
-    let words: Vec<_> = std::iter::once("hi")
+    let greeting = match callback.npc.as_str() {
+        "oteryn:npc.bo_ques" => "djanni'hah",
+        "oteryn:npc.rata_mari" => "piedpiper",
+        _ => "hi",
+    };
+    let words: Vec<_> = std::iter::once(greeting)
         .chain(offer_words(&callback.key).iter().copied())
         .chain(std::iter::once(callback.keywords[0].as_str()))
         .collect();
@@ -902,6 +907,10 @@ pub(super) async fn exercise(
     }
     if name == "qengine-rewards-l2-white-raven" {
         return Box::pin(questl2_passages::white_raven(owner, admitted, h)).await;
+    }
+    if name == super::classic_quest_parity_fixtures::NPC_CASE {
+        return Box::pin(super::classic_quest_parity_fixtures::npc_exercise(owner, admitted, h))
+            .await;
     }
     if name.starts_with("qengine-rewards-l2-djinn-") {
         return Box::pin(questl2_djinn_journeys::exercise(owner, admitted, h, name)).await;
