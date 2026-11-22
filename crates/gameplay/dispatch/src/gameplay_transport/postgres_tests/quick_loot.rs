@@ -1,13 +1,15 @@
 //! QUICKLOOT: production router, item owner, replay and real PostgreSQL custody.
 use super::fixture::{Harness, debug, id, run};
+use super::quick_loot_fixtures::exchange;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::item_mint::*;
 use crate::foundation::{CommandStatus, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
-use crate::gameplay_transport::connection::{
-    FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
-};
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use oteryn_protocol_oteryn::quick_loot::*;
+
+#[path = "quick_loot/session_fence.rs"]
+mod session_fence;
 
 #[test]
 fn quick_loot_postgres_dispatch_assignment_transfer_replay_and_fences() -> TestResult {
@@ -29,14 +31,16 @@ fn request(action: QuickLootAction) -> QuickLootRequest {
 
 #[test]
 fn quick_loot_pouch_postgres_dispatch_unlimited_slots_coin_only_and_weight() -> TestResult {
-    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-pouch", || scenario_with_pouch(true))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-pouch", || {
+        scenario_with_pouch(true, None)
+    })
 }
 
 fn scenario() -> TestResult {
-    scenario_with_pouch(false)
+    scenario_with_pouch(false, None)
 }
 
-fn scenario_with_pouch(pouch: bool) -> TestResult {
+fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "quick_loot", true, false).await?;
         prepare_current_session(&harness).await?;
@@ -48,7 +52,10 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                world,
+                "content-1",
+            )?;
         let generation = controller.active().ok_or("active")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();
@@ -255,6 +262,48 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
             SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 98])
                 .ok_or("capabilities")?;
         assert!(admitted.continuity.selected_capabilities.contains(98));
+        let corpse_identity = {
+            let mut runtime = deps.runtime.lock().await;
+            let creature = runtime
+                .admit_pinned_test_creature(MovementLocalPosition {
+                    x: 7,
+                    y: 0,
+                    floor: 7,
+                })
+                .map_err(debug)?;
+            runtime
+                .commit_monster_lab_damage(creature, b"quick-loot-corpse", 20)
+                .map_err(debug)?;
+            let mut death = runtime.borrow_combat_death();
+            let receipt = death.committed_lethal_receipt(creature).map_err(debug)?;
+            death.project_committed_lethal(receipt).map_err(debug)?;
+            runtime
+                .bind_corpse_item(
+                    creature,
+                    corpse_id,
+                    "Item",
+                    "oteryn:item.tibia.i5973",
+                    "definition-r1",
+                )
+                .map_err(debug)?;
+            creature.corpse_identity()
+        };
+        if let Some(case) = fence_case {
+            case.check(
+                &owner,
+                &mut admitted,
+                &harness.pool,
+                corpse_identity,
+                corpse_id,
+                &items,
+            )
+            .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
         assert!(
             crate::gameplay_transport::equipment_move::native_for_move(
                 &*deps.runtime.lock().await,
@@ -270,7 +319,9 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
             SelectedCapabilities::select(owner.offered_capabilities(), &[6])
                 .ok_or("plain capabilities")?;
         assert_eq!(
-            wire_requests(&owner, &mut plain, &[(1, all)]).await?,
+            exchange(&owner, &mut plain, corpse_identity, |_| Ok(vec![all]))
+                .await?
+                .1,
             vec![(
                 CommandStatus::Rejected,
                 QuickLootResult { items: Vec::new() }
@@ -280,23 +331,21 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
         let selected = admitted.continuity.selected_capabilities;
         admitted.continuity = plain.continuity;
         admitted.continuity.selected_capabilities = selected;
-        assert_eq!(
-            wire_requests(
-                &owner,
-                &mut admitted,
-                &[(
-                    2,
-                    QuickLootRequest {
-                        category: Some(QuickLootCategory::Gold),
-                        ..assign
-                    }
-                )]
-            )
-            .await?[0]
-                .0,
-            CommandStatus::Rejected,
-            "free account cannot assign categories"
-        );
+        if !pouch {
+            let (_, replies) = exchange(&owner, &mut admitted, corpse_identity, |shown| {
+                Ok(vec![QuickLootRequest {
+                    category: Some(QuickLootCategory::Gold),
+                    recipient_id: Some(shown.bag.ok_or("shown bag")?),
+                    ..assign
+                }])
+            })
+            .await?;
+            assert_eq!(
+                replies[0].0,
+                CommandStatus::Rejected,
+                "free account cannot assign categories"
+            );
+        }
         let click = QuickLootRequest {
             corpse: Some(corpse_id),
             ..request(QuickLootAction::Click)
@@ -310,16 +359,23 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
                 .try_into()
                 .map_err(|_| "far cell")?;
         fixture_corpse(&harness.pool, corpse_id, far, id(41), 0).await?;
+        let send_click = |shown: &super::quick_loot_fixtures::ShownHandles| {
+            Ok(vec![QuickLootRequest {
+                corpse: Some(shown.corpse.ok_or("shown corpse")?),
+                ..click
+            }])
+        };
+        let (_, distant) = exchange(&owner, &mut admitted, corpse_identity, send_click).await?;
         assert_eq!(
-            wire_requests(&owner, &mut admitted, &[(3, click)]).await?[0],
+            distant[0],
             (
-                CommandStatus::Accepted,
+                CommandStatus::Rejected,
                 QuickLootResult { items: Vec::new() }
             ),
-            "Click cannot reach a corpse two tiles away"
+            "durable reach independently refuses a corpse two tiles away"
         );
         fixture_corpse(&harness.pool, corpse_id, near, id(99), 0).await?;
-        let denied = wire_requests(&owner, &mut admitted, &[(4, click)]).await?;
+        let (_, denied) = exchange(&owner, &mut admitted, corpse_identity, send_click).await?;
         assert_eq!(denied[0].0, CommandStatus::Accepted);
         assert_eq!(denied[0].1.items.len(), items.len());
         assert!(
@@ -353,34 +409,17 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
                 },
                 ..request(action)
             };
-            let outcomes = wire_requests(
-                &owner,
-                &mut admitted,
-                &[
-                    (
-                        5,
-                        filter(QuickLootAction::FilterAdd, QuickLootFilterMode::Skip),
-                    ),
-                    (6, all),
-                    (
-                        7,
-                        filter(QuickLootAction::FilterRemove, QuickLootFilterMode::Skip),
-                    ),
-                    (
-                        8,
-                        filter(QuickLootAction::FilterAdd, QuickLootFilterMode::Accept),
-                    ),
-                    (
-                        9,
-                        filter(QuickLootAction::FilterSelect, QuickLootFilterMode::Accept),
-                    ),
-                    (
-                        10,
-                        filter(QuickLootAction::FilterClear, QuickLootFilterMode::Accept),
-                    ),
-                    (11, all),
-                ],
-            )
+            let (_, outcomes) = exchange(&owner, &mut admitted, corpse_identity, |_| {
+                Ok(vec![
+                    filter(QuickLootAction::FilterAdd, QuickLootFilterMode::Skip),
+                    all,
+                    filter(QuickLootAction::FilterRemove, QuickLootFilterMode::Skip),
+                    filter(QuickLootAction::FilterAdd, QuickLootFilterMode::Accept),
+                    filter(QuickLootAction::FilterSelect, QuickLootFilterMode::Accept),
+                    filter(QuickLootAction::FilterClear, QuickLootFilterMode::Accept),
+                    all,
+                ])
+            })
             .await?;
             assert_eq!(outcomes.len(), 7);
             assert!(outcomes.iter().all(|r| r.0 == CommandStatus::Accepted));
@@ -402,12 +441,19 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
                     .await
                     .premium_current()
             );
+            let (_, unseen) =
+                exchange(&owner, &mut admitted, corpse_identity, |_| Ok(vec![assign])).await?;
             assert_eq!(
-                wire_requests(&owner, &mut admitted, &[(5, assign)]).await?[0].0,
-                CommandStatus::Accepted
+                unseen[0].0,
+                CommandStatus::Rejected,
+                "an unseen Inbox UUID cannot assign the pouch"
             );
+            // Fixture writes use receipt keys outside this scenario's wire command stream.
+            let setup = durable_quick_loot(&owner, admitted, 1000, assign).await?;
+            assert_eq!(setup.0, CommandStatus::Accepted);
             fixture_overload_pouch(&harness.pool, true).await?;
-            let heavy = wire_requests(&owner, &mut admitted, &[(6, all)]).await?;
+            let (_, heavy) =
+                exchange(&owner, &mut admitted, corpse_identity, |_| Ok(vec![all])).await?;
             assert_eq!(heavy[0].0, CommandStatus::Accepted);
             assert_eq!(heavy[0].1.items.len(), items.len());
             assert!(
@@ -416,27 +462,40 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
             );
             fixture_overload_pouch(&harness.pool, false).await?;
         }
-        let assignment_id = admitted.continuity.next_command_id;
-        let loot_id = assignment_id + 1;
-        let replies = wire_requests(
-            &owner,
-            &mut admitted,
-            &[
-                (
-                    assignment_id,
+        let loot_id = admitted.continuity.next_command_id + u64::from(!pouch);
+        let replies = if pouch {
+            // The Store Inbox has no item-view projection. Provision the saved Gold
+            // Pouch selection through the durable owner, then execute Loot All on wire.
+            let assignment = durable_quick_loot(
+                &owner,
+                admitted,
+                1001,
+                QuickLootRequest {
+                    category: Some(QuickLootCategory::Gold),
+                    ..assign
+                },
+            )
+            .await?;
+            let (_, mut replies) =
+                exchange(&owner, &mut admitted, corpse_identity, |_| Ok(vec![all])).await?;
+            replies.insert(0, assignment);
+            replies
+        } else {
+            exchange(&owner, &mut admitted, corpse_identity, |shown| {
+                Ok(vec![
                     QuickLootRequest {
-                        category: if pouch {
-                            Some(QuickLootCategory::Gold)
-                        } else {
-                            None
-                        },
+                        recipient_id: Some(shown.bag.ok_or("shown bag")?),
                         ..assign
                     },
-                ),
-                (loot_id, loot_request),
-            ],
-        )
-        .await?;
+                    QuickLootRequest {
+                        corpse: Some(shown.corpse.ok_or("shown corpse")?),
+                        ..click
+                    },
+                ])
+            })
+            .await?
+            .1
+        };
         assert_eq!(replies.len(), 2);
         assert_eq!(
             replies[0],
@@ -469,72 +528,40 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
             },
             "batch conserves and merges both stacks"
         );
-        let command = UseCommand {
-            game_session_id: admitted.game_session_id,
-            command_id: loot_id,
-            item_fence: Some(fence),
-        };
         assert_eq!(
-            owner.quick_loot(admitted, command, loot_request).await,
-            Some(replies[1].clone()),
+            durable_quick_loot(&owner, admitted, loot_id, loot_request).await?,
+            replies[1],
             "lost acknowledgement replays exact outcome"
         );
         assert_eq!(
-            owner
-                .quick_loot(admitted, command, assign)
-                .await
-                .map(|r| r.0),
-            Some(CommandStatus::Rejected),
+            durable_quick_loot(&owner, admitted, loot_id, assign)
+                .await?
+                .0,
+            CommandStatus::Rejected,
             "changed intent conflicts"
         );
-        if !pouch {
-            assert_eq!(
-                owner
-                    .quick_loot(
-                        admitted,
-                        UseCommand {
-                            command_id: 40,
-                            ..command
-                        },
-                        QuickLootRequest {
-                            category: Some(QuickLootCategory::Gold),
-                            ..assign
-                        }
-                    )
-                    .await
-                    .map(|r| r.0),
-                Some(CommandStatus::Rejected),
-                "category sorting requires Premium"
-            );
-        }
-        let stale = crate::durability::item_transfer::CurrentCharacterItemFence {
-            connection_generation: crate::foundation::ConnectionGeneration::new(
-                fence.connection_generation.get() + 1,
-            )
-            .map_err(debug)?,
-            ..fence
-        };
-        assert_eq!(
-            owner
-                .quick_loot(
-                    admitted,
-                    UseCommand {
-                        command_id: 9,
-                        item_fence: Some(stale),
-                        ..command
-                    },
-                    all
+        let mut stale_admitted = admitted;
+        stale_admitted.item_fence = Some(
+            crate::durability::item_transfer::CurrentCharacterItemFence {
+                connection_generation: crate::foundation::ConnectionGeneration::new(
+                    fence.connection_generation.get() + 1,
                 )
-                .await
-                .map(|r| r.0),
-            Some(CommandStatus::Rejected)
+                .map_err(debug)?,
+                ..fence
+            },
         );
+        let (_, stale) = exchange(&owner, &mut stale_admitted, corpse_identity, |_| {
+            Ok(vec![all])
+        })
+        .await?;
+        assert_eq!(stale[0].0, CommandStatus::Rejected);
+        admitted.continuity = stale_admitted.continuity;
         let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quick_loot_receipts")
             .fetch_one(&harness.pool)
             .await?;
         assert_eq!(
             receipts,
-            if pouch { 6 } else { 11 },
+            if pouch { 5 } else { 10 },
             "stale and conflicting commands write nothing"
         );
         if !pouch {
@@ -550,19 +577,13 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
                 .and_then(|i| i.definition_ref("Item", "oteryn:item.tibia.i3031", "definition-r1"))
                 .ok_or("coin ref")?
                 .get();
-            let id = admitted.continuity.next_command_id;
-            let result = wire_requests(
-                &owner,
-                &mut admitted,
-                &[(
-                    id,
-                    QuickLootRequest {
-                        filter_mode: Some(QuickLootFilterMode::Skip),
-                        filter_definition_ref: Some(reference),
-                        ..request(QuickLootAction::FilterAdd)
-                    },
-                )],
-            )
+            let (_, result) = exchange(&owner, &mut admitted, corpse_identity, |_| {
+                Ok(vec![QuickLootRequest {
+                    filter_mode: Some(QuickLootFilterMode::Skip),
+                    filter_definition_ref: Some(reference),
+                    ..request(QuickLootAction::FilterAdd)
+                }])
+            })
             .await?;
             assert_eq!(
                 result[0].0,
@@ -586,44 +607,53 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
     })
 }
 
-async fn wire_requests(
+async fn durable_quick_loot(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
-    requests: &[(u64, QuickLootRequest)],
-) -> TestResult<Vec<(CommandStatus, QuickLootResult)>> {
-    let mut input = Vec::new();
-    for &(command_id, req) in requests {
-        let payload = encode_quick_loot_request(&req).map_err(debug)?;
-        let frame = oteryn_protocol_oteryn::encode_client_command(
-            1,
-            &oteryn_protocol_oteryn::ClientCommandValue {
-                command_id,
-                command_type: COMMAND_TYPE_QUICK_LOOT,
-                payload: &payload,
-            },
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    command_id: u64,
+    request: QuickLootRequest,
+) -> TestResult<(CommandStatus, QuickLootResult)> {
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+
+    let fence = admitted.item_fence.ok_or("item fence")?;
+    let permit = owner.spell_lane_permit().await.ok_or("item lane")?;
+    let native = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("native content")?;
+    let premium = owner
+        .session_premium_gate(admitted.game_session_id)
+        .await
+        .require()
+        .is_ok();
+    let cell = crate::durability::map_item_mint_audit::map_item_spatial_position(7, 0, 7)
+        .try_into()
+        .map_err(|_| "loot cell")?;
+    let outcome = owner
+        .root
+        .commit_quick_loot(
+            &permit,
+            owner.character,
+            owner.holder,
+            fence,
+            CommandRef::new(
+                admitted.game_session_id,
+                CommandId::new(command_id).map_err(debug)?,
+            ),
+            &NativeItemWeights(native).with_wheel(owner.premium_coordinator),
+            cell,
+            premium,
+            request,
         )
-        .map_err(debug)?;
-        input.extend(u32::try_from(frame.len())?.to_be_bytes());
-        input.extend(frame);
-    }
-    let output = serve_session(owner, admitted, &input).await?;
-    let mut replies = Vec::new();
-    let mut cursor = output.as_slice();
-    while !cursor.is_empty() {
-        let length = u32::from_be_bytes(cursor.get(..4).ok_or("length")?.try_into()?) as usize;
-        let frame = cursor.get(4..4 + length).ok_or("frame")?;
-        cursor = &cursor[4 + length..];
-        let envelope = oteryn_protocol_oteryn::decode_wire_envelope(frame).map_err(debug)?;
-        if envelope.message_type() == oteryn_protocol_oteryn::MessageType::CommandResult {
-            let reply =
-                oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
-            replies.push((
-                reply.status,
-                decode_quick_loot_result(reply.payload).map_err(debug)?,
-            ));
-        }
-    }
-    Ok(replies)
+        .await?;
+    Ok(match outcome {
+        Ok(result) => (CommandStatus::Accepted, result),
+        Err(_) => (
+            CommandStatus::Rejected,
+            QuickLootResult { items: Vec::new() },
+        ),
+    })
 }
 
 // Fixture provisioning changes one independently checked reach/rights invariant at a time.
@@ -775,7 +805,8 @@ async fn equip_quiver_via_wire(
             ItemMoveIntent {
                 source: std::num::NonZeroU64::new(base + 3).ok_or("meat handle")?,
                 destination: ItemMoveDestination::Container(
-                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?, None
+                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?,
+                    None
                 )
             },
             selection
@@ -791,7 +822,8 @@ async fn equip_quiver_via_wire(
             ItemMoveIntent {
                 source: std::num::NonZeroU64::new(base + 2).ok_or("ammo handle")?,
                 destination: ItemMoveDestination::Container(
-                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?, None
+                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?,
+                    None
                 )
             },
             selection
