@@ -15,7 +15,7 @@ impl LoginSettings {
     }
 
     pub fn save(&self, path: &Path) -> Result<(), String> {
-        self.save_fields(path, [true; 6], [false; 6]).map(|_| ())
+        self.save_fields(path, [true; 6], [false; 6])
     }
 
     pub(crate) fn save_fields(
@@ -23,25 +23,12 @@ impl LoginSettings {
         path: &Path,
         edited: [bool; 6],
         env_fallback: [bool; 6],
-    ) -> Result<Self, String> {
+    ) -> Result<(), String> {
         let _lock = crate::atomic_file::lock(path).map_err(|_| Self::save_error())?;
         self.validate()?;
         let error = Self::save_error;
         let settings = match std::fs::read(path) {
             Ok(bytes) => match serde_json::from_slice::<Self>(&bytes) {
-                Ok(active) if active.platform_url != self.platform_url => {
-                    // A Platform switch saves the whole submitted selection. A stale
-                    // form can still sign in with its own selection without changing
-                    // the settings saved for the other Platform.
-                    if edited[0]
-                        || (env_fallback[0]
-                            && Self::validate_field(0, &active.platform_url).is_err())
-                    {
-                        self.clone()
-                    } else {
-                        return Ok(active);
-                    }
-                }
                 Ok(active) => {
                     let submitted = self.values();
                     let disk = active.values();
@@ -68,8 +55,7 @@ impl LoginSettings {
         };
         settings.validate()?;
         let bytes = serde_json::to_vec_pretty(&settings).map_err(|_| error())?;
-        crate::atomic_file::replace(path, &bytes, true).map_err(|_| Self::save_error())?;
-        Ok(settings)
+        crate::atomic_file::replace(path, &bytes, true).map_err(|_| Self::save_error())
     }
 
     pub(crate) fn save_error() -> String {

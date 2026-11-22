@@ -28,7 +28,6 @@ pub(super) struct LoginState {
     /// Shows the developer connection fields; off by default.
     pub advanced: bool,
     pub revision: u64,
-    projected_revision: Option<u64>,
     path: Option<PathBuf>,
     shown_settings: LoginSettings,
     edited_fields: [bool; 6],
@@ -44,7 +43,6 @@ impl Default for LoginState {
             visible: false,
             advanced: false,
             revision: 0,
-            projected_revision: None,
             path: None,
             shown_settings: LoginSettings::default(),
             edited_fields: [false; 6],
@@ -453,6 +451,7 @@ pub(super) fn project(
     alert_title: Query<&Children, With<AlertTitle>>,
     controls: Query<(Entity, &LoginControl)>,
     mut focus: ResMut<InputFocus>,
+    mut revision: Local<Option<u64>>,
     mut shown: Local<bool>,
 ) {
     let visible = owner.login.visible && owner.selection.pending().is_none();
@@ -498,7 +497,7 @@ pub(super) fn project(
             }
         }
     }
-    if visible && owner.login.projected_revision != Some(owner.login.revision) {
+    if visible && *revision != Some(owner.login.revision) {
         for (entity, field, mut text) in &mut fields {
             if let Some(value) = owner.login.form.settings.values().get(field.0) {
                 // Replacing EditableText would discard the font styles already synced by Bevy.
@@ -519,7 +518,7 @@ pub(super) fn project(
         {
             focus.set(submit, FocusCause::Navigated);
         }
-        owner.login.projected_revision = Some(owner.login.revision);
+        *revision = Some(owner.login.revision);
     }
     for (entity, _, _) in &fields {
         if pending {

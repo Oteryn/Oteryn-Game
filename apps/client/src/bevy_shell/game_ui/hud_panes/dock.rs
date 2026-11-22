@@ -31,16 +31,6 @@ impl Widget {
     }
 }
 
-impl Dock {
-    fn visible_or_right(self, left: bool, extra: bool) -> Self {
-        match self {
-            Self::Left if !left => Self::Right,
-            Self::Extra if !extra => Self::Right,
-            dock => dock,
-        }
-    }
-}
-
 /// The zoom of a module from the shared window layer; 100% without one.
 pub(super) fn zoom(layouts: Option<&WindowLayouts>, widget: Widget) -> f32 {
     layouts
@@ -125,7 +115,11 @@ impl SidebarWidgets {
             if entries.iter().any(|entry| entry.widget == widget) {
                 continue;
             }
-            let dock = saved_entry.dock.visible_or_right(saved.left, saved.extra);
+            let dock = match saved_entry.dock {
+                Dock::Left if !saved.left => Dock::Right,
+                Dock::Extra if !saved.extra => Dock::Right,
+                dock => dock,
+            };
             entries.push(Entry {
                 widget,
                 dock,
@@ -219,6 +213,9 @@ impl SidebarWidgets {
                 continue;
             };
             let active = &mut self.entries[active_index];
+            if edit.dock != previous.dock {
+                active.dock = edit.dock;
+            }
             if edit.open != previous.open {
                 active.open = edit.open;
             }
@@ -238,13 +235,9 @@ impl SidebarWidgets {
             .unwrap_or(&edited.placements);
         for &(widget, dock, before) in placements {
             if let Some(index) = self.entries.iter().position(|entry| entry.widget == widget) {
-                self.entries[index].dock = dock;
                 self.reorder(index, dock, before);
                 self.placements.push((widget, dock, before));
             }
-        }
-        for entry in &mut self.entries {
-            entry.dock = entry.dock.visible_or_right(self.left, self.extra);
         }
     }
 

@@ -5,8 +5,7 @@ pub(super) fn read_fields(
     owner: &mut HostOwner,
     fields: &Query<(Entity, &LoginField, &EditableText)>,
 ) {
-    if owner.login.form.can_submit() && owner.login.projected_revision == Some(owner.login.revision)
-    {
+    if owner.login.form.can_submit() {
         let mut values = owner.login.form.settings.values().map(str::to_owned);
         for (_, field, input) in fields {
             if let Some(value) = values.get_mut(field.0) {

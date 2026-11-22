@@ -2,7 +2,7 @@ use super::*;
 use std::ffi::OsString;
 
 pub(super) struct PendingSave {
-    task: bevy_tasks::Task<Result<LoginSettings, String>>,
+    task: bevy_tasks::Task<Result<(), String>>,
     visible: LoginSettings,
     revision: u64,
     assets: Option<OsString>,
@@ -90,31 +90,10 @@ impl LoginState {
         }
     }
 
-    fn finish_save(
-        &mut self,
-        saved: Result<LoginSettings, String>,
-    ) -> Option<crate::NativeLoginConfig> {
-        let settings = saved
-            .inspect_err(|error| self.form.feedback(error.clone()))
-            .ok()?;
-        // Adopt concurrent settings within the submitted Platform selection.
-        // Explicit environment values also apply to this sign-in.
-        if settings.platform_url == self.form.settings.platform_url {
-            let submitted = self.form.settings.values();
-            let saved = settings.values();
-            let settings = LoginSettings::from_values(std::array::from_fn(|i| {
-                if self.env_fallback[i] {
-                    submitted[i]
-                } else {
-                    saved[i]
-                }
-                .to_owned()
-            }));
-            self.shown_settings.clone_from(&settings);
-            if self.form.settings != settings {
-                self.form.settings = settings;
-                self.revision = self.revision.saturating_add(1);
-            }
+    fn finish_save(&mut self, saved: Result<(), String>) -> Option<crate::NativeLoginConfig> {
+        if let Err(error) = saved {
+            self.form.feedback(error);
+            return None;
         }
         self.form.submit().ok()
     }

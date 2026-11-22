@@ -63,4 +63,20 @@ BEGIN
         RAISE EXCEPTION 'Plain corpse Ground provenance layout changed';
     END IF;
     EXECUTE replace(body, anchor, 'IN (''oteryn:item.tibia.i11589'',''oteryn:item.tibia.i33792''');
+
+    -- Transform schedules are sealed at mint. A corpse already on the ground
+    -- when its chain is admitted keeps the legacy retirement deadline.
+    body := pg_get_functiondef('game_corpse_retirement_deadline(uuid)'::regprocedure);
+    anchor := 'SELECT CASE WHEN original.d[array_length(original.d,1)]=0 THEN NULL';
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
+        RAISE EXCEPTION 'Corpse retirement deadline layout changed';
+    END IF;
+    EXECUTE replace(body, anchor, $deadline$
+ SELECT CASE WHEN original.d[array_length(original.d,1)]=0 THEN NULL
+ WHEN cardinality(original.d)>1 AND NOT EXISTS (
+   SELECT 1 FROM game_spell_field_temporal_schedules s
+   WHERE s.item_instance_id=m.item_instance_id AND s.source_transaction_id=m.transaction_id
+     AND s.source_ordinal=0 AND s.source_stage=1
+ ) THEN m.materialized_at+60000
+ $deadline$);
 END $loot_slice_corpse$;

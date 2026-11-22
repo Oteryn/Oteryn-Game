@@ -138,6 +138,18 @@ pub(crate) struct Database {
 
 impl Database {
     pub(crate) async fn create(admin_url: String, name: &str) -> TestResult<Self> {
+        let (database, mut connection) = Self::create_unmigrated(admin_url, name).await?;
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
+        connection.close().await?;
+        Ok(database)
+    }
+
+    pub(crate) async fn create_unmigrated(
+        admin_url: String,
+        name: &str,
+    ) -> TestResult<(Self, sqlx::PgConnection)> {
         if !admin_url.starts_with("postgresql://oteryn_test_admin:")
             || !admin_url.rsplit_once('@').is_some_and(|(_, host)| {
                 host.strip_prefix("127.0.0.1:")
@@ -175,15 +187,14 @@ impl Database {
             "PostgreSQL 18 required: {version}"
         );
         eprintln!("ITEM-TRANSFER-PG: database {name} on server_version_num={version}");
-        oteryn_gameplay_durability::GAME_MIGRATOR
-            .run(&mut connection)
-            .await?;
-        connection.close().await?;
-        Ok(Self {
-            admin_url,
-            name,
-            url,
-        })
+        Ok((
+            Self {
+                admin_url,
+                name,
+                url,
+            },
+            connection,
+        ))
     }
 
     pub(crate) async fn cleanup(self) -> TestResult {
@@ -451,6 +462,10 @@ pub(crate) struct Harness {
 impl Harness {
     pub(crate) async fn create(admin: String, tag: &str) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
+        Self::open(database, tag).await
+    }
+
+    pub(crate) async fn open(database: Database, tag: &str) -> TestResult<Self> {
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
         let pool = sqlx::PgPool::connect(&database.url).await?;

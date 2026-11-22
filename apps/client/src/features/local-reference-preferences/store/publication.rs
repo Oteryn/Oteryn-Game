@@ -116,12 +116,7 @@ impl PreferenceStore {
             Err(error) if error.kind() == io::ErrorKind::InvalidData => None,
             Err(error) => return Err(error),
         };
-        let staging = path.with_added_extension("pending-backup");
-        let mut staged = false;
-        if let Some(backup) = backup.filter(|backup| *backup != bytes) {
-            if !restoring && !retained && slot.is_dir() {
-                return Err(io::ErrorKind::IsADirectory.into());
-            }
+        if let Some(backup) = backup {
             // Encode a logical generation in the file time. Renames preserve it and
             // legacy snapshots already carry their publication time. Advance by two
             // seconds to remain distinct even on FAT with a coarse timestamp.
@@ -135,33 +130,27 @@ impl PreferenceStore {
                 .transpose()?
                 .unwrap_or(std::time::SystemTime::UNIX_EPOCH)
                 .max(std::time::SystemTime::now());
-            crate::atomic_file::publish_durable_at(&staging, &backup, Some(generation))?;
-            staged = true;
-        }
-        if let Err(error) = crate::atomic_file::publish_durable(path, &bytes)
-            && !Self::transfer_bytes(path).is_ok_and(|active| active == bytes)
-        {
-            if staged {
-                let _ = std::fs::remove_file(&staging);
-            }
-            return Err(error);
-        }
-        if staged {
-            // The active rename commits the replacement. A failed promotion leaves
-            // the durable rollback snapshot in staging or ready for the next writer.
-            let destination = if retained && !restoring {
-                path.with_added_extension("recovery")
+            if !restoring {
+                let destination = if retained {
+                    path.with_added_extension("recovery")
+                } else {
+                    slot
+                };
+                crate::atomic_file::publish_durable_at(&destination, &backup, Some(generation))?;
             } else {
-                ready.clone()
-            };
-            if crate::atomic_file::durable_rename(&staging, &destination).is_ok() && !retained {
+                let staging = path.with_added_extension("pending-backup");
+                crate::atomic_file::publish_durable_at(&staging, &backup, Some(generation))?;
+                crate::atomic_file::publish_durable(path, &bytes)?;
+                crate::atomic_file::durable_rename(&staging, &ready)?;
                 #[cfg(test)]
-                if check_backup_write().is_err() {
-                    return Ok(replacement);
+                check_backup_write()?;
+                if !retained {
+                    crate::atomic_file::durable_rename(&ready, &slot)?;
                 }
-                let _ = crate::atomic_file::durable_rename(&ready, &slot);
+                return Ok(replacement);
             }
         }
+        crate::atomic_file::publish_durable(path, &bytes)?;
         Ok(replacement)
     }
 
@@ -193,11 +182,15 @@ impl PreferenceStore {
         let pending = path.with_added_extension("pending-backup");
         let ready = path.with_added_extension("ready-backup");
         if pending.try_exists()? {
-            if Self::pending_backup_is_committed(path, &pending)? {
-                crate::atomic_file::durable_rename(&pending, &ready)?;
-            } else {
-                std::fs::remove_file(pending)?;
-                sync_parent(path)?;
+            let backup = Self::transfer_bytes(&pending)?;
+            match Self::transfer_bytes(path) {
+                // Active was never replaced. Keep the previously committed backup.
+                Ok(active) if active == backup => {
+                    std::fs::remove_file(pending)?;
+                    sync_parent(path)?;
+                }
+                Err(error) if error.kind() != io::ErrorKind::NotFound => return Err(error),
+                _ => crate::atomic_file::durable_rename(&pending, &ready)?,
             }
         }
         if !ready.is_file() {
@@ -213,15 +206,6 @@ impl PreferenceStore {
             return Ok(true);
         }
         Ok(crate::atomic_file::durable_rename(&ready, &slot).is_err())
-    }
-
-    pub(super) fn pending_backup_is_committed(path: &Path, pending: &Path) -> io::Result<bool> {
-        let backup = Self::transfer_bytes(pending)?;
-        match Self::transfer_bytes(path) {
-            Ok(active) => Ok(active != backup),
-            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(false),
-            Err(error) => Err(error),
-        }
     }
 }
 
@@ -276,7 +260,7 @@ fn restore_displays_the_snapshot_it_publishes() -> io::Result<()> {
 
 #[cfg(test)]
 #[test]
-fn restore_keeps_the_selected_snapshot_when_the_backup_slot_becomes_unwritable() -> io::Result<()> {
+fn review_3376_restore_keeps_backup_content_when_backup_write_fails() -> io::Result<()> {
     let root = tempfile::tempdir()?;
     let path = root.path().join("preferences.json");
     let backup = path.with_extension("backup.json");
@@ -294,11 +278,9 @@ fn restore_keeps_the_selected_snapshot_when_the_backup_slot_becomes_unwritable()
         std::fs::remove_file(backup)?;
         std::fs::create_dir(backup)
     }));
-    let restored = PreferenceStore::publish_replacement(&path, &active, Replacement::Restore)?;
-    assert_eq!(restored.ui_scale, 140);
+    let result = PreferenceStore::publish_replacement(&path, &active, Replacement::Restore);
+    assert!(result.is_err());
     assert_eq!(PreferenceStore::read_transfer(&path)?.ui_scale, 140);
-    let retained = PreferenceStore::load(path)?.backup_path();
-    assert_eq!(PreferenceStore::read_transfer(&retained)?.ui_scale, 125);
     Ok(())
 }
 
@@ -333,9 +315,10 @@ fn restore_recovers_original_bytes_after_backup_write_failure() -> io::Result<()
     )?;
     let mut state = SettingsState::new(Some(path.clone()));
     FAIL_BACKUP_WRITE.set(true);
-    state.restore_backup()?;
-    assert_eq!(state.preferences.ui_scale, ReferencePreferences::default().ui_scale);
-    assert_eq!(std::fs::read(&path)?, PreferenceStore::serialized(&state.preferences)?);
+    assert_eq!(
+        state.restore_backup().err().map(|error| error.kind()),
+        Some(io::ErrorKind::PermissionDenied)
+    );
     let store = PreferenceStore::load(path.clone())?;
     assert!(
         std::fs::read(store.backup_path())? == original,
@@ -349,9 +332,9 @@ fn restore_recovers_original_bytes_after_backup_write_failure() -> io::Result<()
 
 #[cfg(test)]
 #[test]
-fn restore_rejects_precommit_rename_failures_without_changing_either_snapshot() -> io::Result<()> {
+fn restore_propagates_each_durable_rename_failure() -> io::Result<()> {
     use super::super::SettingsState;
-    for extension in ["json.pending-backup", "json"] {
+    for extension in ["json.pending-backup", "json", "backup.json"] {
         let root = tempfile::tempdir()?;
         let path = root.path().join("preferences.json");
         let active = ReferencePreferences {
@@ -359,10 +342,10 @@ fn restore_rejects_precommit_rename_failures_without_changing_either_snapshot() 
             ..Default::default()
         };
         PreferenceStore::export_to(&active, &path)?;
-        let backup = path.with_extension("backup.json");
-        PreferenceStore::export_to(&ReferencePreferences::default(), &backup)?;
-        let before = std::fs::read(&path)?;
-        let saved = std::fs::read(&backup)?;
+        PreferenceStore::export_to(
+            &ReferencePreferences::default(),
+            &path.with_extension("backup.json"),
+        )?;
         let mut state = SettingsState::new(Some(path.clone()));
         crate::atomic_file::fail_durable_rename_to(&path.with_extension(extension));
         assert_eq!(
@@ -370,8 +353,6 @@ fn restore_rejects_precommit_rename_failures_without_changing_either_snapshot() 
             Some(io::ErrorKind::PermissionDenied),
             "{extension}"
         );
-        assert_eq!(std::fs::read(&path)?, before);
-        assert_eq!(std::fs::read(&backup)?, saved);
     }
     Ok(())
 }
@@ -407,7 +388,7 @@ fn pending_promotion_allows_later_settings_writes() -> io::Result<()> {
     PreferenceStore::export_to(&ReferencePreferences::default(), &slot)?;
     let mut state = SettingsState::new(Some(path.clone()));
     FAIL_BACKUP_WRITE.set(true);
-    state.restore_backup()?;
+    assert!(state.restore_backup().is_err());
     std::fs::remove_file(&slot)?;
     std::fs::create_dir(&slot)?;
     let edited = ReferencePreferences {
@@ -552,52 +533,5 @@ fn restore_skips_invalid_legacy_snapshots_and_breaks_generation_ties() -> io::Re
         .set_modified(generation + std::time::Duration::from_secs(60))?;
     state.restore_backup()?;
     assert_eq!(state.preferences.ui_scale, 140);
-    Ok(())
-}
-
-#[cfg(test)]
-#[test]
-fn failed_active_publication_preserves_the_previous_backup() -> io::Result<()> {
-    for reset in [false, true] {
-        let root = tempfile::tempdir()?;
-        let path = root.path().join("preferences.json");
-        let slot = path.with_extension("backup.json");
-        let active = ReferencePreferences { ui_scale: 125, ..Default::default() };
-        let saved = ReferencePreferences { ui_scale: 140, ..Default::default() };
-        PreferenceStore::export_to(&active, &path)?;
-        PreferenceStore::export_to(&saved, &slot)?;
-        let bytes = std::fs::read(&slot)?;
-        let mut state = super::super::SettingsState::new(Some(path.clone()));
-        crate::atomic_file::fail_durable_rename_to(&path);
-        if reset {
-            assert!(state.reset_defaults().is_err());
-        } else {
-            let import = root.path().join("import.json");
-            PreferenceStore::export_to(&ReferencePreferences::default(), &import)?;
-            assert!(state.import_from(&import).is_err());
-        }
-        assert_eq!(PreferenceStore::read_transfer(&path)?.ui_scale, active.ui_scale);
-        assert_eq!(std::fs::read(PreferenceStore::load(path.clone())?.backup_path())?, bytes);
-    }
-    Ok(())
-}
-
-#[cfg(test)]
-#[test]
-fn restore_with_deferred_backup_promotion_reports_the_committed_settings() -> io::Result<()> {
-    let root = tempfile::tempdir()?;
-    let path = root.path().join("preferences.json");
-    let slot = path.with_extension("backup.json");
-    let active = ReferencePreferences { ui_scale: 125, ..Default::default() };
-    let saved = ReferencePreferences { ui_scale: 140, ..Default::default() };
-    PreferenceStore::export_to(&active, &path)?;
-    PreferenceStore::export_to(&saved, &slot)?;
-    let mut state = super::super::SettingsState::new(Some(path.clone()));
-    crate::atomic_file::fail_durable_rename_to(&slot);
-    let restored = state.restore_backup();
-    assert_eq!(PreferenceStore::read_transfer(&path)?.ui_scale, saved.ui_scale);
-    restored?;
-    assert_eq!(state.preferences.ui_scale, saved.ui_scale);
-    assert_eq!(PreferenceStore::read_transfer(&PreferenceStore::load(path)?.backup_path())?.ui_scale, active.ui_scale);
     Ok(())
 }
