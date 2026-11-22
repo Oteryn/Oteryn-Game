@@ -2,6 +2,7 @@
 mod driver;
 #[cfg(test)]
 mod tests;
+mod title;
 
 use super::owner::HostOwner;
 use crate::play::{AudioOutput, AudioSettings, SoundCue, UiSound};
@@ -25,10 +26,11 @@ impl Output for AudioOutput {
 #[derive(Default)]
 pub(super) struct Playback {
     player: Player<AudioOutput>,
+    title: title::Title,
 }
 impl Playback {
     pub(super) fn status(&self) -> Option<&str> {
-        self.player.status()
+        self.player.status().or_else(|| self.title.status())
     }
 }
 pub(super) fn install(app: &mut App) {
@@ -42,6 +44,8 @@ fn poll(
 ) {
     let generation = owner.generation();
     let focused = windows.single().is_ok_and(|window| window.focused);
+    let prefs = &owner.settings.preferences;
+    audio.title.poll(owner.phase, focused, prefs);
     audio.player.poll(
         owner.play.as_mut().map(|play| (generation, &mut play.view)),
         focused,

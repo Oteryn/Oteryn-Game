@@ -513,3 +513,5 @@ fn action_bar_options_show_one_bar_at_a_time() -> TestResult {
     }
     Ok(())
 }
+
+mod sound;

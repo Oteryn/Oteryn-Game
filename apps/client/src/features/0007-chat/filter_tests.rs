@@ -136,3 +136,57 @@ fn console_filters_route_real_notices_store_results_and_private_tabs()
 
     Ok(())
 }
+
+#[test]
+fn private_tab_guild_and_npc_audio_follow_received_message_type()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = play_channel();
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 7, &[])?;
+    assert!(oteryn_client_ui::chat::open_conversation(
+        &mut lock(&link.mailbox).chat,
+        "Friend"
+    ));
+    let delta = |value| AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value,
+    };
+    let send = || {
+        outbox.push(vec![
+            SessionEvent::ChatLine(delta(ChatLine::Private {
+                speaker_name: "Friend".into(),
+                text: "Hello".into(),
+            })),
+            SessionEvent::ChatLine(delta(ChatLine::Guild(oteryn_session::GuildChatLine {
+                guild_id: [1; 16],
+                rank: 1,
+                speaker_name: "Leader".into(),
+                text: "Meet here".into(),
+            }))),
+            SessionEvent::NpcConversation(AppliedDelta {
+                server_sequence: 3,
+                base_revision: 0,
+                new_revision: 1,
+                value: oteryn_protocol_oteryn::npc_service::NpcConversation {
+                    open: None,
+                    lines: vec!["Greetings".into()],
+                },
+            }),
+        ])
+    };
+    let mut prefs = view.preferences().clone();
+    prefs.audio.private_without_tab = false;
+    view.set_preferences(prefs.clone())?;
+    send();
+    assert!(view.tick(&link).is_ok());
+    assert_eq!(view.take_ui_sounds(), [crate::play::UiSound::Chat; 3]);
+    prefs.audio.private = false;
+    prefs.audio.npc = false;
+    prefs.audio.guild = false;
+    view.set_preferences(prefs)?;
+    send();
+    assert!(view.tick(&link).is_ok());
+    assert!(view.take_ui_sounds().is_empty());
+    Ok(())
+}

@@ -18,6 +18,23 @@ pub struct AudioSettings {
     pub master_volume: u8,
     pub ambient_volume: u8,
     pub battle_volumes: [u8; 3],
+    pub anthem: bool,
+    pub creature_death: bool,
+    pub creature_noises: bool,
+    pub other_spells: bool,
+    pub other_weapons: bool,
+    pub own_spells: bool,
+    pub own_weapons: bool,
+    pub eating: bool,
+    pub global: bool,
+    pub guild: bool,
+    pub move_item: bool,
+    pub npc: bool,
+    pub party_messages: bool,
+    pub private: bool,
+    pub private_without_tab: bool,
+    pub raid: bool,
+    pub system: bool,
     pub muted: bool,
 }
 
@@ -30,6 +47,23 @@ impl Default for AudioSettings {
             ui_sounds: [true; 4],
             ambient_volume: 100,
             battle_volumes: [100; 3],
+            anthem: true,
+            creature_death: true,
+            creature_noises: true,
+            other_spells: true,
+            other_weapons: true,
+            own_spells: true,
+            own_weapons: true,
+            eating: true,
+            global: true,
+            guild: true,
+            move_item: true,
+            npc: true,
+            party_messages: true,
+            private: true,
+            private_without_tab: true,
+            raid: true,
+            system: true,
             muted: false,
         }
     }
@@ -120,6 +154,7 @@ pub fn decode_mapping(bytes: &[u8]) -> Result<(String, BTreeMap<u32, Vec<String>
 }
 
 pub struct SoundCatalog {
+    title: Option<String>,
     classes: BTreeMap<u32, BattleClass>,
     channels: BTreeMap<u32, SoundChannel>,
     store: AssetStore,
@@ -128,6 +163,16 @@ pub struct SoundCatalog {
 }
 
 impl SoundCatalog {
+    pub fn read_title(&self) -> Result<Option<Vec<u8>>, String> {
+        self.title
+            .as_ref()
+            .map(|name| {
+                self.store
+                    .read_verified(name, MAX_SOUND_BYTES)
+                    .map_err(|e| e.to_string())
+            })
+            .transpose()
+    }
     pub fn battle_class(&self, id: u32) -> Option<BattleClass> {
         self.classes.get(&id).copied()
     }
@@ -151,12 +196,43 @@ impl SoundCatalog {
             return Err(tr!("sound manifest changed").into());
         }
         let (metadata, cues) = decode_mapping(&bytes)?;
-        store
+        let metadata = store
             .read_verified(&metadata, 8 * 1024 * 1024)
             .map_err(|e| e.to_string())?;
-        let parsed = serde_json::from_slice::<SoundManifest>(&bytes).map_err(|e| e.to_string())?;
+        let mut parsed =
+            serde_json::from_slice::<SoundManifest>(&bytes).map_err(|e| e.to_string())?;
+        let routing =
+            oteryn_client_assets::sound::SoundRouting::decode(&metadata).unwrap_or_default();
+        for (id, kind) in routing.effects {
+            let class = match kind {
+                1 => Some(BattleClass::Attack),
+                2 => Some(BattleClass::Healing),
+                3 => Some(BattleClass::Support),
+                4 | 7 => Some(BattleClass::Weapon),
+                5 => Some(BattleClass::Noise),
+                6 => Some(BattleClass::Death),
+                19 => Some(BattleClass::GenericSpell),
+                _ => None,
+            };
+            if let Some(class) = class {
+                parsed.battle_classes.entry(id).or_insert(class);
+            }
+            let channel = match kind {
+                9 => Some(SoundChannel::Eating),
+                10 => Some(SoundChannel::MoveItem),
+                13 => Some(SoundChannel::PrivateWithoutTab),
+                15 => Some(SoundChannel::PartyNotification),
+                17 => Some(SoundChannel::Raid),
+                18 => Some(SoundChannel::SystemMessage),
+                _ => None,
+            };
+            if let Some(channel) = channel {
+                parsed.sound_channels.insert(id, channel);
+            }
+        }
         let ambient = parsed.ambient_cues;
         Ok(Self {
+            title: routing.title,
             channels: parsed.sound_channels,
             classes: parsed.battle_classes,
             store,
@@ -185,7 +261,6 @@ impl SoundCatalog {
             .map_err(|e| e.to_string())
     }
 }
-
 
 #[cfg(bevy_shell)]
 #[path = "output.rs"]
