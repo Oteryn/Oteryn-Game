@@ -78,7 +78,7 @@ const HASTE_ACTIONS: &[&str] = &[
 pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
     // An error, including admission failure, belongs to one row only.
     for (id, actions, tag, limit) in [
-        ("C17a", HASTE_ACTIONS, 0xa4, 340),
+        ("C17a", HASTE_ACTIONS, 0xa4, 520),
         ("C17c", ILLUSION_ACTIONS, 0xa1, 420),
     ] {
         let mut row = Row::new(id, actions);
@@ -160,7 +160,7 @@ fn level_from_stats(payload: &[u8], vocation_selected: bool) -> TestResult<u32> 
     }
     Ok(u32::from_le_bytes(payload[9..13].try_into()?))
 }
-async fn level(client: &mut DevClientSession) -> TestResult<u32> {
+async fn general_stats_payload(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
     let request = [wire::CharacterTab::GeneralStats as u8, 0, 0, 1];
     let result = client
@@ -170,7 +170,61 @@ async fn level(client: &mut DevClientSession) -> TestResult<u32> {
     if result.status != CommandStatus::Accepted {
         return Err("C17c player level query refused".into());
     }
-    level_from_stats(&result.payload, general_stats::selected(client))
+    Ok(result.payload)
+}
+
+async fn level(client: &mut DevClientSession) -> TestResult<u32> {
+    let payload = general_stats_payload(client).await?;
+    level_from_stats(&payload, general_stats::selected(client))
+}
+
+pub(super) async fn current_vocation(client: &mut DevClientSession) -> TestResult<crate::spell::Vocation> {
+    use crate::spell::Vocation;
+    use oteryn_protocol_oteryn::cyclopedia_character::vocation_id;
+    let payload = general_stats_payload(client).await?;
+    let id = general_stats::validate(&payload, general_stats::selected(client))?
+        .ok_or("spell eligibility requires the negotiated GeneralStats vocation field")?;
+    for key in ["none", "druid", "elder_druid", "sorcerer", "master_sorcerer", "knight", "elite_knight", "paladin", "royal_paladin", "monk", "exalted_monk"] {
+        if vocation_id(key) == Some(id) {
+            return Vocation::from_key(key).ok_or_else(|| format!("unknown spell vocation {key}").into());
+        }
+    }
+    Err(format!("unknown GeneralStats vocation id {id}").into())
+}
+
+fn require_spell_vocation(spell: &crate::spell::SpellDefinition, vocation: crate::spell::Vocation) -> TestResult {
+    if spell.vocations.contains(&vocation) {
+        return Ok(());
+    }
+    Err(format!("spell {} requires vocation {:?}; served vocation={vocation:?}; source:crates/gameplay/spell/src/spell/mod.rs:538", spell.key, spell.vocations).into())
+}
+
+pub(super) async fn prepare_spell_access(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spell: &crate::spell::SpellDefinition,
+) -> TestResult<u32> {
+    require_spell_vocation(spell, current_vocation(client).await?)?;
+    let level = earn_spell_level(client, world, spell.level).await?;
+    require_premium_spell_access(client, spell)?;
+    Ok(level)
+}
+
+fn require_premium_spell_access(
+    client: &mut DevClientSession,
+    spell: &crate::spell::SpellDefinition,
+) -> TestResult {
+    if spell.premium {
+        let available = client.session_mut().spell_catalog()?.is_some_and(|catalog| {
+            catalog.entries.iter().any(|entry| {
+                matches!(&spell.carrier, crate::spell::Carrier::Instant { words, .. } if words == &entry.words) && entry.available
+            })
+        });
+        if !available {
+            return Err(format!("spell {} requires Premium and an available native catalog entry; source:crates/protocol-oteryn/src/actor_spell_catalog.rs:24", spell.key).into());
+        }
+    }
+    Ok(())
 }
 
 pub(super) async fn earn_spell_level(
@@ -343,7 +397,7 @@ async fn illusion(
     if baseline == expected {
         return Err("C17c baseline already has rat appearance; cast would be unproven".into());
     }
-    let player_level = earn_spell_level(client, world, spell.level).await?;
+    let player_level = prepare_spell_access(client, world, spell).await?;
     let before = client
         .actor_vitals()
         .copied()
@@ -753,7 +807,7 @@ async fn haste(
                 .ok_or("C17a invalid speed condition duration")?;
         Ok(Duration::from_millis(ms))
     };
-    let player_level = earn_spell_level(client, world, haste.level.max(strong.level)).await?;
+    let player_level = prepare_spell_access(client, world, haste).await?;
     let haste_duration = duration(haste)?;
     let strong_duration = duration(strong)?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
@@ -815,10 +869,28 @@ async fn haste(
     row.pass("haste-fresh-admission", client.last_server_sequence());
     expire_speed(client, &cells, baseline, started, haste_duration).await?;
     row.pass("haste-expiry", client.last_server_sequence());
+    let strong_level = prepare_spell_access(client, world, strong)
+        .await
+        .map_err(|error| format!("basic Haste lifecycle completed at level {player_level}; Strong Haste access: {error}"))?;
+    let baseline = if strong_level != player_level {
+        let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == cells[0])
+            .ok_or("C17a no return route to the speed corridor after Strong Haste progression")?;
+        walk(client, world, &path).await?;
+        let observed = cadence(client, &cells).await?;
+        if !same_cadence(observed, expected_cadence(None, strong_level, ground)?) {
+            return Err("C17a post-progression baseline differs from the production speed table".into());
+        }
+        observed
+    } else {
+        baseline
+    };
     let recast_started = tokio::time::Instant::now();
     let sequence = cast_support(client, book, "utani hur").await?;
     row.pass("haste-recast", sequence);
-    if !same_cadence(cadence(client, &cells).await?, hasted) {
+    let hasted = cadence(client, &cells).await?;
+    if !faster(hasted, baseline)
+        || !same_cadence(hasted, expected_cadence(Some(haste), strong_level, ground)?)
+    {
         return Err("C17a recast did not reapply haste".into());
     }
     let cooldown = haste
@@ -841,7 +913,7 @@ async fn haste(
     if !faster(stronger, hasted)
         || !same_cadence(
             stronger,
-            expected_cadence(Some(strong), player_level, ground)?,
+            expected_cadence(Some(strong), strong_level, ground)?,
         )
     {
         return Err("C17a strong haste did not replace haste with a faster condition".into());
@@ -865,6 +937,21 @@ async fn haste(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn review_spell_vocation_rejects_guaranteed_refusals_before_progression() -> TestResult {
+        use crate::spell::Vocation;
+        let book = native_spell_book()?;
+        for words in ["utevo res ina \"rat\"", "utana vid", "utani gran hur"] {
+            let spell = book.spoken(words).ok_or("native support spell absent")?.spell;
+            require_spell_vocation(spell, Vocation::Sorcerer)?;
+            assert!(require_spell_vocation(spell, Vocation::Knight).is_err(), "{words}");
+        }
+        let challenge = book.spoken("exeta res").ok_or("Challenge absent")?.spell;
+        require_spell_vocation(challenge, Vocation::Knight)?;
+        assert!(require_spell_vocation(challenge, Vocation::Sorcerer).is_err());
+        Ok(())
+    }
+
     #[test]
     fn admission_gap_names_the_character_and_preserves_the_cause() {
         let cause = oteryn_dev_client::SessionError::ServerProtocolError {
@@ -1073,7 +1160,7 @@ pub(super) async fn with_observer_liveness<T>(
     }
 }
 
-async fn player_logout(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn player_logout(client: &mut DevClientSession) -> TestResult {
     use oteryn_protocol_oteryn::logout::LogoutResult;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
     loop {
@@ -1170,7 +1257,7 @@ pub(super) async fn acquire_rune(
         let balances = runtime::balances(client.session_mut()).await?;
         return Err(format!("rune {id} acquisition blocked: no player-walk route within the admitted town window to a compiled-world seller; eligible_sellers={sellers:?}; observed_balances={balances:?}; carried_quantity={}; no item mint or remote vendor interaction; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", rune_quantity(client, reference)?).into());
     };
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(125);
     loop {
         let vendor_route = route(world, tile(client.world_spatial().actor_position)?, |at| {
             npc.placements.iter().any(|placement| {
@@ -1242,9 +1329,8 @@ pub(super) async fn acquire_rune(
             {
                 verdict::Harness::global().bounded_wait(deadline, "rune-purchase-funds");
                 let hunt = async {
-                    let target = wild_rat(client, world, &[]).await?;
-                    approach_melee(client, world, target.position).await?;
-                    client_hunt::hunt(client).await
+                    let (corpse, _) = player_corpse(client, world, &[]).await?;
+                    loot_corpse_coins(client, corpse, &index).await
                 };
                 match tokio::time::timeout_at(deadline, hunt).await {
                     Ok(Ok(())) => continue,
@@ -1264,6 +1350,50 @@ pub(super) async fn acquire_rune(
         let sequence = inventory_quantity(client, reference, expected).await?;
         return Ok((reference, sequence));
     }
+}
+
+async fn loot_corpse_coins(
+    client: &mut DevClientSession,
+    corpse: oteryn_dev_client::WorldSpatialEntity,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+) -> TestResult {
+    let oteryn_dev_client::EntityDetail::Object { item_handle: Some(handle), .. } = corpse.detail else {
+        return Err("Rat corpse has no server-issued item handle".into());
+    };
+    let use_reply = client.use_item(handle).await?;
+    if use_reply.status != CommandStatus::Accepted
+        || use_reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    {
+        return Err(format!("Rat corpse USE refused: {use_reply:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let entries = loop {
+        if let Some(view) = client.open_container().filter(|view| view.container_handle == Some(handle)) {
+            break view.entries.clone();
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("Rat corpse container frame missing".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    };
+    let coins = [3031, 3035, 3043]
+        .map(|id| provisioning::item_reference(index, id))
+        .into_iter().collect::<TestResult<Vec<_>>>()?;
+    for item in entries {
+        let Some(reference) = coins.iter().copied().find(|coin| *coin == item.item_definition_ref) else { continue };
+        let expected = rune_quantity(client, reference)?.checked_add(u64::from(item.count.get()))
+            .ok_or("Rat coin quantity overflow")?;
+        client.take_events();
+        let reply = client.move_item(&oteryn_dev_client::ItemMoveIntent {
+            source: item.handle,
+            destination: oteryn_dev_client::ItemMoveDestination::MainBackpack,
+        }).await?;
+        if reply.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
+            return Err(format!("Rat coin loot move refused: {reply:?}").into());
+        }
+        inventory_quantity(client, reference, expected).await?;
+    }
+    Ok(())
 }
 
 async fn inventory_quantity(
@@ -1962,122 +2092,17 @@ async fn combat_access(
     book: &crate::spell::SpellBook,
     words: &str,
 ) -> TestResult<u64> {
-    // Normal speech/indexed spells have learning_required=false in the served
-    // book. Walk out of PZ; ask the actual owner to admit this player's cast.
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-    })
-    .ok_or("no ordinary walk route out of PZ for combat spell access")?;
-    walk(client, world, &path).await?;
     let spell = book.spoken(words).ok_or("combat spell absent")?.spell;
+    prepare_spell_access(client, world, spell).await?;
+    non_pz(client, world).await?;
     spell_ready(client, spell).await?;
-    use oteryn_protocol_oteryn::actor_spell::SpellTarget;
-    match player_spell(client, book, words, SpellTarget::None, false).await {
-        Ok(cast) => Ok(cast.result_server_sequence),
-        Err(refusal) => {
-            // Try the actual player first-vocation route rather than assuming
-            // that a refused starter can never become eligible. Its NPC must
-            // be in this compiled world and reachable through ordinary STEPs.
-            let vocation = if words == "exeta res" {
-                "knight"
-            } else {
-                "sorcerer"
-            };
-            earn_spell_level(client, world, spell.level.max(8))
-                .await
-                .map_err(|error| format!("{refusal}; player progression: {error}"))?;
-            if let Err(blocker) = player_first_vocation(client, world, vocation).await {
-                return Err(format!("{refusal}; player prerequisite route: {blocker}").into());
-            }
-            let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-                world
-                    .base()
-                    .tile(at.x, at.y, at.floor)
-                    .is_some_and(|tile| !tile.protection_zone())
-            })
-            .ok_or("no walk route from vocation NPC to non-PZ cast tile")?;
-            walk(client, world, &path).await?;
-            spell_ready(client, spell).await?;
-            Ok(player_spell(client, book, words, SpellTarget::None, false)
-                .await?
-                .result_server_sequence)
-        }
-    }
-}
-
-async fn player_first_vocation(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    vocation: &str,
-) -> TestResult {
-    let basis = spatial_basis::current(client)?;
-    use oteryn_dev_client::client_runtime::npc_shop as runtime;
-    use oteryn_protocol_oteryn::npc_service as wire;
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let observed_level = level(client).await?;
-    let npc = metadata.npcs.npcs.iter().find(|npc| npc.key == "oteryn:npc.oressa")
-        .ok_or_else(|| format!("first vocation {vocation}: Oressa absent from compiled world; observed_level={observed_level}; source:crates/gameplay/content/src/content/npc_catalogue.rs:5"))?;
-    let path = route(world, here, |at| npc.placements.iter().any(|p|
-        p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3))
-        .ok_or_else(|| format!("first vocation {vocation}: no ordinary player route to Oressa within the admitted town window; observed_level={observed_level}; source:crates/gameplay/content/src/content/npc_catalogue.rs:5"))?;
-    walk(client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entry| {
-                entry.kind == oteryn_dev_client::EntityKind::Npc
-                    && npc.placements.iter().any(|p| {
-                        entry.position.x == i32::from(p.x)
-                            && entry.position.y == i32::from(p.y)
-                            && entry.position.floor == basis.floor(p.floor)
-                    })
-            })
-        })
-        .map(|entry| entry.entity)
-        .ok_or("Oressa not visible at compiled placement")?;
-    for text in ["hi", vocation, "yes"] {
-        client.take_events();
-        let disposition = runtime::talk(
-            client.session_mut(),
-            &wire::NpcTalkIntent {
-                npc_actor: actor,
-                text: text.into(),
-            },
-        )
-        .await?;
-        let until = tokio::time::Instant::now() + Duration::from_secs(3);
-        let mut lines = Vec::new();
-        loop {
-            for event in client.take_events() {
-                if let SessionEvent::NpcConversation(delta) = event {
-                    lines.extend(delta.value.lines);
-                }
-            }
-            if !lines.is_empty() {
-                break;
-            }
-            if tokio::time::Instant::now() >= until {
-                break;
-            }
-            client.service_liveness(Duration::from_millis(20)).await?;
-        }
-        if disposition != wire::NpcIntentDisposition::Ok {
-            return Err(format!("Oressa {text} refused: {disposition:?}; observed_level={observed_level}; native_conversation={lines:?}; source:crates/gameplay/dispatch/src/gameplay_transport/vocation_choice.rs:347").into());
-        }
-        if text == "yes"
-            && !lines
-                .iter()
-                .any(|line| line == &format!("Your vocation is now {vocation}."))
-        {
-            return Err(format!("Oressa confirmation has no committed vocation frame: {lines:?}; observed_level={observed_level}").into());
-        }
-    }
-    Ok(())
+    Ok(player_spell(
+        client,
+        book,
+        words,
+        oteryn_protocol_oteryn::actor_spell::SpellTarget::None,
+        false,
+    ).await?.result_server_sequence)
 }
 
 fn own_entity(client: &DevClientSession) -> TestResult<oteryn_dev_client::EntityRef> {
@@ -3091,50 +3116,30 @@ async fn summon_rat(
     world: &BundleWorld,
     book: &crate::spell::SpellBook,
     mana: u32,
-    try_vocation: bool,
+    earn_level: bool,
 ) -> TestResult<(oteryn_dev_client::EntityRef, u64)> {
     let words = "utevo res \"rat\"";
     let spell = book.spoken(words).ok_or("Summon Creature absent")?.spell;
-    non_pz(client, world).await?;
-    for attempt in 0..2 {
-        spell_ready(client, spell).await?;
-        let before = census(client)?;
-        let vitals = client
-            .actor_vitals()
-            .copied()
-            .ok_or("summon vitals absent")?;
-        let observed_level = level(client).await?;
-        client.take_events();
-        let reply = say(client, words).await?;
-        if reply.status == CommandStatus::Accepted && reply.disposition == ChatDisposition::Ok {
-            let sequence = companion_payment(client, vitals, mana, spell.soul).await?;
-            let (entity, _) = companion_spawn(
-                client,
-                &before,
-                "Rat",
-                client.world_spatial().actor_position,
-            )
-            .await?;
-            return Ok((entity, sequence));
-        }
-        let blocker = format!(
-            "Summon Creature refused: {:?}; observed_level={observed_level} required_level={} observed_mana={} creature_type_mana={mana} vocations={:?}; source:crates/gameplay/dispatch/src/gameplay_transport/native_companion_item_cast.rs:77",
-            reply.disposition, spell.level, vitals.mana, spell.vocations
-        );
-        if attempt == 0 && try_vocation {
-            earn_spell_level(client, world, spell.level.max(8))
-                .await
-                .map_err(|error| format!("{blocker}; player progression: {error}"))?;
-            player_first_vocation(client, world, "sorcerer")
-                .await
-                .map_err(|error| format!("{blocker}; player vocation route: {error}"))?;
-            non_pz(client, world).await?;
-        } else {
-            return Err(blocker.into());
-        }
+    if earn_level {
+        prepare_spell_access(client, world, spell).await?;
     }
-    Err("summon attempt exhausted".into())
+    non_pz(client, world).await?;
+    spell_ready(client, spell).await?;
+    let before = census(client)?;
+    let vitals = client.actor_vitals().copied().ok_or("summon vitals absent")?;
+    client.take_events();
+    let reply = say(client, words).await?;
+    if reply.status != CommandStatus::Accepted || reply.disposition != ChatDisposition::Ok {
+        return Err(format!(
+            "Summon Creature refused: {:?}; required_level={} observed_mana={} creature_type_mana={mana} vocations={:?}; source:crates/gameplay/dispatch/src/gameplay_transport/native_companion_item_cast.rs:77",
+            reply.disposition, spell.level, vitals.mana, spell.vocations
+        ).into());
+    }
+    let sequence = companion_payment(client, vitals, mana, spell.soul).await?;
+    let (entity, _) = companion_spawn(client, &before, "Rat", client.world_spatial().actor_position).await?;
+    Ok((entity, sequence))
 }
+
 async fn companion_speech_refusal(client: &mut DevClientSession, words: &str) -> TestResult<u64> {
     let before = census(client)?;
     let vitals = client
@@ -3243,66 +3248,72 @@ async fn companion_behavior(
         client.service_liveness(Duration::from_millis(25)).await?;
     }
 }
-async fn wild_rat(
+fn nearest_named_rat<'a>(
+    entries: impl Iterator<Item = &'a oteryn_dev_client::WorldSpatialEntity>,
+    here: ActorPosition,
+    excluded: &[oteryn_dev_client::EntityRef],
+) -> Option<oteryn_dev_client::WorldSpatialEntity> {
+    entries
+        .filter(|entry| entry.position.floor == here.floor && named(entry, "Rat") && !excluded.contains(&entry.entity))
+        .filter_map(|entry| {
+            let distance = here.x.abs_diff(entry.position.x).max(here.y.abs_diff(entry.position.y));
+            (distance <= 4).then_some((distance, entry))
+        })
+        .min_by_key(|(distance, _)| *distance)
+        .map(|(_, entry)| *entry)
+}
+
+pub(super) async fn wild_rat(
     client: &mut DevClientSession,
     world: &BundleWorld,
     excluded: &[oteryn_dev_client::EntityRef],
 ) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let points: Vec<_> = metadata
-        .spawns
-        .sources
-        .iter()
+    let start = tile(client.world_spatial().actor_position)?;
+    let mut sites: Vec<_> = metadata.spawns.sources.iter()
         .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
-        .filter(|(_, point)| {
-            metadata
-                .spawns
-                .creatures
-                .get(point.creature as usize)
-                .is_some_and(|entry| entry.key == "oteryn:creature.rat")
+        .filter(|(floor, point)| {
+            floor.abs_diff(start.floor) <= 2
+                && start.x.abs_diff(point.x).max(start.y.abs_diff(point.y)) <= 161
+                && metadata.spawns.creatures.get(point.creature as usize)
+                    .is_some_and(|entry| entry.key == "oteryn:creature.rat")
         })
         .collect();
-    // Arrival is a map fact. A rat may still be respawning, so defer visibility
-    // checks to the observation loop after the real STEP commands.
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-            && points.iter().any(|(floor, point)| {
-                at.floor == *floor && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= 1
-            })
-    })
-    .ok_or("earned hunt requires a reachable compiled Rat spawn outside PZ")?;
-    walk(client, world, &path).await?;
-    let until = tokio::time::Instant::now() + Duration::from_secs(25);
+    sites.sort_by_key(|(floor, point)| (floor.abs_diff(start.floor), start.x.abs_diff(point.x).max(start.y.abs_diff(point.y))));
+    let wait = sites.iter().map(|(_, point)| point.respawn_ms).max().unwrap_or(0);
+    let deadline = tokio::time::Instant::now() + Duration::from_millis(u64::from(wait).clamp(90_000, 120_000) + 5_000);
+    verdict::Harness::global().bounded_wait(deadline, "live-rat-spawn");
     loop {
-        let here = client.world_spatial().actor_position;
-        let candidates: Vec<_> = client
-            .world_entities()
-            .ok_or("rat visibility absent")?
-            .iter()
-            .filter(|entry| {
-                named(entry, "Rat")
-                    && !excluded.contains(&entry.entity)
-                    && entry.position.floor == here.floor
-                    && entry
-                        .position
-                        .x
-                        .abs_diff(here.x)
-                        .max(entry.position.y.abs_diff(here.y))
-                        <= 4
-            })
-            .copied()
-            .collect();
-        if let [entry] = candidates.as_slice() {
-            return Ok(*entry);
+        let mut reachable = 0;
+        for (floor, point) in &sites {
+            if tokio::time::Instant::now() >= deadline {
+                return Err("earned hunt: timed out waiting for a live Rat across reachable compiled spawns".into());
+            }
+            let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+                at.floor == *floor && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= 1
+                    && world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
+            });
+            let Some(path) = path else { continue };
+            reachable += 1;
+            walk(client, world, &path).await?;
+            let visit_deadline = deadline.min(tokio::time::Instant::now() + Duration::from_secs(2));
+            loop {
+                let here = client.world_spatial().actor_position;
+                let target = client.world_entities()
+                    .and_then(|entities| nearest_named_rat(entities.iter(), here, excluded));
+                if let Some(target) = target {
+                    return Ok(target);
+                }
+                if tokio::time::Instant::now() >= visit_deadline {
+                    break;
+                }
+                client.service_liveness(Duration::from_millis(50)).await?;
+            }
         }
-        if tokio::time::Instant::now() >= until {
-            return Err(format!("compiled rat spawn needs one exact named live target, observed {} (owned exclusions={excluded:?})", candidates.len()).into());
+        if reachable == 0 {
+            return Err("earned hunt requires a reachable compiled Rat spawn outside PZ".into());
         }
-        client.service_liveness(Duration::from_millis(50)).await?;
     }
 }
 
@@ -3828,7 +3839,7 @@ async fn inventory_quantity_or_applied(
     Ok(())
 }
 
-async fn approach_melee(
+pub(super) async fn approach_melee(
     client: &mut DevClientSession,
     world: &BundleWorld,
     target: ActorPosition,
@@ -4040,7 +4051,7 @@ mod continuation_three_tests {
         }
     }
     #[test]
-    fn companion_identity_requires_named_live_creature() -> TestResult {
+    fn review_companion_identity_requires_named_live_creature() -> TestResult {
         use oteryn_dev_client::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
         let mut entry = WorldSpatialEntity {
             motion: None,
@@ -4062,6 +4073,21 @@ mod continuation_three_tests {
         };
         assert!(named(&entry, "rat"));
         assert!(!named(&entry, "Skeleton"));
+        let mut farther = entry;
+        farther.entity.identity = [8; 16];
+        farther.position.x += 3;
+        let mut wrong_species = entry;
+        wrong_species.entity.identity = [9; 16];
+        wrong_species.display_name = Some(
+            oteryn_protocol_oteryn::entity_names::EntityDisplayName::new("Cave Rat")
+                .map_err(|error| format!("display name: {error:?}"))?,
+        );
+        let candidates = [farther, wrong_species, entry];
+        assert_eq!(nearest_named_rat(candidates.iter(), entry.position, &[]), Some(entry));
+        assert_eq!(
+            nearest_named_rat(candidates.iter(), entry.position, &[entry.entity]),
+            Some(farther)
+        );
         entry.entity.generation = 0;
         assert!(!named(&entry, "Rat"));
         entry.entity.generation = 1;

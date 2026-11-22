@@ -179,7 +179,6 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
         bytes,
@@ -196,11 +195,19 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let crate::spell::ManaCost::Fixed(cost) = spell.mana else {
         return Err("step=cast observed=non-fixed-mana need=assertable-cost".into());
     };
-    full_e2ef5::earn_spell_level(&mut caster, world, spell.level)
+    full_e2ef5::prepare_spell_access(&mut caster, world, spell)
         .await
         .map_err(|error| format!("step=invisibility-access spell=utana vid: {error}"))?;
     let mut observer = connect_character(clients, 0xb2, 0).await?;
-    travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    let target = full_e2ef5::with_observer_liveness(
+        &mut observer,
+        full_e2ef5::wild_rat(&mut caster, world, &[]),
+    ).await?;
+    full_e2ef5::with_observer_liveness(
+        &mut observer,
+        full_e2ef5::approach_melee(&mut caster, world, target.position),
+    ).await?;
+    let rat = target.entity;
     let caster_tile = tile(caster.world_spatial().actor_position)?;
     let path = route(
         world,
@@ -215,27 +222,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         },
     )
     .ok_or("step=meet observed=no-walk-route need=reachable-rat-spawn")?;
-    walk(&mut observer, world, &path).await?;
+    full_e2ef5::with_observer_liveness(&mut caster, walk(&mut observer, world, &path)).await?;
     let caster_ref = own(&caster)?;
-    let rat = caster
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|e| {
-                e.kind == oteryn_dev_client::EntityKind::Creature
-                    && e.position.floor == caster.world_spatial().actor_position.floor
-                    && e.position
-                        .x
-                        .abs_diff(caster.world_spatial().actor_position.x)
-                        .max(
-                            e.position
-                                .y
-                                .abs_diff(caster.world_spatial().actor_position.y),
-                        )
-                        <= 1
-            })
-        })
-        .map(|e| e.entity)
-        .ok_or("step=monster-targets-visible observed=no-adjacent-rat need=live-rat-spawn")?;
     caster.take_events();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let pre_damage = loop {

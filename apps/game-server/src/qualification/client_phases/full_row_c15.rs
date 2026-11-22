@@ -71,38 +71,21 @@ fn adjacent_hunt_target(
 }
 
 async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let rats: Vec<_> = metadata
-        .spawns
-        .sources
-        .iter()
-        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
-        .filter(|(_, point)| {
-            metadata
-                .spawns
-                .creatures
-                .get(point.creature as usize)
-                .is_some_and(|creature| creature.key == "oteryn:creature.rat")
-        })
-        .map(|(floor, point)| TilePos { x: point.x, y: point.y, floor })
-        .collect();
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
-            && rats.iter().any(|rat| {
-                rat.floor == at.floor && rat.x.abs_diff(at.x).max(rat.y.abs_diff(at.y)) <= 1
-            })
-    })
-    .ok_or("step-3 no player-walkable route to an unprotected rat spawn")?;
-    walk(client, world, &path).await?;
-    let at = client.world_spatial().actor_position;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| adjacent_hunt_target(entity, at))
-        })
-        .copied()
-        .ok_or("step-3 rat spawn reached but no adjacent creature frame observed")?;
+    let target = full_e2ef5::wild_rat(client, world, &[]).await?;
+    full_e2ef5::approach_melee(client, world, target.position).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let at = client.world_spatial().actor_position;
+        if client.world_entities().and_then(|view| view.get(&target.entity))
+            .is_some_and(|entry| adjacent_hunt_target(entry, at))
+        {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step-3 selected Rat did not remain adjacent for ATTACK".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
     let attack = client.session_mut().attack_target(Some(&target.entity)).await?;
     if attack.disposition != AttackIntentDisposition::Ok {
         return Err(format!("step-3 native ATTACK refused: {attack:?}").into());

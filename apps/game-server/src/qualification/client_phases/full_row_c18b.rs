@@ -159,10 +159,25 @@ fn cast_payment(
     })
 }
 
+fn crosshair_plan(
+    book: &crate::spell::SpellBook,
+    vocation: crate::spell::Vocation,
+) -> TestResult<Vec<&'static str>> {
+    let mut plan = Vec::new();
+    for words in SPELLS {
+        let spell = book.spoken(words)
+            .ok_or_else(|| format!("served-catalogue-missing-{words}"))?.spell;
+        if spell.vocations.contains(&vocation) {
+            plan.push(words);
+        }
+    }
+    Ok(plan)
+}
+
 fn require_crosshair_casts(successful: usize, refusals: &[String]) -> TestResult {
     if !refusals.is_empty() {
         return Err(format!(
-            "POSITION cast coverage {successful}/{}; refused={}; source:crates/gameplay/dispatch/src/gameplay_transport/ordinary_combat/prepare.rs:282",
+            "POSITION cast coverage {successful}/{}; missing={}; source:crates/gameplay/dispatch/src/gameplay_transport/ordinary_combat/prepare.rs:282",
             SPELLS.len(),
             refusals.join(", ")
         ).into());
@@ -197,6 +212,20 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
     let mut client = connect_character(clients, 0xc8, 1).await?;
     attempt.observed(client.join_snapshot().game_session_id);
 
+    attempt.at("crosshair-vocation-plan");
+    let vocation = full_e2ef5::current_vocation(&mut client).await?;
+    let plan = crosshair_plan(&book, vocation)?;
+    let mut gaps = Vec::new();
+    for words in SPELLS.into_iter().filter(|words| !plan.contains(words)) {
+        let spell = book.spoken(words).ok_or("crosshair spell absent")?.spell;
+        gaps.push(format!("{words} requires a separate admitted vocation {:?}; served={vocation:?}", spell.vocations));
+    }
+    if plan.is_empty() {
+        attempt.observed(&gaps);
+        full_e2ef5::player_logout(&mut client).await?;
+        return require_crosshair_casts(0, &gaps);
+    }
+
     attempt.at("walk-out-of-pz");
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         outside_protection_zone(world, at) && crosshair_tile(world, at).is_some()
@@ -213,8 +242,8 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
         floor: here.floor,
     });
     let mut successful = None;
-    let mut refusals = Vec::new();
-    for words in SPELLS {
+    let mut successful_count = 0;
+    for words in plan {
         attempt.at("crosshair-position-casts");
         let spell = book
             .spoken(words)
@@ -247,16 +276,22 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
                 return Err(format!("needs-exact-vitals-delta-for-{words}").into());
             }
             successful.get_or_insert((spell, spell_index(&book, words)?));
+            successful_count += 1;
+            evidence(&format!(
+                "C18B_CHECK C18b POSITION PASS words={words:?} vocation={vocation:?} server_sequence={}",
+                outcome.result_server_sequence
+            ));
         } else {
             if outcome.actor_vitals_delta.is_some() {
                 return Err(format!("refused-{words}-changed-vitals").into());
             }
-            refusals.push(format!("{words}:{:?}", outcome.disposition));
+            gaps.push(format!("{words}:{:?}", outcome.disposition));
         }
     }
-    attempt.observed(&refusals);
+    attempt.observed(&gaps);
     let Some((spell, index)) = successful else {
-        return require_crosshair_casts(0, &refusals);
+        full_e2ef5::player_logout(&mut client).await?;
+        return require_crosshair_casts(0, &gaps);
     };
 
     attempt.at("out-of-range-refusal");
@@ -309,13 +344,27 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
         return Err("needs-new-session-with-retained-position-and-vitals".into());
     }
     attempt.at("crosshair-position-casts");
-    attempt.observed(&refusals);
-    require_crosshair_casts(SPELLS.len() - refusals.len(), &refusals)
+    attempt.observed(&gaps);
+    require_crosshair_casts(successful_count, &gaps)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn crosshair_plan_only_attempts_spells_for_the_admitted_vocation() -> TestResult {
+        use crate::spell::Vocation;
+        let book = spell_book()?;
+        assert_eq!(crosshair_plan(&book, Vocation::Sorcerer)?, ["exevo mort ora"]);
+        assert_eq!(
+            crosshair_plan(&book, Vocation::Paladin)?,
+            ["exevo tempo mas san", "exori dir san", "exori dir moe"]
+        );
+        assert_eq!(crosshair_plan(&book, Vocation::Monk)?, ["exori mas amp pug"]);
+        assert!(crosshair_plan(&book, Vocation::Knight)?.is_empty());
+        Ok(())
+    }
 
     #[test]
     fn partial_crosshair_casts_leave_a_named_gap() {
