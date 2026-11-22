@@ -576,7 +576,19 @@ impl BundleFacts {
                 } else {
                     door
                 };
-                let closed_solid = self.blocks(item.palette);
+                let closed_solid = self.blocks(item.palette)
+                    && !(tile.house == 0
+                        && !dropped
+                        && self
+                            .palette
+                            .get(item.palette as usize)
+                            .is_some_and(|entry| {
+                                source_bindings::walkable_coal_basin_flame(
+                                    pos,
+                                    ordinal,
+                                    entry.facts.appearance_id,
+                                )
+                            }));
                 blocks |= closed_solid && door == PaletteDoor::No;
                 let Some(key) = key else {
                     // A door beyond the ordinal reach cannot be named, so it blocks as a wall.
@@ -611,9 +623,33 @@ impl BundleFacts {
                     }
                     PaletteDoor::No => {}
                 }
+                let parchment_seal = key
+                    == oteryn_gameplay_items::map_pickup::PARCHMENT_SEAL_PLACEMENT
+                    && tile.house == 0
+                    && !dropped
+                    && self
+                        .palette
+                        .get(item.palette as usize)
+                        .is_some_and(|entry| {
+                            entry.facts.appearance_id == 2819 && entry.facts.pickupable
+                        })
+                    && !self.map_source_children.contains_key(&key)
+                    && item.attrs.count.is_none_or(|count| count == 1)
+                    && item.attrs.action.is_none_or(|action| action == 104)
+                    && item.attrs.unique.is_none()
+                    && item.attrs.door.is_none()
+                    && item.attrs.depot.is_none()
+                    && item.attrs.teleport.is_none()
+                    && item.attrs.description.is_none()
+                    && item.attrs.charges.is_none()
+                    && item
+                        .attrs
+                        .text
+                        .as_ref()
+                        .is_some_and(|text| !text.is_empty());
                 let placement = Placement {
                     palette: item.palette,
-                    bound: dropped || bound(&item.attrs),
+                    bound: !parchment_seal && (dropped || bound(&item.attrs)),
                     dropped,
                     count: item
                         .attrs
@@ -622,25 +658,29 @@ impl BundleFacts {
                         .unwrap_or(1),
                     sub_type: item.attrs.charges.unwrap_or(0),
                     attrs: item.attrs.clone(),
-                    pickup: pickup::eligibility(
-                        tile,
-                        sector.floor,
-                        ordinal as u8,
-                        self.palette
-                            .get(item.palette as usize)
-                            .is_some_and(|p| p.facts.pickupable),
-                        &manifest.dropped_teleports,
-                    )
-                    .map(|entry| entry.quantity)
-                    .and_then(|quantity| {
-                        if item.attrs.unique.is_some() {
-                            Err(pickup::Ineligible::Unique)
-                        } else if item.attrs.action.is_some() {
-                            Err(pickup::Ineligible::Action)
-                        } else {
-                            Ok(quantity)
-                        }
-                    }),
+                    pickup: if parchment_seal {
+                        Ok(1)
+                    } else {
+                        pickup::eligibility(
+                            tile,
+                            sector.floor,
+                            ordinal as u8,
+                            self.palette
+                                .get(item.palette as usize)
+                                .is_some_and(|p| p.facts.pickupable),
+                            &manifest.dropped_teleports,
+                        )
+                        .map(|entry| entry.quantity)
+                        .and_then(|quantity| {
+                            if item.attrs.unique.is_some() {
+                                Err(pickup::Ineligible::Unique)
+                            } else if item.attrs.action.is_some() {
+                                Err(pickup::Ineligible::Action)
+                            } else {
+                                Ok(quantity)
+                            }
+                        })
+                    },
                 };
                 let plain = Placement {
                     palette: item.palette,

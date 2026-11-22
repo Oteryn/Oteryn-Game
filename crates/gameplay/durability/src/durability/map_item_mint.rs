@@ -540,6 +540,31 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         candidate: &mut MapItemMintCandidate,
     ) -> Result<MapItemMintOutcome> {
+        self.commit_map_item_mint_with_seal_text(permit, authority, node, fence, candidate, None)
+            .await
+    }
+
+    /// The retained seal's inscription travels with the materialized item.
+    #[allow(clippy::too_many_arguments, reason = "the text is part of the exact map MINT source")]
+    pub async fn commit_map_item_mint_with_seal_text(
+        &self,
+        permit: &SpellLanePermit,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        candidate: &mut MapItemMintCandidate,
+        seal_text: Option<&str>,
+    ) -> Result<MapItemMintOutcome> {
+        use oteryn_gameplay_items::map_pickup::{PARCHMENT_SEAL_ITEM, PARCHMENT_SEAL_PLACEMENT};
+        let request = candidate.request();
+        let seal = request.placement_key == PARCHMENT_SEAL_PLACEMENT
+            && request.item.definition.production_key == PARCHMENT_SEAL_ITEM;
+        if seal != seal_text.is_some()
+            || seal_text.is_some_and(|text| text.is_empty() || text.len() > 7996)
+        {
+            return Err(MapItemMintError::InvalidInput);
+        }
+        let seal_text = seal_text.map(str::to_owned);
         // A non-Channel scope owns no Ground, so its fence is refused as stale authority
         // before the lane check, as the transaction refused it before SPELL-LOCK-2.
         if !matches!(
@@ -670,6 +695,12 @@ impl DurabilityRoot {
                         tuple,
                     )
                     .await?;
+                    if let Some(text) = seal_text {
+                        sqlx::query("INSERT INTO game_item_text_revisions VALUES (encode($1,'hex')::uuid,1)")
+                            .bind(committed.item_instance_id.as_slice()).execute(&mut **tx).await?;
+                        sqlx::query("INSERT INTO game_item_texts(item_instance_id,text,written_at,text_revision) VALUES (encode($1,'hex')::uuid,$2,statement_timestamp(),1)")
+                            .bind(committed.item_instance_id.as_slice()).bind(text).execute(&mut **tx).await?;
+                    }
                     tx.commit(deadline).await?;
                     Ok(Ok(MapItemMintOutcome::Committed(committed)))
                 })
@@ -763,19 +794,68 @@ impl DurabilityRoot {
         reset_epoch: u64,
         max_entries: usize,
     ) -> Result<Vec<u64>> {
+        self.read_map_item_mint_projection(world_id, channel_id, base_bundle_digest, reset_epoch, max_entries)
+            .await
+            .map(|(keys, _)| keys)
+    }
+
+    /// Read the current Channel's committed removal for this item-move command.
+    pub async fn read_parchment_removal(
+        &self,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        map_digest: [u8; 32],
+        epoch: u64,
+    ) -> Result<Option<[u8; 16]>> {
+        let (world, channel) = scope_of(&fence).map_err(|_| MapItemMintError::AuthorityRejected)?;
+        let removed = self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                let removed: Option<String> = sqlx::query_scalar(
+                    "SELECT p.move_transaction_id::text FROM game_parchment_removals p \
+                     JOIN game_item_loop_move_receipts r ON r.transaction_id=p.move_transaction_id \
+                     JOIN game_map_item_mint_receipts m ON m.transaction_id=p.mint_transaction_id \
+                     WHERE r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric \
+                     AND r.character_id=encode($3,'hex')::uuid AND r.world_id=encode($4,'hex')::uuid \
+                     AND r.channel_id=encode($5,'hex')::uuid AND r.scope_generation=$6::text::numeric \
+                     AND m.base_bundle_digest=$7 AND m.reset_epoch=$8::text::numeric \
+                     AND p.reset_at>statement_timestamp()",
+                ).bind(command.game_session_id().as_bytes().as_slice())
+                  .bind(command.command_id().get().to_string())
+                  .bind(fence.character_id.as_bytes().as_slice())
+                  .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
+                  .bind(fence.scope_ownership_generation.get().to_string())
+                  .bind(map_digest.as_slice()).bind(epoch.to_string())
+                  .fetch_optional(&mut *tx).await?;
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(removed)
+            })
+        }).await?;
+        Ok(removed.as_deref().map(uuid_text).transpose()?)
+    }
+
+    /// Take the hidden origins and the next seal reset from one database snapshot.
+    pub async fn read_map_item_mint_projection(
+        &self,
+        world_id: WorldId,
+        channel_id: ChannelId,
+        base_bundle_digest: [u8; 32],
+        reset_epoch: u64,
+        max_entries: usize,
+    ) -> Result<(Vec<u64>, Option<std::time::Duration>)> {
         let limit = i64::try_from(max_entries.saturating_add(1)).unwrap_or(i64::MAX);
         let keys = self
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    let keys: Vec<String> = sqlx::query_scalar(
-                        "SELECT placement_key::text FROM game_map_item_mint_receipts \
-                          WHERE world_id = encode($1,'hex')::uuid \
-                            AND channel_id = encode($2,'hex')::uuid \
-                            AND base_bundle_digest = $3 \
-                            AND reset_epoch = $4::text::numeric(20,0) \
-                          ORDER BY placement_key LIMIT $5",
+                    let keys: Vec<(String, Option<i64>)> = sqlx::query_as(
+                        "SELECT m.placement_key::text, ceil(extract(epoch FROM (r.reset_at-statement_timestamp()))*1000)::bigint \
+                           FROM game_map_item_mint_receipts m LEFT JOIN game_parchment_removals r ON r.mint_transaction_id=m.transaction_id \
+                          WHERE m.world_id=encode($1,'hex')::uuid AND m.channel_id=encode($2,'hex')::uuid \
+                            AND m.base_bundle_digest=$3 AND m.reset_epoch=$4::text::numeric(20,0) \
+                            AND (r.reset_at IS NULL OR r.reset_at>statement_timestamp()) \
+                          ORDER BY m.placement_key LIMIT $5",
                     )
                     .bind(world_id.as_bytes().as_slice())
                     .bind(channel_id.as_bytes().as_slice())
@@ -792,12 +872,17 @@ impl DurabilityRoot {
         if keys.len() > max_entries {
             return Err(MapItemMintError::CapacityExceeded);
         }
-        keys.iter()
-            .map(|key| {
-                key.parse::<u64>()
-                    .map_err(|_| DurabilityError::InvalidStoredState.into())
-            })
-            .collect()
+        let mut rearm_in = None;
+        let mut placements = Vec::with_capacity(keys.len());
+        for (key, reset_left) in keys {
+            placements.push(key.parse::<u64>().map_err(|_| DurabilityError::InvalidStoredState)?);
+            if let Some(delay) = reset_left {
+                let delay = u64::try_from(delay).map_err(|_| DurabilityError::InvalidStoredState)?;
+                let delay = std::time::Duration::from_millis(delay);
+                rearm_in = Some(rearm_in.map_or(delay, |current: std::time::Duration| current.min(delay)));
+            }
+        }
+        Ok((placements, rearm_in))
     }
 }
 
@@ -847,12 +932,12 @@ async fn admit(
         )));
     }
     let already_taken: bool = sqlx::query_scalar(
-        "SELECT EXISTS (SELECT 1 FROM game_map_item_mint_receipts \
-                         WHERE world_id = encode($1,'hex')::uuid \
-                           AND channel_id = encode($2,'hex')::uuid \
-                           AND base_bundle_digest = $3 \
-                           AND placement_key = $4::text::numeric(20,0) \
-                           AND reset_epoch = $5::text::numeric(20,0))",
+        "SELECT EXISTS (SELECT 1 FROM game_map_item_mint_receipts m \
+                          LEFT JOIN game_parchment_removals r ON r.mint_transaction_id=m.transaction_id \
+                         WHERE m.world_id=encode($1,'hex')::uuid AND m.channel_id=encode($2,'hex')::uuid \
+                           AND m.base_bundle_digest=$3 AND m.placement_key=$4::text::numeric(20,0) \
+                           AND m.reset_epoch=$5::text::numeric(20,0) \
+                           AND (r.reset_at IS NULL OR r.reset_at>statement_timestamp()))",
     )
     .bind(reservation.world_id.as_slice())
     .bind(reservation.channel_id.as_slice())

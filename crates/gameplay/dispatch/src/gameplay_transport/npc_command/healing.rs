@@ -27,7 +27,9 @@ pub(super) fn apply(
         .iter()
         .any(|word| text.eq_ignore_ascii_case(word));
     let healing = if profile == HealingProfile::Full {
-        text.eq_ignore_ascii_case("healing")
+        oteryn_gameplay_npc::greeting::words(text)
+            .iter()
+            .any(|word| word == "healing")
     } else {
         text.eq_ignore_ascii_case("heal") || text.eq_ignore_ascii_case("healing")
     };
@@ -156,6 +158,22 @@ pub(super) fn apply(
     }
     if (gained != 0 || conditions_changed) && !states.commit(runtime, actor, session, next) {
         return None;
+    }
+    if profile == HealingProfile::Full
+        && gained != 0
+        && let Some(map) = admission.bundle_map()
+        && let Ok(position) = runtime.read_actor_position(actor)
+        && let (Ok(x), Ok(y), Some(floor)) = (
+            u16::try_from(position.position().x),
+            u16::try_from(position.position().y),
+            i8::try_from(position.position().floor)
+                .ok()
+                .and_then(i8::checked_neg),
+        )
+    {
+        // Crystal enpa_deia_pema.lua:116, CONST_ME_MAGIC_BLUE.
+        map.facts
+            .emit_movement_effect(crate::map::overlay::TilePos { x, y, floor }, 13);
     }
     conversation.healing_command = Some(command.command_id);
     conversation.premium = None;

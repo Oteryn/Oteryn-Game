@@ -165,6 +165,10 @@ pub(super) async fn move_map_item(
     else {
         return stale;
     };
+    let seal_text = (placement_key == oteryn_gameplay_items::map_pickup::PARCHMENT_SEAL_PLACEMENT
+        && definition.production_key == oteryn_gameplay_items::map_pickup::PARCHMENT_SEAL_ITEM)
+        .then(|| at.map.facts.base_text(placement_key))
+        .flatten();
     let ground_push = matches!(destination, LoopDestination::Ground(_));
     if key_number.is_some()
         && !matches!(
@@ -317,12 +321,13 @@ pub(super) async fn move_map_item(
     } else {
         match admission
             .root
-            .commit_map_item_mint(
+            .commit_map_item_mint_with_seal_text(
                 permit,
                 admission.character,
                 admission.holder,
                 fence,
                 &mut candidate,
+                seal_text,
             )
             .await
         {
@@ -404,36 +409,74 @@ pub(super) async fn move_map_item(
     };
     let weights = NativeItemWeights(native).with_wheel(admission.premium_coordinator);
     // Capability 510: the picked-up entry takes the requested container slot.
-    let result = match request.slot {
-        Some(slot) => {
+    let basin_target = match request.target {
+        LoopTarget::Ground(to)
+            if (to.x, to.y, to.floor)
+                != (i32::from(pos.x), i32::from(pos.y), i16::from(pos.floor)) =>
+        {
+            let runtime = admission.runtime.lock().await;
+            coal_basin::target(at.map, &runtime, to, admission.reset_epoch)
+        }
+        _ => None,
+    };
+    let command_ref = candidate.request().command;
+    let mut offered = false;
+    let offering = match basin_target.as_ref() {
+        Some(target) => {
             admission
                 .root
-                .commit_item_loop_move_to_slot(
+                .commit_item_loop_coal_basin(
                     permit,
                     admission.character,
                     admission.holder,
-                    &fence,
-                    candidate.request().command,
+                    fence,
+                    command_ref,
                     &weights,
-                    pickup,
-                    slot,
+                    pickup.clone(),
+                    target.clone(),
                 )
                 .await
         }
-        None => {
-            admission
-                .root
-                .commit_item_loop_move(
-                    permit,
-                    admission.character,
-                    admission.holder,
-                    &fence,
-                    candidate.request().command,
-                    &weights,
-                    pickup,
-                )
-                .await
+        None => Ok(None),
+    };
+    let result = match offering {
+        Ok(Some(Ok((receipt, consumed)))) => {
+            offered = consumed;
+            Ok(Ok(receipt))
         }
+        Ok(Some(Err(reason))) => Ok(Err(reason)),
+        Err(error) => Err(error),
+        Ok(None) => match request.slot {
+            Some(slot) => {
+                admission
+                    .root
+                    .commit_item_loop_move_to_slot(
+                        permit,
+                        admission.character,
+                        admission.holder,
+                        &fence,
+                        candidate.request().command,
+                        &weights,
+                        pickup,
+                        slot,
+                    )
+                    .await
+            }
+            None => {
+                admission
+                    .root
+                    .commit_item_loop_move(
+                        permit,
+                        admission.character,
+                        admission.holder,
+                        &fence,
+                        candidate.request().command,
+                        &weights,
+                        pickup,
+                    )
+                    .await
+            }
+        },
     };
     ground_cache.invalidate();
     admission
@@ -442,6 +485,18 @@ pub(super) async fn move_map_item(
         .lock()
         .await
         .forget_weapon(actor, command.game_session_id);
+    if let Some(target) = basin_target
+        && let Ok(Ok(receipt)) = &result
+        && !coal_basin::finish_drop(admission, fence, command_ref, &target, receipt, offered).await
+    {
+        return LoopMoveResult::Unknown;
+    }
+    if seal_text.is_some()
+        && matches!(result, Ok(Ok(_)))
+        && !parchment::publish(admission, fence, candidate.request().command).await
+    {
+        return LoopMoveResult::Unknown;
+    }
     match result {
         Ok(Ok(_)) => LoopMoveResult::Committed,
         Ok(Err(reason)) => refused(reason),

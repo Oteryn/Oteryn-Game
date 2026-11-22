@@ -3,6 +3,16 @@ use super::{Attrs, TilePos};
 use serde::Deserialize;
 use std::sync::OnceLock;
 
+/// The retained Tombs flames are walkable magic forcefields. The WorldObject
+/// collision fact for 1959 is non-solid, but the retained B3 uses Item keys.
+pub(super) fn walkable_coal_basin_flame(pos: TilePos, ordinal: usize, appearance: u16) -> bool {
+    appearance == 1959
+        && ordinal == 1
+        && oteryn_gameplay_quests::quest::carried_step::COAL_BASINS
+            .iter()
+            .any(|basin| basin.flame == (i32::from(pos.x), i32::from(pos.y), -i16::from(pos.floor)))
+}
+
 #[derive(Deserialize)]
 struct Capture {
     bindings: Vec<Binding>,

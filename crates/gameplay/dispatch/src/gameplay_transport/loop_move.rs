@@ -14,6 +14,7 @@
 //! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
 //!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
+mod coal_basin;
 mod dreamer_ring;
 pub(super) mod elemental_arrival;
 mod floor_assembly;
@@ -21,6 +22,7 @@ mod house_container;
 #[path = "loop_map_pickup.rs"]
 mod map_pickup;
 mod map_sources;
+mod parchment;
 mod seed_drop;
 
 use super::ComposedFreshAdmission;
@@ -204,6 +206,7 @@ pub struct LoopGroundOverlay {
     field_pin: ([u8; 32], [u8; 32], u64),
     taken_sources: std::collections::BTreeSet<u64>,
     ground_push_definition: Option<NonZeroU32>,
+    seal_reset_at: Option<std::time::Instant>,
 }
 
 impl LoopGroundOverlay {
@@ -388,6 +391,7 @@ impl LoopGroundOverlay {
             field_pin,
             taken_sources: Default::default(),
             ground_push_definition,
+            seal_reset_at: None,
         }
     }
 
@@ -503,6 +507,7 @@ struct CacheState {
     epoch: u64,
     current: Option<Arc<LoopGroundOverlay>>,
     pending_origins: std::collections::BTreeMap<u64, CommandRef>,
+    published_parchment_removal: Option<[u8; 16]>,
 }
 
 /// The Channel's loop Ground overlay, read once after each change. A leaf lock, never held
@@ -583,7 +588,20 @@ impl LoopGroundCache {
     fn cached(&self) -> (u64, Option<Arc<LoopGroundOverlay>>) {
         self.state
             .lock()
-            .map(|state| (state.epoch, state.current.clone()))
+            .map(|state| {
+                (
+                    state.epoch,
+                    state
+                        .current
+                        .as_ref()
+                        .filter(|overlay| {
+                            overlay
+                                .seal_reset_at
+                                .is_none_or(|at| std::time::Instant::now() < at)
+                        })
+                        .cloned(),
+                )
+            })
             .unwrap_or((0, None))
     }
 
@@ -651,14 +669,14 @@ pub async fn loop_ground(
         |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
     )
     .await?;
-    let taken = if let crate::foundation::RuntimeScopeRefV1::Channel {
+    let (taken, reset_in) = if let crate::foundation::RuntimeScopeRefV1::Channel {
         world_id,
         channel_id,
     } = scope
     {
         projection_read(
             || {
-                admission.root.read_map_item_mint_placements(
+                admission.root.read_map_item_mint_projection(
                     world_id,
                     channel_id,
                     base.digest(),
@@ -677,7 +695,7 @@ pub async fn loop_ground(
         )
         .await?
     } else {
-        Vec::new()
+        (Vec::new(), None)
     };
     let mut built = LoopGroundOverlay::build_with_native(
         base.clone(),
@@ -689,6 +707,7 @@ pub async fn loop_ground(
             .active_generation
             .and_then(|generation| generation.native_gameplay()),
     );
+    built.seal_reset_at = reset_in.and_then(|delay| std::time::Instant::now().checked_add(delay));
     let valid_source = |key| {
         map_sources::is_top_level(base, key)
             || admission
@@ -756,6 +775,20 @@ pub(super) async fn committed_loop_move(
         && !dreamer_ring::reconcile(admission, fence.character_id, command).await
     {
         return None;
+    }
+    if replay == LoopMoveReplay::Moved
+        && matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        )
+        && admission.bundle_map().is_some()
+    {
+        let _permit = admission.spell_lane_permit().await?;
+        if !parchment::publish(admission, fence, command).await
+            || !coal_basin::publish(admission, fence, command, false).await
+        {
+            return None;
+        }
     }
     Some(replay)
 }
@@ -857,7 +890,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
     let ItemKey::Instance(item) = request.item else {
         return refused(LoopMoveRefusal::NotSupported);
     };
-    let (native, pins, index, mailbox, ring_target, seed_target, assembly_target) = {
+    let (native, pins, index, mailbox, ring_target, seed_target, assembly_target, basin_target) = {
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         let dead = states.is_dead(actor);
@@ -873,6 +906,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
         let mut ring_target = None;
         let mut seed_target = None;
         let mut assembly_target = None;
+        let mut basin_target = None;
         let pins =
             super::bundle_map_position(&mut runtime, admission.movement_cells(), actor).map(|at| {
                 // MAIL: a move onto a tile holding a mailbox posts into it.
@@ -883,6 +917,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
                         i8::try_from(to.floor),
                     )
                 {
+                    basin_target = coal_basin::target(at.map, &runtime, *to, admission.reset_epoch);
                     mailbox = super::mail::mailbox_at(at.map, index, TilePos { x, y, floor });
                     ring_target =
                         dreamer_ring::target(at.map, *to, content_digest, admission.reset_epoch);
@@ -906,6 +941,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
             ring_target,
             seed_target,
             assembly_target,
+            basin_target,
         )
     };
     let Some(native) = native else {
@@ -926,6 +962,9 @@ pub(super) async fn move_loop_item_with_house_capacity(
         .as_ref()
         .and_then(|ground| ground.ground_entry(&item))
         .map(|(pos, _)| (i32::from(pos.x), i32::from(pos.y), i16::from(pos.floor)));
+    let basin_target = basin_target.filter(|_| {
+        !matches!(request.target, LoopTarget::Ground(to) if pickup == Some((to.x, to.y, to.floor)))
+    });
     let actor_at = pins.as_ref().map(|(_, at, ..)| *at);
     let pickup_cell = match (pickup, actor_at) {
         (Some(cell), Some(at)) if in_reach(at, cell) => {
@@ -1011,8 +1050,28 @@ pub(super) async fn move_loop_item_with_house_capacity(
         )
         .await;
     let mut ring_opened = false;
-    let ring_result = match (elemental_result.is_none(), ring_target.as_ref()) {
-        (true, Some(prepared)) => {
+    let mut basin_offered = false;
+    let offering_result = match (
+        elemental_result.is_none(),
+        basin_target.as_ref(),
+        ring_target.as_ref(),
+    ) {
+        (true, Some(target), _) => {
+            admission
+                .root
+                .commit_item_loop_coal_basin(
+                    &permit,
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    command_ref,
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                    loop_request.clone(),
+                    target.clone(),
+                )
+                .await
+        }
+        (true, None, Some(prepared)) => {
             admission
                 .root
                 .commit_item_loop_dreamer_ring(
@@ -1031,9 +1090,10 @@ pub(super) async fn move_loop_item_with_house_capacity(
     };
     let seed_result = match elemental_result {
         Some(result) => result.map(Some),
-        None => match ring_result {
+        None => match offering_result {
             Ok(Some(Ok((receipt, opened)))) => {
-                ring_opened = opened;
+                ring_opened = opened && basin_target.is_none();
+                basin_offered = opened && basin_target.is_some();
                 Ok(Some(Ok(receipt)))
             }
             Ok(Some(Err(refusal))) => Ok(Some(Err(refusal))),
@@ -1155,8 +1215,26 @@ pub(super) async fn move_loop_item_with_house_capacity(
             .browse_fields
             .committed_move(request.item, destination);
     }
+    let parchment_removed = matches!(committed, Ok(Ok(_))) && pickup == Some((33063, 31624, -15));
     if touches_ground && !matches!(committed, Ok(Err(_))) {
         admission.states.loop_ground.invalidate();
+    }
+    if let Some(target) = basin_target
+        && let Ok(Ok(receipt)) = &committed
+        && !coal_basin::finish_drop(
+            admission,
+            fence,
+            command_ref,
+            &target,
+            receipt,
+            basin_offered,
+        )
+        .await
+    {
+        return LoopMoveResult::Unknown;
+    }
+    if parchment_removed && !parchment::publish(admission, fence, command_ref).await {
+        return LoopMoveResult::Unknown;
     }
     drop(permit);
     if touches_ground && matches!(committed, Ok(Ok(_))) {
@@ -1277,7 +1355,7 @@ pub(super) async fn relocate_source_item(
     let Ok(command_id) = CommandId::new(command.command_id) else {
         return LoopMoveResult::Refused(LoopMoveRefusal::Rejected);
     };
-    let (native, ground) = {
+    let (native, ground, basin) = {
         let runtime = admission.runtime.lock().await;
         if !runtime
             .player_control_facts(actor, command.game_session_id)
@@ -1311,34 +1389,81 @@ pub(super) async fn relocate_source_item(
                 content_revision: sha256_revision(runtime.content_pin().server_artifact_digest()),
                 placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
             },
+            (from != to)
+                .then(|| coal_basin::target(map, &runtime, destination, admission.reset_epoch))
+                .flatten(),
         )
     };
     let Some(native) = native else {
         return LoopMoveResult::Refused(LoopMoveRefusal::Rejected);
     };
-    let result = admission
-        .root
-        .commit_item_loop_move(
-            permit,
-            admission.character,
-            admission.holder,
-            &fence,
-            CommandRef::new(command.game_session_id, command_id),
-            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-            LoopMoveRequest {
-                item,
-                count: None,
-                pickup_cell: Some(ground_cell(
-                    i32::from(from.x),
-                    i32::from(from.y),
-                    i16::from(from.floor),
-                )),
-                destination: LoopDestination::Ground(ground),
-            },
-        )
-        .await;
+    let command = CommandRef::new(command.game_session_id, command_id);
+    let weights = NativeItemWeights(native).with_wheel(admission.premium_coordinator);
+    let request = LoopMoveRequest {
+        item,
+        count: None,
+        pickup_cell: Some(ground_cell(
+            i32::from(from.x),
+            i32::from(from.y),
+            i16::from(from.floor),
+        )),
+        destination: LoopDestination::Ground(ground),
+    };
+    let offering = match basin.as_ref() {
+        Some(target) => {
+            admission
+                .root
+                .commit_item_loop_coal_basin(
+                    permit,
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    command,
+                    &weights,
+                    request.clone(),
+                    target.clone(),
+                )
+                .await
+        }
+        None => Ok(None),
+    };
+    let mut offered = false;
+    let result = match offering {
+        Ok(Some(Ok((receipt, consumed)))) => {
+            offered = consumed;
+            Ok(Ok(receipt))
+        }
+        Ok(Some(Err(reason))) => Ok(Err(reason)),
+        Err(error) => Err(error),
+        Ok(None) => {
+            admission
+                .root
+                .commit_item_loop_move(
+                    permit,
+                    admission.character,
+                    admission.holder,
+                    &fence,
+                    command,
+                    &weights,
+                    request,
+                )
+                .await
+        }
+    };
     if !matches!(result, Ok(Err(_))) {
         admission.states.loop_ground.invalidate();
+    }
+    if let Some(target) = basin
+        && let Ok(Ok(receipt)) = &result
+        && !coal_basin::finish_drop(admission, fence, command, &target, receipt, offered).await
+    {
+        return LoopMoveResult::Unknown;
+    }
+    if (from.x, from.y, from.floor) == (33063, 31624, -15)
+        && matches!(result, Ok(Ok(_)))
+        && !parchment::publish(admission, fence, command).await
+    {
+        return LoopMoveResult::Unknown;
     }
     match result {
         Ok(Ok(_)) => {

@@ -1374,6 +1374,7 @@ impl BundleFacts {
             .merchant_barricades
             .retain(|_, (_, id)| id.get() != key);
         states.changed.remove(&key);
+        states.actions.remove(&key);
         states.movement_decays.retain(|(_, entry), _| *entry != key);
         states.movement_sequence = sequence;
         true
@@ -2145,7 +2146,17 @@ impl BundleFacts {
                 .ok()
                 .map(|i| self.placements[i].1.palette)
                 .or_else(|| self.unique_index(id));
-            blocked |= palette.is_none_or(|p| self.blocks(p));
+            blocked |= palette.is_none_or(|palette| {
+                self.blocks(palette)
+                    && (self.house_tile(pos)
+                        || self.palette.get(palette as usize).is_none_or(|entry| {
+                            !super::source_bindings::walkable_coal_basin_flame(
+                                pos,
+                                usize::from(ordinal - 1),
+                                entry.facts.appearance_id,
+                            )
+                        }))
+            });
         }
         let ground_walkable = tile
             .ground()
