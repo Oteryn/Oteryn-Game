@@ -1,0 +1,248 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.adventurers_guild",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+      "quest": "oteryn:quest.adventurers_guild",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:63-93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u9_80/adventurers_guild/quest_line",
+      "quest": "oteryn:quest.adventurers_guild",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:87-90"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/lost-brother/tarun/greet",
+      "quest": "oteryn:quest.adventurers_guild",
+      "npc": "oteryn:npc.tarun",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello"
+      ],
+      "guards": [],
+      "reply": [
+        "Greetings!"
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:106"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/lost-brother/tarun/offer",
+      "quest": "oteryn:quest.adventurers_guild",
+      "npc": "oteryn:npc.tarun",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "My brother is missing. I fear, he went to this evil palace north of here. A place of great beauty, certainly filled with riches and luxury. But in truth it is a threshold to hell and demonesses are after his blood. ...",
+        "He is my brother, and I am deeply ashamed to admit but I don't dare to go there. Perhaps your heart is more courageous than mine. Would you go to see this place and search for my brother?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:64-70"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/lost-brother/tarun/waiting",
+      "quest": "oteryn:quest.adventurers_guild",
+      "npc": "oteryn:npc.tarun",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I hope you will find my brother."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:71-74"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/lost-brother/tarun/report",
+      "quest": "oteryn:quest.adventurers_guild",
+      "npc": "oteryn:npc.tarun",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "So, he is dead as I feared. I warned him not to go with this woman, but he gave in to temptation. My heart darkens and moans. But you have my sincere thanks. ...",
+        "Without your help I would have stayed in the dark about his fate. Please, take this as a little recompense."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3039",
+          "count": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 3000
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:75-83"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/lost-brother/tarun/accept",
+      "quest": "oteryn:quest.adventurers_guild",
+      "npc": "oteryn:npc.tarun",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "I thank you! This is more than I could hope!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u9_80/adventurers_guild/quest_line",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:84-90"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/lost-brother/tarun/decline",
+      "quest": "oteryn:quest.adventurers_guild",
+      "npc": "oteryn:npc.tarun",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "As you wish."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:91-94"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/lost-brother/tarun/clear-offer",
+      "quest": "oteryn:quest.adventurers_guild",
+      "npc": "oteryn:npc.tarun",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:84-94"
+      ],
+      "topics": [
+        1
+      ],
+      "any_message": true,
+      "exclude_keywords": [
+        "mission"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/tarun.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "8e032f7015dd3ee2135ba9552a588a3f26083327e23fb7a1619423486c482fde"
+    }
+  ]
+}

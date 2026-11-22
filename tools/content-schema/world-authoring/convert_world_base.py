@@ -1208,6 +1208,9 @@ def build(
         import qh_jimmy_stub
 
         qh_jimmy_stub.overlay_outputs(out, ROOT)
+        import fathers_burden_containers
+
+        fathers_burden_containers.overlay_outputs(out)
     import m01c_key_doors
 
     m01c_key_doors.overlay_outputs(
@@ -1269,6 +1272,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
 
     authored_clock_items = donor_delta(summary)
     jimmy_stub = jimmy_stub_delta(summary)
+    fathers_burden = summary.get("source", {}).get("fathers_burden_containers", {})
 
     def count(row: dict, key: str) -> int:
         return row.get(key, 0)
@@ -1285,6 +1289,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
         - count(drafted, "items_added")
         - count(authored, "items_added")
         - jimmy_stub["items"]
+        - count(fathers_burden, "items_added")
         - count(drafted, "replaced_items_added")
         + count(replace, "items_removed")
         + count(rework, "replaced_items_removed")

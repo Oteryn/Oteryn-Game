@@ -20,6 +20,8 @@ EXPECTED = (
     ((32573, 32121, 7), 2772, "unique", 30034),
     ((33290, 31785, 13), 776, "action", 9715),
     ((33498, 32613, 8), 10840, "unique", 35020),
+    ((33007, 32607, 8), 21412, "action", 50806),
+    ((32991, 32642, 8), 21412, "action", 50806),
 )
 
 
@@ -72,7 +74,8 @@ class QuestStartupBindingsTests(unittest.TestCase):
             "data-global/startup/tables/teleport.lua": "TeleportAction = {[50022] = {{itemId=1720,itemPos={{x=32968,y=32630,z=7}}},{itemId=1949,itemPos={{x=32968,y=32629,z=7},{x=32967,y=32630,z=8}}}}} TeleportUnique = {[35020] = {itemId=10840,itemPos={x=33498,y=32613,z=8}}}",
             "data-global/startup/tables/door_level.lua": "LevelDoorAction = {[1070] = {itemId=false,itemPos={{x=33190,y=31684,z=14},{x=33195,y=31684,z=14}}}}",
             "data-global/startup/tables/lever.lua": "LeverUnique = {[30034] = {itemId=2772,itemPos={x=32573,y=32121,z=7}}}",
-            "data-global/startup/tables/item.lua": "ItemAction = {[9715] = {itemId=776,itemPos={{x=33290,y=31785,z=13}}}}",
+            "data-global/startup/tables/item.lua": "ItemAction = {[9715] = {itemId=776,itemPos={{x=33290,y=31785,z=13}}},[50806] = {itemId=21412,itemPos={{x=33007,y=32607,z=8}}}}",
+            "data-global/startup/tables/corpse.lua": "CorpseAction = {[50806] = {itemId=21412,itemPos={{x=32991,y=32642,z=8}}}}",
             "data/libs/tables/doors.lua": "LevelDoorTable = {{closedDoor=5102,openDoor=5103}}",
         }
         with tempfile.TemporaryDirectory() as temporary:

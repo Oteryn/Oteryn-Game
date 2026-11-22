@@ -136,6 +136,34 @@ def load_module(name, path):
     return module
 
 
+def lost_brother_shop():
+    # Crystal 201189f8 tarun.lua:98-104 gates the canonical shop until the report.
+    service = "oteryn:service.trade.tarun"
+    directory = ROOT / "content/services/trade"
+    index = json.loads((directory / "index.json").read_bytes())
+    declarations = [
+        row["declaration"]
+        for name in index["shards"]
+        for row in json.loads((ROOT / name).read_bytes())["records"]
+    ]
+    (shop,) = [row for row in declarations if row["identity"]["key"] == service]
+    requirement = {
+        "quest": "oteryn:quest.adventurers_guild",
+        "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+        "initial": 0,
+        "minimum": 3,
+        "maximum": 3,
+    }
+    return {
+        "npc": "oteryn:npc.tarun",
+        "service": service,
+        "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:98-104"
+        ],
+        "offers": [offer | {"requirements": [requirement]} for offer in shop["offers"]],
+    }
+
+
 def build():
     inputs = donor_inputs()
     gameplay=json.loads((ROOT/'content/spells.manifest.json').read_bytes())
@@ -1154,7 +1182,7 @@ def build():
             'rewards':rewards}]})
     greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
-    generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})
+    generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN) + [lost_brother_shop()]})
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))
     access = load_module('qengine_l1_access', 'tools/content-schema/quest-authoring/qengine_access.py')
     worlds=[]

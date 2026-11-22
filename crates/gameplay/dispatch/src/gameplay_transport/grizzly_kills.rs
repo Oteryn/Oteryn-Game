@@ -403,11 +403,9 @@ pub(super) fn capture(
                     ))
                 });
             frozen.native.retain_mut(|recipient| {
-                if !recipient
-                    .death
-                    .transition
-                    .starts_with("oteryn:quest-transition/native-kills/m31/")
-                {
+                if !oteryn_gameplay_quests::quest::world_change_journals::requires_death_position(
+                    &recipient.death.transition,
+                ) {
                     return true;
                 }
                 if !oteryn_gameplay_quests::quest::world_change_journals::admits_position(
