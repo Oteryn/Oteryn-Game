@@ -14,6 +14,7 @@ pub(super) fn project_tools(
         if let Some(root) = state.root.take() {
             commands.entity(root).despawn();
         }
+        state.pending_sort = None;
         state.request = Some(request);
         state.seen = None;
     }
@@ -82,6 +83,31 @@ pub(super) fn project_tools(
         .insert(TextLayout::default())
         .id();
     commands.entity(root).add_child(text);
+    if let Some((action, original)) = &state.pending_sort {
+        if original == &snapshot {
+            tool_button(
+                &mut commands,
+                &skin,
+                root,
+                &state,
+                "Confirm recursive sort",
+                *action,
+                snapshot.ready(),
+            );
+            tool_button(
+                &mut commands,
+                &skin,
+                root,
+                &state,
+                "Cancel",
+                ToolAction::Close,
+                true,
+            );
+            state.seen = Some(snapshot);
+            return;
+        }
+        state.pending_sort = None;
+    }
     let mut button = |label: &str, action, enabled| {
         tool_button(&mut commands, &skin, root, &state, label, action, enabled)
     };
@@ -275,6 +301,7 @@ pub(super) fn project_tools(
                                     handle: view.container_handle,
                                     key,
                                     descending,
+                                    confirmed: false,
                                 },
                                 ready,
                             );

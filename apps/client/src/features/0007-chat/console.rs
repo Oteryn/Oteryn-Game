@@ -274,7 +274,6 @@ fn report_log_result(shared: &SharedMailbox, result: &std::io::Result<()>) {
 }
 use crate::play::Outbox;
 use oteryn_client_ui::chat::{ConsoleDisplay, console_request};
-use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
     pub fn console_display(&self, display: ConsoleDisplay) -> Result<(), &'static str> {
         if !display.valid() {
@@ -282,23 +281,30 @@ impl PlayLink {
         }
         let mut mailbox = lock(&self.mailbox);
         mailbox.chat.console.display = display;
-        refresh(&mut mailbox, &self.commands);
+        self.refresh_console_levels(&mut mailbox, true);
         Ok(())
     }
-}
-pub(super) fn refresh(mailbox: &mut Mailbox, commands: &UnboundedSender<PlayCommand>) {
-    if let Some(payload) = console_request(&mut mailbox.chat)
-        && commands
-            .send(PlayCommand::Feature(
-                oteryn_client_runtime::raw_feature::FeatureCommand {
-                    capability: 7,
-                    kind: 6117,
-                    payload,
-                },
-            ))
-            .is_err()
-    {
-        mailbox.chat.console.metadata.pending = None;
+    pub(in crate::play) fn refresh_console_levels(&self, mailbox: &mut Mailbox, force: bool) {
+        let chat = &mut mailbox.chat;
+        let payload = if force {
+            console_request(chat)
+        } else if chat.selected && chat.console.display.levels {
+            chat.console.metadata.query_new_speakers(&chat.lines)
+        } else { None };
+        if let Some(payload) = payload
+            && self
+                .commands
+                .send(PlayCommand::Feature(
+                    oteryn_client_runtime::raw_feature::FeatureCommand {
+                        capability: 7,
+                        kind: 6117,
+                        payload,
+                    },
+                ))
+                .is_err()
+        {
+            mailbox.chat.console.metadata.pending = None;
+        }
     }
 }
 /// Send what a channel command asks for; a closed session leaves a feedback line instead.

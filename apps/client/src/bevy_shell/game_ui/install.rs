@@ -151,6 +151,7 @@ struct ToolUi {
     revision: u64,
     root: Option<Entity>,
     seen: Option<ToolSnapshot>,
+    pending_sort: Option<(ToolAction, ToolSnapshot)>,
 }
 #[derive(Clone, Copy)]
 enum ToolAction {
@@ -174,6 +175,7 @@ enum ToolAction {
         handle: oteryn_session::ItemHandle,
         key: oteryn_client_runtime::container_sort::SortKey,
         descending: bool,
+        confirmed: bool,
     },
     /// Tibia Global's "Use Manual Sort Mode" checkbox of the sort menu; `checked` is the mode
     /// the control shows.
@@ -330,6 +332,7 @@ fn tool_activate(
                 handle,
                 key,
                 descending,
+                confirmed,
             },
             ToolSnapshot::Sort(_, containers, _),
         ) => {
@@ -342,11 +345,32 @@ fn tool_activate(
             }) {
                 return;
             }
+            let recursive = owner.settings.preferences.gameplay.sort_recursive;
+            if recursive && owner.settings.preferences.gameplay.warn_recursive_sort && !confirmed {
+                state.pending_sort = state.seen.clone().map(|seen| {
+                    (
+                        ToolAction::Sort {
+                            view,
+                            handle,
+                            key,
+                            descending,
+                            confirmed: true,
+                        },
+                        seen,
+                    )
+                });
+                state.seen = None;
+                return;
+            }
+            if confirmed && (state.pending_sort.take().is_none() || !recursive) {
+                state.seen = None;
+                return;
+            }
             let request = oteryn_client_runtime::container_sort::Request {
                 view,
                 key,
                 descending,
-                recursive: false,
+                recursive,
             };
             for (index, value) in request.encode().into_iter().enumerate() {
                 play.link.container_sort_edit(index, value.to_string());

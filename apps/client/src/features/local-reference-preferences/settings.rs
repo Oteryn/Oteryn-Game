@@ -154,6 +154,24 @@ pub struct ReferencePreferences {
     pub chat_mode: Option<ChatMode>,
     #[serde(default)]
     pub manual_hotkey_profile: bool,
+    #[serde(default = "enabled")]
+    pub confirm_store_purchase: bool,
+    #[serde(default = "enabled")]
+    pub confirm_copy_link: bool,
+    #[serde(default)]
+    pub expiry_containers: bool,
+    #[serde(default)]
+    pub expiry_inventory: bool,
+    #[serde(default)]
+    pub expiry_unused: bool,
+    #[serde(default)]
+    pub highlight_mouse_target: bool,
+    #[serde(default)]
+    pub animated_cursor: bool,
+    #[serde(default)]
+    pub large_cursor: bool,
+    #[serde(default = "enabled")]
+    pub system_cursor: bool,
     #[serde(default = "default_console_font")]
     pub console_font_px: u16,
     #[serde(default)]
@@ -334,6 +352,15 @@ impl Default for ReferencePreferences {
             chat_context_hotkeys: false,
             chat_mode: None,
             manual_hotkey_profile: false,
+            confirm_store_purchase: true,
+            confirm_copy_link: true,
+            expiry_containers: false,
+            expiry_inventory: false,
+            expiry_unused: false,
+            highlight_mouse_target: false,
+            animated_cursor: false,
+            large_cursor: false,
+            system_cursor: true,
             console_font_px: 14,
             compact_status: false,
             status_panel_visible: true,

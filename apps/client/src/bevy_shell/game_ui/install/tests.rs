@@ -81,10 +81,18 @@ fn parity_a_container_sort_controls_dispatch_both_directions()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::bevy_shell::owner::{ActivePlay, Phase};
     use oteryn_client_runtime::container_tree::{ContainerView, ContainerViews};
-    for descending in [false, true] {
+    for (descending, recursive, warn) in [
+        (false, false, true),
+        (true, false, true),
+        (true, true, false),
+        (false, true, true),
+        (true, true, true),
+    ] {
         let mut owner = HostOwner::new(None)?;
         let (link, mut requests, outbox) = crate::play::play_channel();
         link.use_shared_frontend();
+        owner.settings.preferences.gameplay.sort_recursive = recursive;
+        owner.settings.preferences.gameplay.warn_recursive_sort = warn;
         outbox.bevy_sort_fixture();
         crate::play::PlayLink::bevy_items_fixture(
             &outbox,
@@ -132,12 +140,42 @@ fn parity_a_container_sort_controls_dispatch_both_directions()
             .ok_or("sort direction control")?;
         app.world_mut()
             .trigger(bevy::ui_widgets::Activate { entity: button });
+        if recursive && warn {
+            assert!(requests.try_recv().is_err());
+            app.update();
+            let confirm = app
+                .world_mut()
+                .query::<(&Text, &ChildOf)>()
+                .iter(app.world())
+                .find_map(|(label, parent)| {
+                    (label.0 == "Confirm recursive sort").then_some(parent.parent())
+                })
+                .ok_or("recursive sort confirmation")?;
+            if descending {
+                app.world_mut()
+                    .non_send_mut::<HostOwner>()
+                    .settings
+                    .preferences
+                    .gameplay
+                    .sort_recursive = false;
+            }
+            app.world_mut()
+                .trigger(bevy::ui_widgets::Activate { entity: confirm });
+            if descending {
+                assert!(
+                    requests.try_recv().is_err(),
+                    "consent belongs to the displayed sort"
+                );
+                continue;
+            }
+        }
         let crate::combat_input::PlayCommand::Feature(command) = requests.try_recv()? else {
             return Err("sort request".into());
         };
         let request = oteryn_client_runtime::container_sort::Request::decode(&command.payload)
             .ok_or("sort decode")?;
         assert_eq!(request.descending, descending);
+        assert_eq!(request.recursive, recursive);
     }
     Ok(())
 }

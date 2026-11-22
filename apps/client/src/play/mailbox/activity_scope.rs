@@ -132,6 +132,11 @@ impl Mailbox {
         self.properties.mail.pending = Default::default();
         self.properties.house_furniture_wrap.pending = Default::default();
         self.properties.house_podium.pending = Default::default();
+        #[cfg(bevy_shell)]
+        {
+            self.properties.expiry_pending = None;
+            self.properties.expiry_reply = None;
+        }
         self.properties.timed_item.pending = Default::default();
         self.properties.training.pending = Default::default();
         self.properties.guild_bank.pending = Default::default();

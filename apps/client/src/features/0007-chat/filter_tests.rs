@@ -139,3 +139,20 @@ fn console_filters_route_real_notices_store_results_and_private_tabs()
 
     Ok(())
 }
+
+#[test]
+fn applied_console_options_filter_received_notices() {
+    let (link, _, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    outbox.push(vec![SessionEvent::ServerMessage(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: ServerMessage::Advance("Festival".into()),
+    })]);
+    let mut settings = crate::play::SettingsState::new(None);
+    assert!(panel_text(&link.chat_panel()).contains("Festival"));
+    settings.preferences.console.events = false;
+    settings.sync_local_preferences(&link);
+    assert!(!panel_text(&link.chat_panel()).contains("Festival"));
+}
