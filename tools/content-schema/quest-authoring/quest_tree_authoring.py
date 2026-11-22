@@ -146,6 +146,37 @@ def reconcile_elvenbane_backpacks(records, claims):
                                      and row.get('source_key') in resolved)]
 
 
+# QCHK-3 exercised the exact text/filled-bag projections through the live
+# chest owner. Keep the immutable variant definitions and resolve the three
+# historical native-lowering holds only while those projections still match.
+EXPLORER_NATIVE_CLAIMS = {
+    'oteryn:reward-claim.quest.u7_6.explorer_society.books.hengis': (6187, 2821, ()),
+    'oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1': (6083, 2853, (3026, 3207)),
+    'oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2': (6084, 2853, (3012, 3097)),
+}
+
+
+def explorer_claim_lowered(claim):
+    expected = EXPLORER_NATIVE_CLAIMS.get(claim['identity']['key'])
+    native = claim.get('native_contents', {})
+    placed = native.get('placements', [])
+    if (expected is None or claim['data_holds'] or len(placed) != 1
+            or native.get('schema') != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'
+            or native.get('revision') != '201189f871d23597b82caf88fd611454a2ddefb8'
+            or native.get('source_sha256') != 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757'
+            or claim.get('quest', {}).get('key') != 'canary:quest/the_explorer_society_quest'):
+        return False
+    uid, root, children = expected
+    row = placed[0]
+    return (
+        row['unique_id'] == uid
+        and row['root']['key'] == f'oteryn:item.tibia.i{root}'
+        and [(item['item']['key'], item['count']) for item in row['contents']]
+            == [(f'oteryn:item.tibia.i{child}', 1) for child in children]
+        and (bool(children) or row.get('root_text', '').startswith('Diary of Hengis Wulfson'))
+    )
+
+
 def build_records(quests, claims, readiness_reports=None, gates=None, gate_checks=None, source_data=None):
     """No guessed identity joins, missing requirements, quantities or readiness."""
     bindings = {}
@@ -197,7 +228,8 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
                 raise ValueError(f'{key}: committed claim owner does not match source quest: {ref["key"]}')
             canonical.append({'family': 'RewardClaim', **copy.deepcopy(claim['identity'])})
             if claim.get('definition_profile') == 'authored_variant_v1':
-                issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
+                if not explorer_claim_lowered(claim):
+                    issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
                 categories = {hold['category'] for hold in claim['data_holds']}
                 categories.update(claim.get('_source_hold_categories', []))
                 if claim.get('_source_baseline_item_hold'):
