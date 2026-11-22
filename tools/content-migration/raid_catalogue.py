@@ -34,6 +34,8 @@ EVIDENCE_DIR = "docs/reference/content-prep/raid-content-1"
 APPLY_PLAN = f"{EVIDENCE_DIR}/content-apply-plan.json"
 INDEX = "content/encounters/raids/index.json"
 CATALOGUE = "content/encounters/raids/catalogue.json"
+ORC_SAM_CREATURE = "oteryn:creature.orc_sam_backpack"
+ORC_SAM_SOURCE = "tools/content-schema/monster-authoring/samples/orc-sam-backpack-crystal-201189f8.json"
 EVIDENCE = "content/encounters/raids/evidence-00000-00121.json"
 PLACEMENTS = "content/world/placements/index.json"
 CITY_NAMES = {"ab'dendriel", "ankrahmun", "carlin", "darashia", "edron", "kazordoon",
@@ -251,8 +253,14 @@ def creature_catalogue(root: Path) -> dict[str, bool]:
     for path in sorted((root / "content/creatures/definitions").glob("creatures-*.json")):
         for record in json.loads(path.read_bytes())["records"]:
             details = record["authoring"]["profile"]["details"]
-            result[record["definition"]["identity"]["key"]] = (
-                details.get("bosstiary") is not None or details["system_eligibility"]["reward_boss"])
+            definition = record["definition"]
+            key = definition["identity"]["key"]
+            boss = details.get("bosstiary") is not None or details["system_eligibility"]["reward_boss"]
+            if key == ORC_SAM_CREATURE:
+                expected = load(root, ORC_SAM_SOURCE)["records"][0]
+                if definition != expected or boss:
+                    raise ValueError("ORC_SAM_RAID_REQUIRES_CANONICAL_REGULAR_CREATURE")
+            result[key] = boss
     if not result:
         raise ValueError("RAID_CREATURE_CATALOGUE_EMPTY")
     return result

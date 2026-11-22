@@ -17,7 +17,7 @@ use sha2::{Digest, Sha256};
 use std::time::Duration;
 use tokio::sync::Mutex;
 
-pub(super) struct RaidScheduler<'a, 'f, 's> {
+pub(crate) struct RaidScheduler<'a, 'f, 's> {
     pub root: &'a DurabilityRoot,
     pub character: &'a ReconciledCharacterAuthority<'f, 's>,
     pub node: &'a NodeIncarnationProof,
@@ -86,7 +86,7 @@ fn source_order(raid: &CatalogueRaid) -> (u8, u16) {
     }
 }
 
-fn candidates(
+pub(crate) fn candidates(
     catalogue: &RaidCatalogue,
     scheduler: &RaidScheduler<'_, '_, '_>,
     now_ms: i64,

@@ -1,0 +1,370 @@
+{
+  "source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data-global/monster/raids/orc_sam_backpack.lua",
+    "sha256": "a07844bd091296b58e2147937f1712fadac29b941179321d139d7ab6b02c35eb"
+  },
+  "corpse_source": {
+    "path": "data/items/items.xml",
+    "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+  },
+  "corpse_chain": {
+    "5966": {
+      "fluidsource": "blood",
+      "duration": "10",
+      "decayto": "4001",
+      "containersize": "10"
+    },
+    "4001": {
+      "fluidsource": "blood",
+      "duration": "300",
+      "decayto": "4002",
+      "containersize": "10"
+    },
+    "4002": {
+      "duration": "300",
+      "decayto": "4317"
+    },
+    "4317": {
+      "duration": "60",
+      "decayto": "0",
+      "weight": "60000"
+    }
+  },
+  "voice_order": [
+    2,
+    0,
+    1
+  ],
+  "profiles": [
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.orc_sam_backpack",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 70,
+          "experience": 25,
+          "speed": 75,
+          "armor": 10,
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": -5,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "numerator": -10,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": 20,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "numerator": 10,
+                "denominator": 1
+              }
+            }
+          ],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.orc.attack-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "details": {
+            "display_name": "Orc",
+            "article": "an",
+            "inspection": "an orc",
+            "defense": 10,
+            "critical_chance_ppm": 0,
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": false,
+              "exclusive_prey": false,
+              "forge": false,
+              "reward_boss": false
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i5966",
+              "revision": "definition-r1"
+            },
+            "death_residue": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2886",
+                "revision": "definition-r1"
+              },
+              "fluid_type": "blood"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.orc_sam_backpack",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": false,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 15,
+            "change_target": {
+              "interval_ms": 4000,
+              "chance_ppm": 0
+            },
+            "strategy_weights": {
+              "nearest": 100,
+              "damage": 0,
+              "health": 0,
+              "random": 0
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.orc.attack-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.orc_sam_backpack",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/5",
+          "light_level": 0
+        }
+      }
+    }
+  ],
+  "records": [
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.orc_sam_backpack",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.orc_sam_backpack",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.orc_sam_backpack",
+        "revision": "definition-r1"
+      },
+      "loot": {
+        "family": "Loot",
+        "key": "oteryn:loot.creature.orc_sam_backpack",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.orc_sam_backpack",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.orc_sam_backpack",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Loot",
+      "identity": {
+        "family": "Loot",
+        "key": "oteryn:loot.creature.orc_sam_backpack",
+        "revision": "definition-r1"
+      },
+      "algorithm": "IndependentBernoulliPpm",
+      "entries": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3031",
+            "revision": "definition-r1"
+          },
+          "min_count": 1,
+          "max_count": 14,
+          "probability_ppm": 848100
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3244",
+            "revision": "definition-r1"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 1000000
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3273",
+            "revision": "definition-r1"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 58500
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3274",
+            "revision": "definition-r1"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 49600
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3376",
+            "revision": "definition-r1"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 29500
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3378",
+            "revision": "definition-r1"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 78600
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3426",
+            "revision": "definition-r1"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 73000
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3577",
+            "revision": "definition-r1"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 101600
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i10196",
+            "revision": "definition-r1"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 2100
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i11479",
+            "revision": "definition-r1"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 5900
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i23986",
+            "revision": "definition-r1"
+          },
+          "min_count": 1,
+          "max_count": 1,
+          "probability_ppm": 10000
+        }
+      ]
+    }
+  ],
+  "melee": {
+    "minimum": 0,
+    "maximum": 35
+  }
+}
