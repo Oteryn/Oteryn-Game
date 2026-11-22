@@ -103,9 +103,15 @@ impl DeviceLogin {
         } else {
             state.pending.as_slice()
         };
+        let recovery_vault =
+            (!requested && !state.vault_clear_failed).then_some(self.vault.as_ref());
         if !pending
             && !matches!(
-                tokio::time::timeout_at(deadline, self.journal.replay(client, deferred)).await,
+                tokio::time::timeout_at(
+                    deadline,
+                    self.journal.replay(client, deferred, recovery_vault)
+                )
+                .await,
                 Ok(Ok(()))
             )
         {
@@ -263,7 +269,7 @@ impl DeviceLogin {
             .map_err(|_| storage_error())?;
         let lock = self.lock_credential().await?;
         if self.folder.is_some() && !self.revocation_pending()? {
-            self.journal.replay(client, &[]).await?;
+            self.journal.replay(client, &[], None).await?;
             let mut state = state;
             state.session = None;
             state.remembered = false;
@@ -290,7 +296,7 @@ impl DeviceLogin {
         client: &NativeLoginClient,
     ) -> Result<(), NativeLoginError> {
         if self.journal.has_folder() && !self.revocation_pending()? {
-            self.journal.replay(client, &[]).await?;
+            self.journal.replay(client, &[], None).await?;
             attempt.state.session = None;
             attempt.state.key = None;
             attempt.state.remembered = false;

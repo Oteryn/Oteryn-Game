@@ -1,6 +1,9 @@
 //! Local confirmations and session choices; Platform retains all session authority.
 use serde::{Deserialize, Serialize};
-use std::{io, path::Path};
+use std::{io, io::Read, path::Path};
+
+pub(super) type OptOutGeneration = Option<Vec<u8>>;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct MiscellaneousPreferences {
@@ -46,7 +49,6 @@ impl MiscellaneousPreferences {
     }
 
     fn read_sidecar(path: &Path) -> io::Result<Self> {
-        use std::io::Read;
         let mut bytes = Vec::new();
         std::fs::File::open(path)?
             .take(4097)
@@ -61,14 +63,33 @@ impl MiscellaneousPreferences {
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))
     }
     pub fn save(&self, path: &std::path::Path) -> std::io::Result<()> {
+        let generation = Self::opt_out_generation(path)?;
         let _lock = crate::atomic_file::lock(path)?;
-        self.publish(path)
+        self.publish(path, &generation)
+    }
+
+    pub(super) fn opt_out_generation(path: &Path) -> io::Result<OptOutGeneration> {
+        let file = match std::fs::File::open(path.with_added_extension("opt-out-applied")) {
+            Ok(file) => file,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+            Err(error) => return Err(error),
+        };
+        let mut generation = Vec::new();
+        file.take(17).read_to_end(&mut generation)?;
+        if generation.len() != 16 && generation != b"false" {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid opt-out generation",
+            ));
+        }
+        Ok(Some(generation))
     }
 
     pub(super) fn publish_edits(
         &self,
         before: Self,
         path: &std::path::Path,
+        generation: &OptOutGeneration,
     ) -> std::io::Result<()> {
         let mut active = Self::read_for_edit(path)?;
         let Self {
@@ -93,7 +114,7 @@ impl MiscellaneousPreferences {
         if before.confirm_exit != confirm_exit {
             active.confirm_exit = confirm_exit;
         }
-        active.publish(path)
+        active.publish(path, generation)
     }
 
     #[cfg(any(bevy_shell, test))]
@@ -104,7 +125,12 @@ impl MiscellaneousPreferences {
 
     #[cfg(any(bevy_shell, test))]
     pub(super) fn record_opt_out(path: &Path) -> io::Result<()> {
-        crate::atomic_file::publish_durable(&path.with_added_extension("opt-out"), b"false")
+        let marker = path.with_added_extension("opt-out");
+        let _intent = crate::atomic_file::lock(&marker)?;
+        let mut generation = [0; 16];
+        oteryn_platform_client::native_login::secure_random(&mut generation)
+            .map_err(io::Error::other)?;
+        crate::atomic_file::publish_durable(&marker, &generation)
     }
 
     #[cfg(any(bevy_shell, test))]
@@ -120,7 +146,7 @@ impl MiscellaneousPreferences {
     // sidecar is durable, so an interrupted replay can safely run again.
     fn replay_opt_out(path: &Path) -> io::Result<()> {
         if path.with_added_extension("opt-out").try_exists()? {
-            Self::read_for_edit(path)?.publish(path)?;
+            Self::read_for_edit(path)?.publish(path, &Self::opt_out_generation(path)?)?;
         }
         Ok(())
     }
@@ -136,17 +162,24 @@ impl MiscellaneousPreferences {
         }
     }
 
-    fn publish(&self, path: &std::path::Path) -> std::io::Result<()> {
-        // Under the sidecar lock a pending opt-out wins every merge and survives a failed write.
+    fn publish(&self, path: &Path, generation: &OptOutGeneration) -> io::Result<()> {
+        // Sign-out can record its intent before acquiring the sidecar lock.
+        // Serialize recording and consuming that intent with this write.
         let marker = path.with_added_extension("opt-out");
+        let _intent = crate::atomic_file::lock(&marker)?;
         let pending = marker.try_exists()?;
         let mut merged = *self;
         if pending {
             merged.remember_device = false;
+        } else if Self::opt_out_generation(path)? != *generation {
+            merged.remember_device = Self::read_for_edit(path)?.remember_device;
         }
         crate::atomic_file::publish_durable(path, &serde_json::to_vec(&merged)?)?;
         if pending {
-            std::fs::remove_file(marker)?;
+            crate::atomic_file::durable_rename(
+                &marker,
+                &path.with_added_extension("opt-out-applied"),
+            )?;
         }
         Ok(())
     }

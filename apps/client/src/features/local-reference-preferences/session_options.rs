@@ -1,6 +1,6 @@
 //! Session-choice sidecar writes follow successful main-file saves.
 use super::{
-    super::{MiscellaneousPreferences, ReferencePreferences},
+    super::{MiscellaneousPreferences, ReferencePreferences, miscellaneous::OptOutGeneration},
     SettingsState,
 };
 use std::{path::Path, sync::Mutex};
@@ -10,12 +10,16 @@ type SessionBaseline = Mutex<MiscellaneousPreferences>;
 impl SettingsState {
     #[cfg(bevy_shell)]
     pub(crate) fn record_device_opt_out(&self) -> impl FnOnce() -> Result<(), String> + use<> {
-        let path = self.base_path.as_ref().map(|p| p.with_extension("session-options.json"));
+        let path = self
+            .base_path
+            .as_ref()
+            .map(|p| p.with_extension("session-options.json"));
         let epoch = self.remember_epoch.clone();
         move || {
             epoch.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
             if let Some(path) = path {
-                MiscellaneousPreferences::record_opt_out(&path).map_err(|error| error.to_string())?;
+                MiscellaneousPreferences::record_opt_out(&path)
+                    .map_err(|error| error.to_string())?;
             }
             Ok(())
         }
@@ -67,6 +71,8 @@ impl SettingsState {
             .ok_or_else(|| "Session options storage unavailable".to_owned())?
             .with_extension("session-options.json");
         let options = preferences.miscellaneous;
+        let generation = MiscellaneousPreferences::opt_out_generation(&path)
+            .map_err(|error| error.to_string())?;
         #[cfg(bevy_shell)]
         if self.background_preferences || store.saving() || self.session_save.is_some() {
             if self.session_queued >= 8 {
@@ -89,7 +95,7 @@ impl SettingsState {
                     None => Ok(()),
                 };
                 let current = if saved.await == Ok(true) {
-                    save_options(&baseline, options, &path, || {
+                    save_options(&baseline, options, &path, &generation, || {
                         submitted == epoch.load(std::sync::atomic::Ordering::Acquire)
                     })
                 } else {
@@ -102,7 +108,7 @@ impl SettingsState {
         store
             .apply(preferences.clone())
             .map_err(|error| error.to_string())?;
-        save_options(&self.session_baseline, options, &path, || true)
+        save_options(&self.session_baseline, options, &path, &generation, || true)
     }
 }
 
@@ -110,6 +116,7 @@ fn save_options(
     baseline: &SessionBaseline,
     mut options: MiscellaneousPreferences,
     path: &Path,
+    generation: &OptOutGeneration,
     keep_remember_device: impl FnOnce() -> bool,
 ) -> Result<(), String> {
     let _lock = crate::atomic_file::lock(path).map_err(|error| error.to_string())?;
@@ -121,7 +128,7 @@ fn save_options(
         options.remember_device = false;
     }
     options
-        .publish_edits(before, path)
+        .publish_edits(before, path, generation)
         .map_err(|error| error.to_string())?;
     *previous = options;
     Ok(())
@@ -139,7 +146,7 @@ fn opt_out_after_epoch_check_wins_the_merged_write() -> Result<(), Box<dyn std::
         ..before
     };
     let mut recorded = None;
-    save_options(&Mutex::new(before), edited, &path, || {
+    save_options(&Mutex::new(before), edited, &path, &None, || {
         recorded = Some(MiscellaneousPreferences::record_opt_out(&path));
         true
     })?;
@@ -163,8 +170,44 @@ fn failed_merged_publication_keeps_opt_out_for_replay() -> Result<(), Box<dyn st
     before.save(&path)?;
     MiscellaneousPreferences::record_opt_out(&path)?;
     crate::atomic_file::fail_durable_rename_to(&path);
-    assert!(save_options(&Mutex::new(before), before, &path, || true).is_err());
+    assert!(save_options(&Mutex::new(before), before, &path, &None, || true).is_err());
     assert!(path.with_added_extension("opt-out").exists());
     assert!(!MiscellaneousPreferences::read(&path)?.remember_device);
+    Ok(())
+}
+
+#[cfg(all(test, bevy_shell))]
+#[test]
+fn queued_remember_edit_cannot_override_another_clients_completed_opt_out()
+-> Result<(), Box<dyn std::error::Error>> {
+    use std::time::{Duration, Instant};
+
+    bevy_tasks::IoTaskPool::get_or_init(|| {
+        bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+    });
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("preferences.json");
+    let sidecar = path.with_extension("session-options.json");
+    let mut state = SettingsState::new(Some(path.clone()));
+    state.use_background_preferences();
+    let held = crate::atomic_file::lock(&path)?;
+    let mut edited = state.preferences.clone();
+    edited.miscellaneous.remember_device = true;
+    edited.miscellaneous.confirm_exit = false;
+    state.apply(edited);
+    assert!(state.preference_save_pending());
+    MiscellaneousPreferences::disable_remember_device_at(&sidecar)?;
+    assert!(!sidecar.with_added_extension("opt-out").exists());
+    drop(held);
+
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while state.preference_save_pending() {
+        assert!(Instant::now() < deadline);
+        assert!(state.poll_background_save().error.is_none());
+        std::thread::yield_now();
+    }
+    let saved = MiscellaneousPreferences::read(&sidecar)?;
+    assert!(!saved.remember_device);
+    assert!(!saved.confirm_exit);
     Ok(())
 }

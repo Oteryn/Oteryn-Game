@@ -45,7 +45,10 @@ impl PreferenceStore {
         source: Replacement,
     ) -> io::Result<()> {
         let previous = previous.clone();
-        self.enqueue(move |path| Self::publish_replacement(&path, &previous, source).map(Some))?;
+        let restore_retry = self.restore_retry.clone();
+        self.enqueue(move |path| {
+            Self::publish_replacement(&path, &previous, source, &restore_retry).map(Some)
+        })?;
         self.replacing = true;
         Ok(())
     }

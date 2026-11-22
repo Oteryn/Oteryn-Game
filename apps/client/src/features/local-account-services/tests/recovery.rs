@@ -324,8 +324,18 @@ fn bazaar_retry_and_precreate_refusals_settle_after_missing_status() -> TestResu
 
 #[test]
 fn bazaar_reopen_with_same_authorization_keeps_retry_before_first_receipt() -> TestResult {
+    bazaar_reopens_after_unsent_request(false)
+}
+
+#[test]
+fn bazaar_fresh_grant_can_submit_after_unsent_request() -> TestResult {
+    bazaar_reopens_after_unsent_request(true)
+}
+
+fn bazaar_reopens_after_unsent_request(fresh_grant: bool) -> TestResult {
     use std::sync::atomic::{AtomicUsize, Ordering};
-    test_thread(|| {
+    test_thread(move || {
+        let _entry = COMMERCE_ENTRY.lock().map_err(|_| "commerce entry lock")?;
         let mock = MockPlatform::start()?;
         let client = mock.client()?;
         let token = mock.token(&client)?;
@@ -334,6 +344,14 @@ fn bazaar_reopen_with_same_authorization_keeps_retry_before_first_receipt() -> T
         let step = AtomicUsize::new(0);
         config.account_services =
             Arc::new(move |view, _| match step.fetch_add(1, Ordering::SeqCst) {
+                2 if fresh_grant => {
+                    assert!(!view.pending(), "prior grant blocks a new submission");
+                    Action::Bid {
+                        auction_id: AUCTION.into(),
+                        coins: 50,
+                        confirmed: true,
+                    }
+                }
                 0 => Action::Bid {
                     auction_id: AUCTION.into(),
                     coins: 50,
@@ -353,13 +371,31 @@ fn bazaar_reopen_with_same_authorization_keeps_retry_before_first_receipt() -> T
             .lock()
             .map_err(|_| "lock")?
             .bazaar_post_failure = Some(0);
-        let mut session = Session::default();
-        for _ in 0..2 {
+        let session = || {
+            config
+                .device_sessions
+                .commerce_session(&mock.base, &config.oauth_client_id, None)
+        };
+        let mut current = if fresh_grant {
+            session()
+        } else {
+            Session::default()
+        };
+        for attempt in 0..2 {
+            if attempt == 1 {
+                assert_eq!(mock.authority.lock().map_err(|_| "lock")?.effects, 0);
+            }
+            let next = if attempt == 1 && fresh_grant {
+                current = session();
+                Some(mock.token(&client)?)
+            } else {
+                None
+            };
             mock.runtime.block_on(run(
                 &client,
-                &token,
+                next.as_ref().unwrap_or(&token),
                 &config,
-                &mut session,
+                &mut current,
                 CancellationToken::new(),
             ))?;
         }

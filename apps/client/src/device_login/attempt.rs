@@ -46,7 +46,7 @@ impl DeviceAttempt {
             let session = self.state.session.as_ref().ok_or_else(storage_error)?;
             // A cancellation can arrive after the live vault is cleared but before
             // the Platform returns the successor. Preserve the family for replay.
-            self.journal.stage(&session.device_credential)?;
+            self.journal.stage_rotation(session)?;
         }
         let session = self.state.session.take().ok_or_else(storage_error)?;
         self.remember_revocation(session.device_credential.clone());
@@ -80,7 +80,9 @@ impl DeviceAttempt {
         self.state.pending.retain(|pending| pending != predecessor);
         self.save(client, session).await?;
         if self.remembered {
-            self.journal.discard(predecessor)?;
+            let saved = self.state.session.as_ref().ok_or_else(storage_error)?;
+            self.journal
+                .discard_rotation(predecessor, &saved.family_id)?;
         }
         Ok(())
     }
@@ -177,7 +179,7 @@ impl DeviceAttempt {
             }
             self.clear_vault()?;
             self.state.pending.clear();
-            self.journal.replay(client, &[]).await
+            self.journal.replay(client, &[], None).await
         } else {
             self.revoke_pending(client).await?;
             self.clear_vault()

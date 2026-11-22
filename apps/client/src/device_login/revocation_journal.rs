@@ -74,7 +74,12 @@ impl Journal {
     }
 
     pub(super) fn stage(&self, credential: &DeviceCredential) -> Result<(), NativeLoginError> {
-        self.publish(credential, false).map(|_| ())
+        self.publish(credential, false, None).map(|_| ())
+    }
+
+    pub(super) fn stage_rotation(&self, session: &DeviceSession) -> Result<(), NativeLoginError> {
+        self.publish(&session.device_credential, false, Some(&session.family_id))
+            .map(|_| ())
     }
 
     fn stage_process(
@@ -82,7 +87,7 @@ impl Journal {
         process: &mut ProcessCredential,
         credential: &DeviceCredential,
     ) -> Result<(), NativeLoginError> {
-        if !self.publish(credential, true)? && !process.pending.contains(credential) {
+        if !self.publish(credential, true, None)? && !process.pending.contains(credential) {
             process.pending.push(credential.clone());
         }
         Ok(())
@@ -92,11 +97,12 @@ impl Journal {
         &self,
         credential: &DeviceCredential,
         process_only: bool,
+        rotation_family: Option<&str>,
     ) -> Result<bool, NativeLoginError> {
         let Some(folder) = &self.folder else {
             return Ok(false);
         };
-        let reference = credential_reference(credential.expose());
+        let reference = reference_digest(credential.expose());
         let marker = folder.join(format!("{PREFIX}{reference}"));
         let _publication = crate::atomic_file::try_lock(&folder.join("revocations"))
             .map_err(|_| storage_error())?;
@@ -109,7 +115,11 @@ impl Journal {
         } else {
             vault.write(bytes).map_err(|_| storage_error())?;
         }
-        crate::atomic_file::replace(&marker, reference.as_bytes(), true)
+        let contents = match rotation_family {
+            Some(family) => rotation_marker(&reference, family),
+            None => reference,
+        };
+        crate::atomic_file::replace(&marker, contents.as_bytes(), true)
             .map_err(|_| storage_error())?;
         sync_directory(folder)?;
         Ok(true)
@@ -119,6 +129,7 @@ impl Journal {
         &self,
         client: &NativeLoginClient,
         deferred: &[DeviceCredential],
+        recovery_vault: Option<&dyn vault::Vault>,
     ) -> Result<(), NativeLoginError> {
         let pending = self
             .process
@@ -154,12 +165,13 @@ impl Journal {
             // restart the in-memory queue is empty and every marker is replayed.
             if deferred
                 .iter()
-                .any(|credential| credential_reference(credential.expose()) == reference)
+                .any(|credential| reference_digest(credential.expose()) == reference)
             {
                 continue;
             }
             let marker = entry.path();
-            self.revoke_reference(client, &marker, reference).await?;
+            self.revoke_reference(client, &marker, reference, recovery_vault)
+                .await?;
         }
         Ok(())
     }
@@ -169,14 +181,17 @@ impl Journal {
         client: &NativeLoginClient,
         marker: &Path,
         reference: &str,
+        recovery_vault: Option<&dyn vault::Vault>,
     ) -> Result<(), NativeLoginError> {
-        let mut readback = String::new();
-        std::fs::File::open(marker)
-            .and_then(|file| file.take(65).read_to_string(&mut readback))
-            .map_err(|_| storage_error())?;
-        if reference.len() != 64
-            || !reference.bytes().all(|byte| byte.is_ascii_hexdigit())
-            || readback != reference
+        let readback = read_marker(marker)?;
+        let (stored_reference, rotation_family) = readback
+            .split_once('\n')
+            .map_or((readback.as_str(), None), |(reference, family)| {
+                (reference, Some(family))
+            });
+        if !valid_reference(reference)
+            || stored_reference != reference
+            || rotation_family.is_some_and(|family| !valid_reference(family))
         {
             return Err(storage_error());
         }
@@ -187,8 +202,24 @@ impl Journal {
             .ok_or_else(storage_error)?;
         let credential =
             DeviceCredential::parse(std::str::from_utf8(&bytes).map_err(|_| storage_error())?)?;
-        if credential_reference(credential.expose()) != reference {
+        if reference_digest(credential.expose()) != reference {
             return Err(storage_error());
+        }
+        // This marker was written before rotating. The same family with a
+        // different credential proves the successor reached the live vault.
+        if let (Some(family), Some(live_vault)) = (rotation_family, recovery_vault) {
+            let when = now()?;
+            let saved = live_vault
+                .read()
+                .map_err(|_| storage_error())?
+                .and_then(|bytes| DeviceSession::from_vault(&bytes, when).ok());
+            if saved.is_some_and(|session| {
+                family == reference_digest(&session.family_id)
+                    && session.device_credential != credential
+            }) && self.discard_marker(&credential, Some(&readback))?
+            {
+                return Ok(());
+            }
         }
         // The revoke route acknowledges already-absent families with the same success body.
         client
@@ -198,26 +229,57 @@ impl Journal {
     }
 
     pub(super) fn discard(&self, credential: &DeviceCredential) -> Result<(), NativeLoginError> {
+        self.discard_marker(credential, None).map(|_| ())
+    }
+
+    pub(super) fn discard_rotation(
+        &self,
+        credential: &DeviceCredential,
+        family: &str,
+    ) -> Result<(), NativeLoginError> {
+        let marker = rotation_marker(&reference_digest(credential.expose()), family);
+        self.discard_marker(credential, Some(&marker)).map(|_| ())
+    }
+
+    fn discard_marker(
+        &self,
+        credential: &DeviceCredential,
+        expected: Option<&str>,
+    ) -> Result<bool, NativeLoginError> {
         let Some(folder) = &self.folder else {
-            return Ok(());
+            return Ok(true);
         };
-        let reference = credential_reference(credential.expose());
+        let reference = reference_digest(credential.expose());
         let marker = folder.join(format!("{PREFIX}{reference}"));
         let _publication =
             crate::atomic_file::lock(&folder.join("revocations")).map_err(|_| storage_error())?;
         if marker.try_exists().map_err(|_| storage_error())? {
+            if let Some(expected) = expected
+                && read_marker(&marker)? != expected
+            {
+                // An explicit revocation may have replaced the rotation marker.
+                return Ok(false);
+            }
             std::fs::remove_file(marker).map_err(|_| storage_error())?;
             sync_directory(folder)?;
             (self.resolve)(&reference)
                 .clear()
                 .map_err(|_| storage_error())?;
         }
-        Ok(())
+        Ok(true)
     }
 
     pub(super) fn has_folder(&self) -> bool {
         self.folder.is_some()
     }
+}
+
+fn read_marker(path: &Path) -> Result<String, NativeLoginError> {
+    let mut contents = String::new();
+    std::fs::File::open(path)
+        .and_then(|file| file.take(130).read_to_string(&mut contents))
+        .map_err(|_| storage_error())?;
+    Ok(contents)
 }
 
 pub(super) fn sync_directory(path: &Path) -> Result<(), NativeLoginError> {
@@ -230,8 +292,16 @@ pub(super) fn sync_directory(path: &Path) -> Result<(), NativeLoginError> {
     Ok(())
 }
 
-fn credential_reference(credential: &str) -> String {
-    Sha256::digest(credential.as_bytes())
+fn valid_reference(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+}
+
+fn rotation_marker(reference: &str, family: &str) -> String {
+    format!("{reference}\n{}", reference_digest(family))
+}
+
+fn reference_digest(value: &str) -> String {
+    Sha256::digest(value.as_bytes())
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect()

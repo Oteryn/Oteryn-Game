@@ -187,6 +187,79 @@ mod tests {
     use super::revision_material;
 
     #[test]
+    fn postman_travel_callbacks_stay_held_until_quest_settlement()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let evidence: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../../docs/agents/evidence/quests-2-20261102/the_postman_missions_quest.json"
+        ))?;
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        let model = catalogue.service_model_for_project()?;
+        let mut placed_carpet_callbacks = 0;
+        for row in evidence["rows"].as_array().ok_or("Postman evidence rows")? {
+            let source = &row["source_row"];
+            let Some((npc, destination)) = source["trigger"]
+                .as_str()
+                .and_then(|trigger| trigger.strip_prefix("NPC"))
+                .and_then(|trigger| trigger.strip_suffix(",yes"))
+                .and_then(|trigger| trigger.split_once(':'))
+                .filter(|_| {
+                    source["condition"]
+                        .as_str()
+                        .is_some_and(|v| v.starts_with("Mission01="))
+                        && source["effect"]
+                            .as_str()
+                            .is_some_and(|v| v.starts_with("Mission01="))
+                })
+            else {
+                continue;
+            };
+            let key = format!("oteryn:npc.{npc}");
+            let Some((_, entry)) = model
+                .npcs()
+                .iter()
+                .find(|(reference, _)| reference.key == key)
+            else {
+                continue;
+            };
+            let routes = super::resolve(&model, &key, &entry.services);
+            if let Some(route) = routes.iter().find(|route| route.keyword == destination) {
+                assert!(
+                    route.held,
+                    "{npc}/{destination} omits its Postman transition"
+                );
+                if route.carpet {
+                    placed_carpet_callbacks += 1;
+                    let (mission, stage) = source["condition"]
+                        .as_str()
+                        .and_then(|value| value.split_once(';'))
+                        .and_then(|(condition, _)| condition.split_once('='))
+                        .ok_or("Postman donor prerequisite")?;
+                    let stage = stage.parse::<i64>()?;
+                    assert!(
+                        route.route.required_quest_tracks.iter().any(|requirement| {
+                            requirement.track.ends_with(&format!(
+                                "/the_postman_missions/{}",
+                                mission.to_ascii_lowercase()
+                            )) && requirement.minimum == stage
+                                && requirement.maximum == Some(stage)
+                        }),
+                        "{npc}/{destination} must preserve the exact donor prerequisite"
+                    );
+                }
+            }
+        }
+        assert_eq!(
+            placed_carpet_callbacks, 1,
+            "missing placed Postman carpet route"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn m38_return_origin_correction_is_optional_and_preserves_exact_policy()
     -> Result<(), Box<dyn std::error::Error>> {
         let rows: Vec<serde_json::Value> = serde_json::from_str(revision_material())?;

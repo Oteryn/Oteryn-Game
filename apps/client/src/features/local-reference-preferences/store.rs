@@ -24,6 +24,7 @@ pub(super) enum Replacement {
 pub struct PreferenceStore {
     path: PathBuf,
     preferences: ReferencePreferences,
+    restore_retry: std::sync::Arc<std::sync::Mutex<Option<Vec<u8>>>>,
     #[cfg(bevy_shell)]
     save_task: Option<bevy_tasks::Task<Vec<SaveResult>>>,
     #[cfg(bevy_shell)]
@@ -146,6 +147,7 @@ impl PreferenceStore {
         Self {
             path,
             preferences: ReferencePreferences::default(),
+            restore_retry: Default::default(),
             #[cfg(bevy_shell)]
             save_task: None,
             #[cfg(bevy_shell)]
@@ -168,6 +170,7 @@ impl PreferenceStore {
         Ok(Self {
             path,
             preferences,
+            restore_retry: Default::default(),
             #[cfg(bevy_shell)]
             save_task: None,
             #[cfg(bevy_shell)]
