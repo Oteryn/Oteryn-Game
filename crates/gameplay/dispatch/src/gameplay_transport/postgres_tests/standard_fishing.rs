@@ -438,6 +438,24 @@ pub(super) fn gathering_scenario(
                     tile.y += dy;
                 }
             }
+            if desert {
+                use oteryn_world_bundle::bundle::{Family, PaletteEntry, Terrain, TerrainKind};
+                let projected_water = data.manifest.palette.iter_mut().find(|entry| entry.key == water)
+                    .ok_or("desert fixture water")?;
+                projected_water.key = "oteryn:terrain.tibia.i13989".into();
+                projected_water.family = Family::Terrain;
+                let terrain = Terrain {
+                    kind: TerrainKind::Ground, walkable: Some(true), ground_speed: Some(200),
+                    blocks_projectile: None,
+                };
+                projected_water.terrain = Some(terrain);
+                data.manifest.palette.push(PaletteEntry {
+                    key: "oteryn:terrain.tibia.i13988".into(),
+                    family: Family::Terrain,
+                    id: reference("oteryn:item.tibia.i13988").ok_or("spent desert water")?.get()-1,
+                    terrain: Some(terrain),
+                });
+            }
             bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
                 &data.manifest,
                 &data.sectors,

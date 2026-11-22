@@ -213,6 +213,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             request.ingredient = Some(ingredient);
             request.station = Some(entry.item.definition.clone());
         }
+        use oteryn_gameplay_items::fishing::{
+            DESERT_FISHING_RECOVERY_MS, DESERT_FISHING_SPENT, DESERT_FISHING_WATER,
+        };
         let (station, map_target) = {
             if let Some(station) = request.station.clone() {
                 (
@@ -266,8 +269,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let tile = view::compose_tile(&at.map.overlay, &facts, pos).ok()??;
                 let entry = tile.entries.iter().find(|e| e.source.key() == key)?;
-                let MapDefinition::Item(reference) = entry.facts.definition else {
-                    return disposition(UseDisposition::NothingToUse);
+                let station = match entry.facts.definition {
+                    MapDefinition::Item(reference) => {
+                        super::item_look::typed_definition(index, reference)?
+                    }
+                    // The projected shallow water retains its Terrain identity. Its donor
+                    // action consumes a worm through the native Item policy for this appearance.
+                    MapDefinition::Terrain(_)
+                        if entry.facts.appearance_id == DESERT_FISHING_WATER =>
+                    {
+                        let item = &native
+                            .item_policy_for_source_id(u32::from(DESERT_FISHING_WATER))?
+                            .record()
+                            .production_definition;
+                        crate::durability::item_mint::TypedDefinitionRef {
+                            family: item.family.clone(),
+                            production_key: item.production_key.clone(),
+                            revision_ref: item.revision_ref.clone(),
+                        }
+                    }
+                    _ => return disposition(UseDisposition::NothingToUse),
                 };
                 let map_target = (
                     key,
@@ -281,16 +302,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         || entry.facts.sub_type != 0,
                     pos,
                 );
-                (
-                    super::item_look::typed_definition(index, reference)?,
-                    map_target,
-                )
+                (station, map_target)
             }
         };
         request.station = Some(station);
-        use oteryn_gameplay_items::fishing::{
-            DESERT_FISHING_RECOVERY_MS, DESERT_FISHING_SPENT, DESERT_FISHING_WATER,
-        };
         let mut catch_roll = 1;
         let mut fishing_skill = 10;
         // Fishing is the same durable consume/mint owner as cooking, but keeps the rod and
@@ -313,12 +328,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let water_key = &request.station.as_ref()?.production_key;
             let target_id = item_id(water_key)?;
             let target_pos = map_target.3;
-            if target_id == DESERT_FISHING_WATER
-                && !self
+            if target_id == DESERT_FISHING_WATER {
+                let position = (target_pos.x, target_pos.y, -target_pos.floor);
+                let projected = self
                     .bundle_map()
-                    .is_some_and(|map| map.overlay.base().layer_epoch() == Some(self.reset_epoch))
-            {
-                return disposition(UseDisposition::NothingToUse);
+                    .is_some_and(|map| map.overlay.base().layer_epoch() == Some(self.reset_epoch));
+                if !projected
+                    || !self
+                        .root
+                        .world_changes(self.world_id, self.reset_epoch)
+                        .await
+                        .ok()
+                        .flatten()
+                        .is_some_and(|day| {
+                            day.variants.owns_tile_entry(
+                                "river_runs_deep",
+                                position,
+                                DESERT_FISHING_WATER,
+                            )
+                        })
+                {
+                    return disposition(UseDisposition::NothingToUse);
+                }
             }
             let mechanical_sewer = oteryn_gameplay_items::fishing::is_yalahar_sewer_water(
                 target_id,

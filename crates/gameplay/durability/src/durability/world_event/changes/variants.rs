@@ -248,9 +248,5 @@ pub(in crate::durability) async fn desert_fishing_admitted(
     let Some(day) = load(tx, world, epoch).await? else {
         return Ok(false);
     };
-    Ok(day.variants.active().any(|(definition, variant)| {
-        definition.key == "river_runs_deep" && variant.tiles.iter().any(|tile| {
-            tile.position == position && tile.entries.iter().any(|entry| entry.0 == DESERT_FISHING_WATER)
-        })
-    }))
+    Ok(day.variants.owns_tile_entry("river_runs_deep", position, DESERT_FISHING_WATER))
 }

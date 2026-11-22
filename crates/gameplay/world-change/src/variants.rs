@@ -222,6 +222,16 @@ impl Selected {
             .filter_map(move |d| self.variant(d).map(|v| (d, v)))
     }
 
+    pub fn owns_tile_entry(self, key: &str, position: Position, appearance: u16) -> bool {
+        self.active().any(|(definition, variant)| {
+            definition.key == key
+                && variant.tiles.iter().any(|tile| {
+                    tile.position == position
+                        && tile.entries.iter().any(|entry| entry.0 == appearance)
+                })
+        })
+    }
+
     pub fn passage(self, position: Position) -> Option<(&'static Definition, &'static Portal)> {
         if !self.installed() {
             return None;
