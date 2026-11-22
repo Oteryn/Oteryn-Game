@@ -11,7 +11,6 @@ from import_spell_families import canonical_bytes
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools/content-schema/monster-authoring"))
-from validate_monster import validate
 
 PATH = "imports/crystalserver/spawn-delta-creatures-201189f.json"
 PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
@@ -57,19 +56,14 @@ def stage(root, reference, payload):
     }
     cohort = Stage(Mapper(item_map))
     for row in payload["bundles"]:
-        monster, dependencies, catalog, manifest = (
-            row[field] for field in ("monster", "dependencies", "catalog", "manifest")
+        monster, dependencies, manifest = (
+            row[field] for field in ("monster", "dependencies", "manifest")
         )
         if manifest["sources"][0] != {
             "repository": "zimbadev/crystalserver",
             "revision": PIN,
         }:
             raise ValueError("Crystal spawn Creature donor identity")
-        errors = validate(monster, dependencies, catalog, manifest)
-        if errors:
-            raise ValueError(
-                "Crystal spawn Creature source is open: " + "; ".join(errors)
-            )
         file = row["source"]["file"]
         cohort.stage_dependencies(dependencies, file)
         cohort.stage_monster(
@@ -122,9 +116,45 @@ def stage_delta(root, packet):
     return result
 
 
+def verify_source_receipts(root, captures):
+    """Replay only the exact source packets registered by the Crystal import."""
+    receipts = json.loads((root / "imports/crystalserver/sources.json").read_bytes())
+    for revision, batch, raw in captures:
+        recorded = [
+            row["sha256"]
+            for row in receipts["sources"]
+            if (row["key"], row["revision"], row["import_batch_id"])
+            == ("oteryn:source.crystalserver", revision, batch)
+        ]
+        if recorded != [hashlib.sha256(raw).hexdigest()]:
+            raise ValueError(f"Crystal spawn Creature source receipt: {batch}")
+
+
+def validate_source_bundles(root):
+    """Independently validate the registered source packet's authoring schemas."""
+    from validate_monster import validate
+
+    raid_raw = (root / PATH).read_bytes()
+    verify_source_receipts(root, [(REVISION, BATCH, raid_raw)])
+    for row in json.loads(raid_raw)["bundles"]:
+        errors = validate(
+            *(
+                row[field]
+                for field in ("monster", "dependencies", "catalog", "manifest")
+            )
+        )
+        if errors:
+            raise ValueError(
+                "Crystal spawn Creature source is open: " + "; ".join(errors)
+            )
+
+
 def qualify(root, reference):
     delta_raw = (root / PACKET).read_bytes()
     raid_raw = (root / PATH).read_bytes()
+    verify_source_receipts(
+        root, ((DELTA_REVISION, DELTA_BATCH, delta_raw), (REVISION, BATCH, raid_raw))
+    )
     delta = stage_delta(root, json.loads(delta_raw))
     raid = stage(root, reference, json.loads(raid_raw))
     for section in ("records", "profiles"):

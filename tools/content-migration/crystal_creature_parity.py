@@ -275,6 +275,15 @@ def apply_native(root, generated):
 
 
 def race_catalogue(root, parity_rows):
+    races = json.loads((root / RACES).read_bytes())
+    records = {identity(row["creature"]): row for row in races["records"]}
+    records.update(reviewed_race_records(root, parity_rows))
+    races["records"] = [records[key] for key in sorted(records)]
+    races["record_count"] = len(records)
+    return races
+
+
+def reviewed_race_records(root, parity_rows):
     from cyclopedia_creatures import SOURCE as CYCLOPEDIA_SOURCE
 
     rows = list(parity_rows)
@@ -291,10 +300,8 @@ def race_catalogue(root, parity_rows):
         for row in cyclopedia["sources"]
         if "race" in row
     )
-    races = json.loads((root / RACES).read_bytes())
-    records = {identity(row["creature"]): row for row in races["records"]}
-    for row in rows:
-        records[identity(row["identity"])] = {
+    return {
+        identity(row["identity"]): {
             "creature": row["identity"],
             "race": row["race"],
             "disposition": row["race_disposition"],
@@ -304,9 +311,8 @@ def race_catalogue(root, parity_rows):
                 "sha256": row["source_sha256"],
             },
         }
-    races["records"] = [records[key] for key in sorted(records)]
-    races["record_count"] = len(records)
-    return races
+        for row in rows
+    }
 
 
 def reviewed_schedule_preimage(record, additions):

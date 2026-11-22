@@ -7,7 +7,6 @@ from pathlib import Path
 
 from bind_monster_source_definitions import CREATURES
 from import_spell_families import canonical_bytes
-import cake_creature_admission as admission
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
@@ -91,6 +90,8 @@ def qualify(rows, declarations, reference, packet, item_bindings):
     item_map = {int(b['external_id']): b['target']['key'] for b in item_bindings['bindings']
                 if b['disposition'] == 'EXACT' and b['external_id'].isdecimal()
                 and b['target']['family'] == 'Item' and identity(b['target']) in accepted_items}
+    import cake_creature_admission as admission
+
     bundle = admission.complete_bundle()
     expected = admission.stage_bundle(bundle, item_map)
     if (packet.get('crystal_commit') != admission.PIN or packet.get('bundle') != bundle

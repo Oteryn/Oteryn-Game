@@ -443,6 +443,19 @@ def test_normal_repin_updates_raw_extent_without_rewriting_history_checks() -> N
         placement_sha = hashlib.sha256((world / "placements/index.json").read_bytes()).hexdigest()
         assert f'pub const PLACEMENT_INDEX_SHA256: &str = "{placement_sha}";' in client.read_text()
 
+def test_crystal_spawn_source_receipts_bind_schema_valid_packets() -> None:
+    import crystal_spawn_creatures as spawn
+
+    spawn.validate_source_bundles(rc.ROOT)
+    raw = (rc.ROOT / spawn.PATH).read_bytes()
+    try:
+        spawn.verify_source_receipts(rc.ROOT, [(spawn.REVISION, spawn.BATCH, raw + b" ")])
+    except ValueError as error:
+        assert spawn.BATCH in str(error)
+    else:
+        raise AssertionError("changed Crystal Creature capture passed the receipt")
+
+
 def test_source_cohort_includes_installed_successors() -> None:
     from crystal_creature_parity import BATCH as parity
     from crystal_spawn_creatures import BATCH as spawns
@@ -1158,6 +1171,7 @@ def main() -> None:
         test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_checks,
         test_imbuement_candidate_precedes_content_consumers_and_refusal_stops_them,
         test_reward_variant_packet_follows_final_claim_item_and_metadata_inputs,
+        test_crystal_spawn_source_receipts_bind_schema_valid_packets,
         test_source_cohort_includes_installed_successors,
         test_normal_repin_updates_raw_extent_without_rewriting_history_checks,
         test_source_cohort_extent_separates_npc_profiles_and_tracks_successors,
