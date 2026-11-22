@@ -6,6 +6,9 @@ use super::*;
 use oteryn_protocol_oteryn::{container_tree as tree, inspection as inspect};
 use std::collections::BTreeMap;
 
+#[path = "full_e2ef3_e2ei-b.rs"]
+mod full_e2ef3_e2ei_b;
+
 struct Row {
     id: &'static str,
     source: &'static str,
@@ -18,11 +21,6 @@ const ROWS: &[Row] = &[
         id: "I01",
         source: "crates/gameplay/dispatch/src/gameplay_transport/loop_move.rs:3",
         missing: "ground-inventory,nested-move,split-stack,merge-stack,capacity-refusal,relogin-quantities",
-    },
-    Row {
-        id: "I04",
-        source: "crates/protocol-oteryn/src/mail.rs:14",
-        missing: "write-read-rewritable,text-limit,write-once-transform,rewrite-refusal,relogin-text-transform",
     },
     Row {
         id: "I06",
@@ -38,11 +36,6 @@ const ROWS: &[Row] = &[
         id: "I08",
         source: "crates/gameplay/dispatch/src/gameplay_transport/reward_bag_use.rs:16",
         missing: "obtain-primal-bag,use-consumes-one,pinned-pool-reward,relogin-reward",
-    },
-    Row {
-        id: "I09",
-        source: "crates/gameplay/dispatch/src/gameplay_transport/item_transform.rs:16",
-        missing: "approach-unbound-nonhouse-furniture,use-rotate,assert-definition-and-collision",
     },
     Row {
         id: "I12",
@@ -320,5 +313,5 @@ pub(super) async fn run(
             &cause,
         );
     }
-    observations
+    full_e2ef3_e2ei_b::run(observations, clients).await
 }
