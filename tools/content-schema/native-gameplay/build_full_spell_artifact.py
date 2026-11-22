@@ -684,6 +684,8 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         import loot_slice_one
         slice_creatures = loot_slice_one.creatures(ROOT)
         loot_slice_one.project_tables(definitions, tables, facts)
+        import nrwicked_profiles
+        nrwicked_profiles.bind_hard_loot(ROOT, creatures, definitions, tables)
     bindings, named, used = {}, {}, {}
     corpse_refs, yield_keys, corpse_tables = {}, set(), {}
     reward_boss_corpses = set()
