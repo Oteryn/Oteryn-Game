@@ -367,7 +367,6 @@ pub struct NativeItemAttributes {
     pub blocks_projectile: Option<bool>,
     pub immovable_block_solid: Option<bool>,
     /// Missing is Unknown; only a source-qualified recipe may assert a non-damaging field.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub field_condition: Option<crate::content::field_condition::QualifiedFieldCondition>,
     /// Explicit activated source/config policy; absence stays Unknown.
     pub rune_consumption: Option<NativeRuneConsumption>,
@@ -737,6 +736,36 @@ fn bounded(bytes: &[u8], max: usize) -> Result<(), ContentError> {
     }
     Ok(())
 }
+fn pin_composed_item_profiles(
+    items: &ItemProfilesDocument,
+) -> Result<PinnedGameplayBytes, ContentError> {
+    let encoding = || invalid("composed Item profiles encoding");
+    let legacy = serde_json::to_vec(items).map_err(|_| encoding())?;
+    // Previously issuable providers retain the historical serde encoding, including
+    // null field conditions. Use the compact form only beyond the original byte bound.
+    let bytes = if legacy.len() <= MAX_ITEM_PROFILES {
+        legacy
+    } else {
+        let mut compact = serde_json::to_value(items).map_err(|_| encoding())?;
+        let records = compact["records"].as_array_mut().ok_or_else(encoding)?;
+        for record in records {
+            let attributes = record["attributes"].as_object_mut().ok_or_else(encoding)?;
+            if attributes
+                .get("field_condition")
+                .is_some_and(serde_json::Value::is_null)
+            {
+                attributes.remove("field_condition");
+            }
+        }
+        serde_json::to_vec(&compact).map_err(|_| encoding())?
+    };
+    bounded(&bytes, MAX_ITEM_PROFILES)?;
+    Ok(PinnedGameplayBytes {
+        sha256: hex(sha256(&bytes)),
+        bytes,
+    })
+}
+
 fn qualify(pin: &PinnedGameplayBytes, max: usize) -> Result<(), ContentError> {
     bounded(&pin.bytes, max)?;
     if hex(sha256(&pin.bytes)) != pin.sha256 {
@@ -1368,6 +1397,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         source_reward_items.extend(m25_items);
         source_reward_items.extend(galthen_furniture::qualified_records()?);
         source_reward_items.extend(galthen_loot::qualified_records()?);
+        let legacy_galthen_robes = galthen_loot::legacy_robes()?;
         let item_detail_weights: BTreeMap<String, u32> = serde_json::from_slice(include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/item-detail-weight-facts.json"
         ))
@@ -1402,7 +1432,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 .iter()
                 .find(|expected| expected.production_binding.external_id == binding.external_id)
             {
-                if record != expected {
+                if record != expected && !legacy_galthen_robes.contains(record) {
                     // Accept the verified Global weight in addition to the historical
                     // donor record. Compare the entire profile in both cases.
                     use super::ReferenceItemField as F;
@@ -3237,6 +3267,135 @@ mod tests {
             assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
         }
     }
+    #[test]
+    fn equipment_review_rebuild_preserves_issued_item_provider_encoding()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::qualify_selected_native_gameplay_room;
+
+        let fixture = input();
+        let scratch =
+            std::env::temp_dir().join(format!("oteryn-item-issuance-{}", std::process::id()));
+        std::fs::create_dir_all(&scratch)?;
+        let write = |name: &str, bytes: &[u8]| -> Result<Value, std::io::Error> {
+            std::fs::write(scratch.join(name), bytes)?;
+            Ok(serde_json::json!({"path": name, "sha256": hex(sha256(bytes))}))
+        };
+        let source: ItemProfilesDocument = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        let item = |id: &str| {
+            source
+                .records
+                .iter()
+                .find(|record| record.production_binding.external_id == id)
+                .cloned()
+                .ok_or("fixture Item")
+        };
+        let provider = |records| {
+            serde_json::to_vec(&ItemProfilesDocument {
+                schema: source.schema.clone(),
+                records,
+            })
+        };
+        let base = provider(vec![item("3264")?])?;
+        let updates = serde_json::to_vec(&serde_json::json!({
+            "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",
+            "base_sha256": hex(sha256(&base)),
+            "records": [item("3264")?],
+        }))?;
+        let supplement = provider(vec![item("3031")?])?;
+        let manifest = scratch.join("manifest.json");
+        std::fs::write(
+            &manifest,
+            serde_json::to_vec(&serde_json::json!({
+                "schema": "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v2",
+                "catalog": write("catalog.json", &fixture.catalog.bytes)?,
+                "source_selection": write("selection.json", &fixture.source_selection.bytes)?,
+                "creature_profiles": write("creatures.json", &fixture.creature_profiles.bytes)?,
+                "presentation_profiles": write("presentation.json", &fixture.presentation_profiles.bytes)?,
+                "item_profiles": write("items.json", &base)?,
+                "item_profile_updates": write("updates.json", &updates)?,
+                "starting_loadout_item_profiles": write("starter.json", &supplement)?,
+            }))?,
+        )?;
+        let world = test_source(1)?.world_id;
+        let mut issued = NativeGameplayInput::from_manifest(&manifest)?;
+        issued.source_world = None;
+        let items = issued
+            .item_profiles
+            .as_ref()
+            .ok_or("composed Item provider")?;
+        let encoded = std::str::from_utf8(&items.bytes)?;
+        // Restore the historical serde field position only when a null was omitted.
+        let legacy = encoded
+            .split_inclusive(",\"rune_consumption\":")
+            .map(|part| {
+                let Some(prefix) = part.strip_suffix(",\"rune_consumption\":") else {
+                    return part.to_owned();
+                };
+                if prefix
+                    .rsplit_once(",\"immovable_block_solid\":")
+                    .is_some_and(|(_, fields)| !fields.contains("\"field_condition\":"))
+                {
+                    format!("{prefix},\"field_condition\":null,\"rune_consumption\":")
+                } else {
+                    part.to_owned()
+                }
+            })
+            .collect::<String>();
+        issued.item_profiles = Some(pinned(legacy.as_bytes()));
+        let qualified = qualify_selected_native_gameplay_room(world, &issued)?;
+        let issuance = NativeEntryActivationIssuance {
+            world_id: world,
+            activation_sequence: 1,
+            server_artifact_digest: qualified.compiled().server_digest(),
+            client_artifact_digest: qualified.compiled().client_digest(),
+            frame_binding_digest: qualified.frame_binding().digest(),
+        };
+
+        let restarted = NativeGameplayInput::from_manifest(&manifest)?;
+        std::fs::remove_dir_all(scratch)?;
+        activate_native_entry_room_with_gameplay(
+            &mut ContentActivationController::new(),
+            &NodeBootQuiescence::before_channel_runtime(),
+            world,
+            &issuance,
+            &restarted,
+        )?;
+        Ok(())
+    }
+
+    #[test]
+    fn equipment_review_legacy_galthen_robe_artifact_still_decodes()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let mut input =
+            NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))?;
+        input.source_world = None;
+        let legacy_records = galthen_loot::legacy_robes()?;
+        assert_eq!(legacy_records.len(), 2);
+        let provider = input.item_profiles.as_ref().ok_or("Item provider")?;
+        let mut items: ItemProfilesDocument = serde_json::from_slice(&provider.bytes)?;
+        let room = qualify_native_entry_room(test_source(1)?.world_id)?;
+        for legacy in legacy_records {
+            let old = items
+                .records
+                .iter_mut()
+                .find(|record| record.production_binding == legacy.production_binding)
+                .ok_or("Galthen robe")?;
+            *old = legacy;
+            input.item_profiles = Some(pin_composed_item_profiles(&items)?);
+            let artifact = compile_native_gameplay(room.compiled(), &input)?;
+            assert!(
+                decode(&artifact.server_artifact)?
+                    .state
+                    .item_policy_for_source_id(50255)
+                    .is_some()
+            );
+        }
+        Ok(())
+    }
+
     fn with_crystal_equipment(
         check: impl FnOnce(&NativeGameplayState) -> Result<(), Box<dyn std::error::Error>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -5421,6 +5580,7 @@ mod equipment_projection_tests {
         #[derive(serde::Deserialize)]
         struct Packet {
             records: Vec<ItemProfileRecord>,
+            held_ranged: Vec<u32>,
         }
 
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
@@ -5436,9 +5596,20 @@ mod equipment_projection_tests {
             "/../../../tools/content-schema/native-gameplay/crystal-equipment-slice-4.json"
         )))?;
         assert_eq!(packet.records.len(), 177);
+        assert_eq!(packet.held_ranged.len(), 4);
         for expected in packet.records {
             let key = &expected.production_definition.production_key;
             let revision = &expected.production_definition.revision_ref;
+            if packet
+                .held_ranged
+                .contains(&expected.production_binding.external_id.parse()?)
+            {
+                assert!(
+                    content.item_policy(key, revision).is_none(),
+                    "{key} requires area shots"
+                );
+                continue;
+            }
             let details = content
                 .item_policy(key, revision)
                 .ok_or_else(|| format!("missing Crystal item policy {key}"))?;

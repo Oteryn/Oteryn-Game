@@ -4,6 +4,7 @@ import argparse
 import copy
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 import boss_corpse_profiles as base
@@ -13,6 +14,14 @@ from import_cyclopedia_global import apply_profile_weights
 
 ROOT = base.ROOT
 PATH = "tools/content-schema/native-gameplay/galthen-boss-loot.json"
+LEGACY_ROBES = (
+    "tools/content-schema/native-gameplay/galthen-boss-loot-legacy-robes.json"
+)
+LEGACY_REVISIONS = (
+    "e2152d050038cecdb3728c222af2ac184e1cac5a",
+    "25e8bba17f2077e225aad34186995a5d66a53685",
+)
+NATIVE_PROFILES = "content/items/definitions/spell-native-profiles.json"
 PIN_PATH = "tools/content-schema/native-gameplay/galthen-boss-loot-pin.json"
 RUST_PIN = "crates/gameplay/content/src/content/native_gameplay/galthen_loot_pin.rs"
 IDS = (
@@ -280,12 +289,41 @@ def admit(root, generated, destination, manifest_path, order, canonical):
     generated[manifest_path] = canonical(manifest)
 
 
+def legacy_robes(root):
+    rows = []
+    for revision in LEGACY_REVISIONS:
+        raw = subprocess.check_output(
+            ["git", "show", f"{revision}:{NATIVE_PROFILES}"], cwd=root
+        )
+        [row] = [
+            row
+            for row in json.loads(raw)["records"]
+            if row["production_binding"]["external_id"] == "50255"
+        ]
+        rows.append(row)
+    return base.encode(rows)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--canary-root", type=Path, required=True)
-    parser.add_argument("--crystal-root", type=Path, required=True)
+    parser.add_argument("--canary-root", type=Path)
+    parser.add_argument("--crystal-root", type=Path)
+    parser.add_argument("--legacy-robes", action="store_true")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
+    if args.legacy_robes:
+        evidence = ROOT / LEGACY_ROBES
+        raw = legacy_robes(ROOT)
+        if args.check:
+            if evidence.read_bytes() != raw:
+                raise ValueError("M25_LEGACY_ROBE_GENERATED_DRIFT")
+        else:
+            evidence.write_bytes(raw)
+        return
+    if args.canary_root is None or args.crystal_root is None:
+        parser.error(
+            "--canary-root and --crystal-root are required for the current capture"
+        )
     raw = base.encode(capture(args.canary_root, args.crystal_root))
     sha = hashlib.sha256(raw).hexdigest()
     rust = (

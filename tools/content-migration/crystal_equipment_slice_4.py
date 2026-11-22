@@ -481,6 +481,12 @@ def apply(root, document, order):
     for identifier, record in zip(ids, records, strict=True):
         key = item_key(identifier)
         prior = by_key.get(key)
+        if identifier in AREA_ARROWS:
+            # The native shot owner cannot settle the donor area attack. Keep
+            # the captured policy and trade rows, but refuse materialization.
+            if prior is not None or record["authoring"].get("ranged") is not None:
+                raise ValueError(f"Unexpected area ammunition policy: {identifier}")
+            continue
         if key in ARBAZILOTH_KEYS:
             if prior is None:
                 raise ValueError(f"Missing prior Arbaziloth equipment: {identifier}")
