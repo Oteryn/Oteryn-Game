@@ -327,7 +327,7 @@ pub(super) struct Mailbox {
     pub(super) chat_private_open: bool,
     pub(super) chat_public_shutdown: bool,
     pub(super) motion_selected: bool,
-    pub(super) mount_pending: bool,
+    pub(super) mount_pending: Option<super::feature_0502_actor_motion::protocol::PendingMount>,
     // CL26s2: player-typing panel state and native-window shutdown.
     pub(super) player_typing: oteryn_client_ui::player_typing::PlayerTypingPanel,
     pub(super) player_typing_shutdown: bool,

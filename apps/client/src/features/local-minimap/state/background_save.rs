@@ -155,13 +155,6 @@ impl Minimap {
             || self.background_io_pending()
     }
 
-    #[cfg(all(test, bevy_shell))]
-    pub(super) fn finish_pending_save(&mut self) {
-        if let Some(task) = self.save_task.take() {
-            self.finish_background_save(bevy_tasks::block_on(task));
-        }
-    }
-
     #[cfg(bevy_shell)]
     pub(super) fn start_marker_save(&mut self) {
         if self.save_task.is_none()

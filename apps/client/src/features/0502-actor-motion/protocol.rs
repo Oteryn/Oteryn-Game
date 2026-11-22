@@ -1,42 +1,107 @@
 #[cfg(bevy_shell)]
 use crate::play::PlayLink;
-use crate::play::{Outbox, mailbox::lock};
+use crate::play::{
+    Outbox,
+    mailbox::{Mailbox, lock},
+};
+use oteryn_session::{CommandStatus, SessionEvent};
+
+#[derive(Debug, Clone, Copy, Default)]
+pub(in crate::play) struct PendingMount {
+    sent: bool,
+    accepted: bool,
+    motion_seen: bool,
+}
 
 impl Outbox {
     pub(in crate::play) fn actor_motion_initialize(&self, selected: bool) {
         let mut mailbox = lock(&self.0);
         mailbox.motion_selected = selected;
-        mailbox.mount_pending = false;
+        mailbox.mount_pending = None;
     }
-    pub(in crate::play) fn mount_result(&self) {
-        lock(&self.0).mount_pending = false;
+
+    pub(in crate::play) fn feature_sent(&self, capability: u32) {
+        if capability != 502 {
+            return;
+        }
+        if let Some(pending) = &mut lock(&self.0).mount_pending {
+            pending.sent = true;
+        }
+    }
+
+    pub(in crate::play) fn mount_result(&self, status: CommandStatus) {
+        let mut mailbox = lock(&self.0);
+        if let Some(pending) = mailbox.mount_pending {
+            mailbox.mount_pending = (status == CommandStatus::Accepted && !pending.motion_seen)
+                .then_some(PendingMount {
+                    accepted: true,
+                    ..pending
+                });
+        }
+    }
+}
+
+impl Mailbox {
+    #[cfg(bevy_shell)]
+    fn riding(&self) -> Option<bool> {
+        if !self.motion_selected {
+            return None;
+        }
+        Some(self.bar_actions.own_actor?.motion?.mount_look_type != 0)
+    }
+
+    pub(in crate::play) fn mount_actor_published(&mut self, events: &[SessionEvent]) {
+        let Some(pending) = self.mount_pending.as_mut().filter(|pending| pending.sent) else {
+            return;
+        };
+        let Some(own) = self.bar_actions.own_actor else {
+            return;
+        };
+        // Publish also projects the cached actor on idle turns. Only fresh own-actor
+        // motion carried by the visibility stream can finish the command.
+        if events.iter().any(|event| match event {
+            SessionEvent::WorldSpatialEntities(delta) => delta
+                .value
+                .enter
+                .iter()
+                .chain(&delta.value.update)
+                .any(|actor| actor.entity == own.entity && actor.motion.is_some()),
+            SessionEvent::GatedSnapshotReplaced(snapshot) => {
+                snapshot.value.domain_id == 1 && own.motion.is_some()
+            }
+            _ => false,
+        }) {
+            pending.motion_seen = true;
+            if pending.accepted {
+                self.mount_pending = None;
+            }
+        }
     }
 }
 
 #[cfg(bevy_shell)]
 impl PlayLink {
     pub(crate) fn riding(&self) -> Option<bool> {
-        let mailbox = lock(&self.mailbox);
-        if !mailbox.motion_selected {
-            return None;
-        }
-        let own = mailbox.bar_actions.own_actor?;
-        Some(own.motion?.mount_look_type != 0)
+        lock(&self.mailbox).riding()
     }
 
     pub(crate) fn mount_request(&self) {
-        let Some(riding) = self.riding() else { return };
         let mut mailbox = lock(&self.mailbox);
-        if mailbox.mount_pending || mailbox.world_input_blocked() {
+        if mailbox.mount_pending.is_some() || mailbox.world_input_blocked() {
             return;
         }
+        let Some(riding) = mailbox.riding() else {
+            return;
+        };
+        let riding = !riding;
         if let Some(command) =
-            oteryn_client_ui::actor_motion::mount_command(mailbox.motion_selected, !riding)
+            oteryn_client_ui::actor_motion::mount_command(mailbox.motion_selected, riding)
         {
             mailbox.mount_pending = self
                 .commands
                 .send(crate::combat_input::PlayCommand::Feature(command))
-                .is_ok();
+                .is_ok()
+                .then(PendingMount::default);
         }
     }
 
@@ -59,3 +124,7 @@ impl Outbox {
         self.hotkey_own_actor(Some(actor));
     }
 }
+
+#[cfg(all(test, bevy_shell))]
+#[path = "tests.rs"]
+mod tests;
