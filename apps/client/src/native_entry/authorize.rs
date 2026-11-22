@@ -29,7 +29,9 @@ pub(super) async fn access_token(
         client.authorization_url(&redirect_uri, state.as_str(), pkce.challenge())
     }
     .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
-    if !(config.open_browser)(url.as_str()) {
+    #[cfg(test)]
+    crate::coin_shop::delivery_tests::pause(crate::coin_shop::delivery_tests::Point::OAuth);
+    if cancellation.is_cancelled() || !(config.open_browser)(url.as_str()) {
         return Err(rejected(PublicClass::RetryLogin));
     }
     let flow = IdentityFlow::new(state, config.callback_timeout);

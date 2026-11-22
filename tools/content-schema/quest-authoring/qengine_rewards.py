@@ -19,6 +19,7 @@ import qb_barbarian
 import qb_citizen_warrior
 import wizard_cosmetics
 import engoutfit_m36
+import qengine_mounts
 import qmech_m39
 from jsonschema import Draft202012Validator
 
@@ -123,6 +124,7 @@ def donor_inputs():
             if sha(raw) != row['sha256']:
                 raise ValueError('donor blob changed: ' + path)
             result[path] = raw
+        result[qengine_mounts.CATALOGUE_INPUT] = qengine_mounts.read_catalogue_xml(corpus, manifest)
     return result
 
 
@@ -228,8 +230,7 @@ def build():
                         'sex':sex,'compatible_provenance':[PROVENANCE]})
     mount_source = {'reference': 'crystal:data/XML/mounts.xml', 'revision': PIN,
                     'sha256': sha(inputs['data/XML/mounts.xml'])}
-    mount_population = load_module('qengine_mount_population', 'tools/content-schema/quest-authoring/qengine_mounts.py')
-    mounts, mount_mappings = mount_population.populate(ROOT, inputs, looks, mount_source, item_packet)
+    mounts, mount_mappings = qengine_mounts.populate(ROOT, inputs, looks, mount_source, item_packet)
     mappings.extend(mount_mappings)
     lane_programmes=load_module('questpc7_costume_sources','tools/content-schema/quest-authoring/questpc7_outfit_programmes.py')
     lane_programmes.consumptive_mappings(ROOT,outfits,mappings)

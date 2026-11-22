@@ -37,75 +37,149 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         std::mem::take(&mut mailbox.scope_initialize)
     }
+    pub(super) fn scope_waiting(&self) -> bool {
+        let mailbox = lock(&self.0);
+        mailbox.scope_pending || mailbox.scope_initialize
+    }
+
+    pub(super) fn take_scope_modal_reset(&self) -> bool {
+        std::mem::take(&mut lock(&self.0).scope_reset_modal)
+    }
+
+    pub(super) fn reset_unbound_scope(&self) {
+        let mut mailbox = lock(&self.0);
+        retire_source_requests(&mut mailbox);
+        mailbox.reset_server_message_namespace();
+        mailbox.activity_reset_commands = true;
+    }
+
     pub(super) fn scope_publish<T: Stepper>(&self, session: &mut T) -> bool {
         let scope = session
             .feature_snapshot(99)
             .and_then(|bytes| decode_activity_scope(&bytes).ok());
-        let pending = {
-            let mut mailbox = lock(&self.0);
-            if let Some(scope) = scope
-                && mailbox.activity_scope.as_ref().map(|old| old.session) != Some(scope.session)
-            {
-                discard_commands(&mailbox);
-                let receiver = mailbox.command_receiver.clone();
-                let achievements = mailbox.achievement_notices.clone();
-                let shared_frontend = mailbox.shared_frontend;
-                let traffic = mailbox.traffic.take();
-                let character = std::mem::take(&mut mailbox.party.own_character_name);
-                let world = match scope.scope {
-                    ActivityScope::Channel { world, .. }
-                    | ActivityScope::Instance { world, .. } => world,
-                };
-                let mut world_field = String::with_capacity(36);
-                for (index, byte) in world.iter().enumerate() {
-                    if [4, 6, 8, 10].contains(&index) {
-                        world_field.push('-');
-                    }
-                    use std::fmt::Write;
-                    let _ = write!(world_field, "{byte:02x}");
-                }
-                let chat_mode = match mailbox.chat.console.mode {
-                    oteryn_client_ui::chat::ComposerMode::Temporary => {
-                        oteryn_client_ui::chat::ComposerMode::Off
-                    }
-                    mode => mode,
-                };
-                #[cfg(bevy_shell)]
-                let look_receipt = mailbox.look_receipt;
-                *mailbox = mailbox::Mailbox::default();
-                mailbox.shared_frontend = shared_frontend;
-                mailbox.traffic = traffic;
-                mailbox.party.own_character_name = character;
-                mailbox.properties.house.fields[0] = world_field;
-                mailbox.notices.tutorial_selected = session.feature_selected(31);
-                mailbox.notices.save_selected = session.feature_selected(75);
-                mailbox.chat.console.mode = chat_mode;
-                #[cfg(bevy_shell)]
-                {
-                    mailbox.look_receipt = look_receipt;
-                }
-                mailbox.command_receiver = receiver;
-                mailbox.achievement_notices = achievements;
-                mailbox.activity_scope = Some(scope);
-                mailbox.scope_pending = true;
-                mailbox.world_context.pending = true;
-            }
-            mailbox.scope_pending
-        };
-        if pending {
-            self.push(session.drain());
+        let binding = session
+            .game_session_id()
+            .or_else(|| scope.as_ref().map(|scope| scope.session));
+        let scope = scope.filter(|scope| Some(scope.session) == binding);
+        let mut mailbox = lock(&self.0);
+        let reset = binding.is_some()
+            && binding != mailbox.scope_session
+            && (mailbox.scope_session.is_some() || scope.is_some());
+        if reset {
+            let reset_modal = mailbox.scope_session.is_some();
+            reset_scope(&mut mailbox, scope, session);
+            mailbox.scope_reset_modal = reset_modal;
         }
-        pending
+        mailbox.scope_session = binding.or(mailbox.scope_session);
+        if !mailbox.scope_pending {
+            return false;
+        }
+        mailbox.push_events(session.drain());
+        mailbox.own_identity(session.own_identity());
+        mailbox.appearances(session.visible_appearances());
+        if let Some(entities) = session.entities_changed(&[]) {
+            mailbox.entities(entities);
+        }
+        if reset {
+            #[cfg(test)]
+            BEFORE_SCOPE_MARKER.with(|hook| {
+                if let Some(check) = hook.take() {
+                    check();
+                }
+            });
+            mailbox.pushed.scope_session = binding;
+            mailbox.pushed.scope_changed = true;
+            mailbox.pushed.activity_scope = mailbox.activity_scope.clone();
+            mailbox.world_context.pending = true;
+        }
+        true
     }
 }
+fn retire_source_requests(mailbox: &mut mailbox::Mailbox) {
+    discard_commands(mailbox);
+    mailbox.cancel_activity_requests();
+    if let Some(launcher) = &mailbox.connection.coin_shop {
+        launcher.cancel_active();
+    }
+}
+
+fn reset_scope<T: Stepper>(
+    mailbox: &mut mailbox::Mailbox,
+    scope: Option<ActivityScopeSnapshot>,
+    session: &T,
+) {
+    let receiver = mailbox.command_receiver.clone();
+    let achievements = mailbox.achievement_notices.clone();
+    let shared_frontend = mailbox.shared_frontend;
+    let traffic = mailbox.traffic.take();
+    let character = std::mem::take(&mut mailbox.party.own_character_name);
+    let mut world_field = std::mem::take(&mut mailbox.properties.house.fields[0]);
+    let house_transfer = scope.is_none().then(|| {
+        (
+            std::mem::take(&mut mailbox.properties.house_transfer.summary),
+            std::mem::take(&mut mailbox.properties.house_transfer.feedback),
+            std::mem::take(&mut mailbox.properties.house_transfer.fields[0]),
+        )
+    });
+    if let Some(scope) = &scope {
+        let world = match scope.scope {
+            ActivityScope::Channel { world, channel } => {
+                mailbox.connection.channel_current = Some(channel);
+                world
+            }
+            ActivityScope::Instance { world, .. } => world,
+        };
+        world_field.clear();
+        for (index, byte) in world.iter().enumerate() {
+            if [4, 6, 8, 10].contains(&index) {
+                world_field.push('-');
+            }
+            use std::fmt::Write;
+            let _ = write!(world_field, "{byte:02x}");
+        }
+    }
+    let chat_mode = match mailbox.chat.console.mode {
+        oteryn_client_ui::chat::ComposerMode::Temporary => {
+            oteryn_client_ui::chat::ComposerMode::Off
+        }
+        mode => mode,
+    };
+    #[cfg(bevy_shell)]
+    let look_receipt = mailbox.look_receipt;
+    retire_source_requests(mailbox);
+    mailbox.reset_scope_state();
+    mailbox.project_world_channels();
+    mailbox.shared_frontend = shared_frontend;
+    mailbox.traffic = traffic;
+    mailbox.party.own_character_name = character;
+    mailbox.properties.house.fields[0] = world_field;
+    if let Some((summary, feedback, key)) = house_transfer {
+        mailbox.properties.house_transfer.summary = summary;
+        mailbox.properties.house_transfer.feedback = feedback;
+        mailbox.properties.house_transfer.fields[0] = key;
+    }
+    mailbox.notices.tutorial_selected = session.feature_selected(31);
+    mailbox.notices.save_selected = session.feature_selected(75);
+    mailbox.chat.console.mode = chat_mode;
+    #[cfg(bevy_shell)]
+    {
+        mailbox.look_receipt = look_receipt;
+    }
+    mailbox.command_receiver = receiver;
+    mailbox.achievement_notices = achievements;
+    mailbox.activity_scope = scope;
+    mailbox.scope_pending = true;
+    mailbox.world_context.pending = true;
+}
+
 impl PlayLink {
     pub(super) fn scope_presented(&self, session: [u8; 16]) {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.scope_pending
             && mailbox
-                .activity_scope
-                .as_ref()
-                .is_some_and(|scope| scope.session == session)
+                .scope_session
+                .or_else(|| mailbox.activity_scope.as_ref().map(|scope| scope.session))
+                == Some(session)
         {
             discard_commands(&mailbox);
             // This presentation already drained the retired namespace. A later
@@ -222,4 +296,10 @@ mod tests {
         assert!(mailbox.scope_pending);
         assert!(mailbox.activity_reset_commands);
     }
+}
+
+#[cfg(test)]
+std::thread_local! {
+    pub(in crate::play) static BEFORE_SCOPE_MARKER: std::cell::RefCell<Option<Box<dyn FnOnce()>>> =
+        const { std::cell::RefCell::new(None) };
 }

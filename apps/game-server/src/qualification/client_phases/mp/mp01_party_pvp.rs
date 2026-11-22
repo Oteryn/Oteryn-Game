@@ -487,8 +487,7 @@ fn refused_without_damage(
 /// A's attack on player D is refused on a no-PvP World (`pvp_live.rs:184` via
 /// `check_pvp_legality`, `legality.rs:90`) and D takes no damage in a bounded window.
 async fn nopvp_attack_refused(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResult {
-    let from = tile(bots[3].client()?.world_spatial().actor_position)?;
-    let path = route(world, from, |at| {
+    let path = bots::route_bot(bots, 3, world, |at| {
         world
             .base()
             .tile(at.x, at.y, at.floor)
@@ -508,7 +507,7 @@ async fn nopvp_attack_refused(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> 
                         .is_some_and(|t| !t.protection_zone())
                 })
             })
-    })
+    })?
     .ok_or("no reachable non-PZ combat pair in pinned world")?;
     bots::walk_bot(bots, 3, world, &path).await?;
     bots::approach(bots, 0, 3, world, true).await?;
@@ -840,6 +839,15 @@ async fn pvp_journey(
             .any(|entry| entry.item.item_definition_ref == axe)
     });
     if !wielded {
+        let carried = bots[0].client()?.inventory().is_some_and(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .any(|entry| entry.item_definition_ref == axe)
+        });
+        if !carried {
+            return Err("Open PvP knight provisioning did not publish a carried axe".into());
+        }
         let equipped = bots[0]
             .client()?
             .session_mut()
@@ -866,6 +874,19 @@ async fn pvp_journey(
             )
             .into());
         }
+        let published = bots[0].client()?.inventory().is_some_and(|inventory| {
+            inventory
+                .equipment
+                .iter()
+                .any(|entry| entry.item.item_definition_ref == axe)
+        });
+        if !published {
+            return Err(format!(
+                "axe command {} moved the axe without publishing equipment",
+                equipped.command_id
+            )
+            .into());
+        }
     }
     let combat_tile = |at: TilePos| {
         cells
@@ -880,7 +901,6 @@ async fn pvp_journey(
             )
             .is_ok_and(|facts| !facts.flags().protection_zone && facts.no_pvp_zone() == Some(false))
     };
-    let from = tile(bots[1].client()?.world_spatial().actor_position)?;
     let attacker_start = tile(bots[0].client()?.world_spatial().actor_position)?;
     let directions = [
         StepDirection::North,
@@ -888,7 +908,7 @@ async fn pvp_journey(
         StepDirection::South,
         StepDirection::West,
     ];
-    let path = route(world, from, |at| {
+    let path = bots::route_bot(bots, 1, world, |at| {
         at != temple
             && at != attacker_start
             && combat_tile(at)
@@ -899,15 +919,15 @@ async fn pvp_journey(
                         && combat_tile(neighbor)
                 })
             })
-    })
+    })?
     .ok_or("no reachable PvP-enabled combat pair in pinned world")?;
     bots::walk_bot(bots, 1, world, &path).await?;
     let victim_tile = tile(bots[1].client()?.world_spatial().actor_position)?;
-    let path = route(world, attacker_start, |at| {
+    let path = bots::route_bot(bots, 0, world, |at| {
         at.floor == victim_tile.floor
             && at.x.abs_diff(victim_tile.x) + at.y.abs_diff(victim_tile.y) == 1
             && combat_tile(at)
-    })
+    })?
     .ok_or("no reachable adjacent PvP-enabled attacker tile")?;
     bots::walk_bot(bots, 0, world, &path).await?;
     let attacker = bots[0].own()?;

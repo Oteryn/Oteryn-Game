@@ -180,6 +180,10 @@ def shops(inputs, pin):
                     expected = charges.get(f"oteryn:item.tibia.i{fields['clientId']}")
                     if expected != fields['count'] or fields.get('subType', expected) != expected:
                         raise ValueError('Djinn full-charge source mismatch: ' + npc + ':' + row)
+                subtype = fields.get('subType', fields.get('count'))
+                if npc == 'alesar' and fields['clientId'] == 3284 and subtype is None:
+                    # Crystal data/items/items.xml:8551 gives the ice rapier one default charge.
+                    subtype = charges['oteryn:item.tibia.i3284']
                 for verb, direction in [('buy', 'SellToPlayer'), ('sell', 'BuyFromPlayer')]:
                     if verb not in fields:
                         continue
@@ -187,7 +191,7 @@ def shops(inputs, pin):
                         'item': {'family': 'Item', 'key': f"oteryn:item.tibia.i{fields['clientId']}",
                                  'revision': 'definition-r1'},
                         'direction': direction, 'unit_price': fields[verb],
-                        'count': 1, 'sub_type': fields.get('subType', fields.get('count')),
+                        'count': 1, 'sub_type': subtype,
                         'requirements': [{
                             'quest': 'oteryn:quest.the_djinn_war_' + faction + '_faction',
                             'track': ROOT + faction + '_faction/mission03',

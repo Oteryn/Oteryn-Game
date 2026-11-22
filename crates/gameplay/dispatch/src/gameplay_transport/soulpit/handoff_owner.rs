@@ -53,8 +53,10 @@ fn owner_read<T>(read: Result<T, DurabilityError>) -> Result<Option<T>, ()> {
     }
 }
 
+pub(super) const READ_RETRY_MICROS: u64 = 10_000;
+
 fn read_retry_deadline(now: u64, prior: Option<u64>) -> Option<u64> {
-    let retry = now.saturating_add(10_000);
+    let retry = now.saturating_add(READ_RETRY_MICROS);
     Some(prior.map_or(retry, |prior| prior.min(retry)))
 }
 
@@ -68,6 +70,26 @@ async fn lock_owner_cycle<'a>(
     (cycle, now)
 }
 
+pub(in crate::gameplay_transport) enum SoulpitWake {
+    Scheduled(Option<u64>),
+    DiscoveryBusy {
+        room_due: Option<u64>,
+        refused_at: u64,
+    },
+}
+
+impl SoulpitWake {
+    pub(super) fn scheduled_due(&self) -> Option<u64> {
+        match *self {
+            Self::Scheduled(due) => due,
+            Self::DiscoveryBusy {
+                room_due,
+                refused_at,
+            } => read_retry_deadline(refused_at, room_due),
+        }
+    }
+}
+
 pub struct NativeSoulpitHandoff;
 
 impl NativeSoulpitHandoff {
@@ -76,7 +98,7 @@ impl NativeSoulpitHandoff {
         admission: &ComposedFreshAdmission<'_, '_, '_>,
         now_micros: u64,
         global_tick: bool,
-    ) -> Result<Option<u64>, ()> {
+    ) -> Result<SoulpitWake, ()> {
         let (_cycle, now_micros) = lock_owner_cycle(
             &admission.activity_runtimes.soulpit_transitions,
             now_micros,
@@ -98,17 +120,17 @@ impl NativeSoulpitHandoff {
             .map_err(|_| ())?;
         let mut next = None;
         loop {
+            let mut holder_busy = false;
             // Discovery shares the first room's grant, so the page read cannot
             // consume every fairness window before any room is driven.
             let page = admission
                 .root
                 .with_background_operation(async {
-                    let Some(bindings) = owner_read(
-                        owner
-                            .active_soulpits(admission.character, admission.holder, world, after)
-                            .await,
-                    )?
-                    else {
+                    let read = owner
+                        .active_soulpits(admission.character, admission.holder, world, after)
+                        .await;
+                    holder_busy = matches!(read, Err(DurabilityError::RootUnavailable));
+                    let Some(bindings) = owner_read(read)? else {
                         return Ok(None);
                     };
                     *admission
@@ -132,7 +154,14 @@ impl NativeSoulpitHandoff {
                 })
                 .await?;
             let Some((bindings, first_due)) = page else {
-                return Ok(read_retry_deadline(now_micros, next));
+                return Ok(if holder_busy {
+                    SoulpitWake::DiscoveryBusy {
+                        room_due: next,
+                        refused_at: now_micros,
+                    }
+                } else {
+                    SoulpitWake::Scheduled(read_retry_deadline(now_micros, next))
+                });
             };
             if let Some(due) = first_due {
                 next = Some(next.map_or(due, |old: u64| old.min(due)));
@@ -180,7 +209,7 @@ impl NativeSoulpitHandoff {
                 Err(_) => return Err(()),
             }
         }
-        Ok(next)
+        Ok(SoulpitWake::Scheduled(next))
     }
 
     async fn drive_soulpit_room(

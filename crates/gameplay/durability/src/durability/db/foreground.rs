@@ -9,6 +9,12 @@ struct State {
     until: Option<Instant>,
 }
 
+impl State {
+    fn prefers_foreground(&self, now: Instant) -> bool {
+        self.foreground > 0 && self.until.is_some_and(|until| now < until)
+    }
+}
+
 /// One fixed-size arbitration state shared by all clones of a root.
 #[derive(Default)]
 pub(super) struct HolderPriority {
@@ -117,6 +123,12 @@ impl HolderPriority {
         })
     }
 
+    pub(super) fn background_can_attempt(&self, now: Instant) -> bool {
+        self.state
+            .lock()
+            .is_ok_and(|state| !state.prefers_foreground(now))
+    }
+
     /// Check priority and take an already-idle holder in one short critical section.
     /// A continuous foreground stream still permits one background operation per window.
     pub(super) fn background<T>(
@@ -137,7 +149,7 @@ impl HolderPriority {
         let granted = grant
             .as_ref()
             .is_some_and(|grant| grant.load(Ordering::Relaxed));
-        if !granted && state.foreground > 0 && state.until.is_some_and(|until| now < until) {
+        if !granted && state.prefers_foreground(now) {
             return None;
         }
         let holder = acquire()?;

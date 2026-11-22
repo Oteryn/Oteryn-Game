@@ -36,7 +36,6 @@ impl FreshAdmissionStore {
         original: &FreshAdmissionOperationV1,
         current_id: GameSessionId,
     ) -> Result<FreshReconciliation> {
-        use sqlx::Row;
         let replay = original.authorization.facts.replay_key().to_bytes();
         let Some(receipt) = self.receipt_locked(tx, &replay).await? else {
             return Ok(FreshReconciliation::Absent);
@@ -44,7 +43,19 @@ impl FreshAdmissionStore {
         if receipt.operation() != original {
             return Ok(FreshReconciliation::Conflict);
         }
+        let snapshot = self.read_reconciled_session(tx, receipt, current_id).await?;
+        Ok(FreshReconciliation::Committed(Box::new(snapshot)))
+    }
+
+    async fn read_reconciled_session(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        receipt: FreshAdmissionCommitReceiptV1,
+        current_id: GameSessionId,
+    ) -> Result<FreshAdmissionDurableReconciliationSnapshotV1> {
+        use sqlx::Row;
         let b = receipt.binding();
+        let replay = b.facts.replay_key().to_bytes();
         let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(s)::text) <= $2 THEN to_jsonb(s) END AS state FROM game_durability_reconnect_sessions s WHERE game_session_id = encode($1,'hex')::uuid").bind(current_id.as_bytes().as_slice()).bind(super::MAX_ADMISSION_ROW_BYTES).fetch_optional(&mut **tx).await?.ok_or(DurabilityError::InvalidStoredState)?;
         let state: Option<serde_json::Value> = row.try_get("state")?;
         let state = state.ok_or(DurabilityError::InvalidStoredState)?;
@@ -161,11 +172,9 @@ impl FreshAdmissionStore {
         if !reservation {
             return Err(DurabilityError::InvalidStoredState);
         }
-        Ok(FreshReconciliation::Committed(Box::new(
-            FreshAdmissionDurableReconciliationSnapshotV1 {
-                receipt,
-                current_session,
-            },
-        )))
+        Ok(FreshAdmissionDurableReconciliationSnapshotV1 {
+            receipt,
+            current_session,
+        })
     }
 }

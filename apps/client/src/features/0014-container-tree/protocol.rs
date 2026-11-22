@@ -17,16 +17,9 @@ impl Outbox {
         mailbox.containers.house_capacity_v2 = selected;
         oteryn_client_ui::house_container_capacity::project(&mut mailbox.containers, views);
     }
+    #[cfg(test)]
     pub(in crate::play) fn container_events(&self, events: &[SessionEvent]) {
-        let mut mailbox = lock(&self.0);
-        for event in events {
-            if let SessionEvent::ContainerViews(delta) = event {
-                oteryn_client_ui::house_container_capacity::project(
-                    &mut mailbox.containers,
-                    Some(delta.value.clone()),
-                );
-            }
-        }
+        lock(&self.0).container_events(events);
     }
     pub(in crate::play) fn container_result(&self, outcome: Option<ContainerViewOutcome>) {
         oteryn_client_ui::container_tree::protocol::apply_result(
@@ -90,3 +83,17 @@ macro_rules! dispatch {
     };
 }
 pub(in crate::play) use dispatch;
+
+
+impl crate::play::mailbox::Mailbox {
+    pub(in crate::play) fn container_events(&mut self, events: &[SessionEvent]) {
+        for event in events {
+            if let SessionEvent::ContainerViews(delta) = event {
+                oteryn_client_ui::house_container_capacity::project(
+                    &mut self.containers,
+                    Some(delta.value.clone()),
+                );
+            }
+        }
+    }
+}

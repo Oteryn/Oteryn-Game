@@ -813,11 +813,19 @@ impl BundleStepProof<'_> {
         if Some(self.destination.x) == origin.x.checked_add(dx)
             && Some(self.destination.y) == origin.y.checked_add(dy)
             && self.destination.floor == origin.floor
-            && runtime
-                .position_occupied_by_other(self.actor, self.destination)
-                .map_err(MovementError::Actor)?
         {
-            return Err(MovementError::Blocked);
+            let can_walk_through = !self.starts_stairhop
+                && matches!(self.cells.index(), NativeMovementCollisionIndex::Bundle(index)
+                    if pos(self.destination.x, self.destination.y, i32::from(self.destination.floor))
+                        .and_then(|tile| index.map().zone_flags(tile))
+                        .is_some_and(|(_, protection_zone)| protection_zone))
+                && !runtime.forced_player_step_current(self.actor, self.session);
+            if runtime
+                .player_step_occupied(self.actor, self.destination, |_, _| can_walk_through)
+                .map_err(MovementError::Actor)?
+            {
+                return Err(MovementError::Blocked);
+            }
         }
         Ok(())
     }

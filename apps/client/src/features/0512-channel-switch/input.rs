@@ -11,7 +11,7 @@ impl PlayLink {
     /// The Platform the picker asks for client-channel-probe-v1 targets; `None` measures only
     /// the current Channel.
     pub fn channel_probe_platform(&self, platform: Option<String>) {
-        lock(&self.mailbox).channel_probe_platform = platform;
+        lock(&self.mailbox).connection.probe_platform = platform;
     }
 
     /// Opens the window and asks the server for the locks and the cooldown.
@@ -31,7 +31,7 @@ impl PlayLink {
         let due = mailbox
             .channel_probe_refreshed
             .is_none_or(|at| at.elapsed() >= PROBE_REFRESH_INTERVAL);
-        let platform = mailbox.channel_probe_platform.clone().filter(|_| due);
+        let platform = mailbox.connection.probe_platform.clone().filter(|_| due);
         if let Some(platform) = platform {
             mailbox.channel_probe_refreshed = Some(std::time::Instant::now());
             mailbox.channel_probe_pings.clear();
