@@ -163,21 +163,47 @@ def verify_delta_capture(baseline_xml, donor_xml):
     if difference != capture["groups"]:
         sys.exit("retained Crystal spawn delta differs from the pinned XML comparison")
 
+def crystal_capture():
+    capture = json.loads(DELTA.read_bytes())
+    raid_capture = json.loads(DELTA.with_name("world-monster-delta-201189f.json").read_bytes())
+    source = capture["source"]
+    if (raid_capture["repository"], raid_capture["revision"], raid_capture["path"],
+            raid_capture["sha256"], raid_capture["predecessor_sha256"],
+            raid_capture["git_blob"]) != (
+            source["repository"], source["revision"], source["path"], source["sha256"],
+            capture["baseline"]["sha256"], "7949251d25d8db8f0b2ca65b67df76ac577a5caf"):
+        raise ValueError("Crystal spawn delta source mismatch")
+
+    compact = {
+        (group["group"], row["point"]):
+        (group["centre"], row["name"], row["cell"], row["direction"], row["respawn_s"])
+        for group in capture["groups"] for row in group["points"]
+    }
+    reviewed = {
+        (group["source_group_ordinal"], row["source_point_ordinal"]):
+        (group["center"], row["name"].lower(), row["cell"], row["direction"], row["respawn_seconds"])
+        for group in raid_capture["groups"] for row in group["points"]
+    }
+    for packet in (capture, raid_capture):
+        groups = packet["groups"]
+        if len(groups) != 412 or sum(len(group["points"]) for group in groups) != 700:
+            raise ValueError("Crystal spawn delta capture is incomplete")
+    if len(compact) != 700 or compact != reviewed:
+        raise ValueError("Crystal spawn delta captures disagree")
+    return capture
+
+
 def crystal_delta(known):
     raw = DELTA.read_bytes()
-    capture = json.loads(raw)
-    records = []
+    capture = crystal_capture()
+    records, unsupported = [], []
     for group in capture["groups"]:
         cx, cy, cz = group["centre"]
         key = f"oteryn:spawn.crystal_201189f8.g{group['group']:05d}"
         points = []
         for row in group["points"]:
             name = row["name"]
-            if name in DELTA_HELD:
-                continue
             creature = f"oteryn:creature.{slug(name)}"
-            if creature not in known:
-                sys.exit(f"{key}: `{name}` is not an admitted creature definition")
             x, y, z = row["cell"]
             if z != cz or not (0 <= x <= 0xFFFF and 0 <= y <= 0xFFFF):
                 sys.exit(f"{key}: point ({x}, {y}, {z}) is off the source")
@@ -187,6 +213,15 @@ def crystal_delta(known):
                 "creature": creature,
                 "direction": DIRECTIONS[str(row["direction"])],
             }
+            # The donor XML owns world points with a respawn. Script ownership
+            # applies only to script-created points outside this capture.
+            if name in DELTA_HELD:
+                unsupported.append({"source": key, "source_point_ordinal": row["point"],
+                                    "point": {**point, "respawn_ms": seconds * 1000},
+                                    "reason": "unsupported-source-behavior"})
+                continue
+            if creature not in known:
+                sys.exit(f"{key}: `{name}` is not an admitted creature definition")
             if name in DELTA_FIXED_BOSSES:
                 point["boss_policy"] = {"respawn": {"min_s": seconds, "max_s": seconds}}
             else:
@@ -204,7 +239,7 @@ def crystal_delta(known):
         "record_count": len(records),
         "source": capture["source"],
     }
-    return records, provenance
+    return records, unsupported, provenance
 
 def convert(xml: bytes) -> dict[str, str]:
     if hashlib.sha256(xml).hexdigest() != SOURCE["files"][0]["sha256"]:
@@ -215,7 +250,7 @@ def convert(xml: bytes) -> dict[str, str]:
     held_records = json.loads(held_bytes)["records"]
     held = {r["source_group_ordinal"] for r in held_records}
     known, seen, records = creature_keys(), {}, []
-    delta, delta_source = crystal_delta(known)
+    delta, unsupported, delta_source = crystal_delta(known)
     # Crystal replaced each of these occupants in place. Keeping the old Deer
     # would give the activation owner two home spawns for the same cell.
     stag_replacements = {
@@ -246,8 +281,6 @@ def convert(xml: bytes) -> dict[str, str]:
         for point in element:
             name = point.get("name")
             creature = f"oteryn:creature.{slug(name)}"
-            if creature not in known:
-                sys.exit(f"{key}: `{name}` is not an admitted creature definition")
             x, y, z = cx + int(point.get("x")), cy + int(point.get("y")), int(point.get("z", cz))
             if z != cz or not (0 <= x <= 0xFFFF and 0 <= y <= 0xFFFF):
                 sys.exit(f"{key}: point ({x}, {y}, {z}) is off the source")
@@ -354,6 +387,9 @@ def convert(xml: bytes) -> dict[str, str]:
     files[DELTA_SHARD] = dump({"family": "Spawn.Source", "coordinate_frame": FRAME,
                                "records": delta})
     shards.append(f"content/world/spawns/{DELTA_SHARD}")
+    unsupported_name = "unsupported-crystal-201189f8.json"
+    files[unsupported_name] = dump({"coordinate_frame": FRAME, "family": "Unsupported.Spawn.Point",
+                                    "records": unsupported})
     all_records = retained_records + bosses["records"] + delta
     files["index.json"] = dump(
         {
@@ -376,6 +412,9 @@ def convert(xml: bytes) -> dict[str, str]:
             "shard_size": SHARD_SIZE,
             "shards": shards,
             "source": SOURCE,
+            "unsupported_crystal_delta": {"path": f"content/world/spawns/{unsupported_name}",
+                                          "point_count": len(unsupported),
+                                          "sha256": hashlib.sha256((files[unsupported_name] + "\n").encode()).hexdigest()},
             "additional_sources": [{"path": "tools/world-bundle-compiler/boss-spawns.json",
                                     "sha256": hashlib.sha256(bosses_bytes).hexdigest(),
                                     "record_count": len(bosses["records"])},

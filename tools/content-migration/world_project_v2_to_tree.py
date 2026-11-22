@@ -94,6 +94,9 @@ def refresh_bestiary_inventory(root: Path) -> None:
     count = len(records)
     if count != index["record_count"]:
         raise RuntimeError("BESTIARY_SHARD_COUNT")
+    binding_count = sum(len(record.get("source_bindings", [])) for record in records)
+    if binding_count != index["attached_source_bindings"]:
+        raise RuntimeError("BESTIARY_BINDING_COUNT")
     bestiary_count = 0
     boss_counts = Counter()
     for record in records:
@@ -150,11 +153,11 @@ def refresh_bestiary_inventory(root: Path) -> None:
         raise RuntimeError("BESTIARY_VALIDATOR_GUARD_SEAM")
     golden = root / "tools/content-migration/test_world_project_v2_to_tree.py"
     golden_text = golden.read_text()
-    for pattern in (
-        r'''(?m)^([ \t]*assert family_counts\[(?:'Creature'|"Creature")\] == )[0-9_]+$''',
-        r'(?m)^([ \t]*assert lock\["source_binding_counts"\] == \{[^{}]*?"Creature":\s*)[0-9_]+',
+    for pattern, expected in (
+        (r'''(?m)^([ \t]*assert family_counts\[(?:'Creature'|"Creature")\] == )[0-9_]+$''', count),
+        (r'(?m)^([ \t]*assert lock\["source_binding_counts"\] == \{[^{}]*?"Creature":\s*)[0-9_]+', binding_count),
     ):
-        golden_text, guarded = re.subn(pattern, lambda match: match.group(1) + f"{count:_}", golden_text)
+        golden_text, guarded = re.subn(pattern, lambda match: match.group(1) + f"{expected:_}", golden_text)
         if guarded != 1:
             raise RuntimeError("BESTIARY_CORPUS_GOLDEN_SEAM")
     charm = root / "crates/gameplay/dispatch/src/gameplay_transport/charm_progression_tests.rs"

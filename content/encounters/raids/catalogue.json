@@ -666,29 +666,24 @@
       ]
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
       "end": {
         "despawn_after_ms": null,
-        "kind": "unknown"
+        "kind": "until_reset"
       },
-      "inactive_reasons": [
-        "calendar_firing_rule_unresolved",
-        "message_kind_or_timing_unresolved",
-        "native_wave_area_unknown",
-        "waves_unknown",
-        "wiki_donor_identity_unresolved"
-      ],
+      "inactive_reasons": [],
       "key": "oteryn:raid.kazordoon_raids.the_halloween_hare",
       "kind": "calendar",
       "name": "The Halloween Hare",
       "schedule": {
-        "interval_ms": null,
+        "interval_ms": 86400000,
         "kind": "calendar",
         "observations": {
           "date": "October 31",
           "frequency": "annual"
         },
+        "repeat": true,
         "window": {
           "end_day": 31,
           "end_month": 10,
@@ -698,7 +693,68 @@
       },
       "sources": [],
       "variant_group": null,
-      "variants": [],
+      "variants": [
+        {
+          "announcements": [
+            {
+              "delay_ms": 0,
+              "kind": "advance",
+              "source": {
+                "evidence": "TIBIAWIKI_STRUCTURED",
+                "selector": "The Halloween Hare / Raid Message",
+                "source": "wiki:20165:1135570"
+              },
+              "text": "Beware, beware the halloween hare."
+            }
+          ],
+          "key": "raid-anchor:32624_32018_7-32624_32018_7",
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32624,
+                      "y": 32018
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x127-y125.b3",
+                        "sha256": "9a29bd789d743e29c2c90e4df547e7125084699bd3d97c325e1f993adf24a0b1"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32624,
+                      "y": 32018
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32624_32018_7-32624_32018_7",
+                  "boss": false,
+                  "creature": "oteryn:creature.the_halloween_hare",
+                  "source": {
+                    "evidence": "TIBIAWIKI_STRUCTURED",
+                    "selector": "Mapper Coords",
+                    "source": "wiki:20165:1135570"
+                  },
+                  "source_name": "The Halloween Hare",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "wiki_area": "Kazordoon",
       "wiki_records": [
         "oteryn:raid.kazordoon_raids.the_halloween_hare"
@@ -1009,21 +1065,15 @@
       ]
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [
         "The Mutated Pumpkin"
       ],
       "end": {
         "despawn_after_ms": null,
-        "kind": "unknown"
+        "kind": "until_reset"
       },
-      "inactive_reasons": [
-        "calendar_firing_rule_unresolved",
-        "message_kind_or_timing_unresolved",
-        "native_wave_area_unknown",
-        "waves_unknown",
-        "wiki_donor_identity_unresolved"
-      ],
+      "inactive_reasons": [],
       "key": "oteryn:raid.northern_darama_raids.the_mutated_pumpkin",
       "kind": "calendar",
       "name": "The Mutated Pumpkin",
@@ -1036,6 +1086,7 @@
           "interval_hours": 4,
           "start": "October 31 server save"
         },
+        "repeat": true,
         "window": {
           "end_day": 2,
           "end_month": 11,
@@ -1045,7 +1096,188 @@
       },
       "sources": [],
       "variant_group": null,
-      "variants": [],
+      "variants": [
+        {
+          "announcements": [
+            {
+              "delay_ms": 0,
+              "kind": "advance",
+              "source": {
+                "evidence": "TIBIAWIKI_STRUCTURED",
+                "selector": "The Mutated Pumpkin / Raid Message",
+                "source": "wiki:20158:1135815"
+              },
+              "text": "Oh noes! It's a mutated pumpkin!"
+            }
+          ],
+          "key": "raid-anchor:33115_32398_7-33115_32398_7",
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 33115,
+                      "y": 32398
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x129-y126.b3",
+                        "sha256": "8453ff0d5451a3828b92093778e7116f337cfe9b45bfe0ab5cfb67ae967ca669"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 33115,
+                      "y": 32398
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:33115_32398_7-33115_32398_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.the_mutated_pumpkin",
+                  "source": {
+                    "evidence": "TIBIAWIKI_STRUCTURED",
+                    "selector": "Mapper Coords",
+                    "source": "wiki:29889:1139122"
+                  },
+                  "source_name": "The Mutated Pumpkin",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "announcements": [
+            {
+              "delay_ms": 0,
+              "kind": "advance",
+              "source": {
+                "evidence": "TIBIAWIKI_STRUCTURED",
+                "selector": "The Mutated Pumpkin / Raid Message",
+                "source": "wiki:20158:1135815"
+              },
+              "text": "Oh noes! It's a mutated pumpkin!"
+            }
+          ],
+          "key": "raid-anchor:33095_32381_7-33095_32381_7",
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 33095,
+                      "y": 32381
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x129-y126.b3",
+                        "sha256": "8453ff0d5451a3828b92093778e7116f337cfe9b45bfe0ab5cfb67ae967ca669"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 33095,
+                      "y": 32381
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:33095_32381_7-33095_32381_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.the_mutated_pumpkin",
+                  "source": {
+                    "evidence": "TIBIAWIKI_STRUCTURED",
+                    "selector": "Mapper Coords",
+                    "source": "wiki:29889:1139122"
+                  },
+                  "source_name": "The Mutated Pumpkin",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "announcements": [
+            {
+              "delay_ms": 0,
+              "kind": "advance",
+              "source": {
+                "evidence": "TIBIAWIKI_STRUCTURED",
+                "selector": "The Mutated Pumpkin / Raid Message",
+                "source": "wiki:20158:1135815"
+              },
+              "text": "Oh noes! It's a mutated pumpkin!"
+            }
+          ],
+          "key": "raid-anchor:33092_32418_7-33092_32418_7",
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 33092,
+                      "y": 32418
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x129-y126.b3",
+                        "sha256": "8453ff0d5451a3828b92093778e7116f337cfe9b45bfe0ab5cfb67ae967ca669"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 33092,
+                      "y": 32418
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:33092_32418_7-33092_32418_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.the_mutated_pumpkin",
+                  "source": {
+                    "evidence": "TIBIAWIKI_STRUCTURED",
+                    "selector": "Mapper Coords",
+                    "source": "wiki:29889:1139122"
+                  },
+                  "source_name": "The Mutated Pumpkin",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "wiki_area": "Northern Darama",
       "wiki_records": [
         "oteryn:raid.northern_darama_raids.the_mutated_pumpkin"
@@ -11797,15 +12029,14 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
       },
-      "inactive_reasons": [
-        "global_raid_membership_unproven:donor_chayenne_has_no_archived_global_identity"
-      ],
+      "inactive_reasons": [],
       "key": "raid:abdendriel.chayenne",
       "kind": "boss",
       "name": "abdendriel.chayenne",
@@ -11949,8 +12180,9 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -12064,9 +12296,7 @@
           "key": "oteryn:raid.ab_dendriel_raids.dragon_raid_on_draconia"
         }
       ],
-      "inactive_reasons": [
-        "global_counts_conflict:two_dragon_lords_per_floor_vs_donor_one"
-      ],
+      "inactive_reasons": [],
       "key": "raid:abdendriel.dragons",
       "kind": "area",
       "name": "Dragon raid on Draconia",
@@ -12896,8 +13126,9 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -13023,9 +13254,7 @@
           "key": "oteryn:raid.ab_dendriel_raids.war_wolf_raid_on_ab_dendriel"
         }
       ],
-      "inactive_reasons": [
-        "global_counts_conflict:about_70_wolves_35_warwolves_vs_donor_55_70"
-      ],
+      "inactive_reasons": [],
       "key": "raid:abdendriel.warwolves",
       "kind": "area",
       "name": "War Wolf Raid on Ab'Dendriel",
@@ -15603,8 +15832,9 @@
       ]
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -15711,9 +15941,7 @@
           "key": "oteryn:raid.southern_darama_raids.cobra_raid_in_mountain_tomb"
         }
       ],
-      "inactive_reasons": [
-        "global_timeline_conflict_unanchored_source_waves:oteryn:raid.southern_darama_raids.cobra_raid_in_mountain_tomb"
-      ],
+      "inactive_reasons": [],
       "key": "raid:ankrahmun.cobras",
       "kind": "area",
       "name": "Cobra Raid in Mountain Tomb",
@@ -15862,8 +16090,9 @@
       ]
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -15981,9 +16210,7 @@
           "key": "oteryn:raid.southern_darama_raids.gargoyle_raid_in_oasis_tomb"
         }
       ],
-      "inactive_reasons": [
-        "global_counts_conflict:about_70_gargoyles_vs_donor_15"
-      ],
+      "inactive_reasons": [],
       "key": "raid:ankrahmun.gargoyles",
       "kind": "area",
       "name": "Gargoyle Raid in Oasis Tomb",
@@ -16017,13 +16244,7 @@
         {
           "announcements": [
             {
-              "delay_ms": 0,
-              "global_sources": [
-                {
-                  "selector": "Gargoyle Raid in Oasis Tomb / Raid Message",
-                  "source": "wiki:20159:1107855"
-                }
-              ],
+              "delay_ms": 1000,
               "kind": "advance",
               "raw_delay_ms": 1000,
               "source": {
@@ -16037,13 +16258,7 @@
               "text": "There is something stony moving down in the Ankrahmun Rahemos tombs."
             },
             {
-              "delay_ms": 150000,
-              "global_sources": [
-                {
-                  "selector": "Gargoyle Raid in Oasis Tomb / Raid Message",
-                  "source": "wiki:20159:1107855"
-                }
-              ],
+              "delay_ms": 20000,
               "kind": "advance",
               "raw_delay_ms": 20000,
               "source": {
@@ -16068,11 +16283,10 @@
               "sha256": "c8323876cdca6e54942e9d3fb9316ecbb04063dc026345d59dfe5acc6f66e3e3"
             }
           ],
-          "timeline_basis": "global_exact_announcements_and_direct_source_wave_anchors",
           "unresolved": [],
           "waves": [
             {
-              "delay_ms": 150000,
+              "delay_ms": 21000,
               "entries": [
                 {
                   "amount": {
@@ -16116,14 +16330,7 @@
                   "spawn_mode": "area"
                 }
               ],
-              "global_sources": [
-                {
-                  "selector": "Gargoyle Raid in Oasis Tomb / Raid Message",
-                  "source": "wiki:20159:1107855"
-                }
-              ],
-              "raw_delay_ms": 20000,
-              "timing_basis": "source_same_timestamp_as_global_announcement"
+              "raw_delay_ms": 20000
             }
           ]
         }
@@ -16138,8 +16345,9 @@
       ]
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -16250,9 +16458,7 @@
           "key": "oteryn:raid.southern_darama_raids.nomad_raid_near_ankrahmun"
         }
       ],
-      "inactive_reasons": [
-        "global_broadcast_time_unit_unresolved:oteryn:raid.southern_darama_raids.nomad_raid_near_ankrahmun"
-      ],
+      "inactive_reasons": [],
       "key": "raid:ankrahmun.nomads",
       "kind": "area",
       "name": "Nomad Raid near Ankrahmun",
@@ -16652,8 +16858,9 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -16771,10 +16978,7 @@
           "key": "oteryn:raid.southern_darama_raids.terramite_raid_near_ankrahmun"
         }
       ],
-      "inactive_reasons": [
-        "global_broadcast_time_unit_unresolved:oteryn:raid.southern_darama_raids.terramite_raid_near_ankrahmun",
-        "global_waves_conflict:30_then_70_terramites_vs_donor_30_once"
-      ],
+      "inactive_reasons": [],
       "key": "raid:ankrahmun.terramites",
       "kind": "area",
       "name": "Terramite Raid near Ankrahmun",
@@ -17216,8 +17420,9 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -17314,9 +17519,7 @@
           "key": "oteryn:raid.carlin_raids.amazon_raid_north_of_carlin"
         }
       ],
-      "inactive_reasons": [
-        "global_broadcast_time_unit_unresolved:oteryn:raid.carlin_raids.amazon_raid_north_of_carlin"
-      ],
+      "inactive_reasons": [],
       "key": "raid:carlin.amazons",
       "kind": "area",
       "name": "Amazon Raid North of Carlin",
@@ -18421,8 +18624,9 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -18554,9 +18758,7 @@
           "key": "oteryn:raid.carlin_raids.lesser_undead_raid_on_ghostlands"
         }
       ],
-      "inactive_reasons": [
-        "global_timeline_conflict_unanchored_source_waves:oteryn:raid.carlin_raids.lesser_undead_raid_on_ghostlands"
-      ],
+      "inactive_reasons": [],
       "key": "raid:carlin.lesserundeads",
       "kind": "area",
       "name": "Lesser Undead Raid on Ghostlands",
@@ -19114,8 +19316,9 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -19223,9 +19426,7 @@
           "key": "oteryn:raid.carlin_raids.troll_raid_north_west_of_carlin"
         }
       ],
-      "inactive_reasons": [
-        "global_counts_conflict:about_20_22_7_vs_donor_75_3_25"
-      ],
+      "inactive_reasons": [],
       "key": "raid:carlin.trolls",
       "kind": "area",
       "name": "Troll Raid North-West of Carlin",
@@ -19634,8 +19835,9 @@
       ]
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -19732,9 +19934,7 @@
           "key": "oteryn:raid.carlin_raids.undead_raid_on_ghostlands"
         }
       ],
-      "inactive_reasons": [
-        "global_broadcast_time_unit_unresolved:oteryn:raid.carlin_raids.undead_raid_on_ghostlands"
-      ],
+      "inactive_reasons": [],
       "key": "raid:carlin.undeads",
       "kind": "area",
       "name": "Undead Raid on Ghostlands",
@@ -25623,10 +25823,11 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [
         "The Blightfather"
       ],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -25719,9 +25920,7 @@
           "key": "oteryn:raid.zao_raids.lancer_beetles_raid_on_muggy_plains"
         }
       ],
-      "inactive_reasons": [
-        "global_broadcast_sequence_conflict:oteryn:raid.zao_raids.lancer_beetles_raid_on_muggy_plains"
-      ],
+      "inactive_reasons": [],
       "key": "raid:farmine.blightfather",
       "kind": "boss",
       "name": "Lancer Beetles raid on Muggy Plains",
@@ -27681,12 +27880,13 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [
         "Cublarc the Plunderer",
         "Zulazza the Corruptor",
         "Chizzoron the Distorter"
       ],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -27844,9 +28044,7 @@
           "key": "oteryn:raid.zao_raids.orcs_raid_on_zzaion"
         }
       ],
-      "inactive_reasons": [
-        "global_broadcast_sequence_conflict:oteryn:raid.zao_raids.orcs_raid_on_zzaion"
-      ],
+      "inactive_reasons": [],
       "key": "raid:farmine.zulazzathecorruptor",
       "kind": "boss",
       "name": "Orcs raid on Zzaion",
@@ -28555,8 +28753,9 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -28682,9 +28881,7 @@
           "key": "oteryn:raid.kazordoon_raids.goblin_raid_from_femor_hills"
         }
       ],
-      "inactive_reasons": [
-        "global_broadcast_sequence_conflict:oteryn:raid.kazordoon_raids.goblin_raid_from_femor_hills"
-      ],
+      "inactive_reasons": [],
       "key": "raid:kazordoon.goblins",
       "kind": "area",
       "name": "Goblin Raid from Femor Hills",
@@ -31576,8 +31773,9 @@
       ]
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -31676,9 +31874,7 @@
           "key": "oteryn:raid.vandura_raids.quara_scout_raid_on_liberty_bay_plantations"
         }
       ],
-      "inactive_reasons": [
-        "global_broadcast_sequence_conflict:oteryn:raid.vandura_raids.quara_scout_raid_on_liberty_bay_plantations"
-      ],
+      "inactive_reasons": [],
       "key": "raid:libertybay.quaras",
       "kind": "area",
       "name": "Quara Scout Raid on Liberty Bay Plantations",
@@ -32984,17 +33180,16 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
       },
-      "inactive_reasons": [
-        "creature_unbound:The Ravenger"
-      ],
+      "inactive_reasons": [],
       "key": "raid:oramond.ravenger",
-      "kind": "area",
+      "kind": "boss",
       "name": "oramond.ravenger",
       "schedule": {
         "interval_s": 86400,
@@ -33068,9 +33263,9 @@
                     "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
                   },
                   "area_anchor": "raid-anchor:33418_32114_10-33418_32114_10",
-                  "boss": false,
+                  "boss": true,
                   "boss_source": null,
-                  "creature": "oteryn:creature.the_ravenger",
+                  "creature": "oteryn:creature.the_ravager",
                   "source": {
                     "evidence": "OTS_HYPOTHESIS_ONLY",
                     "line": 4,
@@ -35505,6 +35700,7 @@
     {
       "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -36940,8 +37136,9 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -37048,9 +37245,7 @@
           "key": "oteryn:raid.tiquanda_raids.serpent_spawn_raid_in_deeper_banuta"
         }
       ],
-      "inactive_reasons": [
-        "global_broadcast_time_unit_unresolved:oteryn:raid.tiquanda_raids.serpent_spawn_raid_in_deeper_banuta"
-      ],
+      "inactive_reasons": [],
       "key": "raid:porthope.serpentspawns",
       "kind": "area",
       "name": "Serpent Spawn Raid in Deeper Banuta",
@@ -39982,8 +40177,9 @@
       ]
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -40102,9 +40298,7 @@
           "key": "oteryn:raid.hrodmir_raids.barbarian_raid_in_on_svargrond"
         }
       ],
-      "inactive_reasons": [
-        "global_broadcast_sequence_conflict:oteryn:raid.hrodmir_raids.barbarian_raid_in_on_svargrond"
-      ],
+      "inactive_reasons": [],
       "key": "raid:svargrond.barbarianssvargrond1",
       "kind": "multi_variant",
       "name": "Barbarian Raid in On Svargrond",
@@ -42132,10 +42326,11 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [
         "Ghazbaran"
       ],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -42242,9 +42437,7 @@
           "key": "oteryn:raid.hrodmir_raids.ghazbaran_raid_in_the_formorgar_mines"
         }
       ],
-      "inactive_reasons": [
-        "global_timeline_conflict_unanchored_source_waves:oteryn:raid.hrodmir_raids.ghazbaran_raid_in_the_formorgar_mines"
-      ],
+      "inactive_reasons": [],
       "key": "raid:svargrond.ghazbaran",
       "kind": "boss",
       "name": "Ghazbaran Raid in the Formorgar Mines",
@@ -44007,8 +44200,9 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -44115,9 +44309,7 @@
           "key": "oteryn:raid.thais_raids.orc_raid_on_thais"
         }
       ],
-      "inactive_reasons": [
-        "global_broadcast_time_unit_unresolved:oteryn:raid.thais_raids.orc_raid_on_thais"
-      ],
+      "inactive_reasons": [],
       "key": "raid:thais.orcs",
       "kind": "area",
       "name": "Orc Raid on Thais",
@@ -47981,8 +48173,9 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -48096,9 +48289,7 @@
           "key": "oteryn:raid.kazordoon_raids.hunters_raid_north_of_green_claw_swamp"
         }
       ],
-      "inactive_reasons": [
-        "global_creatures_conflict:10_bears_15_hunters_vs_donor_15_hunters_only"
-      ],
+      "inactive_reasons": [],
       "key": "raid:venore.hunters",
       "kind": "area",
       "name": "Hunters Raid north of Green Claw Swamp",
@@ -48446,15 +48637,14 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
       },
-      "inactive_reasons": [
-        "creature_unbound:Orc Sam Backpack"
-      ],
+      "inactive_reasons": [],
       "key": "raid:venore.orcsambackpack",
       "kind": "area",
       "name": "venore.orcsambackpack",
@@ -48536,7 +48726,7 @@
                   "area_anchor": "raid-anchor:32964_31735_7-32981_31756_7",
                   "boss": false,
                   "boss_source": null,
-                  "creature": "oteryn:creature.orc_sam_backpack",
+                  "creature": "oteryn:creature.orc_sambackpack",
                   "source": {
                     "evidence": "OTS_HYPOTHESIS_ONLY",
                     "line": 4,
@@ -48666,8 +48856,9 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
+      "compatibility_decision": "Crystal 201189f XML membership, waves and timeline take precedence",
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
@@ -48756,15 +48947,16 @@
           "key": "oteryn:raid.venore_raids.giant_spider_raid_on_plains_of_havoc"
         }
       ],
-      "inactive_reasons": [
-        "global_broadcast_time_unit_unresolved:oteryn:raid.venore_raids.giant_spider_raid_on_plains_of_havoc",
-        "schedule_unknown"
-      ],
+      "inactive_reasons": [],
       "key": "raid:venore.the_old_widow",
       "kind": "boss",
       "name": "Giant Spider Raid on Plains of Havoc",
       "schedule": {
-        "kind": "unknown"
+        "interval_s": 86400,
+        "kind": "legacy_xml",
+        "margin_ms": 7200000,
+        "repeat": false,
+        "source_order": 159
       },
       "sources": [
         {
@@ -48774,6 +48966,22 @@
           "repository": "zimbadev/crystalserver",
           "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
           "sha256": "e2b55a4413b58a822239799aa0e45269c8ec19ac08c4440aa7c1ba2d0ccfd78f"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 5,
+          "path": "data-crystal/raids/raids.xml",
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "sha256": "9594936b8897993d6e01856bd99bfced5ba1c72fcaccc0dce044063a2fd0d6a3"
+        },
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 1,
+          "path": "data-crystal/raids/the_old_widow/widow.xml",
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "sha256": "df8758518238f723846427f49d493af340cd1d57a88ab6aa7743ee02df66e823"
         }
       ],
       "variant_group": null,
@@ -50637,15 +50845,15 @@
   "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
   "totals": {
     "area": {
-      "active": 34,
-      "total": 101
+      "active": 50,
+      "total": 100
     },
     "boss": {
-      "active": 71,
-      "total": 87
+      "active": 77,
+      "total": 88
     },
     "calendar": {
-      "active": 2,
+      "active": 4,
       "total": 6
     },
     "city": {
@@ -50653,7 +50861,7 @@
       "total": 16
     },
     "multi_variant": {
-      "active": 29,
+      "active": 30,
       "total": 30
     }
   }

@@ -1,5 +1,7 @@
 """Compose the reviewed Crystal 201189f Creature and schedule declarations."""
 
+from collections import Counter
+from copy import deepcopy
 import hashlib
 import json
 
@@ -31,10 +33,44 @@ def read_packet(root):
     return packet, hashlib.sha256(raw).hexdigest()
 
 
-def extend(index, row, field):
+def extend(index, row, field, loot_corrections):
+    from cake_native_successor import source_profile
+
     key = identity(row[field])
-    if index.setdefault(key, row) != row:
-        raise ValueError(f"conflicting Crystal parity declaration: {key}")
+    existing = index.setdefault(key, row)
+    if existing == row:
+        return
+    if key[0] == "Loot":
+        # The source correction names the same donor roll under its verified
+        # Item identity. Keep prior roll order and check the complete multiset.
+        corrected = deepcopy(existing)
+        for entry in corrected["entries"]:
+            item = entry["item"]
+            replacement = loot_corrections.get(item["key"])
+            if replacement is not None:
+                entry["item"] = replacement
+        items = lambda value: Counter(canonical_bytes(entry) for entry in value["entries"])
+        if (items(corrected) == items(row)
+                and {k: v for k, v in corrected.items() if k != "entries"}
+                == {k: v for k, v in row.items() if k != "entries"}):
+            index[key] = corrected
+            return
+    if field == "target" and key[0] == "Creature":
+        expected = source_profile(row)
+        for optional in ("abilities", "resistances"):
+            if expected["data"]["profile"].get(optional) == []:
+                del expected["data"]["profile"][optional]
+        if existing == expected:
+            return
+    raise ValueError(f"conflicting Crystal parity declaration: {key}")
+
+
+def prior_cohort_keys(root):
+    from crystal_spawn_creatures import KEYS
+    from cyclopedia_creatures import SOURCE as CYCLOPEDIA_SOURCE
+
+    cyclopedia = json.loads((root / CYCLOPEDIA_SOURCE).read_bytes())
+    return KEYS | {row["target"]["key"] for row in cyclopedia["bindings"]}
 
 
 def add_schedule(behavior, addition):
@@ -82,10 +118,12 @@ def install_documents(root, package_root):
     }
 
     for entry in [*packet["definitions"], *packet["schedules"]]:
+        corrections = {f"oteryn:item.tibia.i{fix['donor_id']}": fix["item"]
+                       for fix in entry.get("source_loot_identity_corrections", [])}
         for row in entry["records"]:
-            extend(records, row, "identity")
+            extend(records, row, "identity", corrections)
         for row in entry["profiles"]:
-            extend(profiles, row, "target")
+            extend(profiles, row, "target", {})
     for entry in packet["definitions"]:
         row = entry["binding"]
         key = (row["source_key"], row["source_revision"], row["identity_namespace"], row["external_id"])
@@ -136,10 +174,12 @@ def apply_native(root, generated):
     index = json.loads((root / "content/creatures/definitions/index.json").read_bytes())
     source_rows = {identity(row["identity"]): row for row in packet["definitions"]}
     expected = {key: row for key, row in source_rows.items() if key[1] not in ACTIVE_ENCOUNTER_KEYS}
+    prior = prior_cohort_keys(root)
+    additions = {key for key in expected if key[1] not in prior}
     rows = [
         row for path in index["shards"]
         for row in json.loads((root / path).read_bytes())["records"]
-        if identity(row["definition"]["identity"]) in expected
+        if identity(row["definition"]["identity"]) in additions
     ]
     declarations = json.loads((root / "content/world/definitions/declarations.json").read_bytes())
     explicit_reference_levels(declarations)
@@ -152,8 +192,8 @@ def apply_native(root, generated):
             "oteryn:creature.elderbloodjaw": "oteryn:creature.elder_bloodjaw",
         },
     )
-    if {identity(ref) for ref in appended} != set(expected):
-        missing = set(expected) - {identity(ref) for ref in appended}
+    if {identity(ref) for ref in appended} != additions:
+        missing = additions - {identity(ref) for ref in appended}
         raise ValueError(f"incomplete Crystal Creature admission: {sorted(missing)}")
     for record in creatures["records"]:
         entry = expected.get(identity(record["profile"]["target"]))

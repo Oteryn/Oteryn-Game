@@ -127,16 +127,17 @@ class NativeWorldCompletion(unittest.TestCase):
         canonical_outputs = []
 
         def canonical_writer(command):
-            if "--canonicalize-root" not in command:
+            if "--input-root" not in command:
                 return
             self.assertEqual(command[:8], [
-                "cargo", "run", "--locked", "-p", "oteryn-game-server", "--example",
-                "materialize_content_world_project_v2", "--",
+                "cargo", "run", "--locked", "-p", "oteryn-gameplay-content", "--bin",
+                "oteryn-world-project-canonicalize", "--",
             ])
-            source = Path(command[command.index("--canonicalize-root") + 1])
+            source = Path(command[command.index("--input-root") + 1])
             output = Path(command[command.index("--output-root") + 1])
             self.assertEqual(source, self.repo / "content/world")
             install_buddel.assert_called_once_with(self.repo, source)
+            install_parity.assert_called_once_with(self.repo, source)
             self.assertFalse(output.exists())
             # The real writer emits exactly the managed package, not the caller's
             # unmanaged sibling. Keep production's strict output-set assertion live.
@@ -156,6 +157,8 @@ class NativeWorldCompletion(unittest.TestCase):
                 patch.object(regenerate, "refresh_quest_callback_proof"), \
                 patch.object(regenerate, "materialize_world"), \
                 patch("buddel_travel.install_buddel") as install_buddel, \
+                patch("crystal_creature_parity.install_documents") as install_parity, \
+                patch.object(regenerate, "refresh_source_catalogue_limits"), \
                 patch.object(regenerate, "refresh_source_cohort_extent", side_effect=measured), \
                 patch.object(regenerate, "repin_rust_inventory") as repin, \
                 patch.object(canonical.subprocess, "run", side_effect=self.native_output):

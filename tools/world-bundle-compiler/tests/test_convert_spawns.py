@@ -5,6 +5,7 @@ import json
 import sys
 import tempfile
 import unittest
+from collections import Counter
 from pathlib import Path
 from unittest.mock import patch
 
@@ -30,6 +31,34 @@ class ConvertSpawnsTest(unittest.TestCase):
         self.assertEqual(sum(len(r["declaration"]["points"]) for r in self.records), 88478)
         self.assertEqual(self.index["record_count"], 55076)
         self.assertEqual(self.index["point_count"], 88478)
+
+    def test_crystal_revision_delta_accounts_for_every_exact_source_point(self):
+        capture = cs.crystal_capture()
+        delta = json.loads(self.files[cs.DELTA_SHARD])["records"]
+        unsupported = json.loads(self.files["unsupported-crystal-201189f8.json"])["records"]
+        self.assertEqual(len(delta), 386)
+        self.assertEqual(len(unsupported), 26)
+        def key(source, creature, cell, direction, ms):
+            return source, creature, cell["x"], cell["y"], cell["floor"], direction, ms
+        observed = Counter(
+            key(record["declaration"]["identity"]["key"], point["creature"], point["cell"],
+                point["direction"], point.get("respawn_ms") or point["boss_policy"]["respawn"]["min_s"] * 1000)
+            for record in delta for point in record["declaration"]["points"]
+        )
+        observed.update(
+            key(row["source"], row["point"]["creature"], row["point"]["cell"],
+                row["point"]["direction"], row["point"]["respawn_ms"]) for row in unsupported
+        )
+        expected = Counter(
+            key(f"oteryn:spawn.crystal_201189f8.g{group['group']:05d}",
+                "oteryn:creature." + cs.slug(point["name"]),
+                dict(zip(("x", "y", "floor"), point["cell"], strict=True)),
+                cs.DIRECTIONS[str(point["direction"])], point["respawn_s"] * 1000)
+            for group in capture["groups"] for point in group["points"]
+        )
+        self.assertEqual(observed, expected)
+        self.assertEqual(Counter(row["reason"] for row in unsupported),
+                         {"unsupported-source-behavior": 26})
 
     def test_provenance_is_crystalserver(self):
         self.assertEqual(self.index["source"]["source_key"], "oteryn:source.crystalserver")

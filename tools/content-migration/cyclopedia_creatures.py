@@ -10,6 +10,7 @@ from cake_native_successor import (
     source_profile,
 )
 from import_spell_families import canonical_bytes
+from crystal_spawn_creatures import KEYS as SPAWN_KEYS
 
 SOURCE = "imports/crystalserver/cyclopedia-creatures-201189f.json"
 
@@ -32,14 +33,15 @@ def apply(root, generated):
         raise ValueError("The canonical Cyclopedia Creature cohort is incomplete")
 
     declarations = read_project_document(root, "definitions/declarations.json")
+    additions = added_keys - SPAWN_KEYS
     active, presentations, appended = union_profiles(
         json.loads(generated[CREATURES]),
         json.loads(generated[PRESENTATIONS]),
-        [canonical[key] for key in sorted(added_keys)],
+        [canonical[key] for key in sorted(additions)],
         declarations["authoring_profiles"],
         preserve_existing_display_aliases=True,
     )
-    if {row["key"] for row in appended} != added_keys:
+    if {row["key"] for row in appended} != additions:
         raise ValueError("Crystal Cyclopedia Creature identity or display name conflict")
     profiles = {row["profile"]["target"]["key"]: row["profile"]["data"]["profile"]["details"]
                 for row in active["records"] if row["profile"]["target"]["key"] in keys}
@@ -78,9 +80,11 @@ def inventory(root, rows, native):
         behavior = profiles[record["behavior"]["key"]]
         if (canonical[key]["definition"] != record
                 or canonical[key]["authoring"] != profile["data"]
-                or canonical[key]["source_bindings"] != [bindings[key]]
+                or canonical[key]["source_bindings"].count(bindings[key]) != 1
                 or active[key]["profile"] != profile or active[key]["behavior"] != behavior):
             raise ValueError(f"Crystal Cyclopedia Creature inventory mismatch: {key}")
+        if key in SPAWN_KEYS:
+            continue
         actions = behavior["data"]["profile"]
         attacks = actions.get("attacks", [])
         schedules += len(attacks) + len(actions.get("defenses", []))
@@ -88,4 +92,4 @@ def inventory(root, rows, native):
             kind = profiles[attack["ability"]["key"]]["data"]["profile"]["details"]["kind"]
             melee += kind == "Melee"
             spells += kind == "Spell"
-    return len(bindings), schedules, melee, spells
+    return len(bindings.keys() - SPAWN_KEYS), schedules, melee, spells

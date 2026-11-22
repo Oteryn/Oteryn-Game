@@ -85,9 +85,7 @@ def admit(root, items, order):
                 if key in definitions:
                     raise ValueError(f'Duplicate portable container definition {key}')
                 definitions[key] = definition
-    collision = identities & {row['production_definition']['production_key'] for row in items['records']}
-    if collision:
-        raise ValueError(f'Portable containers already have a native owner: {sorted(collision)}')
+    existing = {row['production_definition']['production_key']: row for row in items['records']}
 
     records = []
     known = source.K
@@ -124,7 +122,23 @@ def admit(root, items, order):
     # Compose House facts into the base rows so SRX-1 only carries its own changes.
     house = json.loads((root / PROFILES).read_bytes())
     apply_top_order(bound['records'], house)
-    items['records'].extend(bound['records'])
+    for record in bound['records']:
+        key = record['production_definition']['production_key']
+        if key not in existing:
+            items['records'].append(record)
+            continue
+        # The parity packet also admits the feedbag as a Creature loot yield.
+        # Check every portable-container fact and retain its extra loot metadata.
+        prior = existing[key]
+        policy_fields = ('container', 'physical', 'stack', 'temporal')
+        if (key != 'oteryn:item.tibia.i21292'
+                or any(prior[field] != record[field] for field in
+                       ('admission', 'production_binding', 'production_definition'))
+                or any(prior['semantics'][field] != record['semantics'][field] for field in policy_fields)
+                or any(prior['attributes'].get(field, value) != value
+                       for field, value in record['attributes'].items())):
+            raise ValueError(f'Conflicting portable container native policy: {key}')
+        prior['attributes'].update(record['attributes'])
     items['records'].sort(key=order)
 
 

@@ -9,6 +9,7 @@ import cake_native_successor as cake
 import crystal_creature_parity as crystal
 from cyclopedia_creatures import inventory as cyclopedia_inventory
 import raid_catalogue
+from crystal_spawn_creatures import KEYS as CRYSTAL_SPAWN_KEYS
 from world_project_v2_to_tree import CREATURE_FAMILIES, git_blob_sha
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -73,9 +74,10 @@ def validate_inventory(root, rows, native, schedules):
     _, nrwicked_schedules = nrwicked_inventory(root, native)
     extra_schedules += nrwicked_schedules
     additions, added_schedules, _, _ = cyclopedia_inventory(root, rows, native)
-    from crystal_spawn_creatures import PACKET as DELTA_PACKET, stage as stage_delta
-    delta = stage_delta(root, json.loads((root / DELTA_PACKET).read_bytes()))
-    crystal_keys = {key for family, key in delta.records if family == 'Creature'}
+    from crystal_spawn_creatures import qualify
+    reference = cake.read_project_document(root, 'definitions/reference.json')
+    _, _, _, delta = qualify(root, reference['records'])
+    crystal_keys = CRYSTAL_SPAWN_KEYS
     crystal_rows = {row['definition']['identity']['key']: row for row in rows
                     if row['definition']['identity']['key'] in crystal_keys}
     crystal_native = {row['profile']['target']['key']: row for row in native
@@ -92,31 +94,46 @@ def validate_inventory(root, rows, native, schedules):
                 del authoring['profile'][field]
         authoring['profile']['details'].setdefault('reference_level', None)
         behavior = delta.profiles['Behavior', definition['behavior']['key']]
-        packet, _ = crystal.read_packet(root)
+        if (crystal_rows[creature]['definition'] != definition
+                or crystal_rows[creature]['authoring'] != authoring
+                or crystal_native[creature]['profile']['data'] != authoring
+                or crystal_native[creature]['behavior'] != behavior):
+            raise ValueError('Crystal placement Creature inventory changed: ' + creature)
+        schedule = behavior['data']['profile']
+        crystal_schedules += sum(len(schedule.get(key, [])) for key in ('attacks', 'defenses'))
+        for attack in schedule.get('attacks', []):
+            ability = delta.profiles['Ability', attack['ability']['key']]
+            crystal_attacks[ability['data']['profile']['details']['kind']] += 1
+    if crystal_schedules != 10:
+        raise ValueError('Crystal spawn schedule inventory')
+    packet, _ = crystal.read_packet(root)
     canonical = {crystal.identity(row['definition']['identity']): row for row in rows}
     active = {crystal.identity(row['profile']['target']): row for row in native}
-    parity_schedules = 0
+    prior = crystal.prior_cohort_keys(root)
+    parity_schedules = parity_creatures = 0
     for entry in packet['definitions']:
         key = crystal.identity(entry['identity'])
         definition = next(row for row in entry['records'] if row['identity'] == entry['identity'])
         authored = next(row for row in entry['profiles'] if row['target'] == definition['behavior'])
         if (key not in active or key not in canonical
                 or canonical[key]['definition'] != definition
-                or canonical[key]['source_bindings'] != [entry['binding']]):
+                or canonical[key]['source_bindings'].count(entry['binding']) != 1):
             raise ValueError(f'Crystal Creature inventory mismatch: {key}')
+        parity_creatures += key[1] not in prior
         if key[1] in crystal.ACTIVE_ENCOUNTER_KEYS:
             continue
         if active[key]['behavior'] != authored:
             raise ValueError(f'Crystal Creature Behavior inventory mismatch: {key}')
-        parity_schedules += sum(len(authored['data']['profile'].get(group, []))
-                         for group in ('attacks', 'defenses'))
+        if key[1] not in prior:
+            parity_schedules += sum(len(authored['data']['profile'].get(group, []))
+                                    for group in ('attacks', 'defenses'))
     for entry in packet['schedules']:
         key = crystal.identity(entry['creature'])
         behavior = active[key]['behavior']['data']['profile']
         if behavior.get(entry['group'], []).count(entry['schedule']) != 1:
             raise ValueError(f'Crystal schedule inventory mismatch: {key}')
         parity_schedules += 1
-    if (len(rows) - 1 - additions - len(crystal_keys) != 1863 + 1 + len(packet['definitions'])
+    if (len(rows) - 1 - additions - len(crystal_keys) != 1863 + 1 + parity_creatures
             or len(native) != len(rows) + extra_native
             or schedules - 1 - added_schedules - crystal_schedules != 7201 + 4 + extra_schedules + parity_schedules):
         raise ValueError('Non-seasonal canonical inventory changed; review its source first')
@@ -179,7 +196,10 @@ def generated(root):
     counts = Counter()
     abilities = {crystal.identity(row['target']): row['data']['profile'].get('details')
                  for row in declarations['authoring_profiles'] if row['target']['family'] == 'Ability'}
+    prior = crystal.prior_cohort_keys(root)
     for entry in parity['definitions']:
+        if entry['identity']['key'] in prior:
+            continue
         body = next(row['data']['profile'] for row in entry['profiles']
                     if row['target']['family'] == 'Behavior')
         for attack in body.get('attacks', []):
@@ -229,9 +249,9 @@ def generated(root):
         raise ValueError('Regenerate the source-qualified raid index first')
     raids = json.loads(outputs[raid_catalogue.CATALOGUE])['records']
     active = sum(row['active'] for row in raids)
-    gorga, = [row for row in raids if row['key'] == 'raid:porthope.gorga']
-    # Crystal 201189f8 port_hope/gorga.xml:4 gains its exact Creature binding.
-    if not gorga['active'] or len(raids) != 239 + 1 or active != 136 + 1 + 1:
+    additions = raid_catalogue.CRYSTAL_XML_PARITY | raid_catalogue.HALLOWEEN.keys()
+    activated = {row['key'] for row in raids if row['active']}
+    if len(raids) != 239 + 1 or not additions <= activated or active - len(additions) != 136 + 1:
         raise ValueError('Non-seasonal raid inventory changed; review its source first')
     path = 'crates/gameplay/encounter-rules/src/raid/catalogue.rs'
     replace(path, r'assert_eq!\(catalogue.records\(\).len\(\), [0-9_]+\);',

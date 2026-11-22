@@ -31,13 +31,13 @@ const SHARDS: [(&str, &[u8]); 4] = [
         ),
     ),
     (
-        "content/creatures/definitions/creatures-01500-01870.json",
+        "content/creatures/definitions/creatures-01500-01892.json",
         include_bytes!(
-            "../../../../../../content/creatures/definitions/creatures-01500-01870.json"
+            "../../../../../../content/creatures/definitions/creatures-01500-01892.json"
         ),
     ),
 ];
-const CREATURE_COUNT: usize = 1_871;
+const CREATURE_COUNT: usize = 1_893;
 const BESTIARY_COUNT: usize = 824;
 
 #[derive(Deserialize)]
@@ -417,8 +417,8 @@ mod tests {
         let classes: std::collections::BTreeSet<_> =
             catalogue.bestiary.iter().map(|(_, class)| class).collect();
         assert_eq!(classes.len(), 21);
-        assert_eq!(catalogue.bosstiary.len(), 303);
-        for (category, expected) in [("bane", 73), ("archfoe", 129), ("nemesis", 101)] {
+        assert_eq!(catalogue.bosstiary.len(), 306);
+        for (category, expected) in [("bane", 73), ("archfoe", 132), ("nemesis", 101)] {
             assert_eq!(
                 catalogue
                     .bosstiary
@@ -599,7 +599,7 @@ mod tests {
                 .iter()
                 .all(|(_, bytes)| bytes.len() <= limits().max_document_bytes)
         );
-        assert_eq!(limits().max_reference_records, 1_871);
+        assert_eq!(limits().max_reference_records, 1_893);
     }
 
     #[test]

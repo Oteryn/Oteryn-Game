@@ -22,7 +22,7 @@ class SeasonalInventory(unittest.TestCase):
     def test_exact_merged_cohort_qualifies_thaian_and_crystal_attacks(self):
         self.assertEqual(inventory.validate_inventory(
             self.root, self.rows, self.native, self.schedules),
-            (1, {'Melee': 1, 'Spell': 4}))
+            (1, {'Melee': 2, 'Spell': 6}))
 
     def thaian_rows(self):
         rows = list(self.rows)
@@ -42,7 +42,7 @@ class SeasonalInventory(unittest.TestCase):
         before = copy.deepcopy(thaian)
         self.assertEqual(inventory.validate_inventory(
             self.root, rows, self.native, self.schedules),
-            (1, {'Melee': 1, 'Spell': 4}))
+            (1, {'Melee': 2, 'Spell': 6}))
         self.assertEqual(thaian, before)
 
     def test_explicit_empty_immunities_qualifies_same_source(self):
@@ -50,7 +50,7 @@ class SeasonalInventory(unittest.TestCase):
         thaian['authoring']['profile']['immunities'] = []
         self.assertEqual(inventory.validate_inventory(
             self.root, rows, self.native, self.schedules),
-            (1, {'Melee': 1, 'Spell': 4}))
+            (1, {'Melee': 2, 'Spell': 6}))
 
     def test_canonical_immunities_fact_changes_remain_rejected(self):
         for immunities in (['physical'], None):
@@ -136,7 +136,7 @@ class SeasonalInventory(unittest.TestCase):
         native_before = copy.deepcopy(native)
         self.assertEqual(inventory.validate_inventory(
             self.root, rows, self.native, self.schedules),
-            (1, {'Melee': 1, 'Spell': 4}))
+            (1, {'Melee': 2, 'Spell': 6}))
         self.assertEqual(rows[index], before)
         self.assertEqual(native, native_before)
         self.assertEqual(native['profile']['data']['profile']['immunities'], [])

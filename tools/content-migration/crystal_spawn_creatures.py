@@ -1,4 +1,4 @@
-"""Stage and serve the exact Creature definitions needed by the Crystal placement delta."""
+"""Stage the closed Crystal 201189f Creature bodies used by spawn and raid admission."""
 
 import hashlib
 import json
@@ -7,35 +7,97 @@ import sys
 from pathlib import Path
 
 from creature_admission_stage import Mapper, Stage
-from questpc7_world_seal import refresh
+from import_spell_families import canonical_bytes
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools/content-schema/monster-authoring"))
+from validate_monster import validate
+
+PATH = "imports/crystalserver/spawn-delta-creatures-201189f.json"
+PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
+REVISION = "crystal-raid-spawn-creatures:" + PIN
+DELTA_REVISION = "crystal-spawn-creatures:" + PIN
 PACKET = "imports/crystalserver/spawn-delta-creatures-201189f8.json"
-BATCH = "crystal-spawn-delta-creatures-201189f8-r1"
-REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
-SOURCE_REVISION = f"crystal-spawn-creatures:{REVISION}"
-CREATURES = "content/creatures/definitions/spell-native-profiles.json"
-PRESENTATIONS = "content/presentations/definitions/spell-native-profiles.json"
+DELTA_BATCH = "crystal-spawn-delta-creatures-201189f8-r1"
+BATCH = "crystal-spawn-creatures-201189f-r1"
+NAMES = frozenset(
+    {
+        "common_beetle",
+        "cublarc_the_plunderer",
+        "gorga",
+        "grove_guardian",
+        "herd_weevil",
+        "rootthing_cocoon",
+    }
+)
+KEYS = frozenset("oteryn:creature." + name for name in NAMES)
 
 
-def encode(document):
-    return (
-        json.dumps(document, ensure_ascii=False, separators=(",", ":")) + "\n"
-    ).encode()
+def stage(root, reference, payload):
+    if (payload["schema"], payload["revision"]) != (
+        "OTERYN_CRYSTAL_SPAWN_DELTA_CREATURES/v1",
+        PIN,
+    ):
+        raise ValueError("Crystal spawn Creature capture revision")
+    items = {
+        row["identity"]["key"]
+        for row in reference
+        if row["identity"]["family"] == "Item"
+    }
+    bindings = json.loads(
+        (root / "imports/crystalserver/bindings/items.json").read_bytes()
+    )
+    item_map = {
+        int(row["external_id"]): row["target"]["key"]
+        for row in bindings["bindings"]
+        if row["disposition"] == "EXACT"
+        and row["external_id"].isdigit()
+        and row["target"]["family"] == "Item"
+        and row["target"]["key"] in items
+    }
+    cohort = Stage(Mapper(item_map))
+    for row in payload["bundles"]:
+        monster, dependencies, catalog, manifest = (
+            row[field] for field in ("monster", "dependencies", "catalog", "manifest")
+        )
+        if manifest["sources"][0] != {
+            "repository": "zimbadev/crystalserver",
+            "revision": PIN,
+        }:
+            raise ValueError("Crystal spawn Creature donor identity")
+        errors = validate(monster, dependencies, catalog, manifest)
+        if errors:
+            raise ValueError(
+                "Crystal spawn Creature source is open: " + "; ".join(errors)
+            )
+        file = row["source"]["file"]
+        cohort.stage_dependencies(dependencies, file)
+        cohort.stage_monster(
+            monster,
+            file,
+            {
+                "source_key": "oteryn:source.crystalserver",
+                "source_revision": REVISION,
+                "identity_namespace": "crystalserver/monster-file",
+                "external_id": file,
+            },
+        )
+    if (
+        len(cohort.bindings) != len(KEYS)
+        or {row["target"]["key"] for row in cohort.bindings} != KEYS
+    ):
+        raise ValueError("Crystal spawn Creature membership")
+    return cohort
 
 
-def read(root, path):
-    return json.loads((root / path).read_bytes())
-
-
-def stage(root, packet):
+def stage_delta(root, packet):
     if (
         packet["schema"] != "OTERYN_CRYSTAL_SPAWN_CREATURES/v1"
         or packet["repository"] != "zimbadev/crystalserver"
-        or packet["revision"] != REVISION
+        or packet["revision"] != PIN
     ):
         raise ValueError("Crystal spawn Creature source identity")
-    bindings = read(root, "imports/crystalserver/bindings/items.json")["bindings"]
+    bindings = json.loads((root / "imports/crystalserver/bindings/items.json").read_bytes())["bindings"]
     items = {
         int(row["external_id"]): row["target"]["key"]
         for row in bindings
@@ -50,7 +112,7 @@ def stage(root, packet):
             path,
             {
                 "source_key": "oteryn:source.crystalserver",
-                "source_revision": SOURCE_REVISION,
+                "source_revision": DELTA_REVISION,
                 "identity_namespace": "crystalserver/monster-file",
                 "external_id": path,
             },
@@ -58,158 +120,161 @@ def stage(root, packet):
     return result
 
 
+def qualify(root, reference):
+    delta_raw = (root / PACKET).read_bytes()
+    raid_raw = (root / PATH).read_bytes()
+    delta = stage_delta(root, json.loads(delta_raw))
+    raid = stage(root, reference, json.loads(raid_raw))
+    for section in ("records", "profiles"):
+        incoming, resolved = getattr(delta, section), getattr(raid, section)
+        if any(resolved.get(key) != row for key, row in incoming.items()):
+            raise ValueError(f"Crystal spawn sources disagree on {section}")
+    return delta_raw, delta, raid_raw, raid
+
+
 def install(root, world):
-    raw = (root / PACKET).read_bytes()
-    packet = json.loads(raw)
-    staged = stage(root, packet)
-    digest = hashlib.sha256(raw).hexdigest()
-    repository = packet["repository"]
-    reference_path = "definitions/reference.json"
-    declarations_path = "definitions/declarations.json"
-    sources_path = "provenance/sources.json"
-    imports_path = "provenance/imports.json"
-    reference, declarations, sources, imports = (
-        read(world, path)
-        for path in (reference_path, declarations_path, sources_path, imports_path)
-    )
-    # The native writer expects typed family order for authoring profiles and wire
-    # family order for reference records, as in the existing Creature stage.
-    families = (root / "crates/gameplay/content/src/content/project/v2.rs").read_text()
-    family_order = {
-        {"Npc": "NPC", "ItemConversion": "item_conversion"}.get(name, name): ordinal
-        for ordinal, name in enumerate(
-            re.findall(
-                r"^    ([A-Za-z]+),$",
-                families.split("pub enum ProjectV2Family {", 1)[1].split("\n}", 1)[0],
-                re.M,
-            )
-        )
-    }
+    from cake_native_successor import source_profile
 
-    def add_exact(rows, authored, field, family_key):
-        by_id = {
-            (row[field]["family"], row[field]["key"], row[field]["revision"]): row
-            for row in rows
-        }
-        for row in authored:
-            ref = row[field]
-            identity = (ref["family"], ref["key"], ref["revision"])
-            if identity in by_id and by_id[identity] != row:
+    locators = (
+        "definitions/reference.json",
+        "definitions/declarations.json",
+        "provenance/sources.json",
+        "provenance/imports.json",
+    )
+    docs = [json.loads((world / locator).read_bytes()) for locator in locators]
+    reference, declarations, sources, imports = docs
+    delta_raw, delta, raid_raw, cohort = qualify(root, reference["records"])
+    for rows, incoming, field in (
+        (reference["records"], cohort.records.values(), "identity"),
+        (declarations["authoring_profiles"], cohort.profiles.values(), "target"),
+    ):
+        occupied = {identity(row[field]): row for row in rows}
+        for row in incoming:
+            previous = occupied.get(identity(row[field]))
+            if previous is None:
+                rows.append(row)
+            elif previous != (source_profile(row) if field == "target" else row):
                 raise ValueError(
-                    f"Crystal spawn Creature identity collision: {identity}"
+                    f"Crystal spawn Creature definition conflict: {row[field]}"
                 )
-            by_id[identity] = row
-        return sorted(
-            by_id.values(),
-            key=lambda row: (
-                family_key(row[field]["family"]),
-                row[field]["key"],
-                row[field]["revision"],
-            ),
-        )
-
-    reference["records"] = add_exact(
-        reference["records"], staged.records.values(), "identity", str
-    )
-    declarations["authoring_profiles"] = add_exact(
-        declarations["authoring_profiles"],
-        staged.profiles.values(),
-        "target",
-        family_order.__getitem__,
-    )
-    sources["source_identity_bindings"] = sorted(
-        [
+    for raw, staged, batch, revision in (
+        (delta_raw, delta, DELTA_BATCH, DELTA_REVISION),
+        (raid_raw, cohort, BATCH, REVISION),
+    ):
+        payload = json.loads(raw)
+        digest = hashlib.sha256(raw).hexdigest()
+        sources["source_identity_bindings"] = [
             row
             for row in sources["source_identity_bindings"]
-            if row["source_revision"] != SOURCE_REVISION
+            if row["source_revision"] != revision
+        ] + staged.bindings
+        sources["sources"] = [
+            row for row in sources["sources"] if row["import_batch_id"] != batch
+        ] + [
+            {
+                "key": "oteryn:source.crystalserver",
+                "import_batch_id": batch,
+                "revision": revision,
+                "sha256": digest,
+                "evidence": "OtsHypothesisOnly",
+            }
         ]
-        + staged.bindings,
+        imports["batches"] = [
+            row for row in imports["batches"] if row["batch_id"] != batch
+        ] + [
+            {
+                "batch_id": batch,
+                "source_repository": "zimbadev/crystalserver",
+                "source_revision": revision,
+                "source_artifact_sha256": digest,
+                "access_disposition": "PENDING",
+                "source_generation_profile": payload["schema"],
+                "importer": payload["schema"],
+                "mapper": "creature_admission_stage.py",
+                "mapper_revision": PIN,
+                "mapper_sha256": hashlib.sha256(
+                    (
+                        root / "tools/content-migration/creature_admission_stage.py"
+                    ).read_bytes()
+                ).hexdigest(),
+                "candidates": [],
+                "reimport_states": [],
+            }
+        ]
+    vocabulary = (
+        root / "crates/gameplay/content/src/content/project/v2.rs"
+    ).read_text()
+    families = vocabulary.split("pub enum ProjectV2Family {", 1)[1].split("\n}", 1)[0]
+    order = {
+        {"Npc": "NPC", "ItemConversion": "item_conversion"}.get(name, name): index
+        for index, name in enumerate(
+            re.findall(r"^    ([A-Za-z]+),$", families, re.MULTILINE)
+        )
+    }
+    reference["records"].sort(key=lambda row: identity(row["identity"]))
+    declarations["authoring_profiles"].sort(
+        key=lambda row: (
+            order[row["target"]["family"]],
+            row["target"]["key"],
+            row["target"]["revision"],
+        )
+    )
+    sources["sources"].sort(key=lambda row: (row["key"], row["revision"]))
+    sources["source_identity_bindings"].sort(
         key=lambda row: tuple(
-            row[key]
-            for key in (
+            row[field]
+            for field in (
                 "source_key",
                 "source_revision",
                 "identity_namespace",
                 "external_id",
             )
-        ),
+        )
     )
-    sources["sources"] = sorted(
-        [row for row in sources["sources"] if row["import_batch_id"] != BATCH]
-        + [
-            {
-                "key": "oteryn:source.crystalserver",
-                "import_batch_id": BATCH,
-                "revision": SOURCE_REVISION,
-                "sha256": digest,
-                "evidence": "OtsHypothesisOnly",
-            }
-        ],
-        key=lambda row: (row["key"], row["revision"]),
-    )
-    imports["batches"] = sorted(
-        [row for row in imports["batches"] if row["batch_id"] != BATCH]
-        + [
-            {
-                "batch_id": BATCH,
-                "source_repository": repository,
-                "source_revision": SOURCE_REVISION,
-                "source_artifact_sha256": digest,
-                "access_disposition": "PENDING",
-                "source_generation_profile": packet["schema"],
-                "importer": packet["schema"],
-                "mapper": "creature_admission_stage.py",
-                "mapper_revision": REVISION,
-                "mapper_sha256": hashlib.sha256(
-                    Path(__file__).with_name("creature_admission_stage.py").read_bytes()
-                ).hexdigest(),
-                "candidates": [],
-                "reimport_states": [],
-            }
-        ],
-        key=lambda row: row["batch_id"],
-    )
-    for path, document in [
-        (reference_path, reference),
-        (declarations_path, declarations),
-        (sources_path, sources),
-        (imports_path, imports),
-    ]:
-        (world / path).write_bytes(encode(document))
+    imports["batches"].sort(key=lambda row: row["batch_id"])
+    for locator, document in zip(locators, docs, strict=True):
+        (world / locator).write_bytes(canonical_bytes(document))
+    from questpc7_world_seal import refresh
     refresh(root, world)
 
 
-def admit(root, generated):
-    sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
-    from build_canonical_monster_profiles import union_profiles
+def identity(row):
+    return row["family"], row["key"], row["revision"]
 
-    staged = stage(root, read(root, PACKET))
-    keys = {key for family, key in staged.records if family == "Creature"}
-    rows = [
-        row
-        for path in sorted(
-            (root / "content/creatures/definitions").glob("creatures-*.json")
-        )
-        for row in json.loads(path.read_bytes())["records"]
-        if row["definition"]["identity"]["key"] in keys
-    ]
-    declarations = read(root, "content/world/definitions/declarations.json")[
+
+def admit(root, generated):
+    from cake_native_successor import (
+        CREATURES,
+        PRESENTATIONS,
+        read_project_document,
+        union_profiles,
+    )
+
+    declarations = read_project_document(root, "definitions/declarations.json")[
         "authoring_profiles"
     ]
-    creatures, presentations, appended = union_profiles(
+    profiles = {identity(row["target"]): row["data"] for row in declarations}
+    reference = read_project_document(root, "definitions/reference.json")
+    rows = [
+        {"definition": row, "authoring": profiles[identity(row["identity"])]}
+        for row in reference["records"]
+        if row["identity"]["key"] in KEYS
+    ]
+    native, presentations, appended = union_profiles(
         json.loads(generated[CREATURES]),
         json.loads(generated[PRESENTATIONS]),
         rows,
         declarations,
         preserve_existing_display_aliases=True,
     )
-    if {row["key"] for row in appended} != keys:
-        raise ValueError("Crystal spawn Creature cohort is incomplete")
-    generated[CREATURES] = encode(creatures)
-    generated[PRESENTATIONS] = encode(presentations)
-    manifest_path = "content/spells.manifest.json"
-    manifest = json.loads(generated[manifest_path])
+    if len(appended) != len(KEYS) or {row["key"] for row in appended} != KEYS:
+        raise ValueError("Crystal spawn Creature native membership")
+    generated[CREATURES] = canonical_bytes(native)
+    generated[PRESENTATIONS] = canonical_bytes(presentations)
+    path = "content/spells.manifest.json"
+    manifest = json.loads(generated[path])
     manifest["presentation_profiles"]["sha256"] = hashlib.sha256(
         generated[PRESENTATIONS]
     ).hexdigest()
-    generated[manifest_path] = encode(manifest)
+    generated[path] = canonical_bytes(manifest)
+    return generated

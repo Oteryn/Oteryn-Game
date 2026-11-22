@@ -483,6 +483,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     mining_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import imbuement_item_profiles
     imbuement_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import crystal_raid_items
+    crystal_raid_items.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+                             NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import item_transform_profiles
     item_transform_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import reward_bag_profiles
@@ -701,11 +704,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     imbuement_item_profiles.complete_boots(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
-    crystal_creature_parity.apply_native(root, generated)
-    import crystal_spawn_creatures
-    crystal_spawn_creatures.admit(root, generated)
     import cyclopedia_creatures
     cyclopedia_creatures.apply(root, generated)
+    crystal_creature_parity.apply_native(root, generated)
     from bind_monster_source_definitions import bind_definitions
     generated = bind_definitions(root, generated)
     presentation_path = spell_import.PROVIDER_DESTINATIONS["presentation_profiles"]
