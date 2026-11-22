@@ -55,22 +55,22 @@ fn resolve_targets(
     mut request: QuickLootRequest,
 ) -> Option<QuickLootRequest> {
     if let Some(handle) = request.corpse {
-        let corpse = match view?.resolve(decode_target_handle(handle)?)? {
-            ItemKey::Entity(identity) => runtime.bound_corpse(identity),
-            // Bundle map tiles publish the same corpse as its Ground item key.
-            ItemKey::Instance(instance) => runtime
-                .visible_corpses()
-                .into_iter()
-                .find(|corpse| corpse.item.item_instance_id == instance),
-            _ => None,
-        }?;
-        if corpse.position.floor != position.floor
-            || corpse.position.x.abs_diff(position.x) > 1
-            || corpse.position.y.abs_diff(position.y) > 1
-        {
-            return None;
-        }
-        request.corpse = Some(corpse.item.item_instance_id);
+        request.corpse = Some(match view?.resolve(decode_target_handle(handle)?)? {
+            ItemKey::Entity(identity) => {
+                let corpse = runtime.bound_corpse(identity)?;
+                if corpse.position.floor != position.floor
+                    || corpse.position.x.abs_diff(position.x) > 1
+                    || corpse.position.y.abs_diff(position.y) > 1
+                {
+                    return None;
+                }
+                corpse.item.item_instance_id
+            }
+            // A Ground corpse can outlive its runtime projection. The durable owner
+            // checks current Ground custody, reach and loot rights for this instance.
+            ItemKey::Instance(instance) => instance,
+            _ => return None,
+        });
     }
     if let Some(handle) = request.recipient_id {
         let ItemKey::Instance(instance) = view?.resolve(decode_target_handle(handle)?)? else {
@@ -169,5 +169,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(result) => Some((CommandStatus::Accepted, result)),
             Err(_) => rejected(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::gameplay_transport::actor_spell::tests::runtime_with_player;
+    use crate::gameplay_transport::item_view::{ItemViewContinuity, ItemViewError};
+    use oteryn_protocol_oteryn::quick_loot::{QuickLootAction, encode_target_handle};
+
+    #[test]
+    fn quick_loot_resolves_a_ground_handle_after_corpse_projection_eviction()
+    -> Result<(), ItemViewError> {
+        let (runtime, _, _) = runtime_with_player(1);
+        assert!(runtime.visible_corpses().is_empty());
+        let position = MovementLocalPosition { x: 1, y: 2, floor: 7 };
+        let corpse = [7; 16];
+        let key = ItemKey::Instance(corpse);
+        let mut view = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+        let handle = view.map_view(&[key], |handles| Ok(handles.handle(&key)))?;
+        let request = QuickLootRequest {
+            action: QuickLootAction::Click,
+            corpse: handle.map(encode_target_handle),
+            category: None,
+            recipient: None,
+            recipient_id: None,
+            fallback_to_main: false,
+            filter_mode: None,
+            filter_definition_ref: None,
+        };
+
+        assert_eq!(
+            resolve_targets(&runtime, position, Some(&view), request).and_then(|r| r.corpse),
+            Some(corpse),
+        );
+        view.map_view(&[], |_| Ok(()))?;
+        assert_eq!(resolve_targets(&runtime, position, Some(&view), request), None);
+        Ok(())
     }
 }

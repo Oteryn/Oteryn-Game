@@ -26,10 +26,22 @@ fn quick_loot_refuses_stale_handles_without_durable_writes() -> TestResult {
     })
 }
 
+#[test]
+fn quick_loot_postgres_clicks_a_ground_corpse_without_a_runtime_projection() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    let _ = admin;
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run("quick-loot-ground", || {
+        scenario_with_pouch(false, Some(FenceCase::GroundOnly))
+    })
+}
+
 #[derive(Clone, Copy)]
 pub(super) enum FenceCase {
     Visible,
     Stale,
+    GroundOnly,
 }
 
 impl FenceCase {
@@ -109,6 +121,39 @@ impl FenceCase {
                         6
                     ]
                 );
+            }
+            Self::GroundOnly => {
+                use crate::gameplay_transport::item_view::{
+                    ItemKey, ItemViewContinuity, SessionItemView,
+                };
+
+                {
+                    let mut runtime = owner.runtime.lock().await;
+                    runtime.retain_live_corpse_items(&[]).map_err(debug)?;
+                    assert!(runtime.visible_corpses().is_empty());
+                }
+                let ground = ItemKey::Instance(corpse_id);
+                let mut view =
+                    SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+                let handle = view
+                    .map_view(&[ground], |handles| Ok(handles.handle(&ground)))
+                    .map_err(debug)?
+                    .ok_or("shown Ground corpse")?;
+                let (status, result) = owner
+                    .quick_loot(
+                        *admitted,
+                        admitted.continuity.next_command_id,
+                        click(encode_target_handle(handle)),
+                        Some(&view),
+                    )
+                    .await
+                    .ok_or("Quick Loot outcome")?;
+                assert_eq!(status, CommandStatus::Accepted);
+                assert_eq!(result.items.len(), items.len());
+                assert!(result.items.iter().all(|item| item.accepted));
+                let remaining: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
+                    .bind(corpse_id.as_slice()).fetch_one(pool).await?;
+                assert_eq!(remaining, 0);
             }
         }
         Ok(())
