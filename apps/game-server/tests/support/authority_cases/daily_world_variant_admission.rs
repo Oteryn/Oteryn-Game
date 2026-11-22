@@ -38,6 +38,10 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             .execute(&h.pool)
             .await?;
         let epoch = u64::try_from(epoch)?;
+        let mut reset = h.pool.begin().await?;
+        crate::durability::world_event::changes::finalize_reset_for_test(&mut reset, world, epoch)
+            .await?;
+        reset.commit().await?;
         let day = h.root.world_changes(world, epoch).await?.ok_or("current day")?;
         assert!(h.root.world_change_active(world, "spirit_grounds").await?);
         assert_eq!(h.root.world_changes(world, epoch).await?, Some(day));

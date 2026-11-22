@@ -445,6 +445,7 @@ pub(super) async fn prepare_channel(
 fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldChanges {
     oteryn_gameplay_world_change::daily::DailyWorldChanges {
         reset_epoch: 0,
+        variants: Default::default(),
         fury_gates: None,
         fury_exit: "fury_gates/abdendriel",
         nightmare_isles: "nightmare_isle/ankrahmun-north",

@@ -288,6 +288,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         request.station = Some(station);
+        use oteryn_gameplay_items::fishing::{
+            DESERT_FISHING_RECOVERY_MS, DESERT_FISHING_SPENT, DESERT_FISHING_WATER,
+        };
         let mut catch_roll = 1;
         let mut fishing_skill = 10;
         // Fishing is the same durable consume/mint owner as cooking, but keeps the rod and
@@ -310,6 +313,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let water_key = &request.station.as_ref()?.production_key;
             let target_id = item_id(water_key)?;
             let target_pos = map_target.3;
+            if target_id == DESERT_FISHING_WATER
+                && !self
+                    .bundle_map()
+                    .is_some_and(|map| map.overlay.base().layer_epoch() == Some(self.reset_epoch))
+            {
+                return disposition(UseDisposition::NothingToUse);
+            }
             let mechanical_sewer = oteryn_gameplay_items::fishing::is_yalahar_sewer_water(
                 target_id,
                 target_pos.x,
@@ -481,6 +491,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // the open 7236 made by a pick has no duration/decayTo.
                     decay: if attempt.after == Some(7237) {
                         vec![(7200, 900_000)]
+                    } else if attempt.after == Some(DESERT_FISHING_SPENT) {
+                        vec![(
+                            u32::from(DESERT_FISHING_WATER),
+                            i64::from(DESERT_FISHING_RECOVERY_MS),
+                        )]
                     } else if tool_id == 9306 && attempt.after == Some(4609) {
                         // Crystal items.xml:13998-14005: spent sewer water recovers in 20 min.
                         vec![(4597, 1_200_000)]

@@ -50,6 +50,7 @@ fn map_changes(world: WorldId, changes: &DailyWorldChanges) -> crate::map::daily
         grimvale_full_moon: changes.grimvale_full_moon,
         items: changes.items().collect(),
         trader: changes.oriental_trader.map(|town| town.layer()),
+        variants: changes.variants,
     }
 }
 
@@ -102,7 +103,15 @@ pub(super) fn apply(
     .into_iter()
     .filter(|(kind, _, _)| changes.world_counters && counter_admitted(*kind))
     .map(|(_, key, at)| (key, at));
-    for (key, (x, y, z)) in changes.npcs().chain(trader).chain(shared_npcs) {
+    let variant_npcs = map
+        .into_iter()
+        .flat_map(crate::map::boot::BundleWorld::daily_variant_npcs);
+    for (key, (x, y, z)) in changes
+        .npcs()
+        .chain(trader)
+        .chain(shared_npcs)
+        .chain(variant_npcs)
+    {
         if !npc_boot.is_some_and(|boot| boot.admits(key)) {
             continue;
         }
@@ -120,6 +129,62 @@ pub(super) fn apply(
         }
     }
     placed
+}
+
+/// Append admitted cohorts to the ordinary paced spawn activation.
+pub(super) fn append_variant_spawns<'a>(
+    runtime: &ChannelRuntimeV1,
+    world: &'a crate::map::boot::BundleWorld,
+    sources: &mut Vec<crate::map::boot::BundleSpawnFacts>,
+) -> Result<VariantSpawnBindings<'a>, crate::foundation::CarrierError> {
+    use crate::foundation::CarrierError;
+    let mut bindings = VariantSpawnBindings::default();
+    for (key, cohort) in world.daily_variant_spawns() {
+        for spawn in cohort {
+            let (x, y, z) = spawn.position;
+            let local = (i32::from(x), i32::from(y), i16::from(z));
+            if !world.enterable(TilePos { x, y, floor: -z }) {
+                return Err(CarrierError::InvalidSpawnDefinition);
+            }
+            let policy = runtime.companion_policy(&spawn.creature)?;
+            let health = u64::try_from(policy.maximum_health)
+                .map_err(|_| CarrierError::InvalidSpawnDefinition)?;
+            let index = u16::try_from(sources.len()).map_err(|_| CarrierError::CapacityExceeded)?;
+            bindings.cohorts.push((index, key));
+            if let Some(count) = spawn.after_kills {
+                let guards = cohort[..count]
+                    .iter()
+                    .map(|guard| {
+                        let (x, y, z) = guard.position;
+                        (
+                            (i32::from(x), i32::from(y), i16::from(z)),
+                            guard.creature.clone(),
+                        )
+                    })
+                    .collect();
+                bindings.guards.insert(index, guards);
+            }
+            sources.push((
+                vec![(
+                    local,
+                    u64::from(spawn.respawn_ms),
+                    spawn.creature.clone(),
+                    health,
+                    policy.blocked_by_nearby_players,
+                )],
+                crate::map::boot::BUNDLE_OCCUPANCY_RETRY_MS,
+            ));
+        }
+    }
+    Ok(bindings)
+}
+
+pub(super) type GuardHome = ((i32, i32, i16), String);
+
+#[derive(Default)]
+pub(super) struct VariantSpawnBindings<'a> {
+    pub(super) cohorts: Vec<(u16, &'a str)>,
+    pub(super) guards: std::collections::BTreeMap<u16, Vec<GuardHome>>,
 }
 
 /// Counts the reset day's Items projected into the base map before its owners were built.

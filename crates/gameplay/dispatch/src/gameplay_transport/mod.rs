@@ -61,6 +61,7 @@ mod control_loss_reconciliation;
 mod corpse_decay;
 mod cosmetic_item_use;
 mod creature_field;
+mod daily_world_variants;
 mod dawnport_departure;
 mod dawnport_trial;
 /// DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165) on PostgreSQL 18.6: a trained actor

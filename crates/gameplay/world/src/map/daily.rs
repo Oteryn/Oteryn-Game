@@ -6,6 +6,9 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
+mod variants;
+pub(crate) use variants::VariantProjection;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DailyMap {
     pub seed: [u8; 32],
@@ -15,6 +18,7 @@ pub struct DailyMap {
     pub items: Vec<(u16, (u16, u16, i8))>,
     /// One of the three committed `oriental_trader/<town>` layer keys.
     pub trader: Option<&'static str>,
+    pub variants: oteryn_gameplay_world_change::variants::Selected,
 }
 
 impl DailyMap {
@@ -36,6 +40,7 @@ impl DailyMap {
 
 pub(super) struct Projection {
     daily: DailyMap,
+    pub(super) variants: VariantProjection,
     manifest: Manifest,
 }
 
@@ -62,7 +67,8 @@ impl Projection {
         daily: &DailyMap,
         item: &impl Fn(&str) -> Option<super::facts::ItemDefinition>,
     ) -> Result<Self, Error> {
-        let mut needed = BTreeMap::new();
+        let variants = VariantProjection::new(&manifest, daily.variants)?;
+        let mut needed: BTreeMap<_, _> = variants.appearances().map(|id| (id, None)).collect();
         let positions: std::collections::BTreeSet<_> =
             daily.items.iter().map(|(_, p)| *p).collect();
         // Thawing places 15 Ice Flowers on global (TibiaWiki rev 890265).
@@ -132,6 +138,7 @@ impl Projection {
         }
         Ok(Self {
             daily: daily.clone(),
+            variants,
             manifest,
         })
     }
@@ -146,7 +153,7 @@ struct Layer {
     key: String,
     tiles: Vec<LayerTile>,
 }
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 struct LayerTile {
     position: (u16, u16, i8),
     flags: Option<u32>,
@@ -183,13 +190,20 @@ fn source_layer(town: &str) -> Result<Layer, Error> {
         .ok_or_else(|| refusal("unknown trader town"))
 }
 
-fn layers(manifest: &Manifest, daily: &DailyMap) -> Result<BTreeMap<u32, Sector>, Error> {
-    let Some(town) = daily.trader else {
-        return Ok(BTreeMap::new());
-    };
-    let layer = source_layer(town)?;
-    let mut out = BTreeMap::<u32, Sector>::new();
-    for tile in layer.tiles {
+fn layers(projection: &Projection) -> Result<BTreeMap<u32, Sector>, Error> {
+    let manifest = &projection.manifest;
+    let trader = projection.daily.trader.map(source_layer).transpose()?;
+    let tiles =
+        trader
+            .into_iter()
+            .flat_map(|layer| layer.tiles)
+            .chain(projection.variants.tiles().map(|tile| LayerTile {
+                position: tile.position,
+                flags: tile.flags,
+                entries: tile.entries.clone(),
+            }));
+    let mut sectors = BTreeMap::<u32, Sector>::new();
+    for tile in tiles {
         let (x, y, z) = tile.position;
         if x < manifest.world.min_x
             || x >= manifest.world.max_x
@@ -220,16 +234,29 @@ fn layers(manifest: &Manifest, daily: &DailyMap) -> Result<BTreeMap<u32, Sector>
                 })
             })
             .collect::<Result<_, Error>>()?;
-        out.entry(key(&sector)).or_insert(sector).tiles.push(Tile {
-            x,
-            y,
-            flags: tile.flags.unwrap_or(0),
-            house: 0,
-            zones: Vec::new(),
-            items,
-        });
+        sectors
+            .entry(key(&sector))
+            .or_insert(sector)
+            .tiles
+            .push(Tile {
+                x,
+                y,
+                flags: tile.flags.unwrap_or(0),
+                house: 0,
+                zones: Vec::new(),
+                items,
+            });
     }
-    Ok(out)
+    for sector in sectors.values_mut() {
+        let tiles = std::mem::take(&mut sector.tiles);
+        sector.tiles = tiles
+            .into_iter()
+            .map(|tile| ((tile.y, tile.x), tile))
+            .collect::<BTreeMap<_, _>>()
+            .into_values()
+            .collect();
+    }
+    Ok(sectors)
 }
 
 fn fungus(manifest: &Manifest, sector: &mut Sector, daily: &DailyMap) -> Result<(), Error> {
@@ -318,20 +345,16 @@ fn project(
     mut visitor: impl FnMut(&Manifest, Sector) -> Result<(), Error>,
 ) -> Result<(), Error> {
     let daily = &projection.daily;
-    let mut pending = None;
+    let mut pending = layers(projection)?;
     let mut placed = std::collections::BTreeSet::new();
     stream(&mut |_, mut sector| {
         let manifest = &projection.manifest;
-        let pending = match &mut pending {
-            Some(pending) => pending,
-            slot @ None => slot.insert(layers(manifest, daily)?),
-        };
         while pending
             .first_key_value()
             .is_some_and(|(k, _)| *k < key(&sector))
         {
             if let Some((_, extra)) = pending.pop_first() {
-                visitor(manifest, extra)?;
+                visit_variant_sector(projection, extra, &mut visitor)?;
             }
         }
         if daily.trader == Some("oriental_trader/ankrahmun") && sector.floor == -6 {
@@ -368,7 +391,11 @@ fn project(
                 {
                     return Err(refusal("trader layer overlaps a house"));
                 }
-                tiles.insert((tile.y, tile.x), tile);
+                if tile.items.is_empty() {
+                    tiles.remove(&(tile.y, tile.x));
+                } else {
+                    tiles.insert((tile.y, tile.x), tile);
+                }
             }
             sector.tiles = tiles.into_values().collect();
         }
@@ -399,15 +426,28 @@ fn project(
             }
             placed.insert((*x, *y, *z));
         }
-        visitor(manifest, sector)
+        visit_variant_sector(projection, sector, &mut visitor)
     })?;
     if placed.len() != daily.items.len() {
         return Err(refusal("Thawing source sector missing"));
     }
-    if let Some(pending) = pending {
-        for sector in pending.into_values() {
-            visitor(&projection.manifest, sector)?;
-        }
+    for sector in pending.into_values() {
+        visit_variant_sector(projection, sector, &mut visitor)?;
+    }
+    Ok(())
+}
+
+fn visit_variant_sector(
+    projection: &Projection,
+    mut sector: Sector,
+    visitor: &mut impl FnMut(&Manifest, Sector) -> Result<(), Error>,
+) -> Result<(), Error> {
+    sector.tiles.retain(|tile| !tile.items.is_empty());
+    projection
+        .variants
+        .apply_portals(&projection.manifest, &mut sector)?;
+    if !sector.tiles.is_empty() {
+        visitor(&projection.manifest, sector)?;
     }
     Ok(())
 }

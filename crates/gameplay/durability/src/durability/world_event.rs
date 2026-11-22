@@ -93,7 +93,7 @@ pub(super) async fn record_reset(
         return Err(DurabilityError::InvalidStoredState);
     }
     capture_calendar(tx, world, epoch, catalogue).await?;
-    changes::record(tx, world, epoch).await?;
+    changes::record(tx, world, epoch, is_new).await?;
     super::world_event_outcomes::capture_reset(tx, world, epoch).await?;
     Ok(())
 }
