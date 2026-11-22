@@ -1,6 +1,17 @@
 //! Flask-on-dispenser is an ordinary USE_WITH, composed with the item action owner.
 use super::*;
 use crate::durability::consume_transform::ConsumeTransformRequest;
+use crate::durability::item_loop_move::LoopGround;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::durability::map_item_mint::{
+    MAP_DISPENSER_KEY, MapItemMintError, MapItemMintOutcome, MapItemMintRequest,
+};
+use crate::durability::spell_owner_commit::SpellLanePermit;
+use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
+use crate::gameplay_transport::world_map::{
+    MapHandleTarget, MapViewSource, resolve_map_handle, resolve_map_target,
+};
+use oteryn_gameplay_items::item_ref_admission::generation_ground_item_facts;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn use_dispenser(
@@ -151,19 +162,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             );
         }
-        let (Some(ItemKey::Instance(flask)), Some(ItemKey::Instance(dispenser))) = (source, target)
-        else {
+        let Some(ItemKey::Instance(flask)) = source else {
             return Ok(None);
         };
-        if flask == dispenser {
-            return Ok(None);
-        }
+        let (instance, map_mint) = match target {
+            Some(ItemKey::Instance(dispenser)) if flask != dispenser => (Some(dispenser), None),
+            Some(ItemKey::Instance(_)) => return Ok(None),
+            _ => {
+                let runtime = self.runtime.lock().await;
+                let Some(mint) = self.map_cask_request(&runtime, intent, target, request.command)
+                else {
+                    return Ok(None);
+                };
+                (None, Some(mint))
+            }
+        };
         let inventory = self
             .root
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
             .map_err(|_| ())?;
-        let entries = inventory
+        let mut entries = inventory
             .backpack
             .iter()
             .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
@@ -171,12 +190,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(source) = entries.clone().find(|item| item.item_instance_id == flask) else {
             return Ok(None);
         };
+        let (dispenser, map_origin) = if let Some((mint, position)) = map_mint {
+            if !matching_flask(&mint.item.definition, &source.definition) {
+                return Ok(None);
+            }
+            {
+                let runtime = self.runtime.lock().await;
+                let states = self.states.spell_states.lock().await;
+                if !dispenser_actor_current(&runtime, &states, actor, command)
+                    || runtime.binding().runtime_scope() != fence.runtime_scope
+                    || runtime.binding().scope_generation() != fence.scope_ownership_generation
+                    || !self
+                        .states
+                        .player_trades
+                        .physical(command.game_session_id, Some(flask))
+                {
+                    return Ok(outcome(UseDisposition::Rejected));
+                }
+                let Some((positioned, at)) = runtime
+                    .positioned_player_for_session(command.game_session_id)
+                    .map_err(|_| ())?
+                else {
+                    return Ok(outcome(UseDisposition::Rejected));
+                };
+                if positioned != actor {
+                    return Ok(outcome(UseDisposition::Rejected));
+                }
+                let at = at.position();
+                if at.floor != position.floor
+                    || at.x.abs_diff(position.x) > 1
+                    || at.y.abs_diff(position.y) > 1
+                {
+                    return Ok(outcome(UseDisposition::TooFar));
+                }
+            }
+            match self.materialize_map_cask(&permit, fence, mint).await {
+                Ok(dispenser) => (dispenser, Some(position)),
+                Err(MapItemMintError::Refused(_)) => {
+                    return Ok(outcome(UseDisposition::StaleState));
+                }
+                Err(
+                    MapItemMintError::AuthorityRejected
+                    | MapItemMintError::InvalidInput
+                    | MapItemMintError::ConflictingCause
+                    | MapItemMintError::ConflictingCandidate,
+                ) => return Ok(outcome(UseDisposition::Rejected)),
+                Err(MapItemMintError::Unavailable(_) | MapItemMintError::CapacityExceeded) => {
+                    return Err(());
+                }
+            }
+        } else {
+            (instance.ok_or(())?, None)
+        };
         let target_definition;
         let ground_source;
-        if let Some(target) = entries
-            .clone()
-            .find(|item| item.item_instance_id == dispenser)
-        {
+        if let Some(target) = entries.find(|item| item.item_instance_id == dispenser) {
             target_definition = target.definition.clone();
             ground_source = None;
         } else {
@@ -191,14 +259,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             target_definition = target.definition().clone();
             ground_source = Some(target);
         }
-        let id = |key: &str| key.strip_prefix("oteryn:item.tibia.i")?.parse::<u32>().ok();
-        if id(&target_definition.production_key)
-            .zip(id(&source.definition.production_key))
-            .and_then(|(keg, flask)| {
-                oteryn_gameplay_items::remaining_consumables::keg_fill(keg, flask, 1, 1)
-            })
-            .is_none()
-        {
+        if map_origin.is_some_and(|origin| {
+            ground_source
+                .as_ref()
+                .is_none_or(|source| source.position() != origin)
+        }) {
+            return Ok(outcome(UseDisposition::StaleState));
+        }
+        if !matching_flask(&target_definition, &source.definition) {
             return Ok(None);
         }
         if !self
@@ -215,12 +283,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let ground_context = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
-            if runtime.owner_fence().is_err()
-                || states.is_dead(actor)
-                || !states.spell_idle(&runtime, actor, command.game_session_id)
-                || !runtime
-                    .player_control_facts(actor, command.game_session_id)
-                    .is_ok_and(|facts| facts.control_loss.is_none())
+            if !dispenser_actor_current(&runtime, &states, actor, command)
                 || pinned_index(&runtime, self.active_generation).is_none()
             {
                 return Ok(outcome(UseDisposition::Rejected));
@@ -290,4 +353,158 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .map_err(|_| ())
     }
+
+    fn map_cask_request(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        intent: &UseIntent,
+        target: Option<ItemKey>,
+        command: CommandRef,
+    ) -> Option<(MapItemMintRequest, MovementLocalPosition)> {
+        let map = self.bundle_map()?;
+        let native = self.active_generation?.native_gameplay()?;
+        let index = pinned_index(runtime, self.active_generation)?;
+        let base = map.overlay.base();
+        let facts = map.facts.pinned();
+        let source = MapViewSource {
+            overlay: &map.overlay,
+            facts: &facts,
+            content_generation: runtime.content_pin().client_artifact_digest(),
+            reset_epoch: self.reset_epoch,
+        };
+        let (pos, placement_key) = match (&intent.use_with_map_item, target) {
+            (Some(MapUseTarget::Object(target)), None) => {
+                let selected = resolve_map_target(&source, target, |_| None::<()>).ok()?;
+                (selected.pos, selected.placement_key)
+            }
+            (Some(MapUseTarget::Item(_)), Some(key @ ItemKey::MapBase { .. })) => {
+                let MapHandleTarget::Base {
+                    pos, placement_key, ..
+                } = resolve_map_handle(&source, key).ok()?
+                else {
+                    return None;
+                };
+                (pos, placement_key)
+            }
+            _ => return None,
+        };
+        if facts.object_revision(placement_key) != 0
+            || map.facts.terrain_tool_action(placement_key) != Some(None)
+            || !map.facts.captured_map_children(placement_key)?.is_empty()
+        {
+            return None;
+        }
+        let tile = view::compose_tile(&map.overlay, &facts, pos).ok()??;
+        let entry = tile
+            .entries
+            .iter()
+            .find(|entry| entry.source.key() == MapEntryKey::Base(placement_key))?;
+        let MapDefinition::Item(reference) = entry.facts.definition else {
+            return None;
+        };
+        let definition = crate::gameplay_transport::item_look::typed_definition(index, reference)?;
+        if definition.production_key != MAP_DISPENSER_KEY
+            || entry.facts.bound
+            || entry.facts.count != 1
+            || entry.facts.pickupable
+            || entry.facts.sub_type != 0
+        {
+            return None;
+        }
+        // The map-mint owner carries the exact definition, so qualify only a cask
+        // that uses the admitted definition's starting charge count.
+        use crate::content::ReferenceItemField::Known;
+        let policy = native.item_policy(&definition.production_key, &definition.revision_ref)?;
+        let Known(charges) = &policy.record().semantics.charges else {
+            return None;
+        };
+        let Known(initial) = charges.count else {
+            return None;
+        };
+        if initial == 0 || initial > u32::from(u16::MAX) {
+            return None;
+        }
+        let position = MovementLocalPosition {
+            x: i32::from(pos.x),
+            y: i32::from(pos.y),
+            floor: -i16::from(pos.floor),
+        };
+        let room = self.rooms().gate_ground_item_action()?;
+        LoopGround::from_native_owner(
+            room,
+            runtime,
+            position,
+            &crate::map::overlay::map_revision(base),
+        )
+        .ok()?;
+        let mint = MapItemMintRequest {
+            command,
+            base_bundle_digest: base.digest(),
+            placement_key,
+            reset_epoch: self.reset_epoch,
+            item: generation_ground_item_facts(native, &definition).ok()?,
+            quantity: 1,
+            key_number: None,
+            flat_crate: None,
+            content_revision: crate::durability::map_item_mint_audit::map_revision_of(
+                &native.source_digest(),
+            ),
+            ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
+            sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
+        };
+        Some((mint, position))
+    }
+
+    async fn materialize_map_cask(
+        &self,
+        permit: &SpellLanePermit,
+        fence: CurrentCharacterItemFence,
+        mint: MapItemMintRequest,
+    ) -> Result<[u8; 16], MapItemMintError> {
+        // A previous attempt may have materialized the cask before the fill could
+        // commit. Resume that exact Ground instance from the original receipt.
+        if let Some(receipt) = self
+            .root
+            .read_map_item_mint_receipt(self.character, &fence, &mint)
+            .await?
+        {
+            return Ok(receipt.item_instance_id);
+        }
+        let mut candidate = self
+            .root
+            .freeze_map_item_mint(self.character, self.holder, fence, mint)
+            .await?;
+        let _ground_change =
+            crate::gameplay_transport::loop_move::GroundChange(Some(&self.states.loop_ground));
+        let (MapItemMintOutcome::Committed(receipt)
+        | MapItemMintOutcome::AlreadyCommitted(receipt)) = self
+            .root
+            .commit_map_item_mint(permit, self.character, self.holder, fence, &mut candidate)
+            .await?;
+        Ok(receipt.item_instance_id)
+    }
+}
+
+fn dispenser_actor_current(
+    runtime: &ChannelRuntimeV1,
+    states: &crate::gameplay_transport::actor_spell::ChannelSpellStates,
+    actor: ExactActorRef,
+    command: UseCommand,
+) -> bool {
+    runtime.owner_fence().is_ok()
+        && !states.is_dead(actor)
+        && states.spell_idle(runtime, actor, command.game_session_id)
+        && runtime
+            .player_control_facts(actor, command.game_session_id)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+}
+
+fn matching_flask(dispenser: &TypedDefinitionRef, flask: &TypedDefinitionRef) -> bool {
+    let id = |key: &str| key.strip_prefix("oteryn:item.tibia.i")?.parse::<u32>().ok();
+    id(&dispenser.production_key)
+        .zip(id(&flask.production_key))
+        .and_then(|(keg, flask)| {
+            oteryn_gameplay_items::remaining_consumables::keg_fill(keg, flask, 1, 1)
+        })
+        .is_some()
 }

@@ -85,6 +85,9 @@ const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
 /// The only definition family a map entry mints.
 const ITEM_FAMILY: &str = "Item";
 
+/// The Ground-only strong health cask admitted by map-base Flask USE-WITH.
+pub const MAP_DISPENSER_KEY: &str = "oteryn:item.tibia.i25880";
+
 /// The native tile and top-level ordinal a `placement_key` names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MapItemPlacement {
@@ -752,7 +755,8 @@ impl DurabilityRoot {
 
     /// The `placement_key` of every entry taken in this World, Channel, base
     /// bundle and reset epoch, ascending: the origins the overlay rebuild
-    /// re-hides. Read-only. More than `max_entries` (the bundle's entry
+    /// re-hides, with a flag for a retired blocking cask. Read-only. More
+    /// than `max_entries` (the bundle's entry
     /// count) is an invalid state, reported as `CapacityExceeded`, never
     /// truncated.
     pub async fn read_map_item_mint_placements(
@@ -762,15 +766,18 @@ impl DurabilityRoot {
         base_bundle_digest: [u8; 32],
         reset_epoch: u64,
         max_entries: usize,
-    ) -> Result<Vec<u64>> {
+    ) -> Result<Vec<(u64, bool)>> {
         let limit = i64::try_from(max_entries.saturating_add(1)).unwrap_or(i64::MAX);
         let keys = self
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    let keys: Vec<String> = sqlx::query_scalar(
-                        "SELECT placement_key::text FROM game_map_item_mint_receipts \
+                    let keys: Vec<(String, bool)> = sqlx::query_as(
+                        "SELECT m.placement_key::text, m.definition_production_key=$6 AND EXISTS (\
+                            SELECT 1 FROM game_item_instances i WHERE i.item_instance_id=m.item_instance_id \
+                              AND i.world_id=m.world_id AND i.lifecycle=2) \
+                          FROM game_map_item_mint_receipts m \
                           WHERE world_id = encode($1,'hex')::uuid \
                             AND channel_id = encode($2,'hex')::uuid \
                             AND base_bundle_digest = $3 \
@@ -782,6 +789,7 @@ impl DurabilityRoot {
                     .bind(base_bundle_digest.as_slice())
                     .bind(reset_epoch.to_string())
                     .bind(limit)
+                    .bind(MAP_DISPENSER_KEY)
                     .fetch_all(&mut *tx)
                     .await?;
                     commit_semantic_transaction(tx, deadline).await?;
@@ -793,8 +801,9 @@ impl DurabilityRoot {
             return Err(MapItemMintError::CapacityExceeded);
         }
         keys.iter()
-            .map(|key| {
+            .map(|(key, retired_cask)| {
                 key.parse::<u64>()
+                    .map(|key| (key, *retired_cask))
                     .map_err(|_| DurabilityError::InvalidStoredState.into())
             })
             .collect()
