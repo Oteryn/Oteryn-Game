@@ -761,7 +761,6 @@ mod tests {
                 cell: serde_json::Value::Null,
                 respawn_ms: Some(3_600_000),
                 boss_policy: None,
-                weight: None,
             }],
         };
         let input = Input {
