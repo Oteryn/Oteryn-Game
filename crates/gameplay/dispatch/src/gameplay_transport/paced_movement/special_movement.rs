@@ -732,7 +732,9 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         movement_revision: u64,
     ) {
         use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey, loop_move};
-        use crate::map::door::{DoorStepOut, DoorTileItem, door_step_out};
+        use crate::map::door::{
+            DoorStepOut, DoorTileItem, door_step_out, door_step_out_destination,
+        };
         use crate::map::overlay::AddedItem;
         let (Some(map), Some(position)) = (self.bundle_map(), tile_position(origin)) else {
             return;
@@ -746,7 +748,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             .filter(|(key, facts)| {
                 map.facts.doors().contains(*key)
                     && matches!(
-                        door_step_out::<ItemKey>(facts.appearance_id, position, false, true, &[]),
+                        door_step_out::<ItemKey>(facts.appearance_id, false, None, &[]),
                         DoorStepOut::Close { .. }
                     )
             })
@@ -755,7 +757,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         if doors.is_empty() {
             return;
         }
-        let (index, east_enterable) = {
+        let (index, destination) = {
             let runtime = self.runtime.lock().await;
             if !runtime
                 .player_control_facts(actor, session)
@@ -773,23 +775,22 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             {
                 return;
             }
-            let east = position.x.checked_add(1).map(|x| TilePos { x, ..position });
-            let east_enterable = east.is_some_and(|east| {
+            let destination = door_step_out_destination(position, |tile| {
                 self.movement_cells()
                     .index()
                     .lookup(
                         self.movement_cells().scope(),
                         crate::content::LogicalCell {
-                            x: i32::from(east.x),
-                            y: i32::from(east.y),
-                            z: -i32::from(east.floor),
+                            x: i32::from(tile.x),
+                            y: i32::from(tile.y),
+                            z: -i32::from(tile.floor),
                         },
                     )
                     .ok()
                     == Some(crate::content::CollisionClass::Walkable)
-                    && !map.facts.doors().blocks(east)
+                    && !map.facts.doors().blocks(tile)
                     && !crate::gameplay_transport::map_door::doorway_occupied(
-                        &runtime, actor, at, east,
+                        &runtime, actor, at, tile,
                     )
             });
             (
@@ -797,7 +798,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                     &runtime,
                     self.active_generation,
                 ),
-                east_enterable,
+                destination,
             )
         };
         let Some(index) = index else {
@@ -874,7 +875,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             let DoorStepOut::Close {
                 item_moves,
                 closed_id: _,
-            } = door_step_out(facts.appearance_id, position, false, east_enterable, &items)
+            } = door_step_out(facts.appearance_id, false, destination, &items)
             else {
                 continue;
             };
