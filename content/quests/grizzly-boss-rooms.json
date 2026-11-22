@@ -264,7 +264,7 @@
         31452,
         8
       ],
-      "connected_tiles": 169,
+      "connected_tiles": 182,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:123"
     },
@@ -286,7 +286,7 @@
         31278,
         11
       ],
-      "connected_tiles": 284,
+      "connected_tiles": 288,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:134"
     },
@@ -330,7 +330,7 @@
         31183,
         7
       ],
-      "connected_tiles": 220,
+      "connected_tiles": 227,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:156"
     },
@@ -666,7 +666,7 @@
     }
   ],
   "inputs_sha256": {
-    "content/items/definitions/spell-native-profiles.json": "95c73f86507fbe599631b9e6a572a9bb5af9f43ce1206224d7d39fec017e6cf8",
+    "content/items/definitions/spell-native-profiles.json": "35620238abbdee5265c7f5d777d770ff984d950633b0a25a7b03c8ca2d8436b4",
     "content/quests/killing-in-the-name-of.json": "954cd1b9feba72e3c01f03ed97d68ff08fcd78ab0bf8f1ae779c6abff9ce8309",
     "content/world/objects/objects-00000-00499.json": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
     "content/world/objects/objects-00500-00999.json": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",

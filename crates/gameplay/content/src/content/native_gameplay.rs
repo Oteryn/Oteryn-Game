@@ -1299,6 +1299,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("W02 Sugar corpse identity collision"));
         }
+        // Crystal's retained Lua and appearance IDs bind these carried Items
+        // and discharge targets outside the older binding inventory.
+        let cloot3_bindings: Vec<super::project::ProjectV2SourceIdentityBinding> =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/cloot3-item-bindings.json"
+            ))
+            .map_err(|_| invalid("CLOOT3 exact Item binding"))?;
+        for binding in cloot3_bindings {
+            if admitted
+                .insert(binding.external_id.clone(), binding)
+                .is_some()
+            {
+                return Err(invalid("CLOOT3 Item binding collision"));
+            }
+        }
         // Crystal 201189f8 appearances.dat and arbaziloth_fight.lua bind the
         // purple-fire projection to this exact Ground-only item identity.
         let arbaziloth_fire = serde_json::from_value(serde_json::json!({
@@ -1314,18 +1329,14 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("Arbaziloth fire identity collision"));
         }
-        // Crystal 201189f8 names Spirited Soil in Flickering Spirit Elemental's
-        // loot and retains its exact appearance. This identity was added after
-        // the historical Crystal binding table was captured.
+        // The first and third loot slices independently qualify Spirited Soil.
+        // Register it once above and require the two exact bindings to agree.
         let spirited_soil: super::project::ProjectV2SourceIdentityBinding =
             serde_json::from_slice(include_bytes!(
                 "../../../../../tools/content-schema/native-gameplay/loot-slice-1-spirited-soil-binding.json"
             ))
             .map_err(|_| invalid("native gameplay Spirited Soil identity"))?;
-        if admitted
-            .insert(spirited_soil.external_id.clone(), spirited_soil)
-            .is_some()
-        {
+        if admitted.get(&spirited_soil.external_id) != Some(&spirited_soil) {
             return Err(invalid("native gameplay Spirited Soil binding conflict"));
         }
         let cradle_profiles = qready1_cradle::profiles()?;
@@ -3870,6 +3881,39 @@ mod tests {
             .boss("oteryn:creature.ferumbras")
             .unwrap();
         assert_eq!(boss.category.as_str(), "nemesis");
+    }
+    #[test]
+    fn slice_three_manifest_activates_carried_rewards() {
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller.active().unwrap().native_gameplay().unwrap();
+        let row = native
+            .reward_table()
+            .row("oteryn:creature.spirit_overlord")
+            .unwrap();
+        assert!(row.loot_table.entries.iter().any(|entry| {
+            entry.item.production_key == "oteryn:item.tibia.i51276"
+                && entry.probability_ppm == Some(70_000)
+                && entry.details.stackable
+                && (entry.min_count, entry.max_count) == (1, 1)
+        }));
+        let source: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/cloot3-item-profiles.json"
+        ))
+        .unwrap();
+        for entry in source["records"].as_array().unwrap() {
+            let key = entry["production_definition"]["production_key"]
+                .as_str()
+                .unwrap();
+            let item = native.item_policy(key, "definition-r1").unwrap().record();
+            assert!(item.admission.materializable, "{key}");
+            assert!(
+                item.admission
+                    .legal_destinations
+                    .contains(&NativeItemDestination::CharacterInventory),
+                "{key}"
+            );
+        }
     }
     #[test]
     fn reward_boss_empty_corpse_does_not_admit_missing_private_loot() {
