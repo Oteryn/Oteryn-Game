@@ -39,11 +39,20 @@ ADDITIONAL_ACTIONS = (
 )
 
 
-def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS)):
+TIBIA_TALES_SPECS = (
+    *(("item.lua", "ItemAction", action, "action") for action in range(4207, 4224)),
+    ("item.lua", "ItemAction", 25018, "action"),
+    ("chest.lua", "ChestUnique", 6257, "unique"),
+)
+
+
+def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=False):
     sys.path.insert(0, str(ROOT / "tools/content-schema/quest-authoring"))
     import lua_tables
 
     rows, sources = [], []
+    if include_tibia_tales:
+        specs = (*specs, *TIBIA_TALES_SPECS)
     for filename, table, selector, attribute in specs:
         path = "data-global/startup/tables/" + filename
         raw = (source / path).read_bytes()
@@ -57,6 +66,9 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS)):
         ]
         value = lua_tables.as_python(field["value"])
         for group in value if isinstance(value, list) else [value]:
+            if table == "ItemAction" and selector == 25018 and group["itemId"] is not False:
+                # The same action also names an unrelated surface object.
+                continue
             positions = group["itemPos"]
             for position in positions if isinstance(positions, list) else [positions]:
                 cell = [position[k] for k in "xyz"]
@@ -76,11 +88,11 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS)):
                     if node != 3142:
                         raise ValueError("Key 3142 source storage changed")
                 # False selectors target the existing source ground or door.
-                item = group["itemId"] or {
+                item = group["itemId"] or (104 if selector == 25018 else {
                     "LevelDoorAction": 5102,
                     "KeyDoorAction": 6248,
                     "TilePickAction": 355,
-                }[table]
+                }[table])
                 rows.append(
                     {
                         "position": cell,
@@ -247,7 +259,7 @@ def main():
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     if args.crystal_root:
-        data = (json.dumps(capture(args.crystal_root), indent=2) + "\n").encode()
+        data = (json.dumps(capture(args.crystal_root, include_tibia_tales=True), indent=2) + "\n").encode()
         if args.check:
             if (ROOT / CAPTURE).read_bytes() != data:
                 raise ValueError("startup source capture changed")

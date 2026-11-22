@@ -15,14 +15,23 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                 .item_on_target
                 .as_ref()
                 .is_some_and(|tool| tool.selected_instance)
-                && matches!(
+                && (matches!(
                     callback.key.as_str(),
                     "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
                         | "oteryn:quest-callback/thieves-guild-cathedral-note"
                         | "oteryn:quest-callback/thieves-guild-fish-room-key"
                         | "oteryn:quest-callback/thieves-guild-sarina-vase"
-                ))
+                        | "oteryn:quest-callback/tibia-tales/fill-ale-bottle"
+                        | "oteryn:quest-callback/tibia-tales/poison-slime-pool-31821"
+                        | "oteryn:quest-callback/tibia-tales/poison-slime-pool-31822"
+                ) || (callback
+                    .key
+                    .starts_with("oteryn:quest-callback/tibia-tales/sanctify-grave-")
+                    && callback
+                        .selector
+                        .action
+                        .is_some_and(|action| (4208..=4223).contains(&action)))))
             || rottin_walls::accepts(callback)
             || callback.effects.place_item == Some(12187)
             || matches!(
@@ -186,6 +195,23 @@ mod tests {
             Some(definition)
         ));
         assert!(!matches_source(&handle, None, [1; 16], Some(definition)));
+        Ok(())
+    }
+
+    #[test]
+    fn tibia_tales_selected_tools_reach_the_world_receipt_owner() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let tools: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback
+                    .key
+                    .starts_with("oteryn:quest-callback/tibia-tales/")
+                    && callback.item_on_target.is_some()
+            })
+            .collect();
+        assert_eq!(tools.len(), 35);
+        assert!(tools.into_iter().all(accepts));
         Ok(())
     }
 }

@@ -45,6 +45,7 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
     include_str!("../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
     include_str!("../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
+    include_str!("../../../../content/quests/npc-callbacks/tibia-tales.json"),
 ];
 #[cfg(test)]
 mod m09_rookie_tests;
@@ -59,6 +60,7 @@ const REWARD_GREETINGS: &[&str] = &[
     include_str!("../../../../content/dialogues/quests/quest-contact-greetings.json"),
     include_str!("../../../../content/dialogues/quests/questpc5-targuna-map-greetings.json"),
     include_str!("../../../../content/dialogues/quests/m13-goblin-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/tibia-tales-greetings.json"),
 ];
 
 mod quest_merchant;
@@ -69,6 +71,8 @@ struct RewardMessages {
     greet: String,
     farewell: String,
     walkaway: String,
+    #[serde(default)]
+    greeting_words: Vec<String>,
 }
 
 fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
@@ -835,7 +839,12 @@ impl NpcTalkBook {
                             .chain(["djanni'hah"])
                             .map(str::to_owned)
                             .collect(),
-                        _ => GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+                        _ => reward_messages
+                            .filter(|messages| !messages.greeting_words.is_empty())
+                            .map_or_else(
+                                || GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+                                |messages| messages.greeting_words.clone(),
+                            ),
                     },
                     greeting_reply,
                     farewell_reply,

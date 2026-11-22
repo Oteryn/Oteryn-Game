@@ -1,0 +1,214 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.amanda",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would you bring me holy water from the White Raven Monastery?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.boozer",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/ultimate_booze_quest",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Business has been slow. Would you help me find something new to serve?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.budrik",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The Horned Fox stole my family mining helmet. Can you get it back?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.kazzan",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/to_appease_the_mighty_quest",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Do you know where to find the two djinn fortresses south of here?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.kazzan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/to_appease_the_mighty_quest",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I need an envoy to make an offer of peace to the djinn. Will you go?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.padreia",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/the_exterminator",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I had a vision of a plague coming from the sewers. Will you help protect Carlin?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ubaid",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/to_appease_the_mighty_quest",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Who sent you to our fortress?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.umar",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/to_appease_the_mighty_quest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Who sent you to our fortress?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    }
+  ]
+}

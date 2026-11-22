@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.boozer",
+      "greet": "Welcome to the Hard Rock Racing Track.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell."
+    },
+    {
+      "npc": "oteryn:npc.kazzan",
+      "greet": "Welcome. What business brings you here?",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell."
+    },
+    {
+      "npc": "oteryn:npc.melchior",
+      "greet": "Greetings, traveler. What would you like to know?",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell."
+    },
+    {
+      "npc": "oteryn:npc.ubaid",
+      "greet": "You know our greeting. Speak your business.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "greeting_words": [
+        "djanni'hah"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.umar",
+      "greet": "You know our greeting. What brings you to our fortress?",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "greeting_words": [
+        "djanni'hah"
+      ]
+    }
+  ]
+}
