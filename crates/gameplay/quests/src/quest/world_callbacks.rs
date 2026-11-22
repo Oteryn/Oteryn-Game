@@ -16,7 +16,7 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
-pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024;
+pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 2048;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -756,6 +756,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qc-lizard-sanctuary.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qc-twenty-miles.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qm48-mammoth.json"
@@ -1675,6 +1678,8 @@ mod bounded_tests;
 mod outfit_tests;
 #[cfg(test)]
 mod qc_lizard_sanctuary_tests;
+#[cfg(test)]
+mod qc_twenty_miles_tests;
 
 #[cfg(test)]
 mod scene_tests;

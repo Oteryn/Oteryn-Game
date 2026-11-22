@@ -360,6 +360,7 @@ fn qualified_soul_war_callback(record: &SpellAppearanceRecord) -> bool {
         .as_ref()
         .is_some_and(|records| records.contains(record))
 }
+
 pub fn compile(
     bytes: &[u8],
     outer_content_digest: [u8; 32],
@@ -395,12 +396,16 @@ pub fn compile(
         let cached_canary = qualified_cached_canary_record(record);
         let project_illusionable = qualified_project_illusionable_record(record);
         let soul_war_callback = qualified_soul_war_callback(record);
+        // Crystal 201189f swimming.lua supplies the exact fixed outfit for the Sea Ear cave.
+        let swimming = record.qualification_sha256
+            == "77000963de188c7a0e5f58a2dcd1363d58a19ae6512de5bc9ccc99febe9381d3";
         let canary = record.source.revision == PIN && record.source.default_source.is_none();
         if (!canary
             && !crystal_stag
             && !cached_canary
             && !project_illusionable
-            && !soul_war_callback)
+            && !soul_war_callback
+            && !swimming)
             || ((canary || cached_canary)
                 && record.outfit_key
                     != format!("oteryn:outfit.source.canary.look{}", record.look_type))
@@ -439,6 +444,7 @@ pub fn compile(
             }
         } else if !fixed.insert(record.look_type)
             || (!soul_war_callback
+                && !swimming
                 && !record
                     .source
                     .path

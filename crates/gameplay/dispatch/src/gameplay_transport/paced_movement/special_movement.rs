@@ -362,7 +362,7 @@ pub(in crate::gameplay_transport) fn snow_at(
 fn swimming_definition() -> Option<ConditionDefinition> {
     ConditionDefinition::new_permanent_outfit("environment.swimming", 1, SWIMMING_LOOK_TYPE)?
         .with_appearance(AppearanceSelection {
-            outfit_key: "environment.swimming".to_owned(),
+            outfit_key: "oteryn:outfit.source.crystal.look267".to_owned(),
             colours: Colours::default(),
             addons: 0,
             mount_key: None,
