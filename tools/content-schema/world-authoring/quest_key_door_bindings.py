@@ -51,7 +51,13 @@ def document():
                 sources.append(
                     {
                         k: row[k]
-                        for k in ("repository", "revision", "path", "sha256", "git_blob_sha1")
+                        for k in (
+                            "repository",
+                            "revision",
+                            "path",
+                            "sha256",
+                            "git_blob_sha1",
+                        )
                     }
                 )
             return raw.decode()

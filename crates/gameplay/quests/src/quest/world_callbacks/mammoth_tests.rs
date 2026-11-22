@@ -1,6 +1,27 @@
 use crate::quest::barbarian_mead;
 
 #[test]
+fn barbarian_loader_binds_bare_use_on_the_awake_bear() -> Result<(), String> {
+    let callbacks = super::load()?;
+    let awake = callbacks
+        .iter()
+        .find(|callback| {
+            callback.trigger == super::Trigger::Use
+                && callback.selector.position
+                    == Some(super::Position {
+                        x: 32253,
+                        y: 31049,
+                        floor: -5,
+                    })
+                && callback.selector.appearance == Some(7174)
+                && callback.item_on_target.is_none()
+        })
+        .ok_or("awake bear has no bare USE callback")?;
+    assert!(awake.storage.is_empty());
+    Ok(())
+}
+
+#[test]
 fn qm48_mammoth_binds_live_drunk_action_and_source_storage() -> Result<(), String> {
     let callbacks = super::load()?;
     let callback = callbacks

@@ -331,7 +331,17 @@
               "lever": null,
               "reversible": false,
               "requires_world_admission": true,
-              "passages": [],
+              "passages": [
+                {
+                  "position": {
+                    "x": 32963,
+                    "y": 32677,
+                    "floor": -4
+                  },
+                  "appearance": 5736,
+                  "replacement": 5737
+                }
+              ],
               "teleport": null,
               "storage": [
                 {
@@ -363,9 +373,7 @@
                 "authored per owner rule"
               ],
               "effects": {
-                "transform": 5737,
-                "facing": null,
-                "magic": null
+                "transform": 5737
               }
             }
           }
@@ -532,7 +540,17 @@
               "lever": null,
               "reversible": false,
               "requires_world_admission": true,
-              "passages": [],
+              "passages": [
+                {
+                  "position": {
+                    "x": 32959,
+                    "y": 32679,
+                    "floor": -2
+                  },
+                  "appearance": 1674,
+                  "replacement": 1675
+                }
+              ],
               "teleport": null,
               "storage": [
                 {
@@ -569,9 +587,7 @@
                 "maximum": 0
               },
               "effects": {
-                "transform": 1675,
-                "facing": null,
-                "magic": null
+                "transform": 1675
               }
             }
           }
@@ -738,7 +754,17 @@
               "lever": null,
               "reversible": false,
               "requires_world_admission": true,
-              "passages": [],
+              "passages": [
+                {
+                  "position": {
+                    "x": 32947,
+                    "y": 32679,
+                    "floor": -2
+                  },
+                  "appearance": 1674,
+                  "replacement": 1675
+                }
+              ],
               "teleport": null,
               "storage": [
                 {
@@ -770,9 +796,7 @@
                 "authored per owner rule"
               ],
               "effects": {
-                "transform": 1675,
-                "facing": null,
-                "magic": null
+                "transform": 1675
               }
             }
           }
@@ -820,8 +844,15 @@
                 {
                   "track": "oteryn:quest-progress/engenc/asura/s3/opened",
                   "minimum": 1,
-                  "maximum": 1,
+                  "maximum": 2,
                   "set": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/orchid/count",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 0,
+                  "preserve": true
                 }
               ],
               "offerings": [],
@@ -835,7 +866,7 @@
               "activation": {
                 "track": "oteryn:quest-progress/engenc/asura/s3/opened",
                 "minimum": 1,
-                "maximum": 1
+                "maximum": 2
               },
               "effects": {
                 "encounter": {
@@ -1067,7 +1098,17 @@
               "lever": null,
               "reversible": false,
               "requires_world_admission": true,
-              "passages": [],
+              "passages": [
+                {
+                  "position": {
+                    "x": 32962,
+                    "y": 32674,
+                    "floor": -2
+                  },
+                  "appearance": 1676,
+                  "replacement": 1677
+                }
+              ],
               "teleport": null,
               "storage": [
                 {
@@ -1080,7 +1121,7 @@
                 {
                   "track": "oteryn:quest-progress/engenc/asura/orchid/library-open",
                   "minimum": 0,
-                  "maximum": 0,
+                  "maximum": 1,
                   "set": 1
                 }
               ],

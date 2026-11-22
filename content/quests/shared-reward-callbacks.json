@@ -265,6 +265,28 @@
       ]
     },
     {
+      "key": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "writable": true,
+      "sources": [
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 20,
+      "writable": true,
+      "sources": [
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ]
+    },
+    {
       "key": "oteryn:quest-progress/spike/fame",
       "quest": "oteryn:quest.spike_task",
       "initial": 0,
@@ -2036,6 +2058,167 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l12-cave-explorer-legacy-addon-1",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "cave explorer addon 1"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.cave_explorer",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b",
+        "tibiawiki:Cave Completionist:846114"
+      ],
+      "fee": {
+        "gold": 2000,
+        "include_bank": false
+      },
+      "minimum_level": 80,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.cave_explorer"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.cave_explorer",
+          "addons": 1
+        }
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/cave_completionist",
+          "target": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-cave-explorer-legacy-addon-2",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "cave explorer addon 2"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.cave_explorer",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b",
+        "tibiawiki:Cave Completionist:846114"
+      ],
+      "fee": {
+        "gold": 3000,
+        "include_bank": false
+      },
+      "minimum_level": 80,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.cave_explorer"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.cave_explorer",
+          "addons": 2
+        }
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/cave_completionist",
+          "target": 2
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.cave_explorer",
+          "addons": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-cave-explorer-legacy-report",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "cave explorer report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 20,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.cave_explorer",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ],
+      "fee": {
+        "gold": 1000,
+        "include_bank": false
+      },
+      "minimum_level": 80,
+      "requires_premium": true,
+      "forbids_outfits": [
+        "oteryn:outfit.cave_explorer"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l12-cave-explorer-second",
       "quest": "oteryn:quest.cave_explorer_outfits_quest",
       "npc": "oteryn:npc.gnommander",
@@ -2514,7 +2697,8 @@
             "value": 0
           }
         }
-      ]
+      ],
+      "maximum_level": 79
     },
     {
       "key": "oteryn:quest-reward/l12-spike-middle-report",
@@ -2614,7 +2798,8 @@
             "value": 0
           }
         }
-      ]
+      ],
+      "maximum_level": 49
     },
     {
       "key": "oteryn:quest-reward/l12-spike-upper-report",

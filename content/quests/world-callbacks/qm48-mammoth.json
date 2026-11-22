@@ -147,6 +147,32 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/barbarian-test/awake-bear",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32253,
+          "y": 31049,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 7174
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_horn.lua:28-31"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/barbarian-test/hug-bear",
       "quest": "oteryn:quest.the_ice_islands_quest",
       "trigger": "use",

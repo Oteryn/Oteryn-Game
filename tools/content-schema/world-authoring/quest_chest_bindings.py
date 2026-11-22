@@ -274,7 +274,8 @@ def capture(source_root, selected, root=ROOT):
             key_number = placement["reward"].get("key_binding", "").rsplit("/", 1)[-1]
             if supported_source_key_claim(definition) and (
                 setting.get("isKey") is not True
-                or setting.get("storage") != {"expr": f"Storage.Quest.Key.ID{key_number}"}
+                or setting.get("storage")
+                != {"expr": f"Storage.Quest.Key.ID{key_number}"}
             ):
                 raise ValueError("QUEST_CHEST_SOURCE_KEY_DRIFT")
             rows.append(

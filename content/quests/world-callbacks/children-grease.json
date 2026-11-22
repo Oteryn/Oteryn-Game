@@ -5,6 +5,7 @@
       "key": "oteryn:quest-callback/children-grease",
       "quest": "oteryn:quest.children_of_the_revolution_quest",
       "trigger": "use",
+      "requires_world_admission": true,
       "selector": {
         "position": null,
         "unique": null,
@@ -34,7 +35,8 @@
         "item": "oteryn:item.tibia.i10189",
         "count": 1,
         "replacement": null,
-        "target_replacement": null
+        "target_replacement": null,
+        "selected_instance": true
       },
       "return_on_failure": false,
       "failure_message": null,
@@ -96,6 +98,7 @@
       "key": "oteryn:quest-callback/children-poison-water",
       "quest": "oteryn:quest.children_of_the_revolution_quest",
       "trigger": "use",
+      "requires_world_admission": true,
       "selector": {
         "position": null,
         "appearance": 10133,
@@ -130,7 +133,8 @@
         "item": "oteryn:item.tibia.i10183",
         "count": 1,
         "replacement": null,
-        "target_replacement": null
+        "target_replacement": null,
+        "selected_instance": true
       },
       "effects": {
         "player_speech": "The poison is in the rice field. I should report to Zalamon."

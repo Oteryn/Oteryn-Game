@@ -2785,6 +2785,10 @@
           "preserve": true
         }
       ],
+      "maximum_level": 79,
+      "failure_reply": [
+        "This hunt is for levels 50 through 79."
+      ],
       "reply": [
         "Will you take on the local hunting task?"
       ]
@@ -2818,6 +2822,10 @@
           "set": 0,
           "preserve": true
         }
+      ],
+      "maximum_level": 49,
+      "failure_reply": [
+        "This hunt is for levels 25 through 49."
       ],
       "reply": [
         "Will you take on the local hunting task?"

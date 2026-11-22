@@ -404,13 +404,29 @@ async fn spike(
         .states
         .chat
         .admit(admitted.game_session_id, "Spike Witness", owner.owner_now());
-    let [argery, commander] = npc::install(
+    let [argery, commander, milly, bold] = npc::install_with_offsets(
         owner,
         admitted,
-        ["oteryn:npc.gnomargery", "oteryn:npc.gnommander"],
+        [
+            "oteryn:npc.gnomargery",
+            "oteryn:npc.gnommander",
+            "oteryn:npc.gnomilly",
+            "oteryn:npc.gnombold",
+        ],
+        Some([(0, 1), (1, 1), (-1, 1), (0, -1)]),
     )
     .await?;
-    super::qengine_outfit_stories_fixtures::earn_level(owner, admitted, authority, 80).await?;
+    for (tier, npc, maximum, id) in [("upper", milly, 49, 101), ("middle", bold, 79, 111)] {
+        use super::qengine_outfit_stories_fixtures::earn_level;
+        earn_level(owner, admitted, authority, maximum).await?;
+        assert_eq!(talk(owner, admitted, npc, id, "hi").await?, NpcIntentDisposition::Ok);
+        assert_eq!(talk(owner, admitted, npc, id + 1, "kill").await?, NpcIntentDisposition::Ok);
+        earn_level(owner, admitted, authority, maximum + 1).await?;
+        assert_eq!(talk(owner, admitted, npc, id + 2, "yes").await?, NpcIntentDisposition::Rejected);
+        assert_eq!(count(h, &format!("oteryn:quest-progress/spike/{tier}/phase")).await?, 0);
+        assert_eq!(talk(owner, admitted, npc, id + 3, "kill").await?, NpcIntentDisposition::Rejected);
+        let _ = talk(owner, admitted, npc, id + 4, "bye").await?;
+    }
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())

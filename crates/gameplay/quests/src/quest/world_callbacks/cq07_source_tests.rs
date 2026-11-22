@@ -189,6 +189,19 @@ fn crystal_wand_loader_binds_twinkiller_parchment() -> Result<(), Box<dyn std::e
 }
 
 #[test]
+fn children_loader_requires_the_selected_poison_and_grease() -> Result<(), String> {
+    let callbacks = super::load()?;
+    for (suffix, item) in [("grease", 10189), ("poison-water", 10183)] {
+        let key = format!("oteryn:quest-callback/children-{suffix}");
+        let callback = callbacks.iter().find(|c| c.key == key).ok_or(&key)?;
+        let tool = callback.item_on_target.as_ref().ok_or("mission item")?;
+        assert_eq!(tool.item, format!("oteryn:item.tibia.i{item}"));
+        assert!(tool.selected_instance, "{key} accepts bare USE");
+    }
+    Ok(())
+}
+
+#[test]
 fn cave_explorer_loader_admits_donor_level_thresholds_and_completion_achievement()
 -> Result<(), String> {
     let callbacks = crate::quest::reward_callbacks::load()?;
@@ -219,5 +232,36 @@ fn cave_explorer_loader_admits_donor_level_thresholds_and_completion_achievement
             assert_eq!(callback.achievement_progress[0].target, 2);
         }
     }
+    Ok(())
+}
+
+#[test]
+fn cave_explorer_loader_can_settle_a_pre_upgrade_completed_trial() -> Result<(), String> {
+    let state = load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+    let catalogue = state.catalogue();
+    let callbacks = crate::quest::reward_callbacks::offered_for(catalogue)?;
+    let legacy = callbacks
+        .iter()
+        .find(|callback| {
+            callback.npc == "oteryn:npc.gnommander"
+                && callback
+                    .keywords
+                    .iter()
+                    .any(|word| word == "cave explorer report")
+        })
+        .ok_or("the published Cave Explorer report has no callback")?;
+    let transition = catalogue.transition(&legacy.key).ok_or("legacy report")?;
+    let progress = std::collections::BTreeMap::from([
+        (
+            "oteryn:quest-progress/chosen-trial/cave_explorer/phase".into(),
+            1,
+        ),
+        (
+            "oteryn:quest-progress/chosen-trial/cave_explorer/kills".into(),
+            20,
+        ),
+    ]);
+    assert!(catalogue.evaluate(transition, &progress, 0).is_ok());
+    assert_eq!(legacy.outfit.as_ref().ok_or("base outfit")?.addons, 0);
     Ok(())
 }

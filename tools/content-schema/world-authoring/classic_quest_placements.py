@@ -1,4 +1,5 @@
 """Apply the startup and route placements selected from Crystal 201189f8."""
+
 import argparse
 import hashlib
 import json
@@ -11,7 +12,9 @@ CAPTURE = "tools/content-schema/world-authoring/samples/classic-quest-placements
 
 def region_path(position):
     x, y, z = position
-    return f"content/world/placements/region-z{z:02d}-x{x // 256:03d}-y{y // 256:03d}.b3"
+    return (
+        f"content/world/placements/region-z{z:02d}-x{x // 256:03d}-y{y // 256:03d}.b3"
+    )
 
 
 def overlay_region(raw, palette, rows):
@@ -33,7 +36,8 @@ def overlay_region(raw, palette, rows):
             for row in selected.get(position, ()):
                 appearance = row["appearance"]
                 matches = [
-                    slot for slot, (index, depth, _) in enumerate(items)
+                    slot
+                    for slot, (index, depth, _) in enumerate(items)
                     if depth == 0 and palette[index]["source_item_id"] == appearance
                 ]
                 if house or len(matches) > 1:
@@ -46,8 +50,11 @@ def overlay_region(raw, palette, rows):
                 if not matches:
                     if not row.get("insert"):
                         raise ValueError(f"missing classic quest placement: {row}")
-                    (index,) = (i for i, item in enumerate(palette)
-                                if item["source_item_id"] == appearance)
+                    (index,) = (
+                        i
+                        for i, item in enumerate(palette)
+                        if item["source_item_id"] == appearance
+                    )
                     items.append((index, 0, attributes or None))
                     changed = True
                     added += 1
@@ -55,13 +62,18 @@ def overlay_region(raw, palette, rows):
                     slot = matches[0]
                     index, depth, attrs = items[slot]
                     attrs = attrs or {}
-                    if any(attrs.get(key, value) != value for key, value in attributes.items()):
+                    if any(
+                        attrs.get(key, value) != value
+                        for key, value in attributes.items()
+                    ):
                         raise ValueError(f"conflicting classic quest placement: {row}")
                     if not attributes.items() <= attrs.items():
                         items[slot] = (index, depth, {**attrs, **attributes})
                         changed = True
                 found.add(position)
-        sectors[local] = codec.encode_sector_tiles(sx, sy, tiles) if changed else payload
+        sectors[local] = (
+            codec.encode_sector_tiles(sx, sy, tiles) if changed else payload
+        )
     if found != selected.keys():
         raise ValueError(f"missing classic quest tiles: {selected.keys() - found}")
     return codec.encode_region(z, rx, ry, sectors), added
@@ -76,7 +88,9 @@ def overlay_outputs(outputs, root=ROOT):
     summary = json.loads(outputs[SUMMARY])
     previous = index["source"].get("classic_quests", {})
     attrs = Counter(
-        name for rows in groups.values() for row in rows
+        name
+        for rows in groups.values()
+        for row in rows
         for name in row.get("attributes", {})
     )
     added, delta = 0, 0
@@ -85,7 +99,9 @@ def overlay_outputs(outputs, root=ROOT):
         if path not in groups:
             continue
         baseline = outputs[path]
-        outputs[path], count = overlay_region(baseline, index["palette"], groups.pop(path))
+        outputs[path], count = overlay_region(
+            baseline, index["palette"], groups.pop(path)
+        )
         added += count
         region["items"] += count
         delta += len(outputs[path]) - len(baseline)
@@ -101,7 +117,8 @@ def overlay_outputs(outputs, root=ROOT):
     summary["source"] = index["source"]
     for name, count in attrs.items():
         summary["item_attributes"][name] = (
-            summary["item_attributes"].get(name, 0) + count
+            summary["item_attributes"].get(name, 0)
+            + count
             - previous.get("attributes", {}).get(name, 0)
         )
     summary["bytes_on_disk"] += delta
@@ -121,7 +138,9 @@ def donor_delta(summary):
     expected = {
         "path": CAPTURE,
         "sha256": hashlib.sha256(capture).hexdigest(),
-        "attributes": dict(Counter(key for row in rows for key in row.get("attributes", {}))),
+        "attributes": dict(
+            Counter(key for row in rows for key in row.get("attributes", {}))
+        ),
         "items_added": sum(row.get("insert", False) for row in rows),
     }
     if registered != expected:
@@ -131,7 +150,8 @@ def donor_delta(summary):
 
 def apply(check):
     paths = {INDEX, SUMMARY} | {
-        region_path(row["position"]) for row in json.loads((ROOT / CAPTURE).read_bytes())["placements"]
+        region_path(row["position"])
+        for row in json.loads((ROOT / CAPTURE).read_bytes())["placements"]
     }
     outputs = {path: (ROOT / path).read_bytes() for path in paths}
     overlay_outputs(outputs)

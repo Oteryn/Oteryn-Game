@@ -123,7 +123,7 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.authored.asura_palace_quest",
-        hash(b"0f691d31a3840ab4346e9a7b8271a2810458ebb02afcb1f63e7551f9d076a5e0"),
+        hash(b"f46458b071254e14908bea9b5f40d7924f6a3ca818e27c8961e01b35632d0518"),
         &[hash(
             b"7d2ff46451588dd3ff2352c5db743480e1511730cce8c4ffcdf10f716a1d7caa",
         )],
@@ -194,6 +194,11 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
 ];
 
+const DRAGON_CORPSE_PREDECESSOR: (&str, DefinitionHash) = (
+    "oteryn:quest.dragon_corpse_quest",
+    hash(b"ba645250c7b9827e710e57059c40e56ba56c1950c76433932125927c670b2f06"),
+);
+
 // Main at 3e09916423 before the donor routes attached new tracks and transitions.
 const SOURCE_ROUTE_PREDECESSORS: &[(&str, DefinitionHash)] = &[
     (
@@ -216,6 +221,7 @@ const SOURCE_ROUTE_PREDECESSORS: &[(&str, DefinitionHash)] = &[
         "oteryn:quest.crystal_wand_quest",
         hash(b"84012a12a60d5371070c5fea63caf66af7b05807b9f3d36a6c8d77a7cfeea557"),
     ),
+    DRAGON_CORPSE_PREDECESSOR,
     (
         "oteryn:quest.spike_task",
         hash(b"056a2e30ee5ff71b52331a31967a02804df035b2f8b0befe321d8869809829bb"),
@@ -268,6 +274,17 @@ pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
 mod tests {
     use super::*;
     use crate::quest::{loader, npc_rules};
+
+    #[test]
+    fn dragon_corpse_accepts_the_published_cave_pin() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let (quest, saved) = DRAGON_CORPSE_PREDECESSOR;
+        assert_ne!(catalogue.definition_hash(quest), Some(saved));
+        assert!(npc_rules::legacy_defaults(catalogue, quest, &saved).is_some());
+        Ok(())
+    }
 
     #[test]
     fn package_keeps_main_grave_danger_pin() -> Result<(), String> {

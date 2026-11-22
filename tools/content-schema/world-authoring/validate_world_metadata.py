@@ -90,10 +90,14 @@ def classic_quest_sources(root: Path, summary: dict, errors: list[str]) -> dict:
         "sha256": hashlib.sha256(raw).hexdigest(),
         "revision": capture["revision"],
     }:
-        errors.append("Transition.Teleport: classic quest source pin differs from capture")
+        errors.append(
+            "Transition.Teleport: classic quest source pin differs from capture"
+        )
     return {
         f"{x},{y},{z}:{row['appearance']}": (
-            (x, y, z), tuple(row["attributes"]["teleport"]), capture["revision"],
+            (x, y, z),
+            tuple(row["attributes"]["teleport"]),
+            capture["revision"],
         )
         for row in capture["placements"]
         if "teleport" in row.get("attributes", {})
@@ -154,7 +158,11 @@ def family_records(
     keys = [r.get("declaration", {}).get("identity", {}).get("key") for r in records]
     if keys != sorted(keys) or len(set(keys)) != len(keys):
         errors.append(f"{family}: keys must be unique and sorted")
-    startup = classic_quest_sources(root, summary, errors) if family == "Transition.Teleport" else {}
+    startup = (
+        classic_quest_sources(root, summary, errors)
+        if family == "Transition.Teleport"
+        else {}
+    )
     for record in records:
         declaration = record.get("declaration", {})
         key = declaration.get("identity", {}).get("key")
@@ -168,10 +176,14 @@ def family_records(
             ext = bound.get("external_id")
             if ext in startup and bound.get("identity_namespace") == MAP_NAMESPACE:
                 source, target, revision = startup.pop(ext)
-                if (bound.get("source_revision") != revision
-                        or _coordinates(declaration["from"]) != source
-                        or _coordinates(declaration["to"]) != target):
-                    errors.append(f"{key}: classic quest teleport differs from its source")
+                if (
+                    bound.get("source_revision") != revision
+                    or _coordinates(declaration["from"]) != source
+                    or _coordinates(declaration["to"]) != target
+                ):
+                    errors.append(
+                        f"{key}: classic quest teleport differs from its source"
+                    )
             elif (
                 family not in OWN_SOURCE_REVISION
                 and bound.get("identity_namespace") != WIKI_NAMESPACE
@@ -184,7 +196,9 @@ def family_records(
             if not (pos["x"] < map_extent["width"] and pos["y"] < map_extent["height"]):
                 errors.append(f"{key}: position outside the source map extent")
     if startup:
-        errors.append(f"{family}: missing classic quest teleport sources {sorted(startup)}")
+        errors.append(
+            f"{family}: missing classic quest teleport sources {sorted(startup)}"
+        )
     return records
 
 

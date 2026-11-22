@@ -72,7 +72,9 @@ MAX_FLOOR = 15
 UNSET = (0, 0, 0)
 CATALOGUES = ("content/world/objects", "content/world/terrain")
 GENERATOR = "tools/content-schema/world-authoring/convert_world_metadata.py"
-CLASSIC_QUEST_CAPTURE = "tools/content-schema/world-authoring/samples/classic-quest-placements.json"
+CLASSIC_QUEST_CAPTURE = (
+    "tools/content-schema/world-authoring/samples/classic-quest-placements.json"
+)
 
 FAMILIES = {
     "Area.HuntingPlace": {
@@ -379,7 +381,9 @@ def shard_files(
     return out
 
 
-def classic_quest_teleports(root: Path, records: list[dict], summary: dict) -> dict[str, bytes]:
+def classic_quest_teleports(
+    root: Path, records: list[dict], summary: dict
+) -> dict[str, bytes]:
     """Reconcile the same Crystal startup destinations as the B3 placement overlay."""
     raw = (root / CLASSIC_QUEST_CAPTURE).read_bytes()
     capture = json.loads(raw)
@@ -555,8 +559,11 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="fail instead of writing")
     args = parser.parse_args()
     try:
-        out = (retained_classic_quest_teleports(ROOT) if args.classic_quest_overlay
-               else build(read_source(args.crystal_root)))
+        out = (
+            retained_classic_quest_teleports(ROOT)
+            if args.classic_quest_overlay
+            else build(read_source(args.crystal_root))
+        )
     except (ConvertError, otbm_reader.OtbmError, OSError) as error:
         print(f"FAIL {error}", file=sys.stderr)
         return 1

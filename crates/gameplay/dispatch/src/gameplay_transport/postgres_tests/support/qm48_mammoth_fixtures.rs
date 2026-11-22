@@ -179,6 +179,7 @@ pub(super) async fn exercise_horn(
     };
     let use_interval = std::time::Duration::from_millis(250);
     if position == BEAR {
+        let before = bear_health(owner, admitted).await?;
         let payload = encode_use_intent(&target()).map_err(debug)?;
         let (next, result, _) = super::item_craft_fixtures::exchange(
             owner,
@@ -189,12 +190,12 @@ pub(super) async fn exercise_horn(
         )
         .await?;
         *admitted = next;
-        assert_ne!(
+        assert_eq!(
             result,
             UseDisposition::Committed,
-            "awake bear cannot be hugged"
+            "bare USE on the awake bear resolves a hit"
         );
-        // A refused USE still starts the native 200 ms world-action window.
+        assert!((10..=30).contains(&(before - bear_health(owner, admitted).await?)));
         tokio::time::sleep(use_interval).await;
     }
     let payload = encode_item_use_intent(&UseIntent {
@@ -259,6 +260,20 @@ pub(super) async fn exercise_horn(
             "SELECT count(*) FROM game_account_achievements WHERE achievement_key = 'oteryn:achievement/bearhugger'",
         ).fetch_one(&h.pool).await?;
         assert_eq!(achievements, 1);
+        tokio::time::sleep(use_interval).await;
+        let before = bear_health(owner, admitted).await?;
+        let payload = encode_use_intent(&target()).map_err(debug)?;
+        let (next, result, _) = super::item_craft_fixtures::exchange(
+            owner,
+            *admitted,
+            admitted.continuity.next_command_id,
+            &payload,
+            None,
+        )
+        .await?;
+        *admitted = next;
+        assert_eq!(result, UseDisposition::Committed);
+        assert!((10..=30).contains(&(before - bear_health(owner, admitted).await?)));
     }
     assert_eq!(
         super::qengine_outfit_stories_fixtures::quantity(h, EMPTY_HORN).await?,
@@ -269,6 +284,23 @@ pub(super) async fn exercise_horn(
         1
     );
     Ok(())
+}
+
+async fn bear_health(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult<u32> {
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    Ok(crate::gameplay_transport::actor_spell::observe_vitals(
+        &runtime,
+        &states,
+        admitted.runtime_actor.ok_or("bear trial actor")?,
+        admitted.game_session_id,
+    )
+    .ok_or("bear trial vitals")?
+    .1
+    .health)
 }
 
 pub(super) fn world(

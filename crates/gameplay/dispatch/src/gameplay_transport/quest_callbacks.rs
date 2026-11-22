@@ -298,7 +298,8 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let source_ordinal = match callback.key.as_str() {
         "oteryn:quest-callback/grimvale-full-moon-entry"
         | "oteryn:quest-callback/mages-tower-entry" => Some(1),
-        "oteryn:quest-callback/mages-tower-exit" => Some(2),
+        "oteryn:quest-callback/mages-tower-exit"
+        | oteryn_gameplay_quests::quest::barbarian_mead::AWAKE_BEAR => Some(2),
         _ => None,
     };
     if source_ordinal.is_some_and(|source| source != ordinal) {
@@ -1017,6 +1018,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // The barrel and bear have separate bare and selected-horn USE routes.
                     && match c.key.as_str() {
                         oteryn_gameplay_quests::quest::barbarian_mead::KEY
+                        | oteryn_gameplay_quests::quest::barbarian_mead::AWAKE_BEAR
                         | "oteryn:quest-callback/barbarian-test/hug-bear" => selected_tool.is_none(),
                         "oteryn:quest-callback/barbarian-test/fill-horn"
                         | "oteryn:quest-callback/barbarian-test/stun-bear" => selected_tool.is_some(),

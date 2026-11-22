@@ -30,7 +30,10 @@ def capture_sources(source_root):
         "tile.lua": {"TileUnique": {25010}, "TileAction": {50022}},
         "teleport.lua": {"TeleportAction": {50022, 55022, 55024}},
         "chest.lua": {"ChestUnique": {3164}},
-        "item.lua": {"ItemAction": {8009, 8010, 8011, 8012, 55023}, "ItemUnique": {3162, 3163}},
+        "item.lua": {
+            "ItemAction": {8009, 8010, 8011, 8012, 55023},
+            "ItemUnique": {3162, 3163},
+        },
         "tile_pick.lua": {"TilePickAction": {101}},
         "door_key.lua": {"KeyDoorAction": {4601}},
     }
@@ -94,7 +97,9 @@ def capture_sources(source_root):
         for positions in exact.values()
         for cell, appearance in positions.items()
     }
-    if not expected_exact <= {(tuple(row["position"]), row["item"]) for row in bindings}:
+    if not expected_exact <= {
+        (tuple(row["position"]), row["item"]) for row in bindings
+    }:
         raise ValueError("missing exact source access selector")
     expected = json.loads((ROOT / CAPTURE).read_bytes())
     pinned = {row["path"]: row for row in expected["sources"]}
@@ -105,7 +110,11 @@ def capture_sources(source_root):
         "git_blob_sha1": "5d5323401d243df8416a38aba33c3d6e738b2d1a",
     }
     chest_path = "data-global/startup/tables/chest.lua"
-    pinned[chest_path] = {"path": chest_path, "sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4", "git_blob_sha1": "7b9f823542f9b8d5f99fb6960abe070324c89b8e"}
+    pinned[chest_path] = {
+        "path": chest_path,
+        "sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+        "git_blob_sha1": "7b9f823542f9b8d5f99fb6960abe070324c89b8e",
+    }
     if {row["path"]: row for row in sources} != pinned:
         raise ValueError("source tables differ from pinned Crystal201189f blobs")
     return {

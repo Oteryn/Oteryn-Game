@@ -38,6 +38,8 @@ pub(super) struct Offer {
     #[serde(default)]
     minimum_level: Option<u32>,
     #[serde(default)]
+    maximum_level: Option<u32>,
+    #[serde(default)]
     failure_reply: Vec<String>,
 }
 
@@ -111,8 +113,12 @@ pub(super) fn prepare(
         runtime,
         |context, topic, _, tracks| {
             let text = callback_keyword(&context.2, &intent.text);
-            let meets_level = |minimum: Option<u32>| {
-                minimum.is_none_or(|minimum| inventory.is_some_and(|facts| facts.level >= minimum))
+            let meets_level = |minimum: Option<u32>, maximum: Option<u32>| {
+                minimum.is_none_or(|minimum| {
+                    inventory.is_some_and(|facts| {
+                        (minimum..=maximum.unwrap_or(u32::MAX)).contains(&facts.level)
+                    })
+                })
             };
             let mut refusal = |lines: &[String]| {
                 refused = !lines.is_empty();
@@ -165,7 +171,7 @@ pub(super) fn prepare(
                     if selected.next().is_some() {
                         return None;
                     }
-                    if !meets_level(callback.minimum_level)
+                    if !meets_level(callback.minimum_level, callback.maximum_level)
                         && let Some(choice) = refusal(&callback.failure_reply)
                     {
                         return Some(choice);
@@ -199,7 +205,7 @@ pub(super) fn prepare(
                 .iter()
                 .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
             {
-                if !meets_level(offer.minimum_level) {
+                if !meets_level(offer.minimum_level, offer.maximum_level) {
                     return refusal(&offer.failure_reply);
                 }
                 return Some(Choice {
@@ -252,7 +258,7 @@ pub(super) fn prepare(
             if matching.next().is_some() {
                 return None;
             }
-            if (!meets_level(callback.minimum_level)
+            if (!meets_level(callback.minimum_level, callback.maximum_level)
                 || !callback
                     .inventory
                     .iter()

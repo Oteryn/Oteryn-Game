@@ -580,6 +580,34 @@ async fn exercise_orchid(
         use_target(owner, admitted, command, &target).await?,
         UseDisposition::Committed
     );
+    let command = admitted.continuity.next_command_id;
+    super::quest_world_callbacks_fixtures::wire(
+        owner,
+        admitted,
+        command,
+        1,
+        oteryn_protocol_oteryn::world_spatial::encode_step_intent(
+            oteryn_protocol_oteryn::world_spatial::StepDirection::North,
+        ),
+    )
+    .await?;
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
+            .map_err(debug)?
+            .position(),
+        super::quest_world_callbacks_fixtures::local(
+            oteryn_gameplay_quests::quest::world_callbacks::Position {
+                x: library_door.x,
+                y: library_door.y,
+                floor: library_door.floor,
+            },
+        ),
+        "the open library door admits ordinary movement"
+    );
 
     for (position, approach, item) in [(sapphire, west, 3029), (ruby, east, 3030)] {
         arrive(owner, admitted, approach).await?;

@@ -353,6 +353,8 @@ pub(super) async fn earn_level(
         .await
         .map_err(debug)?
         .ok_or("progression state")?;
+    let mut occurrence = super::fixture::id(105);
+    occurrence[12..].copy_from_slice(&carrying_level.to_be_bytes());
     let outcome = owner
         .revision_sequencer
         .acquire(fence.character_id)
@@ -363,8 +365,7 @@ pub(super) async fn earn_level(
             owner.holder,
             fence,
             ExperienceAwardRequest {
-                occurrence: ExperienceRewardOccurrence::from_bytes(super::fixture::id(105))
-                    .map_err(debug)?,
+                occurrence: ExperienceRewardOccurrence::from_bytes(occurrence).map_err(debug)?,
                 amount: oteryn_simulation_determinism::ExactI64::new(
                     target
                         .checked_sub(current.total_experience.get())

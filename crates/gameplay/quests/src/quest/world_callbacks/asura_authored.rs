@@ -33,6 +33,82 @@ mod tests {
     use super::*;
 
     #[test]
+    fn asura_authored_doors_project_passable_replacements() -> Result<(), String> {
+        let bindings = crate::quest::authored_bindings::Bindings::parse(include_bytes!(
+            "../../../../../../content/quests/authored-bindings/engenc-asura-palace.json"
+        ))?;
+        for suffix in ["s2/door", "s3/door", "s4/door", "orchid/library-door"] {
+            let key = format!("oteryn:quest-callback/engenc/asura/{suffix}");
+            let door = bindings
+                .world_callbacks()
+                .find(|callback| callback.key == key)
+                .ok_or(&key)?;
+            let native = door.selector.native.as_ref().ok_or("native door")?;
+            assert!(
+                door.passages.iter().any(|passage| {
+                    passage.position == native.position
+                        && passage.appearance == native.appearance
+                        && passage.replacement == Some(native.appearance + 1)
+                        && passage.replacement_passable != Some(false)
+                }),
+                "{key} never opens collision"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn orchid_loader_allows_fresh_use_after_runtime_reset() -> Result<(), String> {
+        use crate::quest::{authored_bindings::Bindings, loader};
+
+        let bindings = Bindings::parse(include_bytes!(
+            "../../../../../../content/quests/authored-bindings/engenc-asura-palace.json"
+        ))?;
+        let loaded = loader::load_embedded_quest_state_with_bindings("content-1", &bindings)
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let tracks = std::collections::BTreeMap::from([
+            ("oteryn:quest-progress/engenc/asura/s3/opened".into(), 2),
+            ("oteryn:quest-progress/engenc/asura/s4/opened".into(), 1),
+        ]);
+        let entry = catalogue
+            .transition("oteryn:quest-callback/engenc/asura/orchid/entry")
+            .ok_or("Orchid entry transition")?;
+        assert!(
+            catalogue.evaluate(entry, &tracks, 0).is_ok(),
+            "saved admission cannot restart the unfinished encounter"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn orchid_loader_allows_library_door_to_reopen() -> Result<(), String> {
+        use crate::quest::{authored_bindings::Bindings, loader};
+
+        let bindings = Bindings::parse(include_bytes!(
+            "../../../../../../content/quests/authored-bindings/engenc-asura-palace.json"
+        ))?;
+        let loaded = loader::load_embedded_quest_state_with_bindings("content-1", &bindings)
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let tracks = std::collections::BTreeMap::from([
+            ("oteryn:quest-progress/engenc/asura/orchid/count".into(), 1),
+            (
+                "oteryn:quest-progress/engenc/asura/orchid/library-open".into(),
+                1,
+            ),
+        ]);
+        let door = catalogue
+            .transition("oteryn:quest-callback/engenc/asura/orchid/library-door")
+            .ok_or("Orchid library door transition")?;
+        assert!(
+            catalogue.evaluate(door, &tracks, 0).is_ok(),
+            "saved library flag prevents reopening the closed door"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn orchid_native_loader_keeps_gate_reward_and_completion() -> Result<(), String> {
         use crate::quest::{authored_bindings::Bindings, loader, world_callbacks};
 

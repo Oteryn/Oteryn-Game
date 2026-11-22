@@ -173,6 +173,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return UseDisposition::NothingToUse;
         }
+        if callback.key == oteryn_gameplay_quests::quest::barbarian_mead::AWAKE_BEAR {
+            let QuestCause::Use(command) = cause else {
+                return UseDisposition::Rejected;
+            };
+            return self.bite_awake_bear(runtime, states, actor, command);
+        }
         if callback.effects.reward_door.is_some() {
             return self
                 .execute_reward_door(

@@ -48,17 +48,20 @@ def overlay_outputs(outputs):
         local = (y // 32 % 8) * 8 + x // 32 % 8
         payloads = {
             sector: codec.zstandard.ZstdDecompressor().decompress(
-                raw[offset:offset + length], max_output_size=codec.MAX_SECTOR_BYTES
+                raw[offset : offset + length], max_output_size=codec.MAX_SECTOR_BYTES
             )
             for sector, offset, length in sectors
         }
         tiles = codec.decode_sector(payloads[local], x // 32, y // 32)
         (tile,) = [tile for tile in tiles if tile[:2] == (x, y)]
         if tile[3]:
-            raise ValueError(f"Quest container unexpectedly inside a house: {(x, y, z)}")
+            raise ValueError(
+                f"Quest container unexpectedly inside a house: {(x, y, z)}"
+            )
         items = tile[5]
         (parent,) = [
-            i for i, (slot, depth, _) in enumerate(items)
+            i
+            for i, (slot, depth, _) in enumerate(items)
             if depth == 0 and palette[slot]["source_item_id"] == container
         ]
         child = {
@@ -74,14 +77,18 @@ def overlay_outputs(outputs):
         if palette[slots[material]] != child:
             raise ValueError(f"Unexpected palette binding for material {material}")
         start = parent + 1
-        end = next((i for i in range(start, len(items)) if items[i][1] == 0), len(items))
+        end = next(
+            (i for i in range(start, len(items)) if items[i][1] == 0), len(items)
+        )
         value = (slots[material], 1, None)
         if installed:
             if items[start:end] != [value]:
                 raise ValueError(f"Crystal container_quest.lua:{line} contents drift")
             continue
         if start != end:
-            raise ValueError(f"Crystal container_quest.lua:{line} source already has contents")
+            raise ValueError(
+                f"Crystal container_quest.lua:{line} source already has contents"
+            )
         items.insert(start, value)
         payloads[local] = codec.encode_sector_tiles(x // 32, y // 32, tiles)
         updated = codec.encode_region(z, rx, ry, payloads)
@@ -102,10 +109,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    paths = [INDEX, SUMMARY, *{
-        f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"
-        for x, y, z in MATERIALS
-    }]
+    paths = [
+        INDEX,
+        SUMMARY,
+        *{
+            f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"
+            for x, y, z in MATERIALS
+        },
+    ]
     previous = {path: (ROOT / path).read_bytes() for path in paths}
     outputs = previous.copy()
     overlay_outputs(outputs)

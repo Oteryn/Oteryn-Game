@@ -313,6 +313,8 @@ pub struct RewardCallback {
     pub requires_premium: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub maximum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_completed_quests: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -1007,6 +1009,8 @@ fn validate_document_with_capacity(
             || c.magic_effects.iter().any(|cue| cue.effect_id().is_none())
             || c.storage.len() > super::QUESTSTATE0_RL_02
             || c.minimum_level == Some(0)
+            || c.maximum_level
+                .is_some_and(|max| c.minimum_level.is_none_or(|min| max < min))
             || tracks.len() != c.storage.len()
             || c.requires_actor_conditions.len() > 8
             || c.requires_actor_conditions
@@ -2624,9 +2628,8 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 209 existing, 31 QB, and 13 Sven and Dedoras routes. The final two terms are
-        // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 253 + 62 + 147 + 1 + 1 + 13 + 12);
+        // The shared shard adds three settlement routes for previously enrolled Cave Explorers.
+        assert_eq!(load()?.len(), 256 + 62 + 147 + 1 + 1 + 13 + 12);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2654,6 +2657,9 @@ mod tests {
         let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
         assert_eq!(qb.len(), 31);
         let added_keys = [
+            "oteryn:quest-reward/l12-cave-explorer-legacy-addon-1",
+            "oteryn:quest-reward/l12-cave-explorer-legacy-addon-2",
+            "oteryn:quest-reward/l12-cave-explorer-legacy-report",
             "oteryn:quest-reward/l2-wizard-flowers",
             "oteryn:quest-reward/l2-wizard-flowers-start",
             "oteryn:quest-reward/l2-wizard-legs",
@@ -2673,7 +2679,7 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 222);
+        assert_eq!(legacy.len(), 225);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
