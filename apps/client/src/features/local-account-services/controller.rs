@@ -186,6 +186,19 @@ async fn apply(
                     }
                     Err(error) => return Err(error),
                 }
+            } else {
+                // A new grant must prove ownership before a prior ID enters the view.
+                for id in view.prior.request_ids() {
+                    match client.bazaar_status(token, &id, cancel.clone()).await {
+                        Ok(receipt) => {
+                            accept(view, receipt);
+                            return Ok(());
+                        }
+                        Err(NativeLoginError::Platform(HttpStatus(404))) => {}
+                        Err(error) => return Err(error),
+                    }
+                }
+                view.feedback = tr!("No server result yet").into();
             }
             return Ok(());
         }

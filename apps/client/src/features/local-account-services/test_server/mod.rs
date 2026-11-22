@@ -46,6 +46,7 @@ pub(crate) struct Authority {
     pub pending_first: bool,
     pub paginate: bool,
     pub fail_pages: bool,
+    pub hide_recent_operations: bool,
     pub offline: bool,
     pub lease_active: bool,
     pub in_guild: bool,
@@ -104,7 +105,11 @@ impl Authority {
                 name: "South".into(),
             }],
             next_cursor: None,
-            recent_operations: self.commands.values().map(|(_, r)| r.clone()).collect(),
+            recent_operations: if self.hide_recent_operations {
+                Vec::new()
+            } else {
+                self.commands.values().map(|(_, r)| r.clone()).collect()
+            },
         }
     }
     fn route(

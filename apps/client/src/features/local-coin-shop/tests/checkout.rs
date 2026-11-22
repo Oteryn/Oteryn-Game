@@ -376,6 +376,69 @@ fn earlier_order_cannot_replace_just_purchased_checkout() -> TestResult {
     checkout_refresh_case(false)
 }
 
+#[test]
+fn coin_status_recovers_request_outside_recent_history() -> TestResult {
+    test_thread(|| {
+        use crate::account_services::test_server::coins::CoinAuthority;
+
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let next = mock.token(&client)?;
+        let other = mock.token(&client)?;
+        mock.authority
+            .lock()
+            .map_err(|_| "lock")?
+            .coin_wallets_by_grant
+            .insert(3, CoinAuthority::new(mock.base.clone())?);
+        let browser: Browser = Arc::new(|_| false);
+        let execute = |view: &mut View, action, grant| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                grant,
+                &browser,
+                CancellationToken::new(),
+            ));
+        };
+        let mut first = View::new(None);
+        execute(&mut first, Action::Refresh, &token);
+        mock.with_coins(|coins| {
+            coins.drop_after_create = true;
+            coins.hide_recent_orders = true;
+        })?;
+        execute(
+            &mut first,
+            Action::Purchase {
+                package_id: PACKAGE.into(),
+                confirmed: true,
+            },
+            &token,
+        );
+        let request_id = first
+            .pending
+            .as_ref()
+            .ok_or("pending request")?
+            .request_id
+            .clone();
+        let mut other_account = View::with_prior(None, first.prior.clone());
+        execute(&mut other_account, Action::Status, &other);
+        assert!(other_account.order.is_none());
+        assert!(!format!("{other_account:?}").contains(&request_id));
+
+        let mut reopened = View::with_prior(None, first.prior);
+        execute(&mut reopened, Action::Refresh, &next);
+        assert!(reopened.order.is_none());
+        assert!(!reopened.can_retry());
+        execute(&mut reopened, Action::Status, &next);
+        let order = reopened.order.ok_or("status failed to recover the order")?;
+        assert_eq!(order.request_id, request_id);
+        assert_eq!(mock.with_coins(|coins| coins.creations)?, 1);
+        Ok(())
+    })
+}
+
 fn checkout_refresh_case(deny_lookup: bool) -> TestResult {
     test_thread(move || {
         let mock = MockPlatform::start()?;

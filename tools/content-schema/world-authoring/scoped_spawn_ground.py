@@ -15,6 +15,7 @@ from convert_world_metadata import canonical
 
 ROOT = Path(__file__).resolve().parents[3]
 CAPTURE = "imports/crystalserver/spawn-reconciliation/slice-2.json"
+COMPILER_CELLS = "tools/world-bundle-compiler/scoped-spawn-ground.json"
 INDEX = "content/world/placements/index.json"
 SHARD = "content/world/terrain/terrain-08794-08845.json"
 MARKER = "content/world/terrain/index.json"
@@ -27,7 +28,26 @@ def captured_grounds(root=ROOT):
 
 def ground_cells(raw):
     points = json.loads(raw)["points"]
-    return {tuple(row["cell"]): row["ground"] for row in points if "ground" in row}
+    grounds = {}
+    for row in points:
+        if "ground" in row:
+            cell = tuple(row["cell"])
+            if cell in grounds:
+                raise ValueError(f"duplicate captured ground at {cell}")
+            grounds[cell] = row["ground"]
+    return grounds
+
+
+def scoped_slots(palette):
+    return {
+        slot: row["source_item_id"]
+        for slot, row in enumerate(palette)
+        if row.get("scoped_spawn_ground")
+    }
+
+
+def plain_ground(flags, house, depth, attrs):
+    return not (flags & 1 or house or depth or attrs)
 
 
 @lru_cache(maxsize=1)
@@ -73,6 +93,7 @@ def overlay_outputs(outputs, root=ROOT, *, declared=None):
 
     index = json.loads(read(INDEX))
     palette = index["palette"]
+    existing = scoped_slots(palette)
     by_key = {row["key"]: i for i, row in enumerate(palette)}
     scoped = {}
     for item in sorted(set(grounds.values())):
@@ -99,26 +120,38 @@ def overlay_outputs(outputs, root=ROOT, *, declared=None):
         name = codec.region_name(z, x // 256, y // 256)
         groups[f"content/world/placements/{name}"][x, y] = item
     regions = {row["path"]: row for row in index["regions"]}
+    if missing := groups.keys() - regions.keys():
+        raise ValueError(f"missing spawn ground regions: {sorted(missing)}")
     replacements = Counter()
     bytes_delta = 0
-    for path, cells in sorted(groups.items()):
+    for path in sorted(regions if existing else groups):
+        cells = groups.get(path, {})
         raw = read(path)
         z, rx, ry, sectors = codec.decode_region(raw)
         encoded = {}
         for local, tiles in sectors:
             sx, sy = rx * 8 + local % 8, ry * 8 + local // 8
             for x, y, flags, house, _, placements in tiles:
+                cell = (x, y, z)
+                if existing:
+                    for slot, depth, attrs in placements:
+                        if slot in existing and (
+                            grounds.get(cell) != existing[slot]
+                            or not plain_ground(flags, house, depth, attrs)
+                        ):
+                            raise ValueError(
+                                f"unapproved scoped spawn ground at {cell}"
+                            )
                 item = cells.pop((x, y), None)
                 if item is None:
                     continue
                 candidates = [
                     i
                     for i, (slot, depth, attrs) in enumerate(placements)
-                    if not depth
-                    and not attrs
+                    if plain_ground(flags, house, depth, attrs)
                     and palette[slot]["source_item_id"] == item
                 ]
-                if len(candidates) != 1 or flags & 1 or house:
+                if len(candidates) != 1:
                     raise ValueError(
                         f"spawn ground differs from capture at {(x, y, z)}"
                     )
@@ -127,7 +160,10 @@ def overlay_outputs(outputs, root=ROOT, *, declared=None):
                 if old_slot != scoped[item]:
                     replacements[old_slot] += 1
                     placements[at] = (scoped[item], 0, None)
-            encoded[local] = codec.encode_sector_tiles(sx, sy, tiles)
+            if path in groups:
+                encoded[local] = codec.encode_sector_tiles(sx, sy, tiles)
+        if path not in groups:
+            continue
         if cells:
             raise ValueError(f"missing spawn ground in {path}: {sorted(cells)}")
         payload = codec.encode_region(z, rx, ry, encoded)
@@ -138,7 +174,7 @@ def overlay_outputs(outputs, root=ROOT, *, declared=None):
     if declared is not None:
         from convert_world_base import SUMMARY, key_family
 
-        path = SUMMARY.relative_to(root).as_posix()
+        path = SUMMARY.relative_to(ROOT).as_posix()
         summary = json.loads(outputs[path])
         counts = summary["palette"]
         counts["entries"] = len(palette)
@@ -168,6 +204,14 @@ def main():
     outputs = {}
     overlay_outputs(outputs)
     outputs.update(catalogue_outputs((ROOT / MARKER).read_bytes()))
+    outputs[COMPILER_CELLS] = canonical(
+        {
+            "points": [
+                {"cell": cell, "ground": ground}
+                for cell, ground in sorted(captured_grounds().items())
+            ]
+        }
+    )
     for path, raw in outputs.items():
         target = ROOT / path
         if args.check:

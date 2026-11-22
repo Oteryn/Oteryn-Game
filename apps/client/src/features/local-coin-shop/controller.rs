@@ -80,7 +80,27 @@ async fn apply(
                     .or_else(|| view.order.as_ref().map(|o| &o.request_id))
                 {
                     Some(id) => id.clone(),
-                    None => return Ok(()),
+                    None => {
+                        // Only a current-bearer response may recover an earlier order.
+                        for id in view.prior.request_ids() {
+                            match client.coin_order_status(token, &id, cancel.clone()).await {
+                                Ok(order) => {
+                                    accept(view, order)?;
+                                    break;
+                                }
+                                Err(NativeLoginError::Platform(HttpStatus(404))) => {}
+                                Err(error) => return Err(error),
+                            }
+                        }
+                        if view.order.is_none() {
+                            view.feedback = tr!("No server result yet").into();
+                            return Ok(());
+                        }
+                        refresh(view, client, token, cancel).await?;
+                        view.feedback =
+                            tr!("Purchase status and wallet balance refreshed from Oteryn.").into();
+                        return Ok(());
+                    }
                 },
             };
             if view.pending.as_ref().is_some_and(|p| p.request_id != id) {

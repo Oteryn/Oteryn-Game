@@ -412,3 +412,54 @@ fn fresh_grant_filters_previously_accepted_bazaar_receipt() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn bazaar_status_recovers_request_outside_recent_history() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let next = mock.token(&client)?;
+        let execute = |view: &mut View, action, grant| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                grant,
+                CancellationToken::new(),
+            ));
+        };
+        let mut first = View::default();
+        execute(&mut first, Action::Refresh(AuctionView::All), &token);
+        {
+            let mut authority = mock.authority.lock().map_err(|_| "lock")?;
+            authority.fail_after_commit = true;
+            authority.hide_recent_operations = true;
+        }
+        execute(
+            &mut first,
+            Action::Bid {
+                auction_id: AUCTION.into(),
+                coins: 50,
+                confirmed: true,
+            },
+            &token,
+        );
+        let request_id = first.pending_id().ok_or("pending ID")?.to_owned();
+        let mut reopened = View {
+            prior: first.prior,
+            ..View::default()
+        };
+        execute(&mut reopened, Action::Refresh(AuctionView::All), &next);
+        assert!(reopened.receipt.is_none());
+        assert!(!reopened.can_retry());
+        execute(&mut reopened, Action::Status, &next);
+        let receipt = reopened
+            .receipt
+            .ok_or("status failed to recover the receipt")?;
+        assert_eq!(receipt.request_id, request_id);
+        assert_eq!(receipt.state, OperationState::Committed);
+        assert_eq!(mock.authority.lock().map_err(|_| "lock")?.effects, 1);
+        Ok(())
+    })
+}

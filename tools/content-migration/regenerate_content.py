@@ -63,6 +63,14 @@ WORLD = ROOT / "content/world"
 PIN_PATH = "apps/game-server/tests/content_world_project_repository.rs"
 PIN_TEST = ROOT / PIN_PATH
 CLIENT_WORLD = "crates/client-assets/src/world.rs"
+NOMADS_WINDOW = "docs/reference/content-prep/qmech/nomads-land-window.json"
+NOMADS_WINDOW_REPORTS = (
+    ("docs/reference/content-prep/SRVWLD-M02.md", "Region SHA256"),
+    (
+        "docs/reference/content-prep/engnpc2-m02/nomads-window.md",
+        "Current region SHA-256",
+    ),
+)
 
 REGISTRY = (
     "content/project.json",
@@ -81,6 +89,7 @@ EXTRA_DERIVED = (
     "content/interactions/index.json",
     "content/quests/grizzly-boss-rooms.json",
     "content/quests/last-creep-native.json",
+    "tools/world-bundle-compiler/scoped-spawn-ground.json",
     "tools/content-schema/world-authoring/samples/world-base-capture-v1.json",
     "tools/content-schema/native-gameplay/prey-model-results.json",
     "tools/content-schema/quest-authoring/samples/binding_packets/index.json",
@@ -752,6 +761,32 @@ def canonicalize_world() -> None:
             shutil.copyfile(output / locator, WORLD / locator)
 
 
+def refresh_nomads_window(*, check: bool) -> None:
+    profile_path = ROOT / NOMADS_WINDOW
+    profile = json.loads(profile_path.read_bytes())
+    placement = profile["map"]
+    digest = hashlib.sha256((ROOT / placement["path"]).read_bytes()).hexdigest()
+    placement["sha256"] = digest
+    outputs = {profile_path: json.dumps(profile, ensure_ascii=False, indent=2) + "\n"}
+    for path, label in NOMADS_WINDOW_REPORTS:
+        target = ROOT / path
+        text, count = re.subn(
+            rf"({re.escape(label)}: `)[0-9a-f]{{64}}(?=`)",
+            lambda match: match[1] + digest,
+            target.read_text(encoding="utf-8"),
+        )
+        if count != 1:
+            raise SystemExit(f"{path}: expected one {label} field")
+        outputs[target] = text
+    for target, text in outputs.items():
+        if target.read_text(encoding="utf-8") != text:
+            if check:
+                raise SystemExit(
+                    f"stale Nomads window evidence: {target.relative_to(ROOT)}"
+                )
+            target.write_text(text, encoding="utf-8")
+
+
 def repin_rust_inventory() -> None:
     """Rewrite byte lengths and SHA-256 pins so the test pins exactly the regenerated package."""
     text = PIN_TEST.read_text(encoding="utf-8")
@@ -1116,6 +1151,7 @@ def main() -> int:
     if args.check:
         if args.resolve or args.skip_checks or args.no_stage:
             parser.error("--check cannot be combined with mutation options")
+        refresh_nomads_window(check=True)
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
                 run(command)
@@ -1307,6 +1343,7 @@ def main() -> int:
         run(["python3", f"tools/content-schema/quest-authoring/{script}.py"])
     refresh_quest_donor_capture()
     run(["python3", "tools/contracts/refresh_npc_service_counts.py"])
+    refresh_nomads_window(check=False)
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
@@ -1314,6 +1351,8 @@ def main() -> int:
     if args.resolve:
         derived = derived_paths() | {
             PIN_PATH,
+            NOMADS_WINDOW,
+            *(path for path, _ in NOMADS_WINDOW_REPORTS),
             "apps/game-server/tests/content_npc_catalogue.rs",
             "apps/game-server/tests/content_npc_service_model.rs",
         }

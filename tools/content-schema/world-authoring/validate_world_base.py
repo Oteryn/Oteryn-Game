@@ -36,6 +36,7 @@ from convert_world_base import (
     key_family,
     world_otbm_totals,
 )
+from scoped_spawn_ground import CAPTURE, captured_grounds, plain_ground, scoped_slots
 
 HERE = Path(__file__).resolve().parent
 DIRECTORY = "content/world/placements"
@@ -94,8 +95,10 @@ def load(root: Path, path: str, strict: bool = True):
 _STATE: dict = {}
 
 
-def _init(root: str, extent: tuple[int, int], palette_size: int) -> None:
-    _STATE.update(root=Path(root), extent=extent, palette_size=palette_size)
+def _init(root: str, extent: tuple[int, int], palette_size: int, scoped=None) -> None:
+    _STATE.update(
+        root=Path(root), extent=extent, palette_size=palette_size, scoped=scoped or {}
+    )
 
 
 def check_region(row: dict) -> dict:
@@ -112,6 +115,7 @@ def check_region(row: dict) -> dict:
         "z": -1,
         "attributes": Counter(),
         "palette": Counter(),
+        "scoped": Counter(),
         "teleports": [],
     }
     errors = result["errors"]
@@ -139,6 +143,7 @@ def check_region(row: dict) -> dict:
     attributes = result["attributes"]
     used = result["palette"]
     size = _STATE["palette_size"]
+    scoped = _STATE["scoped"]
     if any(p >= size for p in seen):
         errors.append(
             f"{path}: palette indexes outside 0..{size - 1}: "
@@ -149,7 +154,7 @@ def check_region(row: dict) -> dict:
         if not sector:
             errors.append(f"{path}: sector {local} is empty")
         previous = (-1, -1)
-        for x, y, _flags, house, tile_zones, tile_items in sector:
+        for x, y, flags, house, tile_zones, tile_items in sector:
             if (y, x) <= previous:
                 errors.append(f"{path}: tiles not strictly sorted at ({x}, {y})")
                 break
@@ -165,6 +170,13 @@ def check_region(row: dict) -> dict:
             items += len(tile_items)
             for palette, depth, attrs in tile_items:
                 used[palette] += 1
+                if palette in scoped:
+                    cell = (x, y, z)
+                    if not plain_ground(flags, house, depth, attrs):
+                        errors.append(
+                            f"{path}: scoped spawn ground is not plain at {cell}"
+                        )
+                    result["scoped"][cell, scoped[palette]] += 1
                 if depth:
                     attributes["depth"] += 1
                 if attrs:
@@ -908,7 +920,7 @@ def validate(
     if not check_palette(palette, bound, terrain, world_object, errors, scoped_terrain):
         return errors
     extent = (summary["map"]["width"], summary["map"]["height"])
-    args = (str(root), extent, len(palette))
+    args = (str(root), extent, len(palette), scoped_slots(palette))
     if workers > 1 and len(rows) > 8:
         with ProcessPoolExecutor(workers, initializer=_init, initargs=args) as pool:
             results = list(pool.map(check_region, rows, chunksize=16))
@@ -921,6 +933,7 @@ def validate(
     used: Counter = Counter()
     totals = Counter()
     teleports: Counter = Counter()
+    scoped: Counter = Counter()
     for result in results:
         errors.extend(result["errors"])
         teleports.update(
@@ -928,6 +941,7 @@ def validate(
             for position, index, destination in result["teleports"]
         )
         used.update(result["palette"])
+        scoped.update(result["scoped"])
         floors[result["z"]] += result["tiles"]
         attributes.update(result["attributes"])
         totals.update(
@@ -945,19 +959,12 @@ def validate(
             f"{INDEX}: totals {index['totals']} differ from the decoded {counted}"
         )
     check_palette_use(palette, used, summary, counted["items"], errors)
-    if scoped_terrain:
-        from scoped_spawn_ground import captured_grounds
-
-        occurrences = Counter(
-            {
-                row["source_item_id"]: used[slot]
-                for slot, row in enumerate(palette)
-                if row.get("scoped_spawn_ground")
-            }
-        )
-        if occurrences != Counter(captured_grounds(root).values()):
+    if scoped_terrain or (root / CAPTURE).is_file():
+        expected = Counter(captured_grounds(root).items())
+        if scoped != expected:
             errors.append(
-                f"{INDEX}: scoped spawn ground occurrences differ from the capture"
+                f"{INDEX}: scoped spawn ground cells differ from the capture"
+                f" (missing {list(expected - scoped)[:5]}, unexpected {list(scoped - expected)[:5]})"
             )
     check_teleports(summary, teleports, root, errors)
     if summary.get("totals") != index["totals"]:

@@ -52,6 +52,9 @@ impl PriorRequests {
     pub(crate) fn contains(&self, id: &str) -> bool {
         self.ids().contains(id)
     }
+    pub(crate) fn request_ids(&self) -> Vec<String> {
+        self.ids().iter().cloned().collect()
+    }
     pub(crate) fn reconcile(&self, id: &str) {
         self.ids().remove(id);
     }
