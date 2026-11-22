@@ -17,11 +17,6 @@ pub(super) fn publish<T: Stepper>(
     held: &mut Vec<WorldSpatialEntity>,
 ) -> bool {
     if outbox.scope_publish(session) {
-        outbox.own_identity(session.own_identity());
-        outbox.appearances(session.visible_appearances());
-        if let Some(entities) = session.entities_changed(&[]) {
-            outbox.entities(entities);
-        }
         held.clear();
         return true;
     }

@@ -61,34 +61,38 @@ impl Outbox {
             .game_session_id()
             .or_else(|| scope.as_ref().map(|scope| scope.session));
         let scope = scope.filter(|scope| Some(scope.session) == binding);
-        let reset = {
-            let mut mailbox = lock(&self.0);
-            if binding.is_some()
-                && binding != mailbox.scope_session
-                && (mailbox.scope_session.is_some() || scope.is_some())
-            {
-                let reset_modal = mailbox.scope_session.is_some();
-                reset_scope(&mut mailbox, scope, session);
-                mailbox.scope_session = binding;
-                mailbox.scope_reset_modal = reset_modal;
-                true
-            } else {
-                mailbox.scope_session = binding.or(mailbox.scope_session);
-                false
-            }
-        };
-        if reset || lock(&self.0).scope_pending {
-            self.push(session.drain());
-            if reset {
-                let mut mailbox = lock(&self.0);
-                mailbox.pushed.scope_session = binding;
-                mailbox.pushed.scope_changed = true;
-                mailbox.pushed.activity_scope = mailbox.activity_scope.clone();
-                mailbox.world_context.pending = true;
-            }
-            return true;
+        let mut mailbox = lock(&self.0);
+        let reset = binding.is_some()
+            && binding != mailbox.scope_session
+            && (mailbox.scope_session.is_some() || scope.is_some());
+        if reset {
+            let reset_modal = mailbox.scope_session.is_some();
+            reset_scope(&mut mailbox, scope, session);
+            mailbox.scope_reset_modal = reset_modal;
         }
-        false
+        mailbox.scope_session = binding.or(mailbox.scope_session);
+        if !mailbox.scope_pending {
+            return false;
+        }
+        mailbox.push_events(session.drain());
+        mailbox.own_identity(session.own_identity());
+        mailbox.appearances(session.visible_appearances());
+        if let Some(entities) = session.entities_changed(&[]) {
+            mailbox.entities(entities);
+        }
+        if reset {
+            #[cfg(test)]
+            BEFORE_SCOPE_MARKER.with(|hook| {
+                if let Some(check) = hook.take() {
+                    check();
+                }
+            });
+            mailbox.pushed.scope_session = binding;
+            mailbox.pushed.scope_changed = true;
+            mailbox.pushed.activity_scope = mailbox.activity_scope.clone();
+            mailbox.world_context.pending = true;
+        }
+        true
     }
 }
 fn retire_source_requests(mailbox: &mut mailbox::Mailbox) {
@@ -114,6 +118,7 @@ fn reset_scope<T: Stepper>(
         (
             std::mem::take(&mut mailbox.properties.house_transfer.summary),
             std::mem::take(&mut mailbox.properties.house_transfer.feedback),
+            std::mem::take(&mut mailbox.properties.house_transfer.fields[0]),
         )
     });
     if let Some(scope) = &scope {
@@ -148,9 +153,10 @@ fn reset_scope<T: Stepper>(
     mailbox.traffic = traffic;
     mailbox.party.own_character_name = character;
     mailbox.properties.house.fields[0] = world_field;
-    if let Some((summary, feedback)) = house_transfer {
+    if let Some((summary, feedback, key)) = house_transfer {
         mailbox.properties.house_transfer.summary = summary;
         mailbox.properties.house_transfer.feedback = feedback;
+        mailbox.properties.house_transfer.fields[0] = key;
     }
     mailbox.notices.tutorial_selected = session.feature_selected(31);
     mailbox.notices.save_selected = session.feature_selected(75);
@@ -290,4 +296,10 @@ mod tests {
         assert!(mailbox.scope_pending);
         assert!(mailbox.activity_reset_commands);
     }
+}
+
+#[cfg(test)]
+std::thread_local! {
+    pub(in crate::play) static BEFORE_SCOPE_MARKER: std::cell::RefCell<Option<Box<dyn FnOnce()>>> =
+        const { std::cell::RefCell::new(None) };
 }

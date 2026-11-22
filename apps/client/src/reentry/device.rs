@@ -54,7 +54,13 @@ impl Reentry {
         if self.state != EntryState::Entering || token.is_cancelled() {
             return false;
         }
-        token.cancel();
+        {
+            let _delivery = self
+                .browser_delivery
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            token.cancel();
+        }
         if let Some(config) = &self.client.native_login {
             config.training_queue.clear();
         }

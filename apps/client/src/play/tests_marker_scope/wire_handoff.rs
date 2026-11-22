@@ -7,6 +7,9 @@ use oteryn_session::{Admission, Session, read_frame, write_frame};
 use std::time::Duration;
 use tokio::io::DuplexStream;
 
+#[path = "wire_handoff/house_scope.rs"]
+mod house_scope;
+
 type Error = Box<dyn std::error::Error + Send + Sync>;
 const DEADLINE: Duration = Duration::from_secs(3);
 
@@ -63,17 +66,22 @@ async fn join(peer: &mut DuplexStream, caps: &[u32]) -> Result<(), Error> {
         })?,
     )
     .await?;
-    snapshot(
-        peer,
-        0,
-        &[DomainSnapshot {
-            domain_id: 1,
+    let spatial = spatial(100);
+    let mut domains = vec![DomainSnapshot {
+        domain_id: 1,
+        revision: 1,
+        snapshot_type: 1,
+        payload: &spatial,
+    }];
+    if caps.contains(&wire::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1) {
+        domains.push(DomainSnapshot {
+            domain_id: 57,
             revision: 1,
             snapshot_type: 1,
-            payload: &spatial(100),
-        }],
-    )
-    .await
+            payload: wire::zones_nologout::SERVER_MESSAGES_EMPTY_SNAPSHOT,
+        });
+    }
+    snapshot(peer, 0, &domains).await
 }
 
 async fn admit(client: DuplexStream, caps: &[u32]) -> Result<Session<DuplexStream>, Error> {

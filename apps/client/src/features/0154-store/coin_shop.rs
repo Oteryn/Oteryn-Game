@@ -40,11 +40,13 @@ impl PlayLink {
             let Some(shared) = browser_mailbox.upgrade() else {
                 return false;
             };
-            let mailbox = lock(&shared);
-            !mailbox.scope_pending
-                && !mailbox.player_typing_shutdown
-                && !cancel.is_cancelled()
-                && browser(url)
+            // Under the cancellation owner's lock, commit or reject delivery.
+            // The configured callback may call back into play and runs unlocked.
+            let deliver = {
+                let mailbox = lock(&shared);
+                !mailbox.scope_pending && !mailbox.player_typing_shutdown && !cancel.is_cancelled()
+            };
+            deliver && browser(url)
         });
         let after = Arc::new(move |cancel: &CancellationToken| {
             #[cfg(test)]
@@ -115,4 +117,43 @@ fn session_end_wins_before_checkout_refresh_delivery() -> Result<(), Box<dyn std
         "cancelled worker queued a Store refresh"
     );
     Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn store_browser_callback_can_lock_the_play_mailbox() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::account_services::test_server::{CHARACTER, MockPlatform, test_thread};
+    use std::{sync::mpsc, time::Duration};
+
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let (link, _commands, _) = crate::play::play_channel();
+        let mut config = crate::NativeLoginConfig::from_env(|name| match name {
+            "OTERYN_PLATFORM_URL" | "OTERYN_GATEWAY_URL" => Some(mock.base.clone()),
+            "OTERYN_OAUTH_CLIENT_ID" => Some("native-client".into()),
+            _ => None,
+        })?
+        .ok_or("checkout config")?;
+        let mailbox = Arc::downgrade(&link.mailbox);
+        let (opened, result) = mpsc::channel();
+        config.open_browser = Arc::new(move |_| {
+            let accessible = mailbox
+                .upgrade()
+                .is_some_and(|shared| shared.try_lock().is_ok());
+            let _ = opened.send(accessible);
+            false
+        });
+        link.configure_coin_shop(Some(config), CHARACTER);
+        let launcher = lock(&link.mailbox)
+            .connection
+            .coin_shop
+            .clone()
+            .ok_or("launcher")?;
+        assert!(launcher.start());
+        assert!(
+            result.recv_timeout(Duration::from_secs(5))?,
+            "the Store called the browser opener while holding the play mailbox"
+        );
+        Ok(())
+    })
 }
