@@ -66,6 +66,44 @@ pub(super) fn scene(
     if entry.key.contains("/fury_gates/") {
         return super::engworldchg_fury::scene(entry, marker);
     }
+    if entry.key.contains("/hive_born/") {
+        use oteryn_gameplay_quests::quest::{hive_access, world_callbacks::Position};
+
+        let east = entry.selector.position.ok_or("eastern checkpoint")?;
+        let west = marker.selector.position.ok_or("western checkpoint")?;
+        let gate = |x, y| {
+            hive_access::GATES
+                .iter()
+                .find(|gate| gate.position == (Position { x, y, floor: -1 }))
+                .ok_or("Hive gate")
+        };
+        let east_gate = gate(33598, 31228)?;
+        let west_gate = gate(33495, 31197)?;
+        let objects = [
+            (east_gate.position, east_gate.appearance),
+            (west_gate.position, west_gate.appearance),
+            (west, marker.selector.appearance.ok_or("tower marker")?),
+        ];
+        let cells: Vec<_> = (-2i16..=3)
+            .flat_map(|offset| {
+                (-1i16..=1).map(move |row| Position {
+                    x: west.x.saturating_add_signed(offset),
+                    y: west.y.saturating_add_signed(row),
+                    ..west
+                })
+            })
+            .collect();
+        return super::quest_world_callbacks_fixtures::world_cells(
+            entry,
+            east,
+            entry.selector.appearance.ok_or("eastern marker")?,
+            1,
+            &objects,
+            &[],
+            None,
+            &cells,
+        );
+    }
     use oteryn_world_bundle::{bundle, sector};
     use std::collections::BTreeMap;
     let at = entry.selector.position.ok_or("entry")?;

@@ -616,6 +616,12 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
         quest: &str,
     ) -> Option<oteryn_gameplay_quests::quest::log::QuestLogState<'_>> {
         let state = self.states().get(quest)?;
+        if let Some(completed) = oteryn_gameplay_quests::quest::world_change_journals::hive_journal_completion(quest, self.tracks()) {
+            return Some(oteryn_gameplay_quests::quest::log::QuestLogState {
+                pinned_content_revision: &state.pinned_content_revision,
+                completed,
+            });
+        }
         let helper = oteryn_gameplay_quests::quest::authored_bindings::counter_helper_quest(quest);
         if let Some(helper) = helper {
             return self.save_event_snapshot_valid.then(|| oteryn_gameplay_quests::quest::log::QuestLogState {
