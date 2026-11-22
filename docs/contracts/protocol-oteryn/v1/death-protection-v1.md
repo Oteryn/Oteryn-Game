@@ -28,7 +28,7 @@ key; the client never infers its consumption from current holdings.
 
 Bundle-world capability 595 (requires 382) gates command 6352. This empty,
 self-only request uses the same current session fence as command 664.
-`00` means no committed death. Otherwise the reply is `01`, the same 16-byte
+`00` means no committed death. Otherwise the reply is `02`, the same 16-byte
 death occurrence as command 664, and one kind byte. Values are 0 for a receipt
 without a recorded kind, 1 for environment (no attributed combatant at the
 native lethal transition), 2 for creature and 3 for player. A player-owned

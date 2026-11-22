@@ -139,7 +139,7 @@ impl DeathOccurrenceReply {
             return None;
         }
         let mut bytes = Vec::with_capacity(18);
-        bytes.push(1);
+        bytes.push(2);
         bytes.extend_from_slice(&death.occurrence);
         bytes.push(death.final_blow as u8);
         Some(bytes)
@@ -148,7 +148,7 @@ impl DeathOccurrenceReply {
     pub fn decode(bytes: &[u8]) -> Option<Self> {
         match bytes {
             [0] => Some(Self(None)),
-            [1, occurrence @ .., kind] => {
+            [2, occurrence @ .., kind] => {
                 let occurrence = <[u8; 16]>::try_from(occurrence).ok()?;
                 (occurrence != [0; 16]).then_some(Self(Some(DeathOccurrence {
                     occurrence,
