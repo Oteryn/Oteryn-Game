@@ -71,7 +71,6 @@ impl Mailbox {
                 })
                 .for_each(drop);
         }
-        self.observe_capture_events(&events);
         self.console_events(&events);
         self.activity_scope_events(&events);
         self.channel_list_events(&events);

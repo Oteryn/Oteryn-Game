@@ -106,9 +106,9 @@ pub(crate) struct CaptureObservations {
     was_low: Option<bool>,
 }
 impl crate::play::mailbox::Mailbox {
-    pub(in crate::play) fn observe_capture_events(
+    pub(in crate::play) fn observe_capture_event(
         &mut self,
-        events: &[oteryn_session::SessionEvent],
+        event: &oteryn_session::SessionEvent,
     ) {
         use oteryn_session::analyser_transport::AnalyserImpact;
         use oteryn_session::{SessionEvent, analyser_transport::AnalyserFact};
@@ -141,24 +141,22 @@ impl crate::play::mailbox::Mailbox {
                     self.capture_observations.impact[index].max(value.get());
             }
         };
-        for event in events {
-            match event {
-                SessionEvent::AnalyserFacts(delta) => delta.value.iter().for_each(&mut observe),
-                SessionEvent::AnalyserAttributedFacts(delta) => {
-                    delta.value.iter().for_each(|row| observe(&row.fact))
-                }
-                SessionEvent::ActorVitals(delta) if delta.value.max_health > 0 => {
-                    let vitals = &delta.value;
-                    let low = vitals.health > 0
-                        && u64::from(vitals.health) * 100 <= u64::from(vitals.max_health) * 4;
-                    if self.capture_observations.was_low == Some(false) && low {
-                        self.capture_observations.low_health =
-                            self.capture_observations.low_health.wrapping_add(1);
-                    }
-                    self.capture_observations.was_low = (vitals.health > 0).then_some(low);
-                }
-                _ => continue,
+        match event {
+            SessionEvent::AnalyserFacts(delta) => delta.value.iter().for_each(&mut observe),
+            SessionEvent::AnalyserAttributedFacts(delta) => {
+                delta.value.iter().for_each(|row| observe(&row.fact))
             }
+            SessionEvent::ActorVitals(delta) if delta.value.max_health > 0 => {
+                let vitals = &delta.value;
+                let low = vitals.health > 0
+                    && u64::from(vitals.health) * 100 <= u64::from(vitals.max_health) * 4;
+                if self.capture_observations.was_low == Some(false) && low {
+                    self.capture_observations.low_health =
+                        self.capture_observations.low_health.wrapping_add(1);
+                }
+                self.capture_observations.was_low = (vitals.health > 0).then_some(low);
+            }
+            _ => {}
         }
     }
 }

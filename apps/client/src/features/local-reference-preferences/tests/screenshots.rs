@@ -291,6 +291,25 @@ fn tracked_drop_requests_screenshot_on_confirmed_loot() -> Result<(), Box<dyn st
             .len(),
         1
     );
+    link.analyser_track_item("1", false);
+    link.analyser_auto_value("5");
+    crate::play::mailbox::lock(&link.mailbox).analyser.item_info.insert(
+        1,
+        oteryn_session::analyser_catalogue::ItemInfo {
+            item_type: 1,
+            name: "Known drop".into(),
+            coin_worth: 5,
+        },
+    );
+    outbox.push(vec![loot(3)]);
+    assert!(link.analyser_panel().auto_tracked.contains(&1));
+    assert_eq!(
+        state
+            .process_screenshots(now, Some(&link), &mut Source(vec![]))?
+            .len(),
+        1,
+        "capture the drop that first meets the auto-track threshold"
+    );
     Ok(())
 }
 
