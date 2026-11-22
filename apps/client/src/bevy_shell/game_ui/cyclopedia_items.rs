@@ -26,6 +26,9 @@ use oteryn_client_ui::quick_loot::{Action as LootAction, QuickLootFilterMode as 
 enum Action {
     Track,
     ExcludeSale,
+    OwnValue,
+    MarketValue,
+    MerchantValue,
     Hands,
     Class,
     Level,
@@ -52,6 +55,10 @@ struct Control {
 struct LootControls {
     analyser: bool,
     tracked: bool,
+    market: Option<u64>,
+    merchant: Option<u64>,
+    value: Option<u64>,
+    source: Option<oteryn_client_ui::analyser::PriceSource>,
     excluded: bool,
     available: bool,
     ready: bool,
@@ -63,7 +70,13 @@ impl LootControls {
         let loot = link.quick_loot_panel();
         let id = panel.catalogue_definition.parse::<u32>().ok();
         let (analyser, tracked, excluded) = link.catalogue_loot_options(id);
+        let (market, merchant, value, source) =
+            id.map(|id| link.catalogue_price(id)).unwrap_or_default();
         Self {
+            market,
+            merchant,
+            value,
+            source,
             analyser,
             tracked,
             excluded,
@@ -76,6 +89,8 @@ impl LootControls {
 }
 #[derive(Component)]
 struct Search;
+#[derive(Component)]
+struct OwnPrice;
 #[derive(Resource, Default)]
 struct State {
     overlay: Option<Entity>,
@@ -238,6 +253,7 @@ fn drop_query(
 
 fn finish(
     guard: ModalGuard,
+    own: Query<&EditableText, With<OwnPrice>>,
     search: Query<&EditableText, With<Search>>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
@@ -272,6 +288,39 @@ fn finish(
         return;
     }
     match control.action {
+        Action::OwnValue | Action::MarketValue | Action::MerchantValue => {
+            use oteryn_client_ui::analyser::PriceSource;
+            let Ok(id) = panel.catalogue_definition.parse() else {
+                return;
+            };
+            let Some((_, _, _, shown)) = &state.snapshot else {
+                return;
+            };
+            let (source, price) = match control.action {
+                Action::MarketValue => (PriceSource::Market, shown.market),
+                Action::MerchantValue => (PriceSource::Merchant, shown.merchant),
+                Action::OwnValue => {
+                    let Ok(editor) = own.single() else { return };
+                    if editor.pending_paste.is_some()
+                        || editor
+                            .pending_edits
+                            .iter()
+                            .any(bevy::text::TextEdit::is_destructive)
+                    {
+                        state.pending = Some((entity, control));
+                        return;
+                    }
+                    (
+                        PriceSource::Own,
+                        editor.value().to_string().trim().parse().ok(),
+                    )
+                }
+                _ => return,
+            };
+            if let Some(price) = price {
+                play.link.catalogue_choose_price(id, source, price);
+            }
+        }
         Action::Track | Action::ExcludeSale => {
             let Ok(id) = panel.catalogue_definition.parse::<u32>() else {
                 return;

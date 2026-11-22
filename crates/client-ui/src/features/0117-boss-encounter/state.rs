@@ -8,6 +8,7 @@ pub struct BossEncounterPanel {
     pub boss_names: std::collections::BTreeMap<String, String>,
     pub catalogue: Option<oteryn_client_runtime::boss_encounter::catalogue::Page>,
     pub catalogue_query: Option<oteryn_client_runtime::boss_encounter::catalogue::Query>,
+    pub tracker_target: Option<String>,
     pub pending_catalogue: Option<oteryn_client_runtime::boss_encounter::catalogue::Query>,
     pub gallery_open: bool,
     pub selected: bool,

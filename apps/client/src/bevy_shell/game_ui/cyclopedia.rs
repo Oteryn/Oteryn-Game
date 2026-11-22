@@ -157,6 +157,7 @@ struct State {
 pub(super) fn install(app: &mut App) {
     artwork::install(app);
     app.init_resource::<super::cyclopedia_navigation::History>()
+        .add_systems(Last, super::cyclopedia_navigation::update_history)
         .init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(Update, (keyboard, project).chain())
@@ -379,6 +380,7 @@ fn activate(
     controls: Query<&Control>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
+    mut history: ResMut<super::cyclopedia_navigation::History>,
     mut widget: Option<ResMut<super::hud::EquipmentWidget>>,
     mut state: ResMut<State>,
 ) {
@@ -392,6 +394,14 @@ fn activate(
             state.pending_filter = Some((*control, event.entity));
         } else {
             perform(&owner, &mut state, *control, widget.as_deref_mut());
+            if control.kind == Kind::Encyclopedia
+                && let Some(play) = &owner.play
+                && !play.link.cyclopedia_character_panel().open
+                && play.link.inspection_panel().catalogue_open
+            {
+                use super::cyclopedia_navigation::Subject;
+                history.visit(control.generation, Subject::Character, Subject::Items);
+            }
         }
     }
 }

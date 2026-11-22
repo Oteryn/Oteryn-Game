@@ -15,6 +15,8 @@ use oteryn_client_ui_bevy as source;
 
 #[derive(Resource, Default)]
 struct State {
+    flags: Vec<(u16, u16, u8, String)>,
+    hidden_flags: u8,
     surface: bool,
     faded: u8,
     generation: u64,
@@ -35,6 +37,8 @@ struct Action {
 struct Donation;
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
+    Flag(u8),
+    ShowFlags,
     Surface,
     Opacity,
     Atlas(usize),
@@ -77,11 +81,25 @@ fn activate(
         return;
     }
     match action.kind {
+        Kind::Flag(index) => {
+            state.hidden_flags ^= 1 << index;
+            state.snapshot = None;
+        }
+        Kind::ShowFlags => {
+            state.hidden_flags = 0;
+            state.snapshot = None;
+        }
         Kind::Surface => {
+            if panel.geometry.floor > 7 {
+                return;
+            }
             state.surface = !state.surface;
             state.snapshot = None;
         }
         Kind::Opacity => {
+            if !state.surface || panel.geometry.floor >= 7 {
+                return;
+            }
             state.faded = (state.faded + 25) % 125;
             state.snapshot = None;
         }
@@ -189,6 +207,8 @@ fn project(
         remove_root(&mut state, &mut commands, &mut focus, &parents);
         state.snapshot = None;
         state.donate = None;
+        state.flags.clear();
+        state.hidden_flags = 0;
         state.surface = false;
         state.faded = 0;
         state.generation = owner.generation();
@@ -196,7 +216,23 @@ fn project(
     let Some(panel) = panel else {
         return;
     };
-    if state.snapshot.as_ref() == Some(&panel) {
+    if panel.geometry.floor > 7 {
+        state.surface = false;
+    }
+    let flags = panel
+        .geometry
+        .bounds
+        .and_then(|bounds| {
+            Some(
+                owner
+                    .play
+                    .as_ref()?
+                    .view
+                    .atlas_flags(bounds, panel.geometry.floor),
+            )
+        })
+        .unwrap_or_default();
+    if state.snapshot.as_ref() == Some(&panel) && state.flags == flags {
         return;
     }
     // Let queued edits reach the old editor before preserving its draft and replacing it.
@@ -204,6 +240,7 @@ fn project(
     if gold.is_some_and(|gold| gold.pending_paste.is_some() || !gold.pending_edits.is_empty()) {
         return;
     }
+    state.flags = flags;
     // The typed gold survives a redraw of the same window; only Donate submits it.
     let draft = gold.map(|gold| gold.value().to_string());
     remove_root(&mut state, &mut commands, &mut focus, &parents);
@@ -270,6 +307,13 @@ fn project(
             ][usize::from(state.faded / 25)],
             Kind::Opacity,
         ),
+        ("Red squares", Kind::Flag(0)),
+        ("Blue squares", Kind::Flag(1)),
+        ("Green squares", Kind::Flag(2)),
+        ("Yellow squares", Kind::Flag(3)),
+        ("Quest crosses", Kind::Flag(4)),
+        ("Personal crosses", Kind::Flag(5)),
+        ("Show all flags", Kind::ShowFlags),
         ("Regions", Kind::Atlas(0)),
         ("Previous area", Kind::Atlas(1)),
         ("Next area", Kind::Atlas(2)),
@@ -301,7 +345,10 @@ fn project(
             ))
             .observe(activate)
             .id();
-        if kind != Kind::Close && (!panel.selected || panel.pending || panel.speed_pending) {
+        if kind != Kind::Close && (!panel.selected || panel.pending || panel.speed_pending)
+            || kind == Kind::Surface && panel.geometry.floor > 7
+            || kind == Kind::Opacity && (!state.surface || panel.geometry.floor >= 7)
+        {
             commands
                 .entity(button)
                 .insert(bevy::ui::InteractionDisabled);
@@ -404,6 +451,51 @@ fn project(
             ))
             .id();
         commands.entity(canvas).add_child(cell);
+    }
+    if let Some([left, top, right, bottom]) = panel.geometry.bounds {
+        let (w, h) = (u32::from(right - left) + 1, u32::from(bottom - top) + 1);
+        let (num, den) = if w * 400 >= h * 600 {
+            (600, w)
+        } else {
+            (400, h)
+        };
+        let (ox, oy) = (
+            16 + (600 - w * num / den) / 2,
+            66 + (400 - h * num / den) / 2,
+        );
+        for (x, y, icon, name) in &state.flags {
+            if state.hidden_flags & (1 << icon) != 0 {
+                continue;
+            }
+            let symbol = match icon {
+                4 => "✚",
+                5 => "×",
+                _ => "■",
+            };
+            let color = [
+                Color::srgb(1., 0., 0.),
+                Color::srgb(0., 0., 1.),
+                Color::srgb(0., 1., 0.),
+                Color::srgb(1., 1., 0.),
+                Color::srgb(1., 0., 0.),
+                Color::srgb(1., 0., 0.),
+            ][usize::from(*icon)];
+            commands
+                .spawn((
+                    ChildOf(canvas),
+                    source::text(
+                        format!("{symbol} {name}"),
+                        source::font(skins.font.clone(), false),
+                    ),
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: px((ox + u32::from(x - left) * num / den) as f32),
+                        top: px((oy + u32::from(y - top) * num / den) as f32),
+                        ..default()
+                    },
+                ))
+                .insert(TextColor(color));
+        }
     }
     for [x, y] in drawing.points {
         let point = commands

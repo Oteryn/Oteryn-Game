@@ -293,6 +293,53 @@ fn house_window_action_with_map(
                 .trigger(bevy::ui_widgets::Activate { entity });
             app.update();
             app.update();
+            if caption == "Guildhalls" {
+                use oteryn_session::property_services::house as wire;
+                let PlayCommand::Feature(cmd) = receiver
+                    .try_recv()
+                    .map_err(|_| "filtered browse did not continue to the next town page")?
+                else {
+                    return Err("house page".into());
+                };
+                let row = wire::HouseSummary {
+                    house: "oteryn:house.ztest".into(),
+                    kind: wire::HouseKind::Guildhall,
+                    state: 3,
+                    rent: 10,
+                    revision: 1,
+                    acl_revision: 1,
+                    owned: false,
+                    move_out_ms: None,
+                    price: 0,
+                    ends_ms: None,
+                    own_maximum: None,
+                    details: Some(wire::HouseDetails {
+                        name: "Abbey Hall".into(),
+                        size: 100,
+                        beds: 2,
+                        entrance: (110, 100, 7),
+                    }),
+                };
+                let data =
+                    wire::encode_house_page(&[row], None, true).map_err(|e| format!("{e:?}"))?;
+                app.world()
+                    .non_send::<HostOwner>()
+                    .play
+                    .as_ref()
+                    .ok_or("play")?
+                    .link
+                    .bevy_house_ownership_result(
+                        &cmd,
+                        &oteryn_client_runtime::raw_feature::GatedCommandResult {
+                            command_id: 1,
+                            server_sequence: 1,
+                            status: oteryn_client_runtime::raw_feature::CommandStatus::Accepted,
+                            payload: data,
+                        },
+                    );
+                app.update();
+                assert!(projection(&mut app)?.contains("Abbey Hall"));
+            }
             let text = projection(&mut app)?;
             assert!(
                 text.contains(present) && !text.contains(absent),
@@ -314,6 +361,24 @@ fn house_window_action_with_map(
                 assert!(text.find(first).ok_or("first")? < text.find(last).ok_or("last")?);
             }
         }
+        let entity = button(&mut app, "Query")?;
+        app.world_mut()
+            .trigger(bevy::ui_widgets::Activate { entity });
+        app.update();
+        app.update();
+        let model = app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .house_panel()
+            .model;
+        assert!(
+            model.collecting && model.pending.is_some(),
+            "refresh preserves town-wide sorting"
+        );
         return Ok(());
     }
     let save = button(

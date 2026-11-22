@@ -123,6 +123,23 @@ impl Outbox {
 }
 
 impl Mailbox {
+    pub(in crate::play) fn refresh_loot_quote(
+        &mut self,
+        id: u32,
+        price: u64,
+        source: oteryn_client_ui::analyser::PriceSource,
+    ) {
+        if self.analyser.loot_sources.get(&id) != Some(&source)
+            || self.analyser.loot_prices.get(&id) == Some(&price)
+        {
+            return;
+        }
+        self.analyser.loot_prices.insert(id, price);
+        self.analyser.party.clear();
+        self.analyser.party_revision = self.analyser.party_revision.saturating_add(1);
+        self.analyser.party_feedback = Some("Prices changed; refresh party accounting");
+    }
+
     pub(in crate::play) fn npc_shop_events(&mut self, events: &[SessionEvent]) {
         for event in events {
             match event {
@@ -133,6 +150,22 @@ impl Mailbox {
                         &mut self.npc_shop.live,
                         delta.value.clone(),
                     );
+                    let mut prices = std::collections::BTreeMap::<u32, u64>::new();
+                    for quote in self.npc_shop.live.quotes() {
+                        if quote.side == oteryn_client_ui::npc_shop::NpcTradeSide::Sell
+                            && quote.count == 1
+                        {
+                            let price = prices.entry(quote.item).or_default();
+                            *price = (*price).max(u64::from(quote.price));
+                        }
+                    }
+                    for (id, price) in prices {
+                        self.refresh_loot_quote(
+                            id,
+                            price,
+                            oteryn_client_ui::analyser::PriceSource::Merchant,
+                        );
+                    }
                 }
                 SessionEvent::NpcConversation(delta) => {
                     self.npc_shop.live.conversation = delta.value.open.map(|(npc, _)| npc);

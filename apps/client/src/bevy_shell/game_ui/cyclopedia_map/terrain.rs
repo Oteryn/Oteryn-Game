@@ -121,6 +121,17 @@ impl Terrain {
                 chunks.push((std::cmp::Reverse(z), std::cmp::Reverse(lod), x, y, name));
             }
         }
+        if self.surface
+            && !chunks
+                .iter()
+                .any(|(floor, ..)| floor.0 == i32::from(self.floor))
+        {
+            return Self {
+                surface: false,
+                ..self
+            }
+            .image(store);
+        }
         chunks.sort_unstable();
         if chunks.is_empty() {
             return Err("No map artwork for this area and floor".into());

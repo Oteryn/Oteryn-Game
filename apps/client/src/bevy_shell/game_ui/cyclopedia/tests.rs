@@ -551,5 +551,24 @@ fn subject_navigation_opens_items_and_returns_to_character() -> TestResult {
             from == Subject::Items
         );
     }
+    click(&mut app, Kind::Encyclopedia)?;
+    let back = app
+        .world_mut()
+        .query::<(Entity, &SubjectButton)>()
+        .iter(app.world())
+        .find_map(|(e, b)| (b.from == Subject::Items && b.to == Destination::Back).then_some(e))
+        .ok_or("previous subject")?;
+    app.world_mut().trigger(Activate { entity: back });
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .cyclopedia_character_panel()
+            .open
+    );
     Ok(())
 }

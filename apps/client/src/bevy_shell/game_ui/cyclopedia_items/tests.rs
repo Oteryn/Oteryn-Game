@@ -570,3 +570,68 @@ fn selected_item_tracks_drops_and_excludes_quick_sales() -> TestResult {
     assert!(!link.analyser_panel().loot_tracked.contains(&42));
     Ok(())
 }
+
+#[test]
+fn item_valuation_uses_confirmed_market_or_entered_unit_price() -> TestResult {
+    let (mut app, link, mut receiver, outbox) = catalogue_window()?;
+    outbox.bevy_analyser_initialize();
+    click(&mut app, Action::Select(42))?;
+    click(&mut app, Action::Prices)?;
+    reply_to_prices(&mut receiver, &outbox)?;
+    app.update();
+    click(&mut app, Action::MarketValue)?;
+    assert_eq!(link.analyser_panel().loot_prices.get(&42), Some(&19));
+    app.world_mut()
+        .query_filtered::<&mut EditableText, With<OwnPrice>>()
+        .single_mut(app.world_mut())?
+        .editor_mut()
+        .set_text("73");
+    click(&mut app, Action::OwnValue)?;
+    assert_eq!(link.analyser_panel().loot_prices.get(&42), Some(&73));
+    use oteryn_client_ui::npc_shop::NpcTradeSide;
+    use oteryn_session::{AppliedDelta, EntityRef, SessionEvent, npc_service};
+    outbox.bevy_npc_shop_supported();
+    let shop = |revision, price| {
+        SessionEvent::NpcTradeWindow(AppliedDelta {
+            server_sequence: revision,
+            base_revision: revision - 1,
+            new_revision: revision,
+            value: npc_service::NpcTradeWindow {
+                open: Some((
+                    EntityRef {
+                        identity: [9; 16],
+                        generation: 1,
+                    },
+                    revision,
+                )),
+                offers: vec![npc_service::NpcOffer {
+                    item_definition_ref: 42,
+                    side: NpcTradeSide::Sell,
+                    count: 1,
+                    unit_price: price,
+                }],
+                details: vec![],
+            },
+        })
+    };
+    outbox.push(vec![shop(1, 32)]);
+    app.update();
+    assert!(visible(&mut app).contains("Current merchant buys 1 for 32 gold"));
+    click(&mut app, Action::MerchantValue)?;
+    assert_eq!(link.analyser_panel().loot_prices.get(&42), Some(&32));
+    outbox.push(vec![shop(2, 41)]);
+    app.update();
+    assert_eq!(link.analyser_panel().loot_prices.get(&42), Some(&41));
+    click(&mut app, Action::ExcludeSale)?;
+    assert!(link.npc_shop_panel().sale_exclusions.contains(&42));
+    let quote = link.npc_shop_panel().live.quotes()[0];
+    link.npc_sell_all_request(quote);
+    assert!(
+        receiver.try_recv().is_err(),
+        "excluded catalogue item was sold"
+    );
+    click(&mut app, Action::ExcludeSale)?;
+    link.npc_sell_all_request(quote);
+    assert!(matches!(receiver.try_recv()?, PlayCommand::NpcShop(_)));
+    Ok(())
+}

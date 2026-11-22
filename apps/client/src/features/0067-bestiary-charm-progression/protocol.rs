@@ -115,6 +115,14 @@ pub(in crate::play) fn apply(
             charm.effect_active
         ));
     }
+    if panel
+        .catalogue
+        .search
+        .as_ref()
+        .is_some_and(|s| s.eligible.is_some())
+    {
+        panel.catalogue.search = None;
+    }
     panel.reply = Some(reply);
 }
 #[cfg(test)]

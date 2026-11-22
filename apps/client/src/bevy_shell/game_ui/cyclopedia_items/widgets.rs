@@ -100,6 +100,31 @@ pub(super) fn build(
         .parse::<u32>()
         .ok()
         .is_some_and(|id| panel.catalogue.contains_key(&id));
+    if selected && loot.analyser {
+        label(
+            commands,
+            skin,
+            window,
+            &loot.source.zip(loot.value).map_or_else(
+                || "Loot unit value".into(),
+                |(source, value)| format!("Loot unit value: {value} gold ({source:?})"),
+            ),
+        );
+        commands.spawn((
+            ChildOf(window),
+            OwnPrice,
+            TextInput,
+            bevy::input_focus::tab_navigation::TabIndex(1),
+            EditableText::new(loot.value.map(|v| v.to_string()).as_deref().unwrap_or("")),
+            source::font(skin.font.clone(), false),
+            TextColor(source::TEXT_COLOR),
+            Node {
+                width: px(160.),
+                min_height: px(24.),
+                ..default()
+            },
+        ));
+    }
     for (action, caption, enabled) in [
         (Action::Browse, "Browse", true),
         (Action::Next, "Next page", panel.catalogue_next.is_some()),
@@ -138,6 +163,17 @@ pub(super) fn build(
             },
             selected,
         ),
+        (
+            Action::MarketValue,
+            "Use market average",
+            selected && loot.analyser && loot.market.is_some(),
+        ),
+        (
+            Action::MerchantValue,
+            "Use merchant buy price",
+            selected && loot.analyser && loot.merchant.is_some(),
+        ),
+        (Action::OwnValue, "Use own value", selected && loot.analyser),
         (Action::Prices, "Market prices", selected),
         (
             Action::Hands,

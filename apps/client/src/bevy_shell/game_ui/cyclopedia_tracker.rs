@@ -27,6 +27,7 @@ use oteryn_client_ui_bevy as source;
 enum Action {
     Track,
     Stop(String),
+    Open(String),
     Refresh,
     Sort(TrackerSort),
     Reverse,
@@ -161,6 +162,9 @@ fn project(
         .filter(|_| owner.phase == Phase::Playing);
     if let Some(play) = play {
         play.link.cyclopedia_tracker_flush();
+        if owner.settings.preferences.panel_visible("bosstiary") {
+            play.link.tracked_boss_continue();
+        }
     }
     let mut panel = play.map(|play| play.link.cyclopedia_tracker_panel());
     let stale = generation != state.generation;
@@ -354,6 +358,17 @@ fn fill(
             .id();
         commands.entity(window.rows).add_child(row);
         text(commands, skins, row, label);
+        if boss {
+            button(
+                commands,
+                skins,
+                row,
+                control(Action::Open(key.clone())),
+                "Open boss",
+                view.busy,
+            );
+        }
+
         button(
             commands,
             skins,
@@ -517,6 +532,19 @@ fn finish(
     let panel = || play.link.cyclopedia_tracker_panel();
     match action {
         Action::Close => {}
+        Action::Open(key) => {
+            if !boss
+                || !view(&panel(), true).rows.iter().any(|(id, _)| id == &key)
+                || !play.link.tracked_boss_open(&key)
+            {
+                return;
+            }
+            if !owner.settings.preferences.panel_visible("bosstiary") {
+                let mut preferences = owner.settings.preferences.clone();
+                preferences.visible_panels.push("bosstiary".into());
+                owner.settings.apply(preferences);
+            }
+        }
         Action::Reverse => play.link.cyclopedia_tracker_reverse(boss),
         Action::Sort(sort) => {
             let hide = if boss {

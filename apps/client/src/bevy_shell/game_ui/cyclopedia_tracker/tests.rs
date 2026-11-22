@@ -570,3 +570,60 @@ fn percentage_control_orders_by_fraction_and_reverses() -> TestResult {
     assert_eq!(rows(&mut app), ["rat: 10/10 kills", "bear: 20/250 kills"]);
     Ok(())
 }
+
+#[test]
+fn tracked_boss_opens_matching_catalogue_entry_across_pages() -> TestResult {
+    use oteryn_client_runtime::boss_encounter::catalogue::{Entry, Page, Query};
+    let (mut app, mut commands, outbox) = fixture()?;
+    outbox.bevy_bosstiary_initialize();
+    toolbar(&mut app, "bosstiary_tracker")?;
+    command(&mut commands)?;
+    let key = "oteryn:creature.ferumbras";
+    reply(&mut app, &outbox, &tracker(true, &[(key, 7)]))?;
+    click(&mut app, true, &Action::Open(key.into()))?;
+    for (after, next, species, name) in [
+        (0, Some(1), "oteryn:creature.orc", "Orc"),
+        (1, None, key, "Ferumbras"),
+    ] {
+        let PlayCommand::Feature(cmd) = commands.try_recv()? else {
+            return Err("boss catalogue".into());
+        };
+        assert_eq!(
+            Query::decode(&cmd.payload).ok_or("boss request")?.after,
+            after
+        );
+        let entry = Entry {
+            key: species.into(),
+            name: name.into(),
+            category: 1,
+            kills: 1,
+            thresholds: [5, 10, 20],
+            points: [10, 30, 60],
+            look: 1,
+            object: false,
+        };
+        outbox.bevy_bosstiary_result(&GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: Page {
+                entries: vec![entry],
+                points: 0,
+                next,
+            }
+            .encode()
+            .ok_or("boss page")?,
+        });
+        app.update();
+    }
+    let owner = app.world().non_send::<HostOwner>();
+    assert!(owner.settings.preferences.panel_visible("bosstiary"));
+    let panel = owner
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .boss_encounter_panel();
+    assert_eq!(panel.fields[0], key);
+    Ok(())
+}

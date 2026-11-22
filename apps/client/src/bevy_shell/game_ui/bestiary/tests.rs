@@ -198,9 +198,26 @@ fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result
     app.update();
     assert!(enabled(&mut app, Kind::Select(9))?);
     assert!(enabled(&mut app, Kind::Select(7)).is_err());
+    click(&mut app, Kind::Select(9))?;
+    let result_detail = command(&mut receiver)?;
+    let mut one = search_page.clone();
+    one.cards.retain(|card| card.race == 9);
+    publish(&result_detail, &one)?;
+    app.update();
     click(&mut app, Kind::EndSearch)?;
     app.update();
     assert!(enabled(&mut app, Kind::Select(7))?);
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .charm_progression_panel()
+            .fields[1],
+        "7"
+    );
     click(&mut app, Kind::Catalogue(1))?;
     let next = command(&mut receiver)?;
     let mut last = page.clone();

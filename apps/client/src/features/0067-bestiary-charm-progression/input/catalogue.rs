@@ -13,17 +13,65 @@ impl PlayLink {
     pub fn bestiary_search(&self, name: &str, targets: bool) {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.properties.charm_progression;
-        if panel.pending || !panel.selected || name.len() > 96 { return; }
-        let stage = if targets {
-            let Some(charm) = panel.reply.as_ref().and_then(|reply| reply.charms.charms.iter().find(|c| c.charm.to_string() == panel.fields[0])) else {return};
-            Some(match charm.kind {
-                oteryn_client_runtime::charm_progression::charm::CharmKind::Major => oteryn_client_ui::bestiary_charms::MAJOR_CHARM_RACE_STAGE,
-                oteryn_client_runtime::charm_progression::charm::CharmKind::Minor => oteryn_client_ui::bestiary_charms::MINOR_CHARM_RACE_STAGE,
-            })
-        } else { None };
+        if panel.pending || !panel.selected || name.len() > 96 {
+            return;
+        }
+        let eligible = if targets {
+            let Some(reply) = &panel.reply else { return };
+            let Some(charm) = reply
+                .charms
+                .charms
+                .iter()
+                .find(|c| c.charm.to_string() == panel.fields[0])
+            else {
+                return;
+            };
+            let stage = match charm.kind {
+                oteryn_client_runtime::charm_progression::charm::CharmKind::Major => {
+                    oteryn_client_ui::bestiary_charms::MAJOR_CHARM_RACE_STAGE
+                }
+                oteryn_client_runtime::charm_progression::charm::CharmKind::Minor => {
+                    oteryn_client_ui::bestiary_charms::MINOR_CHARM_RACE_STAGE
+                }
+            };
+            let assigned = reply
+                .charms
+                .charms
+                .iter()
+                .filter(|c| c.assigned_race.is_some())
+                .count();
+            let free = charm.unlocked_stage > 0
+                && charm.assigned_race.is_none()
+                && reply
+                    .charms
+                    .assignment_slot_limit
+                    .is_none_or(|limit| assigned < limit.get() as usize);
+            Some(
+                reply
+                    .bestiary
+                    .iter()
+                    .filter(|race| {
+                        free && race.unlocked_stage() >= stage
+                            && !reply.charms.charms.iter().any(|other| {
+                                other.kind == charm.kind && other.assigned_race == Some(race.race)
+                            })
+                    })
+                    .filter_map(|race| u16::try_from(race.race.get()).ok())
+                    .collect(),
+            )
+        } else {
+            None
+        };
+        let previous_race = panel
+            .catalogue
+            .search
+            .take()
+            .map_or_else(|| panel.fields[1].clone(), |s| s.previous_race);
         let search = panel.catalogue.search.insert(Default::default());
         search.name = name.trim().to_lowercase();
-        search.eligible_stage = stage;
+        search.previous_race = previous_race;
+        search.eligible = eligible;
+        panel.fields[1].clear();
         search.next = Some(0);
         panel.catalogue.detail.clear();
         panel.catalogue.detail_card = None;
@@ -48,6 +96,11 @@ pub(in crate::play) fn submit(
         race: 0,
         category: panel.catalogue.category,
     };
+    if matches!(action, 0 | 1 | 4 | 5 | 8)
+        && let Some(search) = panel.catalogue.search.take()
+    {
+        panel.fields[1] = search.previous_race;
+    }
     match action {
         0 => {}
         1 => {
@@ -86,19 +139,30 @@ pub(in crate::play) fn submit(
             }) as u8;
         }
         10 => {
-            let Some(after) = panel.catalogue.search.as_mut().and_then(|search| search.next.take()) else { return };
+            let Some(after) = panel
+                .catalogue
+                .search
+                .as_mut()
+                .and_then(|search| search.next.take())
+            else {
+                return;
+            };
             request.after = after;
             request.category = 0;
         }
         11 => {
-            panel.catalogue.search = None;
+            if let Some(search) = panel.catalogue.search.take() {
+                panel.fields[1] = search.previous_race;
+            }
             panel.catalogue.detail_card = None;
             panel.catalogue.detail.clear();
             panel.catalogue.next_loot = None;
             return;
         }
         8 => {
-            let Some(&previous) = panel.catalogue.previous.last() else { return };
+            let Some(&previous) = panel.catalogue.previous.last() else {
+                return;
+            };
             request.after = previous;
         }
         9 => {
@@ -204,9 +268,11 @@ pub(in crate::play) fn apply(
         if let Some(search) = &mut panel.catalogue.search {
             search.next = page.next;
             search.cards.extend(page.cards.into_iter().filter(|card| {
-                card.name.to_lowercase().contains(&search.name) && search.eligible_stage.is_none_or(|stage|
-                    panel.reply.as_ref().is_some_and(|reply| reply.bestiary.iter().any(|progress|
-                        progress.race.get() == u32::from(card.race) && progress.unlocked_stage() >= stage)))
+                card.name.to_lowercase().contains(&search.name)
+                    && search
+                        .eligible
+                        .as_ref()
+                        .is_none_or(|ids| ids.contains(&card.race))
             }));
             panel.catalogue.names.extend(confirmed_names);
             return true;

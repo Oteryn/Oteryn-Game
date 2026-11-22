@@ -245,6 +245,14 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control, search: Optio
                 reply.charms.charms.iter().any(|c| c.charm.get() == charm)
             }) =>
         {
+            if panel
+                .catalogue
+                .search
+                .as_ref()
+                .is_some_and(|s| s.eligible.is_some())
+            {
+                play.link.bestiary_catalogue_request(11);
+            }
             play.link.charm_progression_edit(0, charm.to_string());
         }
         Kind::CharmAction(intent @ (Intent::Remove | Intent::ResetAll)) => {

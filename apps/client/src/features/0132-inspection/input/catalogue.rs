@@ -7,22 +7,122 @@ use crate::{
 };
 use oteryn_client_ui::inspection::{Request, catalogue, request};
 use tokio::sync::mpsc::UnboundedSender;
+#[cfg(bevy_shell)]
+type CataloguePrice = (
+    Option<u64>,
+    Option<u64>,
+    Option<u64>,
+    Option<oteryn_client_ui::analyser::PriceSource>,
+);
+#[cfg(bevy_shell)]
+impl Mailbox {
+    fn catalogue_price(&self, item: u32) -> CataloguePrice {
+        let market = self
+            .market
+            .details
+            .statistics
+            .as_ref()
+            .filter(|s| s.definition == item)
+            .and_then(|s| s.average);
+        let merchant = self
+            .npc_shop
+            .live
+            .quotes()
+            .iter()
+            .filter(|q| {
+                q.item == item
+                    && q.side == oteryn_client_ui::npc_shop::NpcTradeSide::Sell
+                    && q.count == 1
+            })
+            .map(|q| u64::from(q.price))
+            .max();
+        (
+            market,
+            merchant,
+            self.analyser.loot_prices.get(&item).copied(),
+            self.analyser.loot_sources.get(&item).copied(),
+        )
+    }
+}
 impl PlayLink {
+    #[cfg(bevy_shell)]
+    pub(crate) fn catalogue_price(&self, item: u32) -> CataloguePrice {
+        let mailbox = lock(&self.mailbox);
+        mailbox.catalogue_price(item)
+    }
+    #[cfg(bevy_shell)]
+    pub(crate) fn catalogue_choose_price(
+        &self,
+        id: u32,
+        source: oteryn_client_ui::analyser::PriceSource,
+        shown: u64,
+    ) -> bool {
+        use oteryn_client_ui::analyser::{PriceSource, Tool};
+        let mut mailbox = lock(&self.mailbox);
+        let (market, merchant, _, _) = mailbox.catalogue_price(id);
+        if match source {
+            PriceSource::Market => market != Some(shown),
+            PriceSource::Merchant => merchant != Some(shown),
+            PriceSource::Own => false,
+        } {
+            return false;
+        }
+        let panel = &mailbox.discovery.inspection;
+        if !mailbox.analyser.selected
+            || !panel.catalogue_open
+            || !panel.selected
+            || panel.pending
+            || panel.catalogue_definition.parse() != Ok(id)
+            || !panel.catalogue.contains_key(&id)
+        {
+            return false;
+        }
+        let analyser = &mut mailbox.analyser;
+        let old = analyser.tool;
+        analyser.tool = Tool::Loot;
+        let saved = oteryn_client_ui::analyser::set_item_price(
+            analyser,
+            &id.to_string(),
+            &shown.to_string(),
+        );
+        analyser.tool = old;
+        if saved {
+            analyser.loot_sources.insert(id, source);
+        }
+        saved
+    }
     pub fn item_catalogue_set_open(&self, open: bool) {
         lock(&self.mailbox).discovery.inspection.catalogue_open = open;
     }
     #[cfg(bevy_shell)]
-    pub(crate) fn catalogue_loot_options(&self, id: Option<u32>) -> (bool,bool,bool) {
-        let mailbox=lock(&self.mailbox);
-        (mailbox.analyser.selected,id.is_some_and(|id|mailbox.analyser.loot_tracked.contains(&id)),id.is_some_and(|id|mailbox.npc_shop.sale_exclusions.contains(&id)))
+    pub(crate) fn catalogue_loot_options(&self, id: Option<u32>) -> (bool, bool, bool) {
+        let mailbox = lock(&self.mailbox);
+        (
+            mailbox.analyser.selected,
+            id.is_some_and(|id| mailbox.analyser.loot_tracked.contains(&id)),
+            id.is_some_and(|id| mailbox.npc_shop.sale_exclusions.contains(&id)),
+        )
     }
     #[cfg(bevy_shell)]
-    pub(crate) fn catalogue_loot_preference(&self, id:u32, tracking:bool, enabled:bool) {
-        let mut mailbox=lock(&self.mailbox);
-        let panel=&mailbox.discovery.inspection;
-        if !panel.catalogue_open || !panel.selected || panel.pending || panel.catalogue_definition.parse()!=Ok(id) || !panel.catalogue.contains_key(&id) {return}
+    pub(crate) fn catalogue_loot_preference(&self, id: u32, tracking: bool, enabled: bool) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mailbox.discovery.inspection;
+        if !panel.catalogue_open
+            || !panel.selected
+            || panel.pending
+            || panel.catalogue_definition.parse() != Ok(id)
+            || !panel.catalogue.contains_key(&id)
+        {
+            return;
+        }
         if tracking {
-            if mailbox.analyser.selected {oteryn_client_ui::analyser::tracking::select_confirmed(&mut mailbox.analyser,id,enabled);}
+            if mailbox.analyser.selected {
+                oteryn_client_ui::analyser::tracking::select_confirmed(
+                    &mut mailbox.analyser,
+                    id,
+                    enabled,
+                );
+            }
         } else if enabled {
             mailbox.npc_shop.sale_exclusions.insert(id);
         } else {

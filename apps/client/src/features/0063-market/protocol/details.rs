@@ -35,12 +35,17 @@ impl Outbox {
         command: &oteryn_client_runtime::raw_feature::FeatureCommand,
         result: &oteryn_session::GatedCommandResult,
     ) {
-        details::apply(
-            &mut lock(&self.0).market,
-            command,
-            result.status,
-            &result.payload,
-        );
+        let mut mailbox = lock(&self.0);
+        details::apply(&mut mailbox.market, command, result.status, &result.payload);
+        if let Some((id, price)) = mailbox
+            .market
+            .details
+            .statistics
+            .as_ref()
+            .and_then(|s| Some((s.definition, s.average?)))
+        {
+            mailbox.refresh_loot_quote(id, price, oteryn_client_ui::analyser::PriceSource::Market);
+        }
     }
 }
 

@@ -16,7 +16,8 @@ pub struct Catalogue {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CreatureSearch {
     pub name: String,
-    pub eligible_stage: Option<u8>,
+    pub previous_race: String,
+    pub eligible: Option<std::collections::BTreeSet<u16>>,
     pub cards: Vec<oteryn_client_runtime::charm_progression::catalogue::Card>,
     pub next: Option<u16>,
 }

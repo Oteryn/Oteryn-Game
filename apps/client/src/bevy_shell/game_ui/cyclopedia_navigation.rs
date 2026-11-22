@@ -112,17 +112,7 @@ fn activate(
     {
         return;
     }
-    let current = match button.from {
-        Subject::Character => play.link.cyclopedia_character_panel().open,
-        Subject::Items => play.link.inspection_panel().catalogue_open,
-        Subject::Bestiary => play.link.charm_progression_panel().open,
-        Subject::Map => play.link.cyclopedia_atlas_panel().is_some(),
-        Subject::Bosstiary => owner.settings.preferences.panel_visible("bosstiary"),
-        Subject::Houses => houses
-            .as_ref()
-            .is_some_and(|h| h.is_open(button.generation)),
-    };
-    if !current {
+    if !button.from.is_open(&owner, houses.as_deref()) {
         return;
     }
     let to = match button.to {
@@ -183,5 +173,49 @@ fn activate(
         history.current = Some(to);
     } else {
         history.visit(button.generation, button.from, to);
+    }
+}
+
+impl Subject {
+    fn is_open(self, owner: &HostOwner, houses: Option<&HouseWindow>) -> bool {
+        let Some(play) = &owner.play else {
+            return false;
+        };
+        match self {
+            Subject::Character => play.link.cyclopedia_character_panel().open,
+            Subject::Items => play.link.inspection_panel().catalogue_open,
+            Subject::Bestiary => play.link.charm_progression_panel().open,
+            Subject::Map => play.link.cyclopedia_atlas_panel().is_some(),
+            Subject::Bosstiary => owner.settings.preferences.panel_visible("bosstiary"),
+            Subject::Houses => houses
+                .as_ref()
+                .is_some_and(|h| h.is_open(owner.generation())),
+        }
+    }
+}
+pub(super) fn update_history(
+    owner: NonSend<HostOwner>,
+    houses: Option<Res<HouseWindow>>,
+    mut history: ResMut<History>,
+    mut buttons: Query<(&SubjectButton, &mut Node)>,
+) {
+    if history.generation != owner.generation()
+        || history
+            .current
+            .is_some_and(|s| !s.is_open(&owner, houses.as_deref()))
+    {
+        *history = History::default();
+    }
+    for (button, mut node) in &mut buttons {
+        if button.to == Destination::Back {
+            let display = if history.current == Some(button.from) && !history.previous.is_empty() {
+                Display::Flex
+            } else {
+                Display::None
+            };
+            if node.display != display {
+                node.display = display;
+            }
+        }
     }
 }

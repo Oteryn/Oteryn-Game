@@ -150,6 +150,7 @@ pub fn request(panel: &mut BossEncounterPanel, intent: Intent) -> Option<Feature
 pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult) -> bool {
     panel.pending = false;
     if let Some(query) = panel.pending_catalogue.take() {
+        let target = panel.tracker_target.take();
         if !matches!(
             result.status,
             CommandStatus::Accepted | CommandStatus::DuplicateReplay
@@ -207,6 +208,25 @@ pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult)
                 .unwrap_or_default();
         }
         panel.feedback = None;
+        if let Some(key) = target {
+            if panel
+                .catalogue
+                .as_ref()
+                .is_some_and(|page| page.entries.iter().any(|e| e.key == key))
+            {
+                panel.fields[0] = key;
+            } else if panel
+                .catalogue
+                .as_ref()
+                .is_some_and(|page| page.next.is_some())
+            {
+                panel.fields[0].clear();
+                panel.tracker_target = Some(key);
+            } else {
+                panel.fields[0].clear();
+                panel.feedback = Some("Tracked boss is absent from the catalogue");
+            }
+        }
         return true;
     }
     if matches!(

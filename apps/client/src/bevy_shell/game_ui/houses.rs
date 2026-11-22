@@ -121,11 +121,10 @@ fn project(
         .play
         .as_ref()
         .map(|play| play.link.house_ownership_panel().model);
-    let projected = owner
-        .play
-        .as_ref()
-        .filter(|_| state.open)
-        .map(|play| play.link.house_panel());
+    let projected = owner.play.as_ref().filter(|_| state.open).map(|play| {
+        play.link.house_browse_all(false);
+        play.link.house_panel()
+    });
     if let Some(panel) = &projected
         && !state.redraw
         && state.activity_revision == panel.activity_revision
@@ -324,6 +323,7 @@ fn finish(
         return;
     }
     if (32..=39).contains(&selection) {
+        play.link.house_browse_all(true);
         match selection {
             32 => state.guildhalls = Some(true),
             33 => state.guildhalls = Some(false),
@@ -401,6 +401,11 @@ fn finish(
             values,
             selection,
         ) {
+            if selection == 0
+                && (state.order.is_some() || state.guildhalls.is_some() || state.rented.is_some())
+            {
+                play.link.house_browse_all(true);
+            }
             state.model = None;
         }
         state.review = None;

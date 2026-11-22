@@ -81,7 +81,12 @@ impl PlayLink {
     pub(crate) fn bevy_house_browser_fixture(&self) {
         self.bevy_house_map_fixture();
         let mut mailbox = lock(&self.mailbox);
-        for (row, (kind, state, size)) in mailbox.properties.house.model.page.rows.iter_mut().zip([(1, 2, 10), (3, 3, 30), (1, 3, 20)]) {
+        mailbox.properties.house.model.page.cursor = Some("oteryn:house.test".into());
+        for (row, (kind, state, size)) in mailbox.properties.house.model.page.rows.iter_mut().zip([
+            (1, 2, 10),
+            (3, 3, 30),
+            (1, 3, 20),
+        ]) {
             row.kind = kind;
             row.state = state;
             row.size = size;
