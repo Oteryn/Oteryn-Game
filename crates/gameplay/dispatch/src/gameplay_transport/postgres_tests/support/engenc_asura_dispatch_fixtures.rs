@@ -33,6 +33,10 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
 }
 
 pub(super) fn start(name: &str) -> TestResult<Position> {
+    if name.ends_with("-fire-side-orchid") {
+        let door = callback(name)?.selector.native.ok_or("native door")?.position;
+        return Ok(Position { x: door.x - 1, ..door });
+    }
     Ok(callback(name)?
         .effects
         .encounter
@@ -65,6 +69,24 @@ pub(super) fn catalogue(name: &str) -> TestResult<QuestStateCatalogue> {
             .find(|t| t.key == "oteryn:quest-progress/engenc/asura/s3/opened")
             .ok_or("fire chamber predecessor")?
             .initial = 1;
+    }
+    let progress = if name.ends_with("-fire-side-orchid") {
+        Some("s3")
+    } else if name.contains("-reentry-") {
+        Some(stage(name)?)
+    } else {
+        None
+    };
+    if let Some(stage) = progress {
+        for (track, value) in [("entered", 1), ("count", 2)] {
+            let key = format!("oteryn:quest-progress/engenc/asura/{stage}/{track}");
+            b.quests[0]
+                .tracks
+                .iter_mut()
+                .find(|track| track.key == key)
+                .ok_or("saved chamber progress")?
+                .initial = value;
+        }
     }
     Ok(b.attach(&QuestStateCatalogue::empty("content-1").ok_or("catalogue")?)?)
 }
@@ -245,6 +267,17 @@ pub(super) async fn exercise(
         oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
         oteryn_protocol_oteryn::world_object::UseDisposition::Committed
     );
+    if name.ends_with("-fire-side-orchid") {
+        let door_receipts: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+        )
+        .bind("oteryn:quest-callback/engenc/asura/s3/door")
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(door_receipts, 1);
+        assert!(owner.runtime.lock().await.visible_entities().creatures.is_empty());
+        return Ok(());
+    }
     let roster = {
         let runtime = owner.runtime.lock().await;
         assert_eq!(
@@ -289,6 +322,9 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(count, 1);
+    if name.contains("-reentry-") {
+        return Ok(());
+    }
     if stage(name)? == "orchid" {
         return exercise_orchid(owner, admitted, h, &roster, &cb).await;
     }

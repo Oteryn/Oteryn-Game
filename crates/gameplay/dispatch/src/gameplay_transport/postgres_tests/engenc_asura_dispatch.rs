@@ -62,3 +62,28 @@ fn engenc_postgres_orchid_death_and_treasure() -> TestResult {
         },
     )
 }
+
+fn run_at_authored_trigger(name: &'static str) -> TestResult {
+    let selector = super::engenc_asura_dispatch_fixtures::callback(name)?
+        .selector
+        .native
+        .ok_or("native trigger")?;
+    run(name, selector.position)
+}
+
+#[test]
+fn engenc_postgres_reenters_cleared_chambers() -> TestResult {
+    for name in [
+        "engenc-asura-native-reentry-s2",
+        "engenc-asura-native-reentry-s3",
+        "engenc-asura-native-reentry-s4",
+    ] {
+        run_at_authored_trigger(name)?;
+    }
+    Ok(())
+}
+
+#[test]
+fn engenc_postgres_reopens_fire_door_from_inside() -> TestResult {
+    run_at_authored_trigger("engenc-asura-native-fire-side-orchid")
+}

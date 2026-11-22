@@ -41,6 +41,11 @@ REWARD_GREETING_OWNERS = {
 }
 
 
+# Sven opens through the native Dialogue fallback, which also admits its
+# conditional greeting handling. Do not assign him a shared reward greeting.
+NATIVE_DIALOGUE_GREETING_NPCS = frozenset({"oteryn:npc.sven"})
+
+
 def reward_greetings(callbacks, inputs, *, root=None):
     root = ROOT if root is None else root
     owners = {}
@@ -80,7 +85,7 @@ def reward_greetings(callbacks, inputs, *, root=None):
     npcs = {c["npc"] for c in callbacks} | {
         "oteryn:npc." + npc for npc in ("alesar", "yaman", "haroun", "nah_bob")
     }
-    for npc in sorted(npcs - owners.keys()):
+    for npc in sorted(npcs - owners.keys() - NATIVE_DIALOGUE_GREETING_NPCS):
         path = "data-global/npc/" + npc.removeprefix("oteryn:npc.") + ".lua"
         messages = {}
         citations = []
@@ -3789,7 +3794,7 @@ def build():
         }
     )
     greetings = reward_greetings(
-        [c for c in callbacks if c["npc"] != "oteryn:npc.sven"]
+        callbacks
         + m39_callbacks
         + ready_callbacks
         + l13_callbacks

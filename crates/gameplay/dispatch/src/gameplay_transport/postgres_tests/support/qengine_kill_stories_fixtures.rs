@@ -546,6 +546,47 @@ async fn spike(
             assert_eq!(erased.rows_affected(), 1);
         }
     }
+    // Reconstruct the persisted state of a character who bought both addons before
+    // the achievement was recorded. A repeat purchase must remain free.
+    let mut fixture = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *fixture)
+        .await?;
+    for delete in [
+        "DELETE FROM game_account_achievements WHERE achievement_key=$1",
+        "DELETE FROM game_account_achievement_grant_requests WHERE achievement_key=$1",
+        "DELETE FROM game_character_achievement_progress WHERE achievement_key=$1",
+    ] {
+        let erased = sqlx::query(delete)
+            .bind("oteryn:achievement/cave_completionist")
+            .execute(&mut *fixture)
+            .await?;
+        assert_eq!(erased.rows_affected(), 1);
+    }
+    fixture.commit().await?;
+    let migration = include_str!(
+        "../../../../../../../apps/game-server/migrations/3033_cave_completionist_backfill.sql"
+    );
+    for _ in 0..2 {
+        sqlx::raw_sql(migration).execute(&h.pool).await?;
+    }
+    arrange_track(h, FAME, 100).await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    for (id, keyword) in [(26, "worthy"), (27, "first")] {
+        assert_eq!(
+            talk(owner, admitted, commander, id, keyword).await?,
+            NpcIntentDisposition::Ok
+        );
+    }
+    assert_eq!(
+        talk(owner, admitted, commander, 28, "yes").await?,
+        NpcIntentDisposition::Rejected
+    );
+    assert_eq!(count(h, FAME).await?, 100);
+    let achievement: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/cave_completionist'"
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(achievement, 1, "both main-era addons earn the achievement");
     Ok(())
 }
 

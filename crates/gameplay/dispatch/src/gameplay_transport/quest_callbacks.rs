@@ -172,6 +172,7 @@ fn callbacks() -> &'static [Callback] {
 fn unique_eligible<'a>(
     candidates: impl IntoIterator<Item = &'a Callback>,
     tracks: &std::collections::BTreeMap<String, i64>,
+    actor_at: Option<MovementLocalPosition>,
 ) -> Option<&'a Callback> {
     let mut eligible = candidates.into_iter().filter(|callback| {
         callback.storage.iter().all(|storage| {
@@ -186,15 +187,22 @@ fn unique_eligible<'a>(
     if eligible.next().is_some() {
         return None;
     }
-    // The chamber door can be reopened after a reset. At the shared source,
-    // the later Orchid encounter takes priority once its own guards pass.
+    // The fire door and Orchid share a placement. Only the Orchid staging
+    // tile can start that encounter; the chamber side still opens the door.
     const FIRE_DOOR: &str = "oteryn:quest-callback/engenc/asura/s3/door";
     const ORCHID: &str = "oteryn:quest-callback/engenc/asura/orchid/entry";
-    match (selected.key.as_str(), alternative.key.as_str()) {
-        (FIRE_DOOR, ORCHID) => Some(alternative),
-        (ORCHID, FIRE_DOOR) => Some(selected),
-        _ => None,
-    }
+    let (door, orchid) = match (selected.key.as_str(), alternative.key.as_str()) {
+        (FIRE_DOOR, ORCHID) => (selected, alternative),
+        (ORCHID, FIRE_DOOR) => (alternative, selected),
+        _ => return None,
+    };
+    let at_staging = orchid.effects.encounter.as_ref().is_some_and(|encounter| {
+        encounter
+            .players
+            .iter()
+            .any(|member| actor_at == Some(local(member.from)))
+    });
+    Some(if at_staging { orchid } else { door })
 }
 
 fn tile(p: Position) -> TilePos {
@@ -1164,6 +1172,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if selected.is_empty() {
                 return None;
             }
+            let Ok(actor_at) = self.runtime.lock().await.read_actor_position(actor) else {
+                return Some(UseOutcome::rejected());
+            };
             let Ok(sessions) = self.states.quest_sessions.lock() else {
                 return Some(UseOutcome::rejected());
             };
@@ -1180,7 +1191,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Some(UseOutcome::rejected());
             };
-            let Some(callback) = unique_eligible(selected.iter().copied(), &tracks) else {
+            let Some(callback) =
+                unique_eligible(selected.iter().copied(), &tracks, Some(actor_at.position()))
+            else {
                 return Some(UseOutcome::rejected());
             };
             callback
@@ -1493,9 +1506,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return entered;
             };
-            let Some(callback) =
-                unique_eligible(selected.iter().map(|(callback, _)| *callback), &tracks)
-            else {
+            let Some(callback) = unique_eligible(
+                selected.iter().map(|(callback, _)| *callback),
+                &tracks,
+                Some(entered.position()),
+            ) else {
                 return entered;
             };
             let Some(pair) = selected

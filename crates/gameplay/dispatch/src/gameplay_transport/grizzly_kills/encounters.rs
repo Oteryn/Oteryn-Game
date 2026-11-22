@@ -178,7 +178,8 @@ pub(super) fn capture(
                 continue;
             };
             for counter in &snapshot.native_counters {
-                if counter.creature != entry.creature
+                if !counter.creditable
+                    || counter.creature != entry.creature
                     || counter.encounter_source.as_deref() != Some(run.source.as_str())
                     || counter.definition_hash != Some(run.definition_hash)
                 {
