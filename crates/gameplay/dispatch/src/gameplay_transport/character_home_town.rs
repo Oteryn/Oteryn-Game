@@ -184,7 +184,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             PREMIUM_EXPIRED_TEXT
         };
-        self.states.chat.push_quest_feedback(session, text);
+        self.states.chat.stage_relocation_notice(session, text);
         true
     }
 

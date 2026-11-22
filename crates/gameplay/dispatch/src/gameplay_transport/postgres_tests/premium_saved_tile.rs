@@ -4,12 +4,22 @@ use super::{Dependencies, TestResult, prepare_current_session, reset};
 
 use crate::durability::character_last_position::LastPositionWrite;
 use crate::durability::premium_fence::EntitlementState;
-use crate::foundation::{AuthenticatedTransportRefV1, ChannelContentPin, MovementLocalPosition};
-use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::foundation::{
+    AuthenticatedTransportRefV1, ChannelContentPin, MessageType, MovementLocalPosition,
+    decode_wire_envelope,
+};
+use crate::gameplay_transport::ComposedFreshAdmission;
+use crate::gameplay_transport::capabilities::SelectedCapabilities;
+use crate::gameplay_transport::connection::{
+    AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
+};
 use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
 };
+use crate::gameplay_transport::tcp_tls::read_frame;
 use crate::map::overlay::TilePos;
+use oteryn_protocol_oteryn::chat::{self, ChatLine};
+use oteryn_protocol_oteryn::{decode_snapshot_chunk, decode_state_delta};
 
 // One walkable cell from Crystal's specialtiles.xml rectangle, retained in the admitted B3.
 const SAVED: TilePos = TilePos {
@@ -195,7 +205,7 @@ async fn scenario(admin: String, state: EntitlementState) -> TestResult {
         LastPositionWrite::Written,
     );
 
-    let (outcome, _, _) = Box::pin(owner.initialize_first_entry(
+    let (outcome, item_fence, _) = Box::pin(owner.initialize_first_entry(
         &request,
         session,
         AuthenticatedTransportRefV1::decode(&[9; 16]).map_err(debug)?,
@@ -235,6 +245,25 @@ async fn scenario(admin: String, state: EntitlementState) -> TestResult {
         )
     );
     assert_eq!(owner.home_town(session, None).await, Some(8));
+    if state == EntitlementState::Expired {
+        assert!(
+            !owner.states.chat.knows(session),
+            "CHAT starts with the login snapshot"
+        );
+        let mut admitted = deps.admitted;
+        admitted.first_entry = outcome;
+        admitted.item_fence = item_fence;
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(owner.offered_capabilities(), &[chat::CAPABILITY_CHAT_V1])
+                .ok_or("CHAT capability selection")?;
+        assert!(
+            admitted
+                .continuity
+                .selected_capabilities
+                .contains(chat::CAPABILITY_CHAT_V1)
+        );
+        Box::pin(assert_login_notice(&owner, admitted)).await?;
+    }
     drop(owner);
     drop(authority);
     drop(seal);
@@ -247,4 +276,59 @@ fn position(tile: TilePos) -> MovementLocalPosition {
         y: i32::from(tile.y),
         floor: i16::from(-tile.floor),
     }
+}
+
+async fn assert_login_notice(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    let (mut server, mut client) = tokio::io::duplex(64 * 1024);
+    let serving = async {
+        serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+    };
+    let driving = async move {
+        let mut chat_snapshot = false;
+        let mut snapshot_committed = false;
+        loop {
+            let frame = read_frame(&mut client).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            match envelope.message_type() {
+                MessageType::SnapshotChunk => {
+                    let (_, domains) = decode_snapshot_chunk(envelope.payload()).map_err(debug)?;
+                    chat_snapshot |= domains
+                        .iter()
+                        .any(|domain| domain.domain_id == chat::STATE_DOMAIN_CHAT);
+                }
+                MessageType::SnapshotCommit => {
+                    assert!(chat_snapshot, "the fresh snapshot must register CHAT");
+                    snapshot_committed = true;
+                }
+                MessageType::StateDelta => {
+                    let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
+                    if delta.domain_id == chat::STATE_DOMAIN_CHAT
+                        && delta.delta_type == chat::DELTA_TYPE_CHAT_LINE_V1
+                    {
+                        assert!(snapshot_committed, "the notice follows the CHAT snapshot");
+                        assert_eq!(
+                            chat::decode_chat_line(delta.payload).map_err(debug)?,
+                            ChatLine::Private {
+                                speaker_name: "Game".into(),
+                                text: "Your premium has expired. You are being teleported to a free town.".into(),
+                            },
+                        );
+                        return Ok(());
+                    }
+                }
+                _ => {}
+            }
+        }
+    };
+    let ((), notice) = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        super::fixture::join_two(serving, driving),
+    )
+    .await
+    .map_err(|_| "timed out waiting for the fresh-login relocation notice")?;
+    notice
 }
