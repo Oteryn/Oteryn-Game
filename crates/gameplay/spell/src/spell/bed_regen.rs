@@ -1,6 +1,6 @@
 //! The actor side of the durable BED-REGEN runtime projection.
 use super::cast::PlayerSpellState;
-use oteryn_gameplay_domain::domain::condition::ConflictKey;
+use oteryn_gameplay_domain::domain::condition::{ConflictKey, FOOD_REGENERATION_MAX_DURATION_MS};
 
 impl PlayerSpellState {
     /// Capture Soul, remaining food milliseconds and the two online fractional periods.
@@ -19,7 +19,7 @@ impl PlayerSpellState {
     /// Restore only on creation of a fresh actor; a reconnect retains its live state.
     pub fn restore_bed_rest(&mut self, rest: [u32; 4], now_us: u64) -> Option<()> {
         if rest[0] > oteryn_protocol_oteryn::actor_spell::MAX_SOUL
-            || rest[1] > 1_200_000
+            || rest[1] > FOOD_REGENERATION_MAX_DURATION_MS
             || rest[2] > 12_000
             || rest[3] > 6_000
         {

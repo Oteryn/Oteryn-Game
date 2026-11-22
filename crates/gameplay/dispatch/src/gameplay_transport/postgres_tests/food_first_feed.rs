@@ -157,6 +157,33 @@ async fn scenario(admin: String, name: &str, cases: &[FoodCase]) -> TestResult {
             );
         }
 
+        if key == "oteryn:item.tibia.i48256" {
+            let gameplay_fence = owner
+                .current_quest_fence(session)
+                .await
+                .map_err(|()| "gameplay fence")?
+                .ok_or("gameplay fence")?;
+            assert!(owner.track_restored(
+                session,
+                deps.actor,
+                &crate::gameplay_transport::last_position::AdmissionPosition::FirstLogin,
+                gameplay_fence,
+            ));
+            let save_started = owner.owner_ms();
+            assert_eq!(owner.write_due_last_positions(true).await, 0);
+            let save_finished = owner.owner_ms();
+            let saved_ms: i32 = sqlx::query_scalar(
+                "SELECT rest[2] FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid",
+            )
+            .bind(id(41).as_slice())
+            .fetch_one(&harness.pool)
+            .await?;
+            let duration_ms = u64::from(seconds) * 1_000;
+            let earliest = duration_ms.saturating_sub(save_finished - before + 1);
+            let latest = duration_ms.saturating_sub(save_started - after);
+            assert!((earliest..=latest).contains(&u64::try_from(saved_ms)?));
+        }
+
         if seconds > 0 {
             owner.clock_origin = owner
                 .clock_origin
