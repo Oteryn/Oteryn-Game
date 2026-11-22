@@ -229,35 +229,51 @@ BEGIN
  END LOOP;
 END $migration$;
 
-CREATE FUNCTION game_server_save_retirement_proven() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE p jsonb;
-BEGIN
- IF NEW.cause_kind<>7 THEN RETURN NULL; END IF;
- p:=convert_from(NEW.intent,'UTF8')::jsonb;
- IF NOT EXISTS(
-   SELECT 1 FROM game_server_save_ground g JOIN game_server_save_occurrences s USING (occurrence_id)
-   JOIN game_spell_item_lines root ON root.transaction_id=NEW.transaction_id AND root.item_instance_id=g.item_id
-   WHERE g.occurrence_id=NEW.server_save_occurrence_id AND g.channel_id=NEW.channel_id
-    AND s.world_id=NEW.world_id AND s.cleanup_enabled AND s.server_digest=NEW.catalog_digest
-    AND g.transaction_id=NEW.transaction_id AND g.disposition='retired'
-    AND game_world_reset_map_epoch_current(s.world_id,s.reset_epoch)
+-- The same receipt evidence survives handoff and World reset. History never
+-- reacquires a live scope or uses the old occurrence to authorize a mutation.
+CREATE FUNCTION game_server_save_retirement_history(p_transaction uuid)
+RETURNS boolean LANGUAGE sql STABLE STRICT AS $$
+ SELECT EXISTS(
+   SELECT 1 FROM game_spell_item_receipts r
+   JOIN game_server_save_ground g USING (transaction_id)
+   JOIN game_server_save_occurrences s USING (occurrence_id)
+   JOIN game_server_save_channels c ON c.occurrence_id=g.occurrence_id AND c.channel_id=g.channel_id
+   JOIN game_spell_item_lines root ON root.transaction_id=r.transaction_id AND root.item_instance_id=g.item_id
+   WHERE r.transaction_id=p_transaction AND r.cause_kind=7 AND r.cost IS NULL AND r.cost_binding IS NULL
+    AND c.state IN ('frozen','complete') AND g.occurrence_id=r.server_save_occurrence_id AND g.channel_id=r.channel_id
+    AND s.world_id=r.world_id AND s.cleanup_enabled AND s.server_digest=r.catalog_digest
+    AND g.transaction_id=r.transaction_id AND g.disposition='retired'
     AND root.operation_kind=2 AND root.placement_context=s.frame_digest
-    AND p=jsonb_build_object('schema','OTERYN_SERVER_SAVE_GROUND/v1','occurrence',s.occurrence_id,
-      'world',s.world_id,'channel',g.channel_id,'epoch',s.reset_epoch,'scheduled_at',s.scheduled_at,
-      'generation',NEW.ownership_generation,'item',g.item_id,'evidence',g.evidence)
+    AND convert_from(r.intent,'UTF8')::jsonb=jsonb_build_object('schema','OTERYN_SERVER_SAVE_GROUND/v1','occurrence',s.occurrence_id,
+      'world',s.world_id,'channel',g.channel_id,'epoch',s.reset_epoch,'scheduled_unix_ms',floor(extract(epoch FROM s.scheduled_at)*1000)::bigint,
+      'generation',r.ownership_generation,'item',g.item_id,'evidence',g.evidence)
+    AND root.content_generation_digest=s.server_digest
+    AND root.quantity_before=(g.evidence->'item'->>'quantity')::bigint
     AND root.state_revision_before=(g.evidence->'item'->>'state_revision')::numeric
     AND root.source_stack_ordinal=(g.evidence->'ground'->>'stack_ordinal')::bigint
     AND root.spatial_position=(g.evidence->'ground'->>'spatial_position')::bytea
     AND root.map_revision=g.evidence->'ground'->>'map_revision'
     AND root.content_revision=g.evidence->'ground'->>'content_revision'
-    AND NEW.operation_count=1+jsonb_array_length(g.evidence->'tree')
+    AND r.operation_count=1+jsonb_array_length(g.evidence->'tree')
     AND NOT EXISTS(SELECT 1 FROM jsonb_to_recordset(g.evidence->'tree') AS t(
        item_id uuid,item_revision numeric,parent_id uuid, ordinal numeric,corpse boolean)
      WHERE NOT EXISTS(SELECT 1 FROM game_spell_item_lines child
-      WHERE child.transaction_id=NEW.transaction_id AND child.operation_kind=6 AND child.item_instance_id=t.item_id
+      WHERE child.transaction_id=r.transaction_id AND child.operation_kind=6 AND child.item_instance_id=t.item_id
        AND child.source_corpse_root=g.item_id AND child.state_revision_before=t.item_revision
        AND child.source_parent_item_instance_id=t.parent_id AND child.source_placement_ordinal=t.ordinal
        AND child.source_entry_is_corpse=t.corpse))
+
+ )
+$$;
+REVOKE ALL ON FUNCTION game_server_save_retirement_history(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_server_save_retirement_history(uuid) TO oteryn_game_runtime,oteryn_game_control;
+
+CREATE FUNCTION game_server_save_retirement_proven() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NEW.cause_kind<>7 THEN RETURN NULL; END IF;
+ IF NOT game_server_save_retirement_history(NEW.transaction_id) OR NOT EXISTS(
+    SELECT 1 FROM game_server_save_occurrences s WHERE s.occurrence_id=NEW.server_save_occurrence_id
+     AND game_world_reset_map_epoch_current(s.world_id,s.reset_epoch)
  ) THEN RAISE EXCEPTION 'server-save retirement requires its exact settled cohort and audit evidence' USING ERRCODE='23514'; END IF;
  RETURN NULL;
 END $$;
@@ -320,7 +336,7 @@ BEGIN
  THEN RAISE EXCEPTION 'server save requires the entire bounded Ground tree' USING ERRCODE='23514'; END IF;
  observed:=floor(extract(epoch FROM clock_timestamp())*1000)::bigint;
  intent:=convert_to(jsonb_build_object('schema','OTERYN_SERVER_SAVE_GROUND/v1','occurrence',s.occurrence_id,
-      'world',s.world_id,'channel',p_channel,'epoch',s.reset_epoch,'scheduled_at',s.scheduled_at,
+      'world',s.world_id,'channel',p_channel,'epoch',s.reset_epoch,'scheduled_unix_ms',floor(extract(epoch FROM s.scheduled_at)*1000)::bigint,
       'generation',p_generation,'item',p_item,'evidence',evidence)::text,'UTF8');
  INSERT INTO game_spell_item_receipts(transaction_id,event_id,world_id,channel_id,ownership_generation,
     spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,operation_count,
@@ -337,6 +353,7 @@ GRANT EXECUTE ON FUNCTION game_server_save_retire_tree(uuid,uuid,uuid,numeric) T
 DO $$ DECLARE f regprocedure; BEGIN
  FOREACH f IN ARRAY ARRAY['game_retire_ground_tree_batch(uuid,uuid[],jsonb,boolean)'::regprocedure,
    'game_server_save_retirement_proven()'::regprocedure,
+   'game_server_save_retirement_history(uuid)'::regprocedure,
    'game_server_save_cohort_committed_in_window()'::regprocedure,
    'game_server_save_retire_tree(uuid,uuid,uuid,numeric)'::regprocedure] LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());

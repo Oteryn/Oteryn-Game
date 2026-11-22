@@ -372,6 +372,10 @@ async fn qualify(harness: &Harness, case: Case) -> TestResult {
                 prior
             );
             assert_eq!(readback(&scene, &occurrence).await?, before);
+            let mut db = scene.reopened().await?;
+            let mut tx = db.begin().await?;
+            crate::durability::spell_item_transaction::verify_spell_item_chain(&mut tx).await?;
+            tx.rollback().await?;
             let view = fresh
                 .read_item_loop_ground_for_scope(crate::foundation::RuntimeScopeRefV1::channel(
                     scene.facts.0.world,

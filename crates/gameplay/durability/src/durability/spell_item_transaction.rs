@@ -20,8 +20,8 @@ use crate::foundation::CommandRef;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
-pub mod corpse_target;
 mod corpse_projection;
+pub mod corpse_target;
 
 #[derive(Debug)]
 pub enum SpellItemError {
@@ -1616,7 +1616,12 @@ pub fn decode_tile_rows(
             .try_get::<Vec<Option<bool>>, _>("collision_flags")?
             .try_into()
             .map_err(|_| SpellItemError::Rejected("tile collision flags width"))?;
-        corpse_projection::project_current_corpse_flags(&row, ownership_generation, target, &mut flags)?;
+        corpse_projection::project_current_corpse_flags(
+            &row,
+            ownership_generation,
+            target,
+            &mut flags,
+        )?;
         let blocks_movement = flags[0].ok_or(SpellItemError::Rejected(
             "item has no qualified current movement flags",
         ))?;
@@ -2753,12 +2758,16 @@ pub async fn verify_spell_item_chain(
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
             let cause: i16 = row.try_get("cause_kind")?;
             let bytes: Option<Vec<u8>> = row.try_get("cost")?;
-            if cause == 5 {
-                let proven: bool =
-                    sqlx::query_scalar(include_str!("spell_item_transaction/feroxa_history.sql"))
-                        .bind(&cursor)
-                        .fetch_one(&mut **tx)
-                        .await?;
+            let world_retirement = match cause {
+                5 => Some(include_str!("spell_item_transaction/feroxa_history.sql")),
+                7 => Some("SELECT game_server_save_retirement_history($1::uuid)"),
+                _ => None,
+            };
+            if let Some(history) = world_retirement {
+                let proven: bool = sqlx::query_scalar(history)
+                    .bind(&cursor)
+                    .fetch_one(&mut **tx)
+                    .await?;
                 if !proven {
                     return Err(DurabilityError::InvalidStoredState);
                 }
