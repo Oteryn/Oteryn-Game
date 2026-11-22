@@ -849,6 +849,7 @@ def main() -> int:
         run(["python3", native + name])
     run(["python3", native + "build_srx3_soul_war_death_events.py", "--refresh-native-pin"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
+    run(["python3", "tools/content-schema/world-authoring/quest_startup_bindings.py", "--apply"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
     run(["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py"])

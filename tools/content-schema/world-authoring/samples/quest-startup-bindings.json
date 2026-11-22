@@ -25,11 +25,55 @@
       "sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
     },
     {
+      "path": "data-global/startup/tables/door_key.lua",
+      "sha256": "e5368703030072fcb400980274408ee2cbcfa51a6bf7d435da3dc2c9fcd2438b"
+    },
+    {
+      "path": "data-global/lib/core/storages.lua",
+      "sha256": "9e7edb4f311cd62424f129526e95e32c4b455e74755599197de629d3e5e63160"
+    },
+    {
       "path": "data/libs/tables/doors.lua",
       "sha256": "6b22b5c4c213ef5a3f18fab43ea61acca7be227c06eb99bbc25d1a8d3e75112c"
     }
   ],
   "bindings": [
+    {
+      "position": [
+        32035,
+        31642,
+        8
+      ],
+      "item": 7042,
+      "attribute": "action",
+      "action": 4503,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 615
+    },
+    {
+      "position": [
+        32107,
+        31568,
+        9
+      ],
+      "item": 7033,
+      "attribute": "action",
+      "action": 4502,
+      "source": "data-global/startup/tables/door_key.lua",
+      "line": 163
+    },
+    {
+      "position": [
+        32180,
+        31633,
+        8
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "action": 30008,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 793
+    },
     {
       "position": [
         32573,

@@ -57,6 +57,7 @@ fn scenario_case(
     let m03_pits = name == super::super::qengine_m03_pits_fixtures::NAME;
     let nomads_window = name.starts_with(super::super::qengine_m02_use_fixtures::NAME);
     let m01b_explore = name.starts_with("m01b/");
+    let alawars_vault = name == super::super::alawars_vault_journey::NAME;
     let qready_craft = name == super::super::qready1_crafting_fixtures::NAME;
     let qready_workbench = super::super::qready1_workbenches_fixtures::matches(name);
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -102,6 +103,7 @@ fn scenario_case(
         || nomads_window
         || qm48
         || m01b_explore
+        || alawars_vault
         || small_ruby
         || mead
         || spirit
@@ -116,7 +118,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if alawars_vault {
+        super::super::alawars_vault_journey::START
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -357,7 +361,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if alawars_vault {
+        callback("alawars-vault-entrance")?
+    } else if m03_use {
         super::super::qengine_m03_use_fixtures::callback()?
     } else if qd_world {
         super::super::qd_world_fixtures::callback(name)?
@@ -1036,7 +1042,9 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if pinned_qc_world {
+        let world = if alawars_vault {
+            super::super::alawars_vault_journey::world(generation.native_gameplay().ok_or("Alawar native content")?)?
+        } else if pinned_qc_world {
             super::super::qc_pinned_world::world(
                 generation
                     .native_gameplay()
@@ -2004,6 +2012,8 @@ fn scenario_case(
             .await?;
         } else if qm50 {
             Box::pin(super::super::qm50_elevator_fixtures::exercise(&owner, &mut admitted)).await?;
+        } else if alawars_vault {
+            Box::pin(super::super::alawars_vault_journey::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if m01b_explore {
             Box::pin(super::super::m01b_explore_fixtures::exercise(
                 &mut owner,

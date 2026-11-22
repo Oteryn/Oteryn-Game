@@ -13,7 +13,7 @@ use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[test]
-fn m35_alawar_dispatch_completes_only_on_last_chest() -> TestResult {
+fn m35_alawar_chests_grant_independently_before_the_journey_finishes() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -921,8 +921,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                         || matches!(case, Case::Longsword | Case::GriffinShield) && index == 2
                         || matches!(
                             case,
-                            Case::Alawar
-                                | Case::Koshei
+                            Case::Koshei
                                 | Case::BlackKnight
                                 | Case::FireAxeAll
                                 | Case::EmperorCookies

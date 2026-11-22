@@ -48,7 +48,17 @@ fn alawars_vault_teleport_pair_preserves_source_selectors_and_destinations() -> 
         assert!(callback.selector.unique.is_none());
         assert!(callback.selector.action.is_none());
         assert_eq!(callback.teleport, Some(destination));
-        assert!(callback.storage.is_empty());
+        if key.ends_with("-exit") {
+            let [observation] = callback.storage.as_slice() else {
+                return Err("return portal must record one observation".into());
+            };
+            assert_eq!(
+                (observation.minimum, observation.maximum, observation.set),
+                (0, 1, 1)
+            );
+        } else {
+            assert!(callback.storage.is_empty());
+        }
         assert!(callback.minimum_level.is_none());
         assert!(callback.offerings.is_empty());
         assert!(callback.item_on_target.is_none());

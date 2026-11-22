@@ -28,6 +28,10 @@ REVISION = 'quest-r1'
 SHARD_SIZE = 100
 QUEST_KEY = re.compile(r'^oteryn:quest\.[a-z0-9_.-]+$')
 CANONICAL_CLAIM_KEY = re.compile(r'^oteryn:reward-claim\.[a-z0-9_.-]+$')
+ALAWAR_QUEST = 'oteryn:quest.alawar_s_vault_quest'
+ALAWAR_KEY_CLAIM = 'oteryn:reward-claim.quest.key.id4502'
+ALAWAR_SOURCE_HOLD = {'code': 'claim_native_lowering_missing',
+                      'source_key': 'canary:reward-claim/quest/key/id4502'}
 
 
 def compact(value):
@@ -233,7 +237,7 @@ def monk_native_lowering(root):
 
 
 def source_projection(root, records):
-    """Validate and remove only the compiled native annotation from the SOURCE view.
+    """Validate and remove the compiled native annotations from the SOURCE view.
 
     Frozen SOURCE receipts still compare every original field byte for byte. Native
     references are compiler output, checked exactly against the callback input, and
@@ -242,6 +246,10 @@ def source_projection(root, records):
     result = copy.deepcopy(records)
     for row in result:
         definition = row['definition']
+        if (definition['identity']['key'] == ALAWAR_QUEST
+                and ALAWAR_SOURCE_HOLD not in definition['missing_data']):
+            # The applied UID projection closes this delivery in the live Quest only.
+            definition['missing_data'].append(copy.deepcopy(ALAWAR_SOURCE_HOLD))
         if definition['identity']['key'] != 'oteryn:quest.the_way_of_the_monk_quest':
             continue
         original = {'state': 'WAITING_IMPLEMENTATION', 'canonical_progress_refs': [],
@@ -338,6 +346,38 @@ def tree_validator():
     return jsonschema.Draft202012Validator(schema, registry=registry)
 
 
+
+def reconcile_alawar_key_claim(root, records, claims):
+    """Clear the live key-delivery hold after preserving the historical recipe witness."""
+    claim = next(c for c in claims if c['identity']['key'] == ALAWAR_KEY_CLAIM)
+    native = claim.get('native_contents', {})
+    placements = native.get('placements', [])
+    definition = next(row['definition'] for row in records if row['definition']['identity']['key'] == ALAWAR_QUEST)
+    variant = claim.get('source_variant', {})
+    capture = 'tools/content-schema/world-authoring/samples/quest-chest-bindings/qa-batch2.json'
+    index = read(root, 'content/world/placements/index.json')
+    bindings = index['source'].get('quest_chests', {}).get('captures', [])
+    exact_placement = {'claim': ALAWAR_KEY_CLAIM, 'position': [32201, 31571, 10],
+                       'appearance': 2472, 'unique': 5008, 'source_line': 435}
+    if not (
+        claim['quest'] == definition['source_refs']['quest']
+        and claim['provenance']['pilot_key'] == ALAWAR_SOURCE_HOLD['source_key']
+        and claim['definition_profile'] == 'authored_variant_v1'
+        and claim['data_holds'] == []
+        and variant.get('source_data', {}).get('status') == 'COMPLETE'
+        and native.get('schema') == 'OTERYN_NATIVE_CONTAINER_REWARD/v1'
+        and native.get('revision') == '201189f871d23597b82caf88fd611454a2ddefb8'
+        and native.get('source_sha256') == digest(root, 'tools/content-schema/reward-claim-authoring/container_native_source.json')
+        and len(placements) == 1
+        and placements[0]['unique_id'] == exact_placement['unique']
+        and placements[0]['contents'][0].get('key_number') == 4502
+        and placements[0]['contents'][0]['item']['key'] == 'oteryn:item.tibia.i2970'
+        and {'path': capture, 'sha256': digest(root, capture)} in bindings
+        and exact_placement in read(root, capture)['bindings']
+    ):
+        raise ValueError('Alawar key 4502 lost its native claim or World placement evidence')
+    definition['missing_data'].remove(ALAWAR_SOURCE_HOLD)
+
 def expected_files(root, include_registration=False):
     quests = read(root, SOURCE)['quests']
     claims = claim_catalogue(root)
@@ -378,6 +418,7 @@ def expected_files(root, include_registration=False):
     records = attach_donor_data(root, records)
     from quest_soul_war_followup import apply as apply_soul_war_followup
     records, _ = apply_soul_war_followup(root, records)
+    reconcile_alawar_key_claim(root, records, claims)
     from quest_item_keys import catalogue, enrich, item_definitions, validate_references
     items = item_definitions(root)
     recipes = [row['definition'].get('recipe') or
