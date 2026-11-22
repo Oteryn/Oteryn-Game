@@ -438,28 +438,54 @@ fn seed_bids(
 #[test]
 fn transient_status_failure_fences_until_status_retry() -> TestResult {
     test_thread(|| {
-        let mock = MockPlatform::start()?;
-        let client = mock.client()?;
-        let token = mock.token(&client)?;
-        seed_bids(&mock, &client, &token, 1)?;
-        mock.authority.lock().map_err(|_| "lock")?.fail_status_once = true;
-        let mut view = View::default();
-        mock.runtime.block_on(controller::execute(
-            &mut view,
-            Action::Refresh(AuctionView::All),
-            &client,
-            &token,
-            CancellationToken::new(),
-        ));
-        assert!(view.pending());
-        mock.runtime.block_on(controller::execute(
-            &mut view,
-            Action::Status,
-            &client,
-            &token,
-            CancellationToken::new(),
-        ));
-        assert!(!view.pending());
+        for (status, retry) in [(503, 503), (503, 403), (503, 404), (403, 403), (404, 404)] {
+            let mock = MockPlatform::start()?;
+            let client = mock.client()?;
+            let token = mock.token(&client)?;
+            mock.authority.lock().map_err(|_| "lock")?.pending_first = true;
+            seed_bids(&mock, &client, &token, 1)?;
+            mock.authority.lock().map_err(|_| "lock")?.status_failure = Some(status);
+            let mut view = View::default();
+            let execute = |view: &mut View, action| {
+                mock.runtime.block_on(controller::execute(
+                    view,
+                    action,
+                    &client,
+                    &token,
+                    CancellationToken::new(),
+                ))
+            };
+            execute(&mut view, Action::Refresh(AuctionView::All));
+            assert!(view.pending(), "lookup {status}");
+            mock.authority.lock().map_err(|_| "lock")?.status_failure = Some(retry);
+            execute(&mut view, Action::Status);
+            execute(
+                &mut view,
+                Action::Bid {
+                    auction_id: AUCTION.into(),
+                    coins: 50,
+                    confirmed: true,
+                },
+            );
+            assert!(view.pending());
+            assert_eq!(
+                mock.authority
+                    .lock()
+                    .map_err(|_| "lock")?
+                    .requests
+                    .iter()
+                    .filter(|request| request
+                        .starts_with("POST /api/v1/native-account/bazaar/commands "))
+                    .count(),
+                1
+            );
+            mock.authority.lock().map_err(|_| "lock")?.status_failure = None;
+            execute(&mut view, Action::Status);
+            assert!(view.pending());
+            mock.authority.lock().map_err(|_| "lock")?.pending_first = false;
+            execute(&mut view, Action::Status);
+            assert!(!view.pending());
+        }
         Ok(())
     })
 }

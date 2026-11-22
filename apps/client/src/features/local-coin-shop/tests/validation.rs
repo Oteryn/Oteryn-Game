@@ -348,7 +348,7 @@ fn failed_reopen_requires_current_order_before_enabling_checkout() -> TestResult
 }
 
 #[test]
-fn coin_refresh_looks_up_both_rows_before_starting_quotes() -> TestResult {
+fn coin_refresh_looks_up_both_rows_within_platform_quote_lifetime() -> TestResult {
     test_thread(|| {
         let mock = MockPlatform::start()?;
         let client = mock.client()?;
@@ -384,18 +384,56 @@ fn coin_refresh_looks_up_both_rows_before_starting_quotes() -> TestResult {
             .await;
             let catalogue = view.catalogue.as_ref().ok_or("catalogue")?;
             assert_eq!(catalogue.recent_orders.len(), 2);
-            let last = mock
-                .authority
-                .lock()
-                .map_err(|_| "lock")?
-                .last_status
-                .ok_or("status")?;
             let package = &catalogue.packages[0];
-            assert!(
-                view.quote_until[&package.quote_id]
-                    >= last + std::time::Duration::from_secs(package.valid_for_seconds.into())
-            );
+            let platform_deadline = mock
+                .with_coins(|authority| authority.quote_deadline(&package.quote_id))?
+                .ok_or("issued quote")?;
+            assert!(view.quote_until[&package.quote_id] <= platform_deadline);
+            assert!(!view.can_purchase_at(&package.id, platform_deadline));
             Ok(())
         })
+    })
+}
+
+#[test]
+fn failed_known_order_lookup_fences_purchases_until_terminal_receipt() -> TestResult {
+    test_thread(|| {
+        for status in [403, 404] {
+            let mock = MockPlatform::start()?;
+            let client = mock.client()?;
+            let token = mock.token(&client)?;
+            let browser: Browser = Arc::new(|_| true);
+            let mut view = View::new(None);
+            let execute = |view: &mut View, action| {
+                mock.runtime.block_on(controller::execute(
+                    view,
+                    action,
+                    &client,
+                    &token,
+                    &browser,
+                    CancellationToken::new(),
+                ))
+            };
+            let purchase = || Action::Purchase {
+                package_id: PACKAGE.into(),
+                confirmed: true,
+            };
+            execute(&mut view, Action::Refresh);
+            execute(&mut view, purchase());
+            let order = view.order.clone().ok_or("created order")?;
+            mock.with_coins(|c| c.status_failure = Some(status))?;
+            execute(&mut view, Action::Refresh);
+            execute(&mut view, Action::Status);
+            execute(&mut view, purchase());
+            assert_eq!(mock.with_coins(|c| c.creations)?, 1, "lookup {status}");
+            mock.with_coins(|c| c.status_failure = None)?;
+            execute(&mut view, Action::Refresh);
+            assert!(!view.can_purchase(PACKAGE));
+            let (body, signature) = mock.signed_event(&order, EventKind::Paid)?;
+            assert_eq!(mock.webhook(&body, &signature)?, 200);
+            execute(&mut view, Action::Status);
+            assert!(view.can_purchase(PACKAGE));
+        }
+        Ok(())
     })
 }

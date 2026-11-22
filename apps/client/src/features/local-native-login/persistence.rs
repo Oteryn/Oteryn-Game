@@ -45,7 +45,10 @@ impl LoginSettings {
                 return submitted[i].to_owned();
             }
             if env_fallback[i] && matches!(i, 3 | 4) {
-                return disk.unwrap_or_default().to_owned();
+                return disk
+                    .filter(|value| Self::validate_field(i, value).is_ok())
+                    .unwrap_or_default()
+                    .to_owned();
             }
             match disk {
                 Some(value)

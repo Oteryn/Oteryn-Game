@@ -39,10 +39,8 @@ impl MockPlatform {
                 let status_gate = (method == "GET" && (target.contains("/bazaar/commands/") || target.contains("/coin-purchases/requests/")))
                     .then(|| state.lock().ok().and_then(|s| s.status_barrier.clone())).flatten();
                 if let Some(gate) = status_gate {
-                    let state = state.clone();
                     tokio::spawn(async move {
                         if tokio::time::timeout(std::time::Duration::from_secs(2), gate.wait()).await.is_ok() {
-                            if let Ok(mut s) = state.lock() { s.last_status = Some(std::time::Instant::now()); }
                             let _ = stream.write_all(response.as_bytes()).await;
                         }
                     });

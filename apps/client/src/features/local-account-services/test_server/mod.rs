@@ -46,9 +46,8 @@ pub(crate) struct Authority {
     pub pending_first: bool,
     pub paginate: bool,
     pub fail_pages: bool,
-    pub fail_status_once: bool,
+    pub status_failure: Option<u16>,
     pub status_barrier: Option<Arc<tokio::sync::Barrier>>,
-    pub last_status: Option<std::time::Instant>,
     pub offline: bool,
     pub lease_active: bool,
     pub in_guild: bool,
@@ -275,8 +274,8 @@ impl Authority {
         if method == "GET"
             && let Some(id) = target.strip_prefix("/api/v1/native-account/bazaar/commands/")
         {
-            if std::mem::take(&mut self.fail_status_once) {
-                return (503, String::new());
+            if let Some(status) = self.status_failure {
+                return (status, String::new());
             }
             if let Some((_, receipt)) = self.commands.get_mut(id) {
                 if receipt.state == OperationState::Pending && !self.pending_first {

@@ -2,6 +2,7 @@ use crate::CLIENT_BUILD;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::path::PathBuf;
 use std::sync::Arc;
+#[cfg(test)]
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -41,7 +42,8 @@ pub(crate) struct BrowserEpoch {
     prepare_for_test: Option<Arc<dyn Fn() -> std::io::Result<std::process::Command> + Send + Sync>>,
     #[cfg(test)]
     launches: std::sync::atomic::AtomicUsize,
-    spawn_guard: Mutex<()>,
+    #[cfg(test)]
+    spawned: Option<Arc<dyn Fn(u32) + Send + Sync>>,
     ended: CancellationToken,
 }
 
@@ -49,23 +51,30 @@ impl BrowserEpoch {
     fn spawn_helper(
         &self,
         command: &mut std::process::Command,
-        epoch: Option<&BrowserEpoch>,
         cancelled: impl Fn() -> bool,
     ) -> std::io::Result<std::process::Child> {
         #[cfg(test)]
         if let Some(spawn) = &self.prepare_for_test {
             *command = spawn()?;
         }
-        let _owner = self.spawn_guard.lock().unwrap_or_else(|e| e.into_inner());
-        let _session =
-            epoch.map(|scope| scope.spawn_guard.lock().unwrap_or_else(|e| e.into_inner()));
         if cancelled() {
             return Err(std::io::ErrorKind::Interrupted.into());
         }
         #[cfg(test)]
         self.launches
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        command.spawn()
+        let child = command.spawn()?;
+        #[cfg(test)]
+        if let Some(spawned) = &self.spawned {
+            spawned(child.id());
+        }
+        if cancelled() {
+            let mut child = child;
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(std::io::ErrorKind::Interrupted.into());
+        }
+        Ok(child)
     }
 
     #[cfg(bevy_shell)]
@@ -88,7 +97,6 @@ impl BrowserEpoch {
     }
 
     pub(crate) fn close(&self) {
-        let _guard = self.spawn_guard.lock().unwrap_or_else(|e| e.into_inner());
         self.ended.cancel();
     }
 }
@@ -237,9 +245,7 @@ fn deliver_system_url(
             if cancelled() {
                 return;
             }
-            let Ok(mut child) =
-                worker_scope.spawn_helper(&mut command, worker_epoch.as_deref(), cancelled)
-            else {
+            let Ok(mut child) = worker_scope.spawn_helper(&mut command, cancelled) else {
                 return;
             };
             let deadline = std::time::Instant::now() + HELPER_OBSERVATION;
@@ -264,11 +270,8 @@ fn deliver_system_url(
                 }
             }
             let _ = child.kill();
-            // The OS may already have accepted the URL. Only the helper is ours to reap.
-            let deadline = std::time::Instant::now() + Duration::from_secs(2);
-            while matches!(child.try_wait(), Ok(None)) && std::time::Instant::now() < deadline {
-                std::thread::sleep(Duration::from_millis(10));
-            }
+            // Reaping runs on the helper worker, independently of the closing caller.
+            let _ = child.wait();
         });
     worker.is_ok()
         && delivery.recv().unwrap_or(false)
@@ -467,44 +470,6 @@ mod browser_command_tests {
         Ok(())
     }
 
-    #[cfg(unix)]
-    #[test]
-    fn shutdown_before_spawn_prevents_helper_side_effect() -> Result<(), Box<dyn std::error::Error>>
-    {
-        let (ready, started) = std::sync::mpsc::channel();
-        let (resume, wait) = std::sync::mpsc::channel();
-        let wait = Mutex::new(wait);
-        let workers = Arc::new(BrowserEpoch {
-            prepare_for_test: Some(Arc::new(move || {
-                ready.send(()).map_err(std::io::Error::other)?;
-                wait.lock()
-                    .map_err(|_| std::io::Error::other("lock"))?
-                    .recv_timeout(Duration::from_secs(5))
-                    .map_err(std::io::Error::other)?;
-                Ok(std::process::Command::new("true"))
-            })),
-            ..Default::default()
-        });
-        let helper = workers.clone();
-        let system = SystemBrowser {
-            opener: Arc::new(move |url| deliver_system_url(url, &helper, None, None)),
-            workers: workers.clone(),
-        };
-        let mut config = NativeLoginConfig::from_env(|_| Some("test".into()))?.ok_or("config")?;
-        config.bind_system_browser(system);
-        let open = config.scoped_browser(CancellationToken::new());
-        let launch = std::thread::spawn(move || open("about:blank"));
-        started.recv_timeout(Duration::from_secs(5))?;
-        config.system_browser.shutdown();
-        resume.send(())?;
-        assert!(!launch.join().map_err(|_| "launch panicked")?);
-        assert_eq!(
-            workers.launches.load(std::sync::atomic::Ordering::SeqCst),
-            0
-        );
-        Ok(())
-    }
-
     #[test]
     fn close_discards_a_callback_in_flight_and_refuses_later_calls()
     -> Result<(), Box<dyn std::error::Error>> {
@@ -534,3 +499,7 @@ mod browser_command_tests {
         Ok(())
     }
 }
+
+#[cfg(all(test, unix))]
+#[path = "admission_browser_tests.rs"]
+mod admission_browser_tests;

@@ -16,7 +16,7 @@ use oteryn_platform_client::native_login::{AccessToken, AttemptRef, NativeLoginC
 use oteryn_platform_client::{PlatformClientError::HttpStatus, native_login::NativeLoginError};
 use std::{sync::Arc, time::Instant};
 
-use session::Unverified;
+pub(crate) use session::Unverified;
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -111,8 +111,10 @@ impl View {
         for (row, result) in listed.into_iter().zip(results) {
             let receipt = match result {
                 Some(Ok(receipt)) => receipt,
-                Some(Err(NativeLoginError::Platform(HttpStatus(403 | 404)))) => {
-                    self.unverified.0.remove(&row.request_id);
+                Some(Err(NativeLoginError::Platform(HttpStatus(403 | 404))))
+                    if row.state != OperationState::Pending =>
+                {
+                    // A stale terminal listing from another grant cannot establish ownership.
                     continue;
                 }
                 _ => {
