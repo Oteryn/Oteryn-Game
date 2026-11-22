@@ -1,0 +1,149 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.thais_lighthouse_quest",
+      "recipe_sha256": "d633371520b8e60de1de873ecf375d1dbbd3d2b9ee073c56383e3f7d56a1be64",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json#/records/13/definition/oteryn_recipe/payload/recipe:sha256:d633371520b8e60de1de873ecf375d1dbbd3d2b9ee073c56383e3f7d56a1be64",
+        "https://www.tibiawiki.com.br/index.php?title=Thais_Quest&oldid=433964",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_lighthouse/action-lever.lua#L3-L42",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_lighthouse/movement-stair.lua#L6-L34",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L685-L699"
+      ],
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/authored/thais-lighthouse/stage",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-thais-lighthouse-arrival",
+              "quest": "oteryn:quest.thais_lighthouse_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32224,
+                  "y": 32275,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": null
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/thais-lighthouse/stage",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/index.php?curid=3250&oldid=749243"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s2",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-thais-lighthouse-ladder-landing",
+              "quest": "oteryn:quest.thais_lighthouse_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32225,
+                  "y": 32276,
+                  "floor": -9
+                },
+                "unique": null,
+                "action": null,
+                "appearance": null
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/thais-lighthouse/stage",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_lighthouse/action-lever.lua#L4-L12"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s3",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-thais-lighthouse-treasure-room",
+              "quest": "oteryn:quest.thais_lighthouse_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32225,
+                  "y": 32274,
+                  "floor": -10
+                },
+                "unique": null,
+                "action": null,
+                "appearance": null
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/thais-lighthouse/stage",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_lighthouse/action-lever.lua#L15-L30"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
