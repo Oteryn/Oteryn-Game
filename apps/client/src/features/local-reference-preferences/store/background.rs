@@ -10,6 +10,7 @@ impl PreferenceStore {
         if background {
             self.deferred_impact_records = Some(records);
             if self.retry_impact_at.is_some() {
+                self.preferences.impact_records = records;
                 return Ok(());
             }
         }
@@ -158,9 +159,10 @@ impl PreferenceStore {
     }
 
     pub(in super::super) fn poll_background_save(&mut self) -> Option<Vec<SaveResult>> {
-        if self
-            .retry_impact_at
-            .is_some_and(|at| std::time::Instant::now() >= at)
+        if !self.replacing
+            && self
+                .retry_impact_at
+                .is_some_and(|at| std::time::Instant::now() >= at)
         {
             self.retry_impact_at = None;
             if let Err(error) = self.flush_impact_records() {
@@ -182,11 +184,22 @@ impl PreferenceStore {
             .find_map(|item| item.as_ref().ok()?.as_ref())
         {
             self.preferences = restored.clone();
+            // A successful import, restore or character load is the newer complete snapshot.
+            // Impact observation pauses while that replacement is in flight.
+            self.deferred_impact_records = None;
+            self.retry_impact_at = None;
         }
         if self.deferred_impact_records == Some(self.preferences.impact_records) {
             self.deferred_impact_records = None;
         }
-        if self.deferred_impact_records.is_some() && results.iter().any(Result::is_err) {
+        if let Some(records) = self.deferred_impact_records
+            && results.iter().any(Result::is_err)
+        {
+            // Keep the durable baseline for the retry and the latest logical value for re-entry.
+            self.io_baseline = Some(std::sync::Arc::new(std::sync::Mutex::new(
+                self.preferences.clone(),
+            )));
+            self.preferences.impact_records = records;
             self.retry_impact_at =
                 Some(std::time::Instant::now() + std::time::Duration::from_secs(1));
         } else if let Err(error) = self.flush_impact_records() {

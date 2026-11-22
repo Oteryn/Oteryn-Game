@@ -244,8 +244,12 @@ pub(super) fn context_items(
     };
     let mut groups: Vec<Vec<(Item, Choice)>> = Vec::new();
     let mut first = Vec::new();
-    if let Some((_, (_, attacking))) = attack.as_deref() {
-        let label = if *attacking { "Stop Attack" } else { "Attack" };
+    if let Some(attack) = attack.as_deref() {
+        let label = if attack.attacking {
+            "Stop Attack"
+        } else {
+            "Attack"
+        };
         first.push((Item::shortcut(label, ATTACK), Choice::Attack));
     }
     if let Some(choice) = find(Action::Look) {

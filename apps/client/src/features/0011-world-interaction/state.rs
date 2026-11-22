@@ -4,7 +4,7 @@ use oteryn_client_runtime::world_interaction::{Target, world_object::WorldObject
 use oteryn_renderer::TileCoord;
 use oteryn_session::world_map::MapOrigin;
 impl PlayView {
-    pub(in crate::play) fn world_context_target(&self, tile: TileCoord) -> Option<Target> {
+    pub(crate) fn world_context_target(&self, tile: TileCoord) -> Option<Target> {
         self.world_context_target_for(tile, false)
     }
     pub(in crate::play) fn world_context_target_for(

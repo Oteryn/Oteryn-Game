@@ -121,16 +121,19 @@ fn context_menu_follows_tibia_order_with_shortcuts_and_uses_a_bed() -> Result {
         browse: Some((tile, 0)),
         npc: None,
         player: Some("Bryn".into()),
-        attack: Some(Box::new((
-            tile,
-            (
-                oteryn_session::EntityRef {
-                    identity: [1; 16],
-                    generation: 1,
-                },
-                false,
-            ),
-        ))),
+        attack: Some(Box::new(AttackChoice {
+            position: oteryn_session::ActorPosition {
+                x: tile.x,
+                y: tile.y,
+                floor: 7,
+            },
+            target: oteryn_session::EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            attacking: false,
+            from_row: false,
+        })),
     };
     let items = projection::context_items(&content, true, false);
     let rows: Vec<String> = items
@@ -177,16 +180,19 @@ fn context_menu_follows_tibia_order_with_shortcuts_and_uses_a_bed() -> Result {
         browse: None,
         npc: None,
         player: None,
-        attack: Some(Box::new((
-            tile,
-            (
-                oteryn_session::EntityRef {
-                    identity: [1; 16],
-                    generation: 1,
-                },
-                true,
-            ),
-        ))),
+        attack: Some(Box::new(AttackChoice {
+            position: oteryn_session::ActorPosition {
+                x: tile.x,
+                y: tile.y,
+                floor: 7,
+            },
+            target: oteryn_session::EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            attacking: true,
+            from_row: false,
+        })),
     };
     let rows = projection::context_items(&current, false, false);
     assert!(matches!(
@@ -346,6 +352,13 @@ fn context_stop_refuses_an_opponent_published_after_validation() -> Result {
 
 #[test]
 fn secondary_list_context_keeps_attack_for_the_unambiguous_creature() -> Result {
+    secondary_context(true)
+}
+#[test]
+fn secondary_list_context_can_attack_without_look() -> Result {
+    secondary_context(false)
+}
+fn secondary_context(look: bool) -> Result {
     use oteryn_session::{
         ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
     };
@@ -373,7 +386,9 @@ fn secondary_list_context_keeps_attack_for_the_unambiguous_creature() -> Result 
     };
     let mut host = HostOwner::new(None)?;
     let (link, mut commands, outbox) = play_channel();
-    outbox.bevy_world_look_selected();
+    if look {
+        outbox.bevy_world_look_selected();
+    }
     outbox.battle_publish(None, Some(7), &[creature]);
     let mut lists = vec![
         serde_json::from_value(serde_json::json!({"creatures":false}))?,
@@ -424,11 +439,24 @@ fn secondary_list_context_keeps_attack_for_the_unambiguous_creature() -> Result 
         else {
             return Err("stacked row missing attack".into());
         };
-        assert_eq!(attack.1.0, selected);
-        assert!(host.choose_dialog(*id, Choice::Attack));
+        assert_eq!(attack.target, selected);
+        let id = *id;
+
+        assert!(host.choose_dialog(id, Choice::Attack));
         assert!(
             matches!(commands.try_recv()?,crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Attack(id)) if id==selected)
         );
     }
+    host.request_creature_context(creature.entity);
+    let id = host.dialogs.pending.as_ref().ok_or("menu")?.id;
+    AFTER_ATTACK_VALIDATION.set(Some(Box::new(move || {
+        outbox.battle_publish(None, Some(7), &[other])
+    })));
+    assert!(
+        !host.choose_dialog(id, Choice::Attack),
+        "a removed row must not submit an attack"
+    );
+    assert!(AFTER_ATTACK_VALIDATION.take().is_none());
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

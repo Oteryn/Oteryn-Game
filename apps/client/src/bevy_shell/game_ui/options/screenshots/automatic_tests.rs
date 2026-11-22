@@ -376,6 +376,13 @@ fn failed_background_impact_reset_retries_without_another_hit()
         }
         std::thread::yield_now();
     }
+    state.select_character(Some([2; 16]));
+    state.select_character(Some(identity));
+    assert_eq!(
+        state.preferences.impact_records,
+        [0, 0],
+        "switching back during the retry delay must retain the reset"
+    );
     std::fs::write(&file, saved)?;
     state.prepare_screenshots(now, Some(&link));
     while state.local_preference_writes_pending() {
@@ -388,5 +395,47 @@ fn failed_background_impact_reset_retries_without_another_hit()
     let mut reopened = crate::play::SettingsState::new(Some(base));
     reopened.select_character(Some(identity));
     assert_eq!(reopened.preferences.impact_records, [0, 0]);
+    Ok(())
+}
+
+#[test]
+fn importing_after_a_queued_impact_save_keeps_the_imported_record()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::analyser_transport::{AnalyserFact, AnalyserImpact};
+    let root = tempfile::tempdir()?;
+    let base = root.path().join("prefs.json");
+    let mut state = crate::play::SettingsState::new(Some(base.clone()));
+    state.select_character(Some([4; 16]));
+    let mut imported = state.preferences.clone();
+    imported.impact_records = [0, 900];
+    let transfer = root.path().join("import.json");
+    crate::play::PreferenceStore::export_to(&imported, &transfer)?;
+    bevy_tasks::IoTaskPool::get_or_init(|| {
+        bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+    });
+    state.use_background_preferences();
+    let (link, _rx, outbox) = crate::play::play_channel();
+    outbox.push(vec![oteryn_session::SessionEvent::AnalyserFacts(
+        oteryn_session::AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: vec![AnalyserFact::Impact(AnalyserImpact::Healing(
+                100u32.try_into()?,
+            ))],
+        },
+    )]);
+    let now = std::time::Instant::now();
+    state.prepare_screenshots(now, Some(&link));
+    assert_eq!(state.preferences.impact_records, [0, 100]);
+    state.import_from(&transfer)?;
+    while state.local_preference_writes_pending() {
+        assert!(state.poll_background_save().error.is_none());
+        assert!(now.elapsed() < std::time::Duration::from_secs(5));
+        std::thread::yield_now();
+    }
+    let mut reopened = crate::play::SettingsState::new(Some(base));
+    reopened.select_character(Some([4; 16]));
+    assert_eq!(reopened.preferences.impact_records, [0, 900]);
     Ok(())
 }

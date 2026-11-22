@@ -52,7 +52,7 @@ impl crate::play::PlayView {
         &self,
         target: oteryn_session::EntityRef,
         link: &PlayLink,
-    ) -> Option<(TileCoord, (oteryn_session::EntityRef, bool))> {
+    ) -> Option<(oteryn_session::ActorPosition, bool)> {
         let position = self.context_creature_position(target)?;
         let mailbox = lock(&link.mailbox);
         if Some(target.identity) == self.scene.own_identity()
@@ -65,14 +65,11 @@ impl crate::play::PlayView {
             return None;
         }
         Some((
-            TileCoord::new(position.x, position.y),
-            (
-                target,
-                mailbox
-                    .battle
-                    .combat
-                    .is_some_and(|combat| combat.target == Some(target)),
-            ),
+            position,
+            mailbox
+                .battle
+                .combat
+                .is_some_and(|combat| combat.target == Some(target)),
         ))
     }
 
@@ -94,8 +91,22 @@ impl PlayLink {
         target: oteryn_session::EntityRef,
         attacking: bool,
     ) -> bool {
+        self.request_positioned_combat(target, attacking, None)
+    }
+    pub(crate) fn request_positioned_combat(
+        &self,
+        target: oteryn_session::EntityRef,
+        attacking: bool,
+        position: Option<oteryn_session::ActorPosition>,
+    ) -> bool {
         let mut mailbox = lock(&self.mailbox);
-        if mailbox.world_input_blocked()
+        if position.is_some_and(|position| {
+            !mailbox
+                .battle
+                .rows
+                .iter()
+                .any(|row| row.entity == target && row.position == position)
+        }) || mailbox.world_input_blocked()
             || mailbox
                 .battle
                 .combat
