@@ -289,13 +289,6 @@ impl Authority {
     }
 }
 mod http;
+pub(crate) use http::test_thread;
 
 type TestResultWith<T> = Result<T, Box<dyn std::error::Error>>;
-pub(crate) fn test_thread(test: impl FnOnce() -> TestResult + Send + 'static) -> TestResult {
-    std::thread::Builder::new()
-        .stack_size(64 << 20)
-        .spawn(move || test().map_err(|e| e.to_string()))?
-        .join()
-        .map_err(|_| "test thread failed")?
-        .map_err(Into::into)
-}
