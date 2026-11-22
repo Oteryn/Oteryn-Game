@@ -532,6 +532,7 @@
     "x": 33902,
     "y": 31462,
     "floor": 6,
+    "world_arrival": [33902, 31464, 6],
     "postman": true,
     "held": false,
     "carpet": false
@@ -638,7 +639,8 @@
     "key": "oteryn:service.travel.captain_max/calassa",
     "keyword": "calassa",
     "price": 200,
-    "premium": false,
+    "premium": true,
+    "premium_override": false,
     "x": 31911,
     "y": 32710,
     "floor": 6,
@@ -2195,6 +2197,7 @@
     "x": 33902,
     "y": 31462,
     "floor": 6,
+    "world_arrival": [33902, 31464, 6],
     "postman": true,
     "held": true,
     "carpet": false

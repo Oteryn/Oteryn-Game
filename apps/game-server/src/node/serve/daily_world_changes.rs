@@ -64,6 +64,37 @@ pub(super) fn prepare_map(
     checked.with_daily_map(map_changes(world, changes))
 }
 
+const MAERYN: &str = "oteryn:npc.maeryn";
+
+fn shared_npcs(
+    changes: &DailyWorldChanges,
+) -> impl Iterator<Item = (&'static str, (u16, u16, i8))> {
+    use oteryn_gameplay_world_change::{counter::CounterKind as K, owner::counter_admitted};
+    // Retained NPC anchors for Orockle/Benevola; adjacent admitted Navigator tile
+    // and the audited Seacrest Guardian are explicit native geometry choices.
+    [
+        (K::HiveBorn, "oteryn:npc.orockle", (33448, 31309, 7)),
+        (K::Overhunting, "oteryn:npc.benevola", (32596, 31745, 7)),
+        (K::Deeplings, "oteryn:npc.navigator", (33638, 31377, 9)),
+        // Explicit native barter station, not an asserted donor Yeo coordinate.
+        (K::FireFeathered, "oteryn:npc.yeo", (33554, 31624, 14)),
+        (
+            K::FireFeathered,
+            "oteryn:npc.guardian_of_the_deep_seas",
+            (33553, 31624, 14),
+        ),
+    ]
+    .into_iter()
+    .filter(move |(kind, _, _)| changes.world_counters && counter_admitted(*kind))
+    .map(|(_, key, at)| (key, at))
+}
+
+/// The active reset projection has its own contact cells for these bundle NPCs.
+pub(super) fn owns_npc(changes: &DailyWorldChanges, key: &str) -> bool {
+    changes.reset_epoch != 0
+        && (key == MAERYN || shared_npcs(changes).any(|(daily, _)| daily == key))
+}
+
 /// Places the day's NPCs the loaded catalogue admits; one that cannot stand is logged.
 pub(super) fn apply(
     runtime: &mut ChannelRuntimeV1,
@@ -84,28 +115,10 @@ pub(super) fn apply(
             })
         })
         .map(|town| ("oteryn:npc.yasir", town.yasir_position()));
-    use oteryn_gameplay_world_change::{counter::CounterKind as K, owner::counter_admitted};
-    // Retained NPC anchors for Orockle/Benevola; adjacent admitted Navigator tile
-    // and the audited Seacrest Guardian are explicit native geometry choices.
-    let shared_npcs = [
-        (K::HiveBorn, "oteryn:npc.orockle", (33448, 31309, 7)),
-        (K::Overhunting, "oteryn:npc.benevola", (32596, 31745, 7)),
-        (K::Deeplings, "oteryn:npc.navigator", (33638, 31377, 9)),
-        // Explicit native barter station, not an asserted donor Yeo coordinate.
-        (K::FireFeathered, "oteryn:npc.yeo", (33554, 31624, 14)),
-        (
-            K::FireFeathered,
-            "oteryn:npc.guardian_of_the_deep_seas",
-            (33553, 31624, 14),
-        ),
-    ]
-    .into_iter()
-    .filter(|(kind, _, _)| changes.world_counters && counter_admitted(*kind))
-    .map(|(_, key, at)| (key, at));
     // Fandom Maeryn revid 1116853 locates her downstairs normally. TibiaWiki BR
     // Maeryn revid 396987 supplies the upstairs cell she uses during the full moon.
     let maeryn = std::iter::once((
-        "oteryn:npc.maeryn",
+        MAERYN,
         if changes.grimvale_full_moon {
             (33332, 31686, 6)
         } else {
@@ -115,7 +128,7 @@ pub(super) fn apply(
     for (key, (x, y, z)) in changes
         .npcs()
         .chain(trader)
-        .chain(shared_npcs)
+        .chain(shared_npcs(changes))
         .chain(maeryn)
     {
         if !npc_boot.is_some_and(|boot| boot.admits(key)) {
@@ -335,10 +348,26 @@ pub(crate) mod tests {
 
     #[test]
     fn maeryn_moves_upstairs_only_during_the_grimvale_full_moon() {
-        let admitted = boot(&["oteryn:npc.maeryn"]);
+        let mut admitted = boot(&[MAERYN]);
+        if let NpcBoot::Place { table, .. } = &mut admitted {
+            table.npcs.push(crate::foundation::NpcPlacements {
+                key: MAERYN.into(),
+                placements: vec![NpcPlacement {
+                    x: 33330,
+                    y: 31686,
+                    floor: -7,
+                    direction: MovementFacing::North,
+                }],
+            });
+        }
         for (day, expected) in [(12, (33331, 31686, 7)), (13, (33332, 31686, 6))] {
             let mut runtime = channel_runtime();
             let changes = DailyWorldChanges::roll(41, 1, day, |_| u64::MAX);
+            assert_eq!(
+                super::super::bundle_npcs::place(&mut runtime, Some(&admitted), Some(&changes))
+                    .expect("static bundle placement"),
+                0
+            );
             assert_eq!(apply(&mut runtime, Some(&admitted), &changes, None), 1);
             assert_eq!(npc_keys(&runtime), ["oteryn:npc.maeryn"]);
             let position = &runtime.visible_entities().npcs[0].position;

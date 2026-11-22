@@ -450,7 +450,7 @@ def test_source_cohort_includes_installed_successors() -> None:
         pass
 
     def measure():
-        assert installed == ["thaian", "buddel", "regional NPCs"], "measure only the complete installed World"
+        assert installed == ["thaian", "buddel", "regional NPC prices", "regional NPCs"], "measure only the complete installed World"
         raise Measured
 
     with patch.object(sys, "argv", ["regenerate_content.py"]), \
@@ -459,6 +459,7 @@ def test_source_cohort_includes_installed_successors() -> None:
             patch.object(rc, "materialize_world"), \
             patch("questpc7_thaian_authoring.install", side_effect=lambda _: installed.append("thaian")), \
             patch("buddel_travel.install_buddel", side_effect=lambda *_: installed.append("buddel")), \
+            patch("regional_npc_prices.install", side_effect=lambda *_: installed.append("regional NPC prices")), \
             patch("regional_npc_dialogue.install", side_effect=lambda *_: installed.append("regional NPCs")), \
             patch.object(rc, "canonicalize_world"), \
             patch.object(rc, "refresh_source_cohort_extent", side_effect=measure):
@@ -523,6 +524,7 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
                 patch.object(rc, "materialize_world", side_effect=lambda: events.append(("materialize-world",))), \
                 patch("questpc7_thaian_authoring.install", side_effect=lambda _: record(("install-thaian",))), \
                 patch("buddel_travel.install_buddel", side_effect=lambda *_: record(("install-buddel",))), \
+                patch("regional_npc_prices.install", side_effect=lambda *_: record(("install-regional-npc-prices",))), \
                 patch("regional_npc_dialogue.install", side_effect=lambda *_: record(("install-regional-npc-dialogue",))), \
                 patch.object(rc, "canonicalize_world", side_effect=lambda: record(("canonicalize-world",))), \
                 patch.object(rc, "refresh_source_cohort_extent", side_effect=lambda: record(("source-cohort",))), \
@@ -539,7 +541,8 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
 
 def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them() -> None:
     ordered = [
-        ("materialize-world",), ("install-thaian",), ("install-buddel",), ("install-regional-npc-dialogue",),
+        ("materialize-world",), ("install-thaian",), ("install-buddel",),
+        ("install-regional-npc-prices",), ("install-regional-npc-dialogue",),
         ("canonicalize-world",), ("source-cohort",), ("repin-world",),
         ("python3", "tools/content-migration/world_project_v2_to_tree.py"),
     ]

@@ -390,7 +390,7 @@ impl NpcTalkBook {
         let journal_npcs = world_change_journals::npc_keys(source).unwrap_or_default();
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|sinatuki-fish-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|sinatuki-fish-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::quest_access::book_digest(
                     &crate::content::npc_catalogue::quest_shops::book_digest(
                         &crate::content::npc_catalogue::grizzly_shop::book_digest(
@@ -479,394 +479,409 @@ impl NpcTalkBook {
                 .as_ref()
                 .filter(|_| literal_contacts::regional(&reference.key));
             let regional = regional_contacts::get(&reference.key);
+            let regional_keywords = || {
+                regional_dialogue
+                    .into_iter()
+                    .flat_map(|dialogue| &dialogue.keywords)
+                    .filter(|keyword| {
+                        literal_keyword(keyword) && !keyword.reply[0].contains("|TIME|")
+                    })
+            };
+            let mut merged_regional_keywords = false;
             let mut journal_fallback = false;
             let mut regional_source = false;
             let mut regional_walkaway = None;
-            let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if native_quest
-                && matches!(
-                    reference.key.as_str(),
-                    "oteryn:npc.strange_pipe"
-                        | "oteryn:npc.strange_pipe_1"
-                        | "oteryn:npc.strange_pipe_2"
-                        | "oteryn:npc.strange_pipe_3"
-                ) {
-                // Crystal201189f: each pipe's unconditional storage callback
-                // inherits these NpcHandler messages; it declares no override.
-                // The native dispatcher still commits the access write first.
-                (
-                    "Greetings, |PLAYERNAME|.".into(),
-                    "Good bye, |PLAYERNAME|.".into(),
-                    None,
-                    Vec::new(),
-                )
-            } else if reference.key == "oteryn:npc.grizzly_adams" {
-                // W15c: the existing NPC owner opens the conversation; confirmed task
-                // choices and their stateful replies belong to native Grizzly dispatch.
-                (
-                    "Welcome to the Paw and Fur - Hunting Elite. Would you like to join?".into(),
-                    "Good hunting!".into(),
-                    Some("Ask me about tasks, points, rank, promotion or bosses.".into()),
-                    Vec::new(),
-                )
-            } else if reference.key == "oteryn:npc.lynda" {
-                // Crystal201189f lynda.lua:307-309; only the native marriage caller opens.
-                (
-                    "Welcome in the name of the gods, pilgrim |PLAYERNAME|!".into(),
-                    "Be careful on your journeys.".into(),
-                    Some(
-                        "Ask me about marriage, celebration, removing a proposal, or divorce."
+            let (greeting_reply, farewell_reply, topic_reply, mut dialogue_keywords) =
+                if native_quest
+                    && matches!(
+                        reference.key.as_str(),
+                        "oteryn:npc.strange_pipe"
+                            | "oteryn:npc.strange_pipe_1"
+                            | "oteryn:npc.strange_pipe_2"
+                            | "oteryn:npc.strange_pipe_3"
+                    )
+                {
+                    // Crystal201189f: each pipe's unconditional storage callback
+                    // inherits these NpcHandler messages; it declares no override.
+                    // The native dispatcher still commits the access write first.
+                    (
+                        "Greetings, |PLAYERNAME|.".into(),
+                        "Good bye, |PLAYERNAME|.".into(),
+                        None,
+                        Vec::new(),
+                    )
+                } else if reference.key == "oteryn:npc.grizzly_adams" {
+                    // W15c: the existing NPC owner opens the conversation; confirmed task
+                    // choices and their stateful replies belong to native Grizzly dispatch.
+                    (
+                        "Welcome to the Paw and Fur - Hunting Elite. Would you like to join?"
                             .into(),
-                    ),
-                    Vec::new(),
-                )
-            } else if reference.key == DEEP_SEAS_GUARDIAN {
-                // Retained Crystal Guardian is an NPC stub with FocusModule and no overrides
-                // or shop. The same pinned default handler supplies greeting and farewell;
-                // the native quest adapter owns its authored stateful mission conversation.
-                (
-                    YASIR_GREET.into(),
-                    OROCKLE_FAREWELL.into(),
-                    None,
-                    Vec::new(),
-                )
-            } else if reference.key == "oteryn:npc.yeo" {
-                // Retained canonical Yeo dialogue supplies these greeting/farewell lines.
-                // Wiki supplies the ten-shrimp barter; native dispatch owns confirmation.
-                (YEO_GREET.into(), "Mhm.".into(), None, Vec::new())
-            } else if reference.key == "oteryn:npc.benevola" {
-                (BENE_GREET.into(), "Good bye.".into(), None, Vec::new())
-            } else if reference.key == OROCKLE {
-                // Canonical catalogue offers remain the sole shop source; no mission mint.
-                (
-                    YASIR_GREET.into(),
-                    OROCKLE_FAREWELL.into(),
-                    Some(OROCKLE_TRADE.into()),
-                    Vec::new(),
-                )
-            } else if reference.key == YASIR {
-                // Closed native consumer: no other Dialogue-backed merchant is admitted.
-                (
-                    YASIR_GREET.into(),
-                    YASIR_FAREWELL.into(),
-                    Some(YASIR_JOB.into()),
-                    yasir_keywords(),
-                )
-            } else if matches!(
-                reference.key.as_str(),
-                "oteryn:npc.ambassador_manop" | "oteryn:npc.enpa_deia_pema"
-            ) {
-                // MONKQUEST3: greeting belongs to the NPC owner; stateful pilgrimage
-                // replies and all writes belong to the native quest caller in dispatch.
-                (
-                    format!(
-                        "Harmony, friend. I am {}. Ask me about the pilgrimage.",
-                        npc.name
-                    ),
-                    "May your path lead to enlightenment.".into(),
-                    Some("Ask me about your pilgrimage or progress on the Three-Fold Path.".into()),
-                    Vec::new(),
-                )
-            } else if matches!(
-                reference.key.as_str(),
-                "oteryn:npc.mayor_pocaro" | "oteryn:npc.wayland_smythers"
-            ) && npc.services.is_empty()
-            {
-                // SUMMER: the model's historical `bank_dialogue` carrier holds the
-                // admitted messages for every Dialogue-backed NPC. Only these Summer NPCs'
-                // literal, single-line lore is qualified here. Quest callbacks and
-                // multipart/stateful branches remain outside the talk consumer.
-                let Some(dialogue) = &npc.bank_dialogue else {
-                    continue;
-                };
-                if dialogue.greet.len() != 1 || dialogue.farewell.len() != 1 {
-                    continue;
-                }
-                (
-                    dialogue.greet[0].clone(),
-                    dialogue.farewell[0].clone(),
-                    None,
-                    dialogue
-                        .keywords
-                        .iter()
-                        .filter(|keyword| literal_keyword(keyword))
-                        .cloned()
-                        .collect(),
-                )
-            } else if let Some(greeting) = crate::quest_greetings::get(&reference.key)
-                .filter(|_| reference.key != "oteryn:npc.spectulus")
-            {
-                // Only the closed source NPCs with native quest callers open here.
-                // Their conditional topics and writes remain with dispatch.
-                (
-                    greeting.greet.text.clone(),
-                    greeting.farewell.text.clone(),
-                    None,
-                    Vec::new(),
-                )
-            } else if let Some(greeting) = endgame_greeting(&reference.key) {
-                // Only these source NPCs have native stateful Quest
-                // consumers. This admits their greeting, not their Lua/script
-                // branches; dispatch owns every confirmation and durable write.
-                (greeting.into(), "Farewell.".into(), None, Vec::new())
-            } else if let Some(messages) = reward_messages {
-                // Stateful exchanges now have a real consumer in dispatch.
-                // Open only their source-authored greeting; no scripted branch
-                // or unconfirmed item/storage effect is admitted by this book.
-                (
-                    messages.greet.clone(),
-                    messages.farewell.clone(),
-                    None,
-                    Vec::new(),
-                )
-            } else if reference.key == "oteryn:npc.seymour" {
-                // TIBIAWIKI_STRUCTURED: Present Quest/Spoiler, Seymour transcript.
-                (
+                        "Good hunting!".into(),
+                        Some("Ask me about tasks, points, rank, promotion or bosses.".into()),
+                        Vec::new(),
+                    )
+                } else if reference.key == "oteryn:npc.lynda" {
+                    // Crystal201189f lynda.lua:307-309; only the native marriage caller opens.
+                    (
+                        "Welcome in the name of the gods, pilgrim |PLAYERNAME|!".into(),
+                        "Be careful on your journeys.".into(),
+                        Some(
+                            "Ask me about marriage, celebration, removing a proposal, or divorce."
+                                .into(),
+                        ),
+                        Vec::new(),
+                    )
+                } else if reference.key == DEEP_SEAS_GUARDIAN {
+                    // Retained Crystal Guardian is an NPC stub with FocusModule and no overrides
+                    // or shop. The same pinned default handler supplies greeting and farewell;
+                    // the native quest adapter owns its authored stateful mission conversation.
+                    (
+                        YASIR_GREET.into(),
+                        OROCKLE_FAREWELL.into(),
+                        None,
+                        Vec::new(),
+                    )
+                } else if reference.key == "oteryn:npc.yeo" {
+                    // Retained canonical Yeo dialogue supplies these greeting/farewell lines.
+                    // Wiki supplies the ten-shrimp barter; native dispatch owns confirmation.
+                    (YEO_GREET.into(), "Mhm.".into(), None, Vec::new())
+                } else if reference.key == "oteryn:npc.benevola" {
+                    (BENE_GREET.into(), "Good bye.".into(), None, Vec::new())
+                } else if reference.key == OROCKLE {
+                    // Canonical catalogue offers remain the sole shop source; no mission mint.
+                    (
+                        YASIR_GREET.into(),
+                        OROCKLE_FAREWELL.into(),
+                        Some(OROCKLE_TRADE.into()),
+                        Vec::new(),
+                    )
+                } else if reference.key == YASIR {
+                    // Closed native consumer: no other Dialogue-backed merchant is admitted.
+                    (
+                        YASIR_GREET.into(),
+                        YASIR_FAREWELL.into(),
+                        Some(YASIR_JOB.into()),
+                        yasir_keywords(),
+                    )
+                } else if matches!(
+                    reference.key.as_str(),
+                    "oteryn:npc.ambassador_manop" | "oteryn:npc.enpa_deia_pema"
+                ) {
+                    // MONKQUEST3: greeting belongs to the NPC owner; stateful pilgrimage
+                    // replies and all writes belong to the native quest caller in dispatch.
+                    (
+                        format!(
+                            "Harmony, friend. I am {}. Ask me about the pilgrimage.",
+                            npc.name
+                        ),
+                        "May your path lead to enlightenment.".into(),
+                        Some(
+                            "Ask me about your pilgrimage or progress on the Three-Fold Path."
+                                .into(),
+                        ),
+                        Vec::new(),
+                    )
+                } else if matches!(
+                    reference.key.as_str(),
+                    "oteryn:npc.mayor_pocaro" | "oteryn:npc.wayland_smythers"
+                ) && npc.services.is_empty()
+                {
+                    // SUMMER: the model's historical `bank_dialogue` carrier holds the
+                    // admitted messages for every Dialogue-backed NPC. Only these Summer NPCs'
+                    // literal, single-line lore is qualified here. Quest callbacks and
+                    // multipart/stateful branches remain outside the talk consumer.
+                    let Some(dialogue) = &npc.bank_dialogue else {
+                        continue;
+                    };
+                    if dialogue.greet.len() != 1 || dialogue.farewell.len() != 1 {
+                        continue;
+                    }
+                    (
+                        dialogue.greet[0].clone(),
+                        dialogue.farewell[0].clone(),
+                        None,
+                        dialogue
+                            .keywords
+                            .iter()
+                            .filter(|keyword| literal_keyword(keyword))
+                            .cloned()
+                            .collect(),
+                    )
+                } else if let Some(greeting) = crate::quest_greetings::get(&reference.key)
+                    .filter(|_| reference.key != "oteryn:npc.spectulus")
+                {
+                    // Only the closed source NPCs with native quest callers open here.
+                    // Their conditional topics and writes remain with dispatch.
+                    (
+                        greeting.greet.text.clone(),
+                        greeting.farewell.text.clone(),
+                        None,
+                        Vec::new(),
+                    )
+                } else if let Some(greeting) = endgame_greeting(&reference.key) {
+                    // Only these source NPCs have native stateful Quest
+                    // consumers. This admits their greeting, not their Lua/script
+                    // branches; dispatch owns every confirmation and durable write.
+                    (greeting.into(), "Farewell.".into(), None, Vec::new())
+                } else if let Some(messages) = reward_messages {
+                    // Stateful exchanges now have a real consumer in dispatch.
+                    // Open only their source-authored greeting; no scripted branch
+                    // or unconfirmed item/storage effect is admitted by this book.
+                    (
+                        messages.greet.clone(),
+                        messages.farewell.clone(),
+                        None,
+                        Vec::new(),
+                    )
+                } else if reference.key == "oteryn:npc.seymour" {
+                    // TIBIAWIKI_STRUCTURED: Present Quest/Spoiler, Seymour transcript.
+                    (
                     "Hello, |PLAYERNAME|. Welcome to the Academy of Rookgaard. May I sign you up as a student?".into(),
                     "Good bye, |PLAYERNAME|! And remember: No running up and down in the academy!".into(),
                     None,
                     Vec::new(),
                 )
-            } else if matches!(
-                reference.key.as_str(),
-                "oteryn:npc.frodo" | MORDECAI | "oteryn:npc.sinatuki"
-            ) {
-                // Use the pinned focus messages where supplied, with Crystal's defaults
-                // for Sinatuki. Only literal, single-line keywords are supported here.
-                let Some(dialogue) = &npc.bank_dialogue else {
+                } else if matches!(
+                    reference.key.as_str(),
+                    "oteryn:npc.frodo" | MORDECAI | "oteryn:npc.sinatuki"
+                ) {
+                    // Use the pinned focus messages where supplied, with Crystal's defaults
+                    // for Sinatuki. Only literal, single-line keywords are supported here.
+                    let Some(dialogue) = &npc.bank_dialogue else {
+                        continue;
+                    };
+                    (
+                        dialogue
+                            .greet
+                            .first()
+                            .cloned()
+                            .unwrap_or_else(|| "Greetings, |PLAYERNAME|.".into()),
+                        dialogue
+                            .farewell
+                            .first()
+                            .cloned()
+                            .unwrap_or_else(|| "Good bye, |PLAYERNAME|.".into()),
+                        None,
+                        regional_keywords().cloned().collect(),
+                    )
+                } else if reference.key == "oteryn:npc.uzgod" {
+                    // Source Obsidian Knife transcript; the confirmed item exchange is native.
+                    (
+                        "Hiho |PLAYERNAME|! Wanna weapon, eh?".into(),
+                        "Guut bye. Coming back soon.".into(),
+                        None,
+                        Vec::new(),
+                    )
+                } else if reference.key == "oteryn:npc.al_dee" {
+                    // npc-br snapshot, Al Dee revid420190. Stateful exchange belongs to dispatch.
+                    (
+                        "Hello, hello, |PLAYERNAME|! Please come in, look, and buy!".into(),
+                        "Bye, bye |PLAYERNAME|.".into(),
+                        None,
+                        Vec::new(),
+                    )
+                } else if reference.key == "oteryn:npc.yasir" {
+                    // TIBIAWIKI_STRUCTURED: npc-br/2026-09-28 snapshot, Yasir
+                    // revid433385, npc_lines. Only his literal trade dialogue is
+                    // admitted here; dispatch grants Si, Ariki! when the window opens.
+                    let keywords = ["ariki", "trade"]
+                        .into_iter()
+                        .map(|word| crate::content::ProjectV2DialogueKeyword {
+                            key: word.into(),
+                            triggers: vec![word.into()],
+                            reply: vec!["Si! Haneka ariki!".into()],
+                            fallback: false,
+                            links: Vec::new(),
+                            only_focus: true,
+                            only_unfocus: false,
+                            reset: false,
+                            ungreet: false,
+                            move_up: None,
+                            children: Vec::new(),
+                        })
+                        .collect();
+                    (
+                        "Yasu me halaka. <greets you friendly>".into(),
+                        "Si, jema ze harun. <waves>".into(),
+                        None,
+                        keywords,
+                    )
+                } else if let Some(contact) = regional.filter(|_| !bank) {
+                    merged_regional_keywords = true;
+                    (
+                        contact
+                            .greet
+                            .as_deref()
+                            .unwrap_or(regional_contacts::GREET)
+                            .into(),
+                        contact
+                            .farewell
+                            .as_deref()
+                            .unwrap_or(regional_contacts::FAREWELL)
+                            .into(),
+                        None,
+                        contact.keywords.clone(),
+                    )
+                } else if let Some(messages) = npc.bank_dialogue.as_ref().and_then(|dialogue| {
+                    literal_contacts::regional_messages(&reference.key, dialogue)
+                }) {
+                    regional_source = true;
+                    merged_regional_keywords = !bank;
+                    regional_walkaway = messages.walkaway;
+                    let passage = (!travel_routes.is_empty())
+                        .then(|| "Ask me for a passage to your destination.".into());
+                    (
+                        messages.greet,
+                        messages.farewell,
+                        passage,
+                        messages.keywords,
+                    )
+                } else if let Some(replies) = &npc.generated_replies {
+                    let mut lines: Vec<&str> = Vec::new();
+                    for (_, line) in &replies.services {
+                        if !lines.contains(&line.text.as_str()) {
+                            lines.push(&line.text);
+                        }
+                    }
+                    (
+                        replies.greeting.text.clone(),
+                        replies.farewell.text.clone(),
+                        (!lines.is_empty()).then(|| lines.join(" ")),
+                        Vec::new(),
+                    )
+                } else if !travel_routes.is_empty() {
+                    (
+                        format!("Greetings, I am {}.", npc.name),
+                        "Farewell.".into(),
+                        Some("Ask me for a passage to your destination.".into()),
+                        Vec::new(),
+                    )
+                } else if !premium_services.is_empty() {
+                    (
+                        format!("Greetings, I am {}.", npc.name),
+                        "Farewell.".into(),
+                        Some("Ask me about promotion or a blessing.".into()),
+                        Vec::new(),
+                    )
+                } else if bank {
+                    // Only the Bank Dialogue's explicitly supported, authored message shape is
+                    // consumed. Missing/multipart/stateful dialogue stays held, never generated.
+                    let Some(dialogue) = &npc.bank_dialogue else {
+                        continue;
+                    };
+                    if dialogue.greet.len() != 1
+                        || dialogue.farewell.len() != 1
+                        || dialogue
+                            .keywords
+                            .iter()
+                            .any(|keyword| !literal_keyword(keyword))
+                    {
+                        continue;
+                    }
+                    (
+                        dialogue.greet[0].clone(),
+                        dialogue.farewell[0].clone(),
+                        None,
+                        dialogue.keywords.clone(),
+                    )
+                } else if literal_contacts::admitted(&reference.key) && npc.services.is_empty() {
+                    // The historical `bank_dialogue` carrier also holds these explicitly
+                    // qualified lore contacts. Per-contact topic scope and the literal
+                    // matcher keep quest callbacks and exchange topics outside this path.
+                    let Some(dialogue) = &npc.bank_dialogue else {
+                        continue;
+                    };
+                    if dialogue.greet.len() != 1 || dialogue.farewell.len() != 1 {
+                        continue;
+                    }
+                    (
+                        literal_contacts::greeting(&reference.key)
+                            .unwrap_or(&dialogue.greet[0])
+                            .to_owned(),
+                        dialogue.farewell[0].clone(),
+                        None,
+                        dialogue
+                            .keywords
+                            .iter()
+                            .filter(|keyword| {
+                                literal_contacts::keyword_allowed(&reference.key, keyword)
+                            })
+                            .cloned()
+                            .collect(),
+                    )
+                } else if crate::content::npc_catalogue::healing::profile(&reference.key).is_some()
+                {
+                    (
+                        format!(
+                            "Greetings, I am {}. Ask me for healing if you are injured.",
+                            npc.name
+                        ),
+                        "Farewell.".into(),
+                        None,
+                        Vec::new(),
+                    )
+                } else if let Some((greet, farewell)) = &dark_messages {
+                    (greet.clone(), farewell.clone(), None, Vec::new())
+                } else if let Some(messages) = &isle_messages {
+                    (
+                        messages.greet.clone(),
+                        messages.farewell.clone(),
+                        None,
+                        Vec::new(),
+                    )
+                } else if native_quest && npc.dialogue.is_some() {
+                    // Conditional native greeting rules own the text. An absent literal
+                    // greeting still admits focus so that their reply or dismissal runs.
+                    let greeting = npc
+                        .bank_dialogue
+                        .as_ref()
+                        .and_then(|dialogue| dialogue.greet.first())
+                        .cloned()
+                        .unwrap_or_default();
+                    let farewell = npc
+                        .bank_dialogue
+                        .as_ref()
+                        .and_then(|dialogue| dialogue.farewell.first())
+                        .cloned()
+                        .unwrap_or_else(|| "Farewell.".into());
+                    (greeting, farewell, None, Vec::new())
+                } else if journal_npcs.contains(&reference.key) {
+                    // The authored personal programme owns subsequent choices. Use the
+                    // pinned default handler's focus text, never a generic value-bearing topic.
+                    journal_fallback = true;
+                    (
+                        YASIR_GREET.into(),
+                        "Good bye, |PLAYERNAME|.".into(),
+                        None,
+                        Vec::new(),
+                    )
+                } else if let Some(dialogue) = regional_dialogue {
+                    let focus_line = |lines: &[String], default: &str| match lines {
+                        [line] => line.clone(),
+                        _ => default.into(),
+                    };
+                    (
+                        focus_line(&dialogue.greet, "Greetings, |PLAYERNAME|."),
+                        focus_line(&dialogue.farewell, "Good bye, |PLAYERNAME|."),
+                        None,
+                        regional_keywords().cloned().collect(),
+                    )
+                } else {
                     continue;
                 };
-                (
-                    dialogue
-                        .greet
-                        .first()
-                        .cloned()
-                        .unwrap_or_else(|| "Greetings, |PLAYERNAME|.".into()),
-                    dialogue
-                        .farewell
-                        .first()
-                        .cloned()
-                        .unwrap_or_else(|| "Good bye, |PLAYERNAME|.".into()),
-                    None,
-                    dialogue
-                        .keywords
-                        .iter()
-                        .filter(|keyword| {
-                            literal_keyword(keyword) && !keyword.reply[0].contains("|TIME|")
-                        })
-                        .cloned()
-                        .collect(),
-                )
-            } else if reference.key == "oteryn:npc.uzgod" {
-                // Source Obsidian Knife transcript; the confirmed item exchange is native.
-                (
-                    "Hiho |PLAYERNAME|! Wanna weapon, eh?".into(),
-                    "Guut bye. Coming back soon.".into(),
-                    None,
-                    Vec::new(),
-                )
-            } else if reference.key == "oteryn:npc.al_dee" {
-                // npc-br snapshot, Al Dee revid420190. Stateful exchange belongs to dispatch.
-                (
-                    "Hello, hello, |PLAYERNAME|! Please come in, look, and buy!".into(),
-                    "Bye, bye |PLAYERNAME|.".into(),
-                    None,
-                    Vec::new(),
-                )
-            } else if reference.key == "oteryn:npc.yasir" {
-                // TIBIAWIKI_STRUCTURED: npc-br/2026-09-28 snapshot, Yasir
-                // revid433385, npc_lines. Only his literal trade dialogue is
-                // admitted here; dispatch grants Si, Ariki! when the window opens.
-                let keywords = ["ariki", "trade"]
-                    .into_iter()
-                    .map(|word| crate::content::ProjectV2DialogueKeyword {
-                        key: word.into(),
-                        triggers: vec![word.into()],
-                        reply: vec!["Si! Haneka ariki!".into()],
-                        fallback: false,
-                        links: Vec::new(),
-                        only_focus: true,
-                        only_unfocus: false,
-                        reset: false,
-                        ungreet: false,
-                        move_up: None,
-                        children: Vec::new(),
-                    })
-                    .collect();
-                (
-                    "Yasu me halaka. <greets you friendly>".into(),
-                    "Si, jema ze harun. <waves>".into(),
-                    None,
-                    keywords,
-                )
-            } else if let Some(contact) = regional.filter(|_| !bank) {
-                (
-                    contact
-                        .greet
-                        .as_deref()
-                        .unwrap_or(regional_contacts::GREET)
-                        .into(),
-                    contact
-                        .farewell
-                        .as_deref()
-                        .unwrap_or(regional_contacts::FAREWELL)
-                        .into(),
-                    None,
-                    contact.keywords.clone(),
-                )
-            } else if let Some(messages) = npc
-                .bank_dialogue
-                .as_ref()
-                .and_then(|dialogue| literal_contacts::regional_messages(&reference.key, dialogue))
+            if merged_regional_keywords
+                && npc.generated_replies.is_none()
+                && travel_routes.is_empty()
             {
-                regional_source = true;
-                regional_walkaway = messages.walkaway;
-                let passage = (!travel_routes.is_empty())
-                    .then(|| "Ask me for a passage to your destination.".into());
-                (
-                    messages.greet,
-                    messages.farewell,
-                    passage,
-                    messages.keywords,
-                )
-            } else if let Some(replies) = &npc.generated_replies {
-                let mut lines: Vec<&str> = Vec::new();
-                for (_, line) in &replies.services {
-                    if !lines.contains(&line.text.as_str()) {
-                        lines.push(&line.text);
+                for keyword in regional_keywords() {
+                    if !dialogue_keywords
+                        .iter()
+                        .any(|existing| existing.triggers == keyword.triggers)
+                    {
+                        dialogue_keywords.push(keyword.clone());
                     }
                 }
-                (
-                    replies.greeting.text.clone(),
-                    replies.farewell.text.clone(),
-                    (!lines.is_empty()).then(|| lines.join(" ")),
-                    Vec::new(),
-                )
-            } else if !travel_routes.is_empty() {
-                (
-                    format!("Greetings, I am {}.", npc.name),
-                    "Farewell.".into(),
-                    Some("Ask me for a passage to your destination.".into()),
-                    Vec::new(),
-                )
-            } else if !premium_services.is_empty() {
-                (
-                    format!("Greetings, I am {}.", npc.name),
-                    "Farewell.".into(),
-                    Some("Ask me about promotion or a blessing.".into()),
-                    Vec::new(),
-                )
-            } else if bank {
-                // Only the Bank Dialogue's explicitly supported, authored message shape is
-                // consumed. Missing/multipart/stateful dialogue stays held, never generated.
-                let Some(dialogue) = &npc.bank_dialogue else {
-                    continue;
-                };
-                if dialogue.greet.len() != 1
-                    || dialogue.farewell.len() != 1
-                    || dialogue
-                        .keywords
-                        .iter()
-                        .any(|keyword| !literal_keyword(keyword))
-                {
-                    continue;
-                }
-                (
-                    dialogue.greet[0].clone(),
-                    dialogue.farewell[0].clone(),
-                    None,
-                    dialogue.keywords.clone(),
-                )
-            } else if literal_contacts::admitted(&reference.key) && npc.services.is_empty() {
-                // The historical `bank_dialogue` carrier also holds these explicitly
-                // qualified lore contacts. Per-contact topic scope and the literal
-                // matcher keep quest callbacks and exchange topics outside this path.
-                let Some(dialogue) = &npc.bank_dialogue else {
-                    continue;
-                };
-                if dialogue.greet.len() != 1 || dialogue.farewell.len() != 1 {
-                    continue;
-                }
-                (
-                    literal_contacts::greeting(&reference.key)
-                        .unwrap_or(&dialogue.greet[0])
-                        .to_owned(),
-                    dialogue.farewell[0].clone(),
-                    None,
-                    dialogue
-                        .keywords
-                        .iter()
-                        .filter(|keyword| {
-                            literal_contacts::keyword_allowed(&reference.key, keyword)
-                        })
-                        .cloned()
-                        .collect(),
-                )
-            } else if crate::content::npc_catalogue::healing::profile(&reference.key).is_some() {
-                (
-                    format!(
-                        "Greetings, I am {}. Ask me for healing if you are injured.",
-                        npc.name
-                    ),
-                    "Farewell.".into(),
-                    None,
-                    Vec::new(),
-                )
-            } else if let Some((greet, farewell)) = &dark_messages {
-                (greet.clone(), farewell.clone(), None, Vec::new())
-            } else if let Some(messages) = &isle_messages {
-                (
-                    messages.greet.clone(),
-                    messages.farewell.clone(),
-                    None,
-                    Vec::new(),
-                )
-            } else if native_quest && npc.dialogue.is_some() {
-                // Conditional native greeting rules own the text. An absent literal
-                // greeting still admits focus so that their reply or dismissal runs.
-                let greeting = npc
-                    .bank_dialogue
-                    .as_ref()
-                    .and_then(|dialogue| dialogue.greet.first())
-                    .cloned()
-                    .unwrap_or_default();
-                let farewell = npc
-                    .bank_dialogue
-                    .as_ref()
-                    .and_then(|dialogue| dialogue.farewell.first())
-                    .cloned()
-                    .unwrap_or_else(|| "Farewell.".into());
-                (greeting, farewell, None, Vec::new())
-            } else if journal_npcs.contains(&reference.key) {
-                // The authored personal programme owns subsequent choices. Use the
-                // pinned default handler's focus text, never a generic value-bearing topic.
-                journal_fallback = true;
-                (
-                    YASIR_GREET.into(),
-                    "Good bye, |PLAYERNAME|.".into(),
-                    None,
-                    Vec::new(),
-                )
-            } else if let Some(dialogue) = regional_dialogue {
-                let focus_line = |lines: &[String], default: &str| match lines {
-                    [line] => line.clone(),
-                    _ => default.into(),
-                };
-                (
-                    focus_line(&dialogue.greet, "Greetings, |PLAYERNAME|."),
-                    focus_line(&dialogue.farewell, "Good bye, |PLAYERNAME|."),
-                    None,
-                    dialogue
-                        .keywords
-                        .iter()
-                        .filter(|keyword| {
-                            literal_keyword(keyword) && !keyword.reply[0].contains("|TIME|")
-                        })
-                        .cloned()
-                        .collect(),
-                )
-            } else {
-                continue;
-            };
+            }
             book.npcs.insert(
                 reference.key.clone(),
                 NpcTalkEntry {

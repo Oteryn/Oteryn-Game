@@ -54,20 +54,20 @@ def evidence(kind, row, cell, pages, candidate):
     }
 
 
-def contacts(admitted, scoped, original, candidates, root):
+def contacts(admitted, original, candidates, root):
     rows = json.loads(CONTACTS.read_bytes())
     if set(rows) != {"crystal", "wiki_br", "wiki"}:
         raise ValueError("invalid mainland NPC source groups")
     pages = {row["pageid"]: row for row in json.loads((root / BR_FACTS).read_bytes())["pages"]}
-    occupied = {(r["declaration"]["cell"]["x"], r["declaration"]["cell"]["y"],
-                 r["declaration"]["cell"]["floor"]) for r in original}
-    reserved = occupied | {tuple(row["cell"]) for group in rows.values() for row in group}
+    occupied = {(d["cell"]["x"], d["cell"]["y"], d["cell"]["floor"]): d
+                for row in original for d in [row["declaration"]]}
+    reserved = set(occupied) | {tuple(row["cell"]) for group in rows.values() for row in group}
     records = {}
     for kind, group in rows.items():
         for row in group:
             npc = f"oteryn:npc.{row['npc']}"
-            if npc not in admitted or npc in scoped:
-                raise ValueError(f"{npc}: mainland placement must have an unplaced admitted identity")
+            if npc not in admitted:
+                raise ValueError(f"{npc}: mainland placement requires an admitted identity")
             cell = tuple(row["cell"])
             direction = row.get("direction", "north")
             if direction not in ("north", "east", "south", "west"):
@@ -75,12 +75,22 @@ def contacts(admitted, scoped, original, candidates, root):
             provenance = [evidence(kind, row, row["cell"], pages, candidates.get(npc))]
             if nearby := row.get("nearby"):
                 choice = {"source": point(cell), "target": point(nearby["cell"]), "reason": nearby["reason"]}
-                cell, adjustment = choose_cell(root, cell, choice, reserved, compiler_qualified=True)
+                target = tuple(nearby["cell"])
+                previous = occupied.get(target)
+                shareable = previous and (previous["npc"], previous["direction"]) == (npc, direction)
+                cell, adjustment = choose_cell(
+                    root, cell, choice, reserved - {target} if shareable else reserved,
+                    compiler_qualified=True,
+                )
                 provenance.append(adjustment)
                 reserved.add(cell)
-            if cell in occupied:
-                raise ValueError(f"{npc}: NPC contact cell {cell} already occupied")
-            occupied.add(cell)
+            if previous := occupied.get(cell):
+                if (previous["npc"], previous["direction"]) != (npc, direction):
+                    raise ValueError(f"{npc}: NPC contact cell {cell} already occupied by {previous['npc']}")
+                previous["provenance"].extend(row for row in provenance if row not in previous["provenance"])
+                if row.get("solid_contact"):
+                    previous["block_solid_contact"] = True
+                continue
             x, y, z = cell
             key = f"oteryn:npc_placement.{row['npc']}.x{x}_y{y}_z{z}"
             records[key] = {"declaration": {
@@ -89,4 +99,5 @@ def contacts(admitted, scoped, original, candidates, root):
                 "direction": direction, "provenance": provenance,
                 **({"block_solid_contact": True} if row.get("solid_contact") else {}),
             }}
+            occupied[cell] = records[key]["declaration"]
     return [records[key] for key in sorted(records)]

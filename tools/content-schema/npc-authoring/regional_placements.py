@@ -15,7 +15,7 @@ def normalize(name):
     return re.sub(r"[^a-z0-9]", "", name.lower())
 
 
-def apply(candidates, scope, admitted, root):
+def apply(candidates, donor_candidates, scope, admitted, root):
     document = json.loads(SELECTION.read_text())
     source = document["crystal_source"]
     if (source["origin"] != "crystal"
@@ -35,7 +35,7 @@ def apply(candidates, scope, admitted, root):
     for row in document["placements"]:
         key = f"oteryn:npc.{row['npc']}"
         cell = tuple(row["cell"])
-        if (key not in admitted or key in earlier or cell in seen or len(cell) != 3
+        if (key not in admitted or cell in seen or len(cell) != 3
                 or any(type(value) is not int for value in cell)
                 or not all(0 <= value <= limit for value, limit in zip(cell, (65535, 65535, 15)))):
             raise ValueError(f"{key}: invalid or duplicate regional placement {cell}")
@@ -63,11 +63,11 @@ def apply(candidates, scope, admitted, root):
         if alternate := row.get("supersedes"):
             alternate_key = f"oteryn:npc.{alternate}"
             position = dict(zip(("x", "y", "z"), cell))
-            displaced = candidates[alternate_key]["placements"]
-            if alternate_key in earlier or not any(p["position"] == position for p in displaced):
+            original = donor_candidates[alternate_key]["placements"]
+            if alternate_key in earlier or not any(p["position"] == position for p in original):
                 raise ValueError(f"{key}: no unscoped alternative at {cell}")
             candidates[alternate_key]["placements"] = [
-                p for p in displaced if p["position"] != position
+                p for p in candidates[alternate_key]["placements"] if p["position"] != position
             ]
             evidence["supersedes_placement_hypothesis"] = alternate_key
         direction = row.get("direction", 0)
@@ -95,5 +95,9 @@ def apply(candidates, scope, admitted, root):
             "regional_provenance": evidence,
             "block_solid_contact": row.get("block_solid_contact", False),
         })
-    scope["npcs"].extend(regional)
-    candidates.update(regional)
+    for key, candidate in regional.items():
+        if key in earlier:
+            candidates[key]["placements"].extend(candidate["placements"])
+        else:
+            scope["npcs"].append(key)
+            candidates[key] = candidate

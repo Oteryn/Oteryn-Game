@@ -2,11 +2,11 @@
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
   "content_revision": "seasonal-cake-creature-20261107-r1",
-  "content_lock_digest": "1093b6ac103cad9dd17268339b01825faf51bf9255161c0639ff290b7205df4f",
+  "content_lock_digest": "6a5aaae98b3caffa2da9dfdbdd902acf6e5471e25bae3b5e1a4927f01b18ec7f",
   "min_runtime_version": "4",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:seasonal-cake-creature-20261107-r1/014d4afe412e0dc4715e437d961583138fa6519530542498f05cd6746c955e80"
+  "provenance_summary": "lock:seasonal-cake-creature-20261107-r1/55a7607e39ca8143cffefaffe7222a23c10d7f06ead088cc41d00d0443151060"
 }

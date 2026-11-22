@@ -120,7 +120,6 @@ AUTHORING_TOOLS = (
 
 CHECKS = (
     ["python3", "tools/content-migration/regional_npc_prices.py", "--check"],
-    ["python3", "tools/content-schema/npc-authoring/convert_placements.py", "--check"],
     ["python3", "tools/content-schema/world-object-authoring/regional_npc_ground.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],

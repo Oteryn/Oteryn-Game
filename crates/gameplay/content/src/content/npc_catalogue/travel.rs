@@ -46,6 +46,9 @@ struct Correction {
     x: i32,
     y: i32,
     floor: i16,
+    // Keep the captured source position separate from its qualified bundle arrival.
+    world_arrival: Option<(i32, i32, i16)>,
+    premium_override: Option<bool>,
     postman: bool,
     carpet: bool,
     held: bool,
@@ -109,26 +112,31 @@ pub fn resolve(
             if template.is_none() && !correction.native_addition {
                 return None;
             }
+            let (x, y, floor) =
+                correction
+                    .world_arrival
+                    .unwrap_or((correction.x, correction.y, correction.floor));
+            let premium = correction.premium_override.unwrap_or(correction.premium);
             let mut route = template.cloned().unwrap_or(ProjectV2TravelRoute {
                 key: key.to_owned(),
                 destination: crate::content::ProjectV2TravelDestination {
                     coordinate_frame: "global-target-2026-09-27".to_owned(),
-                    x: correction.x,
-                    y: correction.y,
-                    floor: correction.floor,
+                    x,
+                    y,
+                    floor,
                 },
                 price: correction.price,
-                premium: correction.premium,
+                premium,
                 min_level: None,
                 required_quest_tracks: Vec::new(),
             });
             route.key = key.to_owned();
             route.price = correction.price;
-            route.premium = correction.premium;
+            route.premium = premium;
             route.min_level = None;
-            route.destination.x = correction.x;
-            route.destination.y = correction.y;
-            route.destination.floor = correction.floor;
+            route.destination.x = x;
+            route.destination.y = y;
+            route.destination.floor = floor;
             Some(TravelRoute {
                 service: service.to_owned(),
                 route,
@@ -290,12 +298,12 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 234);
+        assert_eq!(corrections.len(), 238);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys.len(), 234);
+        assert_eq!(keys.len(), 238);
         let dalbrect = corrections
             .iter()
             .find(|row| row.key == "oteryn:service.travel.dalbrect/isle_of_kings")
@@ -473,6 +481,7 @@ mod tests {
             ("captain_bluebear", "yalahar", 200, (32_816, 31_272, 6)),
             ("captain_fearless", "yalahar", 185, (32_816, 31_272, 6)),
             ("captain_greyhound", "yalahar", 185, (32_816, 31_272, 6)),
+            ("captain_gulliver", "issavi", 120, (33_902, 31_464, 6)),
             ("captain_max", "calassa", 200, (31_911, 32_710, 6)),
             ("captain_sinbeard", "yalahar", 230, (32_816, 31_272, 6)),
             ("captain_seahorse", "oramond", 200, (33_479, 31_985, 7)),
@@ -497,7 +506,10 @@ mod tests {
             assert_eq!(found.route.price, price);
             assert_eq!(
                 found.route.premium,
-                !matches!(npc, "captain_jack_rat" | "captain_waverider")
+                !matches!(
+                    npc,
+                    "captain_jack_rat" | "captain_max" | "captain_waverider"
+                )
             );
             assert_eq!(
                 (

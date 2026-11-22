@@ -282,7 +282,8 @@ def provenance(candidate: dict, placement: dict) -> list[dict]:
 
 def convert() -> dict[str, str]:
     report = json.loads(CANDIDATES.read_text())
-    candidates = {c["identity"]["key"]: c for c in report["candidates"]}
+    donor_candidates = {c["identity"]["key"]: c for c in report["candidates"]}
+    candidates = donor_candidates.copy()
     scope = json.loads(SCOPE.read_text())
     native = native_contacts.candidates(NPCS, scope.get("native_contacts", []))
     if set(native) & set(candidates):
@@ -297,7 +298,7 @@ def convert() -> dict[str, str]:
         apply_wiki_br_contacts(candidates, scope, wiki_br_facts)
     apply_wiki_br_cells(candidates, scope)
     candidates = apply_authored_placements(candidates, scope, admitted)
-    regional_placements.apply(candidates, scope, admitted, ROOT)
+    regional_placements.apply(candidates, donor_candidates, scope, admitted, ROOT)
     npcs = sorted(scope["npcs"])
     if len(set(npcs)) != len(npcs):
         sys.exit("the scope lists an NPC twice")
@@ -326,7 +327,10 @@ def convert() -> dict[str, str]:
     adjustments = scope.get("placement_adjustments", {})
     if not isinstance(adjustments, dict) or not set(adjustments) <= set(npcs):
         sys.exit("placement_adjustments names an unscoped NPC")
-    if any(len(candidates[npc]["placements"]) != 1 for npc in adjustments):
+    if any(
+        sum("regional_provenance" not in row for row in candidates[npc]["placements"]) != 1
+        for npc in adjustments
+    ):
         sys.exit("chosen adjacent placement requires a unique retained source cell")
     adjusted_cells = set()
 
@@ -366,8 +370,12 @@ def convert() -> dict[str, str]:
                     held.append(entry)
                 continue
             choice_evidence = None
-            if npc in adjustments:
-                cell, choice_evidence = choose_cell(ROOT, cell, adjustments[npc], set(occupancy) | adjusted_cells)
+            if npc in adjustments and "regional_provenance" not in placement:
+                occupied = {
+                    point for point, occupants in occupancy.items()
+                    if set(occupants) != {(npc, direction.upper())}
+                }
+                cell, choice_evidence = choose_cell(ROOT, cell, adjustments[npc], occupied | adjusted_cells)
                 adjusted_cells.add(cell)
             x, y, z = cell
             key = f"oteryn:npc_placement.{local_name(npc)}.x{x}_y{y}_z{z}"
@@ -378,6 +386,8 @@ def convert() -> dict[str, str]:
                 existing = records[key]["declaration"]
                 if existing["direction"] != direction:
                     sys.exit(f"{key}: two directions at one cell")
+                if placement.get("block_solid_contact"):
+                    existing["block_solid_contact"] = True
                 for row in rows:
                     if row not in existing["provenance"]:
                         existing["provenance"].append(row)
@@ -403,23 +413,18 @@ def convert() -> dict[str, str]:
     held.sort(key=dump)
 
     original = [records[k] for k in sorted(records)]
-    mainland = mainland_contacts(admitted, set(npcs), original, candidates, ROOT)
+    mainland = mainland_contacts(admitted, original, donor_candidates, ROOT)
     placed.update(record["declaration"]["npc"] for record in mainland)
-    ordered = original + mainland
+    ordered = sorted(original + mainland, key=lambda row: row["declaration"]["identity"]["key"])
     files, shards = {}, []
-    # Keep the published, independently used starter/quest shards intact.
-    # Mainland contacts form their own sorted run after the original shards.
-    parts = [cohort[start : start + SHARD_SIZE]
-             for cohort in (original, mainland) for start in range(0, len(cohort), SHARD_SIZE)]
-    start = 0
-    for part in parts:
+    for start in range(0, len(ordered), SHARD_SIZE):
+        part = ordered[start : start + SHARD_SIZE]
         name = f"placements-{start:05d}-{start + len(part) - 1:05d}.json"
         if start == 0:
             # Keep Main's published shard path as admitted placements grow.
             name = "placements-00000-00055.json"
         shards.append(f"content/world/npc-placements/{name}")
         files[name] = dump({"coordinate_frame": FRAME, "family": "Npc.Placement", "records": part})
-        start += len(part)
     held_text = dump({"coordinate_frame": FRAME, "family": "Npc.Placement", "held": held, "schema": "OTERYN_NPC_PLACEMENT_HELD/v1"})
     files["held.json"] = held_text
     files["index.json"] = dump(

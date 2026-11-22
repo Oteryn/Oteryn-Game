@@ -276,6 +276,13 @@ const CONTACTS: &[(&str, u16, u16, u8)] = &[
     ("oteryn:npc.zerbrus", 32022, 32202, 6),
 ];
 
+// Additional contacts for the same NPCs from the other NPC content lanes.
+const PACKAGE_CONTACTS: &[(&str, u16, u16, u8)] = &[
+    ("oteryn:npc.brodrosch", 32659, 31956, 15),
+    ("oteryn:npc.gewen", 32589, 31942, 0),
+    ("oteryn:npc.xodet", 32251, 32207, 11),
+];
+
 #[test]
 fn six_region_npcs_are_loaded_at_qualified_source_cells() -> Result<(), Box<dyn std::error::Error>>
 {
@@ -324,7 +331,7 @@ fn six_region_npcs_are_loaded_at_qualified_source_cells() -> Result<(), Box<dyn 
                 .map(|p| (npc.key.as_str(), p.x, p.y, p.floor.unsigned_abs()))
         })
         .collect();
-    let expected: BTreeSet<_> = CONTACTS.iter().copied().collect();
+    let expected: BTreeSet<_> = CONTACTS.iter().chain(PACKAGE_CONTACTS).copied().collect();
     assert_eq!(
         actual,
         expected,
