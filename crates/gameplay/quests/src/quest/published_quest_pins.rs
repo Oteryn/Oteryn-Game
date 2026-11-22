@@ -125,7 +125,8 @@ mod tests {
     use crate::quest::{loader, npc_rules};
 
     #[test]
-    fn package_keeps_main_grave_danger_pin() -> Result<(), String> {
+    fn grave_danger_uses_the_zelos_report_definition_and_keeps_previous_pins() -> Result<(), String>
+    {
         let loaded =
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
@@ -133,8 +134,16 @@ mod tests {
         assert_eq!(
             catalogue.definition_hash(grave),
             Some(hash(
-                b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"
+                b"c2ae319776b9920057272cdee4caa2827f2f66aeb6bdff3946ef7383224da5db"
             ))
+        );
+        assert_eq!(
+            npc_rules::legacy_defaults(
+                catalogue,
+                grave,
+                &hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
+            ),
+            Some(&Default::default()),
         );
         assert!(
             npc_rules::legacy_defaults(
@@ -155,7 +164,26 @@ mod tests {
 
         for &(quest, refreshed, published) in CITATION_REFRESHES {
             assert_eq!(published_hash(quest, refreshed), published, "{quest}");
-            assert_eq!(catalogue.definition_hash(quest), Some(published), "{quest}");
+            let active = match quest {
+                "oteryn:quest.giant_smithhammer_quest" => {
+                    hash(b"bc9a387b5eba43a87478e8016be9c36a86f4cf63a555ade6e4eefae403ca8ba8")
+                }
+                "oteryn:quest.goblin_merchant_quest" => {
+                    hash(b"29c02b41a74e92e5adcd94218e4cad52db38134f2de0fe7c0f9363b0ecfc9769")
+                }
+                "oteryn:quest.grave_danger_quest" => {
+                    hash(b"c2ae319776b9920057272cdee4caa2827f2f66aeb6bdff3946ef7383224da5db")
+                }
+                _ => published,
+            };
+            assert_eq!(catalogue.definition_hash(quest), Some(active), "{quest}");
+            if active != published {
+                assert_eq!(
+                    npc_rules::legacy_defaults(catalogue, quest, &published),
+                    Some(&Default::default()),
+                    "{quest}"
+                );
+            }
             let mut unrelated_revision = refreshed;
             unrelated_revision[0] ^= 1;
             assert_eq!(

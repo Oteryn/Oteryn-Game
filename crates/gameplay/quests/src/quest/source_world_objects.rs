@@ -90,6 +90,15 @@ pub fn source_is_ready(callback: &Callback, appearance: u16) -> bool {
         // Crystal 201189f movement_fire_bug_teleport.lua:9-14.
         "oteryn:quest-callback/dreamers-challenge-fire-bug-entry" => appearance == 1949,
         super::dreamer_fire_bug::IGNITE => appearance == 3134,
+        "oteryn:quest-callback/questpc7-goblin-sign-1"
+        | "oteryn:quest-callback/questpc7-goblin-sign-2"
+        | "oteryn:quest-callback/questpc7-goblin-sign-3" => appearance == 17679,
+        "oteryn:quest-callback/questpc7-goblin-trunk-1"
+        | "oteryn:quest-callback/questpc7-goblin-trunk-2"
+        | "oteryn:quest-callback/questpc7-goblin-trunk-3"
+        | "oteryn:quest-callback/questpc7-goblin-trunk-1-last"
+        | "oteryn:quest-callback/questpc7-goblin-trunk-2-last"
+        | "oteryn:quest-callback/questpc7-goblin-trunk-3-last" => appearance == 17677,
         _ => true,
     }) && (!callback
         .item_on_target

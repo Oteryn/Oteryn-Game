@@ -10,12 +10,12 @@ def append_golden(root, callbacks, offers, inputs, pin):
     index, definition = next((i, r['definition']) for i, r in enumerate(records)
                              if r['definition']['identity']['key'] == 'oteryn:quest.golden_outfits_quest')
     recipe = definition['oteryn_recipe']['payload']['recipe']
-    prices = [s['count'] for s in recipe['stages'] if s['kind'] == 'use']
-    if prices != [100000, 50000, 50000] or recipe['repeat']['kind'] != 'once':
+    legacy_prices = [s['count'] for s in recipe['stages'] if s['kind'] == 'use']
+    if legacy_prices != [100000, 50000, 50000] or recipe['repeat']['kind'] != 'once':
         raise ValueError('GOLDEN_SELECTED_RECIPE_DRIFT')
     source = 'data-global/npc/king_tibianus.lua'
     sources = [f'canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}',
-               f'crystal:{pin}:{source}:131-189:sha256:{hashlib.sha256(inputs[source]).hexdigest()}']
+               f'crystal:{pin}:{source}:131-200:sha256:{hashlib.sha256(inputs[source]).hexdigest()}']
     track = 'oteryn:quest-progress/questpc7/golden/commission'
     npc = 'oteryn:npc.king_tibianus'
 
@@ -32,24 +32,38 @@ def append_golden(root, callbacks, offers, inputs, pin):
                'achievement': None, 'reply': [reply], 'sources': sources}
         if money is not None:
             row['fee'] = {'gold': money, 'include_bank': True}
+            if addon == 0:
+                row['forbids_outfits'] = ['oteryn:outfit.golden']
+            else:
+                row['forbids_addons'] = [{'outfit': 'oteryn:outfit.golden', 'addons': addon}]
         if completes:
             row['completes'] = True
         callbacks.append(row)
 
     add('intro', -1, 0, ['golden commission', 'golden outfit'],
         'I can commission the Golden outfit and its two addons. Ask me for the base outfit.')
-    for stage, (name, words, label, price, addon) in enumerate([
-        ('base', ['base outfit'], 'basic Golden outfit', prices[0], 0),
-        ('gloves', ['boots and gloves'], 'Golden boots and gloves', prices[1], 1),
-        ('helmet', ['golden helmet'], 'Golden helmet', prices[2], 2),
-    ]):
-        # Keep the selected commission separate from main's donor topics1-5.
-        topic = 101 + stage
+    for name, words, label, price, addon, before, after, topic in [
+        ('base', ['base outfit'], 'basic Golden outfit', 500000000, 0, 0, 1, 101),
+        ('helmet', ['golden helmet'], 'Golden helmet', 250000000, 2, 1, 2, 103),
+        ('gloves', ['boots and gloves'], 'Golden boots and gloves', 250000000, 1, 2, 3, 102),
+        ('legacy-helmet', ['golden helmet'], 'Golden helmet', 250000000, 2, 2, 3, 103),
+    ]:
+        marker = track + '/helmet-first'
+        guards = [storage(before, before, True)]
+        if name in ('gloves', 'legacy-helmet'):
+            value = 1 if name == 'gloves' else -1
+            guards.append({'track': marker, 'minimum': value, 'maximum': value,
+                           'set': value, 'preserve': True})
         offers.append({'npc': npc, 'keywords': words, 'topic': 0, 'next_topic': topic,
-                       'storage': [storage(stage, stage, True)],
+                       'storage': guards,
                        'reply': [f'The {label} costs {price} gold. Do you agree?']})
-        add(name, stage, stage + 1, ['yes'], f'Your {label} is ready.',
+        add(name, before, after, ['yes'], f'Your {label} is ready.',
             topic=topic, money=price, addon=addon)
+        callbacks[-1]['storage'].extend(guards[1:])
+        if name == 'helmet':
+            callbacks[-1]['storage'].append({
+                'track': marker, 'minimum': -1, 'maximum': -1, 'set': 1,
+            })
     add('complete', 3, 4, ['complete commission'], 'Your Golden commission is complete.', completes=True)
 
 

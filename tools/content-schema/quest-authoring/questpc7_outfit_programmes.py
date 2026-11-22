@@ -78,6 +78,19 @@ def append(root, callbacks, inputs, pin):
                 'achievement': None, 'completes': completes,
                 'reply': [f'Your {slug} {name} qualification is recorded.'], 'sources': sources})
 
+        if slug == 'inquisition':
+            source_report = 'content/quests/grave-danger-final-source.json'
+            sources[:] = [f'canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}',
+                          f'{source_report}:204:sha256:{hashlib.sha256((root / source_report).read_bytes()).hexdigest()}']
+            npc = 'jack_springer'
+            requirements['completed_quests'] = []
+            add('commission', -1, 0, addon=0)
+            callbacks[-1].update(keywords=['report'], reply=['Your victory over King Zelos has earned the Hand of the Inquisition outfit.'],
+                                 achievement='oteryn:achievement/inquisition_s_hand',
+                                 requires=[{'track':'oteryn:quest-progress/questpc7/grave/boss_6','minimum':1,'maximum':1}])
+            add('complete', 0, 3, owned=3, completes=True)
+            callbacks[-1]['storage'][0]['maximum'] = 2
+            continue
         add('commission', -1, 0, addon=0)
         add('first token', 0, 1, give=items[0], owned=0)
         add('second token', 1, 2, give=items[1], owned=bits[0])

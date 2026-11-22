@@ -3842,6 +3842,38 @@ mod tests {
         assert_eq!(boss.category.as_str(), "nemesis");
     }
     #[test]
+    fn outfit_tokens_are_in_admitted_native_boss_loot() -> Result<(), Box<dyn std::error::Error>> {
+        let (controller, _) = activated_with_loot_tables(test_source(1)?.world_id, None);
+        let generation = controller.active().ok_or("generation")?;
+        let native = generation.native_gameplay().ok_or("native gameplay")?;
+        for (creature, items) in [
+            ("magma_bubble", &[39544, 39545][..]),
+            ("count_vlarkorth", &[31738][..]),
+            ("duke_krule", &[31738][..]),
+            ("earl_osam", &[31738][..]),
+            ("lord_azaram", &[31738][..]),
+            ("sir_baeloc", &[31738][..]),
+            ("king_zelos", &[31737][..]),
+        ] {
+            let row = native
+                .reward_table()
+                .row(&format!("oteryn:creature.{creature}"))
+                .map_err(|reason| format!("{creature}: {reason:?}"))?;
+            for item in items {
+                let key = format!("oteryn:item.tibia.i{item}");
+                assert!(
+                    row.loot_table
+                        .entries
+                        .iter()
+                        .any(|entry| entry.item.production_key == key),
+                    "{creature}: {key}"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn reward_boss_empty_corpse_does_not_admit_missing_private_loot() {
         let world = test_source(1).unwrap().world_id;
         let (controller, _) = activated_with_loot_tables(world, None);

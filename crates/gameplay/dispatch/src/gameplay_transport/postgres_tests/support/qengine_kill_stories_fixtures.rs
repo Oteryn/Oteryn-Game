@@ -346,7 +346,18 @@ pub(super) async fn exercise(
             .0,
         NpcIntentDisposition::Rejected
     );
-    if label != "dragon-slayer" {
+    if label == "fire-fighter" {
+        for (index, item) in [39545, 39544].into_iter().enumerate() {
+            super::qengine_voucher_stories_fixtures::mint(owner, admitted, item, 1, &mut ordinal).await?;
+            super::questpc7_outfit_items_fixtures::use_token(owner, admitted, u32::from(item)).await?;
+            super::qengine_voucher_stories_fixtures::mask(
+                owner, admitted, &outfit, if index == 0 { 2 } else { 3 },
+            ).await?;
+            let awards:i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/friendly_fire'")
+                .fetch_one(&h.pool).await?;
+            assert_eq!(awards, i64::try_from(index)?, "both token USE receipts earn Friendly Fire");
+        }
+    } else if label == "cave-explorer" {
         for bit in 1..=2 {
             let callback = find(if bit == 1 { "first" } else { "second" })?;
             for item in &callback.take {

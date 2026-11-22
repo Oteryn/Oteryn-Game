@@ -90,7 +90,7 @@ SIDE_IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
 SIDE_IDS |= {17668, 17669, 17670, 17671, 17672, 17673, 17674, 17675, 17676, 3120}  # Rafzan's five source-priced portable tools.
 # Bushwhacking scenery is Ground-only; the wave owner schedules removal.
 MERCHANT_SCENERY = {12187, 12189}
-STATIC_IDS = MERCHANT_SCENERY | {8995, 8996, 9527, 17677, 17679, 17681, 21573, 23163, 32173, 32537}
+STATIC_IDS = MERCHANT_SCENERY | {8995, 8996, 9527, 17677, 17678, 17679, 17680, 17681, 21573, 23163, 32173, 32537}
 SIDE_IDS |= STATIC_IDS | {3114, 3456, 3661, 32197, 32225, 32226, 32227, 32228, 32582, 32583, 32584, 32585, 32602, 32757}
 SIDE_IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 
@@ -199,8 +199,13 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
     records=[]
     for item_id in sorted(selected):
         node=xml[item_id]
-        flower = lion_flower.admitted(item_id, source.attrs(node))
-        if not flower and item_id not in (CORPSE_IDS | MERCHANT_SCENERY) and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
+        attributes = source.attrs(node)
+        flower = lion_flower.admitted(item_id, attributes)
+        temporal_keys = {'charges', 'duration', 'decayto', 'stopduration'} & attributes.keys()
+        if item_id == 17678:
+            if {key: attributes[key] for key in temporal_keys} != {'duration': '240', 'decayto': '17677'}:
+                raise ValueError('QENGINE_REWARD_SMASHED_TRUNK_TIMER_DRIFT')
+        elif not flower and item_id not in (CORPSE_IDS | MERCHANT_SCENERY) and temporal_keys:
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):

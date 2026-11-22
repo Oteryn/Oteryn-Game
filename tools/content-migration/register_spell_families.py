@@ -730,6 +730,15 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     house_top_order = json.loads((root / house_decoration_actions.PROFILES).read_bytes())
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
+    # These boss drops and corpse stages join after the main appearance pass.
+    # Apply the same client top-order facts in the base Item provider so the
+    # separate SRX update section remains reserved for its specialized rows.
+    boss_items = native_goal_loot_items.OUTFIT_BOSS_LOOT | {36844, 36845, 36846, 36847}
+    boss_keys = {f"oteryn:item.tibia.i{item}" for item in boss_items}
+    house_decoration_actions.apply_top_order(
+        [row for row in items["records"] if row["production_definition"]["production_key"] in boss_keys],
+        json.loads((root / house_decoration_actions.PROFILES).read_bytes()),
+    )
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
@@ -765,6 +774,10 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # source refinement to that final document, after the final Item overlay.
     import questpc7_marsh_loot
     questpc7_marsh_loot.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
+    native_goal_loot_items.refresh_outfit_boss_loot(
+        root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+        NATIVE_MANIFEST, spell_import.canonical_bytes,
+    )
     import questpc7_slug_loot
     questpc7_slug_loot.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
     import questpc7_smith_corpse_loot

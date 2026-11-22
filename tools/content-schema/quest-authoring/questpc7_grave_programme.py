@@ -7,7 +7,6 @@ TRACK='oteryn:quest-progress/questpc7/grave/programme'
 VISITS='oteryn:quest-progress/questpc7/grave/visits'
 PASSAGES='oteryn:quest-progress/questpc7/grave/passages'
 DOOR='oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/king_zelos_door'
-OUTFIT='oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/inquisition_outfit_received'
 COBRA='oteryn:quest-progress/quest/u12_20/grave_danger/cobra_bastion/access'
 GRAVES=[('Edron north', (33222, 31670, -7), 1980, (33221, 31670, -7), 103), ('Dark Cathedral', (32644, 32394, -8), 31112, (32643, 32394, -8), 410), ('Ghostlands', (32190, 31816, -8), 31116, (32189, 31816, -8), 410), ('Cormaya', (33262, 31983, -8), 31109, (33262, 31984, -8), 8230), ('Femor Hills', (32542, 31846, -6), 31104, (32541, 31846, -6), 11422), ('isle northeast of Ankrahmun', (33376, 32806, -8), 31112, (33375, 32806, -8), 410), ('Kilmaresh', (33813, 31624, -9), 31104, (33812, 31624, -9), 410), ('Vengoth', (32959, 31534, -7), 31100, (32958, 31534, -7), 7066), ('Darashia', (33244, 32471, -11), 1982, (33244, 32472, -11), 410), ('old Thais temple', (32347, 32169, -12), 31109, (32347, 32170, -12), 429), ('Orclands entrance', (32776, 31817, -8), 31116, (32775, 31817, -8), 4396), ('southern Ice Islands', (32012, 31558, -7), 31116, (32011, 31558, -7), 436)]
 BOSSES=[('count_vlarkorth', (33456, 31434, -13), (33456, 31437, -13), (33455, 31437, -13), 11424), ('duke_krule', (33456, 31473, -13), (33456, 31476, -13), (33455, 31476, -13), 416), ('earl_osam', (33488, 31441, -13), (33488, 31444, -13), (33487, 31444, -13), 6593), ('lord_azaram', (33424, 31473, -13), (33424, 31476, -13), (33423, 31476, -13), 500), ('sir_baeloc', (33422, 31431, -13), (33422, 31434, -13), (33421, 31434, -13), 4394), ('sir_nictros', (33427, 31431, -13), (33427, 31434, -13), (33426, 31434, -13), 4404), ('king_zelos', (33443, 31545, -13), (33443, 31548, -13), (33442, 31548, -13), 410), ('scarlett_etzel', (33396, 32643, -6), (33396, 32646, -6), (33395, 32646, -6), 23897)]
@@ -69,8 +68,8 @@ def build(root):
     scar=BOSSES[7]
     row=callback('scarlett-passage','step_in',scar[3],scar[4],[state(TRACK,3,3,3,True),state(PASSAGES,6,6,7),state(counter(7),1,1,1,True)],'Scarlett is defeated. Examine the armour to close the investigation.')
     row['teleport']=pos(REWARD_APPROACH);worlds.append(row)
-    row=callback('reward','use',REWARD_POSITION,31482,[state(TRACK,3,3,4),state(PASSAGES,7,7,7,True),state(counter(7),1,1,1,True),state(OUTFIT,-1,1,1)],'The twelve graves, Lich Knights, Zelos and Cobra threat are resolved. You earn Hand of the Inquisition and Inquisition\'s Hand.')
-    row.update(completes=True,outfit_reward={'outfit':'oteryn:outfit.hand_of_the_inquisition','addons':0},achievements=['oteryn:achievement/inquisition_s_hand'],activation={'track':TRACK,'minimum':3,'maximum':3});worlds.append(row)
+    row=callback('reward','use',REWARD_POSITION,31482,[state(TRACK,3,3,4),state(PASSAGES,7,7,7,True),state(counter(7),1,1,1,True)],'The twelve graves, Lich Knights, Zelos and Cobra threat are resolved.')
+    row.update(completes=True,activation={'track':TRACK,'minimum':3,'maximum':3});worlds.append(row)
     objectives=[]
     for i,(name,center,arrival,exit,appearance) in enumerate(BOSSES):
         stage=(0,1,2,3,4,4,5)[i] if i<7 else 3

@@ -485,11 +485,21 @@ def build():
         [storage(dark+'outfit',-1,1,0)],outfit=('glooth_engineer',0),
         requires=[requirement(dark+'mission18',1)])
     for suffix,bit,minimum,maximum,finished_second in [
-        ('second',2,6,2147483647,False),('first-low',1,3,5,False),('first-high',1,6,2147483647,True)]:
+        ('second',2,6,2147483647,False),('second-after-first',2,6,2147483647,True),
+        ('first-low',1,3,5,False),('first-high',1,6,2147483647,True)]:
         required=[requirement(dark+'outfit',1),{'track':votes,'minimum':minimum,'maximum':maximum}]
-        if finished_second:required.append(requirement(glooth+'addon2',1))
+        if bit == 2:
+            required.append(requirement(glooth+'addon1', 1) if finished_second
+                            else requirement(glooth+'addon1', -1, 0))
+        elif finished_second:
+            required.append(requirement(glooth+'addon2',1))
         add('l3-glooth-engineer-'+suffix,'glooth_engineer_outfits_quest','ezebeth',['addon'],
-            [storage(glooth+'addon'+str(bit),-1,1,0)],outfit=('glooth_engineer',bit),requires=required)
+            [storage(glooth+'addon'+str(bit),-1,1,0)],outfit=('glooth_engineer',bit),requires=required,
+            achievement='oteryn:achievement/glooth_engineer' if finished_second else None)
+        callbacks[-1]['requires_outfits'] = ['oteryn:outfit.glooth_engineer']
+        if finished_second:
+            callbacks[-1]['requires_addons'] = [{'outfit':'oteryn:outfit.glooth_engineer','addons':3-bit}]
+            callbacks[-1]['completes'] = True
     declarations=[{'key':votes,'quest':'oteryn:quest.oramond_quest','initial':-1,'min':-1,'max':2147483647,
         'sources':[f'crystal:{PIN}:data-global/npc/ezebeth.lua:93-103:sha256:{sha(inputs["data-global/npc/ezebeth.lua"])}']}]
     noble=prefix+'u7_8/nobleman_outfits/'
@@ -931,21 +941,37 @@ def build():
             npc=callback['npc'].split('.')[-1];path='data-global/npc/'+npc+'.lua'
             lines='75-169' if npc=='gnomally' else '61-78'
             callback['sources']=[f'crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}']
-    # Chosen Golden programme retains its authored prices and boots-first order.
+    # King Tibianus accepts armour, helmet, then boots in the pinned source.
     golden='oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit'
     for suffix,before,after,bit,gold,topic,word in [
-            ('base',0,1,0,100000,3,'armor'),
-            ('boots',1,2,1,50000,5,'boots'),
-            ('helmet',2,3,2,50000,4,'helmet')]:
+            ('base',0,1,0,500000000,3,'armor'),
+            ('helmet',1,2,2,250000000,4,'helmet'),
+            ('boots',2,3,1,250000000,5,'boots'),
+            ('legacy-helmet',2,3,2,250000000,4,'helmet')]:
         guard=[storage(golden,before,after)]
+        # Stage 2 from the old commission already owns boots.
+        helmet_first = 'oteryn:quest-progress/golden/source-helmet-first'
+        if suffix == 'helmet':
+            guard.append(storage(helmet_first,-1,1))
+        elif suffix in ('boots','legacy-helmet'):
+            marker = 1 if suffix == 'boots' else -1
+            guard.append(storage(helmet_first,marker,marker,preserve=True))
         add('l10-golden-'+suffix,'golden_outfits_quest','king_tibianus',['yes'],guard,
             outfit=('golden',bit),topic=topic,next_topic=2,fee={'gold':gold,'include_bank':True})
-        callbacks[-1]['sources'].append('owner:chosen-golden:100000-50000-50000:boots-before-helmet')
+        base = 'oteryn:outfit.golden'
+        callbacks[-1]['forbids_outfits' if bit == 0 else 'forbids_addons'] = (
+            [base] if bit == 0 else [{'outfit':base,'addons':bit}]
+        )
+        if suffix in ('boots', 'legacy-helmet'):
+            callbacks[-1]['completes'] = True
+        callbacks[-1]['sources'] = [
+            f'crystal:{PIN}:data-global/npc/king_tibianus.lua:131-200:sha256:{sha(inputs["data-global/npc/king_tibianus.lua"])}'
+        ]
         offers.append({'npc':'oteryn:npc.king_tibianus','keywords':[word],'topic':2,'next_topic':topic,
-            'storage':guard,'reply':[f'The chosen commission costs {gold} gold. Do you agree?']})
+            'storage':guard,'reply':[f'The donation costs {gold} gold. Do you agree?']})
     for words,before,after in [(['outfit','addon'],0,1),(['yes'],1,2)]:
         offers.append({'npc':'oteryn:npc.king_tibianus','keywords':words,'topic':before,'next_topic':after,
-            'storage':[],'reply':['Choose armor, boots or helmet for your golden commission.']})
+            'storage':[],'reply':['Donate for the armor first, then the helmet, then the boots.']})
     # Distinct order ranks choose the shared three documents' actual USE branch.
     parent='oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4'
     declarations.append({'key':parent,'quest':'oteryn:quest.dreamer_s_challenge_quest','initial':0,
@@ -1040,12 +1066,10 @@ def build():
         callbacks[-1].update(requires_premium=True,forbids_outfits=['oteryn:outfit.'+family])
         if level:callbacks[-1]['minimum_level']=level
         callbacks[-1]['sources'].append(provenance)
-        if label=='dragon-slayer':continue
+        if label!='cave-explorer':continue
         for bit in (1,2):
             add('l12-'+label+'-'+('first' if bit==1 else 'second'),quest,npc,[family.replace('_',' ')+' addon '+str(bit)],[],
-                take=[(39544 if bit==1 else 39545,1)] if label=='fire-fighter' else [],outfit=(family,bit),
-                fee={'gold':2000 if bit==1 else 3000,'include_bank':False} if label=='cave-explorer' else None,
-                achievement='oteryn:achievement/friendly_fire' if label=='fire-fighter' and bit==2 else None)
+                outfit=(family,bit),fee={'gold':2000 if bit==1 else 3000,'include_bank':False})
             callbacks[-1].update(minimum_level=level,requires_premium=True,requires_outfits=['oteryn:outfit.'+family],
                 forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
             if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
@@ -1095,6 +1119,7 @@ def build():
     l13_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith('l13-')]
     callbacks = [c for c in callbacks if c not in l13_callbacks]
     programme_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith('questpc7-')]
+    programme_tracks = lane_data[3]
     callbacks = [c for c in callbacks if c not in programme_callbacks]
     l13_callbacks.sort(key=lambda c:c['key'])
     programme_callbacks.sort(key=lambda c:c['key'])
@@ -1117,7 +1142,7 @@ def build():
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises})
     validate_callbacks({'schema':1,'callbacks':fibula_callbacks})
     validate_callbacks({'schema':1,'callbacks':l13_callbacks})
-    validate_callbacks({'schema':1,'callbacks':programme_callbacks})
+    validate_callbacks({'schema':1,'tracks':programme_tracks,'callbacks':programme_callbacks})
     native_cosmetics = cosmetics.provisioning_input(
         ROOT / cosmetics.AUTHORING, appearance / 'manifest.json', ROOT / cosmetics.OUTPUT,
         authoring_bytes=encoded(author))
@@ -1131,7 +1156,7 @@ def build():
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises}),
             'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'callbacks':fibula_callbacks}),
             'content/quests/npc-callbacks/l13-outfits.json': encoded({'schema':1,'callbacks':l13_callbacks}),
-            'content/quests/npc-callbacks/questpc7-programmes.json': encoded({'schema':1,'callbacks':programme_callbacks}),
+            'content/quests/npc-callbacks/questpc7-programmes.json': encoded({'schema':1,'tracks':programme_tracks,'callbacks':programme_callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     generated['content/quests/npc-callbacks/l2-ready-stories.json'] = encoded({
         'schema':1,'tracks':[],'callbacks':ready_callbacks})

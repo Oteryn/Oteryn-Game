@@ -148,6 +148,10 @@
         "replacement": null,
         "target_replacement": null
       },
+      "effects": {
+        "transform": 17680,
+        "reset_after_ms": 240000
+      },
       "return_on_failure": false,
       "failure_message": null,
       "requirements": {
@@ -159,7 +163,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        "content/world/placements/index.json:1:sha256:f960cbe2dab68d5ea185c1864105aad50238744b063e7fe26364874460c057c1",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -218,6 +222,10 @@
         "replacement": null,
         "target_replacement": null
       },
+      "effects": {
+        "transform": 17680,
+        "reset_after_ms": 240000
+      },
       "return_on_failure": false,
       "failure_message": null,
       "requirements": {
@@ -229,7 +237,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        "content/world/placements/index.json:1:sha256:f960cbe2dab68d5ea185c1864105aad50238744b063e7fe26364874460c057c1",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -288,6 +296,10 @@
         "replacement": null,
         "target_replacement": null
       },
+      "effects": {
+        "transform": 17680,
+        "reset_after_ms": 240000
+      },
       "return_on_failure": false,
       "failure_message": null,
       "requirements": {
@@ -299,7 +311,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        "content/world/placements/index.json:1:sha256:f960cbe2dab68d5ea185c1864105aad50238744b063e7fe26364874460c057c1",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -384,6 +396,76 @@
         {
           "track": "oteryn:quest-progress/questpc7/goblin/trunks",
           "minimum": 0,
+          "maximum": 1,
+          "set": 2,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunk-site-1",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17676",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "effects": {
+        "transform": 17678,
+        "reset_after_ms": 240000
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You smash the junk trunk.",
+      "sources": [
+        "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17678",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-goblin-trunk-1-last",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33101,
+          "y": 32047,
+          "floor": -10
+        },
+        "appearance": 17677,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": 2,
           "maximum": 2,
           "set": 3,
           "add": 1
@@ -397,31 +479,31 @@
       ],
       "activation": {
         "track": "oteryn:quest-progress/questpc7/goblin/trunks",
-        "minimum": 0,
+        "minimum": 2,
         "maximum": 2
       },
       "minimum_level": null,
       "experience": null,
       "monk_reward": null,
       "offerings": [],
-      "item_on_target": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17676",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "effects": {
+        "transform": 17678,
+        "reset_after_ms": 240000
+      },
       "return_on_failure": false,
       "failure_message": null,
-      "requirements": {
-        "min_level": 0,
-        "premium": false,
-        "completed_quests": [],
-        "owned_items": [
-          {
-            "item": "oteryn:item.tibia.i17676",
-            "count": 1
-          }
-        ]
-      },
-      "success_message": "You smash one marked junk trunk with the retained trunkhammer.",
+      "success_message": "You smash the last trunk and your hammer breaks.",
       "sources": [
         "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17678",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ]
     },
@@ -454,6 +536,76 @@
         {
           "track": "oteryn:quest-progress/questpc7/goblin/trunks",
           "minimum": 0,
+          "maximum": 1,
+          "set": 2,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunk-site-2",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17676",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "effects": {
+        "transform": 17678,
+        "reset_after_ms": 240000
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You smash the junk trunk.",
+      "sources": [
+        "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17678",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-goblin-trunk-2-last",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33143,
+          "y": 32051,
+          "floor": -10
+        },
+        "appearance": 17677,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": 2,
           "maximum": 2,
           "set": 3,
           "add": 1
@@ -467,31 +619,31 @@
       ],
       "activation": {
         "track": "oteryn:quest-progress/questpc7/goblin/trunks",
-        "minimum": 0,
+        "minimum": 2,
         "maximum": 2
       },
       "minimum_level": null,
       "experience": null,
       "monk_reward": null,
       "offerings": [],
-      "item_on_target": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17676",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "effects": {
+        "transform": 17678,
+        "reset_after_ms": 240000
+      },
       "return_on_failure": false,
       "failure_message": null,
-      "requirements": {
-        "min_level": 0,
-        "premium": false,
-        "completed_quests": [],
-        "owned_items": [
-          {
-            "item": "oteryn:item.tibia.i17676",
-            "count": 1
-          }
-        ]
-      },
-      "success_message": "You smash one marked junk trunk with the retained trunkhammer.",
+      "success_message": "You smash the last trunk and your hammer breaks.",
       "sources": [
         "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17678",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ]
     },
@@ -524,6 +676,76 @@
         {
           "track": "oteryn:quest-progress/questpc7/goblin/trunks",
           "minimum": 0,
+          "maximum": 1,
+          "set": 2,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunk-site-3",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17676",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "effects": {
+        "transform": 17678,
+        "reset_after_ms": 240000
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You smash the junk trunk.",
+      "sources": [
+        "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17678",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-goblin-trunk-3-last",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33136,
+          "y": 32076,
+          "floor": -10
+        },
+        "appearance": 17677,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": 2,
           "maximum": 2,
           "set": 3,
           "add": 1
@@ -537,31 +759,31 @@
       ],
       "activation": {
         "track": "oteryn:quest-progress/questpc7/goblin/trunks",
-        "minimum": 0,
+        "minimum": 2,
         "maximum": 2
       },
       "minimum_level": null,
       "experience": null,
       "monk_reward": null,
       "offerings": [],
-      "item_on_target": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17676",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "effects": {
+        "transform": 17678,
+        "reset_after_ms": 240000
+      },
       "return_on_failure": false,
       "failure_message": null,
-      "requirements": {
-        "min_level": 0,
-        "premium": false,
-        "completed_quests": [],
-        "owned_items": [
-          {
-            "item": "oteryn:item.tibia.i17676",
-            "count": 1
-          }
-        ]
-      },
-      "success_message": "You smash one marked junk trunk with the retained trunkhammer.",
+      "success_message": "You smash the last trunk and your hammer breaks.",
       "sources": [
         "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17678",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ]
     },
@@ -3369,12 +3591,6 @@
           "maximum": 1,
           "set": 1,
           "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/inquisition_outfit_received",
-          "minimum": -1,
-          "maximum": 1,
-          "set": 1
         }
       ],
       "minimum_level": null,
@@ -3389,26 +3605,17 @@
         "premium": true,
         "completed_quests": []
       },
-      "success_message": "The twelve graves, Lich Knights, Zelos and Cobra threat are resolved. You earn Hand of the Inquisition and Inquisition's Hand.",
+      "success_message": "The twelve graves, Lich Knights, Zelos and Cobra threat are resolved.",
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "content/world/placements/region-z06-x130-y127.b3:1:sha256:142b1af54e3bf9b22aca5afe41607c43b56b7fc46c34390437a773ee43934978",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ],
       "completes": true,
-      "achievements": [
-        "oteryn:achievement/inquisition_s_hand"
-      ],
       "activation": {
         "track": "oteryn:quest-progress/questpc7/grave/programme",
         "minimum": 3,
         "maximum": 3
-      },
-      "effects": {
-        "outfit_reward": {
-          "outfit": "oteryn:outfit.hand_of_the_inquisition",
-          "addons": 0
-        }
       }
     },
     {
@@ -6092,13 +6299,91 @@
       ]
     },
     {
-      "key": "oteryn:quest-callback/authored-smith-cache-reward",
+      "key": "oteryn:quest-callback/authored-smith-cache-reward-talon",
       "quest": "oteryn:quest.giant_smithhammer_quest",
       "trigger": "use",
       "selector": {
         "position": {
-          "x": 32777,
-          "y": 32254,
+          "x": 32774,
+          "y": 32253,
+          "floor": -8
+        },
+        "appearance": 2472,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/claimed-talon",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2,
+          "add": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1170-1186"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "track_initials": {
+        "oteryn:quest-progress/chosen/smith-cache/boxes": 0
+      },
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3034",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-smith-cache-reward-talon-last",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32774,
+          "y": 32253,
           "floor": -8
         },
         "appearance": 2472,
@@ -6122,6 +6407,18 @@
           "maximum": 1,
           "set": 1,
           "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/claimed-talon",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
         }
       ],
       "offerings": [],
@@ -6136,24 +6433,333 @@
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
         "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
         "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
-        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef"
+        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1170-1186"
       ],
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+        "minimum": 2,
+        "maximum": 2
+      },
+      "track_initials": {
+        "oteryn:quest-progress/chosen/smith-cache/boxes": 0
+      },
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3034",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-smith-cache-reward-hammer",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32776,
+          "y": 32253,
+          "floor": -8
+        },
+        "appearance": 2472,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/claimed-hammer",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2,
+          "add": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1170-1186"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "track_initials": {
+        "oteryn:quest-progress/chosen/smith-cache/boxes": 0
+      },
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3208",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-smith-cache-reward-hammer-last",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32776,
+          "y": 32253,
+          "floor": -8
+        },
+        "appearance": 2472,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/claimed-hammer",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1170-1186"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+        "minimum": 2,
+        "maximum": 2
+      },
+      "track_initials": {
+        "oteryn:quest-progress/chosen/smith-cache/boxes": 0
+      },
       "completes": true,
       "effects": {
         "item_reward": {
           "item": "oteryn:item.tibia.i3208",
           "count": 1,
-          "contents": [],
-          "backpack_outputs": [
-            {
-              "item": "oteryn:item.tibia.i3034",
-              "count": 1
-            },
-            {
-              "item": "oteryn:item.tibia.i3031",
-              "count": 100
-            }
-          ]
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-smith-cache-reward-gold",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32778,
+          "y": 32253,
+          "floor": -8
+        },
+        "appearance": 2472,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/claimed-gold",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2,
+          "add": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1170-1186"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "track_initials": {
+        "oteryn:quest-progress/chosen/smith-cache/boxes": 0
+      },
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3031",
+          "count": 100,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-smith-cache-reward-gold-last",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32778,
+          "y": 32253,
+          "floor": -8
+        },
+        "appearance": 2472,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/claimed-gold",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1170-1186"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/smith-cache/boxes",
+        "minimum": 2,
+        "maximum": 2
+      },
+      "track_initials": {
+        "oteryn:quest-progress/chosen/smith-cache/boxes": 0
+      },
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3031",
+          "count": 100,
+          "contents": []
         }
       }
     },

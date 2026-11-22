@@ -137789,7 +137789,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "b841e199e5db0ecbef7e4752c0c3287dfe929c8400240dccd21701e1669c5f34",
+        "canonical_definition_sha256": "84b15ce3cd120b9b39b2a08669f9be7b7d1fa4ed7a0ada445501d939593e8e98",
         "canonical_name": "terra helmet",
         "wiki_observations": [
           {
@@ -137923,7 +137923,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "32e639c06a90f954acc91cc3a4a80c4e5db3b151fd6f5d2ae099ad0e309897c1",
+        "canonical_definition_sha256": "7e8e735c536d51469aa72e09925584d3382c598792a6061a67da0dff711463e0",
         "canonical_name": "bear skin",
         "wiki_observations": [
           {
@@ -138024,7 +138024,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "6c77c00d95251900fbc819be40ce3e66fb50366450b825024d9e967fd82811ae",
+        "canonical_definition_sha256": "56013c65b5c37cb27fd17f6c7da8f26abac2617831643c13a4be71f056becf42",
         "canonical_name": "embrace of nature",
         "wiki_observations": [
           {
@@ -138125,7 +138125,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "e51612090f52378cfbef699b05e4ecb3c366443ff94095fa7af752d261b82c19",
+        "canonical_definition_sha256": "fefbc81c9f52e821a7f81eb8ff6b9165247736fa6d039ae26d17b7a7da316b75",
         "canonical_name": "mortal mace",
         "wiki_observations": [
           {
@@ -138228,7 +138228,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "e9487721c63b4f19d6e5b4febfd88714e96ce0a1b3f209ad818a4cf734cfe941",
+        "canonical_definition_sha256": "e884b8a3ce721ee79bd39666621d0ffd458e6dc28a0c3e9519647ab7ccfde40d",
         "canonical_name": "bow of cataclysm",
         "wiki_observations": [
           {
@@ -138349,7 +138349,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "e896575b56f915000f698a7cf7d24013092e4a6be552c88592b6916e15901731",
+        "canonical_definition_sha256": "35c0b3d6c968072c03b88c13367426a575c407fa1f9b3a0d44d666c447c8fa0e",
         "canonical_name": "galea mortis",
         "wiki_observations": [
           {
@@ -138466,7 +138466,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "3483acfa2da99ab5305cc5308f8a5d38dac80e8820abd68c928257d28ed05c9e",
+        "canonical_definition_sha256": "ee487136514e77346128ac4f04cf81ddaa036814023053a697247e10efb1e430",
         "canonical_name": "toga mortis",
         "wiki_observations": [
           {
@@ -145396,7 +145396,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "d05260fc52c5830c78d441fc3aea5c62d1a3f359396923a445dacd41283e2994",
+        "canonical_definition_sha256": "f89de28d18346f586d176c9f6e32af4ba5fa226f75a656a3b5ce4162316305f1",
         "canonical_name": "spiritthorn armor",
         "wiki_observations": [
           {
@@ -145507,7 +145507,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "826058c6860d332c8b0e1177743c7f0dfd3211c4a70d9c8310bdd45240020041",
+        "canonical_definition_sha256": "afa904284858b9d671043b58e3b2f7855396613b1f98562a1f0a42a9786d3936",
         "canonical_name": "spiritthorn helmet",
         "wiki_observations": [
           {
@@ -145645,7 +145645,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "ecdb290d7cfad64bc50a4382ea257baf78d3881d82a3fa7f160e580faf5d8c12",
+        "canonical_definition_sha256": "3f7d49c00ef9cd92f4a70f4472e6603643ab339fc777db57afc53755137483b8",
         "canonical_name": "alicorn headguard",
         "wiki_observations": [
           {
@@ -145782,7 +145782,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "b18d729da717e37841eef251879352342887d904111e2b310c6fc4039f2bcf3d",
+        "canonical_definition_sha256": "d6e78cdd3b130b1436999ceab8e01f6b1d453327e6fc74717e33e541dc0ecd4a",
         "canonical_name": "arcanomancer regalia",
         "wiki_observations": [
           {
@@ -145919,7 +145919,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "d4663f95ff609d51709b76d352864b9734129fb151fa6377730d263316469ad4",
+        "canonical_definition_sha256": "b25ed41e5eab958072ec9714bbaa186b35ccdb47b66bfd157806775b17ef092d",
         "canonical_name": "arcanomancer folio",
         "wiki_observations": [
           {
@@ -146025,7 +146025,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "324e03d348a9f86575630198910796cfc97299082636d88260aded1a7d761e6c",
+        "canonical_definition_sha256": "a9543c751b3e4929b49401d01fbf63f8ef000d0c39f13868bc26f4d04e67b03b",
         "canonical_name": "arboreal crown",
         "wiki_observations": [
           {
@@ -146162,7 +146162,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "e659dcac1df86474d9ead4c20f257c9024d9152227a7cd735fc73f14bcb1d9b7",
+        "canonical_definition_sha256": "a3f067c223e05147a405db15f8ec4e46324c1ee71c73257bba450fe625c99d5f",
         "canonical_name": "arboreal tome",
         "wiki_observations": [
           {
@@ -160290,7 +160290,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27500-27999.json",
-        "canonical_definition_sha256": "aff01ea2b859cd366fd2fc26464cf569b05e0cb35474fe59e53b53d5c635c012",
+        "canonical_definition_sha256": "7d580e93f6cdab7fbe691f05dfdad070762ab3431c889fbab5a978bbf7e903d9",
         "canonical_name": "ethereal coned hat",
         "wiki_observations": [
           {
@@ -161778,7 +161778,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27500-27999.json",
-        "canonical_definition_sha256": "ec94fbe47fec07d1a181fb0ddc39d0d99643a8ca6e40aa4b3e1ed1aaa0dcd52b",
+        "canonical_definition_sha256": "0e1ce7d0c367606e0e61e04b33a906a869611cbed8de73353d6f5d18b72b127b",
         "canonical_name": "death oyoroi",
         "wiki_observations": [
           {

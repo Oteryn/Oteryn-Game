@@ -309,6 +309,14 @@ pub(super) async fn exercise(
         1
     );
     no_rewards(h).await?;
+    let [jack] = super::classic_quests_fixtures::install(owner, a, ["oteryn:npc.jack_springer"]).await?;
+    let mut npc_sequence = a.continuity.next_command_id;
+    assert_eq!(
+        super::questpc7_outfit_items_fixtures::talk(owner, a, jack, &mut npc_sequence, "report").await?,
+        oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Ok
+    );
+    let base: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key='oteryn:outfit.hand_of_the_inquisition/quest-grant/0'").fetch_one(&h.pool).await?;
+    assert_eq!(base, 1, "the qualified Zelos report alone grants the base outfit");
     let reward = callback(&rows, "reward")?;
     let p = reward.selector.position.ok_or("reward")?;
     let appearance = reward.selector.appearance.ok_or("armour")?;
@@ -319,7 +327,8 @@ pub(super) async fn exercise(
         UseDisposition::Rejected
     );
     owner.premium_coordinator = premium;
-    no_rewards(h).await?;
+    let before_achievement: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/inquisition_s_hand'").fetch_one(&h.pool).await?;
+    assert_eq!(before_achievement, 1, "Jack's report awards Inquisition's Hand");
     let command = a.continuity.next_command_id;
     let payload = super::questpc7_hoist_story_fixtures::target(owner, p, appearance)?;
     assert_eq!(

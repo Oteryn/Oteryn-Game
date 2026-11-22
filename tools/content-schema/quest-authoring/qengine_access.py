@@ -66,6 +66,27 @@ def document():
                                        for x,y in [(33219,31657),(33221,31657),(33223,31659),
                                                    (33224,31659),(33220,31661),(33222,31661)]],
                              room_min=position(33217,31655,13), room_max=position(33225,31663,13))))
+    rows.append(callback(
+        'ghoul-room-well', 'ghoul_room_quest', 'use',
+        'data-global/scripts/actions/other/teleport_draw_well.lua:1-14',
+        at=position(32508, 32176, 13), appearance=1931,
+        teleport=position(32508, 32176, 14)))
+    for x, y in [(33092, 32061), (33067, 32121), (33026, 32183)]:
+        gas = callback(f'rafzan-swamp-gas-{x}-{y}', 'goblin_merchant_quest', 'use',
+                       'data/items/items.xml:item-17681', at=position(x, y, 7), appearance=17681)
+        gas['sources'].extend([
+            'https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277',
+            'content/world/placements/region-z07-x129-y125.b3',
+        ])
+        gas['requires_world_admission'] = True
+        gas['storage'] = [
+            dict(track='oteryn:quest-progress/questpc7/goblin/odours', minimum=0,
+                 maximum=1, set=2),
+        ]
+        gas['item_on_target'] = dict(item='oteryn:item.tibia.i17672', count=1,
+                                     replacement='oteryn:item.tibia.i17673',
+                                     target_replacement=None, selected_instance=True)
+        rows.append(gas)
     import questpc2_access
     questpc2_access.extend(rows, callback, position)
     for row in rows:

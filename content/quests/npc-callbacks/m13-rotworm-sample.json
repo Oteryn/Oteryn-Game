@@ -54,6 +54,58 @@
         "chosen:Goblin Merchant Quest/s3:third perfume sample uses a live Rotworm; 17673 to 17674 retained perfume-gatherer variants; personal sample receipt does not finish the four-odour stage",
         "content/creatures/definitions:oteryn:creature.rotworm",
         "content/items/definitions/items-06500-06999.json:17673,17674"
+      ],
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/goblin-merchant/cheese-sample",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "cheese sample"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i17674",
+      "carried_target": "oteryn:item.tibia.i3120",
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/odours",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 4
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/goblin_merchant/rotworm_sample",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17674",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3120",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i17675",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "per_occurrence_mint": true,
+      "reply": [
+        "The last sample completes your perfume gatherer."
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ]
     }
   ]
