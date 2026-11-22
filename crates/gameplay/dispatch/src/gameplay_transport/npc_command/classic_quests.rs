@@ -58,13 +58,7 @@ pub(super) fn prepare(
         command.game_session_id,
         intent,
     )?;
-    if ![
-        classic_talk::JEROM,
-        classic_talk::QUEEN,
-        classic_talk::ROTTIN,
-    ]
-    .contains(&context.2.as_str())
-    {
+    if ![classic_talk::JEROM, classic_talk::QUEEN].contains(&context.2.as_str()) {
         return None;
     }
     let tracks = {

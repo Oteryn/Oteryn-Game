@@ -108,6 +108,7 @@ def input_helpers(root, *, real_conditional=False):
         ("boss_corpse_terminal_reference", "extend_records"),
         ("qready1_cradle_item_profiles", "extend_records"),
         ("cake_bridge_reference", "extend_records"),
+        ("nrwicked_profiles", "extend_records"),
         ("encounter_loot_item_admissions", "apply_admissions"),
         ("itemhold_q", "apply_admissions"),
         ("tainted_talisman", "apply_admissions"),
