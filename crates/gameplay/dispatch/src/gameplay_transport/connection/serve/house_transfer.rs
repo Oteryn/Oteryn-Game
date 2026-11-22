@@ -360,6 +360,12 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         }
                         route::StepAction::Dispatch(dispatch) => dispatch,
                     }
+                } else if command.command_type
+                    == oteryn_protocol_oteryn::house_podium::COMMAND_QUERY
+                    && selected.command_selected(command.command_type)
+                {
+                    drop(permit.take());
+                    podium_query(stream, authority, &mut services, &mut admitted, command).await?
                 } else {
                     services
                         .route(authority, &mut admitted, command)
@@ -478,3 +484,79 @@ mod authority_tests;
 #[cfg(test)]
 #[path = "house_transfer_raid_tests.rs"]
 mod raid_tests;
+
+// The House loop retains the original command reservation while its native STEP
+// owner approaches the podium. Only the final query produces a CommandResult.
+async fn podium_query<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
+    stream: &mut S,
+    authority: &A,
+    services: &mut house_hireling::State,
+    admitted: &mut AdmittedSession,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+) -> Result<Dispatch, ServeEnd> {
+    let refused = || Dispatch::Reply(CommandStatus::Rejected, Vec::new());
+    let Some(item) = oteryn_protocol_oteryn::house_podium::decode_item(command.payload) else {
+        return Ok(refused());
+    };
+    let Some(route) = authority.house_podium_approach(*admitted, item).await else {
+        return Ok(refused());
+    };
+    let walked = !route.is_empty();
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(4);
+    for direction in route {
+        let payload = oteryn_protocol_oteryn::world_spatial::encode_step_intent(direction);
+        let step = oteryn_protocol_oteryn::ClientCommandView {
+            command_id: command.command_id,
+            command_type: COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            payload: &payload,
+        };
+        loop {
+            if tokio::time::Instant::now() >= deadline {
+                return Ok(refused());
+            }
+            let Some(input) = authority.enter_input(admitted.game_session_id).await else {
+                return Ok(refused());
+            };
+            let outcome = services.step(authority, admitted, step, false).await;
+            drop(input);
+            match outcome {
+                route::StepAction::Wait(due) => {
+                    tokio::time::sleep_until(due.min(deadline)).await;
+                }
+                route::StepAction::Dispatch(
+                    dispatch @ Dispatch::Step(
+                        StepOutcome {
+                            disposition: StepDisposition::Moved,
+                            ..
+                        },
+                        _,
+                    ),
+                ) => {
+                    services
+                        .effects(stream, authority, admitted, dispatch)
+                        .await?;
+                    break;
+                }
+                route::StepAction::Dispatch(_) => return Ok(refused()),
+            }
+        }
+    }
+    if walked {
+        // Crystal game.cpp:4609-4625 schedules the query after the walking action.
+        tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+        if !authority
+            .house_podium_approach(*admitted, item)
+            .await
+            .is_some_and(|route| route.is_empty())
+        {
+            return Ok(refused());
+        }
+    }
+    let Some(_input) = authority.enter_input(admitted.game_session_id).await else {
+        return Ok(refused());
+    };
+    services
+        .route(authority, admitted, command)
+        .await
+        .ok_or(ServeEnd::Disconnected)
+}

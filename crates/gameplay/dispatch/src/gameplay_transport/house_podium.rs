@@ -70,6 +70,13 @@ macro_rules! authority_methods {
         fn house_podium_available(&self) -> bool {
             false
         }
+        fn house_podium_approach(
+            &self,
+            _: $crate::gameplay_transport::connection::AdmittedSession,
+            _: [u8; 16],
+        ) -> impl std::future::Future<Output = Option<Vec<oteryn_protocol_oteryn::world_spatial::StepDirection>>> {
+            async { None }
+        }
         fn house_podium(
             &self,
             _: $crate::gameplay_transport::connection::AdmittedSession,
@@ -84,6 +91,13 @@ macro_rules! composed_methods {
     () => {
         fn house_podium_available(&self) -> bool {
             true
+        }
+        async fn house_podium_approach(
+            &self,
+            admitted: connection::AdmittedSession,
+            item: [u8; 16],
+        ) -> Option<Vec<oteryn_protocol_oteryn::world_spatial::StepDirection>> {
+            self.plan_house_podium_approach(admitted, item).await
         }
         async fn house_podium(
             &self,

@@ -85,6 +85,11 @@ const KIND: &str = concat!(
     fence_args!(),
     ",encode($10,'hex')::uuid)"
 );
+const TARGET: &str = concat!(
+    "SELECT game_house_podium_target_fenced(",
+    fence_args!(),
+    ",encode($10,'hex')::uuid)"
+);
 const LOAD: &str = concat!(
     "SELECT * FROM game_house_podium_load_fenced(",
     fence_args!(),
@@ -308,6 +313,36 @@ impl DurabilityRoot {
                 })
             })
             .await
+    }
+
+    pub async fn house_podium_target(
+        &self,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        house: HouseId,
+        item: [u8; 16],
+    ) -> Result<Option<[u8; 12]>, DurabilityError> {
+        if fence.runtime_scope != house.runtime_scope()? {
+            return Ok(None);
+        }
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                if !prove_current_incarnation(&mut tx, &node).await? {
+                    return Ok(None);
+                }
+                let row = fenced(TARGET, &node, &fence, &house)
+                    .bind(item.to_vec())
+                    .fetch_one(&mut *tx).await?;
+                let bytes: Option<Vec<u8>> = row.try_get(0)?;
+                let position = bytes.map(|value| {
+                    value.try_into().map_err(|_| DurabilityError::InvalidStoredState)
+                }).transpose()?;
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(position)
+            })
+        }).await
     }
 
     /// Every committed display of the House the fenced session is in, ordered by item.

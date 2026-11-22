@@ -35,6 +35,7 @@ enum Case {
     Roundtrip,
     Refusals,
     MissingCapability,
+    Walk,
 }
 
 #[test]
@@ -50,6 +51,15 @@ fn house_podium_dispatch_refusals_leave_display_unchanged_postgres() -> TestResu
 #[test]
 fn house_podium_dispatch_without_capability_150_is_rejected_postgres() -> TestResult {
     postgres_case("house_podium_without_capability", Case::MissingCapability)
+}
+
+#[test]
+fn house_podium_dispatch_walks_before_querying_distant_podium() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    postgres_case("house_podium_walk", Case::Walk)
 }
 
 fn postgres_case(name: &'static str, case: Case) -> TestResult {
@@ -83,10 +93,11 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .await
         .map_err(debug)?;
     let base = Dependencies::new()?;
-    let world = super::house_wrap_fixtures::wrap_bundle(base.admitted.world_id, base.admitted.channel_id)?;
-    let cells = world
-        .movement_cells(base.room.movement_cells())
-        .map_err(debug)?;
+    let world = if matches!(case, Case::Walk) {
+        super::house_wrap_fixtures::walkable_house_bundle(base.admitted.world_id, base.admitted.channel_id)?
+    } else {
+        super::house_wrap_fixtures::wrap_bundle(base.admitted.world_id, base.admitted.channel_id)?
+    };
     let mut packet = cosmetics_test_packet();
     packet["authoring"]["document"]["content_revision"] = "content-1".into();
     let outfit_key = packet["authoring"]["document"]["outfits"][0]["key"]
@@ -94,8 +105,14 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .ok_or("cosmetics outfit key")?
         .to_owned();
     let bytes = serde_json::to_vec(&packet)?;
-    let (controller, _) =
+    let (controller, native_pin) =
         activated_with_optional_cosmetics(base.admitted.world_id, None, Some(&bytes));
+    let room = if matches!(case, Case::Walk) {
+        native_pin.qualified_room().clone()
+    } else {
+        base.room
+    };
+    let cells = world.movement_cells(room.movement_cells()).map_err(debug)?;
     let active = controller.active().ok_or("active content")?;
     let pin = ChannelContentPin::from_activation(
         base.admitted.world_id,
@@ -106,7 +123,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         [4; 32],
         (32309, 32805, 7),
     );
-    let deps = Dependencies::with_content(pin, base.room, base.spells)?;
+    let deps = Dependencies::with_content(pin, room, base.spells)?;
     let mut owner = deps.owner(h, &authority);
     owner.movement_cells = (&cells).into();
     owner.evidence = &evidence.evidence;
@@ -136,6 +153,11 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
         &[], crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id, deps.admitted.channel_id), 1, "policy-1", OFFERS,
     ).map_err(debug)?;
+    if matches!(case, Case::Walk) {
+        super::tutorial_vitals_fixture::publish_native_activation(h, &native_pin).await?;
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
+            .bind(id(41).as_slice()).execute(&h.pool).await?;
+    }
     deps.initialize(&owner).await;
     {
         let mut runtime = owner.runtime.lock().await;
@@ -209,7 +231,20 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .await?;
     sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i42367','definition-r1',1,1,encode($3,'hex')::uuid)")
         .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(id(73).as_slice()).execute(&mut *tx).await?;
-    let position: Vec<u8> = POSITION
+    let position = if matches!(case, Case::Walk) {
+        let actor = admitted.runtime_actor.ok_or("house actor")?;
+        let state = owner.runtime.lock().await.house_actor_state(actor, admitted.game_session_id).map_err(debug)?;
+        assert_eq!((state.position.x, state.position.y), (32309, 32804));
+        for x in [32310_i32, 32311] {
+            let intermediate = [x, 32804, 7].map(i32::to_be_bytes).concat();
+            sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
+                .bind(id(42).as_slice()).bind(HOUSE).bind(intermediate).execute(&mut *tx).await?;
+        }
+        [32312, 32804, 7]
+    } else {
+        POSITION
+    };
+    let position: Vec<u8> = position
         .iter()
         .flat_map(|value| value.to_be_bytes())
         .collect();
@@ -258,6 +293,13 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .ok_or("query command result")?;
     assert_eq!(status, CommandStatus::Accepted);
     assert_eq!(wire::Projection::decode(&payload), Some(None));
+    if matches!(case, Case::Walk) {
+        let actor = admitted.runtime_actor.ok_or("house actor")?;
+        let house = owner.runtime.lock().await
+            .house_actor_state(actor, admitted.game_session_id).map_err(debug)?;
+        assert_eq!((house.position.x, house.position.y), (32311, 32804));
+        return Ok(());
+    }
     let command = admitted.continuity.next_command_id;
     let (status, payload) = exchange(&owner, &mut admitted, command, wire::COMMAND_SET, &set)
         .await?

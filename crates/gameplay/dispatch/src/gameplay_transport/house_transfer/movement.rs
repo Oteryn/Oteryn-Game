@@ -22,6 +22,134 @@ type Reply = (StepOutcome, Option<Duration>);
 type ItemCells = BTreeMap<LogicalCell, (bool, u16)>;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn plan_house_podium_approach(
+        &self,
+        admitted: AdmittedSession,
+        item: [u8; 16],
+    ) -> Option<Vec<StepDirection>> {
+        use crate::movement::path_search::{
+            CHASE_SEARCH_DISTANCE, chebyshev, measured_creature_route, route_next_to,
+        };
+
+        let actor = admitted.runtime_actor?;
+        let fence = admitted.item_fence?;
+        let session = admitted.game_session_id;
+        let state = self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, session)
+            .ok()?;
+        if state.scope != fence.runtime_scope
+            || state.generation != fence.scope_ownership_generation
+        {
+            return None;
+        }
+        let house = HouseId::new(self.world_id, &state.house)?;
+        let bytes = self
+            .root
+            .house_podium_target(self.holder, fence, house.clone(), item)
+            .await
+            .ok()??;
+        let coord = |i| Some(i32::from_be_bytes(bytes.get(i..i + 4)?.try_into().ok()?));
+        let target = MovementLocalPosition {
+            x: coord(0)?,
+            y: coord(4)?,
+            floor: i16::try_from(coord(8)?).ok()?,
+        };
+        let start = movement(state.position);
+        if start.floor != target.floor {
+            return None;
+        }
+        if chebyshev(start, target) <= 1 {
+            return Some(Vec::new());
+        }
+
+        let doors = self.door.lock().await.blocking_cells().clone();
+        let runtime = self.runtime.lock().await;
+        if runtime.house_actor_state(actor, session).ok()? != state {
+            return None;
+        }
+        let request = HouseStepReadRequest {
+            fence,
+            origin_channel: *self.channel_id.as_bytes(),
+            house,
+            content_digest: runtime.content_pin().server_artifact_digest(),
+        };
+        let diagonal = admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1);
+        let mut context = (self, &runtime, &state.house, &doors, None);
+        self.root
+            .with_house_step_read(
+                self.character,
+                self.holder,
+                request,
+                &mut context,
+                move |read, context| {
+                    let (owner, runtime, house, doors, route) = context;
+                    let Some(items) = owner
+                        .active_generation
+                        .and_then(crate::content::ActiveGeneration::native_gameplay)
+                        .and_then(|content| item_cells(&read.interior.items, content))
+                    else {
+                        return false;
+                    };
+                    let cells = owner.movement_cells();
+                    let blocker = HouseBlocker {
+                        cells,
+                        bundle: owner.bundle_map(),
+                        house,
+                        items: &items,
+                        doors,
+                    };
+                    let tile_cost = |at| {
+                        let tile = cell(at);
+                        (!blocker.blocks(tile)
+                            && cells.index().lookup(cells.scope(), tile)
+                                == Ok(CollisionClass::Walkable)
+                            && !runtime
+                                .house_cell_occupied_except(
+                                    actor,
+                                    session,
+                                    LocalPosition {
+                                        x: at.x,
+                                        y: at.y,
+                                        floor: at.floor,
+                                    },
+                                )
+                                .unwrap_or(true))
+                        .then_some(0)
+                    };
+                    *route = if diagonal {
+                        route_next_to(start, target, CHASE_SEARCH_DISTANCE, tile_cost)
+                    } else {
+                        measured_creature_route(start, target, false, tile_cost).0
+                    };
+                    false
+                },
+            )
+            .await
+            .ok()?;
+        Some(
+            context
+                .4?
+                .into_iter()
+                .map(|step| match step {
+                    CardinalStep::North => StepDirection::North,
+                    CardinalStep::East => StepDirection::East,
+                    CardinalStep::South => StepDirection::South,
+                    CardinalStep::West => StepDirection::West,
+                    CardinalStep::NorthEast => StepDirection::NorthEast,
+                    CardinalStep::SouthEast => StepDirection::SouthEast,
+                    CardinalStep::SouthWest => StepDirection::SouthWest,
+                    CardinalStep::NorthWest => StepDirection::NorthWest,
+                })
+                .collect(),
+        )
+    }
+
     pub(in crate::gameplay_transport) async fn house_paced_step(
         &self,
         actor: ExactActorRef,
