@@ -440,7 +440,7 @@ def test_package_tree_contract():
         family: sum(row["identity"]["family"] == family for row in reference["records"])
         for family in creature_families
     }
-    assert family_counts['Creature'] == 1_865
+    assert family_counts['Creature'] == 1_871
     # One Crystal 201189f8 star-herb handler extends the frozen129 conversion cohort.
     # The alternate tainted-antler key was a duplicate of the same whole-stack transform.
     conversion_keys = {
@@ -472,7 +472,7 @@ def test_package_tree_contract():
         "item_conversion": 130,
         **{family: value["records"] for family, value in quest_families.items()},
     }
-    assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1_865, "Encounter": 108, "NPC": 2747}
+    assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1_871, "Encounter": 108, "NPC": 2747}
     assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
     paths = [row["path"] for row in manifest["managed_files"]]

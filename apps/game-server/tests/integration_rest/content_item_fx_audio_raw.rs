@@ -84,7 +84,7 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
     // #2673 adds the drown-protection item batch without reimport states.
     // E06 adds the client market mint and the Crystal market parity batches, without states.
     // This count is refreshed by the normal repin_rust_inventory source tool.
-    assert_eq!(batches.len(), 36);
+    assert_eq!(batches.len(), 37);
     let cake = batches
         .iter()
         .filter(|batch| batch.batch_id == "seasonal-cake-creature-crystal-201189f-r1")
@@ -99,8 +99,23 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
         1,
         "one separately qualified Thaian source batch"
     );
+    let cyclopedia = batches
+        .iter()
+        .filter(|batch| batch.batch_id == "cyclopedia-creatures-crystal-201189f-r1")
+        .collect::<Vec<_>>();
     assert_eq!(
-        batches.len() - cake.len() - thaian.len(),
+        cyclopedia.len(),
+        1,
+        "one separately qualified Cyclopedia source batch"
+    );
+    assert_eq!(
+        cyclopedia[0].source_artifact_sha256,
+        world_project_sha256(include_bytes!(
+            "../../../../imports/crystalserver/cyclopedia-creatures-201189f.json"
+        ))
+    );
+    assert_eq!(
+        batches.len() - cake.len() - thaian.len() - cyclopedia.len(),
         34,
         "all historical source batches retained"
     );

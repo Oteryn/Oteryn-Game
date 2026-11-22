@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 
 import cake_native_successor as cake
+from cyclopedia_creatures import inventory as cyclopedia_inventory
 import raid_catalogue
 from world_project_v2_to_tree import CREATURE_FAMILIES, git_blob_sha
 
@@ -67,8 +68,9 @@ def validate_inventory(root, rows, native, schedules):
     elemental_native, elemental_schedules = elemental_inventory(native)
     extra_native += elemental_native
     extra_schedules += elemental_schedules
-    if (len(rows) - 1 != 1863 + 1 or len(native) != len(rows) + extra_native
-            or schedules - 1 != 7201 + 4 + extra_schedules):
+    additions, added_schedules, _, _ = cyclopedia_inventory(root, rows, native)
+    if (len(rows) - 1 - additions != 1863 + 1 or len(native) != len(rows) + extra_native
+            or schedules - 1 - added_schedules != 7201 + 4 + extra_schedules):
         raise ValueError('Non-seasonal canonical inventory changed; review its source first')
     return 1
 
@@ -98,6 +100,7 @@ def generated(root):
     schedules = sum(len(row['behavior']['data']['profile'].get(key, []))
                     for row in native for key in ('attacks', 'defenses'))
     thaian_melee = validate_inventory(root, rows, native, schedules)
+    _, _, cyclopedia_melee, cyclopedia_spells = cyclopedia_inventory(root, rows, native)
     from engenc_elemental_profiles import inventory_extension as elemental_inventory
     elemental_native, _ = elemental_inventory(native)
     result = {}
@@ -124,9 +127,9 @@ def generated(root):
     # Keep the pre-existing unsupported set at116: no new source gap is admitted.
     path = 'crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane.rs'
     replace(path, r'\("melee:Ok\(\(\)\)", [0-9_]+\)',
-            f'("melee:Ok(())", {1689 + 1 + thaian_melee})')
+            f'("melee:Ok(())", {1689 + 1 + thaian_melee + cyclopedia_melee})')
     replace(path, r'\("spell:Ok\(\(\)\)", [0-9_]+\)',
-            f'("spell:Ok(())", {4198 + len(behavior["attacks"]) - 1})')
+            f'("spell:Ok(())", {4198 + len(behavior["attacks"]) - 1 + cyclopedia_spells})')
     if '("spell:Err(UnsupportedShape)", 116)' not in result[path]:
         raise ValueError('Existing native source gap pin changed')
 

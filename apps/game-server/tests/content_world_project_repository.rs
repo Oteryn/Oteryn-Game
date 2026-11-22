@@ -17,18 +17,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        418,
-        "f531f82a5f7352a12ef6070c5e1c1c16acb0259d0d432e68864ce948ecbcd15b",
+        433,
+        "080da306134bb8d4dc3c4023f60df4220bcc3dee373349ef64ad265ae32b6fd8",
     ),
     (
         "definitions/declarations.json",
-        27_760_785,
-        "7e290b771aa69d2d7f4ae70a2b7e40a7ebbff06f8afa3cab1e3e6d6e62c96b47",
+        27_798_955,
+        "0e4b6b6c5246cc5bf2bd13ab1a90a6323c28e0a6b5c743437b26829319d0ab7a",
     ),
     (
         "definitions/reference.json",
-        27_390_893,
-        "a375a7c94187351a674a9e5b6eeca22ffd2a40a420167f0757f8a92b8b7dd83a",
+        27_416_178,
+        "cc82aaa3eb797a4dc03b5511cceb32b12c0d283e31db99c67750ee8fe50a9930",
     ),
     (
         "editor/author.json",
@@ -37,8 +37,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1957,
-        "13b5b70d473b1be794045234dabcf60cbf78974dd9f1c9527b69133621a654bc",
+        1962,
+        "659925d51f785bfdbf1dd7663d976b71102fac00ae24404c949fb77cbd9d657b",
     ),
     (
         "presentations/bindings.json",
@@ -47,18 +47,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        408,
-        "9025eb3943522af3380c32524eb19d76e8257527755304a3e101096d61fe99c4",
+        413,
+        "53961320a3aec4232612fca7e087e50fda2f3a7688383d3434a6ab027a7a1bbb",
     ),
     (
         "provenance/imports.json",
-        6_774_564,
-        "96adebd34de3ccddc1563569c26528c9fe21c2c302774daeda5977feb4697c5c",
+        6_775_214,
+        "69c691ad75607ecd3232912093ddad0d15e7a2dfdcd545281dd45c77812a274a",
     ),
     (
         "provenance/sources.json",
-        1_668_021,
-        "58d8ce37b1c537184c990fd091c16908bd7c69dd5435ef3da0c553466019feab",
+        1_670_572,
+        "4251cfdf7296f350e36ba3f1a1e3f75a3503e7b618099259284520c574267584",
     ),
     (
         "worlds/world.json",
@@ -143,7 +143,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "c9c082fe0655d425a53391448a11ac167e4d38997e7579550059825711af4ce6";
+const TREE_SHA256: &str = "07d4a2fe51b741c601ef35f862d912a585bf6ef46088927c060d3afd04d907c5";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -153,9 +153,9 @@ const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
 /// Full generated population, including qualified source proxies and Wiki metadata.
-const CREATURES: usize = 1_865;
-const CREATURE_RECORDS: usize = 26_211;
-const CREATURE_PROFILES: usize = 25_068;
+const CREATURES: usize = 1_871;
+const CREATURE_RECORDS: usize = 26_289;
+const CREATURE_PROFILES: usize = 25_140;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1282;
 const NPC_RECORDS: usize = 2_564;
@@ -189,7 +189,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 31,
+        max_import_records: 32,
         max_reimport_states: 404,
     }
 }
@@ -404,15 +404,16 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "seasonal-cake-creature-20261107-r1"
+        "cyclopedia-creatures-crystal-201189f-r1"
     );
-    // Thaian adds the 37th separately qualified batch; the historical cohort remains 25.
-    assert_eq!(project.imports().len(), 37);
+    // The independently qualified Cyclopedia batch preserves the historical cohort.
+    assert_eq!(project.imports().len(), 38);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
         .filter(|b| {
             !b.batch_id.starts_with("monster-full-mechanics-")
+                && b.batch_id != "cyclopedia-creatures-crystal-201189f-r1"
                 && b.batch_id != "g4-item-forge289-br-r1"
                 && b.batch_id != "g4-item-fx-audio295-raw-evidence-r1"
                 && b.batch_id != "official-creature-balance-8918-8935-9024-9039"
@@ -1236,7 +1237,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 31);
+    assert_eq!(v2.sources.len(), 32);
     let source_for = |batch: &str| {
         v2.sources
             .iter()
@@ -1631,6 +1632,35 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "crystalserver-creature-1530:201189f871d23597b82caf88fd611454a2ddefb8"
     );
     assert_eq!(cake_source.sha256, world_project_sha256(cake_bytes));
+    let cyclopedia_bytes =
+        include_bytes!("../../../imports/crystalserver/cyclopedia-creatures-201189f.json");
+    let cyclopedia_packet: serde_json::Value =
+        serde_json::from_slice(cyclopedia_bytes).expect("Cyclopedia source capture");
+    let cyclopedia_bindings: Vec<ProjectV2SourceIdentityBinding> =
+        serde_json::from_value(cyclopedia_packet["bindings"].clone())
+            .expect("Cyclopedia typed bindings");
+    let cyclopedia_import = import_for("cyclopedia-creatures-crystal-201189f-r1");
+    let cyclopedia_source = source_for("cyclopedia-creatures-crystal-201189f-r1");
+    assert_eq!(
+        cyclopedia_import.source_artifact_sha256,
+        world_project_sha256(cyclopedia_bytes)
+    );
+    assert_eq!(
+        cyclopedia_source.sha256,
+        cyclopedia_import.source_artifact_sha256
+    );
+    assert_eq!(cyclopedia_source.key, "oteryn:source.crystalserver");
+    assert_eq!(
+        cyclopedia_source.revision,
+        cyclopedia_import.source_revision
+    );
+    assert_eq!(cyclopedia_bindings.len(), 6);
+    assert!(cyclopedia_bindings.iter().all(|binding| {
+        binding.source_key == cyclopedia_source.key
+            && binding.source_revision == cyclopedia_source.revision
+            && binding.target.family == ProjectV2Family::Creature
+            && v2.source_identity_bindings.contains(binding)
+    }));
     let mut creature_files = BTreeSet::new();
     let mut d44_wiki_bindings = 0;
     let mut thaian_wiki_bindings = 0;
@@ -1687,6 +1717,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         if cake_bindings.contains(binding) {
             assert_eq!(binding.target.family, ProjectV2Family::Creature);
             assert_eq!(binding.target.key, "oteryn:creature.cake_golem");
+            assert!(creature_files.insert(&binding.external_id));
+            continue;
+        }
+        if cyclopedia_bindings.contains(binding) {
             assert!(creature_files.insert(&binding.external_id));
             continue;
         }
