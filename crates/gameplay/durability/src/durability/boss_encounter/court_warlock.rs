@@ -277,12 +277,10 @@ impl DurabilityRoot {
                     let Some((boss, party)) = row else {
                         return Ok(false);
                     };
-                    let keys = party
-                        .chunks_exact(16)
-                        .map(|id| {
-                            let id = id
-                                .try_into()
-                                .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let (members, _) = party.as_chunks::<16>();
+                    let keys = members
+                        .iter()
+                        .map(|&id| {
                             let character = CharacterId::from_bytes(id)
                                 .map_err(|_| DurabilityError::InvalidStoredState)?;
                             BossRewardKey::new(character, &boss)
