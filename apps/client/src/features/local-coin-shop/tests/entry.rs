@@ -157,7 +157,7 @@ fn store_launcher_fresh_oauth_keeps_request_until_sign_out() -> TestResult {
                     .map(str::to_owned),
                 format!("{view:?}"),
             ));
-            if matches!(steps.fetch_add(1, Ordering::SeqCst), 0 | 2) {
+            if matches!(steps.fetch_add(1, Ordering::SeqCst), 0 | 4) {
                 Action::Purchase {
                     package_id: PACKAGE.into(),
                     confirmed: true,
@@ -184,6 +184,20 @@ fn store_launcher_fresh_oauth_keeps_request_until_sign_out() -> TestResult {
             assert!(!debug.contains("services-test-token-"));
         }
         done_rx.recv_timeout(Duration::from_secs(5))?;
+        for account in [Some("account-b"), None] {
+            mock.authority.lock().map_err(|_| "lock")?.oauth_account = account.map(str::to_owned);
+            let deadline = Instant::now() + Duration::from_secs(5);
+            while !launcher.can_start() && Instant::now() < deadline {
+                std::thread::yield_now();
+            }
+            assert!(launcher.start());
+            assert!(
+                shown_rx.recv_timeout(Duration::from_secs(5))?.0.is_none(),
+                "another login inherited the pending order"
+            );
+            done_rx.recv_timeout(Duration::from_secs(5))?;
+        }
+        mock.authority.lock().map_err(|_| "lock")?.oauth_account = Some("account-a".into());
         let deadline = Instant::now() + Duration::from_secs(5);
         while !launcher.can_start() && Instant::now() < deadline {
             std::thread::yield_now();
@@ -207,7 +221,7 @@ fn store_launcher_fresh_oauth_keeps_request_until_sign_out() -> TestResult {
         done_rx.recv_timeout(Duration::from_secs(5))?;
         assert_eq!(
             mock.authority.lock().map_err(|_| "lock")?.oauth_exchanges,
-            3
+            5
         );
         Ok(())
     })
