@@ -25,13 +25,26 @@ fn blue_present_full_backpack_drops_one_reward_and_consumes_one_present_once() -
     };
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(admin).map_err(|error| error.to_string()))?
+        .spawn(move || scenario(admin, 2).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "full backpack reward scenario thread")??;
     Ok(())
 }
 
-fn scenario(admin: String) -> TestResult {
+#[test]
+fn blue_present_last_unit_in_full_backpack_drops_before_freeing_source_slot() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || scenario(admin, 1).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "last unit full backpack reward scenario thread")??;
+    Ok(())
+}
+
+fn scenario(admin: String, quantity: i64) -> TestResult {
     run(async move |_| {
         let harness =
             Harness::create_with_admission_seed(admin, "w19a_full_pack", true, false).await?;
@@ -161,9 +174,9 @@ fn scenario(admin: String) -> TestResult {
         let fence = crate::gameplay_transport::item_fence_of(current).ok_or("fence")?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
-        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(bundle_room.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
 
-        let mut entries = vec![(BLUE_PRESENT, 2)];
+        let mut entries = vec![(BLUE_PRESENT, quantity)];
         entries.resize(20, ("oteryn:item.tibia.i3588", 1));
         super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
         let source = id(71);
@@ -173,6 +186,7 @@ fn scenario(admin: String) -> TestResult {
         let draw = reward_bag_draw(*fence.game_session_id.as_bytes(), 1, source);
         let expected =
             reward_bag_conversion(native, &definition, draw).ok_or("Blue Present reward")?;
+        assert_eq!(expected.recipe, "oteryn:reward-bag.event_6570");
         let [(reward, amount)] = expected.outputs.as_slice() else {
             return Err("Blue Present must select one reward".into());
         };
@@ -197,19 +211,28 @@ fn scenario(admin: String) -> TestResult {
         };
         // Fail after the source debit, when the transaction inserts the reward's custody.
         sqlx::raw_sql(
-            "CREATE FUNCTION refuse_test_present_drop() RETURNS trigger LANGUAGE plpgsql AS $$
-                 BEGIN RAISE EXCEPTION 'injected Blue Present Ground insert failure'; END $$;
+            "CREATE SEQUENCE test_present_drop_reached;
+             GRANT USAGE ON SEQUENCE test_present_drop_reached TO oteryn_game_runtime;
+             CREATE FUNCTION refuse_test_present_drop() RETURNS trigger LANGUAGE plpgsql AS $$
+                 BEGIN
+                     PERFORM nextval('test_present_drop_reached');
+                     RAISE EXCEPTION 'injected Blue Present Ground insert failure';
+                 END $$;
              CREATE TRIGGER refuse_test_present_drop AFTER INSERT ON game_item_ground_locations
                  FOR EACH ROW EXECUTE FUNCTION refuse_test_present_drop();",
         )
         .execute(&harness.pool)
         .await?;
-        assert!(matches!(
-            owner
-                .use_reward_bag(deps.actor, command, ItemKey::Instance(source))
-                .await,
-            Some(None)
-        ));
+        let failed = owner
+            .use_reward_bag(deps.actor, command, ItemKey::Instance(source))
+            .await;
+        assert!(matches!(failed, Some(None)), "{failed:?}");
+        assert!(
+            sqlx::query_scalar::<_, bool>("SELECT is_called FROM test_present_drop_reached")
+                .fetch_one(&harness.pool)
+                .await?,
+            "the injected failure must occur at the Ground insert"
+        );
         let rolled_back: (i64, i64, i64, i64) = sqlx::query_as(
             "SELECT i.quantity,
              (SELECT count(*) FROM game_item_craft_records),
@@ -220,12 +243,12 @@ fn scenario(admin: String) -> TestResult {
         .bind(source.as_slice())
         .fetch_one(&harness.pool)
         .await?;
-        assert_eq!(rolled_back, (2, 0, 0, 0));
+        assert_eq!(rolled_back, (quantity, 0, 0, 0));
         sqlx::query("DROP TRIGGER refuse_test_present_drop ON game_item_ground_locations")
             .execute(&harness.pool)
             .await?;
 
-        let (_, result, _) = exchange(&owner, admitted, 1, &payload, Some(source_ref)).await?;
+        let (_, result, actual) = exchange(&owner, admitted, 1, &payload, Some(source_ref)).await?;
         assert_eq!(result, UseDisposition::Committed);
 
         let check = async || -> TestResult {
@@ -239,7 +262,7 @@ fn scenario(admin: String) -> TestResult {
             .bind(id(70).as_slice())
             .fetch_one(&harness.pool)
             .await?;
-            assert_eq!(source_state, (1, 1, true));
+            assert_eq!(source_state, if quantity == 1 { (0, 2, false) } else { (1, 1, true) });
 
             let placements: Vec<PlacementRow> = sqlx::query_as(
                 "SELECT i.definition_production_key,i.quantity,g.spatial_position,uuid_send(g.channel_id),
@@ -271,15 +294,18 @@ fn scenario(admin: String) -> TestResult {
             )
             .fetch_one(&harness.pool)
             .await?;
-            assert_eq!(counts, (1, 1, 20));
+            assert_eq!(counts, (1, 1, if quantity == 1 { 19 } else { 20 }));
             Ok(())
         };
         check().await?;
 
+        let intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+            admitted.continuity.selected_capabilities.as_slice(),
+            &actual,
+        ).map_err(debug)?;
         let replay = owner
-            .use_reward_bag(deps.actor, command, ItemKey::Instance(source))
-            .await
-            .ok_or("reward route")?
+            .use_reward_bag_intent(deps.actor, command, &intent, None)
+            .await.map_err(|()| "reward replay unavailable")?
             .ok_or("reward replay")?;
         assert_eq!(replay.disposition, UseDisposition::Committed);
         check().await?;

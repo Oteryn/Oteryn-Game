@@ -13,6 +13,11 @@ use crate::gameplay_transport::world_map::{
 };
 use oteryn_gameplay_items::item_ref_admission::generation_ground_item_facts;
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static DISPENSER_ACK_BARRIER: std::sync::Arc<tokio::sync::Notify>;
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn use_dispenser(
         &self,
@@ -308,6 +313,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         request.source = flask;
         request.target = Some(dispenser);
+        let _ground_change = super::super::loop_move::GroundChange(
+            ground_context.as_ref().map(|_| &self.states.loop_ground),
+        );
         let receipt = if let Some(context) = &ground_context {
             self.root
                 .consume_dispenser_on_ground(
@@ -335,6 +343,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
         };
+        #[cfg(test)]
+        if receipt.as_ref().is_ok_and(|result| {
+            result.as_ref().is_some_and(|receipt| {
+                receipt.fresh && receipt.disposition == UseDisposition::Committed
+            })
+        }) && DISPENSER_ACK_BARRIER
+            .try_with(|ready| ready.notify_one())
+            .is_ok()
+        {
+            std::future::pending::<()>().await;
+        }
         receipt
             .map(|receipt| {
                 receipt.and_then(|receipt| {

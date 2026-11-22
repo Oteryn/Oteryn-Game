@@ -25,6 +25,8 @@ mod departure_poll;
 mod pillar;
 #[path = "arena_match/pit_reset.rs"]
 mod pit_reset;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use pit_reset::ARENA_ITEM_RESET_BARRIER;
 #[path = "arena_match/portal_step.rs"]
 mod portal_step;
 #[path = "arena_match/timeout_poll.rs"]

@@ -174,3 +174,6 @@ BEGIN
         EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
     END LOOP;
 END $migration$;
+
+-- The existing deferred Ground removal trigger runs with the writer's rights.
+GRANT EXECUTE ON FUNCTION game_arena_reset_item_proven(UUID) TO oteryn_game_runtime;

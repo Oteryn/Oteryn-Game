@@ -3,15 +3,14 @@
 use super::connection::{UseCommand, UseOutcome};
 use super::item_ref_admission::NativeItemWeights;
 use super::{ComposedFreshAdmission, item_view::ItemKey};
-use crate::durability::item_craft::{BLUE_PRESENT, ItemCraftRequest};
+use crate::durability::item_craft::{
+    BLUE_PRESENT, EventContainerReplaySource, ItemCraftRequest, REWARD_BAG_INSTANCE_INTENT_TAG,
+};
 use crate::durability::item_loop_move::LoopGround;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use oteryn_gameplay_items::reward_bag::{event_containers::legacy_conversion_rule, is_reward_bag};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, encode_item_use_intent};
-
-/// Existing bags retain their historical instance-tagged receipt.
-const INTENT_TAG: &[u8] = b"oteryn:reward-bag-use:v1";
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// W19 binds the original client USE bytes before the handle can retire.
@@ -36,7 +35,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_event_container_command_source(self.character, fence, command_ref)
             .await
             .map_err(|_| ())?;
-        let id = if let Some(id) = historical {
+        // The existing item-completion route reconciles instance-tagged receipts.
+        if matches!(historical, Some(EventContainerReplaySource::InstanceTagged)) {
+            return Ok(None);
+        }
+        let id = if let Some(EventContainerReplaySource::Wire(id)) = historical {
             id
         } else {
             let Some(ItemKey::Instance(id)) = source else {
@@ -60,7 +63,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .chain(inventory.nested.iter().map(|(_, entry)| entry))
                 .find(|entry| entry.item.item_instance_id == id);
             if !carried.is_some_and(|entry| {
-                legacy_conversion_rule(&entry.item.definition.production_key).is_some()
+                let key = &entry.item.definition.production_key;
+                key == BLUE_PRESENT || legacy_conversion_rule(key).is_some()
             }) {
                 return Ok(None);
             }
@@ -94,8 +98,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let ItemKey::Instance(id) = item else {
             return None;
         };
-        self.use_reward_bag_request(actor, command, id, [INTENT_TAG, id.as_slice()].concat())
-            .await
+        self.use_reward_bag_request(
+            actor,
+            command,
+            id,
+            [REWARD_BAG_INSTANCE_INTENT_TAG, id.as_slice()].concat(),
+        )
+        .await
     }
 
     /// Replay precedes inventory, liveness and trade reads. Fresh writes recheck the
@@ -174,7 +183,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return outcome(UseDisposition::Rejected);
             }
-            if carried.item.definition.production_key == BLUE_PRESENT && carried.item.quantity > 1 {
+            if carried.item.definition.production_key == BLUE_PRESENT {
                 self.blue_present_drop_tile(&runtime, actor, fence)
             } else {
                 None

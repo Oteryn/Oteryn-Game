@@ -39,7 +39,7 @@
 //! TRANSFER. The fence is the B3-1 TRANSFER fence
 //! ([`super::item_transfer::character_item_fence_is_current`]).
 //!
-//! [`DurabilityRoot::read_map_item_mint_placements`] lists the taken entries
+//! [`DurabilityRoot::read_map_item_mint_placement_states`] lists the taken entries
 //! of one (World, Channel, digest, reset epoch) for the overlay rebuild,
 //! which re-hides every one of them.
 
@@ -753,13 +753,10 @@ impl DurabilityRoot {
             .await?
     }
 
-    /// The `placement_key` of every entry taken in this World, Channel, base
-    /// bundle and reset epoch, ascending: the origins the overlay rebuild
-    /// re-hides, with a flag for a retired blocking cask. Read-only. More
-    /// than `max_entries` (the bundle's entry
-    /// count) is an invalid state, reported as `CapacityExceeded`, never
-    /// truncated.
-    pub async fn read_map_item_mint_placements(
+    /// Taken placement keys in this World, Channel, bundle and reset epoch, in
+    /// ascending order, with a flag for retired blocking casks. More than
+    /// `max_entries` is reported as `CapacityExceeded`.
+    pub async fn read_map_item_mint_placement_states(
         &self,
         world_id: WorldId,
         channel_id: ChannelId,

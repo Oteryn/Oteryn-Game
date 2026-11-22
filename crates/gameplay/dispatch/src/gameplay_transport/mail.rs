@@ -101,7 +101,6 @@ pub(super) async fn execute(
         .await
     {
         Ok(outcome) => Some(wire_post_outcome(outcome)),
-        Err(_) if !in_reach => Some(MailOutcome::Rejected),
         Err(_) => None,
     }
 }
