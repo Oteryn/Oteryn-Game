@@ -378,6 +378,20 @@ def build():
     # L1: keep parent QuestState ownership for shared prerequisite tracks.
     frontier = prefix + 'u8_54/the_new_frontier/'
     yalahar = prefix + 'u8_4/in_service_of_yalahar/'
+
+    def finish_outfit(other_track, other_addon, achievement, page, revision):
+        trade = callbacks[-1]
+        # Preserve the published trade's value plan and its historical receipts.
+        trade['requires'] = [{'track': other_track, 'minimum': -1, 'maximum': 0}]
+        callbacks.append({
+            **trade,
+            'key': trade['key'] + '-complete',
+            'requires': [{'track': other_track, 'minimum': 1, 'maximum': 1}],
+            'requires_addons': [{'outfit': trade['outfit']['outfit'], 'addons': other_addon}],
+            'achievement': 'oteryn:achievement/' + achievement,
+            'sources': [*trade['sources'], f'https://tibia.fandom.com/index.php?curid={page}&oldid={revision}'],
+        })
+
     for name, bit, item, word in [('crest',1,10199,'crest'), ('tribal',2,10198,'tribal crest')]:
         add('l1-warmaster-'+name, 'the_new_frontier_quest', 'cael', ['yes'],
             [storage(frontier+'questline',27,27,preserve=True),
@@ -386,6 +400,8 @@ def build():
         offers.append({'npc':'oteryn:npc.cael','keywords':[word], 'topic':0,
             'next_topic':60+bit-1,'storage':callbacks[-1]['storage'],
             'reply':['Can I have that '+('serpent' if bit==1 else 'tribal')+' crest?']})
+        finish_outfit(frontier + 'warmaster_addon_' + str(3 - bit), 3 - bit,
+                      'master_of_war', 42269, 795619)
     for name, bit, item, words in [('cape',1,11701,['cape','first addon']), ('hat',2,11700,['hat','second addon'])]:
         track='oteryn:quest-progress/wayfarer_outfit'+('' if bit==1 else '_1')
         add('l1-wayfarer-'+name,'wayfarer_outfits_quest','cranky_lizard_crone',['yes'],
@@ -393,6 +409,8 @@ def build():
         offers.append({'npc':'oteryn:npc.cranky_lizard_crone','keywords':words,
             'topic':0,'next_topic':bit,'storage':callbacks[-1]['storage'],
             'reply':['Do you have the '+('old cape' if bit==1 else 'sedge hat')+' with you?']})
+        finish_outfit('oteryn:quest-progress/wayfarer_outfit' + ('_1' if bit == 1 else ''),
+                      3 - bit, 'peazzekeeper', 46398, 844411)
     for npc,side in [('palimuth',1),('yalahari',2)]:
         states=[storage(yalahar+'questline',52,53),
                 storage(yalahar+'door_to_reward',-1,1,1),

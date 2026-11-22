@@ -1215,7 +1215,24 @@ pub(super) async fn exercise(
                 preserve: true,
             });
     }
-    seed(owner, admitted, &setup, 9000).await?;
+    if key.starts_with("l1-warmaster-") || key.starts_with("l1-wayfarer-") {
+        // Keep the production catalogue so either addon and its completion branch
+        // can be reached after the first exchange.
+        let prerequisites = setup
+            .storage
+            .iter()
+            .map(|state| (state.track.clone(), state.minimum))
+            .collect::<Vec<_>>();
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+            h, owner, admitted, &prerequisites, 150,
+        )
+        .await?;
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
+    } else {
+        seed(owner, admitted, &setup, 9000).await?;
+    }
     let [npc] = super::classic_quests_fixtures::install(owner, admitted, [callback.npc.as_str()]).await?;
     let mut selected = admitted
         .continuity
@@ -1584,6 +1601,64 @@ pub(super) async fn exercise(
     let next = admitted.continuity.next_command_id;
     let _ = talk(owner, admitted, npc, next, &callback.keywords[0]).await?;
     assert_eq!(counts(h).await?, after);
+    if let Some((complement, achievement)) = match key {
+        "l1-warmaster-crest" => Some(("l1-warmaster-tribal", "master_of_war")),
+        "l1-warmaster-tribal" => Some(("l1-warmaster-crest", "master_of_war")),
+        "l1-wayfarer-cape" => Some(("l1-wayfarer-hat", "peazzekeeper")),
+        "l1-wayfarer-hat" => Some(("l1-wayfarer-cape", "peazzekeeper")),
+        _ => None,
+    } {
+        let earned = || {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
+            )
+            .bind(format!("oteryn:achievement/{achievement}"))
+            .fetch_one(&h.pool)
+        };
+        assert_eq!(
+            earned().await?,
+            0,
+            "a single addon does not complete the outfit"
+        );
+        let complement = oteryn_gameplay_quests::quest::reward_callbacks::load()?
+            .into_iter()
+            .find(|callback| callback.key.ends_with(complement))
+            .ok_or("complementary addon")?;
+        let input = complement.take.first().ok_or("complementary trade item")?;
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        super::quest_world_callbacks_fixtures::input_item(
+            owner,
+            fence.item_fence(),
+            &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                position: at,
+                item: input.item.clone(),
+                count: input.count,
+            },
+            320,
+            true,
+        )
+        .await?;
+        let (disposition, catalogues, _) = wire_grant(owner, admitted, npc, &complement).await?;
+        assert_eq!(disposition, NpcIntentDisposition::Ok);
+        assert_eq!(earned().await?, 1, "the second addon completes the outfit");
+        let completed = counts(h).await?;
+        assert_eq!(completed.0, after.0 + 1);
+        assert_eq!(completed.1, after.1 + 1);
+        let outfit = callback.outfit.as_ref().ok_or("addon outfit")?;
+        assert!(catalogues.iter().any(|catalogue| {
+            catalogue.outfits.iter().any(|option| {
+                option.key == outfit.outfit && option.permitted_addons == 3
+            })
+        }));
+        let command = admitted.continuity.next_command_id;
+        let _ = talk(owner, admitted, npc, command, "yes").await?;
+        assert_eq!(earned().await?, 1);
+        assert_eq!(counts(h).await?, completed);
+    }
     if key == "pirate-sabre" {
         // Arrange a prior account entitlement, as when a sibling Character
         // already finished this quest. Progress can still advance without
