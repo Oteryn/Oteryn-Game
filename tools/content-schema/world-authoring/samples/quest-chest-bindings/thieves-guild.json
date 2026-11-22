@@ -85,22 +85,5 @@
       "source_line": 2665
     }
   ],
-  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
-  "level_access": [
-    {
-      "position": [
-        32981,
-        31760,
-        9
-      ],
-      "appearance": 6264,
-      "action": 1040,
-      "source_line": 76,
-      "claims": [
-        "oteryn:reward-claim.kv.orcfortress1",
-        "oteryn:reward-claim.kv.orcfortress2",
-        "oteryn:reward-claim.kv.orcfortress3"
-      ]
-    }
-  ]
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc"
 }

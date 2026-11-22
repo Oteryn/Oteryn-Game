@@ -318,7 +318,7 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             owner.offered_capabilities(),
-            &[3, 4, 6, 11, 13, 15, 16],
+            &[3, 4, 6, 11, 13, 15, 16, 18],
         )
         .ok_or("journey capabilities")?;
     install(owner, admitted).await?;
@@ -346,7 +346,7 @@ pub(super) async fn exercise(
     expect(h, 2, &[(3044, 0)]).await?;
 
     // Supply outside-world loot and spending money through the ordinary item owner.
-    super::questpc8_magic_sword_fixtures::raise_level(owner, admitted, 50, 400).await?;
+    super::questpc8_magic_sword_fixtures::raise_level(owner, admitted, 50, 200).await?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
