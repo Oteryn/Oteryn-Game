@@ -2,6 +2,7 @@
 mod device_sign_out;
 mod local_saves;
 mod options_draft;
+mod web_link;
 
 use crate::{
     ClientBootstrap,
@@ -62,6 +63,7 @@ pub(super) struct HostOwner {
     pub settings: SettingsState,
     preferences_path: Option<PathBuf>,
     draft: Option<Draft>,
+    web_link: Option<std::sync::mpsc::Receiver<bool>>,
     forget_intent: Option<device_sign_out::PendingIntent>,
     device_sign_out: Option<tokio::sync::watch::Receiver<Option<bool>>>,
     scope: Scope,
@@ -108,6 +110,7 @@ impl HostOwner {
             settings: SettingsState::new(path.clone()),
             preferences_path: path,
             draft: None,
+            web_link: None,
             forget_intent: None,
             device_sign_out: None,
             scope: Scope {
@@ -262,25 +265,6 @@ impl HostOwner {
                 )));
         }
     }
-    /// Opens a Platform page (support tickets, cookie policy) from the login window with the
-    /// Platform the connection settings name.
-    pub fn open_web_link(&mut self, link: crate::web_links::WebLink) {
-        if self.phase == Phase::Offline
-            && let Ok(config) = self.login.form.settings.config()
-            && let Some(entry) = &mut self.entry
-        {
-            entry.configure(config);
-        }
-        if !self
-            .entry
-            .as_ref()
-            .is_some_and(|entry| entry.open_web_link(link))
-        {
-            self.login.form.feedback(
-                "Correct the connection settings to open Platform pages in the browser.".into(),
-            );
-        }
-    }
     pub fn poll(&mut self, viewport: [u32; 2]) {
         if self.phase == Phase::Closed {
             if self.entry.is_some() && !self.forget_worker_running() {
@@ -293,6 +277,7 @@ impl HostOwner {
         {
             self.start_saved_login(config, assets);
         }
+        self.poll_web_link();
         self.poll_device_sign_out();
         self.poll_retired_minimaps();
         let completion = self.settings.poll_background_save();
