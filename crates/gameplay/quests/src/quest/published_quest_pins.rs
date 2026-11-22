@@ -97,6 +97,23 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
 ];
 
+// Captured from the published 3e099164 catalogue with quest_definition_hashes.
+// The daily bindings add tracks and operations while retaining existing defaults.
+const DAILY_PREDECESSORS: &[(&str, DefinitionHash)] = &[
+    (
+        "oteryn:quest.bigfoot_s_burden_quest",
+        hash(b"5ec0c3c6eb10e5876e39fd742b9fa39905980b2d81cea8077116aef91f873258"),
+    ),
+    (
+        "oteryn:quest.dangerous_depths_quest",
+        hash(b"b19e1d3f99ecdaf123501f7ba3a54ca184be811b7e4e6a9f8c6f3307f32a0acb"),
+    ),
+    (
+        "oteryn:quest.spike_task",
+        hash(b"056a2e30ee5ff71b52331a31967a02804df035b2f8b0befe321d8869809829bb"),
+    ),
+];
+
 pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> DefinitionHash {
     CITATION_REFRESHES
         .iter()
@@ -115,6 +132,21 @@ pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
                     hash,
                     defaults: Default::default(),
                 }));
+        }
+    }
+    for &(quest, previous) in DAILY_PREDECESSORS {
+        if catalogue
+            .definition_hash(quest)
+            .is_some_and(|current| current != previous)
+        {
+            catalogue
+                .predecessors
+                .entry(quest.into())
+                .or_default()
+                .push(NpcDefinitionPredecessor {
+                    hash: previous,
+                    defaults: Default::default(),
+                });
         }
     }
 }
@@ -153,6 +185,14 @@ mod tests {
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
 
+        for &(quest, pin) in DAILY_PREDECESSORS {
+            assert_ne!(catalogue.definition_hash(quest), Some(pin), "{quest}");
+            assert_eq!(
+                npc_rules::legacy_defaults(catalogue, quest, &pin),
+                Some(&Default::default()),
+                "{quest}"
+            );
+        }
         for &(quest, refreshed, published) in CITATION_REFRESHES {
             assert_eq!(published_hash(quest, refreshed), published, "{quest}");
             assert_eq!(catalogue.definition_hash(quest), Some(published), "{quest}");
