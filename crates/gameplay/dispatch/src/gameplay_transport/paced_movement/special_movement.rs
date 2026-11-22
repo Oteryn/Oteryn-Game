@@ -722,7 +722,7 @@ impl ChannelSpellStates {
 
 impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
     /// M06-CLOSE: run while the successful step still owns the Channel lane. The runtime
-    /// census is taken after leaving; durable item moves finish before the door transition.
+    /// census is taken after leaving; durable item cleanup finishes before the door transition.
     pub(super) async fn close_departed_door(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
@@ -731,6 +731,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         origin: MovementLocalPosition,
         movement_revision: u64,
     ) {
+        use crate::durability::item_decay_retire::{DoorGroundItem, DoorGroundRetirement};
         use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey, loop_move};
         use crate::map::door::{
             DoorStepOut, DoorTileItem, door_step_out, door_step_out_destination,
@@ -871,7 +872,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 };
                 items.push(DoorTileItem {
                     item: ItemKey::Instance(item.item_instance_id),
-                    movable: facts.pickupable && movable(&facts),
+                    movable: movable(&facts) && (destination.is_none() || facts.pickupable),
                     corpse: false,
                 });
             }
@@ -880,19 +881,63 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             let revision = map.facts.doors().revision(key);
             let DoorStepOut::Close {
                 item_moves,
+                item_retirements,
                 closed_id: _,
             } = door_step_out(facts.appearance_id, false, destination, &items)
             else {
                 continue;
             };
-            let fence = if item_moves.is_empty() {
+            let fence = if item_moves.is_empty() && item_retirements.is_empty() {
                 None
             } else {
-                let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+                match self.current_quest_fence(session).await {
+                    Ok(Some(fence)) => Some(fence.item_fence()),
+                    _ if item_moves.is_empty() => None,
+                    _ => return,
+                }
+            };
+            if let Some(fence) = fence
+                && !item_retirements.is_empty()
+            {
+                let retirements = item_retirements
+                    .into_iter()
+                    .map(|item| match item {
+                        ItemKey::Instance(id) => Some(DoorGroundItem::Instance(id)),
+                        ItemKey::MapBase { placement_key, .. } => {
+                            Some(DoorGroundItem::Authored(placement_key))
+                        }
+                        _ => None,
+                    })
+                    .collect::<Option<Vec<_>>>();
+                let Some(retirements) = retirements else {
                     return;
                 };
-                Some(fence.item_fence())
-            };
+                let request = DoorGroundRetirement {
+                    door_key: key,
+                    bundle_digest: map.overlay.base().digest(),
+                    content_digest: native.source_digest(),
+                    reset_epoch: self.reset_epoch,
+                    items: retirements,
+                };
+                let result = self
+                    .root
+                    .retire_door_ground(permit, self.character, self.holder, fence, request.clone())
+                    .await;
+                if matches!(
+                    result,
+                    Err(crate::durability::DurabilityError::CommitOutcomeUnknown
+                        | crate::durability::DurabilityError::RootUnavailable)
+                ) {
+                    // The same receipt or tombstone resolves a lost commit reply.
+                    let _ = self
+                        .root
+                        .retire_door_ground(permit, self.character, self.holder, fence, request)
+                        .await;
+                }
+                // A storage refusal retains existing custody. Still seal the
+                // protected doorway, subject to the normal live census below.
+                self.states.loop_ground.invalidate();
+            }
             for (item, to) in item_moves {
                 let mut hasher = Sha256::new()
                     .chain_update(b"oteryn:door-step-out:v1")

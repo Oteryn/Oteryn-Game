@@ -770,11 +770,16 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let keys: Vec<String> = sqlx::query_scalar(
-                        "SELECT placement_key::text FROM game_map_item_mint_receipts \
+                        "SELECT placement_key::text FROM (SELECT placement_key FROM game_map_item_mint_receipts \
                           WHERE world_id = encode($1,'hex')::uuid \
                             AND channel_id = encode($2,'hex')::uuid \
                             AND base_bundle_digest = $3 \
                             AND reset_epoch = $4::text::numeric(20,0) \
+                          UNION ALL SELECT placement_key FROM game_door_authored_retirements \
+                          WHERE world_id = encode($1,'hex')::uuid \
+                            AND channel_id = encode($2,'hex')::uuid \
+                            AND base_bundle_digest = $3 \
+                            AND reset_epoch = $4::text::numeric(20,0)) AS taken \
                           ORDER BY placement_key LIMIT $5",
                     )
                     .bind(world_id.as_bytes().as_slice())
@@ -852,7 +857,13 @@ async fn admit(
                            AND channel_id = encode($2,'hex')::uuid \
                            AND base_bundle_digest = $3 \
                            AND placement_key = $4::text::numeric(20,0) \
-                           AND reset_epoch = $5::text::numeric(20,0))",
+                           AND reset_epoch = $5::text::numeric(20,0)) \
+         OR EXISTS (SELECT 1 FROM game_door_authored_retirements \
+                     WHERE world_id = encode($1,'hex')::uuid \
+                       AND channel_id = encode($2,'hex')::uuid \
+                       AND base_bundle_digest = $3 \
+                       AND placement_key = $4::text::numeric(20,0) \
+                       AND reset_epoch = $5::text::numeric(20,0))",
     )
     .bind(reservation.world_id.as_slice())
     .bind(reservation.channel_id.as_slice())

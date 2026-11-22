@@ -41,7 +41,7 @@ fn m06_quest_door_step_out_closes_when_player_steps_south() -> TestResult {
 }
 
 #[test]
-fn m06_quest_door_step_out_keeps_custody_when_both_exits_are_blocked() -> TestResult {
+fn m06_quest_door_step_out_retires_item_when_both_exits_are_blocked() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -110,16 +110,18 @@ async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) 
         .iter_mut()
         .find(|tile| tile.x == EAST.x)
         .ok_or("east tile")?;
+    let authored_coin = east.items.pop().ok_or("authored coin")?;
     east.items.truncate(1);
     east.items.push(wall);
     // Queen of the Banshees quest door, the same action as the placed M06Q fixture.
-    tiles
+    let doorway = tiles
         .iter_mut()
         .find(|tile| tile.x == DOORWAY.x)
-        .and_then(|tile| tile.items.get_mut(1))
-        .ok_or("quest door")?
-        .attrs
-        .action = Some(10089);
+        .ok_or("doorway")?;
+    doorway.items.get_mut(1).ok_or("quest door")?.attrs.action = Some(10089);
+    if south_blocked {
+        doorway.items.push(authored_coin);
+    }
     tiles.push(south);
     let bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
         &data.manifest,
@@ -296,9 +298,57 @@ async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) 
     let moves: (i64, i64) = sqlx::query_as("SELECT count(*), COALESCE(sum(quantity_after),0)::bigint FROM game_item_loop_move_lines WHERE item_instance_id=encode($1,'hex')::uuid AND from_kind=3 AND to_kind=3")
         .bind(item.as_slice()).fetch_one(&harness.pool).await?;
     if south_blocked {
+        assert!(
+            after.is_empty(),
+            "the stranded coin must leave Ground custody"
+        );
+        let authored = crate::map::view::placement_key(DOORWAY, 2).ok_or("authored coin key")?;
+        {
+            use crate::durability::item_decay_retire::{DoorGroundItem, DoorGroundRetirement};
+            let permit = owner.spell_lane_permit().await.ok_or("Ground owner lane")?;
+            // Replay the same cleanup as if its first commit reply had been lost.
+            owner
+                .root
+                .retire_door_ground(
+                    &permit,
+                    &authority,
+                    owner.holder,
+                    fence,
+                    DoorGroundRetirement {
+                        door_key: door,
+                        bundle_digest: map.base().digest(),
+                        content_digest: native.source_digest(),
+                        reset_epoch: 0,
+                        items: vec![
+                            DoorGroundItem::Instance(item),
+                            DoorGroundItem::Authored(authored),
+                        ],
+                    },
+                )
+                .await?;
+        }
+        let retired: (i16, i64, i64) = sqlx::query_as(
+            "SELECT i.lifecycle, i.quantity, (SELECT count(*) FROM game_door_ground_retirements r
+             WHERE r.item_instance_id=i.item_instance_id AND r.transaction_id=i.last_transaction_id)
+             FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(item.as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(retired, (2, 0, 1));
         assert_eq!(
-            after, before,
-            "a blocked relocation must preserve durable custody"
+            owner
+                .root
+                .read_map_item_mint_placements(
+                    world,
+                    channel,
+                    map.base().digest(),
+                    0,
+                    map.base().entry_count()
+                )
+                .await?,
+            [authored],
+            "a cold Ground projection must also hide the authored coin"
         );
         assert_eq!(moves, (0, 0));
     } else {
