@@ -15,7 +15,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
     content: &C,
     plan: &oteryn_gameplay_quests::quest::npc_rules::NpcRulePlan,
 ) -> Pass<[u8; 16]> {
-    use oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect;
+    use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleEffect, SKJAAR_QUEST};
     let gifts = plan
         .effects
         .iter()
@@ -24,14 +24,24 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
                 item,
                 count,
                 subtype: None,
-            } => Some((item, *count)),
+            } => Some((item, *count, None)),
+            NpcRuleEffect::GiveItem {
+                item,
+                count: 1,
+                subtype: Some(number),
+            } if plan.quest == SKJAAR_QUEST && item == "oteryn:item.tibia.i2970" => {
+                Some((item, 1, Some(*number)))
+            }
             _ => None,
         })
         .collect::<Vec<_>>();
-    let Some((reward_item, quantity @ 1..=100)) = gifts.first() else {
+    let Some((reward_item, quantity @ 1..=100, key_number)) = gifts.first() else {
         return Ok(Err(RewardClaimMintError::InvalidInput));
     };
-    if gifts.len() > 20 || gifts.iter().any(|(_, count)| !(1..=100).contains(count)) {
+    if gifts.len() > 20
+        || gifts.iter().any(|(_, count, _)| !(1..=100).contains(count))
+        || (gifts.len() > 1 && gifts.iter().any(|(_, _, number)| number.is_some()))
+    {
         return Ok(Err(RewardClaimMintError::InvalidInput));
     }
     let quantity = *quantity;
@@ -64,7 +74,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         return Ok(Err(RewardClaimMintError::InvalidInput));
     }
     let mut additional_items = Vec::new();
-    for (key, quantity) in gifts.iter().skip(1) {
+    for (key, quantity, _) in gifts.iter().skip(1) {
         let definition = TypedDefinitionRef {
             family: "Item".into(),
             production_key: (*key).clone(),
@@ -115,7 +125,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         // M41 grants the source achievement in the same fenced NPC transaction.
         achievement: None,
         quest_transition: None,
-        key_number: None,
+        key_number: *key_number,
     };
     if validate_request(&request).is_err() || !contents::weight_pin_matches(&request, content) {
         return Ok(Err(RewardClaimMintError::InvalidInput));
