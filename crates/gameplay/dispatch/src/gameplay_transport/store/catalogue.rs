@@ -1,5 +1,5 @@
-//! The admitted runtime Store catalogue (`rulesets/economy/store/catalogue.json`, built from the
-//! pinned Canary GameStore catalogue by `tools/content-schema/store-authoring/build_runtime_catalogue.py`).
+//! The admitted runtime Store catalogue (`rulesets/economy/store/catalogue.json`).
+//! `tools/content-schema/store-authoring/build_runtime_catalogue.py` projects the pinned offer sources.
 use oteryn_gameplay_economy::store as rules;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};

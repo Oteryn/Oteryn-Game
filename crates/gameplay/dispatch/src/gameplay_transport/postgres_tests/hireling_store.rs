@@ -14,7 +14,7 @@ use oteryn_protocol_oteryn::store as wire;
 use std::sync::{Arc,Mutex as SyncMutex};
 
 fn exercise_sword(seed:u8)->TestResult<(u32,Vec<u8>)> {
-    let request=wire::StorePurchaseRequest{purchase_request_id:id(seed),offer_key:"store:exercise-sword".into(),catalog_revision:"451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c".into(),price:25,currency:"TIBIA_COIN".into()};
+    let request=wire::StorePurchaseRequest{purchase_request_id:id(seed),offer_key:"store:exercise-sword".into(),catalog_revision:"728b1173634c4da6ca09f44953eab1246701478b0cf11f9759b02e7f191e49da".into(),price:25,currency:"TIBIA_COIN".into()};
     Ok((wire::COMMAND_TYPE_STORE_PURCHASE,wire::encode_purchase_request(&request).map_err(debug)?))
 }
 

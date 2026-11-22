@@ -1,9 +1,8 @@
 """Build the runtime Store catalogue (rulesets/economy/store/catalogue.json).
 
-Offers come from the pinned Canary GameStore catalogue. Only item offers whose Item is admitted
-for the Character inventory as one non-stackable instance, with default charges equal to the
-offer's charges, are admitted: the native Inbox mint delivers exactly one such instance.
-TibiaWiki (Exercise Weapons, Tibia Coins) agrees with every admitted price and charge count.
+Offers come from pinned Canary and the retained Crystal charged-item extract.
+The native Inbox mint delivers one non-stackable instance with the native definition's
+default charges, so charged offers must agree with those defaults.
 
   python build_runtime_catalogue.py --canary <canary@52550d5e>   # regenerate
   python build_runtime_catalogue.py --check                      # admission against content
@@ -24,6 +23,7 @@ CANARY_COMMIT = "52550d5e"
 SOURCE = "data/modules/scripts/gamestore/catalog/consumables_exercise_weapons.lua"
 CATEGORY = "consumables.exercise-weapons"
 PREY_EXPANSION = ROOT / "rulesets/economy/store/prey-list-expansion.json"
+CRYSTAL_CHARGED = Path(__file__).with_name("crystal-charged-offers.json")
 
 
 def expansion_offer(config: dict) -> dict:
@@ -73,6 +73,43 @@ def with_expansion(catalogue: dict) -> dict:
     return catalogue | {"offers": offers}
 
 
+def with_crystal_charged(catalogue: dict, items: dict[str, tuple[str, int]]) -> dict:
+    extract = json.loads(CRYSTAL_CHARGED.read_text(encoding="utf-8"))
+    source = catalogue["source"].copy()
+    previous = set(source.get("crystal_charged_items", {}).get("offer_keys", []))
+    offers = [row for row in catalogue["offers"] if row["key"] not in previous]
+    keys = {row["key"] for row in offers}
+    crystal_keys = []
+    for row in extract["offers"]:
+        key = "store:" + row["title"].lower().replace(" ", "-")
+        item_key = row["item_key"]
+        admitted = items.get(item_key)
+        if admitted is None or admitted[1] != row["charges"]:
+            raise ValueError(f"{key}: no admitted item with {row['charges']} charges")
+        if key in keys:
+            raise ValueError(f"{key}: duplicate Store offer")
+        keys.add(key)
+        crystal_keys.append(key)
+        offers.append(
+            {
+                "key": key,
+                "category": row["category"],
+                "title": row["title"],
+                "price": row["price"],
+                "currency": "TIBIA_COIN",
+                "item": {
+                    "key": item_key,
+                    "revision": admitted[0],
+                    "charges": row["charges"],
+                },
+                "source_line": row["source_line"],
+            }
+        )
+    source["crystal_charged_items"] = extract["source"] | {"offer_keys": sorted(crystal_keys)}
+    offers.sort(key=lambda row: row["key"])
+    return catalogue | {"source": source, "offers": offers}
+
+
 def admitted_items() -> dict[str, tuple[str, int]]:
     """Item key -> (revision, default charges) for admitted non-stackable inventory items."""
     records = json.loads(PROFILES.read_text(encoding="utf-8"))["records"]
@@ -87,8 +124,10 @@ def admitted_items() -> dict[str, tuple[str, int]]:
             and charges.get("state") == "KNOWN"
             and charges["value"]["count"].get("state") == "KNOWN"
         ):
-            item = record["authoring"]["item"]
-            items[item["key"]] = (item["revision"], charges["value"]["count"]["value"])
+            item = record["production_definition"]
+            items[item["production_key"]] = (
+                item["revision_ref"], charges["value"]["count"]["value"]
+            )
     return items
 
 
@@ -112,15 +151,31 @@ def parse_offers(lua: str) -> list[dict]:
 
 def build(lua: str) -> dict:
     items = admitted_items()
-    offers = []
+    catalogue = with_crystal_charged(
+        {
+            "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
+            "source": {
+                "repository": "opentibiabr/canary",
+                "commit": CANARY_COMMIT,
+                "path": SOURCE,
+            },
+            "offers": [],
+        },
+        items,
+    )
+    offers = catalogue["offers"]
+    crystal_keys = {offer["key"] for offer in offers}
     for offer in parse_offers(lua):
+        offer_key = "store:" + offer["name"].lower().replace(" ", "-")
+        if offer_key in crystal_keys:
+            continue
         key = f"oteryn:item.tibia.i{offer['itemtype']}"
         admitted = items.get(key)
         if admitted is None or admitted[1] != offer["charges"]:
             continue
         offers.append(
             {
-                "key": "store:" + offer["name"].lower().replace(" ", "-"),
+                "key": offer_key,
                 "category": CATEGORY,
                 "title": offer["name"],
                 "price": offer["price"],
@@ -133,18 +188,7 @@ def build(lua: str) -> dict:
                 "source_line": offer["line"],
             }
         )
-    offers.sort(key=lambda offer: offer["key"])
-    return with_expansion(
-        {
-            "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
-            "source": {
-                "repository": "opentibiabr/canary",
-                "commit": CANARY_COMMIT,
-                "path": SOURCE,
-            },
-            "offers": offers,
-        }
-    )
+    return with_expansion(catalogue)
 
 
 def check() -> list[str]:
@@ -157,6 +201,8 @@ def check() -> list[str]:
     expected = with_expansion(catalogue)
     if catalogue != expected:
         errors.append("Prey expansion offer needs regeneration")
+    if catalogue != with_crystal_charged(catalogue, items):
+        errors.append("Crystal charged offers need regeneration")
     for offer in catalogue["offers"]:
         if offer.get("unlock_key") == "prey-list-expansion":
             continue
@@ -185,9 +231,8 @@ def main() -> int:
         OUT.write_text(json.dumps(build(lua), indent=2) + "\n", encoding="utf-8")
     if args.refresh_owner_offers:
         catalogue = json.loads(OUT.read_text(encoding="utf-8"))
-        OUT.write_text(
-            json.dumps(with_expansion(catalogue), indent=2) + "\n", encoding="utf-8"
-        )
+        catalogue = with_crystal_charged(with_expansion(catalogue), admitted_items())
+        OUT.write_text(json.dumps(catalogue, indent=2) + "\n", encoding="utf-8")
     errors = check()
     for error in errors:
         print(error, file=sys.stderr)

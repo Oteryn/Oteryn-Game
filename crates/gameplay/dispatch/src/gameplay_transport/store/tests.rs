@@ -73,13 +73,13 @@ fn hireling_store_catalogue_has_every_pinned_crystal_offer_and_keeps_item_revisi
     assert_eq!(catalogue.rules.offers_in_category("houses.hirelings",None,32).expect("page").len(),7);
     assert_eq!(catalogue.rules.offers_in_category("houses.hireling-dresses",None,32).expect("page").len(),9);
     assert_eq!(catalogue.item_revision("store:hireling:25440"),Some("definition-r1"));
-    assert_eq!(CATALOGUE.as_ref().expect("existing catalogue").rules.revision(),"451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c");
+    assert_eq!(CATALOGUE.as_ref().expect("existing catalogue").rules.revision(),"728b1173634c4da6ca09f44953eab1246701478b0cf11f9759b02e7f191e49da");
 }
 
 #[test]
 fn store_catalogue_admits_the_exercise_weapon_offers() {
     let catalogue = CATALOGUE.as_ref().expect("embedded catalogue");
-    assert_eq!(catalogue.rules.revision(), "451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c");
+    assert_eq!(catalogue.rules.revision(), "728b1173634c4da6ca09f44953eab1246701478b0cf11f9759b02e7f191e49da");
     let offer = catalogue.rules.offer("store:exercise-sword").expect("offer");
     // Canary 52550d5e consumables_exercise_weapons.lua:118-121: 25 coins, item 28552.
     assert_eq!(offer.price_coins, 25);
@@ -96,7 +96,7 @@ fn store_catalogue_admits_the_exercise_weapon_offers() {
         .rules
         .offers_in_category("consumables.exercise-weapons", None, 100)
         .expect("page");
-    assert_eq!(page.len(), 23);
+    assert_eq!(page.len(), 24);
 }
 
 #[test]
@@ -242,4 +242,35 @@ fn store_capability_requires_a_composed_platform_client() {
     static BASE: &[super::super::capabilities::OfferedCapability] = &[];
     assert!(!with_store_offer(BASE, false).iter().any(|row| row.id == wire::CAPABILITY_STORE_V1));
     assert!(with_store_offer(BASE, true).iter().any(|row| row.id == wire::CAPABILITY_STORE_V1));
+}
+
+#[test]
+fn store_catalogue_loads_every_crystal_default_charge_offer() -> Result<(), &'static str> {
+    let catalogue = CATALOGUE.as_ref().ok_or("embedded catalogue")?;
+    for (category, count) in [
+        ("consumables.exercise-weapons", 24),
+        ("consumables.kegs", 11),
+        ("useful-things", 2),
+    ] {
+        let offers = catalogue
+            .rules
+            .offers_in_category(category, None, 32)
+            .map_err(|_| "page")?;
+        assert_eq!(offers.len(), count, "{category}");
+    }
+    let offer = catalogue
+        .rules
+        .offer("store:exercise-wraps")
+        .ok_or("Exercise Wraps")?;
+    assert_eq!(catalogue.title(&offer.key), "Exercise Wraps");
+    assert_eq!(offer.price_coins, 25);
+    assert_eq!(
+        offer.delivery,
+        rules::DeliveryKind::Item {
+            item_key: "oteryn:item.tibia.i50293".into(),
+            count: 1,
+        }
+    );
+    assert_eq!(catalogue.item_revision(&offer.key), Some("definition-r1"));
+    Ok(())
 }

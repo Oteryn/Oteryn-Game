@@ -176,7 +176,7 @@ pub(super) fn purchase_request(seed: u8, offer: &str, price: u64) -> TestResult<
     let request = wire::StorePurchaseRequest {
         purchase_request_id: id(seed),
         offer_key: offer.into(),
-        catalog_revision: "451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c".into(),
+        catalog_revision: "728b1173634c4da6ca09f44953eab1246701478b0cf11f9759b02e7f191e49da".into(),
         price,
         currency: "TIBIA_COIN".into(),
     };
