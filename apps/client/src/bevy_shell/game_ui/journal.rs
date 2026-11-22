@@ -2,6 +2,7 @@
 mod actions;
 mod model;
 mod submission;
+mod tracker;
 mod widgets;
 use super::modal::ModalGuard;
 use super::{
@@ -40,6 +41,11 @@ enum Kind {
     Cast,
     Castable,
     Close,
+    ClearTracker,
+    CleanTracker,
+    HideQuest,
+    Pin,
+    ShowHidden,
     Completed,
     Refresh,
     Search,
@@ -108,6 +114,7 @@ pub(super) fn open_spells(owner: &mut HostOwner) {
     }
 }
 pub(super) fn install(app: &mut App) {
+    tracker::install(app);
     app.init_resource::<State>()
         .add_systems(Startup, setup.after(super::setup))
         .add_systems(Update, (keyboard, project, refresh_labels).chain())
@@ -170,7 +177,7 @@ fn project(
     let quests = play.link.quest_panel();
     let book = play.link.spellbook_state();
     let catalogue = play.link.spell_catalog_panel();
-    let q = quests.open || quests.tracker_open;
+    let q = quests.open;
     let s = book.open || catalogue.open || catalogue.archive_open;
     if !q && !s {
         hide(

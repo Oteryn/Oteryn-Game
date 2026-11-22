@@ -36,7 +36,11 @@ enum Kind {
     Cancel,
     Deliver(u8),
     Start(u8),
+    Search,
+    Store,
+    Category,
     Buy(u16),
+    ConfirmShop(u16),
     BuyTalisman,
     ConfirmTalisman,
     UpgradeTalisman(u8),
@@ -134,6 +138,8 @@ fn intent(panel: &TaskBoardPanel, confirm: &mut bool, kind: &Kind) -> Option<Ful
 #[derive(Component)]
 struct Root;
 #[derive(Component)]
+struct SearchField;
+#[derive(Component)]
 struct Action {
     generation: u64,
     revision: u64,
@@ -144,6 +150,9 @@ struct State {
     tab: Tab,
     confirm: bool,
     buy_talisman: bool,
+    search: String,
+    category: Option<u8>,
+    shop_selection: Option<u16>,
     extra: Option<extras::Action>,
     seen: Option<TaskBoardPanel>,
     generation: u64,
@@ -175,7 +184,11 @@ fn project(
     if state.generation != owner.generation() || panel.is_none() {
         *state = State::default();
     }
+    if state.seen.is_none() && panel.as_ref().is_some_and(|p| p.open_weekly) {
+        state.tab = Tab::Weekly;
+    }
     if state.seen != panel {
+        state.shop_selection = None;
         state.extra = None;
     }
     // A talisman confirmation survives a board update; it closes once no purchase is possible.
@@ -280,6 +293,35 @@ fn project(
             Some(Kind::Cancel),
         );
     }
+    if let Some(offer) = state.shop_selection.and_then(|id| {
+        panel
+            .weekly
+            .as_ref()?
+            .shop
+            .iter()
+            .find(|offer| offer.index == id)
+    }) {
+        widget(
+            &mut commands,
+            &skins,
+            frame,
+            &state,
+            &format!(
+                "Confirm purchase of {} for {} points?",
+                model::shop_offer_text(offer, panel.weekly.as_ref().map_or(0, |r| r.points)),
+                offer.price
+            ),
+            Some(Kind::ConfirmShop(offer.index)),
+        );
+        widget(
+            &mut commands,
+            &skins,
+            frame,
+            &state,
+            "Cancel",
+            Some(Kind::Cancel),
+        );
+    }
     if state.buy_talisman && state.tab == Tab::Talisman {
         widget(
             &mut commands,
@@ -306,7 +348,21 @@ fn project(
             Some(Kind::Cancel),
         );
     }
-    for row in entries(panel, state.tab, state.confirm) {
+    widget(
+        &mut commands,
+        &skins,
+        frame,
+        &state,
+        "Task Store offers",
+        Some(Kind::Store),
+    );
+    extras::search_controls(&mut commands, &skins, frame, &state);
+    let rows = if matches!(state.tab, Tab::Preferences | Tab::Soulseals) {
+        extras::filtered(panel, state.tab, &state.search, state.category)
+    } else {
+        entries(panel, state.tab, state.confirm)
+    };
+    for row in rows {
         widget(
             &mut commands,
             &skins,
@@ -389,6 +445,7 @@ fn widget(
 fn activate(
     event: On<Activate>,
     actions: Query<&Action>,
+    fields: Query<&bevy::text::EditableText, With<SearchField>>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
     guard: ModalGuard,
@@ -409,7 +466,49 @@ fn activate(
     if !panel.open || state.seen.as_ref() != Some(&panel) {
         return;
     }
+    if !matches!(action.kind, Kind::ConfirmShop(_)) {
+        state.shop_selection = None;
+    }
     match action.kind {
+        Kind::Store => {
+            play.link.task_board_store(&panel);
+        }
+        Kind::Search => {
+            if let Ok(field) = fields.single() {
+                state.search = field.value().to_string();
+                state.dirty = true;
+            }
+        }
+        Kind::Category => {
+            state.category = match state.category {
+                None => Some(0),
+                Some(n) if n < 5 => Some(n + 1),
+                _ => None,
+            };
+            state.dirty = true;
+        }
+        Kind::Buy(index) => {
+            if state.tab == Tab::Shop
+                && panel.selected
+                && !panel.pending
+                && panel.weekly.as_ref().is_some_and(|r| {
+                    r.shop
+                        .iter()
+                        .any(|o| o.index == index && !o.bought && r.points >= u64::from(o.price))
+                })
+            {
+                state.shop_selection = Some(index);
+            }
+            state.dirty = true;
+        }
+        Kind::ConfirmShop(index) => {
+            if state.shop_selection.take() == Some(index)
+                && let Some(buy) = intent(&panel, &mut state.confirm, &Kind::Buy(index))
+            {
+                play.link.task_board_action_bound(&panel, buy);
+            }
+            state.dirty = true;
+        }
         Kind::Close => {
             play.link.task_board_set_open(false);
             state.confirm = false;
@@ -420,6 +519,8 @@ fn activate(
             }
             state.extra = None;
             state.tab = tab;
+            state.search.clear();
+            state.category = None;
             state.confirm = false;
             state.buy_talisman = false;
             state.dirty = true;

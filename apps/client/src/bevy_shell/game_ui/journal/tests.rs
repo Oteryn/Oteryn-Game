@@ -973,3 +973,5 @@ fn spell_detail_fields() -> Result {
     }
     Ok(())
 }
+
+mod parity;

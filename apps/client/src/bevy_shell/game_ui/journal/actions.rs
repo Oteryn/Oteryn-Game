@@ -41,7 +41,7 @@ pub(super) fn perform(
     let book = link.spellbook_state();
     let catalogue = link.spell_catalog_panel();
     let visible = match action.key.tab {
-        Tab::Quests => quest.open || quest.tracker_open,
+        Tab::Quests => quest.open,
         Tab::Spells => book.open || catalogue.open || catalogue.archive_open,
     };
     if !visible {
@@ -171,6 +171,31 @@ pub(super) fn perform(
     }
     if action.key.tab == Tab::Quests {
         match action.kind {
+            Kind::ClearTracker | Kind::CleanTracker => {
+                if !quest.state.selected || quest.pending_query.is_some() {
+                    return false;
+                }
+                let tracked = &quest.state.log.tracked;
+                let quest_indexes: Vec<_> = tracked
+                    .iter()
+                    .filter(|q| matches!(action.kind, Kind::CleanTracker) && !q.completed)
+                    .map(|q| q.quest_index)
+                    .collect();
+                if quest_indexes.len() == tracked.len() {
+                    return false;
+                }
+                link.quest_request(&QuestLogQuery::Track { quest_indexes });
+            }
+            Kind::Pin | Kind::HideQuest => {
+                if !link.quest_toggle_mark(matches!(action.kind, Kind::Pin)) {
+                    return false;
+                }
+                state.quest_page = 0;
+            }
+            Kind::ShowHidden => {
+                link.quest_toggle_hidden_filter();
+                state.quest_page = 0;
+            }
             Kind::Completed => {
                 state.hide_completed = !state.hide_completed;
                 state.quest_page = 0;
@@ -182,7 +207,10 @@ pub(super) fn perform(
                     return false;
                 }
                 let sort = if matches!(action.kind, Kind::Sort) {
-                    QuestSort::from_selection(((quest.list_sort.selection() + 1) % 4) as isize)
+                    QuestSort::from_selection(
+                        ((quest.list_sort.selection() + 1) % quest_log::QUEST_SORT_LABELS.len())
+                            as isize,
+                    )
                 } else {
                     quest.list_sort
                 };

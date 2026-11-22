@@ -209,6 +209,15 @@ pub(super) fn build(
                 .id();
             commands.entity(button).add_child(label);
         }
+        for (kind, label) in [
+            (Kind::Pin, "Pin / unpin selected quest"),
+            (Kind::HideQuest, "Hide / restore selected quest"),
+            (Kind::ShowHidden, "Toggle hidden quests"),
+            (Kind::CleanTracker, "Remove completed tracked quests"),
+            (Kind::ClearTracker, "Clear tracker"),
+        ] {
+            action(commands, skin, left, key, kind, label, 320.);
+        }
         let hint = commands
             .spawn(source::text(
                 "Search quest ID or known mission text",

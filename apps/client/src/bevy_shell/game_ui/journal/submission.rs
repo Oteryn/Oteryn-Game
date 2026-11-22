@@ -50,7 +50,7 @@ pub(super) fn finish(
     let visible = match pending.action.key.tab {
         Tab::Quests => {
             let quest = play.link.quest_panel();
-            quest.open || quest.tracker_open
+            quest.open
         }
         Tab::Spells => {
             let book = play.link.spellbook_state();

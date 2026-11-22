@@ -6,12 +6,16 @@ pub enum QuestSort {
     NumberDescending,
     ActiveFirst,
     CompletedFirst,
+    Alphabetical,
+    ReverseAlphabetical,
 }
-pub const QUEST_SORT_LABELS: [&str; 4] = [
+pub const QUEST_SORT_LABELS: [&str; 6] = [
     "Quest number ascending",
     "Quest number descending",
     "Active first",
     "Completed first",
+    "Quest name A–Z",
+    "Quest name Z–A",
 ];
 impl QuestSort {
     pub const fn from_selection(selection: isize) -> Self {
@@ -19,6 +23,8 @@ impl QuestSort {
             1 => Self::NumberDescending,
             2 => Self::ActiveFirst,
             3 => Self::CompletedFirst,
+            4 => Self::Alphabetical,
+            5 => Self::ReverseAlphabetical,
             _ => Self::NumberAscending,
         }
     }
@@ -28,6 +34,8 @@ impl QuestSort {
             Self::NumberDescending => 1,
             Self::ActiveFirst => 2,
             Self::CompletedFirst => 3,
+            Self::Alphabetical => 4,
+            Self::ReverseAlphabetical => 5,
         }
     }
 }
@@ -56,6 +64,7 @@ pub fn quest_rows(panel: &QuestPanel) -> Vec<&QuestListEntry> {
         .state
         .list
         .iter()
+        .filter(|q| panel.show_hidden || !panel.hidden.contains(&q.quest_index))
         .filter(|q| {
             format!(
                 "quest {} {}",
@@ -67,14 +76,19 @@ pub fn quest_rows(panel: &QuestPanel) -> Vec<&QuestListEntry> {
                 || known.contains(&q.quest_index)
         })
         .collect();
-    rows.sort_by(|a, b| match panel.list_sort {
-        QuestSort::NumberAscending => a.quest_index.cmp(&b.quest_index),
-        QuestSort::NumberDescending => b.quest_index.cmp(&a.quest_index),
-        QuestSort::ActiveFirst => (a.completed, a.quest_index).cmp(&(b.completed, b.quest_index)),
-        QuestSort::CompletedFirst => {
-            (!a.completed, a.quest_index).cmp(&(!b.completed, b.quest_index))
+    match panel.list_sort {
+        QuestSort::Alphabetical | QuestSort::ReverseAlphabetical => {
+            rows.sort_by_cached_key(|q| (panel.title(q.quest_index).to_lowercase(), q.quest_index));
+            if panel.list_sort == QuestSort::ReverseAlphabetical {
+                rows.reverse();
+            }
         }
-    });
+        QuestSort::NumberAscending => rows.sort_by_key(|q| q.quest_index),
+        QuestSort::NumberDescending => rows.sort_by_key(|q| std::cmp::Reverse(q.quest_index)),
+        QuestSort::ActiveFirst => rows.sort_by_key(|q| (q.completed, q.quest_index)),
+        QuestSort::CompletedFirst => rows.sort_by_key(|q| (!q.completed, q.quest_index)),
+    }
+    rows.sort_by_key(|q| !panel.pinned.contains(&q.quest_index));
     rows
 }
 /// A click resolves through the last painted ids, then checks the latest server list.

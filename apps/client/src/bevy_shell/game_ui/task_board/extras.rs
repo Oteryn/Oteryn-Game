@@ -9,6 +9,31 @@ pub(super) enum Action {
     Page(u16),
 }
 pub(super) fn entries(panel: &TaskBoardPanel, tab: Tab) -> Vec<Entry> {
+    filtered(panel, tab, "", None)
+}
+pub(super) fn category_label(category: Option<u8>) -> &'static str {
+    category
+        .and_then(|c| {
+            [
+                "Harmless",
+                "Trivial",
+                "Easy",
+                "Medium",
+                "Hard",
+                "Challenging",
+            ]
+            .get(usize::from(c))
+            .copied()
+        })
+        .unwrap_or("All categories")
+}
+pub(super) fn filtered(
+    panel: &TaskBoardPanel,
+    tab: Tab,
+    search: &str,
+    category: Option<u8>,
+) -> Vec<Entry> {
+    let search = search.trim().to_lowercase();
     let mut rows = Vec::new();
     if tab == Tab::Soulseals {
         entry(&mut rows, &panel.fights.feedback, None);
@@ -26,7 +51,9 @@ pub(super) fn entries(panel: &TaskBoardPanel, tab: Tab) -> Vec<Entry> {
             ),
             None,
         );
-        for fight in &reply.entries {
+        for fight in reply.entries.iter().filter(|f| {
+            f.name.to_lowercase().contains(&search) && category.is_none_or(|c| c == f.stars)
+        }) {
             entry(
                 &mut rows,
                 format!(
@@ -80,7 +107,9 @@ pub(super) fn entries(panel: &TaskBoardPanel, tab: Tab) -> Vec<Entry> {
             ),
             None,
         );
-        for race in &choices {
+        for race in choices.iter().filter(|key| {
+            key.is_empty() || model::creature_name(key).to_lowercase().contains(&search)
+        }) {
             let label = if race.is_empty() {
                 "Clear (10 bounty points)".into()
             } else {
@@ -154,17 +183,57 @@ pub(super) fn summary(panel: &TaskBoardPanel, action: &Action) -> String {
 pub(super) fn send(link: &crate::play::PlayLink, expected: &TaskBoardPanel, action: &Action) {
     match action {
         Action::Preferred(slot, race) => {
-            link.task_board_preferences_bound(expected, FullIntent::Preferred(*slot, race.clone()));
+            link.task_board_action_bound(expected, FullIntent::Preferred(*slot, race.clone()));
         }
         Action::Unwanted(slot, race) => {
-            link.task_board_preferences_bound(expected, FullIntent::Unwanted(*slot, race.clone()));
+            link.task_board_action_bound(expected, FullIntent::Unwanted(*slot, race.clone()));
         }
         Action::Unlock => {
-            link.task_board_preferences_bound(expected, FullIntent::UnlockList);
+            link.task_board_action_bound(expected, FullIntent::UnlockList);
         }
         Action::Fight(race) => {
             link.soulseal_fight_bound(expected, *race);
         }
         Action::Page(after) => link.soulseal_catalogue_request(*after),
+    }
+}
+
+pub(super) fn search_controls(
+    commands: &mut Commands,
+    skins: &Skins,
+    frame: Entity,
+    state: &State,
+) {
+    if matches!(state.tab, Tab::Preferences | Tab::Soulseals) {
+        let mut edit = bevy::text::EditableText::new(&state.search);
+        edit.max_characters = Some(128);
+        let field = commands
+            .spawn((
+                SearchField,
+                bevy::ui_widgets::TextInput,
+                edit,
+                source::font(skins.font.clone(), false),
+                TextColor(source::TEXT_COLOR),
+                bevy::input_focus::tab_navigation::TabIndex(0),
+                Node {
+                    height: px(26.),
+                    width: percent(100.),
+                    ..default()
+                },
+            ))
+            .id();
+        commands.entity(frame).add_child(field);
+        widget(
+            commands,
+            skins,
+            frame,
+            state,
+            "Search by name",
+            Some(Kind::Search),
+        );
+    }
+    if state.tab == Tab::Soulseals {
+        let label = extras::category_label(state.category);
+        widget(commands, skins, frame, state, label, Some(Kind::Category));
     }
 }
