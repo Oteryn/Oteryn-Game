@@ -56,7 +56,7 @@ async fn scenario(admin: String) -> TestResult {
         .native_gameplay()
         .and_then(|native| native.item_index())
         .ok_or("item index")?;
-    let reference = |key| index.definition_ref("Item", key, "definition-r1");
+    let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
     let (bytes, pins) = bundle_with_item_ids(
         (BAG, reference(BAG).ok_or("backpack definition")?.get() - 1),
         (CASK, reference(CASK).ok_or("cask definition")?.get() - 1),
