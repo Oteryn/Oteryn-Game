@@ -604,7 +604,7 @@ pub(super) fn run(route: Route) -> TestResult {
         assert_eq!(runtime.visible_entities().creatures.len(), 6);
         drop(runtime);
         if route == Route::ArenaDeadline {
-            super::plate_predicates_fixtures::arena_deadline(&mut owner, &admitted, map).await?;
+            super::plate_predicates_fixtures::arena_deadline(&owner, &admitted, map).await?;
         }
         if combat {
             super::annihilator_combat::clear_corridor(&mut owner, &mut admitted[0]).await?;

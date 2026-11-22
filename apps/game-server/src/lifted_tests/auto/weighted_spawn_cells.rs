@@ -169,6 +169,8 @@ fn start_runtime(table: spawn::Table) -> Result<ChannelRuntimeV1, Box<dyn Error>
 #[test]
 fn shared_spawn_cell_draws_by_weight_on_each_respawn_and_keeps_single_creature_cells()
 -> Result<(), Box<dyn Error>> {
+    const WEIGHTED_DELAY_US: u64 = 30_000_000;
+
     let _clock = test_clock::set(Schedule::default(), 0);
     let table = authored_spawn_table()?;
     let mut runtime = start_runtime(table)?;
@@ -196,34 +198,39 @@ fn shared_spawn_cell_draws_by_weight_on_each_respawn_and_keeps_single_creature_c
             break;
         }
 
-        let occurrence = (ordinal as u64).to_be_bytes();
-        runtime.commit_monster_lab_damage(actor, &occurrence, health)?;
         if ordinal == 0 {
             runtime.commit_monster_lab_damage(fixed_actor, b"single-home", 20)?;
-        }
-        crate::gameplay_transport::drive_owner_spawns(&mut runtime, now);
-        let due = runtime
-            .pending_respawn(shared)
-            .ok_or("weighted deadline")?
-            .due_micros;
-        assert_eq!(due, now + 30_000_000);
-        crate::gameplay_transport::drive_owner_spawns(&mut runtime, due);
-        assert!(runtime.spawn_point_creatures()[0].2.is_none());
-        crate::gameplay_transport::drive_owner_spawns(&mut runtime, due + 4_200_000);
-        now = due + 4_250_000;
-        if ordinal == 0 {
+            crate::gameplay_transport::drive_owner_spawns(&mut runtime, now);
             let single_due = runtime
                 .pending_respawn(single)
                 .ok_or("single deadline")?
                 .due_micros;
             assert_eq!(single_due, 45_000_000);
-            crate::gameplay_transport::drive_owner_spawns(&mut runtime, single_due);
-            crate::gameplay_transport::drive_owner_spawns(&mut runtime, single_due + 4_200_000);
+            // Admit both replacements in one turn to inspect birth HP before Forge maintenance.
+            now = single_due - WEIGHTED_DELAY_US;
+        }
+        // The unsequenced damage ledger reserves NUL as the occurrence delimiter.
+        let occurrence = format!("weighted-home:{ordinal}");
+        runtime.commit_monster_lab_damage(actor, occurrence.as_bytes(), health)?;
+        crate::gameplay_transport::drive_owner_spawns(&mut runtime, now);
+        let due = runtime
+            .pending_respawn(shared)
+            .ok_or("weighted deadline")?
+            .due_micros;
+        assert_eq!(due, now + WEIGHTED_DELAY_US);
+        crate::gameplay_transport::drive_owner_spawns(&mut runtime, due);
+        let warned = runtime.spawn_point_creatures();
+        assert!(warned[0].2.is_none());
+        if ordinal == 0 {
+            assert!(warned[1].2.is_none());
+        }
+        crate::gameplay_transport::drive_owner_spawns(&mut runtime, due + 4_200_000);
+        now = due + 4_250_000;
+        if ordinal == 0 {
             let replacement = runtime.spawn_point_creatures()[1]
                 .2
                 .ok_or("single replacement")?;
             assert_ne!(replacement, fixed_actor);
-            now = single_due + 4_250_000;
         }
     }
     Ok(())
