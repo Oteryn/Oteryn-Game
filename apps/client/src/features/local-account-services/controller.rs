@@ -60,6 +60,9 @@ async fn apply(
             view.feedback = tr!("Server account data refreshed.").into();
             view.install_page(page);
             view.selected_view = kind;
+            if view.post_refusal_status == Some(403) {
+                view.post_refusal_status = None;
+            }
             return Ok(());
         }
         Action::Next => {
@@ -173,6 +176,10 @@ async fn apply(
                         view.post_refusal_status = None;
                         view.quote = None;
                         view.feedback = tr!("The server refused the request").into();
+                    }
+                    Err(error @ NativeLoginError::Platform(HttpStatus(404))) => {
+                        view.post_refusal_status = None;
+                        return Err(error);
                     }
                     Err(error) => return Err(error),
                 }

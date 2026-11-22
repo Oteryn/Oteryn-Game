@@ -319,6 +319,68 @@ fn login_form_drives_existing_browser_gateway_and_admission() -> TestResult {
 }
 
 #[test]
+fn confirmed_gateway_update_refusal_reaches_the_login_form() -> TestResult {
+    use crate::native_login::{LoginForm, LoginSettings};
+    use oteryn_platform_client::{native_login::ReleaseIdentity, updates::UpdateChannel};
+
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            let run = || -> TestResult {
+                let stack = Stack::start(vec![])?;
+                let config = stack.config();
+                let release = ReleaseIdentity::new(UpdateChannel::Stable, "fixture-release", 4)
+                    .ok_or("fixture release identity")?;
+                let url = "https://oteryn.com/download";
+                stack.refuse_login(409, r#"{"protocol_version":2,"attempt_ref":null,"error":{"code":"NATIVE_LOGIN_CLIENT_UPDATE_REQUIRED","public_class":"CLIENT_UPDATE_REQUIRED"},"update":{"update_channel":"stable","minimum_release_sequence":5,"current_release_sequence":6,"manual_download_url":"https://oteryn.com/download"}}"#)?;
+                let mut form = LoginForm::new(LoginSettings::from_values([
+                    config.platform_url.clone(),
+                    config.gateway_url.clone(),
+                    config.oauth_client_id.clone(),
+                    config.world_ref.clone(),
+                    config.character_id.clone(),
+                    config.dev_root.to_string_lossy().into_owned(),
+                ]));
+                let mut submitted = form.submit()?;
+                submitted.open_browser = config.open_browser;
+                submitted.select_character = config.select_character;
+                submitted.retry_unit = config.retry_unit;
+                submitted.preference_path = config.preference_path;
+                submitted.device_sessions = config.device_sessions;
+                let result = stack.servers.block_on(async {
+                    tokio::time::timeout(
+                        std::time::Duration::from_secs(10),
+                        crate::build_info::LOGIN_RELEASE_FIXTURE.scope(
+                            (submitted.gateway_url.clone(), release),
+                            super::enter(&submitted, CancellationToken::new()),
+                        ),
+                    ).await
+                })??;
+                let error = result.err().ok_or("build gate admitted an old client")?;
+                assert_eq!(error, GameplayEntryError::ClientUpdateRequired {
+                    manual_download_url: url.to_owned(),
+                    updater_started: false,
+                });
+                form.finish(Err(error));
+                assert!(form.message().contains(url));
+                assert!(form.submit().is_err());
+                let requests = stack.requests();
+                let mut logins = requests.iter().filter_map(|request| request.strip_prefix("POST /v1/login "));
+                let request: serde_json::Value = serde_json::from_str(logins.next().ok_or("missing gateway login")?)?;
+                assert_eq!(request["offer"]["release"]["release_id"], "fixture-release");
+                assert!(logins.next().is_none());
+                assert_eq!(stack.admissions.load(Ordering::SeqCst), 0);
+                stack.finish();
+                Ok(())
+            };
+            run().map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "build gate scenario thread failed")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn empty_account_create_and_refresh_never_issue_a_ticket() -> TestResult {
     for suffix in ["", "?source=game#login"] {
         empty_account_create_and_refresh_case(suffix)?;

@@ -155,7 +155,6 @@ async fn initial_gateway_login(
     config: &NativeLoginConfig,
     cancel: CancellationToken,
 ) -> Result<(AttemptRef, NativeLoginGrant), GameplayEntryError> {
-    let mut refreshed_device_ticket = false;
     loop {
         let attempt_ref =
             AttemptRef::generate().map_err(|_| rejected(PublicClass::TemporarilyUnavailable))?;
@@ -178,15 +177,9 @@ async fn initial_gateway_login(
                     ) || (matches!(error, NativeLoginError::TicketSpent)
                         && Instant::now() >= authorized.ticket.usable_until())) =>
             {
-                refreshed_device_ticket = true;
                 authorized
                     .refresh_ticket(client, config, cancel.clone())
                     .await?;
-            }
-            Err(NativeLoginError::Gateway(GatewayErrorCode::AuthenticationRequired))
-                if refreshed_device_ticket =>
-            {
-                return Err(rejected(PublicClass::RetryLogin));
             }
             Err(error) => return Err(login_rejected(error)),
         }

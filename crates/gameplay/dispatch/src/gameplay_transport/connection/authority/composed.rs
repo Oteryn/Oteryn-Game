@@ -1178,6 +1178,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         {
             return outcome;
         }
+        // Item-definition USE can select a carried rabbit knife. Delegate exact
+        // ground custody and replay to skinning before trying carried-stone refining.
+        if matches!(
+            intent.target,
+            oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_)
+        ) {
+            match self
+                .use_skinning(actor, command, &intent, source, target)
+                .await
+            {
+                Ok(Some(outcome)) => return Some(outcome),
+                Ok(None) => {}
+                Err(()) => return None,
+            }
+        }
         self.use_pick_impl(actor, command, intent, source, target)
             .await
     }
@@ -1403,6 +1418,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         source: Option<item_view::ItemKey>,
         target: Option<item_view::ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
+        if let Some(outcome) = self
+            .use_arbaziloth_rod(actor, command, &intent, source)
+            .await
+        {
+            return Ok(Some(outcome));
+        }
         self.dispatch_soul_war_source_use(actor, command, &intent, source, target)
             .await
     }
@@ -1713,6 +1734,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.expire_house_furniture_on_tick(actor, game_session_id)
             .await;
         self.tick_actor_vitals(actor, game_session_id).await
+    }
+
+    async fn tick_house_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        self.expire_house_furniture_on_tick(actor, admitted.game_session_id)
+            .await;
+        self.tick_house_actor_vitals(actor, admitted).await
     }
 
     /// ATTACK-1b: one `ATTACK_TARGET_INTENT` as one Channel-owner work item, under the runtime

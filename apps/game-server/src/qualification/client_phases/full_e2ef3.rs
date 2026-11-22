@@ -6,6 +6,18 @@ use super::*;
 use oteryn_protocol_oteryn::{container_tree as tree, inspection as inspect};
 use std::collections::BTreeMap;
 
+#[path = "full_e2ef3_e2ei-a.rs"]
+mod e2ei_a;
+
+#[path = "full_e2ef3_e2ei-c.rs"]
+mod e2ei_c;
+
+#[path = "full_e2ef3_e2ei-b.rs"]
+mod full_e2ef3_e2ei_b;
+
+#[path = "full_e2ef3_e2ei-d.rs"]
+mod full_e2ef3_e2ei_d;
+
 struct Row {
     id: &'static str,
     source: &'static str,
@@ -258,7 +270,9 @@ async fn open_backpack(client: &mut oteryn_dev_client::DevClientSession) -> Test
 pub(super) async fn run(
     mut client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
+    world: &BundleWorld,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
+    let core_start = tile(client.world_spatial().actor_position)?;
     let started = std::time::Instant::now();
     let mut primal = false;
     let mut covet = false;
@@ -268,19 +282,7 @@ pub(super) async fn run(
         let saved_quantities = quantities(&client)?;
         open_backpack(&mut client).await?;
         let before = backpack_inspection(&mut client).await?;
-        let session = client.join_snapshot().game_session_id;
-        let saved_position = client.world_spatial().actor_position;
-        let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(&mut client).await?;
-        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("E2EF3 fresh admission logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
-        }
-        drop(client);
-        client = connect_world(clients, 0x79).await?;
-        if client.join_snapshot().game_session_id == session
-            || client.world_spatial().actor_position != saved_position
-        {
-            return Err("E2EF3 fresh admission session/position mismatch".into());
-        }
+        e2ei_a::relogin_starter(&mut client, clients).await?;
         open_backpack(&mut client).await?;
         if backpack_inspection(&mut client).await? != before
             || quantities(&client)? != saved_quantities
@@ -289,29 +291,38 @@ pub(super) async fn run(
         }
         for scenario in ["I01.root-view-relogin", "I16.starter-weight-relogin"] {
             evidence(&format!(
-                "e2e_all scenario={scenario} status=PASS seconds={:.3}",
+                "E2EF3_OBSERVATION scenario={scenario} status=PASS seconds={:.3}",
                 started.elapsed().as_secs_f64()
             ));
         }
-        Ok::<_, Box<dyn std::error::Error>>(client)
+        Ok::<_, Box<dyn std::error::Error>>(())
     }
     .await;
+    let starter_seconds = started.elapsed().as_secs_f64();
+    report_starter(observations, starter_seconds)?;
+
+    let client = e2ei_a::run(client, clients).await;
+    let client = full_e2ef3_e2ei_b::run(client, clients).await;
+    let client = e2ei_c::run(client, clients).await;
+    let mut client =
+        full_e2ef3_e2ei_d::run(client, clients, primal, covet, starter_seconds).await?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = core_return_path(from, core_start, |from, start| {
+        route(world, from, |at| at == start)
+    })?;
+    walk(&mut client, world, &path).await?;
+    Ok(client)
+}
+
+fn report_starter(observations: TestResult<()>, seconds: f64) -> TestResult<()> {
     let cause = match &observations {
         Ok(_) => verdict::Cause::Assertion,
         Err(error) => verdict::classify(error.as_ref()),
     };
-    for row in ROWS {
-        if observations.is_ok() && ((row.id == "I08" && primal) || (row.id == "I13" && covet)) {
-            evidence(&format!(
-                "e2e_all scenario={}.full status=PASS seconds={:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities",
-                row.id,
-                started.elapsed().as_secs_f64()
-            ));
-            continue;
-        }
+    for row in starter_rows(observations.is_err()) {
         result(
             row,
-            started.elapsed().as_secs_f64(),
+            seconds,
             if observations.is_ok() {
                 "ordinary-starter-observed;full-actions-unimplemented;no-provisioning-used"
             } else {
@@ -321,4 +332,64 @@ pub(super) async fn run(
         );
     }
     observations
+}
+
+fn core_return_path(
+    from: TilePos,
+    start: TilePos,
+    find: impl FnOnce(TilePos, TilePos) -> Option<Vec<StepDirection>>,
+) -> TestResult<Vec<StepDirection>> {
+    if from == start {
+        return Ok(Vec::new());
+    }
+    find(from, start)
+        .ok_or_else(|| format!("E2EF3 has no return route from {from:?} to {start:?}").into())
+}
+
+#[test]
+fn qualification_e2ef3_starter_error_fails_phase() {
+    let result = report_starter(Err("starter inspection changed".into()), 0.0);
+    assert!(result.is_err_and(|error| error.to_string() == "starter inspection changed"));
+}
+
+#[test]
+fn qualification_e2ef3_displaced_client_requires_return_route() {
+    let start = TOWN;
+    let displaced = TilePos {
+        x: start.x + 1,
+        ..start
+    };
+    let path = core_return_path(displaced, start, |from, to| {
+        assert_eq!((from, to), (displaced, start));
+        Some(vec![StepDirection::West])
+    });
+    assert!(path.is_ok_and(|steps| steps == [StepDirection::West]));
+    assert!(core_return_path(displaced, start, |_, _| None).is_err());
+    assert!(core_return_path(start, start, |_, _| None).is_ok_and(|steps| steps.is_empty()));
+}
+
+const MODULE_ROWS: &[&[&str]] = &[
+    e2ei_a::COVERED_ROWS,
+    full_e2ef3_e2ei_b::COVERED_ROWS,
+    e2ei_c::COVERED_ROWS,
+    full_e2ef3_e2ei_d::COVERED_ROWS,
+];
+
+fn starter_rows(failed: bool) -> impl Iterator<Item = &'static Row> {
+    ROWS.iter()
+        .filter(move |row| failed || !MODULE_ROWS.iter().any(|ids| ids.contains(&row.id)))
+}
+
+#[test]
+fn full_e2ef3_reports_each_row_once() {
+    let mut covered: Vec<_> = MODULE_ROWS
+        .iter()
+        .flat_map(|ids| ids.iter().copied())
+        .chain(starter_rows(false).map(|row| row.id))
+        .collect();
+    covered.sort_unstable();
+    let mut expected: Vec<_> = ROWS.iter().map(|row| row.id).collect();
+    expected.sort_unstable();
+    assert!(covered.windows(2).all(|pair| pair[0] != pair[1]));
+    assert_eq!(covered, expected);
 }
