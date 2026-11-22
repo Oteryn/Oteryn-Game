@@ -22,7 +22,7 @@ pub(in crate::gameplay_transport) struct MovementEquipmentRead {
     delta: i32,
 }
 impl MovementEquipmentRead {
-    pub(super) fn observed_delta(
+    pub(in crate::gameplay_transport) fn observed_delta(
         &self,
         runtime: &ChannelRuntimeV1,
         states: &ChannelSpellStates,

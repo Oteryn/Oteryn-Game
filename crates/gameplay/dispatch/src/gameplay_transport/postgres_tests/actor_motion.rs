@@ -137,6 +137,8 @@ fn scenario(position_before_change: bool) -> TestResult {
                 .bind(id(112).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
             sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,8,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
                 .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(112).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'none',0,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,1,encode($2,'hex')::uuid) ON CONFLICT DO NOTHING")
+                .bind(id(41).as_slice()).bind(id(30).as_slice()).execute(&mut *tx).await?;
             tx.commit().await?;
             let mut writer = harness.pool.begin().await?;
             sqlx::query("SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR UPDATE")

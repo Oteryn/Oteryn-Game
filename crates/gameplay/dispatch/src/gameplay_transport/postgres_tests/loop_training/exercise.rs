@@ -265,6 +265,16 @@ fn statue_scenario(flags: [u32; 2], expected: u8, choice: Option<u8>) -> TestRes
                 &owner, admitted, command, 6370, &[6], None,
             ).await.ok_or("invalid skill refusal")?;
             assert_eq!(malformed, TrainingResult::REFUSED);
+            let mut obsolete = admitted;
+            obsolete.continuity.connection_generation += 1;
+            let stale = crate::gameplay_transport::loop_training::wire::dispatch(
+                &owner, obsolete, command, 6370, &[choice], None,
+            ).await.ok_or("stale generation refusal")?;
+            assert_eq!(stale, TrainingResult::REFUSED);
+            let selected_logout_count: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_training_markers WHERE cause='logout'",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(selected_logout_count, 0, "a refusal never writes the skill marker");
             (6370, vec![choice])
         } else {
             (COMMAND_TYPE_OFFLINE_TRAINING, payload(&mut items, statue(world.base().digest())?)?)

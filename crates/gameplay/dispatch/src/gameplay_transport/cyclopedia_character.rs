@@ -50,7 +50,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let states = self.states.spell_states.lock().await;
         let state = states.get(&runtime, actor, session)?;
         let delta = equipment.observed_delta(&runtime, &states, actor, fence)?;
-        let current = super::actor_movement::spell_state_speed(
+        let current = super::actor_spell::actor_movement::spell_state_speed(
             &runtime, state, actor, session, self.owner_now().get(), Some(delta), true,
         )?;
         Some(wire::MovementSpeed {

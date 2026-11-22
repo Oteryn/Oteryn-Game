@@ -991,15 +991,23 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let session = admitted.game_session_id;
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
-        if runtime
-            .player_control_facts(actor, session)
-            .ok()?
-            .control_loss
-            .is_some()
-        {
-            return None;
-        }
-        let state = states.get(&runtime, actor, session)?;
+        let state = if runtime.house_actor_state(actor, session).is_ok() {
+            let fence = admitted.item_fence?;
+            if fence.connection_generation.get() != admitted.continuity.connection_generation {
+                return None;
+            }
+            states.house_spell_state(&runtime, actor, session, fence)?
+        } else {
+            if runtime
+                .player_control_facts(actor, session)
+                .ok()?
+                .control_loss
+                .is_some()
+            {
+                return None;
+            }
+            states.get(&runtime, actor, session)?
+        };
         Some(
             state
                 .owned_conditions()

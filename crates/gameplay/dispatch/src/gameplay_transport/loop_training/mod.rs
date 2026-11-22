@@ -4,7 +4,7 @@ mod exercise;
 pub(in crate::gameplay_transport) use exercise::EXERCISE_READBACK_BARRIER;
 pub(super) mod wire;
 use super::capabilities::OfferedCapability;
-use super::connection::{AdmittedSession, FirstEntryOutcome, UseCommand};
+use super::connection::{AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority, UseCommand};
 use super::{ComposedFreshAdmission, item_view::ItemKey};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::exercise_training::ExerciseDummyKey;
@@ -502,7 +502,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         family: usize,
     ) -> Option<TrainingResult> {
-        if self.bundle_map().is_none() || self.training_context().is_none() {
+        let Some(actor) = admitted.runtime_actor else {
+            return Some(TrainingResult::REFUSED);
+        };
+        if self.bundle_map().is_none()
+            || self.training_context().is_none()
+            || !self.turn_actor_valid(actor, admitted.game_session_id).await
+        {
             return Some(TrainingResult::REFUSED);
         }
         self.start_offline_training(admitted, family).await

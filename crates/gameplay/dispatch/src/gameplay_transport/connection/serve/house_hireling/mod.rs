@@ -87,6 +87,21 @@ impl State {
             return routing::house_rotation::route(authority, admitted, command).await;
         }
         match command.command_type {
+            oteryn_protocol_oteryn::actor_spell::COMMAND_TYPE_MANA_SHIELD_REMAINING => {
+                return Some(
+                    routing::mana_shield_remaining::route(authority, *admitted, command.payload)
+                        .await,
+                );
+            }
+            oteryn_protocol_oteryn::target_move::COMMAND_TYPE_FOLLOW_STATE => {
+                let status = if command.payload.is_empty() {
+                    CommandStatus::Accepted
+                } else {
+                    CommandStatus::Rejected
+                };
+                // The House step owner has no FOLLOW route.
+                return Some(Dispatch::Reply(status, Vec::new()));
+            }
             oteryn_protocol_oteryn::item_inscription::COMMAND_TYPE_ITEM_INSCRIPTION_READ => {
                 return Some(
                     routing::item_inscription::route(authority, admitted, command, &self.items)

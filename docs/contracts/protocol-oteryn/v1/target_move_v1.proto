@@ -22,6 +22,7 @@ message TargetMoveResult {
 // connection's current accepted FOLLOW route. Attack Chase is independent.
 // Stop, replacement input, target loss detected by the follow cadence and
 // loss of the actor's route clear the result. A resumed connection starts
-// with no route. Neither querying nor replaying an old move starts a route.
+// with no route. House custody has no FOLLOW route. Neither querying nor
+// replaying an old move starts a route.
 // Unselected capability and malformed requests are rejected with no payload.
 // Command 81 and all movement state-domain payloads keep their encoding.

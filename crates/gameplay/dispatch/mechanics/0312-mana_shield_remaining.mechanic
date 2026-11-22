@@ -1,10 +1,4 @@
 name=mana_shield_remaining
 commands=6372
 [route]
-if command.payload.is_empty()
-    && let Some(amount) = authority.mana_shield_remaining(session.admitted).await
-{
-    Dispatch::Reply(CommandStatus::Accepted, amount.to_le_bytes().to_vec())
-} else {
-    Dispatch::Reply(CommandStatus::Rejected, Vec::new())
-}
+routing::mana_shield_remaining::route(authority, session.admitted, command.payload).await

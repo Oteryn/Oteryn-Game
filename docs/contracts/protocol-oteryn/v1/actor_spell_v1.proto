@@ -141,7 +141,7 @@ message ActorVitalsV1 {
 
 // Capability 605 ACTOR_LIVE_STATE_V1, command 6372 MANA_SHIELD_REMAINING.
 // Empty request; accepted reply is exactly one little-endian uint32 giving
-// the own Channel actor's live, damage-depletable mana shield capacity.
+// the own actor's live, damage-depletable mana shield capacity.
 // Zero means no active finite shield, including expiry or an equipment-only
 // mana shield. The amount is independent of the actor's current mana pool.
 // Unavailable owner state, unselected capability and nonempty requests are

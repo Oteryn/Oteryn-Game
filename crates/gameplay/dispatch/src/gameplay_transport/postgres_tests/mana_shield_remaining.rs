@@ -85,7 +85,7 @@ fn scenario() -> TestResult {
                     20,
                     crate::player_lethal::PlayerHitKind::Fire,
                     "test:mana-shield-remaining",
-                    now,
+                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
                 )
                 .ok_or("native incoming fire damage")?;
             assert_eq!(damage.applied, 0);

@@ -102,6 +102,10 @@ impl FreshAdmissionAuthority for CommandAuthority {
         })
     }
 
+    async fn mana_shield_remaining(&self, _: AdmittedSession) -> Option<u32> {
+        Some(37)
+    }
+
     async fn server_info_query(&self, _: AdmittedSession, payload: &[u8]) -> Option<Vec<u8>> {
         use oteryn_protocol_oteryn::server_info::{Query, Reply};
         assert_eq!(Query::decode(payload), Some(Query::Quests));
@@ -276,6 +280,36 @@ fn house_query_mount_and_inscription_routes_return_owner_results() -> Result<(),
             };
             assert!(matches!(state.route(&owner, &mut admitted, command).await,
                 Some(Dispatch::Reply(CommandStatus::Accepted, reply)) if reply == expected));
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn house_live_state_reports_own_shield_and_no_follow() -> Result<(), String> {
+    run_command_test(|| async {
+        let (mut admitted, actor) = command_fixture(&[605])?;
+        let owner = CommandAuthority {
+            reserved: false,
+            move_seen: Cell::new(None),
+        };
+        let (mut state, _) = house_hireling::State::prepare(&owner, actor, &mut admitted)
+            .await
+            .map_err(|_| "prepare")?;
+        for (command_type, expected) in [(6371, vec![]), (6372, 37_u32.to_le_bytes().to_vec())] {
+            let command = oteryn_protocol_oteryn::ClientCommandView {
+                command_type,
+                command_id: 1,
+                payload: &[],
+            };
+            assert!(matches!(state.route(&owner, &mut admitted, command).await,
+                Some(Dispatch::Reply(CommandStatus::Accepted, reply)) if reply == expected));
+            let invalid = oteryn_protocol_oteryn::ClientCommandView {
+                payload: &[0],
+                ..command
+            };
+            assert!(matches!(state.route(&owner, &mut admitted, invalid).await,
+                Some(Dispatch::Reply(CommandStatus::Rejected, reply)) if reply.is_empty()));
         }
         Ok(())
     })
