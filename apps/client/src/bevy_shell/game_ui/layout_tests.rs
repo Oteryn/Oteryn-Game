@@ -542,3 +542,22 @@ fn upper_pane_height_resizes_only_the_upper_game_region() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn hiding_status_bars_collapses_the_region_shared_by_vitals_and_weapon_progress() -> TestResult {
+    let mut app = app();
+    let bar = app.world().resource::<super::super::StatusBar>().0;
+    app.insert_non_send(crate::bevy_shell::owner::HostOwner::new(None)?);
+    for (visible, display) in [(false, Display::None), (true, Display::Flex)] {
+        let mut owner = app
+            .world_mut()
+            .non_send_mut::<crate::bevy_shell::owner::HostOwner>();
+        owner.settings.preferences.status_bar_visible = visible;
+        owner.settings.preferences.game_window.upper_pane_height = 86;
+        app.update();
+        let region = app.world().get::<Node>(bar).ok_or("shared status region")?;
+        assert_eq!(region.display, display);
+        assert_eq!(region.height, px(86.));
+    }
+    Ok(())
+}

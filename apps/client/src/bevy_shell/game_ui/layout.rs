@@ -157,9 +157,9 @@ pub(super) fn install(app: &mut App) {
         .add_observer(cancel)
         .add_systems(Startup, restore.after(super::setup))
         .add_systems(Update, (maintain, remember).chain())
-        .add_systems(Update, upper_pane_height);
+        .add_systems(Update, project_upper_pane);
 }
-fn upper_pane_height(
+fn project_upper_pane(
     owner: Option<NonSend<super::super::owner::HostOwner>>,
     bar: Option<Res<super::StatusBar>>,
     mut nodes: Query<&mut Node>,
@@ -167,6 +167,14 @@ fn upper_pane_height(
     if let (Some(owner), Some(bar)) = (owner, bar)
         && let Ok(mut node) = nodes.get_mut(bar.0)
     {
+        let display = if owner.settings.preferences.status_bar_visible {
+            Display::Flex
+        } else {
+            Display::None
+        };
+        if node.display != display {
+            node.display = display;
+        }
         let height = owner.settings.preferences.game_window.upper_pane_height;
         let height = if height == 0 {
             Val::Auto
