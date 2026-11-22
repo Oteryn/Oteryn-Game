@@ -103,13 +103,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let protected_peers = if own_session.is_some() {
+            self.read_bundle_protected_peers(actor).await
+        } else {
+            Vec::new()
+        };
         let legacy = if forecasts {
             self.door.lock().await.blocking_cells().clone()
         } else {
             std::collections::BTreeSet::new()
         };
         let runtime = self.runtime.lock().await;
-        let states = self.states.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let now = self.owner_now();
         if let Some(mut view) =
             house_hireling_view::entities(&runtime, actor, self.owner_now().get() / 1_000).ok()?
@@ -252,6 +257,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 cells: self.movement_cells(),
                 blocked: super::super::pvp_live::pz_blocked(&states, actor, own_session, now),
             };
+            let states = states.bundle_progression_turn(
+                super::super::paced_movement::BundleProtectedPeer::current(
+                    protected_peers,
+                    &runtime,
+                ),
+            );
             motion.prewalk_ms = super::super::actor_spell::actor_movement::prewalk_forecast(
                 &runtime,
                 &states,

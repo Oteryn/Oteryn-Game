@@ -216,16 +216,7 @@ pub(super) fn prepare_player_bundle_step<'a>(
         direction,
         false,
         blocking,
-        move |peer, session| {
-            states
-                .actors
-                .iter()
-                .find(|(actor, held, _)| *actor == peer && *held == session)
-                .is_some_and(|(_, _, state)| {
-                    state.character_facts().level
-                        < oteryn_gameplay_combat_rules::pvp::legality::PVP_MIN_LEVEL
-                })
-        },
+        move |peer, session| states.bundle_protected_peers.contains(&(peer, session)),
     )
 }
 
@@ -1203,75 +1194,178 @@ mod tests {
     }
 
     #[test]
-    fn bundle_walkthrough_requires_level_protection_outside_protection_zone() {
-        use oteryn_gameplay_combat_rules::pvp::legality::PVP_MIN_LEVEL;
+    fn bundle_step_rechecks_stair_door_in_dispatch_before_commit() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
 
-        for (level, can_walk_through) in [(PVP_MIN_LEVEL - 1, true), (PVP_MIN_LEVEL, false)] {
-            let (mut runtime, mut states, cells, actor, session) = bundle_owner();
-            let no_doors = std::collections::BTreeSet::new();
-            let east = |runtime: &mut ChannelRuntimeV1, states: &mut ChannelSpellStates| {
-                step_in_channel(
-                    runtime,
-                    states,
-                    &cells,
-                    actor,
-                    session,
-                    1,
-                    CardinalStep::East,
-                    &no_doors,
-                    None,
-                )
-            };
-            east(&mut runtime, &mut states).unwrap();
-            east(&mut runtime, &mut states).unwrap();
-            let before = runtime.read_actor_position(actor).unwrap();
-            let landing = MovementLocalPosition {
-                x: 4,
-                y: 0,
-                floor: 8,
-            };
-            let peer_session = GameSessionId::decode(&id(5)).unwrap();
-            let reservation = runtime.reserve_fresh_session(peer_session).unwrap();
-            let peer = runtime.commit_fresh_session(reservation).unwrap();
-            runtime
-                .initialize_pinned_test_position(peer, landing)
-                .unwrap();
-            states
-                .initialize(
-                    &runtime,
-                    peer,
-                    peer_session,
-                    CharacterCastFacts {
-                        vocation: crate::spell::Vocation::Knight,
-                        level,
-                        magic_level: 10,
-                        max_health: 1000,
-                        max_mana: 500,
-                        max_soul: 100,
-                    },
-                    (0, 0),
-                    SemanticTimeMicros::from_micros(0),
-                )
-                .unwrap();
+        struct StairDoor {
+            checks: AtomicUsize,
+            open_checks: usize,
+        }
 
-            let forecast = prewalk_forecast(
-                &runtime, &states, &cells, actor, session, 1, None, &no_doors,
-            );
-            let result = east(&mut runtime, &mut states);
-            if can_walk_through {
-                let (after, wait) = result.unwrap();
-                assert_eq!(after.position(), landing);
-                assert_eq!(u128::from(forecast[1]), wait.as_millis());
-            } else {
-                assert!(matches!(result, Err(MovementError::Blocked)));
-                assert_eq!(runtime.read_actor_position(actor).unwrap(), before);
-                assert_eq!(forecast[1], 0);
+        impl crate::map::floor::CellBlocker for StairDoor {
+            fn blocks(&self, pos: LogicalCell) -> bool {
+                pos == (LogicalCell { x: 1, y: 0, z: 8 })
+                    && self.checks.fetch_add(1, Ordering::Relaxed) >= self.open_checks
             }
+        }
+
+        let (mut runtime, mut states, cells, actor, session) = bundle_owner();
+        let open = StairDoor {
+            checks: AtomicUsize::new(0),
+            open_checks: usize::MAX,
+        };
+        let direction = CardinalStep::East;
+        let before = runtime.read_actor_position(actor).unwrap();
+        prepare_player_bundle_step(
+            &runtime, &states, &cells, actor, session, before, direction, &open,
+        )
+        .unwrap();
+        let open_checks = open.checks.load(Ordering::Relaxed);
+        assert!(open_checks > 0);
+        let door = StairDoor {
+            checks: AtomicUsize::new(0),
+            open_checks,
+        };
+
+        // The stair is clear for preflight and closes before inner dispatch.
+        // A shortcut straight to commit would report an invalidated proof.
+        let result = step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            1,
+            direction,
+            &door,
+            None,
+        );
+        assert!(matches!(result, Err(MovementError::Blocked)), "{result:?}");
+        assert_eq!(runtime.read_actor_position(actor).unwrap(), before);
+    }
+
+    #[test]
+    fn bundle_walkthrough_uses_decreased_progression_level() {
+        assert_bundle_walkthrough_uses_progression(7, 8);
+    }
+
+    #[test]
+    fn bundle_walkthrough_uses_increased_progression_level() {
+        assert_bundle_walkthrough_uses_progression(8, 7);
+    }
+
+    fn assert_bundle_walkthrough_uses_progression(level: u32, cached_level: u32) {
+        let can_walk_through = level < oteryn_gameplay_combat_rules::pvp::legality::PVP_MIN_LEVEL;
+        let (mut runtime, mut states, cells, actor, session) = bundle_owner();
+        let no_doors = std::collections::BTreeSet::new();
+        let east = |runtime: &mut ChannelRuntimeV1, states: &mut ChannelSpellStates| {
+            step_in_channel(
+                runtime,
+                states,
+                &cells,
+                actor,
+                session,
+                1,
+                CardinalStep::East,
+                &no_doors,
+                None,
+            )
+        };
+        east(&mut runtime, &mut states).unwrap();
+        east(&mut runtime, &mut states).unwrap();
+        let before = runtime.read_actor_position(actor).unwrap();
+        let landing = MovementLocalPosition {
+            x: 4,
+            y: 0,
+            floor: 8,
+        };
+        let peer_session = GameSessionId::decode(&id(5)).unwrap();
+        let reservation = runtime.reserve_fresh_session(peer_session).unwrap();
+        let peer = runtime.commit_fresh_session(reservation).unwrap();
+        runtime
+            .initialize_pinned_test_position(peer, landing)
+            .unwrap();
+        states
+            .initialize(
+                &runtime,
+                peer,
+                peer_session,
+                CharacterCastFacts {
+                    vocation: if can_walk_through {
+                        crate::spell::Vocation::Knight
+                    } else {
+                        crate::spell::Vocation::None
+                    },
+                    level: cached_level,
+                    magic_level: 10,
+                    max_health: 1000,
+                    max_mana: 500,
+                    max_soul: 100,
+                },
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .unwrap();
+
+        let mut states = states.bundle_progression_turn(
+            can_walk_through
+                .then_some((peer, peer_session))
+                .into_iter()
+                .collect(),
+        );
+        let ingress = super::super::field_step_ingress::destination(
+            &runtime,
+            &states,
+            &cells,
+            actor,
+            session,
+            before,
+            CardinalStep::East,
+            &no_doors,
+        );
+        assert_eq!(ingress.ok(), can_walk_through.then_some(landing));
+        let forecast = prewalk_forecast(
+            &runtime, &states, &cells, actor, session, 1, None, &no_doors,
+        );
+        let result = east(&mut runtime, &mut states);
+        if can_walk_through {
+            let (after, wait) = result.unwrap();
+            assert_eq!(after.position(), landing);
+            assert_eq!(u128::from(forecast[1]), wait.as_millis());
+        } else {
+            assert!(matches!(result, Err(MovementError::Blocked)));
+            assert_eq!(runtime.read_actor_position(actor).unwrap(), before);
+            assert_eq!(forecast[1], 0);
         }
     }
 
     #[test]
     fn bundle_walkthrough_still_blocks_monster_on_protection_zone_tile() {
+        assert_bundle_walkthrough_blocks_non_player(|runtime, landing| {
+            runtime.admit_pinned_test_creature(landing).unwrap();
+        });
+    }
+
+    #[test]
+    fn bundle_walkthrough_still_blocks_npc_on_protection_zone_tile() {
+        assert_bundle_walkthrough_blocks_non_player(|runtime, landing| {
+            runtime
+                .place_dynamic_npc(
+                    "oteryn:npc.walkthrough-test",
+                    crate::foundation::NpcPlacement {
+                        x: u16::try_from(landing.x).unwrap(),
+                        y: u16::try_from(landing.y).unwrap(),
+                        floor: i8::try_from(-landing.floor).unwrap(),
+                        direction: crate::foundation::MovementFacing::South,
+                    },
+                )
+                .unwrap();
+        });
+    }
+
+    fn assert_bundle_walkthrough_blocks_non_player(
+        admit: impl FnOnce(&mut ChannelRuntimeV1, MovementLocalPosition),
+    ) {
         let (mut runtime, mut states, cells, actor, session) =
             bundle_owner_of(crate::map::boot::tests::teleport_bundle);
         let no_doors = std::collections::BTreeSet::new();
@@ -1290,13 +1384,14 @@ mod tests {
             .unwrap();
         }
         let before = runtime.read_actor_position(actor).unwrap();
-        runtime
-            .admit_pinned_test_creature(MovementLocalPosition {
+        admit(
+            &mut runtime,
+            MovementLocalPosition {
                 x: 5,
                 y: 1,
                 floor: 8,
-            })
-            .unwrap();
+            },
+        );
         let forecast = prewalk_forecast(
             &runtime, &states, &cells, actor, session, 1, None, &no_doors,
         );

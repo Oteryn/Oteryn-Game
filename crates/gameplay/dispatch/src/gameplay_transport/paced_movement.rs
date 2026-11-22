@@ -27,7 +27,88 @@ fn snowbunny_progress_operation(
     })
 }
 
+pub(super) struct BundleProtectedPeer {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    lease: crate::foundation::CharacterLease,
+}
+
+impl BundleProtectedPeer {
+    pub(super) fn current(
+        peers: Vec<Self>,
+        runtime: &ChannelRuntimeV1,
+    ) -> Vec<(ExactActorRef, GameSessionId)> {
+        peers
+            .into_iter()
+            .filter(|peer| runtime.bound_attacker_lease(peer.actor, peer.session) == Ok(peer.lease))
+            .map(|peer| (peer.actor, peer.session))
+            .collect()
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Collect the peers that can occupy the landing of an ordinary bundle step.
+    /// Durable reads run outside the Channel lock. The caller rechecks leases
+    /// before lending these facts to the synchronous movement proof.
+    pub(super) async fn read_bundle_protected_peers(
+        &self,
+        actor: ExactActorRef,
+    ) -> Vec<BundleProtectedPeer> {
+        if crate::map::floor::table_of(self.movement_cells()).is_none() {
+            return Vec::new();
+        }
+        let candidates: Vec<_> = {
+            let runtime = self.runtime.lock().await;
+            let Ok(origin) = runtime.read_actor_position(actor) else {
+                return Vec::new();
+            };
+            let origin = origin.position();
+            runtime
+                .positioned_melee_census()
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|(peer, at, session)| {
+                    let session = session?;
+                    let at = at.position();
+                    if peer == actor
+                        || at.floor != origin.floor
+                        || at.x.abs_diff(origin.x) > 1
+                        || at.y.abs_diff(origin.y) > 1
+                    {
+                        return None;
+                    }
+                    let lease = runtime.bound_attacker_lease(peer, session).ok()?;
+                    Some(BundleProtectedPeer {
+                        actor: peer,
+                        session,
+                        lease,
+                    })
+                })
+                .collect()
+        };
+        let mut protected = Vec::new();
+        for peer in candidates {
+            let Ok(character) =
+                crate::domain::CharacterId::from_bytes(*peer.lease.character_id().as_bytes())
+            else {
+                continue;
+            };
+            if self
+                .root
+                .read_character_progression(self.character, character)
+                .await
+                .is_ok_and(|state| {
+                    state.is_some_and(|state| {
+                        state.level < oteryn_gameplay_combat_rules::pvp::legality::PVP_MIN_LEVEL
+                    })
+                })
+            {
+                protected.push(peer);
+            }
+        }
+        protected
+    }
+
     pub(super) async fn ordinary_paced_step(
         &self,
         actor: ExactActorRef,
@@ -74,6 +155,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.refresh_cyclopedia_speed(actor, session).await;
         let equipment = self.read_movement_equipment(actor, session).await;
         let optional_pvp = self.special_movement_policy(&permit, actor, session).await;
+        let protected_peers = self.read_bundle_protected_peers(actor).await;
         // Checkout may wait for background durability work. Never wait under
         // the Channel runtime or spell-state guards; SQL work itself runs once.
         // Source-qualified blood callbacks also need this read without optional
@@ -252,11 +334,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let snow_origin = self.bundle_map().is_some_and(|map| {
             origin.is_some_and(|at| special_movement::snow_at(map, at.position()))
         });
+        let mut movement_states =
+            states.bundle_progression_turn(BundleProtectedPeer::current(protected_peers, &runtime));
         let outcome = if self.bundle_map().is_some()
             && !native_blood_listener
             && !(field_step_room
                 && origin.is_some_and(|origin| {
-                    states.cloak_blood_ingress_needed(
+                    movement_states.cloak_blood_ingress_needed(
                         &runtime,
                         self.movement_cells(),
                         actor,
@@ -279,7 +363,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 operator_event("event=step_rejected_field_pass_return");
                 return (StepOutcome::rejected(), None);
             }
-            states.step_with_non_player_field_contact(
+            movement_states.step_with_non_player_field_contact(
                 &mut runtime,
                 self.movement_cells(),
                 actor,
@@ -296,7 +380,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &mut permit,
                 field_pass,
                 &mut runtime,
-                &mut states,
+                &mut movement_states,
                 actor,
                 session,
                 now,
@@ -306,6 +390,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         };
+        drop(movement_states);
         if hicks
             && matches!(
                 &outcome,

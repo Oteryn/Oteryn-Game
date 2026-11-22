@@ -114,6 +114,8 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// command, no damage and no credit, and its death record goes with its entry.
 #[derive(Debug)]
 pub struct ChannelSpellStates {
+    /// Protected peers read from durable progression for the current movement turn.
+    bundle_protected_peers: Vec<(ExactActorRef, GameSessionId)>,
     #[cfg(test)]
     pub(super) drunk_seed_fixture: Option<[u8; 32]>,
     pub(super) encounter_phases: super::encounter_phases::Registry,
@@ -326,11 +328,44 @@ impl<I, T> PendingSpellMarker<I, T> {
     }
 }
 
+pub(super) struct BundleProgressionTurn<'a>(&'a mut ChannelSpellStates);
+
+impl std::ops::Deref for BundleProgressionTurn<'_> {
+    type Target = ChannelSpellStates;
+
+    fn deref(&self) -> &Self::Target {
+        self.0
+    }
+}
+
+impl std::ops::DerefMut for BundleProgressionTurn<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.0
+    }
+}
+
+impl Drop for BundleProgressionTurn<'_> {
+    fn drop(&mut self) {
+        self.0.bundle_protected_peers.clear();
+    }
+}
+
+impl ChannelSpellStates {
+    pub(super) fn bundle_progression_turn(
+        &mut self,
+        protected_peers: Vec<(ExactActorRef, GameSessionId)>,
+    ) -> BundleProgressionTurn<'_> {
+        self.bundle_protected_peers = protected_peers;
+        BundleProgressionTurn(self)
+    }
+}
+
 impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
             #[cfg(test)]
             drunk_seed_fixture: None,
+            bundle_protected_peers: Vec::new(),
             encounter_phases: Default::default(),
             native_self_heals: Default::default(),
             native_self_heal_content: None,
