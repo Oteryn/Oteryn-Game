@@ -7,6 +7,38 @@ pub(crate) struct LookMessage {
 
 #[cfg(bevy_shell)]
 impl crate::play::PlayLink {
+    pub(crate) fn private_screen_message(
+        &self,
+        cursor: &mut Option<(u64, u64)>,
+    ) -> (bool, Option<String>) {
+        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let panel = &mailbox.chat;
+        let previous = cursor.replace((panel.scope, panel.received));
+        let reset = previous.is_none_or(|(scope, _)| scope != panel.scope);
+        let received = previous
+            .filter(|(scope, _)| *scope == panel.scope)
+            .map_or(0, |(_, n)| n);
+        let count = usize::try_from(panel.received.wrapping_sub(received)).unwrap_or(usize::MAX);
+        let start = panel.lines.len().saturating_sub(count);
+        let latest = panel.lines[start..]
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(index, line)| {
+                if let oteryn_session::ChatLine::Private { speaker_name, text } = line
+                    && panel
+                        .recipients
+                        .get(start + index)
+                        .is_none_or(Option::is_none)
+                    && panel.console.communication.visible(line)
+                {
+                    Some(format!("{speaker_name}: {text}"))
+                } else {
+                    None
+                }
+            });
+        (reset, latest)
+    }
     pub(crate) fn look_message(&self) -> Option<LookMessage> {
         crate::play::mailbox::lock(&self.mailbox)
             .screen_look
@@ -58,3 +90,55 @@ pub(in crate::play) fn record_look(
 
 #[cfg(all(test, bevy_shell))]
 mod tests;
+
+#[cfg(bevy_shell)]
+#[derive(Debug, Default)]
+pub(in crate::play) struct LootMessage {
+    receipt: u64,
+    items: Vec<oteryn_session::analyser_transport::AnalyserItemCount>,
+    gold: u64,
+}
+
+#[cfg(bevy_shell)]
+impl LootMessage {
+    pub(in crate::play) fn record(
+        &mut self,
+        items: &[oteryn_session::analyser_transport::AnalyserItemCount],
+        gold: u64,
+    ) {
+        self.receipt = self.receipt.wrapping_add(1);
+        self.items.clear();
+        self.items.extend_from_slice(items);
+        self.gold = gold;
+    }
+}
+
+#[cfg(bevy_shell)]
+impl crate::play::PlayLink {
+    pub(crate) fn loot_receipt(&self) -> u64 {
+        crate::play::mailbox::lock(&self.mailbox)
+            .screen_loot
+            .receipt
+    }
+    pub(crate) fn loot_values(&self) -> Vec<(String, u64)> {
+        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let mut values = Vec::new();
+        for item in &mailbox.screen_loot.items {
+            let id = item.item_type.get();
+            let info = mailbox.analyser.item_info.get(&id);
+            let name = info.map_or_else(|| format!("#{id}"), |info| info.name.clone());
+            let worth = mailbox
+                .analyser
+                .loot_prices
+                .get(&id)
+                .copied()
+                .or_else(|| info.map(|i| i.coin_worth))
+                .unwrap_or(0);
+            values.push((format!("{} × {name}", item.count), worth));
+        }
+        if mailbox.screen_loot.gold > 0 {
+            values.push((format!("{} gold", mailbox.screen_loot.gold), 1));
+        }
+        values
+    }
+}

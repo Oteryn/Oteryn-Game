@@ -633,3 +633,61 @@ fn bestiary_charm_paging_stops_on_a_cyclic_cursor() -> Result {
     }
     Ok(())
 }
+
+#[test]
+fn untracked_bestiary_stage_is_captured_after_credited_kill() -> Result {
+    use crate::play::{SettingsState, screenshot::CaptureAction};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.bevy_bestiary_initialize();
+    let mut settings = SettingsState::new(None);
+    settings.preferences.screenshots.on_bestiary_unlock = true;
+    let start = std::time::Instant::now();
+    for (index, kills) in [(0, 9), (1, 10)] {
+        let now = start + std::time::Duration::from_secs(index * 3);
+        if index > 0 {
+            outbox.push(vec![oteryn_session::SessionEvent::AnalyserFacts(
+                oteryn_session::AppliedDelta {
+                    server_sequence: 2,
+                    base_revision: 1,
+                    new_revision: 2,
+                    value: vec![oteryn_session::analyser_transport::AnalyserFact::Kill {
+                        race: std::num::NonZeroU32::new(9),
+                    }],
+                },
+            )]);
+        }
+        assert!(matches!(
+            settings.prepare_screenshots(now, Some(&link)),
+            CaptureAction::Idle
+        ));
+        let query = command(&mut commands)?;
+        let result = progression::CharmProgressionReply {
+            outcome: progression::CharmProgressionOutcome::Query,
+            fee_gold: 0,
+            bestiary: vec![progression::bestiary::BestiaryRaceProgress {
+                race: std::num::NonZeroU32::new(9).ok_or("race")?,
+                kill_count: kills,
+                kill_thresholds: [10, 20, 30],
+            }],
+            charms: default(),
+        };
+        outbox.bevy_bestiary_result(
+            &query,
+            &GatedCommandResult {
+                command_id: index + 1,
+                server_sequence: index + 3,
+                status: oteryn_session::CommandStatus::Accepted,
+                payload: progression::encode_charm_progression_reply(&result)
+                    .map_err(|e| format!("{e:?}"))?,
+            },
+        );
+        assert_eq!(
+            matches!(
+                settings.prepare_screenshots(now, Some(&link)),
+                CaptureAction::Save
+            ),
+            index == 1
+        );
+    }
+    Ok(())
+}

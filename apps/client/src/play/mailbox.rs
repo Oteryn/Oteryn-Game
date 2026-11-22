@@ -148,9 +148,12 @@ pub(super) struct ConnectionInputs {
 pub(super) struct Mailbox {
     pub(super) connection: ConnectionInputs,
     #[cfg(bevy_shell)]
+    pub(super) screen_loot: super::feature_local_text_messages::view::LootMessage,
+    #[cfg(bevy_shell)]
     pub(super) screen_look: Option<super::feature_local_text_messages::view::LookMessage>,
     #[cfg(bevy_shell)]
     pub(super) look_receipt: u64,
+    pub(super) capture_observations: super::screenshot::CaptureObservations,
     pub(super) shared_frontend: bool,
     pub(super) command_latency: Option<(std::time::Instant, std::time::Duration)>,
     /// The admitted session's byte counters; `None` before admission.

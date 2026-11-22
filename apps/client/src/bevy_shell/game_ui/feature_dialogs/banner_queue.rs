@@ -138,6 +138,85 @@ mod tests {
         spawn_banner(&mut app.world_mut().commands(), Handle::default());
         Ok((app, outbox))
     }
+    #[test]
+    fn cosmetic_catalogue_unlock_reaches_banner() -> Result {
+        use oteryn_client_runtime::appearance::{Catalogue, Context};
+        let (mut app, outbox) = app()?;
+        outbox.bevy_outfit_test_panel(oteryn_client_ui::appearance::Panel {
+            selected: true,
+            ..default()
+        });
+        for rev in [1, 2] {
+            let catalogue = Catalogue {
+                context: Context {
+                    content_generation: [1; 32],
+                    cosmetics_digest: [2; 32],
+                },
+                root_revision: rev,
+                selected: None,
+                palette: vec![[0; 3]],
+                outfits: vec![],
+                mounts: if rev == 2 {
+                    vec!["horse".into()]
+                } else {
+                    vec![]
+                },
+            };
+            outbox.push(vec![SessionEvent::Appearance(AppliedDelta {
+                server_sequence: rev,
+                base_revision: rev - 1,
+                new_revision: rev,
+                value: oteryn_session::AppearanceUpdate::Catalogue(catalogue),
+            })]);
+            app.update();
+        }
+        assert_eq!(
+            app.world_mut()
+                .query_filtered::<&Text, With<Banner>>()
+                .single(app.world())?
+                .0,
+            "Unlocked mount: horse"
+        );
+        Ok(())
+    }
+    #[test]
+    fn confirmed_quest_completion_reaches_banner() -> Result {
+        use oteryn_client_runtime::quest_log::{
+            QuestListEntry, QuestLog, QuestLogView, QuestState,
+        };
+        let (mut app, outbox) = app()?;
+        outbox.bevy_journal_quest_state(QuestState {
+            selected: true,
+            revision: Some(0),
+            list: vec![QuestListEntry {
+                quest_index: 1,
+                completed: false,
+            }],
+            ..default()
+        });
+        outbox.push(vec![SessionEvent::QuestLog(AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: QuestLog {
+                map_marks: vec![],
+                tracked: vec![],
+                view: Some(QuestLogView::List(vec![QuestListEntry {
+                    quest_index: 1,
+                    completed: true,
+                }])),
+            },
+        })]);
+        app.update();
+        assert_eq!(
+            app.world_mut()
+                .query_filtered::<&Text, With<Banner>>()
+                .single(app.world())?
+                .0,
+            "Quest completed: Quest 1"
+        );
+        Ok(())
+    }
     fn send(outbox: &crate::play::Outbox, count: u32) {
         outbox.push(vec![SessionEvent::AchievementEarned(AppliedDelta {
             server_sequence: count.into(),

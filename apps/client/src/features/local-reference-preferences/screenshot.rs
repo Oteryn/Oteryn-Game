@@ -93,7 +93,78 @@ impl Pixels {
     }
 }
 
-pub(super) fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct CaptureObservations {
+    impact: [u32; 2],
+    tracked_loot: u64,
+    pub(in crate::play) tracker: [u64; 3],
+    credited_kills: u64,
+    low_health: u64,
+    was_low: Option<bool>,
+}
+impl crate::play::mailbox::Mailbox {
+    pub(in crate::play) fn observe_capture_events(
+        &mut self,
+        events: &[oteryn_session::SessionEvent],
+    ) {
+        use oteryn_session::analyser_transport::AnalyserImpact;
+        use oteryn_session::{SessionEvent, analyser_transport::AnalyserFact};
+        let mut observe = |fact: &AnalyserFact| {
+            #[cfg(bevy_shell)]
+            if let AnalyserFact::KillLoot {
+                corpse_items, gold, ..
+            } = fact
+            {
+                self.screen_loot.record(corpse_items, *gold);
+            }
+            if let AnalyserFact::KillLoot { corpse_items, .. } = fact
+                && corpse_items
+                    .iter()
+                    .any(|item| self.analyser.loot_tracked.contains(&item.item_type.get()))
+            {
+                self.capture_observations.tracked_loot =
+                    self.capture_observations.tracked_loot.wrapping_add(1);
+            }
+            if matches!(fact, AnalyserFact::Kill { .. }) {
+                self.capture_observations.credited_kills =
+                    self.capture_observations.credited_kills.wrapping_add(1);
+            }
+            if let AnalyserFact::Impact(impact) = fact {
+                let (index, value) = match impact {
+                    AnalyserImpact::Damage { value, .. } => (0, value),
+                    AnalyserImpact::Healing(value) => (1, value),
+                };
+                self.capture_observations.impact[index] =
+                    self.capture_observations.impact[index].max(value.get());
+            }
+        };
+        for event in events {
+            match event {
+                SessionEvent::AnalyserFacts(delta) => delta.value.iter().for_each(&mut observe),
+                SessionEvent::AnalyserAttributedFacts(delta) => {
+                    delta.value.iter().for_each(|row| observe(&row.fact))
+                }
+                SessionEvent::ActorVitals(delta) if delta.value.max_health > 0 => {
+                    let vitals = &delta.value;
+                    let low = vitals.health > 0
+                        && u64::from(vitals.health) * 100 <= u64::from(vitals.max_health) * 4;
+                    if self.capture_observations.was_low == Some(false) && low {
+                        self.capture_observations.low_health =
+                            self.capture_observations.low_health.wrapping_add(1);
+                    }
+                    self.capture_observations.was_low = (vitals.health > 0).then_some(low);
+                }
+                _ => continue,
+            }
+        }
+    }
+}
+impl crate::play::PlayLink {
+    fn capture_observations(&self) -> CaptureObservations {
+        crate::play::mailbox::lock(&self.mailbox).capture_observations
+    }
+}
+pub(crate) fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
     if !folder.as_os_str().is_empty() {
         if !folder.is_absolute() {
             return Err(io::Error::new(
@@ -216,7 +287,7 @@ impl SettingsState {
 #[cfg(test)]
 #[path = "screenshot_fixture.rs"]
 mod fixture;
-#[cfg(test)]
-pub(crate) use fixture::{TestDir, assert_one_test_passed, with_relative_capture_path};
 #[cfg(all(test, bevy_shell, unix))]
 pub(crate) use fixture::one_test_passed;
+#[cfg(test)]
+pub(crate) use fixture::{TestDir, assert_one_test_passed, with_relative_capture_path};
