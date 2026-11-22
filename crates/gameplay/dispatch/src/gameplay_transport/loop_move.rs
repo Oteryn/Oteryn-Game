@@ -962,6 +962,9 @@ pub(super) async fn move_loop_item_with_house_capacity(
         .as_ref()
         .and_then(|ground| ground.ground_entry(&item))
         .map(|(pos, _)| (i32::from(pos.x), i32::from(pos.y), i16::from(pos.floor)));
+    let basin_target = basin_target.filter(|_| {
+        !matches!(request.target, LoopTarget::Ground(to) if pickup == Some((to.x, to.y, to.floor)))
+    });
     let actor_at = pins.as_ref().map(|(_, at, ..)| *at);
     let pickup_cell = match (pickup, actor_at) {
         (Some(cell), Some(at)) if in_reach(at, cell) => {
@@ -1352,7 +1355,7 @@ pub(super) async fn relocate_source_item(
     let Ok(command_id) = CommandId::new(command.command_id) else {
         return LoopMoveResult::Refused(LoopMoveRefusal::Rejected);
     };
-    let (native, ground) = {
+    let (native, ground, basin) = {
         let runtime = admission.runtime.lock().await;
         if !runtime
             .player_control_facts(actor, command.game_session_id)
@@ -1386,34 +1389,81 @@ pub(super) async fn relocate_source_item(
                 content_revision: sha256_revision(runtime.content_pin().server_artifact_digest()),
                 placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
             },
+            (from != to)
+                .then(|| coal_basin::target(map, &runtime, destination, admission.reset_epoch))
+                .flatten(),
         )
     };
     let Some(native) = native else {
         return LoopMoveResult::Refused(LoopMoveRefusal::Rejected);
     };
-    let result = admission
-        .root
-        .commit_item_loop_move(
-            permit,
-            admission.character,
-            admission.holder,
-            &fence,
-            CommandRef::new(command.game_session_id, command_id),
-            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-            LoopMoveRequest {
-                item,
-                count: None,
-                pickup_cell: Some(ground_cell(
-                    i32::from(from.x),
-                    i32::from(from.y),
-                    i16::from(from.floor),
-                )),
-                destination: LoopDestination::Ground(ground),
-            },
-        )
-        .await;
+    let command = CommandRef::new(command.game_session_id, command_id);
+    let weights = NativeItemWeights(native).with_wheel(admission.premium_coordinator);
+    let request = LoopMoveRequest {
+        item,
+        count: None,
+        pickup_cell: Some(ground_cell(
+            i32::from(from.x),
+            i32::from(from.y),
+            i16::from(from.floor),
+        )),
+        destination: LoopDestination::Ground(ground),
+    };
+    let offering = match basin.as_ref() {
+        Some(target) => {
+            admission
+                .root
+                .commit_item_loop_coal_basin(
+                    permit,
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    command,
+                    &weights,
+                    request.clone(),
+                    target.clone(),
+                )
+                .await
+        }
+        None => Ok(None),
+    };
+    let mut offered = false;
+    let result = match offering {
+        Ok(Some(Ok((receipt, consumed)))) => {
+            offered = consumed;
+            Ok(Ok(receipt))
+        }
+        Ok(Some(Err(reason))) => Ok(Err(reason)),
+        Err(error) => Err(error),
+        Ok(None) => {
+            admission
+                .root
+                .commit_item_loop_move(
+                    permit,
+                    admission.character,
+                    admission.holder,
+                    &fence,
+                    command,
+                    &weights,
+                    request,
+                )
+                .await
+        }
+    };
     if !matches!(result, Ok(Err(_))) {
         admission.states.loop_ground.invalidate();
+    }
+    if let Some(target) = basin
+        && let Ok(Ok(receipt)) = &result
+        && !coal_basin::finish_drop(admission, fence, command, &target, receipt, offered).await
+    {
+        return LoopMoveResult::Unknown;
+    }
+    if (from.x, from.y, from.floor) == (33063, 31624, -15)
+        && matches!(result, Ok(Ok(_)))
+        && !parchment::publish(admission, fence, command).await
+    {
+        return LoopMoveResult::Unknown;
     }
     match result {
         Ok(Ok(_)) => {

@@ -9,7 +9,7 @@ use crate::gameplay_transport::{
     item_move::{LoopMove, LoopMoveRefusal, LoopMoveReplay, LoopMoveResult, LoopTarget},
     item_view::ItemKey,
 };
-use oteryn_gameplay_items::map_pickup::PARCHMENT_SEAL_PLACEMENT;
+use crate::map::overlay::TilePos;
 use oteryn_gameplay_world::map::view::MapFacts;
 
 #[test]
@@ -67,7 +67,7 @@ fn run_scene(scene: Scene) -> TestResult {
         let (origin, world) = match scene {
             Scene::Parchment => {
                 let origin = MovementLocalPosition {
-                    x: 33063,
+                    x: 33062,
                     y: 31625,
                     floor: 15,
                 };
@@ -80,7 +80,7 @@ fn run_scene(scene: Scene) -> TestResult {
                         )),
                         region: (15, 129, 123),
                         bounds: (33059, 31622, 33068, 31629),
-                        start: (33063, 31625),
+                        start: (33062, 31625),
                         expected: vec![ExpectedTile {
                             position: (33063, 31624),
                             ids: vec![353, 2474, 2819],
@@ -107,7 +107,7 @@ fn run_scene(scene: Scene) -> TestResult {
                             bytes,
                             region: (13, 129, 128),
                             bounds: (33097, 32815, 33099, 32817),
-                            start: (33097, u16::try_from(origin.y)?),
+                            start: (33097, 32815),
                             expected: vec![
                                 ExpectedTile {
                                     position: (33098, 32816),
@@ -172,7 +172,7 @@ fn run_scene(scene: Scene) -> TestResult {
             1,
             1,
             "runtime-scope-assignment:1",
-            2,
+            8,
             pin,
         )
         .map_err(debug)?;
@@ -276,6 +276,15 @@ async fn exercise_parchment(
     admitted: super::AdmittedSession,
     world: &crate::map::boot::BundleWorld,
 ) -> TestResult {
+    let placement = crate::map::view::placement_key(
+        TilePos {
+            x: 33063,
+            y: 31624,
+            floor: -15,
+        },
+        2,
+    )
+    .ok_or("source seal placement")?;
     let command = UseCommand {
         game_session_id: admitted.game_session_id,
         command_id: 1,
@@ -284,7 +293,7 @@ async fn exercise_parchment(
     let request = LoopMove {
         item: ItemKey::MapBase {
             bundle_digest: world.base().digest(),
-            placement_key: PARCHMENT_SEAL_PLACEMENT,
+            placement_key: placement,
             reset_epoch: 0,
         },
         target: LoopTarget::MainBackpack,
@@ -293,7 +302,7 @@ async fn exercise_parchment(
     };
     let text = world
         .facts()
-        .base_text(PARCHMENT_SEAL_PLACEMENT)
+        .base_text(placement)
         .ok_or("seal inscription")?;
     assert_eq!(
         owner.move_loop_item(deps.actor, command, request).await,
@@ -385,7 +394,7 @@ async fn exercise_parchment(
     );
     let (mints, linked): (i64, i64) = sqlx::query_as(
             "SELECT count(*), count(parchment_previous) FROM game_map_item_mint_receipts WHERE placement_key=$1::text::numeric",
-        ).bind(PARCHMENT_SEAL_PLACEMENT.to_string()).fetch_one(&h.pool).await?;
+        ).bind(placement.to_string()).fetch_one(&h.pool).await?;
     assert_eq!((mints, linked), (2, 1));
 
     Ok(())
@@ -436,40 +445,6 @@ async fn exercise_basin(
         count: Some(2),
         slot: None,
     };
-    if occupant {
-        sqlx::query("CREATE FUNCTION reject_test_coal_basin() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fixture rejects debit' USING ERRCODE='23514'; END $$")
-            .execute(&h.pool).await?;
-        sqlx::query("CREATE TRIGGER reject_test_coal_basin BEFORE INSERT ON game_dreamer_ring_offerings FOR EACH ROW WHEN (NEW.basin_uid=9033) EXECUTE FUNCTION reject_test_coal_basin()")
-            .execute(&h.pool).await?;
-        assert_eq!(
-            owner
-                .move_loop_item(
-                    deps.actor,
-                    UseCommand {
-                        command_id: 1,
-                        ..command
-                    },
-                    request
-                )
-                .await,
-            LoopMoveResult::Refused(LoopMoveRefusal::Rejected)
-        );
-        let (carried, receipts): (i64, i64) = sqlx::query_as(
-            "SELECT (SELECT i.quantity FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid), (SELECT count(*) FROM game_dreamer_ring_offerings WHERE basin_uid=9033)",
-        ).bind(item.as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!((carried, receipts), (3, 0));
-        let position = deps
-            .runtime
-            .lock()
-            .await
-            .read_actor_position(deps.actor)
-            .map_err(debug)?
-            .position();
-        assert_eq!((position.x, position.y, position.floor), (33097, 32816, 13));
-        sqlx::query("DROP TRIGGER reject_test_coal_basin ON game_dreamer_ring_offerings")
-            .execute(&h.pool)
-            .await?;
-    }
     assert_eq!(
         owner.move_loop_item(deps.actor, command, request).await,
         LoopMoveResult::Committed
@@ -478,6 +453,27 @@ async fn exercise_basin(
         owner.committed_loop_move(deps.actor, command).await,
         Some(LoopMoveReplay::Moved)
     );
+    // Assert the real route and Ground custody before touching new receipt
+    // columns so the same mounted cases demonstrate the behaviour on main.
+    let at = deps
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(deps.actor)
+        .map_err(debug)?
+        .position();
+    assert_eq!(
+        (at.x, at.y, at.floor),
+        if occupant {
+            (33093, 32824, 13)
+        } else {
+            (33097, 32815, 13)
+        }
+    );
+    let ground_coins: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i3042'"
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(ground_coins, 0);
     let (exact_tx, has_player, quantity, remains, ground): (bool, bool, i64, i64, i64) = sqlx::query_as(
         "SELECT o.created_xact_id=r.created_xact_id,o.basin_recipient IS NOT NULL, (o.before_item->>'quantity')::bigint, \
          (SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid), \
@@ -492,18 +488,65 @@ async fn exercise_basin(
         "SELECT value FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start'",
     ).fetch_optional(&h.pool).await?;
     assert_eq!(progress, occupant.then_some(1));
-    let runtime = deps.runtime.lock().await;
-    let at = runtime
-        .read_actor_position(deps.actor)
-        .map_err(debug)?
-        .position();
-    assert_eq!(
-        (at.x, at.y, at.floor),
-        if occupant {
-            (33093, 32824, 13)
-        } else {
-            (33097, 32815, 13)
+    if occupant {
+        {
+            let mut runtime = deps.runtime.lock().await;
+            let at = runtime.read_actor_position(deps.actor).map_err(debug)?;
+            let map = owner.bundle_map().ok_or("coal basin world")?;
+            let doors = crate::map::floor::BundleDoors(&map.facts);
+            let prepared = crate::map::floor::prepare_quest_callback_teleport(
+                &runtime,
+                owner.movement_cells(),
+                deps.actor,
+                admitted.game_session_id,
+                at,
+                MovementLocalPosition {
+                    x: 33097,
+                    y: 32816,
+                    floor: 13,
+                },
+                false,
+                &doors,
+            )
+            .map_err(debug)?;
+            runtime.commit_source_step(prepared).map_err(debug)?;
         }
-    );
+        let request = LoopMove {
+            count: None,
+            ..request
+        };
+        sqlx::query("CREATE FUNCTION reject_test_coal_basin() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fixture rejects debit' USING ERRCODE='23514'; END $$")
+            .execute(&h.pool).await?;
+        sqlx::query("CREATE TRIGGER reject_test_coal_basin BEFORE INSERT ON game_dreamer_ring_offerings FOR EACH ROW WHEN (NEW.basin_uid=9033) EXECUTE FUNCTION reject_test_coal_basin()")
+            .execute(&h.pool).await?;
+        assert_eq!(
+            owner
+                .move_loop_item(
+                    deps.actor,
+                    UseCommand {
+                        command_id: 3,
+                        ..command
+                    },
+                    request
+                )
+                .await,
+            LoopMoveResult::Refused(LoopMoveRefusal::Rejected)
+        );
+        let (carried, receipts): (i64, i64) = sqlx::query_as(
+            "SELECT (SELECT i.quantity FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid), (SELECT count(*) FROM game_dreamer_ring_offerings WHERE basin_uid=9033)",
+        ).bind(item.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!((carried, receipts), (1, 1));
+        let position = deps
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(deps.actor)
+            .map_err(debug)?
+            .position();
+        assert_eq!((position.x, position.y, position.floor), (33097, 32816, 13));
+        sqlx::query("DROP TRIGGER reject_test_coal_basin ON game_dreamer_ring_offerings")
+            .execute(&h.pool)
+            .await?;
+    }
     Ok(())
 }

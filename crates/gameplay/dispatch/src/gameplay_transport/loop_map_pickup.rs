@@ -410,7 +410,10 @@ pub(super) async fn move_map_item(
     let weights = NativeItemWeights(native).with_wheel(admission.premium_coordinator);
     // Capability 510: the picked-up entry takes the requested container slot.
     let basin_target = match request.target {
-        LoopTarget::Ground(to) => {
+        LoopTarget::Ground(to)
+            if (to.x, to.y, to.floor)
+                != (i32::from(pos.x), i32::from(pos.y), i16::from(pos.floor)) =>
+        {
             let runtime = admission.runtime.lock().await;
             coal_basin::target(at.map, &runtime, to, admission.reset_epoch)
         }

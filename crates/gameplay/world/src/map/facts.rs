@@ -574,7 +574,19 @@ impl BundleFacts {
                 } else {
                     door
                 };
-                let closed_solid = self.blocks(item.palette);
+                let closed_solid = self.blocks(item.palette)
+                    && !(tile.house == 0
+                        && !dropped
+                        && self
+                            .palette
+                            .get(item.palette as usize)
+                            .is_some_and(|entry| {
+                                source_bindings::walkable_coal_basin_flame(
+                                    pos,
+                                    ordinal,
+                                    entry.facts.appearance_id,
+                                )
+                            }));
                 blocks |= closed_solid && door == PaletteDoor::No;
                 let Some(key) = key else {
                     // A door beyond the ordinal reach cannot be named, so it blocks as a wall.
