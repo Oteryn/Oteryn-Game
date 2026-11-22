@@ -296,6 +296,8 @@ def materialize_item_tree(reference, declarations, editor, sources):
     extend_cradle_references(item_records, ROOT)
     from cake_bridge_reference import extend_records as extend_cake_bridge_reference
     extend_cake_bridge_reference(item_records, ROOT)
+    from nrwicked_profiles import extend_records as extend_arbaziloth_fire
+    extend_arbaziloth_fire(item_records, ROOT)
     from ordinary_corpse_cohort import extend_item_references
     extend_item_references(item_records, ROOT)
     from encounter_loot_item_admissions import apply_admissions as apply_encounter_loot_admissions

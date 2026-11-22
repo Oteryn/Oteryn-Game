@@ -35,6 +35,8 @@ def source_qualified_item_references(reference, root):
     cradle(records, root)
     from cake_bridge_reference import extend_records as cake_bridge
     cake_bridge(records, root)
+    from nrwicked_profiles import extend_records as arbaziloth_fire
+    arbaziloth_fire(records, root)
     from ordinary_corpse_cohort import extend_item_references
     extend_item_references(records, root)
     return records
@@ -69,7 +71,8 @@ REWARD_CLAIM_COUNT = len(json.loads(
 import sys
 sys.path.insert(0, str(ROOT / 'tools/content-schema/reward-claim-authoring'))
 import engclaim_native
-REWARD_CLAIM_COUNT += len(engclaim_native.CASES)
+import nrwicked_native
+REWARD_CLAIM_COUNT += len(engclaim_native.CASES) + len(nrwicked_native.records()[0])
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 57, "Service.Bank": 2, "Service.Promotion": 7, "Service.Blessing": 10}

@@ -19,7 +19,7 @@ fn ordinary_corpse_decay_registry_installs_exact_source_chains_postgres() -> Tes
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/ordinary-corpse-cohort.json"
     )))?;
-    assert_eq!(chains.len(), 253);
+    assert_eq!(chains.len(), 252);
     scenario_thread::run("ordinary-corpse-decay-cohort", move || {
         run(async move |admin| {
             let h =

@@ -1286,6 +1286,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("W02 Sugar corpse identity collision"));
         }
+        // Crystal 201189f8 appearances.dat and arbaziloth_fight.lua bind the
+        // purple-fire projection to this exact Ground-only item identity.
+        let arbaziloth_fire = serde_json::from_value(serde_json::json!({
+            "source_key": "oteryn:source.crystalserver",
+            "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "identity_namespace": "ots/item_server_id", "external_id": "49362",
+            "target": {"family": "Item", "key": "oteryn:item.tibia.i49362", "revision": "definition-r1"},
+            "disposition": "EXACT"
+        })).map_err(|_| invalid("Arbaziloth fire exact identity"))?;
+        if admitted
+            .insert("49362".to_owned(), arbaziloth_fire)
+            .is_some()
+        {
+            return Err(invalid("Arbaziloth fire identity collision"));
+        }
         // These exact bodies lack a historical XML binding. Their Crystal
         // appearance and the current client object agree on the server Item id.
         for external_id in [35136, 35384, 35388, 35846, 36929, 44667, 44671, 48406] {
@@ -1422,6 +1437,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                     if record != &corrected {
                         return Err(refusal());
                     }
+                }
+            } else if binding.external_id == "49362" {
+                use super::ReferenceItemField as F;
+                if !record.admission.materializable
+                    || record.admission.stack_class != NativeItemStackClass::NonStackable
+                    || record.admission.legal_destinations != [NativeItemDestination::Ground]
+                    || !matches!(&record.semantics.physical, F::Known(value)
+                        if value.weight == F::Known(0)
+                            && value.movable == F::Known(false)
+                            && value.pickupable == F::Known(false))
+                    || record.attributes.blocks_movement != Some(false)
+                    || record.attributes.blocks_projectile != Some(false)
+                    || record.production_binding_qualification.is_some()
+                {
+                    return Err(invalid("Arbaziloth fire Ground policy"));
                 }
             } else if binding.external_id == "48416" {
                 use super::{ReferenceItemField as F, ReferenceItemType as Type};
@@ -2286,7 +2316,7 @@ mod tests {
         let admissions = cohort["admissions"]
             .as_object()
             .ok_or("source admissions")?;
-        assert_eq!(admissions.len(), 307);
+        assert_eq!(admissions.len(), 306);
         for (creature, source) in admissions {
             let key = format!("oteryn:creature.{creature}");
             let source = source.as_u64().ok_or("source Item id")?;
@@ -2326,7 +2356,7 @@ mod tests {
             }
         }
         let chains = cohort["chains"].as_object().ok_or("source chains")?;
-        assert_eq!(chains.len(), 253);
+        assert_eq!(chains.len(), 252);
         for stages in chains.values() {
             for stage in stages.as_array().ok_or("source chain")? {
                 let id = stage[0].as_u64().ok_or("stage Item id")?;
@@ -5051,6 +5081,27 @@ mod source_item_closure_tests {
         serde_json::from_slice(include_bytes!(
             "../../../../../content/creatures/definitions/spell-native-profiles.json"
         ))
+    }
+    #[test]
+    fn production_native_creature_attack_closures_validate() -> Result<(), String> {
+        let document = actual().map_err(|error| error.to_string())?;
+        for record in &document.records {
+            if let Some(definitions) = &record.attack_definitions {
+                for profile in &definitions.profiles {
+                    crate::content::project::validate_native_gameplay_profile(profile).map_err(
+                        |error| {
+                            format!(
+                                "{}: {}: {error}",
+                                record.profile.target.key, profile.target.key
+                            )
+                        },
+                    )?;
+                }
+                validate_attack_definitions(record)
+                    .map_err(|error| format!("{}: {error}", record.profile.target.key))?;
+            }
+        }
+        Ok(())
     }
     #[test]
     fn summer_attack_closure_requires_exact_creature_and_behavior()

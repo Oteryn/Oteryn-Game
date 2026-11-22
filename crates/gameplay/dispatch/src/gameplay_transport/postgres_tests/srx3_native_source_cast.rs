@@ -187,7 +187,13 @@ fn source_cast_case_inner(
             let mut damaged = false;
             let mut selected_at = None;
             for _ in 0..128 {
-                owner.drain_monster_melee().await;
+                let turn = owner.drain_monster_melee();
+                if slug == "lady_tenebris" {
+                    // Keep the main native chance sequence across unrelated provider changes.
+                    crate::gameplay_transport::monster_profile_cycle::with_main_native_ai_seed(turn).await;
+                } else {
+                    turn.await;
+                }
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;
                 if let Some(master) = master.filter(|_| !selected)
